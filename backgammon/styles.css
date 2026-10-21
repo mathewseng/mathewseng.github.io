@@ -5568,6 +5568,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
 /* Short Solver screens reserve space for result navigation and analysis
    controls; the board uses the remaining height without distorting its SVG. */
 @media (max-width: 700px) and (min-height: 501px) and (max-height: 740px) {
+  .app[data-page="solver"] #subtitle { min-height: 2lh; }
   .app[data-page="solver"]:not(.editing-position) { height: 100dvh; }
   .app[data-page="solver"]:not(.editing-position) .stage {
     height: 100%;

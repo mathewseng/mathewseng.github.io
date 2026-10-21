@@ -22,21 +22,21 @@ module.exports = async function parity(browser, base, out, name) {
   const inventory = () =>
     page
       .locator(
-        "#panel button,#panel input,#panel select,#panel textarea,#panel summary,#panel a[href]",
+        ":is(#panel,.solver-setup-dock) :is(button,input,select,textarea,summary,a[href])",
       )
       .evaluateAll((ns) =>
         ns.map((n) => [
           n.tagName,
           n.getAttribute("aria-label") || n.textContent.trim() || n.type,
           n.disabled || false,
-        ]),
+        ]).sort((a,b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
       );
-  const exerciseControls = async () => {
+  const exerciseControls = async (scope = "#panel") => {
     await page
-      .locator("#panel details")
+      .locator(`${scope} details`)
       .evaluateAll((ns) => ns.forEach((n) => (n.open = true)));
     const controls = page.locator(
-      "#panel button:visible,#panel input:visible,#panel select:visible,#panel textarea:visible,#panel summary:visible,#panel a[href]:visible",
+      `${scope} :is(button,input,select,textarea,summary,a[href]):visible`,
     );
     for (let i = 0; i < (await controls.count()); i++) {
       const n = controls.nth(i);
@@ -124,6 +124,7 @@ module.exports = async function parity(browser, base, out, name) {
             path: path.join(out, `${name}-parity-${route}-${width}.png`),
           });
         await close();
+        if (route === "solver") await exerciseControls(".solver-setup-dock");
         assert.equal(
           await page.locator("#panel").evaluate((n) => n.parentElement.id),
           "inspector",

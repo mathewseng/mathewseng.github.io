@@ -270,13 +270,16 @@ module.exports = async function keyboardUX(
           points[0] = 1;
           points[2] = 1;
           points[5] = 1;
+          // Keep the race undecided so certain-bearoff adjudication does not
+          // finish the game before the keyboard action can be exercised.
+          points[23] = -3;
         }
         const initial = r.initialState({
             phase: "move",
             dice: kind === "bar" ? [3, 1] : [2, 1],
             points,
             bar: kind === "bar" ? [1, 0] : [0, 0],
-            off: kind === "bar" ? [0, 0] : [12, 0],
+            off: kind === "bar" ? [0, 0] : [12, 12],
             matchLength: 0,
           }),
           id = crypto.randomUUID();
