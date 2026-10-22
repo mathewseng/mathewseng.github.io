@@ -437,7 +437,7 @@ function render() {
   for(const control of quickAnalysis.querySelectorAll('button')) control.disabled=!!problems.length||!!review;
   for(const control of quickAnalysis.querySelectorAll('[data-analyze-preset]'))
     control.setAttribute('aria-pressed',String(control.dataset.analyzePreset===analysis.preset));
-  quickAnalysis.title = `Current analysis: ${analysis.preset === 'auto' ? 'Auto' : PRESETS[analysis.preset]?.name}`;
+  quickAnalysis.title = `Current analysis: ${analysis.preset === 'auto' ? 'Auto' : analysis.preset === 'puretd' ? 'PureTD money' : analysis.preset === 'puretd-wide' ? 'PureTD wide' : PRESETS[analysis.preset]?.name}`;
   panel(problems);
   const docked = wideSetup.matches;
   document.querySelector('.app').classList.toggle('setup-docked',docked);
@@ -563,6 +563,8 @@ function panel(problems) {
               key,
               `Fixed ${value.plies} ply · ${value.name}`,
             ]),
+            ['puretd', 'PureTD money · 1 ply · experimental'],
+            ['puretd-wide', 'PureTD wide · 1 ply · experimental'],
           ],
           analysis.preset,
           (value) => {
@@ -575,7 +577,7 @@ function panel(problems) {
       el(
         "p",
         { class: "muted small" },
-        SEARCH_DESCRIPTION,
+        SEARCH_DESCRIPTION + ' PureTD money and PureTD wide are separate learned evaluators for checker moves in money/Jacoby games without beavers or raccoons. They report cubeful equity only and evaluate all legal root moves at one ply. Wide uses a larger, slower model with closer EVs in the published opening comparison. Cube decisions and rollout controls run GNUbg.',
       ),
     ),
     analysis.status,
@@ -1070,8 +1072,7 @@ async function progressive() {
         ].includes(event.action.type)
       )
         continue;
-      const answer = await analysis.engine.analyze(states[i], {
-        preset: analysis.preset,
+      const answer = await analysis.analyzeRaw(states[i], {
         submitted: event.action.type === "move" ? event.action.steps : null,
         priority: 0,
       });

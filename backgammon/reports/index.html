@@ -10,12 +10,12 @@
       content="Recorded GNUbg speed and accuracy measurements for the Backgammon analysis settings, and an on-device measurement."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=c2e8512d027c6ee6" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=c2e8512d027c6ee6" />
-    <link rel="stylesheet" href="../styles.css?bgv=c2e8512d027c6ee6" />
-    <link rel="stylesheet" href="../docs.css?bgv=c2e8512d027c6ee6" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=aaefb2ac70d0bc38" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=aaefb2ac70d0bc38" />
+    <link rel="stylesheet" href="../styles.css?bgv=aaefb2ac70d0bc38" />
+    <link rel="stylesheet" href="../docs.css?bgv=aaefb2ac70d0bc38" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="./app.js?bgv=c2e8512d027c6ee6"></script>
+    <script type="module" src="./app.js?bgv=aaefb2ac70d0bc38"></script>
   </head>
   <body class="docs-page docs-page--report">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -56,6 +56,7 @@
             <a href="#speed">Depth comparison</a>
             <a href="#device">Measure this device</a>
             <a href="#accuracy">Accuracy</a>
+            <a href="#learned-evaluators">Independent learned evaluators</a>
             <a href="#opening-accuracy">Five-ply book vs XG</a>
             <a href="#rollout-accuracy">Rollout policies vs XG</a>
             <a href="#rollout-diagnostic">Remaining disagreements</a>
@@ -133,6 +134,10 @@
               <p class="notice">Historical results: filtered checker selection was affected by a later-discovered defect. <a href="#checker-selection">See the correction and its validation.</a> These results do not establish the corrected engine’s accuracy.</p>
               <p>Controlled full-game tests of opening 2–1 and the 14 persistent reply disagreements.</p>
               <div id="fullgame-ablation-content"></div>
+            </section>
+            <section class="docs-section" id="learned-evaluators" aria-labelledby="learned-evaluators-heading">
+              <h2 id="learned-evaluators-heading">Independent learned evaluators vs XG</h2>
+              <div id="learned-evaluators-content"></div>
             </section>
             <section class="docs-section" id="corrected-rollout" aria-labelledby="corrected-rollout-heading">
               <h2 id="corrected-rollout-heading">Corrected checker selection: independent full-game study</h2>

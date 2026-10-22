@@ -659,6 +659,15 @@ const server = http.createServer((req, res) => {
         (report.verifyUI ||= []).push(
           await run("verify-ui", browser, base, out, browserName),
         );
+        (report.puretdUI ||= []).push(
+          await run("puretd-ui", browser, base, out, browserName),
+        );
+        (report.learnedEvaluators ||= []).push(
+          await run("learned-evaluators", browser, base, out, browserName),
+        );
+        (report.puretdLoading ||= []).push(
+          {browser:browserName,cases:await run("puretd-loading",browser,base)},
+        );
         (report.engineCacheContext ||= []).push(
           {browser: browserName, cases: await run("engine-cache-context", browser, base)},
         );

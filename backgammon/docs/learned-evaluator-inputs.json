@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-22T21:53:29.251765+00:00",
+  "tolerance": 0.005,
+  "referenceSHA256": "d1f807738c7c2e6ae433cb2f4c81603bfe0ec7ee1aebc5483163f0eed445b153",
+  "description": "Exploratory comparison over all 729 published XG opening/reply positions and all 2,584 listed candidate values. Engines generate their own root moves. No XG values, fitted offsets, or post-hoc corrections enter evaluation. This is a selected opening corpus and not a general playing-strength benchmark. XG has Jacoby and immediate redoubles; GNUbg ordinary and PureTD use Jacoby without beavers/raccoons; GNUbg beavers-on and Sage have beavers without raccoons. Deterministic tree/model estimates are compared with finite published XG rollouts or XGRoller++ estimates; small differences are not exact ground truth. Native timing is exploratory and not a controlled speed comparison.",
+  "runs": [
+    {
+      "id": "gnu2-beavers",
+      "label": "GNUbg 2 ply \u00b7 beavers on",
+      "file": "docs/learned-gnu2-beavers-raw.jsonl.gz",
+      "sha256": "422a127dd4570e5f54f38f049660ed0c6d44d1e2eb93252cbea08b79ce1fa183"
+    },
+    {
+      "id": "gnu2-ordinary",
+      "label": "GNUbg 2 ply \u00b7 beavers off",
+      "file": "docs/learned-gnu2-ordinary-raw.jsonl.gz",
+      "sha256": "c46747873a1436d43923a7b6740788b14816df72663c997957b0d4479525016f"
+    },
+    {
+      "id": "sage2",
+      "label": "Sage 2 ply (one reply turn)",
+      "file": "docs/learned-sage2-raw.jsonl.gz",
+      "sha256": "cb11f176e7ddfb2247eb564b6a440c7e82a2e023f344f47d455e21f68e395bba",
+      "sageLevel": "2-ply"
+    },
+    {
+      "id": "sage3",
+      "label": "Sage 3 ply (two reply turns)",
+      "file": "docs/learned-sage3-raw.jsonl.gz",
+      "sha256": "f3c1d6c601c739064728e05662f48521c7c126c765fc1f7895968838b07e00f6",
+      "sageLevel": "3-ply"
+    },
+    {
+      "id": "puretd0",
+      "label": "PureTD 0 ply",
+      "file": "docs/learned-puretd0-raw.jsonl.gz",
+      "sha256": "d2e9e0eec6a35a266de206abfc1e5c1ae0ae53d24352862cbf3cf5c7cc8a44e6"
+    },
+    {
+      "id": "puretd1",
+      "label": "PureTD 1 ply",
+      "file": "docs/learned-puretd1-raw.jsonl.gz",
+      "sha256": "0cb00ce25a68e9a0d447a5f9676030f18d583a631d127023e430fd52323a1af4"
+    },
+    {
+      "id": "puretd-wide0",
+      "label": "PureTD wide 0 ply",
+      "file": "docs/learned-puretd-wide0-raw.jsonl.gz",
+      "sha256": "729ff8f9393ee91827ecc48c691ab26e4b95ab6923c2c69942423236a595e06d"
+    },
+    {
+      "id": "puretd-wide1",
+      "label": "PureTD wide 1 ply",
+      "file": "docs/learned-puretd-wide1-raw.jsonl.gz",
+      "sha256": "99a8166999c768930db4245d572e934481723e9abfb51ea21b92320f6da11cd5"
+    }
+  ],
+  "historicalBookSHA256": "065d9b68603a142bce51a778918b11649a3fd03f6270facdd8b89920c9991b9c"
+}

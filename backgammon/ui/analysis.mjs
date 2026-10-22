@@ -4,10 +4,14 @@ import { el, button, select, field, showError } from "./shell.mjs";
 import { comparisonSummary, moveFeatures } from "../core/analysis-insight.mjs";
 import { EngineClient } from "../engine/client.mjs";
 import { PRESETS } from "../engine/metadata.mjs";
+import { puretdIssue } from "../engine/puretd.mjs";
+import { PURETD } from "../engine/puretd-metadata.mjs";
 import { positionKey, playerName } from "../core/rules.mjs";
 export const percentage = (n) => `${(100 * n).toFixed(1)}%`;
 export const equity = (n) => (n >= 0 ? "+" : "") + n.toFixed(3);
 export function probabilityView(c, player) {
+  if (c.probabilities === null)
+    return el("p", {class:"muted small"}, "This model estimates cubeful equity directly. It does not produce win or gammon probabilities.");
   const [win, gammon, bg, loseGammon, loseBg] = c.probabilities;
   return el(
     "div",
@@ -149,7 +153,7 @@ export function resultView(
           el(
             "span",
             { class: "muted small" },
-            `Δ ${equity(c.equity - result.candidates[0].equity)} · win ${percentage(c.probabilities[0])}`,
+            `Δ ${equity(c.equity - result.candidates[0].equity)}${c.probabilities ? ` · win ${percentage(c.probabilities[0])}` : ""}`,
           ),
         );
         if (result.method === "reference")
@@ -207,17 +211,12 @@ export function resultView(
             result.settings.cubeful ? "Cubeful equity" : "Equity · cube off",
             el("strong", {}, equity(best.equity)),
           ),
-          el(
-            "div",
-            {},
-            "Cubeless equity",
-            el("strong", {}, equity(best.cubeless)),
-          ),
+          Number.isFinite(best.cubeless) ? el("div", {}, "Cubeless equity", el("strong", {}, equity(best.cubeless))) : null,
         ),
       );
     }
   }
-  if (result.screening || result.method === "rollout" || result.settings.pruning === false || result.settings.verification) {
+  if (result.screening || result.method === "rollout" || result.method === "neural" || result.settings.pruning === false || result.settings.verification) {
     const details = el(
       "details",
       {},
@@ -234,7 +233,11 @@ export function resultView(
     if (result.screening?.retainedLeader)
       details.append(el("p", { class: "muted small" },
         "Research keeps the 3-ply shortlist’s leader and evaluates it alongside every other finalist at 4 ply. Completed 3-ply work is reused for this check."));
-    if (result.settings.pruning === false)
+    if (result.method === "neural")
+      details.append(el("p", {class:"muted small"},
+        `${result.settings.name} · independent learned cubeful equity, with one turn of lookahead and every legal root move evaluated. Experimental checker analysis for money play with Jacoby and without beavers or raccoons. No imported opening values or equity correction is applied. This does not establish XG parity. `,
+        el("a", {href:PURETD.source,target:"_blank",rel:"noopener"}, "Model and source")));
+    if (result.settings.pruning === false && result.method !== "neural")
       details.append(el("p", { class: "muted small" },
         "Verify evaluates every displayed 4-ply checker finalist without GNUbg’s internal pruning network. The Research shortlist and its 3-ply leader check still use normal pruning. This slower diagnostic can change equities; it does not establish greater playing strength or agreement with XG."));
     if (result.settings.verification)
@@ -264,7 +267,7 @@ export function resultView(
     el(
       "p",
       { class: "muted small" },
-      `${result.settings.name} · ${result.method === "reference" ? "published book 3.70 (2013)" : result.method === "rollout" ? `${result.settings.trials} trials` : `${result.settings.plies} ply`} · ${(result.elapsedMs / 1000).toFixed(2)} s${result.book ? ` · precomputed opening book${result.book.stage === "third-turn" ? " (turn 3)" : result.book.stage === "fourth-turn" ? " (turn 4)" : ""}` : result.cached ? " · cached" : ""}. ${result.units === "current-cube-points" ? "Equity is in current-cube points." : "Main value is match-winning chance; Δ is normalized match equity."} Values use ${playerName(result.perspective)}’s player-on-roll perspective. Cubeless equity and engine metadata are included in saved results.`,
+      `${result.settings.name} · ${result.method === "reference" ? "published book 3.70 (2013)" : result.method === "rollout" ? `${result.settings.trials} trials` : `${result.settings.plies} ply`} · ${(result.elapsedMs / 1000).toFixed(2)} s${result.book ? ` · precomputed opening book${result.book.stage === "third-turn" ? " (turn 3)" : result.book.stage === "fourth-turn" ? " (turn 4)" : ""}` : result.cached ? " · cached" : ""}. ${result.units === "current-cube-points" ? "Equity is in current-cube points." : "Main value is match-winning chance; Δ is normalized match equity."} Values use ${playerName(result.perspective)}’s player-on-roll perspective. ${result.method === 'neural' ? 'Model identity and search settings are included in saved results.' : 'Cubeless equity and engine metadata are included in saved results.'}`,
     ),
   );
   return node;
@@ -277,8 +280,7 @@ export class AnalysisPanel {
       "GNUbg loads when needed.",
     );
     this.preset = "quick";
-    this.engine = new EngineClient({
-      onStatus: (type, text) => {
+    const onStatus = (type, text) => {
         clearInterval(this.elapsedTimer);
         if (type === "busy") {
           const started = performance.now();
@@ -292,8 +294,14 @@ export class AnalysisPanel {
           ["busy", "loading"].includes(type),
         );
         this.status.textContent = text;
-      },
-    });
+      };
+    this.engine = new EngineClient({onStatus});
+    this.moneyEngine = new EngineClient({onStatus, openingBook:null,
+      engineName:'PureTD', assetsDescription:'the learned money model', presetNames:{standard:'PureTD money · 1 ply'},
+      workerFactory:()=>new Worker(new URL('../engine/puretd-worker.mjs',import.meta.url),{type:'module'})});
+    this.wideMoneyEngine = new EngineClient({onStatus, openingBook:null,
+      engineName:'PureTD wide', assetsDescription:'the larger money model', presetNames:{standard:'PureTD wide · 1 ply'},
+      workerFactory:()=>new Worker(new URL('../engine/puretd-worker.mjs?model=wide',import.meta.url),{type:'module'})});
     this.onResult = onResult;
     this.token = 0;
   }
@@ -318,10 +326,7 @@ export class AnalysisPanel {
   async run(state, options = {}) {
     const token = ++this.token,
       key = positionKey(state);
-    const raw = await this.engine.analyze(state, {
-      preset: this.preset,
-      ...options,
-    });
+    const raw = await this.analyzeRaw(state, options);
     if (token !== this.token || key !== positionKey(state))
       throw new DOMException("Stale analysis.", "AbortError");
     const result = presentAnalysis(state, raw);
@@ -332,6 +337,18 @@ export class AnalysisPanel {
   cancel() {
     this.token++;
     this.engine.cancel();
+    this.moneyEngine.cancel();
+    this.wideMoneyEngine.cancel();
+  }
+  analyzeRaw(state, options = {}) {
+    const learned = ['puretd', 'puretd-wide'].includes(this.preset);
+    if (learned && !options.rollout && state.phase === 'move') {
+      const issue = puretdIssue(state);
+      if (issue) return Promise.reject(new Error(issue));
+      return (this.preset === 'puretd-wide' ? this.wideMoneyEngine : this.moneyEngine)
+        .analyze(state, {...options, preset:'standard', useBook:false});
+    }
+    return this.engine.analyze(state, {preset:learned ? 'deep' : this.preset, ...options});
   }
   async safely(state, options) {
     try {

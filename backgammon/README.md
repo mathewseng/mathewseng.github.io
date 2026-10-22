@@ -26,6 +26,15 @@ On macOS an existing Chrome may be selected with `CHROME_PATH='/Applications/Goo
 
 ## Architecture and controls
 
+Solver's **Analysis settings → PureTD money / PureTD wide** offers separate experimental
+one-ply checker evaluators for Jacoby money games with beavers/raccoons off. Each
+evaluates every legal root move with a pinned MIT-licensed learned model and
+reports cubeful equity only. It does not use the reference book. GNUbg remains
+the default and handles rollouts, cube and match analysis. On the complete
+published XG opening corpus the wider model matches 705/729 choices with mean absolute EV
+difference 0.003791, but 703/2,584 values remain outside ±0.005. See
+[the comparison, limitations and reproducible build](docs/LEARNED-EVALUATORS.md).
+
 The **Openings** tab at `/backgammon/openings/` previews all 15 opening rolls and every published alternative within 0.040 equity of the highest listed value. Choose a move, then **Replies**, to explore all 21 reply rolls. Both stages show move/equity/loss rows, before/after boards and a Solver link. Rankings use the explicitly attributed XG opening book 3.70 (2013): 729 positions and 2,584 candidate values, imported unchanged with source URLs, methods, trial counts and published confidence bounds. XG references use money/Jacoby/beavers-on rules. The page does not change saved game settings. Its Solver link preserves the displayed rule context.
 
 Where XG has no entry or cannot load, the guide uses labeled GNUbg five-ply estimates with beavers off. XG lists the 5–1 run 24/18 as close but provides no reply page for it; a separately recorded GNUbg five-ply supplement fills all 21 replies. The guide starts no live engine. Live analysis uses XG only for compatible centered-cube money positions with Jacoby and beavers and raccoons on. Other rule contexts use GNUbg, and an unlisted submitted move falls back to a complete GNUbg comparison rather than mixing EV sources. Tests verify all 729 source positions and every imported value in both orientations. Independent GNUbg accuracy experiments remain separate; importing reference values is not a measured gain in engine strength. See [the reference-book method](docs/XG-REFERENCE-BOOK.md).

@@ -5,6 +5,7 @@ import { DEFAULT_SOUND, normalizeSound } from "./sound.mjs";
 import { mergeEvaluations } from "./decision-history.mjs";
 import { validateTakebacks } from "./table.mjs";
 import { normalizeShortcuts, DEFAULT_SHORTCUTS } from "./shortcuts.mjs";
+import { PURETD, PURETD_WIDE } from "../engine/puretd-metadata.mjs";
 export const PREFIX = "backgammon.v1.";
 export const MAX_BACKUP = 8 * 1024 * 1024;
 export const settingsDefaults = {
@@ -162,13 +163,20 @@ export function validateItem(item) {
   if (item.analysis) {
     const a = item.analysis;
     const valid = (n) => typeof n === "number" && Number.isFinite(n);
+    const isNeural = a.method === 'neural';
+    const learned = isNeural && [PURETD, PURETD_WIDE].find(model => model.id === a.engine);
+    if (isNeural && (!learned || a.type !== 'checker' ||
+        a.model?.id !== learned.model || a.model.sha256 !== learned.modelSHA256 || a.model.equityOnly !== true ||
+        ![0, 1].includes(a.settings?.plies) || a.settings.cubeful !== true ||
+        a.settings.pruning !== false || a.units !== 'current-cube-points'))
+      throw new Error('Invalid learned-model provenance.');
     const evaluation = (c) =>
       c &&
       valid(c.equity) &&
-      valid(c.cubeless) &&
+      (isNeural ? c.cubeless === null && c.probabilities === null : valid(c.cubeless) &&
       Array.isArray(c.probabilities) &&
       c.probabilities.length === 5 &&
-      c.probabilities.every((n) => valid(n) && n >= -0.0001 && n <= 1.0001);
+      c.probabilities.every((n) => valid(n) && n >= -0.0001 && n <= 1.0001));
     const isReference = a.method === "reference";
     const credit = c => c?.referenceCredit &&
       typeof c.referenceCredit.author === "string" && c.referenceCredit.author.trim().length > 0 && c.referenceCredit.author.length <= 120 &&

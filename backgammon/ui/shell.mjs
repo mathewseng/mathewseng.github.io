@@ -612,7 +612,7 @@ export function about() {
       el(
         "p",
         {},
-        "GNUbg Core 955555c · web binding bg6. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution. Browser-supported SIMD acceleration and the scalar fallback use the same weights and analysis settings.",
+        "GNUbg Core 955555c · web binding bg9. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution. Browser-supported SIMD acceleration and the scalar fallback use the same weights and analysis settings.",
       ),
       el(
         "p",
@@ -635,6 +635,9 @@ export function about() {
         {},
         "Local data stays in this browser. Export a Library backup to move it between devices. Online rooms use PeerJS signaling and may fail on restricted networks. They are casual peer-to-peer games, not tournament security.",
       ),
+      el("p", {}, "Solver also offers experimental PureTD money checker analysis: a separately trained, MIT-licensed model by Alex Strehl. It supports Jacoby money play without beavers/raccoons and reports cubeful equity only. Its one-ply search evaluates every legal root move. GNUbg remains the default engine and supplies rollouts and match/cube analysis."),
+      el("a", {href:"/backgammon/engine/vendor/puretd/LICENSE.txt",target:"_blank"}, "PureTD model and engine · MIT license"),
+      el("a", {href:"/backgammon/engine/source/puretd/puretd-18b0a80-source.tar.gz"}, "PureTD pinned source and original model"),
       el(
         "a",
         { href: "/backgammon/licenses/GPL-3.0.txt", target: "_blank" },

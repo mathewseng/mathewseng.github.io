@@ -11,10 +11,16 @@ export class EngineClient {
       new Worker(new URL("./worker.mjs", import.meta.url), { type: "module" }),
     onStatus = () => {},
     openingBook = new PreferredOpeningBook(),
+    engineName = "GNUbg",
+    assetsDescription = "its local databases",
+    presetNames = {},
   } = {}) {
     this.factory = workerFactory;
     this.book = openingBook;
     this.onStatus = onStatus;
+    this.engineName = engineName;
+    this.assetsDescription = assetsDescription;
+    this.presetNames = presetNames;
     this.queue = [];
     this.cache = new Map();
     this.readings = new Map();
@@ -28,7 +34,7 @@ export class EngineClient {
     if (this.initializing) return this.initializing;
     if (this.ready) return Promise.resolve();
     const generation = ++this.generation;
-    this.onStatus("loading", "Loading GNUbg and its local databases…");
+    this.onStatus("loading", `Loading ${this.engineName} and ${this.assetsDescription}…`);
     let resolveReady;
     const pending = new Promise((resolve, reject) => {
       resolveReady = resolve;
@@ -55,7 +61,7 @@ export class EngineClient {
           this.initReject = null;
           this.onStatus(
             "ready",
-            `GNUbg ready · ${(data.elapsedMs / 1000).toFixed(2)} s startup`,
+            `${this.engineName} ready · ${(data.elapsedMs / 1000).toFixed(2)} s startup`,
           );
           resolveReady();
         } else if (data.id === 0 && data.type === "error")
@@ -342,7 +348,7 @@ export class EngineClient {
       const job = this.queue.shift();
       this.active = job;
       job.started = performance.now();
-      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Analyzing · at least 2 ply…" : `Evaluating ${job.preset}…`);
+      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Analyzing · at least 2 ply…" : `Evaluating ${this.presetNames[job.preset] || job.preset}…`);
       this.worker.postMessage({
         id: job.id,
         type: "analyze",
