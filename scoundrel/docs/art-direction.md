@@ -1,36 +1,32 @@
-# Cinder & Tide
+# Ash & Briar
 
-Visual thesis: expressive painted fantasy scenes, luminous color and bold silhouettes set into an aged, quiet dungeon table.
+Visual thesis: original expressive fantasy characters and objects painted in broad shapes, each with a distinct small story and local color palette, presented against a quiet dark dungeon and gallery.
 
-Content plan: four readable encounter artworks form the playing surface; strength, name and faction stay visible; actions explain the selected encounter; the collection reveals each illustration with its name, faction/type and value.
+Content plan: the game shows four readable encounters; the collection presents all 44 artworks with names and values, suit filters and search; the focused art viewer adds role, one line of flavor and the relevant game rule.
 
-Interaction thesis: staggered dealing establishes the room, a small lift identifies the selected encounter, and a full-art collection view lets the painting breathe. Reduced motion removes movement. Touch never depends on hover.
+Interaction thesis: cards lift and rotate slightly toward the pointer, a soft light follows the surface, and brief entrance and viewer transitions make navigation feel tangible. Touch taps open artwork and horizontal swipes browse it. All movement respects reduced motion; every action has a keyboard and touch equivalent.
 
-## Two peoples, many forms
+## The deck
 
-Spades are **Cinderkin**, a volcanic people ranging from wick-stealing imps and glass-winged seers to horned artisans and ancient ash dragons. Copper craft, ember eyes and volcanic materials connect them without prescribing one anatomy, one palette or one pose.
+- **Spades · Stonekin:** living slate and charcoal people, from a tiny pebble thief to an ancient coastal giant. Vary age, proportions, stone shape, expression and role.
+- **Clubs · Treefolk:** living wooden creatures with green foliage, from a seed sprite and vine herald to thicket beasts and dreaming elders. Leaf shape, canopy, anatomy and scale can vary widely.
+- **Diamonds · Weapons:** blue-steel dagger, hooked sickle, bearded axe, spear, mace, dueling saber, warhammer, greatsword and flail. Handles, bindings, local materials, environment and lighting are individual.
+- **Hearts · Potions:** recognizable red liquid in distinct fresh scarlet, rose, brick, vermilion, garnet, ruby wine, copper red, dark cherry and coral shades. Bottle shapes, stopper, glass, wrapping and setting are distinct too.
 
-Clubs are **Tideborn**, an ocean people ranging from amphibious sprites and armored crab squires to tentacled scholars, reef royalty and island-bearing elders. Shell, coral, fins and pearls connect them; reefs, marshes, ships, deep water and sunlit shores create different settings.
+All 44 names have distinct meaningful words. Avoid repeated material roots and repeated weather/sky themes in weapon names. The races are cosmetic identities; both monster suits retain the same game rules.
 
-The two suits remain mechanically identical monsters. Race, role and flavor are cosmetic. Weapons and healing potions retain their original values and rules.
+## Color and detail
 
-## Variation requirements
+The suit color belongs to the subject, not the whole painting. A grey Stonekin can appear beneath teal fabric on terracotta steps; blue steel can sit against burgundy leather; a garnet potion can hang against turquoise plaster. Keep two or three distinct supporting color families, warm/cool contrast and the local colors of materials.
 
-- Every card has its own name, subject, illustration and miniature story.
-- Alternate small/large, humanlike/beastlike, round/angular, graceful/heavy, comic/solemn and still/active silhouettes.
-- Alternate close portraits, profiles, aerial views, low angles, full-body actions, monumental landscapes and object still lifes.
-- Use different local color stories: icy blue versus amber, coral versus turquoise, rose versus ivory, silver versus violet, fresh green versus gold.
-- Characters act in a place. Avoid a procession of front-facing figures in the same dark alcove.
-- Weapons vary in shape, orientation and environment. Potions vary in vessel, liquid color, material and staging.
-- No blanket desaturation or hue shift on card artwork. The atmosphere setting changes the table lighting only.
-- Original artwork generated independently per card. No extracted game assets, logos, UI frames, painted numbers or lettering.
+Use strong silhouettes, broad opaque gouache-like paint shapes, quiet areas and selective crisp detail at the face or item edge. One or two meaningful contextual details should tell the scene. Vary lighting, time of day, setting, gesture, framing and scale. Do not default to the same portrait, pedestal or matching colored background for a suit. Avoid surface microdetail, ornate filigree, particles everywhere and overly crowded scenes.
 
-## References
+The user's references are [Legends of Runeterra's official card illustrations](https://developer.riotgames.com/docs/lor#data-dragon), especially the local colors and moments in Greenglade Caretaker, Inspiring Mentor, Cithria of Cloudfield and Scarthane Steffen. Characters and scenes in this deck are original. Earlier concepts and name revisions remain in [the study archive](ash-and-briar/README.md).
 
-The user's references guide broad compositional qualities: expressive silhouettes and vibrant painted worlds in [Legends of Runeterra's official art](https://playruneterra.com/en-us/news/game-updates/patch-2-12-0-notes/) and [Hearthstone's full-art card presentation](https://hearthstone.blizzard.com/en-us/news/24244424/34-2-patch-notes-events-and-features). Characters, cultures and images are original.
+## Delivery
 
-## Responsive presentation
+`catalog.js` is shared by the game, report histories and dedicated `/scoundrel/gallery/` page. Names, roles, lore, weapon types, potion targets and image paths live there. `art-prompts.json` records the exact prompts, source references and final artwork hashes. The built-in image generation tool made each illustration independently; no recolors or crops of a shared character are used.
 
-Desktop uses a four-card row and an adjacent adventurer rail. Portrait phones use a two-by-two room with compact health/weapon status, visible names and comfortably sized action buttons. Names wrap; no ellipsis or line clamping hides content. On short screens and with enlarged text, the document may scroll rather than crop actions. Dialogs respect the dynamic viewport and safe areas.
+Card paintings have no baked-in text, suit marks, value seals or borders. Code supplies those elements. Full WebPs are 960px wide and responsive thumbnails 320px, proportionally compressed with `cwebp`. Artwork keeps its own colors across all dungeon atmospheres. The eight approved color-story samples are retained in the final set.
 
-`catalog.js` is the encounter source. `art-prompts.json` records the complete image prompts and final asset paths.
+The gallery uses four columns on desktop, five on wide displays, three on tablets and two on phones. Search and filters update the visible count and URL. Card links include a stable hash, and the viewer navigates only the filtered set. Native modal focus handling, close/backdrop controls, focus restoration, dynamic viewport bounds and reduced-motion behavior apply throughout.

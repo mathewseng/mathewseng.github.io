@@ -22,8 +22,8 @@
   const names = { monster: "Monster", weapon: "Weapon", potion: "Potion" };
   const catalog = window.ScoundrelCatalog;
   const name = (c) => catalog[c.id].name;
-  const art = (c) => c.image + "?v=20261022";
-  const sources = (c) => c.image.replace("/cards/", "/cards/thumbs/") + "?v=20261022 320w, " + art(c) + " 640w";
+  const art = (c) => c.image + "?v=20261022-ash";
+  const sources = (c) => c.image.replace("/cards/", "/cards/thumbs/") + "?v=20261022-ash 320w, " + art(c) + " 960w";
 
   function preferences() {
     document.documentElement.dataset.atmosphere = ["ember", "moon", "moss"].includes(prefs.atmosphere) ? prefs.atmosphere : "ember";

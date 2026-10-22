@@ -5,13 +5,13 @@
 :root {
   --sc-health: var(--bad);
   --sc-weapon: var(--family-home);
-  --sc-tide: color-mix(in srgb, var(--good) 70%, var(--family-blackjack));
-  --sc-cinder: color-mix(in srgb, var(--family-poker-2) 72%, var(--family-blackjack));
+  --sc-tree: color-mix(in srgb, var(--good) 70%, var(--family-blackjack));
+  --sc-stone: color-mix(in srgb, var(--muted) 80%, var(--ink));
   --sc-health-ink: var(--sc-health);
   --sc-weapon-ink: var(--sc-weapon);
 }
 @supports (color: oklch(from red l c h)) {
-  :root { --sc-tide: oklch(from var(--good) .78 .14 calc(h - 15)); }
+  :root { --sc-tree: oklch(from var(--good) .78 .14 calc(h - 15)); }
 }
 [data-atmosphere="moon"] { --sc-gold: var(--info); --sc-gold-bright: var(--ink); --sc-art-filter: saturate(.35) hue-rotate(150deg); }
 [data-atmosphere="moss"] { --sc-gold: var(--good); --sc-gold-bright: var(--family-backgammon); --sc-art-filter: saturate(.62) hue-rotate(38deg); }
@@ -222,10 +222,10 @@ button:disabled { cursor: not-allowed; }
   .action-stage { min-height: 80px; padding-block: 12px; }
 }
 
-/* Cinder & Tide: art stays vivid; captions participate in layout and can wrap. */
+/* Ash & Briar: art stays vivid; captions participate in layout and can wrap. */
 :where(.encounter, .catalog-grid figure, .artwork-dialog) { --sc-card-accent: var(--family-blackjack); --sc-card-ink: var(--sc-card-accent); }
-[data-suit="s"], [data-filter="s"] { --sc-card-accent: var(--sc-cinder); }
-[data-suit="c"], [data-filter="c"] { --sc-card-accent: var(--sc-tide); }
+[data-suit="s"], [data-filter="s"] { --sc-card-accent: var(--sc-stone); }
+[data-suit="c"], [data-filter="c"] { --sc-card-accent: var(--sc-tree); }
 [data-suit="h"], [data-filter="h"] { --sc-card-accent: var(--sc-health); --sc-card-ink: var(--sc-health-ink); }
 [data-suit="d"], [data-filter="d"], .weapon-block { --sc-card-accent: var(--sc-weapon); --sc-card-ink: var(--sc-weapon-ink); }
 .encounter {
@@ -423,3 +423,12 @@ button:disabled { cursor: not-allowed; }
 .avoid-value { display: block; margin-top: 10px; color: var(--sc-gold-bright); }
 .avoid-value[hidden] { display: none; }
 @media (max-width: 600px) { .avoid-choice { padding: 12px; }.avoid-preview { gap: 5px; }.avoid-card { aspect-ratio: .8; }.avoid-choice-title strong { font-size: 15px; } }
+
+.catalog-page-link { margin-top: 18px; }
+.catalog-page-link a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-gold-bright); font-size: 13px; }
+@media (max-width: 600px) {
+  .game-topbar { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 0 12px; }
+  .game-topbar > .back-link { grid-column: 1; grid-row: 1; }
+  .game-topbar > .topbar-actions, .game-topbar > .return-game { grid-column: 2; grid-row: 1; justify-self: end; margin: 0; }
+  .game-topbar > .game-nav { grid-column: 1 / -1; grid-row: 2; justify-content: center; gap: 24px; margin: 0; }
+}

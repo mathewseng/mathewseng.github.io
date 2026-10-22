@@ -10,7 +10,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `gym/` | Gym Tracker training app (Vite + React; the only page with a build step) |
 | `cards/` | Card Table Workshop |
 | `microtonal-lab/` | Tuning explorer and browser instrument |
-| `scoundrel/` | Solo dungeon card game: 44 illustrated encounters, hidden-deck action EVs, and a reproducible outcome report in `reports/` |
+| `scoundrel/` | Solo dungeon card game: 44 Ash & Briar encounters, an animated card collection in `gallery/`, hidden-deck action EVs, and an outcome report in `reports/` |
 | `ofc/` | OFC hub: `play/`, `fantasyland-trainer/`, `fantasyland-ev/` (its Overview tab replaced the old Fantasyland report); `ofc.css` is the family stylesheet |
 | `poker/` | Poker hub: `play/`, `rush/`, `ultimate-omaha/`, `edge-the-dealer/`, `222/`, `video-poker/` (35 single-draw variants and a payout lab with exact hold EVs), `dodge/`, `calculations/`; `table.css` (felt, seats, lobby, action stage) is shared by the four tables and `tools.css` by the four research tools |
 | `blackjack/` | Blackjack hub: `strategy/` |
