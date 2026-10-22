@@ -14,6 +14,8 @@ if(!Number.isInteger(shard)||shard<0||shard>=inputs.shards||!Number.isInteger(wo
 for(const [id,digest] of Object.entries(inputs.runtime.binaries))if(hash(fs.readFileSync(path.join(native,inputs.runtime.files[id])))!==digest)throw Error('Native binary changed');
 for(const [file,digest] of Object.entries(inputs.runtime.assets))if(hash(fs.readFileSync(path.join(native,file)))!==digest)throw Error('Runtime asset changed');
 const platform=read(path.join(out,'platform-validation.json'));
+const platformFields={schema:1,platform:'linux',architecture:'arm64',cases:12,trialsPerCase:2,tolerance:1e-5,allWithinTolerance:true,scriptSHA256:hash(fs.readFileSync(path.join(family,'scripts/validate-filtered-rollout-platform.py')))};
+if(Object.entries(platformFields).some(([k,v])=>platform[k]!==v)||!Number.isFinite(platform.maxNumericDifference)||platform.maxNumericDifference<0||platform.maxNumericDifference>platformFields.tolerance)throw Error('Worker platform metadata changed');
 if(!platform.allWithinTolerance||JSON.stringify(platform.binaries)!==JSON.stringify(inputs.runtime.binaries)||platform.fixtureSHA256!==inputs.runtime.fixtureSHA256)throw Error('Worker platform validation missing');
 const jobs=jobsFor(inputs,shard),expected=new Map(jobs.map(j=>[j.key,j])),policies=new Map(inputs.policies.map(p=>[p.id,p]));
 function validate(r){const j=expected.get(r.key),p=policies.get(r.policy),v=r.value;if(!j||!p||['id','policy','runtime','candidateId','role','board','batch','seed'].some(k=>r[k]!==j[k]))throw Error('Unplanned batch identity');

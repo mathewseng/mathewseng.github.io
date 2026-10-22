@@ -6,6 +6,7 @@ from pathlib import Path
 FAMILY=Path(__file__).resolve().parents[1];PREFIX='filtered-rollout-v1';HASH=lambda b:hashlib.sha256(b).hexdigest()
 p=argparse.ArgumentParser();p.add_argument('native',type=Path);p.add_argument('--record-fixture',action='store_true');p.add_argument('--output',type=Path);args=p.parse_args();root=args.native.resolve()
 plan=json.loads((FAMILY/f'docs/{PREFIX}-inputs.json').read_bytes());build=json.loads((root/'runtime-build.json').read_bytes())
+assert build['binaries']['fixed']!=build['binaries']['legacy'],'Correction must have been compiled'
 fields=['checkerPlies','cubePlies','truncationPlies','lateAfterPlies','lateCheckerPlies','lateCubePlies','endpointPlies','rulesMode','filter','vrPlies','cacheContext']
 cases=[]
 for d in plan['plan']:
@@ -22,6 +23,7 @@ def run(case):
  values=[json.loads(s) for s in r.stdout.splitlines() if s.startswith('{')];assert len(values)==1
  return {'name':case['name'],'runtime':case['runtime'],'value':values[0]}
 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:results=list(pool.map(run,cases))
+(root/'excluded-case-results.json').write_text(json.dumps({'binaries':build['binaries'],'cases':cases,'results':results,'excludedFromStudy':True},indent=2)+'\n')
 fixture_path=FAMILY/f'docs/{PREFIX}-smoke-fixture.json'
 if args.record_fixture:
  old=json.loads((FAMILY/'docs/cube-policy-v2-smoke-fixture.json').read_bytes())

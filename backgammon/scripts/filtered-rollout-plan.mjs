@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';import {createHash} from 'node:crypto';import {gunzipSync} from 'node:zlib';
+import {stateForBoard} from './book-branches.mjs';
+import {boardKey,commitTurn} from '../core/rules.mjs';
 export const family=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export const PREFIX='filtered-rollout-v1',FOCUS='reply-7985255600f3563f-44',TRIALS=16384,BATCH=32,SHARDS=20;
 export const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -29,6 +31,13 @@ export function createPlan(runtime=null){
   d.seedNonce=nonce-1;seeds.forEach(s=>used.add(s));
   d.candidates.forEach((c,i)=>{c.candidateId=`c${i}`;if(!Number.isFinite(c.reference?.xgEquity))throw Error('Missing published reference');});
  }
+ const referenceFile='engine/opening-book-data/xg/index.json',referenceBytes=fs.readFileSync(path.join(family,referenceFile)),referenceIndex=JSON.parse(referenceBytes),referenceAttributions={};
+ for(const d of plan){
+  const state=stateForBoard(d.board,[...d.roll].map(Number)),entry=referenceIndex.entries[d.board][d.roll];
+  const moves=new Map(entry.moves.map(m=>[boardKey(commitTurn(state,m.steps.map(([from,to,die])=>({from,to,die})))),m]));
+  referenceAttributions[d.id]={};
+  for(const c of d.candidates){const m=moves.get(c.board);if(!m||m.equity!==c.reference.xgEquity||m.confidenceHalfWidth!==c.reference.confidenceHalfWidth)throw Error('Reference attribution mismatch');referenceAttributions[d.id][c.candidateId]={source:entry.source,method:m.method,trials:m.trials,policy:m.policy,...m.credit};}
+ }
  const common={cubePlies:2,truncationPlies:0,lateAfterPlies:0,lateCubePlies:2,endpointPlies:2,rulesMode:3,vrPlies:1,cacheContext:1};
  const policies=[
   {id:'fixed-normal',label:'Corrected normal 2-ply checker',runtime:'fixed',caseIds:plan.map(d=>d.id),checkerPlies:2,lateCheckerPlies:2,filter:0},
@@ -36,10 +45,12 @@ export function createPlan(runtime=null){
   {id:'fixed-deep',label:'Corrected large-filter 3-ply checker',runtime:'fixed',caseIds:[FOCUS],checkerPlies:3,lateCheckerPlies:3,filter:2},
  ].map(p=>({...p,...common}));
  const unsigned={schema:1,id:PREFIX,runtime,collectionEnabled:!!runtime,
+  referenceSource:{file:referenceFile,sha256:hash(referenceBytes)},referenceAttributions,
   sources:sources.map(file=>({file:`docs/${file}`,sha256:hash(fs.readFileSync(path.join(family,'docs',file)))})),
   patchSHA256:hash(fs.readFileSync(path.join(family,'engine/source/filtered-rollout-bg9.patch'))),
   runnerSHA256:hash(fs.readFileSync(path.join(family,'scripts/run-filtered-rollout-study.mjs'))),
   plannerSHA256:hash(fs.readFileSync(fileURLToPath(import.meta.url))),
+  analysisInputs:Object.fromEntries(['merge-filtered-rollout-shards.py','summarize-filtered-rollout-study.py','summarize-fullgame-ablation.py','summarize-rollout-diagnostic.py'].map(n=>['scripts/'+n,hash(fs.readFileSync(path.join(family,'scripts',n)))])),
   plan,policies,trials:TRIALS,batchSize:BATCH,shards:SHARDS,plannedRecords:14336,plannedGames:458752,
   seedExclusions:{sources:exclusions,diagnosticSeeds,diagnosticOffsets:64},
   rules:{matchLength:0,jacoby:true,immediateRedoubles:2,cubeLimit:1024,startingCube:1,cubeOwner:null},

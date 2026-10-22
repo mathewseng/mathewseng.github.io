@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "binaries": {
+    "legacy": "492649aac0d81ee61c7ca82ab7e56f1aecc93f9d8140d02f6033a3b9855d0919",
+    "fixed": "c3c478be3a20968d4830235e13cb4f88895fab9a52510efaf36492a856ea49ef"
+  },
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cases": 12,
+  "trialsPerCase": 2,
+  "allWithinTolerance": true,
+  "allFieldsExact": true,
+  "maxNumericDifference": 0.0,
+  "tolerance": 1e-05,
+  "fixtureSHA256": "7b77dd5422d02b17df5543f733fabffd544534e1bfeecf84abc549dfec6f5a0a",
+  "scriptSHA256": "33b74160ae0f41cbf22b298f872ff83b3d98d05c9f58cb627d56c83089673f60"
+}
