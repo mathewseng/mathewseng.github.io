@@ -149,8 +149,6 @@
     $("oracle-summary").textContent = !E.actions(state).length ? "Game over. Final score " + E.score(state) + "." : b ? `${proven ? "Exact best" : "Recommended"}: ${winners.map(row => E.describe(state, row.action)).join(" or ")}. ${proven ? "Final score" : "Estimated final score"} ${b.score.toLocaleString("en-US", { maximumFractionDigits: 1 })}.${pending ? " Evaluating alternatives…" : ""}` : "Calculating moves…";
     const progress = $("search-progress");
     progress.textContent = searchStatus ? `${searchStatus.simulations.toLocaleString()}${searchStatus.pending ? " / " + searchStatus.target.toLocaleString() : ""} simulations · ${searchStatus.pending ? "searching" : analysis.every(row => row.exact) ? "solved exactly" : "complete"}` : "";
-    $("deepen-button").disabled = !!searchStatus && (searchStatus.deep && searchStatus.pending || !searchStatus.pending && (searchStatus.simulations >= 100000 || analysis.every(row => row.exact)));
-    $("deepen-button").textContent = searchStatus?.deep && searchStatus.pending ? "Searching 100k…" : "Search 100k";
     const rows = E.actions(state).map(action => ({ action, row: analysis.find(row => same(row.action, action)) }));
     rows.sort((a, b) => (a.row?.score == null) - (b.row?.score == null) || (b.row?.score ?? -Infinity) - (a.row?.score ?? -Infinity) || Number(b.row?.exact || false) - Number(a.row?.exact || false));
     $("action-values").innerHTML = rows.map(({ action: a, row: r }) => {
@@ -161,16 +159,16 @@
       return `<tr${isBest(r) ? ' class="is-best"' : ""}><td><button class="oracle-action" type="button" data-preview='${esc(JSON.stringify(a))}'>${esc(E.describe(state, a))}</button></td><td data-label="Health">${change}</td><td class="value-cell" data-label="EV · final score">${val}</td><td data-label="Analysis"><span class="proof${r?.exact ? " exact" : ""}">${r?.score == null ? "Pending" : r.exact ? "Exact" : r.samples.toLocaleString() + (shared ? " shared samples" : " samples")}</span></td></tr>`;
     }).join("");
   }
-  function analyze(deep = false) {
+  function analyze() {
     worker?.terminate(); worker = null; searchStatus = null; const requestId = ++request;
     if (!prefs.oracle || !E.actions(state).length) { renderAnalysis(); return; }
     if (!window.Worker) { $("oracle-summary").textContent = "This browser does not support the worker required for analysis."; return; }
     try {
-      worker = new Worker("solver-worker.js?v=20261022-ev");
-      worker.onmessage = ({ data }) => { if (data.requestId !== requestId) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; searchStatus = { deep, pending: data.pending, simulations: data.simulations, target: data.target }; renderAnalysis(data.pending); };
+      worker = new Worker("solver-worker.js?v=20261022-auto");
+      worker.onmessage = ({ data }) => { if (data.requestId !== requestId) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; searchStatus = { pending: data.pending, simulations: data.simulations, target: data.target }; renderAnalysis(data.pending); };
       worker.onerror = () => { $("oracle-summary").textContent = "The analysis worker could not load. Try reloading the page."; };
-      searchStatus = { deep, pending: true, simulations: 0, target: deep ? 100000 : 12000 };
-      worker.postMessage({ requestId, observation: E.observe(state), deep }); renderAnalysis(true);
+      searchStatus = { pending: true, simulations: 0, target: 100000 };
+      worker.postMessage({ requestId, observation: E.observe(state) }); renderAnalysis(true);
     } catch { $("oracle-summary").textContent = "Analysis needs a browser that supports Web Workers."; }
   }
   function start() {
@@ -250,7 +248,6 @@
   $("atmosphere").addEventListener("change", (event) => { prefs.atmosphere = event.target.value; preferences(); });
   $("motion-setting").addEventListener("change", (event) => { prefs.motion = event.target.checked; preferences(); });
   $("oracle-toggle").addEventListener("change", (event) => { prefs.oracle = event.target.checked; preferences(); analyze(); });
-  $("deepen-button").addEventListener("click", () => analyze(true));
   document.addEventListener("keydown", (event) => {
     if (event.repeat || event.ctrlKey || event.altKey || event.metaKey || document.querySelector("dialog[open]") || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName)) return;
     const i = Number(event.key) - 1;
