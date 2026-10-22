@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "binarySHA256": "bb562b9b442f94fc47cc2d45bae46d5e8300ecb5e630c211201a9913ba5ee9b6",
+  "platform": "linux",
+  "architecture": "arm64",
+  "cases": 26,
+  "legacyCases": 16,
+  "policyCases": 10,
+  "trialsPerCase": 2,
+  "allWithinTolerance": true,
+  "allFieldsExact": false,
+  "maxNumericDifference": 6.079999999908381e-06,
+  "tolerance": 1e-05,
+  "fixtureSHA256": "88215f1aa6a63849bd5340f4795cd15ce5ad9c197a260aea46271735c0ca4f77",
+  "scriptSHA256": "c281b9abb4d2f8794b61be4bcbb699113ef6b08fcd37def12659c96e3103b2a3"
+}
