@@ -1,0 +1,1119 @@
+{
+  "schema": 1,
+  "signature": "e8cf1918cc466768cb3965f412618bf4ad8b3d40926d646bdb76b9cec1856e5e",
+  "complete": true,
+  "recordedAt": "2026-10-22T13:03:50.634658+00:00",
+  "trialsPerMovePolicy": 32768,
+  "gapComparisons": 6,
+  "records": 20480,
+  "totalTrials": 655360,
+  "method": "Fixed independent 32768-trial full-game precision study of the six replies whose sampled Full/strong leader differed from XG after the completed 4096-trial cohort. All 20 retained moves use identical 2-ply checker/cube policies throughout, no turn cutoff, Jacoby on and beavers off. 1024 independent blocks of 32 trials; common seeds across alternatives within each position, disjoint across positions and every preceding planned experiment. No pooling or optional stopping. Separate simultaneous 95% Student-t families for six historical fixed-pair gaps and 14 XG-choice-versus-every-other-retained-move contrasts. The third retained leader after 62$ is explicitly tested. Absolute reference-EV differences are descriptive and retain XG uncertainty/rule caveats. Complete validated results replace all six entries together as a same-policy precision refinement, irrespective of agreement; no forced XG rankings. Persistent differences implicate continuation policy/evaluation or reference settings, not neural weights alone.",
+  "policies": [
+    {
+      "id": "full-strong",
+      "checkerPlies": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCheckerPlies": 2,
+      "lateCubePlies": 2,
+      "endpointPlies": 2
+    }
+  ],
+  "summaries": {
+    "full-strong": {
+      "positions": 6,
+      "meanGap": 0.001887089907226562,
+      "meanAbsoluteGapError": 0.007487089907226552,
+      "pairMeanFavorsXG": 2,
+      "classifications": {
+        "persistent": 1,
+        "reversed": 0,
+        "unresolved": 5
+      }
+    }
+  },
+  "effectSummary": {},
+  "rows": [
+    {
+      "id": "reply-fd57f8a8e221b7f8-51",
+      "kind": "reply",
+      "roll": "51",
+      "source": "https://www.extremegammon.com/OB/Replies_to_32D.html",
+      "previousMove": "13/8 24/23",
+      "xgMove": "13/8 6/5",
+      "referenceGap": -0.002700000000000008,
+      "policies": {
+        "full-strong": {
+          "retainedReferenceGaps": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "difference": -0.0014300741210937502,
+              "standardError": 0.002660350669858162,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.005220367862669797,
+                "lower": -0.006650441983763547,
+                "upper": 0.0037902937415760464,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.007769549008061291,
+                "lower": -0.009199623129155041,
+                "upper": 0.0063394748869675405,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "unresolved"
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,0,-3,5,-1,-1,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/23 23/18",
+              "difference": 0.022835392158203124,
+              "standardError": 0.002720115457887938,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.005337643446781627,
+                "lower": 0.0174977487114215,
+                "upper": 0.02817303560498475,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.007944091956408208,
+                "lower": 0.014891300201794916,
+                "upper": 0.03077948411461133,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "XG-ahead"
+            },
+            {
+              "board": "-2,0,0,0,0,5,1,3,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/8 8/7",
+              "difference": 0.03334738458984375,
+              "standardError": 0.0027054035683201244,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.005308774517444933,
+                "lower": 0.028038610072398818,
+                "upper": 0.03865615910728869,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.007901125911257321,
+                "lower": 0.02544625867858643,
+                "upper": 0.04124851050110107,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "XG-ahead"
+            }
+          ],
+          "gap": {
+            "difference": 0.0014300741210937502,
+            "standardError": 0.002660350669858162,
+            "batches": 1024,
+            "interval95": {
+              "halfWidth": 0.005220367862669797,
+              "lower": -0.0037902937415760464,
+              "upper": 0.006650441983763547,
+              "criticalValue": 1.9622856196428131
+            },
+            "familywise95": {
+              "halfWidth": 0.007032368309786287,
+              "lower": -0.005602294188692536,
+              "upper": 0.008462442430880037,
+              "criticalValue": 2.643399003546108
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+              "move": "13/8 24/23",
+              "role": "previous-choice",
+              "referenceEquity": -0.1865,
+              "samples": 32768,
+              "equity": -0.18388727060546875,
+              "standardError": 0.0017949128282624426,
+              "cubeless": -0.12725644662109376,
+              "probabilities": [
+                0.45984902849609377,
+                0.12781186024414062,
+                0.006745588515625,
+                0.17408535737304687,
+                0.0074215148828125
+              ],
+              "referenceCredit": {
+                "rank": 2,
+                "author": "David Rockwell",
+                "date": "9/2/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": 0.002612729394531249,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0018
+            },
+            {
+              "board": "-2,0,0,0,1,4,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/5",
+              "role": "xg-choice",
+              "referenceEquity": -0.1838,
+              "samples": 32768,
+              "equity": -0.1853173447265625,
+              "standardError": 0.0019437603392667819,
+              "cubeless": -0.12986105709960938,
+              "probabilities": [
+                0.46147881251953127,
+                0.12908792657226562,
+                0.00697423994140625,
+                0.17829159887695312,
+                0.010571075849609375
+              ],
+              "referenceCredit": {
+                "rank": 1,
+                "author": "David Rockwell",
+                "date": "9/2/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": -0.0015173447265625084,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.002
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,0,-3,5,-1,-1,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+              "move": "24/23 23/18",
+              "role": "other-retained",
+              "referenceEquity": -0.2098,
+              "samples": 32768,
+              "equity": -0.20815273688476563,
+              "standardError": 0.0019114564490476697,
+              "cubeless": -0.14787039833007812,
+              "probabilities": [
+                0.4573917334375,
+                0.11703701087890625,
+                0.006085813525390625,
+                0.17863217016601562,
+                0.0071451714453125
+              ],
+              "referenceCredit": {
+                "rank": 3,
+                "author": "David Rockwell",
+                "date": "9/2/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": 0.0016472631152343598,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0026
+            },
+            {
+              "board": "-2,0,0,0,0,5,1,3,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+              "move": "13/8 8/7",
+              "role": "other-retained",
+              "referenceEquity": -0.2192,
+              "samples": 32768,
+              "equity": -0.21866472931640624,
+              "standardError": 0.0019594734852686584,
+              "cubeless": -0.14669230166015626,
+              "probabilities": [
+                0.4505481607128906,
+                0.12787070024414063,
+                0.006503666494140625,
+                0.17200392196289063,
+                0.010147876416015625
+              ],
+              "referenceCredit": {
+                "rank": 4,
+                "author": "David Rockwell",
+                "date": "6/12/2012",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": 0.0005352706835937693,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0048
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "bestMove": "13/8 24/23",
+          "agrees": false
+        }
+      },
+      "effects": {},
+      "conclusion": "unresolved",
+      "sampledLeaderAgrees": false
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "kind": "reply",
+      "roll": "44",
+      "source": "https://www.extremegammon.com/OB/Replies_to_41$.html",
+      "previousMove": "8/4 8/4 24/20 20/16",
+      "xgMove": "13/9 13/9 24/20 20/16",
+      "referenceGap": -0.011299999999999977,
+      "policies": {
+        "full-strong": {
+          "retainedReferenceGaps": [
+            {
+              "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "8/4 8/4 24/20 20/16",
+              "difference": -0.016077971201171874,
+              "standardError": 0.0036602047708608537,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.007182367186808271,
+                "lower": -0.023260338387980146,
+                "upper": -0.008895604014363602,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.010689620984537103,
+                "lower": -0.026767592185708976,
+                "upper": -0.005388350216634771,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "alternative-ahead"
+            }
+          ],
+          "gap": {
+            "difference": 0.016077971201171874,
+            "standardError": 0.0036602047708608537,
+            "batches": 1024,
+            "interval95": {
+              "halfWidth": 0.007182367186808271,
+              "lower": 0.008895604014363602,
+              "upper": 0.023260338387980146,
+              "criticalValue": 1.9622856196428131
+            },
+            "familywise95": {
+              "halfWidth": 0.00967538164406829,
+              "lower": 0.006402589557103584,
+              "upper": 0.025753352845240163,
+              "criticalValue": 2.643399003546108
+            },
+            "classification": "persistent"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "8/4 8/4 24/20 20/16",
+              "role": "previous-choice",
+              "referenceEquity": 0.6005,
+              "samples": 32768,
+              "equity": 0.6010690829785156,
+              "standardError": 0.0025890064488223595,
+              "cubeless": 0.4371747923632813,
+              "probabilities": [
+                0.608867557421875,
+                0.27463262169921876,
+                0.03199589138671875,
+                0.08334949712890626,
+                0.003851040830078125
+              ],
+              "referenceCredit": {
+                "rank": 2,
+                "author": "David Rockwell",
+                "date": "7/1/2012",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": 0.0005690829785155449,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0033
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+              "move": "13/9 13/9 24/20 20/16",
+              "role": "xg-choice",
+              "referenceEquity": 0.6118,
+              "samples": 32768,
+              "equity": 0.5849911117773438,
+              "standardError": 0.0027786817644115088,
+              "cubeless": 0.4332203166503906,
+              "probabilities": [
+                0.6192530840625,
+                0.25176339787109375,
+                0.02455733873046875,
+                0.07816473659179687,
+                0.00349444287109375
+              ],
+              "referenceCredit": {
+                "rank": 1,
+                "author": "David Rockwell",
+                "date": "7/1/2012",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": -0.026808888222656257,
+              "withinTolerance": false,
+              "referenceConfidenceHalfWidth": 0.0032
+            }
+          ],
+          "bestBoard": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "bestMove": "8/4 8/4 24/20 20/16",
+          "agrees": false
+        }
+      },
+      "effects": {},
+      "conclusion": "persistent-policy-disagreement",
+      "sampledLeaderAgrees": false
+    },
+    {
+      "id": "reply-cf59cb9355405192-52",
+      "kind": "reply",
+      "roll": "52",
+      "source": "https://www.extremegammon.com/OB/Replies_to_51$.html",
+      "previousMove": "13/8 24/22",
+      "xgMove": "13/8 6/4",
+      "referenceGap": -0.00020000000000000573,
+      "policies": {
+        "full-strong": {
+          "retainedReferenceGaps": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+              "move": "13/8 24/22",
+              "difference": -0.001285896416015625,
+              "standardError": 0.0025125372208857906,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.004930315657361505,
+                "lower": -0.0062162120733771295,
+                "upper": 0.00364441924134588,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.007337860114994183,
+                "lower": -0.008623756531009809,
+                "upper": 0.006051963698978558,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "unresolved"
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,1,-4,3,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 13/11",
+              "difference": 0.014039418583984374,
+              "standardError": 0.002585324585719814,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.005073145256667005,
+                "lower": 0.00896627332731737,
+                "upper": 0.01911256384065138,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.007550435473819242,
+                "lower": 0.0064889831101651325,
+                "upper": 0.021589854057803615,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "XG-ahead"
+            }
+          ],
+          "gap": {
+            "difference": 0.001285896416015625,
+            "standardError": 0.0025125372208857906,
+            "batches": 1024,
+            "interval95": {
+              "halfWidth": 0.004930315657361505,
+              "lower": -0.00364441924134588,
+              "upper": 0.0062162120733771295,
+              "criticalValue": 1.9622856196428131
+            },
+            "familywise95": {
+              "halfWidth": 0.006641638386062006,
+              "lower": -0.005355741970046381,
+              "upper": 0.007927534802077632,
+              "criticalValue": 2.643399003546108
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+              "move": "13/8 24/22",
+              "role": "previous-choice",
+              "referenceEquity": -0.2346,
+              "samples": 32768,
+              "equity": -0.23136573013671874,
+              "standardError": 0.0017895990225264176,
+              "cubeless": -0.15518601454101563,
+              "probabilities": [
+                0.4477321207421875,
+                0.11658081622070313,
+                0.005104829150390625,
+                0.165711965625,
+                0.00663168498046875
+              ],
+              "referenceCredit": {
+                "rank": 2,
+                "author": "David Rockwell",
+                "date": "1/1/2013",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": 0.003234269863281264,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0018
+            },
+            {
+              "board": "-2,0,0,1,0,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 6/4",
+              "role": "xg-choice",
+              "referenceEquity": -0.2344,
+              "samples": 32768,
+              "equity": -0.2326516265527344,
+              "standardError": 0.001878681249483782,
+              "cubeless": -0.15337079954101562,
+              "probabilities": [
+                0.44675923975585935,
+                0.12471109487304688,
+                0.00563190935546875,
+                0.16802750459960938,
+                0.009193928798828126
+              ],
+              "referenceCredit": {
+                "rank": 1,
+                "author": "David Rockwell",
+                "date": "1/1/2013",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": 0.001748373447265611,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0019
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,4,0,0,1,-4,3,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+              "move": "13/8 13/11",
+              "role": "other-retained",
+              "referenceEquity": -0.2525,
+              "samples": 32768,
+              "equity": -0.24669104513671875,
+              "standardError": 0.0019272558779103064,
+              "cubeless": -0.16446463040039064,
+              "probabilities": [
+                0.4425851426074219,
+                0.126758670859375,
+                0.005947844521484375,
+                0.17302198732421875,
+                0.009309076767578126
+              ],
+              "referenceCredit": {
+                "rank": 3,
+                "author": "David Rockwell",
+                "date": "1/1/2013",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": 0.005808954863281257,
+              "withinTolerance": false,
+              "referenceConfidenceHalfWidth": 0.0037
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+          "bestMove": "13/8 24/22",
+          "agrees": false
+        }
+      },
+      "effects": {},
+      "conclusion": "unresolved",
+      "sampledLeaderAgrees": false
+    },
+    {
+      "id": "reply-d8b0ad29eebeddb9-33",
+      "kind": "reply",
+      "roll": "33",
+      "source": "https://www.extremegammon.com/OB/Replies_to_64P.html",
+      "previousMove": "6/3 6/3 8/5 8/5",
+      "xgMove": "13/10 13/10 24/21 24/21",
+      "referenceGap": -0.00489999999999996,
+      "policies": {
+        "full-strong": {
+          "retainedReferenceGaps": [
+            {
+              "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+              "move": "6/3 6/3 8/5 8/5",
+              "difference": 0.004405794384765625,
+              "standardError": 0.0024037759488922303,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.004716894977354481,
+                "lower": -0.0003111005925888564,
+                "upper": 0.009122689362120106,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.007020223029587656,
+                "lower": -0.002614428644822031,
+                "upper": 0.011426017414353281,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "unresolved"
+            },
+            {
+              "board": "-2,0,2,0,0,3,0,3,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "6/3 6/3 24/21 24/21",
+              "difference": 0.023655040185546875,
+              "standardError": 0.0022964932618842098,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.0045063757034020015,
+                "lower": 0.019148664482144875,
+                "upper": 0.028161415888948875,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.006706904148783962,
+                "lower": 0.016948136036762915,
+                "upper": 0.030361944334330836,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "XG-ahead"
+            },
+            {
+              "board": "-2,0,0,0,2,5,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "8/5 8/5 24/21 24/21",
+              "difference": 0.027922079599609375,
+              "standardError": 0.002322847812869464,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.004558090859812509,
+                "lower": 0.023363988739796865,
+                "upper": 0.032480170459421885,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.006783872564183236,
+                "lower": 0.02113820703542614,
+                "upper": 0.03470595216379261,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "XG-ahead"
+            },
+            {
+              "board": "-2,0,2,0,0,3,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+              "move": "6/3 6/3 13/10 13/10",
+              "difference": 0.043757893681640625,
+              "standardError": 0.002421949358047173,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.004752556396799111,
+                "lower": 0.03900533728484151,
+                "upper": 0.04851045007843974,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.0070732984360266146,
+                "lower": 0.03668459524561401,
+                "upper": 0.05083119211766724,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "XG-ahead"
+            }
+          ],
+          "gap": {
+            "difference": -0.004405794384765625,
+            "standardError": 0.0024037759488922303,
+            "batches": 1024,
+            "interval95": {
+              "halfWidth": 0.004716894977354481,
+              "lower": -0.009122689362120106,
+              "upper": 0.0003111005925888564,
+              "criticalValue": 1.9622856196428131
+            },
+            "familywise95": {
+              "halfWidth": 0.0063541389480498214,
+              "lower": -0.010759933332815446,
+              "upper": 0.0019483445632841965,
+              "criticalValue": 2.643399003546108
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+              "move": "6/3 6/3 8/5 8/5",
+              "role": "previous-choice",
+              "referenceEquity": 0.269,
+              "samples": 32768,
+              "equity": 0.27035888756835935,
+              "standardError": 0.0017340520909415996,
+              "cubeless": 0.189106473046875,
+              "probabilities": [
+                0.5601924688476563,
+                0.200894916328125,
+                0.010219933935546875,
+                0.1346363002734375,
+                0.007762062861328125
+              ],
+              "referenceCredit": {
+                "rank": 2,
+                "author": "David Rockwell",
+                "date": "12/8/2012",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": 0.0013588875683593349,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0022
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "13/10 13/10 24/21 24/21",
+              "role": "xg-choice",
+              "referenceEquity": 0.2739,
+              "samples": 32768,
+              "equity": 0.274764681953125,
+              "standardError": 0.0016454419531640794,
+              "cubeless": 0.1907469458886719,
+              "probabilities": [
+                0.5619440895507812,
+                0.16021034532226563,
+                0.006466280087890625,
+                0.0963021898046875,
+                0.003546596748046875
+              ],
+              "referenceCredit": {
+                "rank": 1,
+                "author": "David Rockwell",
+                "date": "12/8/2012",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": 0.0008646819531250016,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0021
+            },
+            {
+              "board": "-2,0,2,0,0,3,0,3,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "6/3 6/3 24/21 24/21",
+              "role": "other-retained",
+              "referenceEquity": 0.2539,
+              "samples": 32768,
+              "equity": 0.2511096417675781,
+              "standardError": 0.001611643296693677,
+              "cubeless": 0.17291683823242188,
+              "probabilities": [
+                0.5568239469628906,
+                0.15498596297851563,
+                0.00650349294921875,
+                0.09871793763671875,
+                0.003525071474609375
+              ],
+              "referenceCredit": {
+                "rank": 3,
+                "author": "David Rockwell",
+                "date": "12/8/2012",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": -0.002790358232421908,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0022
+            },
+            {
+              "board": "-2,0,0,0,2,5,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+              "move": "8/5 8/5 24/21 24/21",
+              "role": "other-retained",
+              "referenceEquity": 0.2447,
+              "samples": 32768,
+              "equity": 0.24684260235351563,
+              "standardError": 0.0016567155405964769,
+              "cubeless": 0.17489049013671876,
+              "probabilities": [
+                0.5509303163769531,
+                0.17082114545898439,
+                0.00644159267578125,
+                0.10060060061523438,
+                0.003652748369140625
+              ],
+              "referenceCredit": {
+                "rank": 4,
+                "author": "David Rockwell",
+                "date": "12/8/2012",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": 0.002142602353515627,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0029
+            },
+            {
+              "board": "-2,0,2,0,0,3,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+              "move": "6/3 6/3 13/10 13/10",
+              "role": "other-retained",
+              "referenceEquity": 0.2348,
+              "samples": 32768,
+              "equity": 0.23100678827148438,
+              "standardError": 0.0017959740090400962,
+              "cubeless": 0.160507748671875,
+              "probabilities": [
+                0.5553492164550782,
+                0.18566172454101562,
+                0.00992037921875,
+                0.13842756520507812,
+                0.007341180625
+              ],
+              "referenceCredit": {
+                "rank": 5,
+                "author": "David Rockwell",
+                "date": "12/8/2012",
+                "engine": "eXtreme Gammon 2.00"
+              },
+              "referenceDifference": -0.0037932117285156275,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0044
+            }
+          ],
+          "bestBoard": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+          "bestMove": "13/10 13/10 24/21 24/21",
+          "agrees": true
+        }
+      },
+      "effects": {},
+      "conclusion": "unresolved",
+      "sampledLeaderAgrees": true
+    },
+    {
+      "id": "reply-ea77bd807985fd53-21",
+      "kind": "reply",
+      "roll": "21",
+      "source": "https://www.extremegammon.com/OB/Replies_to_64S.html",
+      "previousMove": "24/22 8/7",
+      "xgMove": "13/11 8/7",
+      "referenceGap": -0.003599999999999992,
+      "policies": {
+        "full-strong": {
+          "retainedReferenceGaps": [
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+              "move": "24/22 8/7",
+              "difference": -0.0008410308691406243,
+              "standardError": 0.0028068480979610536,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.005507837659150757,
+                "lower": -0.006348868528291382,
+                "upper": 0.004666806790010133,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.008197394464713452,
+                "lower": -0.009038425333854076,
+                "upper": 0.0073563635955728275,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "unresolved"
+            }
+          ],
+          "gap": {
+            "difference": 0.0008410308691406243,
+            "standardError": 0.0028068480979610536,
+            "batches": 1024,
+            "interval95": {
+              "halfWidth": 0.005507837659150757,
+              "lower": -0.004666806790010133,
+              "upper": 0.006348868528291382,
+              "criticalValue": 1.9622856196428131
+            },
+            "familywise95": {
+              "halfWidth": 0.007419619465255537,
+              "lower": -0.0065785885961149124,
+              "upper": 0.008260650334396161,
+              "criticalValue": 2.643399003546108
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+              "move": "24/22 8/7",
+              "role": "previous-choice",
+              "referenceEquity": -0.1333,
+              "samples": 32768,
+              "equity": -0.13172072713867186,
+              "standardError": 0.001923952119572373,
+              "cubeless": -0.0893391815234375,
+              "probabilities": [
+                0.4708833667089844,
+                0.12591644213867187,
+                0.00587391939453125,
+                0.15537476948242188,
+                0.00750279529296875
+              ],
+              "referenceCredit": {
+                "rank": 2,
+                "author": "David Rockwell",
+                "date": "8/24/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": 0.0015792728613281404,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0019
+            },
+            {
+              "board": "-1,0,0,0,0,5,1,2,0,0,1,-4,4,0,0,-1,-3,0,-5,0,0,0,0,2,0,1,0,0",
+              "move": "13/11 8/7",
+              "role": "xg-choice",
+              "referenceEquity": -0.1297,
+              "samples": 32768,
+              "equity": -0.1325617580078125,
+              "standardError": 0.0022461211459730733,
+              "cubeless": -0.0924321191015625,
+              "probabilities": [
+                0.4725983076660156,
+                0.13152769567382813,
+                0.00636830251953125,
+                0.16497076961914062,
+                0.01055061177734375
+              ],
+              "referenceCredit": {
+                "rank": 1,
+                "author": "David Rockwell",
+                "date": "8/24/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": -0.0028617580078124927,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.002
+            }
+          ],
+          "bestBoard": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+          "bestMove": "24/22 8/7",
+          "agrees": false
+        }
+      },
+      "effects": {},
+      "conclusion": "unresolved",
+      "sampledLeaderAgrees": false
+    },
+    {
+      "id": "reply-2fda09c519d84905-32",
+      "kind": "reply",
+      "roll": "32",
+      "source": "https://www.extremegammon.com/OB/Replies_to_62$.html",
+      "previousMove": "13/10 13/11",
+      "xgMove": "13/10 6/4",
+      "referenceGap": -0.010899999999999993,
+      "policies": {
+        "full-strong": {
+          "retainedReferenceGaps": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 13/11",
+              "difference": 0.003906638779296875,
+              "standardError": 0.0027017775344091847,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.005301659203245159,
+                "lower": -0.0013950204239482839,
+                "upper": 0.009208297982542035,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.00789053608620338,
+                "lower": -0.003983897306906505,
+                "upper": 0.011797174865500255,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "unresolved"
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,1,0,1,0,0,0,0",
+              "move": "13/10 24/22",
+              "difference": 0.010399407294921875,
+              "standardError": 0.0026743845795212337,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.005247906401789008,
+                "lower": 0.005151500893132866,
+                "upper": 0.015647313696710883,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.00781053501420602,
+                "lower": 0.002588872280715855,
+                "upper": 0.018209942309127893,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "XG-ahead"
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,1,-4,4,0,0,0,-3,0,-5,-1,1,0,0,1,0,0,0,0",
+              "move": "24/21 13/11",
+              "difference": 0.005631520419921875,
+              "standardError": 0.0026795899610864214,
+              "batches": 1024,
+              "interval95": {
+                "halfWidth": 0.00525812084717913,
+                "lower": 0.00037339957274274554,
+                "upper": 0.010889641267101005,
+                "criticalValue": 1.9622856196428131
+              },
+              "familywise95": {
+                "halfWidth": 0.007825737321042713,
+                "lower": -0.0021942169011208374,
+                "upper": 0.013457257740964589,
+                "criticalValue": 2.920498074216482
+              },
+              "direction": "unresolved"
+            }
+          ],
+          "gap": {
+            "difference": -0.003906638779296875,
+            "standardError": 0.0027017775344091847,
+            "batches": 1024,
+            "interval95": {
+              "halfWidth": 0.005301659203245159,
+              "lower": -0.009208297982542035,
+              "upper": 0.0013950204239482839,
+              "criticalValue": 1.9622856196428131
+            },
+            "familywise95": {
+              "halfWidth": 0.007141876042260499,
+              "lower": -0.011048514821557373,
+              "upper": 0.003235237262963624,
+              "criticalValue": 2.643399003546108
+            },
+            "classification": "unresolved"
+          },
+          "candidates": [
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 13/11",
+              "role": "previous-choice",
+              "referenceEquity": -0.2137,
+              "samples": 32768,
+              "equity": -0.21163189931640625,
+              "standardError": 0.0018486444297574275,
+              "cubeless": -0.14329560053710938,
+              "probabilities": [
+                0.45338555509765627,
+                0.13438504884765626,
+                0.00642196306640625,
+                0.1790791729296875,
+                0.011785548203125
+              ],
+              "referenceCredit": {
+                "rank": 2,
+                "author": "Steven Carey",
+                "date": "4/12/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": 0.0020681006835937543,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0034
+            },
+            {
+              "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+              "move": "13/10 6/4",
+              "role": "xg-choice",
+              "referenceEquity": -0.2028,
+              "samples": 32768,
+              "equity": -0.20772526053710938,
+              "standardError": 0.0020154454016882255,
+              "cubeless": -0.14394081180664062,
+              "probabilities": [
+                0.4569907538671875,
+                0.12940355181640625,
+                0.005994226083984375,
+                0.1803174929296875,
+                0.012995297421875
+              ],
+              "referenceCredit": {
+                "rank": 1,
+                "author": "Steven Carey",
+                "date": "4/12/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": -0.004925260537109372,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0034
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,1,0,1,0,0,0,0",
+              "move": "13/10 24/22",
+              "role": "other-retained",
+              "referenceEquity": -0.2175,
+              "samples": 32768,
+              "equity": -0.21812466783203124,
+              "standardError": 0.0018613371128294997,
+              "cubeless": -0.15187734392578126,
+              "probabilities": [
+                0.4525282573925781,
+                0.12024515623046875,
+                0.00557366689453125,
+                0.1744882183984375,
+                0.008251177705078125
+              ],
+              "referenceCredit": {
+                "rank": 4,
+                "author": "Steven Carey",
+                "date": "4/12/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": -0.0006246678320312449,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0032
+            },
+            {
+              "board": "-2,0,0,0,0,5,0,3,0,0,1,-4,4,0,0,0,-3,0,-5,-1,1,0,0,1,0,0,0,0",
+              "move": "24/21 13/11",
+              "role": "other-retained",
+              "referenceEquity": -0.2161,
+              "samples": 32768,
+              "equity": -0.21335678095703126,
+              "standardError": 0.001843198489508222,
+              "cubeless": -0.1497913116503906,
+              "probabilities": [
+                0.4548609638378906,
+                0.11659040837890625,
+                0.00552534423828125,
+                0.1731541976953125,
+                0.008453594638671876
+              ],
+              "referenceCredit": {
+                "rank": 3,
+                "author": "Steven Carey",
+                "date": "4/12/2013",
+                "engine": "eXtreme Gammon 2.10"
+              },
+              "referenceDifference": 0.002743219042968731,
+              "withinTolerance": true,
+              "referenceConfidenceHalfWidth": 0.0031
+            }
+          ],
+          "bestBoard": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+          "bestMove": "13/10 6/4",
+          "agrees": true
+        }
+      },
+      "effects": {},
+      "conclusion": "unresolved",
+      "sampledLeaderAgrees": true
+    }
+  ],
+  "referenceAttributionSHA256": "d7a4f35212bce51a1af0da21db521b791e7252ba839201ab67a1c5daa23a0a59",
+  "retainedComparisons": 14,
+  "equityTolerance": 0.005,
+  "conclusions": {
+    "persistent-policy-disagreement": 1,
+    "XG-choice-supported": 0,
+    "unresolved": 5
+  },
+  "absoluteEV": {
+    "moves": 20,
+    "withinTolerance": 18,
+    "interpretation": "Descriptive distance from the published reference. Our confidence intervals do not include XG sampling error, the beaver-rule difference or continuation-policy error."
+  },
+  "inputSHA256": "5d983f989ca61bf974632fdb1e6e6f4a6bb681617df31c03beec08c0be10df03",
+  "rawSHA256": "b9418230d0857ef326e35c8de908564d264515282e6af8874868fa1f88a42586",
+  "build": {
+    "ablationPatchSHA256": "95c0cdabf24884df7a1d6f602ee8b38d95e60cc5343240929b4a0508400b671f",
+    "archive": "gnubg-core-955555c-bg6.tar.gz",
+    "archiveSHA256": "bf6aac810e16ef6b3980a93fb7975c51367bb89658d0d6344dda6890501c6ba4",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+    "flags": "-O3 -ffp-contract=off -Isrc -Isrc/lib -Wno-unused-parameter -DBG_NATIVE_NEON -DBG_ABLATION",
+    "architecture": "arm64",
+    "neon": true,
+    "binarySHA256": "6f42770f62d7f752da2e836bbb8eb9452f1acd4fe274d69a131b1a0118973877",
+    "inputs": {
+      "build-rollout-native.mjs": "8306363250a712571bb7006faea8718c931d5d17dedc5afe7b8197f37b539115",
+      "rollout-native.c": "4c4799fd9f16b7bee5f69fd6bf32cca96b8064d1f4be068c3bac8b1cb341d2b8",
+      "deep-book-neon.h": "c1b6d5b05fab41bb28f235ff5f12e6f1dbb27b04691ae0f9a90706ae435f3153"
+    },
+    "orderPatchSHA256": "3d84d68e7dafbdc40bd3b009ffe7931653a6efefc8b66ec6068e0747019090ad",
+    "bridgeSHA256": "ac4e57573cf7cfab7f76fe5961cec367817c85597f482c714a1bfc12ca7a7269",
+    "builtAt": "2026-10-20T23:11:40.881Z"
+  },
+  "sourceSHA256": "350c3d8c669c4ced17b6a7bef57012b6f0e1567ea7512b89ec96a7f5e946636c"
+}

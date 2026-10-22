@@ -12,6 +12,30 @@
       "maxTrials": 512
     }
   },
+  "replyFullgamePrecision": {
+    "signature": "e8cf1918cc466768cb3965f412618bf4ad8b3d40926d646bdb76b9cec1856e5e",
+    "comparisonSHA256": "b11c3d290f0adc058191f3469eb718080f63db249302a22e8535ed32aa37217a",
+    "rawSHA256": "b9418230d0857ef326e35c8de908564d264515282e6af8874868fa1f88a42586",
+    "inputSHA256": "5d983f989ca61bf974632fdb1e6e6f4a6bb681617df31c03beec08c0be10df03",
+    "positions": 6,
+    "candidates": 20,
+    "trialsPerMove": 32768,
+    "policyId": "strong",
+    "promotedIds": [
+      "reply-fd57f8a8e221b7f8-51",
+      "reply-7985255600f3563f-44",
+      "reply-cf59cb9355405192-52",
+      "reply-d8b0ad29eebeddb9-33",
+      "reply-ea77bd807985fd53-21",
+      "reply-2fda09c519d84905-32"
+    ],
+    "criterion": "Complete fixed sample; all six unchanged-policy positions refined together regardless of winner.",
+    "conclusions": {
+      "persistent-policy-disagreement": 1,
+      "XG-choice-supported": 0,
+      "unresolved": 5
+    }
+  },
   "fullgame": {
     "experimentSignature": "8e036c17121e162d517acb9568fb6c97694d9738109f0c79b9122644b2de4c85",
     "comparisonSHA256": "6dad37738fda3efd2b178fb225dd61e6d2703f46441112d59741321dfb085c53",
@@ -147,9 +171,9 @@
       "comparisonSHA256": "13e639bd1f53d70390be11b903c3502e3105dc2823c3e2a591bcd8e3a307e755"
     }
   },
-  "recordedAt": "2026-10-22T01:22:04.241Z",
+  "recordedAt": "2026-10-22T13:06:11.665Z",
   "id": "jacoby-rollout-v2",
-  "indexSHA256": "38e413f78ed63454648d060f24d3965c5dede7f3efb20b0a65191f3a969a7cdb",
+  "indexSHA256": "e18d46fb4142f14dddde1aad2adf53d7b7c8c60c7aff4e503ae794de55da7993",
   "coverage": {
     "positions": 666,
     "sampled": 66,
@@ -203,21 +227,21 @@
     },
     "reply": {
       "positions": 651,
-      "bestMoveAgreement": 636,
+      "bestMoveAgreement": 638,
       "referenceBestEV": {
         "n": 651,
         "tolerance": 0.005,
-        "withinTolerance": 178,
+        "withinTolerance": 180,
         "maximumAbsoluteDifference": 0.04337249999999998,
-        "meanAbsoluteDifference": 0.011717516750792054
+        "meanAbsoluteDifference": 0.011700285772039415
       },
       "commonCandidateEV": {
         "n": 1415,
         "tolerance": 0.005,
-        "withinTolerance": 338,
-        "meanAbsoluteDifference": 0.01231311346240061
+        "withinTolerance": 345,
+        "meanAbsoluteDifference": 0.012264556059111356
       },
-      "meanSelectedMoveReferenceLoss": 0.00009815668202764958,
+      "meanSelectedMoveReferenceLoss": 0.00007019969278033784,
       "fivePlyBaseline": {
         "commonCandidateEV": {
           "n": 1415,
@@ -4200,48 +4224,48 @@
       "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "strong",
-      "samples": 4096,
+      "samples": 32768,
       "agrees": false,
       "move": "13/8 24/23",
       "referenceMove": "13/8 6/5",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_32D.html",
       "referenceBestEquity": -0.1838,
-      "referenceBestEstimate": -0.19445496578125,
+      "referenceBestEstimate": -0.1853173447265625,
       "commonCandidateEV": [
         {
           "board": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
           "move": "13/8 24/23",
-          "equity": -0.18852988875,
+          "equity": -0.18388727060546875,
           "referenceEquity": -0.1865,
-          "difference": -0.002029888750000014,
+          "difference": 0.002612729394531249,
           "withinTolerance": true
         },
         {
           "board": "-2,0,0,0,1,4,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
           "move": "13/8 6/5",
-          "equity": -0.19445496578125,
+          "equity": -0.1853173447265625,
           "referenceEquity": -0.1838,
-          "difference": -0.010654965781249998,
-          "withinTolerance": false
+          "difference": -0.0015173447265625084,
+          "withinTolerance": true
         },
         {
           "board": "-2,0,0,0,0,5,0,3,0,0,0,-3,5,-1,-1,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
           "move": "24/23 23/18",
-          "equity": -0.202968630390625,
+          "equity": -0.20815273688476563,
           "referenceEquity": -0.2098,
-          "difference": 0.006831369609374999,
-          "withinTolerance": false
+          "difference": 0.0016472631152343598,
+          "withinTolerance": true
         },
         {
           "board": "-2,0,0,0,0,5,1,3,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
           "move": "13/8 8/7",
-          "equity": -0.216244040390625,
+          "equity": -0.21866472931640624,
           "referenceEquity": -0.2192,
-          "difference": 0.002955959609375003,
+          "difference": 0.0005352706835937693,
           "withinTolerance": true
         }
       ],
-      "referenceBestDifference": -0.010654965781249998,
+      "referenceBestDifference": -0.0015173447265625084,
       "selectedMoveReferenceLoss": 0.002700000000000008
     },
     {
@@ -7134,32 +7158,32 @@
       "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "strong",
-      "samples": 4096,
+      "samples": 32768,
       "agrees": false,
       "move": "8/4 8/4 24/20 20/16",
       "referenceMove": "24/20* 20/16* 13/9(2)",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_41$.html",
       "referenceBestEquity": 0.6118,
-      "referenceBestEstimate": 0.5942600837500001,
+      "referenceBestEstimate": 0.5849911117773438,
       "commonCandidateEV": [
         {
           "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
           "move": "8/4 8/4 24/20 20/16",
-          "equity": 0.61639573671875,
+          "equity": 0.6010690829785156,
           "referenceEquity": 0.6005,
-          "difference": 0.015895736718749998,
-          "withinTolerance": false
+          "difference": 0.0005690829785155449,
+          "withinTolerance": true
         },
         {
           "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
           "move": "13/9 13/9 24/20 20/16",
-          "equity": 0.5942600837500001,
+          "equity": 0.5849911117773438,
           "referenceEquity": 0.6118,
-          "difference": -0.017539916249999954,
+          "difference": -0.026808888222656257,
           "withinTolerance": false
         }
       ],
-      "referenceBestDifference": -0.017539916249999954,
+      "referenceBestDifference": -0.026808888222656257,
       "selectedMoveReferenceLoss": 0.011299999999999977
     },
     {
@@ -12232,40 +12256,40 @@
       "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "strong",
-      "samples": 4096,
+      "samples": 32768,
       "agrees": false,
       "move": "13/8 24/22",
       "referenceMove": "13/8 6/4",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_51$.html",
       "referenceBestEquity": -0.2344,
-      "referenceBestEstimate": -0.235539683671875,
+      "referenceBestEstimate": -0.2326516265527344,
       "commonCandidateEV": [
         {
           "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
           "move": "13/8 24/22",
-          "equity": -0.2216903240625,
+          "equity": -0.23136573013671874,
           "referenceEquity": -0.2346,
-          "difference": 0.012909675937500004,
-          "withinTolerance": false
+          "difference": 0.003234269863281264,
+          "withinTolerance": true
         },
         {
           "board": "-2,0,0,1,0,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
           "move": "13/8 6/4",
-          "equity": -0.235539683671875,
+          "equity": -0.2326516265527344,
           "referenceEquity": -0.2344,
-          "difference": -0.0011396836718750025,
+          "difference": 0.001748373447265611,
           "withinTolerance": true
         },
         {
           "board": "-2,0,0,0,0,5,0,4,0,0,1,-4,3,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
           "move": "13/8 13/11",
-          "equity": -0.236631805625,
+          "equity": -0.24669104513671875,
           "referenceEquity": -0.2525,
-          "difference": 0.015868194375000005,
+          "difference": 0.005808954863281257,
           "withinTolerance": false
         }
       ],
-      "referenceBestDifference": -0.0011396836718750025,
+      "referenceBestDifference": 0.001748373447265611,
       "selectedMoveReferenceLoss": 0.00020000000000000573
     },
     {
@@ -20274,57 +20298,57 @@
       "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "strong",
-      "samples": 4096,
-      "agrees": false,
-      "move": "6/3 6/3 8/5 8/5",
+      "samples": 32768,
+      "agrees": true,
+      "move": "13/10 13/10 24/21 24/21",
       "referenceMove": "24/21(2) 13/10(2)",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_64P.html",
       "referenceBestEquity": 0.2739,
-      "referenceBestEstimate": 0.27099814953125,
+      "referenceBestEstimate": 0.274764681953125,
       "commonCandidateEV": [
-        {
-          "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
-          "move": "6/3 6/3 8/5 8/5",
-          "equity": 0.272321367578125,
-          "referenceEquity": 0.269,
-          "difference": 0.0033213675781249563,
-          "withinTolerance": true
-        },
         {
           "board": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
           "move": "13/10 13/10 24/21 24/21",
-          "equity": 0.27099814953125,
+          "equity": 0.274764681953125,
           "referenceEquity": 0.2739,
-          "difference": -0.002901850468749967,
+          "difference": 0.0008646819531250016,
+          "withinTolerance": true
+        },
+        {
+          "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+          "move": "6/3 6/3 8/5 8/5",
+          "equity": 0.27035888756835935,
+          "referenceEquity": 0.269,
+          "difference": 0.0013588875683593349,
           "withinTolerance": true
         },
         {
           "board": "-2,0,2,0,0,3,0,3,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
           "move": "6/3 6/3 24/21 24/21",
-          "equity": 0.25783313265625,
+          "equity": 0.2511096417675781,
           "referenceEquity": 0.2539,
-          "difference": 0.003933132656250005,
+          "difference": -0.002790358232421908,
           "withinTolerance": true
         },
         {
           "board": "-2,0,0,0,2,5,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
           "move": "8/5 8/5 24/21 24/21",
-          "equity": 0.2412857490625,
+          "equity": 0.24684260235351563,
           "referenceEquity": 0.2447,
-          "difference": -0.003414250937500002,
+          "difference": 0.002142602353515627,
           "withinTolerance": true
         },
         {
           "board": "-2,0,2,0,0,3,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
           "move": "6/3 6/3 13/10 13/10",
-          "equity": 0.22916213125,
+          "equity": 0.23100678827148438,
           "referenceEquity": 0.2348,
-          "difference": -0.005637868749999997,
-          "withinTolerance": false
+          "difference": -0.0037932117285156275,
+          "withinTolerance": true
         }
       ],
-      "referenceBestDifference": -0.002901850468749967,
-      "selectedMoveReferenceLoss": 0.00489999999999996
+      "referenceBestDifference": 0.0008646819531250016,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-d8b0ad29eebeddb9-41",
@@ -20868,32 +20892,32 @@
       "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "strong",
-      "samples": 4096,
+      "samples": 32768,
       "agrees": false,
       "move": "24/22 8/7",
       "referenceMove": "13/11 8/7*",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_64S.html",
       "referenceBestEquity": -0.1297,
-      "referenceBestEstimate": -0.1316629728125,
+      "referenceBestEstimate": -0.1325617580078125,
       "commonCandidateEV": [
         {
           "board": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
           "move": "24/22 8/7",
-          "equity": -0.1297930584375,
+          "equity": -0.13172072713867186,
           "referenceEquity": -0.1333,
-          "difference": 0.0035069415625000044,
+          "difference": 0.0015792728613281404,
           "withinTolerance": true
         },
         {
           "board": "-1,0,0,0,0,5,1,2,0,0,1,-4,4,0,0,-1,-3,0,-5,0,0,0,0,2,0,1,0,0",
           "move": "13/11 8/7",
-          "equity": -0.1316629728125,
+          "equity": -0.1325617580078125,
           "referenceEquity": -0.1297,
-          "difference": -0.0019629728124999912,
+          "difference": -0.0028617580078124927,
           "withinTolerance": true
         }
       ],
-      "referenceBestDifference": -0.0019629728124999912,
+      "referenceBestDifference": -0.0028617580078124927,
       "selectedMoveReferenceLoss": 0.003599999999999992
     },
     {
@@ -23264,49 +23288,49 @@
       "book": "jacoby-rollout-v2",
       "method": "rollout",
       "policyId": "strong",
-      "samples": 4096,
-      "agrees": false,
-      "move": "24/21 13/11",
+      "samples": 32768,
+      "agrees": true,
+      "move": "13/10 6/4",
       "referenceMove": "13/10 6/4",
       "referenceSource": "https://www.extremegammon.com/OB/Replies_to_62$.html",
       "referenceBestEquity": -0.2028,
-      "referenceBestEstimate": -0.218544285078125,
+      "referenceBestEstimate": -0.20772526053710938,
       "commonCandidateEV": [
         {
-          "board": "-2,0,0,0,0,5,0,3,0,0,1,-4,4,0,0,0,-3,0,-5,-1,1,0,0,1,0,0,0,0",
-          "move": "24/21 13/11",
-          "equity": -0.21441552,
-          "referenceEquity": -0.2161,
-          "difference": 0.0016844799999999882,
+          "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+          "move": "13/10 6/4",
+          "equity": -0.20772526053710938,
+          "referenceEquity": -0.2028,
+          "difference": -0.004925260537109372,
           "withinTolerance": true
         },
         {
           "board": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
           "move": "13/10 13/11",
-          "equity": -0.218337849375,
+          "equity": -0.21163189931640625,
           "referenceEquity": -0.2137,
-          "difference": -0.004637849375000003,
+          "difference": 0.0020681006835937543,
           "withinTolerance": true
         },
         {
-          "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
-          "move": "13/10 6/4",
-          "equity": -0.218544285078125,
-          "referenceEquity": -0.2028,
-          "difference": -0.015744285078125003,
-          "withinTolerance": false
+          "board": "-2,0,0,0,0,5,0,3,0,0,1,-4,4,0,0,0,-3,0,-5,-1,1,0,0,1,0,0,0,0",
+          "move": "24/21 13/11",
+          "equity": -0.21335678095703126,
+          "referenceEquity": -0.2161,
+          "difference": 0.002743219042968731,
+          "withinTolerance": true
         },
         {
           "board": "-2,0,0,0,0,5,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,1,0,1,0,0,0,0",
           "move": "13/10 24/22",
-          "equity": -0.223872533828125,
+          "equity": -0.21812466783203124,
           "referenceEquity": -0.2175,
-          "difference": -0.006372533828124999,
-          "withinTolerance": false
+          "difference": -0.0006246678320312449,
+          "withinTolerance": true
         }
       ],
-      "referenceBestDifference": -0.015744285078125003,
-      "selectedMoveReferenceLoss": 0.013299999999999979
+      "referenceBestDifference": -0.004925260537109372,
+      "selectedMoveReferenceLoss": 0
     },
     {
       "id": "reply-2fda09c519d84905-33",

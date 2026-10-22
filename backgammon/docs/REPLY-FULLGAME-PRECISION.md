@@ -22,3 +22,53 @@ Published per-move reference values retain their original XG contributor credits
 The summarizer joins credits by the legal resulting board against the unchanged
 reference collection, verifies each equity, and records the attribution file's
 SHA-256. This adds source metadata without changing the sample or inference.
+
+## Completed results — 22 October 2026
+
+All 655,360 trials completed: 32,768 per retained move, 20,480 complete batches,
+with the signed sample and continuation policy unchanged. All six independent
+book entries were updated together, including positions that still disagree.
+
+| Position | Sampled leader matches XG | Inference across retained alternatives |
+| --- | --- | --- |
+| 32 down → 51 | No | Unresolved |
+| 41 slot → 44 | No | Persistent policy disagreement |
+| 51 slot → 52 | No | Unresolved |
+| 64 point → 33 | Yes | Unresolved |
+| 64 split → 21 | No | Unresolved |
+| 62 slot → 32 | Yes | Unresolved |
+
+For 41 slot → 44, GNUbg favors `24/16 8/4(2)` over XG's
+`24/16 13/9(2)` by 0.01608, with simultaneous 95% bounds
+[0.00539, 0.02677]. XG instead favors its choice by 0.01130.
+The GNUbg estimate for XG's choice is 0.58499 versus the published 0.61180,
+a difference of −0.02681. The alternative's estimate is 0.60107 versus 0.60050.
+This is position- and move-dependent; applying a global EV offset would not fix it.
+
+This disagreement persists without a turn cutoff. More trials under the same
+policy have not removed it. They do not identify whether the cause is checker
+play, cube play, the evaluator, move filtering or the different reference rules.
+The other five positions are unresolved, not proven equivalent or proven to
+have disagreed solely because of sampling noise. Two sampled leaders moved into
+agreement with XG, but neither is statistically ahead of every retained move.
+
+Eighteen of the 20 candidate means are within the user's 0.005 tolerance.
+The other exception is `13/8 13/11` after 51 slot → 52, at +0.00581 versus XG.
+These are descriptive distances from uncertain historical reference estimates;
+they do not establish joint 0.005 equivalence. Across the broader independent
+book, the updated audit reports 15/15 opening choices and 638/651 reply choices
+matching XG; only 180/651 reference-best reply EVs are within 0.005.
+The general GNUbg evaluator therefore does not satisfy the requested accuracy
+throughout the book.
+
+As an exploratory influence check after completion, deleting any one of the
+1,024 paired blocks in the persistent case leaves its mean XG-minus-alternative
+gap between −0.01652 and −0.01555. The slow final batch is not the sole cause.
+This check does not replace or modify the prespecified confidence intervals.
+All batches, including that batch, remain in the published results.
+
+The application uses the separately attributed published XG values for covered
+opening/reply positions under their matching money/Jacoby/beaver/raccoon context.
+Uncovered guide positions use labeled GNUbg fallback. No independent GNUbg EVs
+or rankings were edited to resemble XG, and imported-reference agreement is not
+claimed as an improvement in the independent evaluator.

@@ -12,13 +12,17 @@ export async function renderReplyPrecision(target,{json,table,link,downloads,fai
   }
   if(report.records!==20480||report.totalTrials!==655360||report.rows.length!==6)throw Error('Incomplete fixed sample');
   const format=n=>(n>=0?'+':'')+n.toFixed(5),verdict={'persistent-policy-disagreement':'Persistent policy disagreement','XG-choice-supported':'XG choice supported',unresolved:'Unresolved'};
+  const positionName=r=>{
+   const m=new URL(r.source).pathname.match(/Replies_to_(\d{2})([A-Z$])\.html/);
+   return m?`${m[1]} ${{D:'down','$':'slot',P:'point',S:'split'}[m[2]]||m[2]} → ${r.roll}`:r.id;
+  };
   target.append(el('p',{},`${report.conclusions['persistent-policy-disagreement']} persistent policy disagreements, ${report.conclusions['XG-choice-supported']} XG choices supported, and ${report.conclusions.unresolved} unresolved positions. ${report.absoluteEV.withinTolerance}/20 candidate EVs are within 0.005 of the published XG values.`),
    el('p',{},'Conclusions compare XG’s move against every retained alternative using a simultaneous 95% family of 14 paired Student-t intervals. An interval crossing zero is unresolved; it does not establish equivalence or prove that the earlier difference was noise. The six historical fixed pairs form a separate confidence family.'),
    table(['Position','Sampled leader','XG move','Conclusion'],report.rows.map(r=>{
-    const p=r.policies['full-strong'];return[link(r.id,r.source),p.bestMove,r.xgMove,verdict[r.conclusion]];
+    const p=r.policies['full-strong'];return[link(positionName(r),r.source),p.bestMove,r.xgMove,verdict[r.conclusion]];
    }),'All six positions are reported, regardless of their winning moves'),
-   table(['Position / alternative','XG minus alternative','Simultaneous 95% interval'],report.rows.flatMap(r=>r.policies['full-strong'].retainedReferenceGaps.map(g=>[`${r.id} · ${g.move}`,format(g.difference),`${format(g.familywise95.lower)} to ${format(g.familywise95.upper)}`])),'Paired gaps to all retained alternatives; positive favors XG’s move'),
-   table(['Position / move','GNUbg EV','Published XG EV','Difference','Within 0.005'],report.rows.flatMap(r=>r.policies['full-strong'].candidates.map(c=>[`${r.id} · ${c.move}`,format(c.equity),el('span',{},format(c.referenceEquity),el('small',{style:'display:block'},`XG · ${c.referenceCredit.author}`)),format(c.referenceDifference),c.withinTolerance?'Yes':'No'])),'Absolute EV distances are descriptive, not joint equivalence tests'),
+   table(['Position / alternative','XG minus alternative','Simultaneous 95% interval'],report.rows.flatMap(r=>r.policies['full-strong'].retainedReferenceGaps.map(g=>[`${positionName(r)} · ${g.move}`,format(g.difference),`${format(g.familywise95.lower)} to ${format(g.familywise95.upper)}`])),'Paired gaps to all retained alternatives; positive favors XG’s move'),
+   table(['Position / move','GNUbg EV','Published XG EV','Difference','Within 0.005'],report.rows.flatMap(r=>r.policies['full-strong'].candidates.map(c=>[`${positionName(r)} · ${c.move}`,format(c.equity),el('span',{},format(c.referenceEquity),el('small',{style:'display:block'},`XG · ${c.referenceCredit.author}`)),format(c.referenceDifference),c.withinTolerance?'Yes':'No'])),'Absolute EV distances are descriptive, not joint equivalence tests'),
    el('p',{},'Persistent differences identify a disagreement under this continuation policy. They do not isolate neural weights from checker decisions, cube decisions, move filtering, rule differences or reference uncertainty. XG enables beavers; this experiment disables them. These are historical published XG results, not fresh XG engine runs. The Openings page’s direct XG imports are separate from this experiment.'),
    downloads(link('All results and intervals','../docs/reply-fullgame-precision-comparison.json'),link('Fixed plan and seeds','../docs/reply-fullgame-precision-inputs.json'),link('Raw paired batches (gzip)','../docs/reply-fullgame-precision-batches.jsonl.gz'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/REPLY-FULLGAME-PRECISION.md')));
  }catch(error){failed(target,error);}

@@ -44,7 +44,7 @@ for(const r of rows.filter(r=>r.method==='rollout')){
  const p=storedPolicies[r.policyId]??={positions:0,minTrials:r.samples,maxTrials:r.samples};
  p.positions++;p.minTrials=Math.min(p.minTrials,r.samples);p.maxTrials=Math.max(p.maxTrials,r.samples);
 }
-const report={schema:1,storedPolicies,fullgame:index.provenance.fullgamePrecision??index.provenance.fullgame??null,recordedAt:new Date().toISOString(),id:ROLLOUT_BOOK_ID,indexSHA256:createHash('sha256').update(fs.readFileSync(indexFile)).digest('hex'),
+const report={schema:1,storedPolicies,replyFullgamePrecision:index.provenance.replyFullgamePrecision??null,fullgame:index.provenance.fullgamePrecision??index.provenance.fullgame??null,recordedAt:new Date().toISOString(),id:ROLLOUT_BOOK_ID,indexSHA256:createHash('sha256').update(fs.readFileSync(indexFile)).digest('hex'),
  coverage:{positions:rows.length,sampled:rows.filter(r=>r.method==='rollout').length,fivePlyFallback:rows.filter(r=>r.method==='tree').length,mirrored,graded,omitted},promotedCohorts:index.provenance.promotedCohorts,summaries,rows};
 if(report.coverage.sampled!==index.provenance.positions)throw Error('Published coverage mismatch');
 fs.writeFileSync(path.join(family,'docs/rollout-book-validation.json'),JSON.stringify(report,null,2)+'\n');
