@@ -11,15 +11,15 @@
     <title>Backgammon</title>
     <script data-fragment-redirect="/backgammon/#openings">if(location.hash==="#openings")location.replace("/backgammon/openings/"+location.search+location.hash);</script>
     <link rel="icon" href="icon.svg" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=6c5fb7f89a996333" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=6c5fb7f89a996333" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=6c5fb7f89a996333" />
-    <link rel="stylesheet" href="../shared/hub-art.css?bgv=6c5fb7f89a996333" />
-    <link rel="stylesheet" href="styles.css?bgv=6c5fb7f89a996333" />
-    <link rel="stylesheet" href="opening-guide.css?bgv=6c5fb7f89a996333" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=b4e19f400693ce6c" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=b4e19f400693ce6c" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=b4e19f400693ce6c" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=b4e19f400693ce6c" />
+    <link rel="stylesheet" href="styles.css?bgv=b4e19f400693ce6c" />
+    <link rel="stylesheet" href="opening-guide.css?bgv=b4e19f400693ce6c" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script src="../shared/hub.js?bgv=6c5fb7f89a996333" defer></script>
-    <script type="module" src="app.js?bgv=6c5fb7f89a996333"></script>
+    <script src="../shared/hub.js?bgv=b4e19f400693ce6c" defer></script>
+    <script type="module" src="app.js?bgv=b4e19f400693ce6c"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -30,6 +30,14 @@
           <span class="crumb-sep" aria-hidden="true">/</span>
           <span class="crumb-current" aria-current="page">Backgammon</span>
         </nav>
+        <nav class="switcher" aria-label="Game families">
+          <a href="/ofc/" data-to="ofc">OFC</a>
+          <a href="/poker/" data-to="poker">Poker</a>
+          <a href="/blackjack/" data-to="blackjack">Blackjack</a>
+          <a href="/backgammon/" data-to="backgammon" aria-current="page">Backgammon</a>
+          <a href="/dice/" data-to="dice">Dice</a>
+        </nav>
+      </header>
       <nav class="nav tool-nav hub-tool-tabs" aria-label="Backgammon tools">
           <a href="/backgammon/play/">Play</a>
           <a href="/backgammon/trainer/">Trainer</a>
@@ -38,7 +46,7 @@
           <a href="/backgammon/library/">Library</a>
           <a href="/backgammon/controls/">Docs</a>
       </nav>
-      </header>
+
 
 
       <main class="hub-main" id="main" tabindex="-1">
