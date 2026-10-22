@@ -1,4 +1,6 @@
 .report-shell { max-width: 1280px; }
+body { -webkit-tap-highlight-color: transparent; }
+html[data-focus-mode="pointer"] :focus { outline: none; }
 .report-shell .topbar-actions { margin-left: auto; }
 .report-shell .return-game { min-height: 44px; margin-left: auto; }
 .report-intro { position: relative; margin-top: 28px; padding: 28px 32px; border: 1px solid var(--sc-border); border-radius: 8px; overflow: hidden; background: linear-gradient(90deg, var(--page), color-mix(in srgb, var(--page) 92%, transparent) 37%, color-mix(in srgb, var(--page) 15%, transparent)), url("../assets/dungeon.webp") 70% 40% / cover; }
@@ -11,7 +13,13 @@
 .report-summary .evidence-note { font-size: 13px; color: var(--muted); max-width: 90ch; }
 .report-controls { display: flex; align-items: end; gap: 14px; padding: 22px 0; border-top: 1px solid var(--sc-border); }
 .report-controls > label, .section-heading > label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--muted); }
-.report-controls select, .section-heading select { border: 1px solid var(--control-border); border-radius: 4px; background: var(--surface); color: var(--ink); min-height: 44px; font: inherit; font-size: 13px; padding: 8px 32px 8px 12px; }
+.report-select { position: relative; display: inline-flex; min-width: 150px; }
+.report-select select { appearance: none; -webkit-appearance: none; width: 100%; min-height: 46px; padding: 11px 44px 11px 14px; border: 1px solid var(--sc-border); border-radius: 6px; background: linear-gradient(180deg, var(--sc-panel), var(--page)); color: var(--sc-gold-bright); box-shadow: inset 0 1px color-mix(in srgb, var(--sc-gold) 8%, transparent); font: 500 14px/1.5 ScoundrelSans, var(--font-sans); font-variant-numeric: tabular-nums; cursor: pointer; transition: border-color .18s, background-color .18s; }
+.report-select select:hover { border-color: color-mix(in srgb, var(--sc-gold) 60%, var(--page)); }
+.report-select select:disabled { opacity: .5; cursor: not-allowed; }
+.report-select option { background: var(--sc-panel); color: var(--ink); }
+.report-select > .icon { position: absolute; right: 14px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--sc-gold); pointer-events: none; }
+.report-controls .report-select { min-width: 176px; }
 .report-controls > .game-button { margin-left: auto; }
 .report-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 24px 0 28px; border-block: 1px solid var(--sc-border); }
 .report-metrics > div { padding: 0 25px; border-right: 1px solid var(--sc-border); }
@@ -42,7 +50,6 @@
 .chart-reference-median { stroke: var(--info); stroke-dasharray: 6 3; }
 .chart-inspector { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .chart-inspector > label { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
-.chart-inspector select { min-width: 116px; min-height: 44px; padding: 8px 30px 8px 10px; border: 1px solid var(--control-border); border-radius: 4px; background: var(--surface); color: var(--ink); font: inherit; }
 .chart-caption { flex: 1; min-width: 170px; font-size: 13px; color: var(--sc-gold-bright); line-height: 1.7; }
 .distribution-detail { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--sc-border); padding-top: 16px; margin-top: 18px; }
 .report-section { padding: 32px 0; border-bottom: 1px solid var(--sc-border); }
@@ -76,8 +83,9 @@
 .solution-line li > strong { display: inline-block; width: 60px; text-align: right; font: 600 16px/1.5 ScoundrelDisplay, Georgia, serif; color: var(--sc-health); }
 @media (max-width: 650px) { .deal-links { flex-direction: column; align-items: flex-start; gap: 0; }.deal-links > a, .deal-links > button { font-size: 12px; }.report-metrics strong { white-space: normal; overflow-wrap: anywhere; } }
 @media (max-width: 650px) {
+  .report-select select { font-size: 16px; }
   .chart-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
   .chart-inspector { align-items: stretch; flex-direction: column; gap: 10px; }
-  .chart-inspector select { flex: 1; }
+  .chart-inspector .report-select { flex: 1; min-width: 0; }
   .chart-caption { min-width: 0; }
 }

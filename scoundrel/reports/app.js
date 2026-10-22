@@ -1,6 +1,9 @@
 (() => {
   "use strict";
   const $ = id => document.getElementById(id), S = ScoundrelStatistics, E = Scoundrel;
+  // Pointer selection keeps its appearance, including when arrow keys follow a click.
+  document.addEventListener("pointerdown", () => { document.documentElement.dataset.focusMode = "pointer"; }, true);
+  document.addEventListener("keydown", event => { if (event.key === "Tab") document.documentElement.dataset.focusMode = "keyboard"; }, true);
   const f = (x, digits = 3) => x == null ? "—" : x.toLocaleString("en-US", { maximumFractionDigits: digits });
   const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   let data, rows = [], activeScore = null, visible = 20, chartWidth = 0, historyRequest = 0, resizeFrame = 0;
