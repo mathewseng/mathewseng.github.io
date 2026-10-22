@@ -45,7 +45,9 @@ jobs:
         run: node dice/reports/tests/browser.cjs
 
       - name: Test assembled Scoundrel game and reports
-        run: node scoundrel/tests/browser.cjs
+        run: |
+          node scoundrel/tests/browser.cjs
+          node scoundrel/tests/responsive.cjs
 
       - name: Test assembled Backgammon application
         run: node backgammon/tests/browser.cjs
