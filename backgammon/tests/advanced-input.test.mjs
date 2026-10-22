@@ -125,6 +125,24 @@ test('point-space at an original draft location returns that checker while disc 
     {type:'move',step:{from:12,to:10,die:2}},'forced origin cannot undo, but its resident can still play forward');
 });
 
+test('clicking point 5 after two 5/4 moves plays 6/5 instead of undoing 5/4',()=>{
+  for (const turn of [0,1]) {
+    const p = point => turn ? 23-point : point;
+    const points = Array(24).fill(0);
+    for (const [point,count] of [[5,2],[6,5],[8,3],[10,1],[13,3],[18,1],[3,-3],[19,-3],[20,-1],[21,-2],[22,-2],[23,-2],[24,-2]])
+      points[p(point-1)] = count * (turn ? -1 : 1);
+    const s = initialState({phase:'move', dice:[1,1], turn, points});
+    const paths = legalPaths(s), draft = Array.from({length:2},()=>({from:p(4),to:p(3),die:1}));
+    const options = {point:p(4),checker:false,candidates:nextSteps(paths,draft),
+      returns:originalReturnRoutes(s,paths,draft),routes:availableRoutes(paths,draft),preferred:1,dice:s.dice,turn};
+    assert.ok(options.returns.some(route=>route.to===p(4)), 'the clicked point is also an undo destination');
+    const action = advancedAction(options);
+    assert.deepEqual(action,{type:'move',step:{from:p(5),to:p(4),die:1}});
+    assert.ok(matchingPaths(paths,[...draft,action.step]).length);
+    assert.equal(advancedAction({...options,candidates:[]}).type,'undo','original-point undo remains available without a direct arrival');
+  }
+});
+
 test('otherwise inactive point space plays its resident with the same die as a checker tap',()=>{
   for(const turn of [0,1]) for(const dice of [[4,1],[3,3]]) {
     const s=initialState({phase:'move',dice,turn}),paths=legalPaths(s);
