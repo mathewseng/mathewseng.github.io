@@ -9,17 +9,22 @@
   const value = c => c & 15, type = c => c >> 4;
   function pack(o) {
     if ("deck" in o || "initialDeck" in o || "seed" in o || !Array.isArray(o.unknownCards) || !Array.isArray(o.bottom)) throw Error("Analysis requires a public observation, never a private deck");
-    return { u: o.unknownCards.map(encode).sort((a, b) => a - b), b: o.bottom.map(encode), r: o.room.filter(Boolean).map(encode), h: o.health, w: o.weapon?.value || 0, l: E.weaponLimit(o), p: +o.potionUsed, f: +E.canFlee(o), g: +(o.phase === "ready") };
+    return { slots: o.room.reduce((mask, c, i) => mask | (c ? 1 << i : 0), 0), keepSlots: o.keepSlots !== false, u: o.unknownCards.map(encode).sort((a, b) => a - b), b: o.bottom.map(encode), r: o.room.filter(Boolean).map(encode), h: o.health, w: o.weapon?.value || 0, l: E.weaponLimit(o), p: +o.potionUsed, f: +E.canFlee(o), g: +(o.phase === "ready") };
   }
   function key(s) {
-    return String.fromCharCode(...s.u) + "/" + String.fromCharCode(...s.b) + "/" + String.fromCharCode(...(s.f ? s.r : s.r.slice().sort((a, b) => a - b))) + "/" + [s.h, s.w, s.l, s.p, s.f, s.g].join(",");
+    return String.fromCharCode(...s.u) + "/" + String.fromCharCode(...s.b) + "/" + String.fromCharCode(...s.r) + "/" + [s.h, s.w, s.l, s.p, s.f, s.g, s.slots, +s.keepSlots].join(",");
   }
   function seedFor(s) { let seed = 2166136261; for (const c of key(s)) seed = Math.imul(seed ^ c.charCodeAt(0), 16777619); return seed >>> 0 || 1; }
   function random(seed) { let x = seed >>> 0 || 1; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; }; }
+  const slotAt = (s, index) => [0, 1, 2, 3].filter(slot => s.slots & (1 << slot))[index];
   function moves(s) {
     if (s.g) return [130];
     const result = [];
-    for (const c of new Set(s.r)) { result.push(c); if (type(c) === 0 && s.w && value(c) < s.l) result.push(c | 64); }
+    for (const [index, c] of s.r.entries()) {
+      if (s.slots == null && s.r.indexOf(c) !== index) continue;
+      const move = c | (s.slots == null ? 0 : slotAt(s, index) * 256);
+      result.push(move); if (type(c) === 0 && s.w && value(c) < s.l) result.push(move | 64);
+    }
     if (s.f) { result.push(128); if (s.r.some((c, i) => c !== s.r[s.r.length - 1 - i])) result.push(129); }
     return result.sort((a, b) => a - b);
   }
@@ -27,15 +32,24 @@
   const damageLeft = s => [...s.u, ...s.b, ...s.r].reduce((sum, c) => sum + (type(c) === 0 ? value(c) : 0), 0);
   function step(s, move, rng, deferDraw = false) {
     const n = { ...s, u: s.u.slice(), b: s.b.slice(), r: s.r.slice() };
-    const draw = () => { if (deferDraw) { n.drawPending = 1; return; } while (n.r.length < 4 && (n.u.length || n.b.length)) n.r.push(n.u.length ? n.u.splice(Math.floor(rng() * n.u.length), 1)[0] : n.b.shift()); };
+    const draw = () => {
+      if (!n.keepSlots) n.slots = (1 << n.r.length) - 1;
+      if (deferDraw) { n.drawPending = 1; return; }
+      for (let slot = 0; slot < 4 && (n.u.length || n.b.length); slot++) if (!(n.slots & (1 << slot))) {
+        const c = n.u.length ? n.u.splice(Math.floor(rng() * n.u.length), 1)[0] : n.b.shift();
+        const index = [0, 1, 2, 3].filter(i => i < slot && n.slots & (1 << i)).length;
+        n.r.splice(index, 0, c); n.slots |= 1 << slot;
+      }
+    };
     const fullRoom = () => (deferDraw ? Math.min(4, remaining(n)) : n.r.length) === 4;
-    if (move >= 128) {
-      if (move !== 130) { n.b.push(...(move === 129 ? n.r.slice().reverse() : n.r)); n.r = []; }
+    if ((move & 255) >= 128) {
+      if (move !== 130) { n.b.push(...(move === 129 ? n.r.slice().reverse() : n.r)); n.r = []; n.slots = 0; }
       draw(); n.p = 0; n.g = 0; n.f = +(move === 130 && fullRoom());
       return { state: n };
     }
     const c = move & 63, v = value(c), t = type(c);
-    n.r.splice(n.r.indexOf(c), 1); n.f = 0;
+    const slot = move >> 8, index = [0, 1, 2, 3].filter(i => i < slot && n.slots & (1 << i)).length;
+    n.r.splice(index, 1); n.slots &= ~(1 << slot); n.f = 0;
     if (t === 1) { n.w = v; n.l = 15; }
     else if (t === 2) { if (!n.p) n.h = Math.min(20, n.h + v); n.p = 1; }
     else { n.h -= move & 64 ? Math.max(0, v - n.w) : v; if (move & 64) n.l = v; }
@@ -53,6 +67,7 @@
     const n = next.state;
     // Used potions in a final room below 20 can neither heal nor earn a bonus.
     if (n.p && n.h < 20 && !n.u.length && !n.b.length) n.r = n.r.map(c => type(c) === 2 ? 32 : c);
+    if (!n.f && !n.u.length && !n.b.length) { n.r.sort((a, b) => a - b); n.slots = (1 << n.r.length) - 1; }
     return (n.drawPending || 0) + ":" + key(n);
   }
   function actionGroups(s) {
@@ -65,8 +80,9 @@
     return [...groups.values()];
   }
   function preference(s, move) {
+    move &= 255;
     if (move === 130) return 0;
-    if (move >= 128) {
+    if ((move & 255) >= 128) {
       const costs = s.r.map(c => type(c) ? 0 : s.w && value(c) < s.l ? Math.max(0, value(c) - s.w) : value(c)).sort((a, b) => a - b);
       const healing = Math.max(0, ...s.r.filter(c => type(c) === 2).map(c => Math.min(value(c), 20 - s.h)));
       const weapon = Math.max(s.w, ...s.r.filter(c => type(c) === 1).map(value));
@@ -82,7 +98,7 @@
     if (action.type === "descend") return 130;
     if (action.type === "flee") return action.direction === "right" ? 129 : 128;
     const c = o.room.find(c => c?.id === action.id);
-    return encode(c) | (action.mode === "weapon" ? 64 : 0);
+    return encode(c) | (action.mode === "weapon" ? 64 : 0) | (o.room.findIndex(card => card?.id === action.id) * 256);
   }
   // Plan the visible room before rollout. This search stops before a draw;
   // it cannot pick a line based on cards that have not been revealed yet.
@@ -111,11 +127,10 @@
       if (cache.size > 60000) cache.clear();
       cache.set(k, best); return best;
     }
-    return visit(s);
+    return visit({ ...s, slots: undefined });
   }
   function analyze(observation, options = {}) {
     const initial = pack(observation), rng = random(seedFor(initial));
-    const started = Date.now(), iterations = options.iterations ?? 12000, timeMs = options.timeMs ?? 1800;
     const tree = new Map(), endgames = new Map(), plans = new Map();
     let simulations = 0, heuristicSkips = 0;
     function known(s) {
@@ -160,7 +175,8 @@
         if (!s.u.length && remaining(s) <= 4) return known(s);
         const plan = s.g ? { move: 130, value: 0 } : roomPlan(s, plans);
         const current = s.h - Math.max(0, 7 - s.h) ** 2 * .5 + s.w * (s.l - 2) / 13 * 1.3;
-        const move = s.f && plan.value < current - 7 - 1e-9 ? 128 : plan.move;
+        let move = s.f && plan.value < current - 7 - 1e-9 ? 128 : plan.move;
+        if (move < 128) move |= slotAt(s, s.r.indexOf(move & 63)) * 256;
         const next = step(s, move, rng); if (next.score != null) return next.score; s = next.state;
       }
     }
@@ -171,30 +187,34 @@
       const a = rootNode.actions.find(a => a.moves.includes(m));
       return { action, equivalence: a.move, score: a.n ? mean(a) : null, samples: a.n, standardError: Number.isFinite(uncertainty(a)) ? uncertainty(a) : null, exact: a.exact };
     });
-    if (!rootNode.actions.every(a => a.exact)) for (; simulations < iterations; simulations++) {
-      let s = initial, score, path = [];
-      for (let depth = 0; ; depth++) {
-        const k = key(s); let node = tree.get(k);
-        if (!node || depth >= 9) {
-          if (!node && tree.size < 12000) tree.set(k, makeNode(s));
-          score = rollout(s); break;
+    function run(options = {}) {
+      const started = Date.now(), iterations = options.iterations ?? 12000, timeMs = options.timeMs ?? 1800;
+      if (!rootNode.actions.every(a => a.exact)) for (; simulations < iterations; simulations++) {
+        let s = initial, score, path = [];
+        for (let depth = 0; ; depth++) {
+          const k = key(s); let node = tree.get(k);
+          if (!node || depth >= 9) {
+            if (!node && tree.size < 12000) tree.set(k, makeNode(s));
+            score = rollout(s); break;
+          }
+          const a = choose(node, node === rootNode); path.push([node, a]);
+          if (a.exact) { score = mean(a); break; }
+          const next = step(s, a.move, rng);
+          if (next.score != null) { score = next.score; break; }
+          s = next.state;
         }
-        const a = choose(node, node === rootNode); path.push([node, a]);
-        if (a.exact) { score = mean(a); break; }
-        const next = step(s, a.move, rng);
-        if (next.score != null) { score = next.score; break; }
-        s = next.state;
+        for (const [node, a] of path) { node.n++; if (!a.exact) { a.n++; a.sum += score; a.squares += score * score; } }
+        if (options.onProgress && (simulations + 1) % (options.progressInterval ?? 128) === 0) {
+          options.onProgress?.({ results: results(), simulations: simulations + 1, heuristicSkips });
+        }
+        if ((simulations & 127) === 127) {
+          if (Date.now() - started >= timeMs && rootNode.actions.every(a => a.n)) { simulations++; break; }
+        }
       }
-      for (const [node, a] of path) { node.n++; if (!a.exact) { a.n++; a.sum += score; a.squares += score * score; } }
-      if (options.onProgress && (simulations + 1) % (options.progressInterval ?? 128) === 0) {
-        options.onProgress?.({ results: results(), simulations: simulations + 1, heuristicSkips });
-      }
-      if ((simulations & 127) === 127) {
-        if (Date.now() - started >= timeMs && rootNode.actions.every(a => a.n)) { simulations++; break; }
-      }
+      const rows = results(), best = rows.filter(r => r.score != null).sort((a, b) => b.score - a.score)[0];
+      return { action: best?.action, score: best?.score, results: rows, simulations, heuristicSkips, elapsed: Date.now() - started, method: "hidden-deck-mcts", extend: run };
     }
-    const rows = results(), best = rows.filter(r => r.score != null).sort((a, b) => b.score - a.score)[0];
-    return { action: best?.action, score: best?.score, results: rows, simulations, heuristicSkips, elapsed: Date.now() - started, method: "hidden-deck-mcts" };
+    return run(options);
   }
   const api = { analyze, pack, key, seedFor, random, moves, step, outcomeKey, actionGroups, preference, roomPlan, actionMove, encode };
   root.ScoundrelSolver = api;

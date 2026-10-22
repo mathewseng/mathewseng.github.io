@@ -40,13 +40,13 @@ test("public knowledge remembers returned cards and consumes that memory as card
   assert.deepEqual(E.observe(returned).bottom.map(c=>c.id), ["3c","2s"]);
   let next=act(returned,"fight","6s","bare");next=act(next,"drink","7h");next=act(next,"drink","5h");next=act(next,"descend");
   assert.deepEqual(next.knownBottom, []);
-  assert.deepEqual(next.room.map(c=>c.id), ["4d","3c","2s"]);
+  assert.deepEqual(next.room.map(c=>c?.id || null), ["3c","2s",null,"4d"]);
 });
 test("a room resolves exactly three cards before carrying its fourth to the next room", () => {
   let s=game(["2d","3d","4d","5d","6h","7h","8h"]);
   for(const id of ["2d","3d","4d"])s=act(s,"equip",id);
   assert.equal(s.phase,"ready"); assert.deepEqual(E.actions(s),[{type:"descend"}]);
-  s=act(s,"descend"); assert.deepEqual(s.room.map(c=>c.id),["5d","6h","7h","8h"]); assert.equal(s.resolved,0); assert.equal(s.potionUsed,false);
+  s=act(s,"descend"); assert.deepEqual(s.room.map(c=>c.id),["6h","7h","8h","5d"]); assert.equal(s.resolved,0); assert.equal(s.potionUsed,false);
 });
 test("only the first potion per room heals, even when the first was taken at full health", () => {
   let s=game(["2h","4s","9h","3d"]); s=act(s,"drink","2h"); s=act(s,"fight","4s","bare"); s=act(s,"drink","9h"); assert.equal(s.health,16);

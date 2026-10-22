@@ -28,10 +28,19 @@ const { serveSite, settle } = require("../../scripts/site-pages.cjs"), E = requi
     assert.ok((await page.locator("#search-progress").innerText()).includes("100,000 simulations · complete"));
     assert.deepEqual(await page.evaluate(() => window.analysisUpdates.map(message => message.simulations)), [...Array.from({ length: 10 }, (_, i) => (i + 1) * 1000), ...Array.from({ length: 9 }, (_, i) => (i + 2) * 10000)]);
     assert.equal(await page.locator("#deepen-button").count(), 0, "automatic search needs no manual button");
-    const scores = (await page.locator("#action-values .value-cell").allTextContents()).map(value => Number(value.replaceAll(",", "")));
+    const values = await page.locator("#action-values .value-cell").allTextContents();
+    assert.ok(values.every(value => /^-?[\d,]+\.\d{2}$/.test(value)), "EVs always have two decimal places");
+    const scores = values.map(value => Number(value.replaceAll(",", "")));
     assert.ok(scores.every((value, i) => !i || scores[i - 1] >= value));
     const output = process.env.SCOUNDREL_SCREENSHOTS;
     if (output) { fs.mkdirSync(output, { recursive: true }); await page.locator("#oracle-panel").screenshot({ path: path.join(output, "analysis-100k.png") }); }
+
+    await page.locator("#extend-button").click();
+    await page.waitForFunction(() => window.latestAnalysis?.requestId === window.latestRequest.requestId && window.latestAnalysis.simulations === 1000000 && !window.latestAnalysis.pending);
+    assert.equal(await page.evaluate(() => window.latestAnalysis.target), 1000000);
+    assert.deepEqual(await page.evaluate(() => window.analysisUpdates.map(message => message.simulations)), Array.from({ length: 91 }, (_, i) => 100000 + i * 10000));
+    assert.equal(await page.locator("#extend-button").isDisabled(), true);
+    if (output) await page.locator("#oracle-panel").screenshot({ path: path.join(output, "analysis-1m.png") });
 
     const equivalent = E.createGame({ seed: "equivalent-ui" });
     equivalent.room = [E.card("2h"), E.card("8h"), E.card("9h"), null]; equivalent.deck = [];
@@ -61,11 +70,22 @@ const { serveSite, settle } = require("../../scripts/site-pages.cjs"), E = requi
 
     // An action during an automatic search starts a fresh 100k request immediately.
     await page.goto(server.base + "/scoundrel/?seed=cancel-100k"); await settle(page);
+    await page.locator("#extend-button").click();
     const request = await page.evaluate(() => window.latestRequest.requestId);
     await page.locator(".encounter").first().click(); await page.locator("[data-action]").first().click();
     await page.waitForFunction(previous => window.latestRequest?.requestId > previous && window.latestAnalysis?.requestId === window.latestRequest.requestId && window.latestAnalysis.simulations >= 1000, request);
     assert.equal(await page.evaluate(() => window.latestAnalysis.target), 100000);
+    await page.locator("#oracle-toggle").uncheck();
+    const ordered = ["2d", "3d", "4d", "5d"];
+    let carried = E.createGame({ deck: [...ordered, ...E.makeDeck().filter(card => !ordered.includes(card.id)).map(card => card.id)], seed: "carry-ui" });
+    for (const id of ordered.slice(0, 3)) carried = E.transition(carried, { type: "equip", id });
+    await page.evaluate(state => localStorage.setItem("scoundrel-run-v1", JSON.stringify(state)), carried);
+    await page.goto(server.base + "/scoundrel/"); await settle(page);
+    assert.equal(await page.locator('#room-cards > :nth-child(4)').getAttribute("data-card"), "5d");
+    await page.locator("[data-action]").click();
+    assert.equal(await page.locator('#room-cards > :nth-child(4)').getAttribute("data-card"), "5d");
+    if (output) await page.screenshot({ path: path.join(output, "carry-same-slot.png"), fullPage: true });
     assert.deepEqual(errors, []);
-    console.log("Analysis browser checks passed: automatic 100k search, exact 1k/10k checkpoints, EV sorting, equivalent best choices, empty-deck order and cancellation.");
+    console.log("Analysis browser checks passed: automatic 100k, resumed 1M, exact checkpoints, two-decimal EVs, fixed carry slot, equivalent choices and cancellation.");
   } finally { await browser.close(); await server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

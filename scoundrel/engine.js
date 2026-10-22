@@ -50,7 +50,7 @@
     const deck = options.deck ? options.deck.map(card) : shuffled(seed);
     const initialDeck = deck.map((c) => c.id);
     return {
-      version: 1, id: options.id || seed + "-" + Date.now().toString(36), seed, initialDeck,
+      version: 1, keepSlots: options.keepSlots !== false, id: options.id || seed + "-" + Date.now().toString(36), seed, initialDeck,
       room: deck.splice(0, 4), deck, knownBottom: [], health: MAX_HEALTH, deathHealth: null,
       weapon: null, slain: [], discard: [], roomNumber: 1, resolved: 0,
       potionUsed: false, fledPrevious: false, phase: "playing", lastCard: null,
@@ -118,9 +118,14 @@
       message = "Avoided " + (action.direction || "left") + ". Returned " + fleeOrder(state, action.direction).map(label).join(" → ") + " to the bottom.";
     } else if (action.type === "descend") {
       const unknownCount = s.deck.length - s.knownBottom.length;
-      s.room = s.room.filter(Boolean);
-      const drawCount = Math.min(4 - s.room.length, s.deck.length);
-      while (s.room.length < 4 && s.deck.length) s.room.push(s.deck.shift());
+      const drawCount = Math.min(4 - s.room.filter(Boolean).length, s.deck.length);
+      if (s.keepSlots === false) {
+        s.room = s.room.filter(Boolean);
+        while (s.room.length < 4 && s.deck.length) s.room.push(s.deck.shift());
+      } else {
+        while (s.room.length < 4) s.room.push(null);
+        for (let i = 0; i < 4 && s.deck.length; i++) if (!s.room[i]) s.room[i] = s.deck.shift();
+      }
       s.knownBottom.splice(0, Math.max(0, drawCount - unknownCount));
       s.roomNumber++;
       s.resolved = 0;
@@ -174,7 +179,7 @@
     const visible = [...s.room.filter(Boolean), ...s.discard, ...s.slain, ...bottom, ...(s.weapon ? [s.weapon] : [])];
     const seen = new Set(visible.map(c => c.id));
     return {
-      phase: s.phase, health: s.health, weapon: s.weapon && card(s.weapon),
+      keepSlots: s.keepSlots !== false, phase: s.phase, health: s.health, weapon: s.weapon && card(s.weapon),
       slain: s.slain.map(card), room: s.room.map(c => c && card(c)),
       potionUsed: s.potionUsed, resolved: s.resolved, fledPrevious: s.fledPrevious,
       unknownCards: s.initialDeck.filter(id => !seen.has(id)).sort().map(card), bottom,

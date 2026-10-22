@@ -54,7 +54,7 @@ async function main() {
             }
             line.push(action); state = E.transition(state, action);
           }
-          const row = { index, seed, score: E.score(state), survived: state.phase === "won", verified: true, searches, elapsedMs, heuristicSkips, line: H.encode(line), revision: Native.revision, iterations };
+          const row = { keepSlots: true, index, seed, score: E.score(state), survived: state.phase === "won", verified: true, searches, elapsedMs, heuristicSkips, line: H.encode(line), revision: Native.revision, iterations };
           D.verify(row, seedPrefix); rows.set(index, row); wins += +row.survived; sum += row.score;
           fs.appendFileSync(checkpoint, JSON.stringify(row) + "\n");
           if (rows.size % 100 === 0 || rows.size === count || count <= 10) {
@@ -65,7 +65,7 @@ async function main() {
     }));
     progress("verifying");
     const data = D.publish({ rows: rows.values(), output, seedPrefix, requestedDeals: count,
-      policy: { name: "Hidden-deck Monte Carlo tree search", exact: false, revision: Native.revision, iterations, treeDepth: 9, minimumRootSamples: 48, knownEndgameCards: 8 },
+      policy: { keepSlots: [...rows.values()].every(row => row.keepSlots === true), name: "Hidden-deck Monte Carlo tree search", exact: false, revision: Native.revision, iterations, treeDepth: 9, minimumRootSamples: 48, knownEndgameCards: 8 },
       startedAt: new Date(started).toISOString(), deadline: deadlineText || undefined });
     progress("complete", { publishedDeals: data.completedDeals, deadlineReached: data.completedDeals < count });
     console.log(`Published ${data.completedDeals} replay-verified hidden-deck policy outcomes to ${output}`);

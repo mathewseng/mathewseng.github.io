@@ -78,7 +78,7 @@
     const shown = rows.filter(r => activeScore == null || r.score === activeScore);
     $("deals-caption").textContent = `${f(shown.length)} deals${activeScore != null ? " · score " + activeScore : " · every run verified"}`;
     $("clear-filter").hidden = activeScore == null;
-    $("deals-body").innerHTML = shown.slice(0, visible).map(r => `<tr><td>${String(r.index + 1).padStart(4, "0")}</td><td>${r.score}</td><td class="${r.score > 0 ? "proven" : "defeated"}">${r.score > 0 ? "Survived" : "Defeated"}</td><td class="deal-links"><button class="text-button" type="button" data-solution="${r.index}">History</button><a href="../?seed=${encodeURIComponent(r.seed)}">Play</a></td></tr>`).join("");
+    $("deals-body").innerHTML = shown.slice(0, visible).map(r => `<tr><td>${String(r.index + 1).padStart(4, "0")}</td><td>${r.score}</td><td class="${r.score > 0 ? "proven" : "defeated"}">${r.score > 0 ? "Survived" : "Defeated"}</td><td class="deal-links"><button class="text-button" type="button" data-solution="${r.index}">History</button><a href="../?seed=${encodeURIComponent(r.seed)}${data.policy.keepSlots ? "" : "&amp;layout=legacy"}">Play</a></td></tr>`).join("");
     $("load-more").hidden = visible >= shown.length;
   }
   function chooseScore(score) {
@@ -132,7 +132,7 @@
       historyCache.set(start, promise);
     }
     const shard = await historyCache.get(start), line = ScoundrelHistory.decode(shard.lines[row.index - start]);
-    let state = E.createGame({ seed: row.seed });
+    let state = E.createGame({ seed: row.seed, keepSlots: data.policy.keepSlots === true });
     for (const action of line) state = E.transition(state, action);
     if (E.score(state) !== row.score) throw Error("History does not match its recorded score");
     return line;
@@ -141,7 +141,7 @@
     const button = event.target.closest("[data-solution]"); if (!button) return;
     const row = data.rows.find(r => r.index === Number(button.dataset.solution));
     const request = ++historyRequest;
-    let state = E.createGame({ seed: row.seed });
+    let state = E.createGame({ seed: row.seed, keepSlots: data.policy.keepSlots === true });
     $("solution-title").textContent = `Deal ${String(row.index + 1).padStart(4, "0")} · score ${row.score}`;
     $("solution-proof").textContent = "Played using revealed information only. This is the recorded policy run, not a hindsight solution.";
     $("solution-line").textContent = "Loading history…";
@@ -165,7 +165,7 @@
   });
   fetch("outcomes.json?v=20261022-7", { cache: "no-cache" }).then(response => { if (!response.ok) throw Error("Study data could not be loaded"); return response.json(); }).then(S.validate).then(study => {
     data = study; data.rows = S.studyRows(study);
-    $("technical-method").textContent = `Seeds ${data.rows[0].seed} through ${data.rows.at(-1).seed}. The native Monte Carlo policy uses a budget of ${f(data.policy.iterations)} simulations per decision and tree depth ${data.policy.treeDepth}. A room planner guides rollouts without seeing future draws. All ${f(data.rows.length)} histories passed replay validation. Histories load on demand and are checksum-checked. Policy revision ${data.policy.revision.slice(0, 12)}.`;
+    $("technical-method").textContent = `Seeds ${data.rows[0].seed} through ${data.rows.at(-1).seed}. The native Monte Carlo policy uses a budget of ${f(data.policy.iterations)} simulations per decision and tree depth ${data.policy.treeDepth}. A room planner guides rollouts without seeing future draws. All ${f(data.rows.length)} histories passed replay validation. Histories load on demand and are checksum-checked. Carry layout: ${data.policy.keepSlots ? "the remaining card stays in its slot" : "historical carry to the first slot"}. Policy revision ${data.policy.revision.slice(0, 12)}.`;
     $("study-date").textContent = "Computed " + new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/New_York" }).format(new Date(data.generatedAt));
     $("loading").hidden = true; $("report-content").hidden = false; render();
   }).catch(error => { $("loading").textContent = error.message + ". Reload to try again."; });

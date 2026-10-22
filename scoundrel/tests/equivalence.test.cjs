@@ -19,7 +19,7 @@ test("equal capped healing preserves the carried potion and final-potion bonus",
     const state = E.createGame({ deck });
     state.health = 12; state.room = deck.slice(0, 2).map(E.card); state.deck = deck.slice(2).map(E.card); state.resolved = 2;
     const compact = S.pack(E.observe(state));
-    assert.notEqual(S.outcomeKey(compact, S.encode(E.card("8h"))), S.outcomeKey(compact, S.encode(E.card("9h"))));
+    assert.notEqual(S.outcomeKey(compact, S.actionMove(E.observe(state), { type: "drink", id: "8h" })), S.outcomeKey(compact, S.actionMove(E.observe(state), { type: "drink", id: "9h" })));
     const a = E.transition(state, { type: "drink", id: "8h" }), b = E.transition(state, { type: "drink", id: "9h" });
     assert.equal(a.health, 20); assert.equal(b.health, 20);
     if (!state.deck.length) { assert.equal(exhaustive(a), 29); assert.equal(exhaustive(b), 28); }

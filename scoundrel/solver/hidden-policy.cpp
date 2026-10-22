@@ -26,7 +26,7 @@ template<class T> void sortSmall(T* begin,T* end) {
 struct State {
   array<uint8_t,44> u{}, b{};
   array<uint8_t,4> r{};
-  int un=0, bn=0, rn=0, h=20, w=0, l=15, p=0, f=0, g=0;
+  int slots=15, keepSlots=1, un=0, bn=0, rn=0, h=20, w=0, l=15, p=0, f=0, g=0;
 };
 struct Next { State s; bool terminal=false, drawPending=false; int score=0; };
 struct Action { int move, n=0; double prior=0, sum=0, squares=0; bool exact=false; };
@@ -67,21 +67,21 @@ Key key(const State&s) {
   Key k;int pos=0;
   memcpy(k.bytes.data()+pos,s.u.data(),s.un);pos+=s.un;
   memcpy(k.bytes.data()+pos,s.b.data(),s.bn);pos+=s.bn;
-  auto room=s.r;if(!s.f)sortSmall(room.data(),room.data()+s.rn);
+  auto room=s.r;
   memcpy(k.bytes.data()+pos,room.data(),s.rn);
   k.bytes[44]=s.un;k.bytes[45]=s.bn;k.bytes[46]=s.rn;
   k.bytes[47]=s.h;k.bytes[48]=s.w;k.bytes[49]=s.l;
-  k.bytes[50]=s.p;k.bytes[51]=s.f;k.bytes[52]=s.g;
+  k.bytes[50]=s.p;k.bytes[51]=s.f;k.bytes[52]=s.g;k.bytes[53]=s.slots;k.bytes[54]=s.keepSlots;
   return k;
 }
+int slotAt(const State&s,int index){for(int slot=0;slot<4;slot++)if(s.slots&(1<<slot)){if(!index--)return slot;}return -1;}
 SmallList<int,10> moves(const State&s) {
   SmallList<int,10> result;
   if(s.g){result.push_back(130);return result;}
-  uint64_t seen=0;
   for(int i=0;i<s.rn;i++) {
-    int c=s.r[i]; if(seen&(uint64_t(1)<<c))continue; seen|=uint64_t(1)<<c;
-    result.push_back(c);
-    if(type(c)==0&&s.w&&value(c)<s.l)result.push_back(c|64);
+    int c=s.r[i],move=c|(slotAt(s,i)<<8);
+    result.push_back(move);
+    if(type(c)==0&&s.w&&value(c)<s.l)result.push_back(move|64);
   }
   if(s.f) {
     result.push_back(128); bool distinct=false;
@@ -100,25 +100,27 @@ int damageLeft(const State&s) {
 Next step(const State&s,int move,Random&rng,bool deterministic=false,bool deferDraw=false) {
   Next out;out.s=s;auto&n=out.s;
   auto draw=[&](){
+    if(!n.keepSlots)n.slots=(1<<n.rn)-1;
     if(deferDraw){out.drawPending=true;return;}
-    while(n.rn<4&&(n.un||n.bn)) {
+    for(int slot=0;slot<4&&(n.un||n.bn);slot++)if(!(n.slots&(1<<slot))) {
+      int card;
       if(n.un) {
-        int i=deterministic?0:int(rng.next()*n.un); n.r[n.rn++]=n.u[i];
-        for(int j=i+1;j<n.un;j++)n.u[j-1]=n.u[j]; n.un--;
-      } else {
-        n.r[n.rn++]=n.b[0]; for(int j=1;j<n.bn;j++)n.b[j-1]=n.b[j]; n.bn--;
-      }
+        int i=deterministic?0:int(rng.next()*n.un);card=n.u[i];
+        for(int j=i+1;j<n.un;j++)n.u[j-1]=n.u[j];n.un--;
+      }else{card=n.b[0];for(int j=1;j<n.bn;j++)n.b[j-1]=n.b[j];n.bn--;}
+      int index=__builtin_popcount(unsigned(n.slots&((1<<slot)-1)));
+      for(int j=n.rn;j>index;j--)n.r[j]=n.r[j-1];n.r[index]=card;n.rn++;n.slots|=1<<slot;
     }
   };
-  if(move>=128) {
+  if((move&255)>=128) {
     if(move!=130) {
       for(int i=0;i<s.rn;i++)n.b[n.bn++]=s.r[move==129?s.rn-1-i:i];
-      n.rn=0;
+      n.rn=0;n.slots=0;
     }
     draw();n.p=0;n.g=0;n.f=move==130&&(deferDraw?min(4,remaining(n)):n.rn)==4;return out;
   }
-  int c=move&63,v=value(c),t=type(c),index=0;
-  while(n.r[index]!=c)index++;
+  int c=move&63,v=value(c),t=type(c),slot=move>>8,index=__builtin_popcount(unsigned(n.slots&((1<<slot)-1)));
+  n.slots&=~(1<<slot);
   for(int i=index+1;i<n.rn;i++)n.r[i-1]=n.r[i]; n.rn--;n.f=0;
   if(t==1){n.w=v;n.l=15;}
   else if(t==2){if(!n.p)n.h=min(20,n.h+v);n.p=1;}
@@ -138,6 +140,7 @@ SmallList<int,10> groupedMoves(const State&s) {
     else {
       auto&n=next.s;
       if(n.p&&n.h<20&&!n.un&&!n.bn)for(int i=0;i<n.rn;i++)if(type(n.r[i])==2)n.r[i]=32;
+      if(!n.f&&!n.un&&!n.bn){sortSmall(n.r.data(),n.r.data()+n.rn);n.slots=(1<<n.rn)-1;}
       auto k=key(n);signature=string(1,next.drawPending?'1':'0')+string(reinterpret_cast<const char*>(k.bytes.data()),k.bytes.size());
     }
     if(find(signatures.begin(),signatures.end(),signature)==signatures.end()){signatures.push_back(signature);result.push_back(move);}
@@ -145,8 +148,9 @@ SmallList<int,10> groupedMoves(const State&s) {
   return result;
 }
 double preference(const State&s,int move) {
+  move&=255;
   if(move==130)return 0;
-  if(move>=128) {
+  if((move&255)>=128) {
     SmallList<int,4>costs;int healing=0,weapon=s.w;
     for(int i=0;i<s.rn;i++) {
       int c=s.r[i],v=value(c),t=type(c);
@@ -203,10 +207,6 @@ uint64_t packRoom(const Room&s){
   uint64_t k=uint64_t(s.h+16)<<24|uint64_t(s.w)<<30|uint64_t(s.l)<<34|uint64_t(s.p)<<38|uint64_t(s.rn)<<39;
   for(int i=0;i<s.rn;i++)k|=uint64_t(s.r[i])<<(6*i);
   return k;
-}
-void applyRoom(State&s,uint64_t k){
-  s.h=int((k>>24)&63)-16;s.w=(k>>30)&15;s.l=(k>>34)&15;s.p=(k>>38)&1;s.rn=(k>>39)&7;s.f=0;
-  for(int i=0;i<s.rn;i++)s.r[i]=(k>>(6*i))&63;
 }
 double carryUtilities[21][11][16][43];
 double currentUtilities[21][11][16];
@@ -320,13 +320,9 @@ struct Search {
       Plan plan=s.g?Plan{130,0}:roomPlan(Room{s.r,s.rn,s.h,s.w,s.l,s.p},s.un||s.bn);
       double current=currentUtilities[s.h][s.w][s.l];
       int move=s.f&&plan.value<current-7-1e-9?128:plan.move;
-      // The cached visible-room plan also stores its deterministic final state.
-      // Jump to that boundary, then sample new cards. No future draw is exposed.
-      if(move<128&&(s.un||s.bn)&&(s.un||remaining(s)>s.rn+2)){
-        applyRoom(s,plan.finish);
-        if(s.h<=0)return s.h-damageLeft(s);
-        move=130;
-      }
+      // Keep the room planner's rank-based heuristic, but apply every encounter
+      // in its physical slot so the carried card stays put at the next draw.
+      if(move<128){int index=0;while(s.r[index]!=(move&63))index++;move|=slotAt(s,index)<<8;}
       auto n=step(s,move,rng);if(n.terminal)return n.score;s=n.s;
     }
   }
@@ -357,7 +353,7 @@ int main() {
   ios::sync_with_stdio(false);cin.tie(nullptr);cout<<setprecision(15);
   int iterations;uint32_t seed;
   while(cin>>iterations>>seed) {
-    State s;cin>>s.h>>s.w>>s.l>>s.p>>s.f>>s.g>>s.rn;
+    State s;cin>>s.h>>s.w>>s.l>>s.p>>s.f>>s.g>>s.slots>>s.keepSlots>>s.rn;
     if(!cin||s.rn<1||s.rn>4||iterations<1)return 2;
     for(int i=0,c;i<s.rn;i++){cin>>c;s.r[i]=c;}
     cin>>s.un;if(s.un<0||s.un>40)return 2;for(int i=0,c;i<s.un;i++){cin>>c;s.u[i]=c;}

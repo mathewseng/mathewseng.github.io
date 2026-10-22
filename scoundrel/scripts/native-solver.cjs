@@ -42,7 +42,7 @@ function createSolver(binary = compile(), { sharedCache = true } = {}) {
       if (!Number.isInteger(iterations) || iterations < 16) throw Error("Use at least 16 simulations");
       return new Promise((resolve, reject) => {
         pending = { observation, resolve, reject };
-        child.stdin.write([iterations, S.seedFor(s), s.h, s.w, s.l, s.p, s.f, s.g, s.r.length, ...s.r, s.u.length, ...s.u, s.b.length, ...s.b].join(" ") + "\n");
+        child.stdin.write([iterations, S.seedFor(s), s.h, s.w, s.l, s.p, s.f, s.g, s.slots, +s.keepSlots, s.r.length, ...s.r, s.u.length, ...s.u, s.b.length, ...s.b].join(" ") + "\n");
       });
     },
     close() { child.stdin.end(); },
