@@ -3,13 +3,19 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# Share the research budget across both studies, leaving room for publishing
+# and validation within the account's standard-runner concurrency allowance.
+concurrency:
+  group: backgammon-research
+  cancel-in-progress: false
+  queue: max
 jobs:
   sample:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 350
     strategy:
       fail-fast: false
-      max-parallel: 20
+      max-parallel: 16
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
