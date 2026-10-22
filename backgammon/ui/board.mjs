@@ -365,6 +365,7 @@ export class Board {
       "aria-label": "Backgammon board",
     });
     container.replaceChildren(this.svg);
+    this.motion = true;
     this.animations = [];
     this.feedbackTimers = [];
     this.lifecycle = new AbortController();
@@ -382,14 +383,14 @@ export class Board {
     addEventListener(
       "bg-motion",
       () => {
-        if (reducedMotion()) settle();
+        if (this.reducedMotion()) settle();
       },
       listen,
     );
     matchMedia("(prefers-reduced-motion: reduce)").addEventListener(
       "change",
       () => {
-        if (reducedMotion()) settle();
+        if (this.reducedMotion()) settle();
       },
       listen,
     );
@@ -797,7 +798,7 @@ export class Board {
       );
       this.svg.insertBefore(this.dragLanding, this.dragGhost);
     }
-    const node = this.dragLanding, motion = !reducedMotion() && !document.hidden;
+    const node = this.dragLanding, motion = !this.reducedMotion() && !document.hidden;
     // Read the visible pose before cancelling. Rapid crossings reverse in place;
     // pointer motion within the same destination never restarts the transition.
     const style = getComputedStyle(node), from = style.transform, opacity = style.opacity;
@@ -824,7 +825,7 @@ export class Board {
     this.dragLandingContext = null;
   }
   captureDragLanding() {
-    if (!this.dragLanding || reducedMotion() || document.hidden) return null;
+    if (!this.dragLanding || this.reducedMotion() || document.hidden) return null;
     const style = getComputedStyle(this.dragLanding);
     return { node: this.dragLanding.cloneNode(true), transform: style.transform,
       opacity: Number(style.opacity), target: this.dragLanding.dataset.target };
@@ -876,13 +877,13 @@ export class Board {
     this.dragFace = checker(0, 0, this.state.turn);
     this.dragFace.classList.add("drag-face"); this.dragGhost.append(this.dragFace);
     this.svg.append(this.dragGhost);
-    if (animate && !reducedMotion()) {
+    if (animate && !this.reducedMotion()) {
       const down = this.coordinates(p.x, p.y);
       this.dragLift = this.dragFace.animate([
         { transform: `translate(${x - down.x}px, ${y - down.y}px) scale(1)` },
         { transform: `translateY(${p.touch ? -24 / Math.abs(this.svg.getScreenCTM().a) : 0}px) scale(1.1)` },
       ], { duration:160, easing:"cubic-bezier(.2,.75,.3,1)", fill:"forwards" });
-    } else this.dragFace.style.transform = `translateY(${p.touch && !reducedMotion() ? -24 / Math.abs(this.svg.getScreenCTM().a) : 0}px) scale(${reducedMotion() ? 1 : 1.1})`;
+    } else this.dragFace.style.transform = `translateY(${p.touch && !this.reducedMotion() ? -24 / Math.abs(this.svg.getScreenCTM().a) : 0}px) scale(${this.reducedMotion() ? 1 : 1.1})`;
   }
   followDrag(clientX, clientY) {
     const p = this.pointer;
@@ -940,6 +941,9 @@ export class Board {
       n.removeAttribute("data-arriving");
     });
   }
+  reducedMotion() {
+    return !this.motion || reducedMotion();
+  }
   destroy() {
     this.lifecycle.abort();
     this.endDrag();
@@ -951,25 +955,25 @@ export class Board {
     if (this.previewKey === key) return;
     this.previewKey = key;
     const snapshot = this.state && this.options.orientation === options.orientation &&
-      !reducedMotion() && !document.hidden ? capturePreview(this.svg) : null;
+      !this.reducedMotion() && !document.hidden ? capturePreview(this.svg) : null;
     this.render(state, { ...options, interactive: false, preview: true });
     if (snapshot) animatePreview(this.svg, snapshot, this.animations);
   }
   animateEdit(before, after, from, to, player) {
-    if (reducedMotion() || document.hidden) return;
+    if (this.reducedMotion() || document.hidden) return;
     this.flyChecker(this.dropOrigin || checkerPosition(before, from, player, this.options.orientation),
       checkerPosition(after, to, player, this.options.orientation), player, to,
       {drop:!!this.dropOrigin, residentCount:typeof to === 'number' ? Math.max(0, before.points[to] * (player ? -1 : 1)) : 0});
   }
   async waitForPresentation() {
-    while (!reducedMotion() && !document.hidden &&
+    while (!this.reducedMotion() && !document.hidden &&
       (this.playbackTimer || performance.now() < (this.diceSettledAt || 0))) {
       await new Promise(resolve => setTimeout(resolve, 32));
     }
   }
   playTurn(before, steps, { automatic = false, rolled = false } = {}) {
     if (!steps.length) return;
-    if (reducedMotion() || document.hidden) {
+    if (this.reducedMotion() || document.hidden) {
       const after = steps.reduce((s, step) => applyStep(s, step), before);
       sound.play(
         after.bar[1 - before.turn] > before.bar[1 - before.turn]
@@ -1026,7 +1030,7 @@ export class Board {
         : step.to === "off"
           ? "off"
           : "move";
-    if (reducedMotion() || document.hidden) {
+    if (this.reducedMotion() || document.hidden) {
       sound.play(cue);
       return 0;
     }
@@ -1174,7 +1178,7 @@ export class Board {
     return flight;
   }
   contact(position) {
-    if (reducedMotion() || document.hidden) return;
+    if (this.reducedMotion() || document.hidden) return;
     const ring = svg("circle", {
       cx: position.x,
       cy: position.y,
@@ -1193,7 +1197,7 @@ export class Board {
   }
   animateRestore(before, after, cue = "reset") {
     sound.play(cue);
-    if (reducedMotion() || document.hidden) return;
+    if (this.reducedMotion() || document.hidden) return;
     for (const player of [0, 1]) {
       const origins = [],
         destinations = [];
@@ -1243,7 +1247,7 @@ export class Board {
     }
   }
   returnDragged(point) {
-    if (!this.dropOrigin || reducedMotion() || document.hidden) return;
+    if (!this.dropOrigin || this.reducedMotion() || document.hidden) return;
     this.flyChecker(
       this.dropOrigin,
       checkerPosition(
@@ -1259,7 +1263,7 @@ export class Board {
   }
   animateDice() {
     sound.play("roll");
-    if (reducedMotion() || document.hidden) return;
+    if (this.reducedMotion() || document.hidden) return;
     this.diceSettledAt = performance.now() + 740;
     this.svg.querySelectorAll(".board-die").forEach((die, i) => {
       // The outer SVG transform fixes the die's location. Animate the face inside
@@ -1295,7 +1299,7 @@ export class Board {
   dicePoses() {
     // Snapshot before render cancels animations/removes SVG children. This also
     // captures interrupted lifts/fades, so switching and undo never jump.
-    if (reducedMotion() || document.hidden) return null;
+    if (this.reducedMotion() || document.hidden) return null;
     const dice = [...this.svg.querySelectorAll('.board-die')].map(die => {
       const face = die.querySelector('.board-die-face');
       const group = die.closest('.board-dice');
@@ -1323,7 +1327,7 @@ export class Board {
       opacities: [...control.querySelectorAll('[data-dice-icon]')].map(n => getComputedStyle(n).opacity) } };
   }
   animateDiceLayout(poses) {
-    if (reducedMotion() || document.hidden) return;
+    if (this.reducedMotion() || document.hidden) return;
     const dice = [...this.svg.querySelectorAll('.board-die')];
     if (!dice.length) return;
     const group = dice[0].closest('.board-dice');
@@ -1375,7 +1379,7 @@ export class Board {
     }
   }
   animateDiceSelection(poses) {
-    if (!poses?.dice.length || reducedMotion() || document.hidden) return;
+    if (!poses?.dice.length || this.reducedMotion() || document.hidden) return;
     const timing = { duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)' };
     this.svg.querySelectorAll('.board-die').forEach((die, index) => {
       const before = poses.dice[index];
@@ -1429,7 +1433,7 @@ export class Board {
   }
   animateCube(before) {
     sound.play("cube");
-    if (reducedMotion() || document.hidden) return;
+    if (this.reducedMotion() || document.hidden) return;
     const cube = this.svg.querySelector(".board-cube");
     if (!cube) return;
     const cy = (s) =>
@@ -1482,7 +1486,7 @@ export class Board {
     } = {},
   ) {
     const dicePoses = this.dicePoses();
-    const highlightMotion = !reducedMotion() && !document.hidden;
+    const highlightMotion = !this.reducedMotion() && !document.hidden;
     const lastMoveEntry = highlightMotion ? captureLastMoveEntry(this.svg) : [];
     const arrowPoses = highlightMotion ? [...this.svg.querySelectorAll('.last-move-arrow > path')].map(path => {
       const a = path.getAnimations().find(a => a.id === 'move-arrow-entry' && a.playState !== 'finished');

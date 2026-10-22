@@ -1,0 +1,171 @@
+/* Solver geometry depends on the viewport, never on messages or checker count. */
+.app[data-page="solver"] #board > .bg-board {
+  width: calc(100% - var(--bg-equity-width) - 6px);
+  margin-left: calc(var(--bg-equity-width) + 6px);
+}
+.app[data-page="solver"] .bg-board,
+.app[data-page="solver"] .bg-board * {
+  animation: none;
+  transition: none;
+}
+.solver-controls {
+  gap: 16px;
+  align-content: start;
+}
+.solver-setup-dock,
+.solver-analysis-controls {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+.solver-setup-dock { --solver-section-color: var(--accent); }
+.solver-analysis-controls,
+#solver-analysis { --solver-section-color: var(--info); }
+#solver-save { --solver-section-color: var(--warn); }
+.solver-group-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  font-size: var(--t-md);
+}
+.solver-section-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--solver-section-color, var(--accent));
+  background: color-mix(in srgb, var(--solver-section-color, var(--accent)) 12%, transparent);
+}
+.solver-section-icon svg { width: 19px; height: 19px; }
+.solver-context-item {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border-color: var(--line-strong);
+  background: var(--page);
+}
+.solver-context-label { color: var(--muted); font-weight: 500; }
+.solver-context-item strong { color: var(--ink); font-size: var(--t-md); }
+.solver-context-item:hover { border-color: var(--accent); }
+.solver-control-label {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+#editor-tools > summary { color: var(--ink); }
+.solver-quick-analysis .btn { min-width: 0; padding-inline: 8px; }
+.solver-quick-analysis [aria-pressed="true"] {
+  color: var(--info);
+  border-color: var(--info);
+  background: var(--info-soft);
+}
+.solver-group {
+  gap: 12px;
+  padding-top: 18px;
+  border-top-color: var(--line-strong);
+}
+.solver-group > details {
+  padding: 0 10px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--page);
+}
+.solver-group > details > summary { color: var(--ink); }
+#solver-save > .btn { justify-content: flex-start; }
+
+/* The same preview controls work in the desktop rail and the phone stack. */
+.app[data-page="solver"] .study-strip:not([hidden]) { display: grid; }
+.app[data-page="solver"] .study-preview-controls:not([hidden]) {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 6px;
+}
+.app[data-page="solver"] .study-preview-controls > .btn { padding-inline: 8px; }
+
+.solver-controls .action-buttons {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.solver-controls .action-buttons .btn {
+  min-width: 0;
+  padding-inline: 8px;
+  white-space: normal;
+}
+.solver-controls .source-preview-control { grid-column: 1 / -1; }
+.app[data-page="solver"] .solver-analysis-controls > * { order: 0; }
+
+@media (min-width: 1025px) and (min-height: 501px) {
+  .app[data-page="solver"] .stage {
+    grid-template-rows: 28px minmax(0, 1fr) 28px;
+    height: 100%;
+  }
+  .app[data-page="solver"] .inspector {
+    display: block;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .app[data-page="solver"] .inspector > .panel-body {
+    overflow: visible;
+    padding-top: 0;
+  }
+  .app[data-page="solver"] .inspector > .solver-controls {
+    padding: 0 14px;
+  }
+  .solver-controls .action-main {
+    display: grid;
+    gap: 8px;
+  }
+  .solver-controls .solver-context { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .solver-controls #message {
+    min-height: 0;
+    font-size: var(--t-sm);
+    line-height: var(--lh-body);
+    overflow-wrap: anywhere;
+  }
+  .solver-controls #draft-line { display: none; }
+  .solver-controls #editor-decision { grid-template-columns: 1fr; }
+  .solver-controls .position-editor { gap: 10px; }
+}
+
+@media (max-width: 1024px) and (min-height: 501px) {
+  .app[data-page="solver"],
+  .app[data-page="solver"]:not(.editing-position) { height: auto; min-height: 100dvh; }
+  .app[data-page="solver"] .stage,
+  .app[data-page="solver"]:not(.editing-position) .stage {
+    height: auto;
+    min-height: 0;
+    grid-template-rows: 24px auto 24px auto;
+    align-content: start;
+  }
+  .app[data-page="solver"] #board {
+    height: min(calc((100cqw - var(--bg-equity-width) - 6px) * 660 / 876), calc(100dvh - 250px));
+    max-height: none;
+    aspect-ratio: auto;
+  }
+  .app[data-page="solver"]:not(.editing-position) .solver-setup-dock { display: none; }
+  .solver-controls { padding-top: 0; }
+  .solver-analysis-controls { padding-top: 8px; }
+  .solver-controls .action-main { gap: 8px; }
+  .solver-controls #message { font-size: var(--t-sm); }
+}
+
+@media (max-height: 500px) and (min-width: 650px) {
+  .solver-controls .solver-setup-dock,
+  .solver-controls .solver-analysis-controls { padding-block: 8px; }
+  .solver-controls .solver-group-title { font-size: var(--t-sm); }
+  .solver-controls .solver-context { grid-template-columns: 1fr; }
+  .solver-controls .action-main { display: grid; gap: 6px; }
+  .solver-controls .solver-quick-analysis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

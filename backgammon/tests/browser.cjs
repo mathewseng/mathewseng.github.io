@@ -664,6 +664,9 @@ const server = http.createServer((req, res) => {
         (report.mobileStudy ||= []).push(
           await run("mobile-study", browser, base, out, browserName),
         );
+        (report.solverLayout ||= []).push(
+          await run("solver-layout", browser, base, out, browserName),
+        );
         (report.solverEditor ||= []).push(
           await run("solver-editor", browser, base, out, browserName),
         );

@@ -24,6 +24,7 @@ module.exports = async function solverEditor(browser, base, out, name) {
     const r=n.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};
   },checker);
   const drag=async(from,to,cancel=false)=>{
+    await page.locator('#board').scrollIntoViewIfNeeded();
     const a=await position(from,true),b=await position(to);
     await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:8});
     if(await page.locator('.drag-checker').count()!==1){
@@ -118,6 +119,7 @@ module.exports = async function solverEditor(browser, base, out, name) {
     if(name==='chromium') {
       await page.setViewportSize({width:390,height:844});
       await page.emulateMedia({reducedMotion:'no-preference'});
+      await page.locator('#board').scrollIntoViewIfNeeded();
       const cdp=await context.newCDPSession(page), a=await position(12,true), b=await position(9);
       const touch=(type,p)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:p?[{...p,id:1}]:[]});
       await touch('touchStart',a);
@@ -125,6 +127,7 @@ module.exports = async function solverEditor(browser, base, out, name) {
       assert.equal(await page.locator('.drag-checker').count(),1);
       assert.equal(await page.locator('.drag-landing-ghost[data-target="9"]').count(),1);
       await touch('touchEnd');await waitState(s=>s.points[9]===1);
+      assert.equal(await page.locator('.moving-checker,.drop-landing-ghost').count(),0,'Solver touch drops settle immediately with normal motion enabled');
       await page.waitForFunction(()=>!document.querySelector('.drag-checker,.moving-checker,.drag-landing-ghost'));
       await page.locator('#editor-undo').tap();await waitState(s=>s.points[9]===0);
       await cdp.detach();await page.emulateMedia({reducedMotion:'reduce'});

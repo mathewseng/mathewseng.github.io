@@ -52,6 +52,8 @@ await startUpdates();
 resumedAfterUpdate();
 const pageProgress = readPageProgress();
 const ui = shell("solver", "Solver");
+// Editing, draft moves and alternative previews all settle in the same frame.
+ui.board.motion = false;
 let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   editing = false,
   result = null,
@@ -108,6 +110,16 @@ const renderDraft = draft.render.bind(draft);
 draft.render = () => { renderDraft(); if (editing) editor.sync(source, true); };
 editor.onDice = () => diceDialog();
 editor.onContext = () => contextDialog('cube');
+const sectionIcons = {
+  position: '<circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M14 4h6v6M4 14v6h6"/>',
+  analysis: '<path d="M4 19V5m0 14h16M8 15l4-5 4 2 4-7"/>',
+  save: '<path d="M5 4h14v17l-7-4-7 4z"/>',
+};
+function sectionTitle(title, icon) {
+  const symbol = el('span', {class:'solver-section-icon', 'aria-hidden':true});
+  symbol.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${sectionIcons[icon]}</svg>`;
+  return el('h3', {class:'solver-group-title'}, symbol, el('span',{},title));
+}
 const editorContext = button("Settings", contextDialog, "", {id:"editor-context"});
 const setupTools = el('div', {class:'solver-setup-tools'},
   button('Clear', () => editor.commit(clearPosition(source)), '', {id:'editor-clear'}),
@@ -132,15 +144,13 @@ const decisionChoices = choiceButtons([['move','Checker move'],['roll','Cube dec
   editor.commit(next);
 });
 decisionChoices.id='editor-decision'; decisionChoices.setAttribute('aria-label','Decision to analyze');
-editor.node.append(decisionChoices);
+editor.node.append(el('span',{class:'solver-control-label'},'Decision to analyze'), decisionChoices);
 study.node.after(editor.node);
 // The same controls live beside the board on desktop, and below it on phones.
 const contextStrip = el("section", { class: "solver-context", "aria-label": "Position context" });
-const setupAnchor = document.createComment('Solver setup controls');
-editor.node.before(setupAnchor);
-const setupDock = el('section',{class:'solver-setup-dock','aria-label':'Position setup'},contextStrip,editor.node);
-setupAnchor.after(setupDock);
-const wideSetup = matchMedia('(min-width: 1051px) and (min-height: 601px)');
+const setupDock = el('section',{class:'solver-setup-dock','aria-label':'Position setup'},sectionTitle('Position setup','position'),contextStrip,editor.node);
+study.node.after(setupDock);
+const wideSetup = matchMedia('(min-width: 1025px) and (min-height: 501px)');
 wideSetup.addEventListener('change',()=>{setupDisclosure.open=wideSetup.matches;render();});
 // One progress component for analysis: indeterminate while GNUbg searches,
 // determinate for rollouts and match review. The text stays in #message and
@@ -232,6 +242,13 @@ const quickAnalysis = el('div',{class:'solver-quick-analysis','aria-label':'Anal
     controls.scrollIntoView({block:'start',behavior:'smooth'});
   },'',{id:'solver-rollout'}));
 $('actions').after(quickAnalysis);
+const actionArea = document.querySelector('.action-area');
+actionArea.classList.add('solver-controls');
+const actionsAnchor = document.createComment('Solver controls below the board on phones');
+actionArea.before(actionsAnchor);
+const analysisControls = el('section', {class:'solver-analysis-controls', 'aria-label':'Analyze position'},
+  sectionTitle('Analyze position','analysis'), document.querySelector('.action-main'), $('message'), progress, study.node);
+actionArea.prepend(analysisControls);
 analysis.preset = "auto";
 const hash = new URLSearchParams(location.hash.slice(1)),
   params = new URLSearchParams(location.search);
@@ -422,10 +439,11 @@ function render() {
     control.setAttribute('aria-pressed',String(control.dataset.analyzePreset===analysis.preset));
   quickAnalysis.title = `Current analysis: ${analysis.preset === 'auto' ? 'Auto' : PRESETS[analysis.preset]?.name}`;
   panel(problems);
-  const docked = wideSetup.matches && editing;
+  const docked = wideSetup.matches;
   document.querySelector('.app').classList.toggle('setup-docked',docked);
-  if(docked) $('panel').prepend(setupDock);
-  else setupAnchor.after(setupDock);
+  document.querySelector('.app').classList.toggle('solver-actions-docked',docked);
+  if (docked) $('inspector').prepend(actionArea);
+  else actionsAnchor.after(actionArea);
 }
 function panel(problems) {
   const p = $("panel");
@@ -460,10 +478,10 @@ function panel(problems) {
   // section buttons jump between them and every control stays mounted.
   const group = (id, title) =>
     el("section", { class: "solver-group", id: `solver-${id}`, "aria-labelledby": `solver-${id}-title` },
-      el("h3", { class: "solver-group-title", id: `solver-${id}-title` }, title));
-  const positionGroup = group("position", "Position"),
-    analysisGroup = group("analysis", "Analysis"),
-    saveGroup = group("save", "Save");
+      Object.assign(sectionTitle(title, id === 'save' ? 'save' : id === 'analysis' ? 'analysis' : 'position'), {id:`solver-${id}-title`}));
+  const positionGroup = group("position", "Position tools"),
+    analysisGroup = group("analysis", "Analysis & results"),
+    saveGroup = group("save", "Save to Library");
   p.append(
     el(
       "nav",

@@ -60,6 +60,15 @@ module.exports = async function controlPolish(browser, base, out, name) {
         assert.ok(layout[key].bottom<=height+2,`visible ${key} ${width}: ${JSON.stringify(layout)}`);
       }
       if(width<=700 && height>500) assert.ok(layout.confirm.top>=layout.board.bottom-2,'portrait confirmation follows full-width board');
+      const size = () => page.locator('#board > svg').evaluate(n => {
+        const r=n.getBoundingClientRect();return {width:r.width,height:r.height};
+      });
+      const beforeMove = await size();
+      await page.keyboard.press('1');
+      assert.ok(await page.locator('.board-die.consumed').count(), 'the checker move was applied');
+      assert.deepEqual(await size(),beforeMove,`board stays constant while playing at ${width}×${height}`);
+      await page.keyboard.press('z');
+      assert.deepEqual(await size(),beforeMove,`undo preserves board size at ${width}×${height}`);
       report.layouts.push({width,height,...layout});
       await page.screenshot({path:path.join(out,`${name}-controls-${width}x${height}.png`)});
     }
