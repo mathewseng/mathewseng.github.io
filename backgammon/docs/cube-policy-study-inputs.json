@@ -1,0 +1,321 @@
+{
+  "signature": "0294775ccc5713adcddbe80e50b70319cf315bb3c3f5fd358e22e0002be15a72",
+  "schema": 1,
+  "id": "cube-policy-study",
+  "priorSignature": "e8cf1918cc466768cb3965f412618bf4ad8b3d40926d646bdb76b9cec1856e5e",
+  "priorInputsSHA256": "5d983f989ca61bf974632fdb1e6e6f4a6bb681617df31c03beec08c0be10df03",
+  "build": {
+    "cubeStudyInputs": {
+      "patch-rollout-cube-study.py": "ef7afb1ae6e8ed6d7c470862c5f6fb7c1a4dc4ea8064d0ab608a222663c892ea",
+      "rollout-cube-policy.h": "9655a138e957c64fb528e958f508ea939be9e522b07bfa0e188ab98a0a07a292"
+    },
+    "ablationPatchSHA256": "95c0cdabf24884df7a1d6f602ee8b38d95e60cc5343240929b4a0508400b671f",
+    "archive": "gnubg-core-955555c-bg6.tar.gz",
+    "archiveSHA256": "bf6aac810e16ef6b3980a93fb7975c51367bb89658d0d6344dda6890501c6ba4",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+    "flags": "-O3 -ffp-contract=off -Isrc -Isrc/lib -Wno-unused-parameter -DBG_NATIVE_NEON -DBG_ABLATION -DBG_CUBE_STUDY",
+    "architecture": "arm64",
+    "neon": true,
+    "binarySHA256": "809665f0911f3634eb894f06256e473e553367494d7479602866caa9aa496bfb",
+    "inputs": {
+      "build-rollout-native.mjs": "ffa06463a8fdfb1a4039b0bfb765f8857937b0317f97b49f6f481ad71eb09a6f",
+      "rollout-native.c": "f4cc7514cbef5a6df1d2325a8d7a31aa9798a1e457e5169e11347906f4cbd02f",
+      "deep-book-neon.h": "c1b6d5b05fab41bb28f235ff5f12e6f1dbb27b04691ae0f9a90706ae435f3153"
+    },
+    "orderPatchSHA256": "3d84d68e7dafbdc40bd3b009ffe7931653a6efefc8b66ec6068e0747019090ad",
+    "bridgeSHA256": "ac4e57573cf7cfab7f76fe5961cec367817c85597f482c714a1bfc12ca7a7269",
+    "builtAt": "2026-10-22T13:28:24.697Z"
+  },
+  "validationSHA256": "9ec306a176521c15e3166b6851ab240a62e0b218f389cbe48a308757120cb330",
+  "runnerSHA256": "8d28500b3a1b8c164c45633a15eb49ae26661aa95f4a00f3186e7802cd0d2e89",
+  "plan": [
+    {
+      "id": "reply-7985255600f3563f-44",
+      "kind": "reply",
+      "cohort": "reply-disagreement",
+      "source": "https://www.extremegammon.com/OB/Replies_to_41$.html",
+      "referenceBest": {
+        "rank": 1,
+        "move": "24/20* 20/16* 13/9(2)",
+        "equity": 0.6118,
+        "confidenceHalfWidth": 0.0032,
+        "probabilities": [
+          [
+            0.6183,
+            0.2492,
+            0.0256
+          ],
+          [
+            0.38170000000000004,
+            0.0776,
+            0.0034000000000000002
+          ]
+        ],
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 3-ply",
+        "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0"
+      },
+      "board": "-2,0,0,0,0,5,0,3,0,0,0,-4,5,0,0,-1,-3,0,-4,-1,0,0,0,2,0,0,0,0",
+      "roll": "44",
+      "candidates": [
+        {
+          "steps": [
+            {
+              "from": 7,
+              "to": 3,
+              "die": 4
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "die": 4
+            },
+            {
+              "from": 23,
+              "to": 19,
+              "die": 4
+            },
+            {
+              "from": 19,
+              "to": 15,
+              "die": 4
+            }
+          ],
+          "notation": "8/4 8/4 24/20 20/16",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "historical": {
+            "equity": 0.65975749,
+            "cubeless": 0.4523885,
+            "probabilities": [
+              0.6127153,
+              0.27464211,
+              0.03492715,
+              0.0792926,
+              0.00331879
+            ]
+          },
+          "fourPly": {
+            "equity": 0.64895844,
+            "cubeless": 0.4454807,
+            "probabilities": [
+              0.61064881,
+              0.27458927,
+              0.03322947,
+              0.08084691,
+              0.00278874
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.65425658,
+            "cubeless": 0.44658378,
+            "probabilities": [
+              0.60932851,
+              0.27572224,
+              0.03555091,
+              0.0800388,
+              0.00330756
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+          "after": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "8/4 8/4 24/20 20/16",
+            "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+            "xgEquity": 0.6005,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0033,
+            "threePly": 0.65975749,
+            "fourPly": 0.64895844,
+            "fivePly": 0.65425658
+          },
+          "role": "previous-choice"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 8,
+              "die": 4
+            },
+            {
+              "from": 12,
+              "to": 8,
+              "die": 4
+            },
+            {
+              "from": 23,
+              "to": 19,
+              "die": 4
+            },
+            {
+              "from": 19,
+              "to": 15,
+              "die": 4
+            }
+          ],
+          "notation": "13/9 13/9 24/20 20/16",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "historical": {
+            "equity": 0.6348899,
+            "cubeless": 0.43947449,
+            "probabilities": [
+              0.61868685,
+              0.25536752,
+              0.02831316,
+              0.07831696,
+              0.00326293
+            ]
+          },
+          "fourPly": {
+            "equity": 0.63815105,
+            "cubeless": 0.44126603,
+            "probabilities": [
+              0.62006497,
+              0.25502497,
+              0.02717912,
+              0.07843003,
+              0.00263799
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.63374531,
+            "cubeless": 0.43684053,
+            "probabilities": [
+              0.61725318,
+              0.2558606,
+              0.02826325,
+              0.07859148,
+              0.00319819
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+          "after": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/9 13/9 24/20 20/16",
+            "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+            "xgEquity": 0.6118,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0032,
+            "threePly": 0.6348899,
+            "fourPly": 0.63815105,
+            "fivePly": 0.63374531
+          },
+          "role": "xg-choice"
+        }
+      ],
+      "seedBase": 4176272946,
+      "seedNonce": 0,
+      "previousChoice": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "previousGap": 0.018488934374999988
+    }
+  ],
+  "policies": [
+    {
+      "id": "legacy",
+      "label": "Previous ordinary-cube policy",
+      "checkerPlies": 2,
+      "lateCheckerPlies": 2,
+      "rulesMode": 0,
+      "filter": 0,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCubePlies": 2,
+      "endpointPlies": 2,
+      "vrPlies": 1
+    },
+    {
+      "id": "ordinary",
+      "label": "Corrected ordinary-cube policy",
+      "checkerPlies": 2,
+      "lateCheckerPlies": 2,
+      "rulesMode": 1,
+      "filter": 0,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCubePlies": 2,
+      "endpointPlies": 2,
+      "vrPlies": 1
+    },
+    {
+      "id": "matched",
+      "label": "XG cube rules · 2-ply normal checker",
+      "checkerPlies": 2,
+      "lateCheckerPlies": 2,
+      "rulesMode": 3,
+      "filter": 0,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCubePlies": 2,
+      "endpointPlies": 2,
+      "vrPlies": 1
+    },
+    {
+      "id": "wide",
+      "label": "XG cube rules · 2-ply huge checker filter",
+      "checkerPlies": 2,
+      "lateCheckerPlies": 2,
+      "rulesMode": 3,
+      "filter": 1,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCubePlies": 2,
+      "endpointPlies": 2,
+      "vrPlies": 1
+    },
+    {
+      "id": "deep",
+      "label": "XG cube rules · 3-ply large checker filter",
+      "checkerPlies": 3,
+      "lateCheckerPlies": 3,
+      "rulesMode": 3,
+      "filter": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCubePlies": 2,
+      "endpointPlies": 2,
+      "vrPlies": 1
+    }
+  ],
+  "trials": 16384,
+  "batchSize": 32,
+  "effects": [
+    [
+      "ordinary",
+      "legacy"
+    ],
+    [
+      "matched",
+      "ordinary"
+    ],
+    [
+      "wide",
+      "matched"
+    ],
+    [
+      "deep",
+      "matched"
+    ]
+  ],
+  "gapComparisons": 5,
+  "effectComparisons": 4,
+  "candidateEffectComparisons": 8,
+  "rules": {
+    "matchLength": 0,
+    "jacoby": true,
+    "matchedImmediateRedoubles": 2,
+    "cubeLimit": 1024,
+    "startingCube": 1,
+    "cubeOwner": null
+  },
+  "method": "Fixed independent 16384 full-game trials per candidate and policy, 512 paired blocks of 32, 163840 games total. Both retained 41$-44 candidates under five policies. Shared dice across candidates and policies; every seed disjoint from preceding studies and timing/validation samples. Cube strength stays at GNUbg 2-ply; checker policies vary normal 2-ply, huge-filter 2-ply, large-filter 3-ply throughout every full game. Identical 1-ply control-variate evaluations across all policies; no dice rotation, fixed-turn cutoff, late policy reduction, pooling, optional stopping, or reference-value correction. Exact two-sided bearoff evaluation remains eligible. XG rules mean money/Jacoby/beaver/raccoon, original responder retains ownership, cube ceiling 1024. Actual legal cube branches are separately evaluated; future search-node beaver backups use scale-invariant continuation approximations. Five paired move gaps and four differences of gaps have separate simultaneous 95% Student-t families. Eight per-candidate policy effects form a third family. Absolute differences against published XG EVs are descriptive; original XG margins retained. Selection follows the previous completed experiment; this is one diagnostic position, not an all-openings accuracy claim."
+}

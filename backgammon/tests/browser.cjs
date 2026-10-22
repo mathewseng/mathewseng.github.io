@@ -608,6 +608,12 @@ const server = http.createServer((req, res) => {
         (report.fullgamePrecision ||= []).push(
           await run("fullgame-precision", browser, base, out, browserName),
         );
+        (report.replyFullgamePrecision ||= []).push(
+          await run("reply-fullgame-report", browser, base, out, browserName),
+        );
+        (report.cubePolicyStudy ||= []).push(
+          await run("cube-policy-report", browser, base, out, browserName),
+        );
         (report.deepOpeningBook ||= []).push(
           await run("deep-opening-book", browser, base, out, browserName),
         );
