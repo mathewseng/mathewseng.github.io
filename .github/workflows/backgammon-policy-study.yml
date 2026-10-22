@@ -1,0 +1,40 @@
+name: Backgammon fixed policy experiment
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sample:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Unpack and verify the frozen native runtime
+        run: python3 backgammon/scripts/unpack-cube-policy-runtime.py /tmp/bg-cube-study-v2
+      - name: Validate policy outputs on this worker
+        run: |
+          mkdir -p backgammon/test-results/cube-policy-study-v2
+          python3 backgammon/scripts/validate-cube-policy-platform.py /tmp/bg-cube-study-v2 --output backgammon/test-results/cube-policy-study-v2/platform-validation.json
+      - name: Run the fixed shard without interim outcome reporting
+        env:
+          BG_ROLLOUT_NATIVE: /tmp/bg-cube-study-v2
+          BG_ROLLOUT_WORKERS: 4
+          BG_STUDY_SHARD: ${{ matrix.shard }}
+          BG_STUDY_OUT: backgammon/test-results/cube-policy-study-v2
+        run: node backgammon/scripts/run-cube-policy-study-v2.mjs
+      - name: Preserve every completed batch, including on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cube-policy-v2-shard-${{ matrix.shard }}
+          path: backgammon/test-results/cube-policy-study-v2/
+          retention-days: 30
+          if-no-files-found: error

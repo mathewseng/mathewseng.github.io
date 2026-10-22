@@ -1,0 +1,28 @@
+name: Build Backgammon WASM engine
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install the pinned Emscripten toolchain
+        run: |
+          git clone --depth 1 --branch 4.0.15 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install 4.0.15
+          /tmp/emsdk/emsdk activate 4.0.15
+      - name: Build scalar and SIMD engines with identical assets
+        env:
+          BG_ENGINE_OUTPUT: /tmp/bg-engine-bg8
+        run: |
+          source /tmp/emsdk/emsdk_env.sh
+          sh backgammon/scripts/build-engine.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backgammon-engine-bg8
+          path: /tmp/bg-engine-bg8/
+          retention-days: 30
+          if-no-files-found: error

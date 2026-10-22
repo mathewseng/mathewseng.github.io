@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "kind": "production-source deterministic cache regression; no rollout samples",
+  "sourceArchiveSHA256": "622e285b7ed3e8f622831305ed1e31c81bcd708d1d9322c8a25bebe9de6af0e5",
+  "patchSHA256": "90c009d79e579cf9cc0ab3c66f96035bd3642249cce8be1365aebd23fe43db2f",
+  "auditScriptSHA256": "1b4c559550504561babbbcd310e351ec72aa34860b44081d44c24cbe2a1f0e82",
+  "scriptSHA256": "2cb90ae6a4bb091aaa5ed8661421d9feb53878d6d846ea1579a6f46ae3451e6b",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+  "cases": [
+    {
+      "cacheContext": 0,
+      "capturedNodes": 15,
+      "actualQueryHits": 15,
+      "incorrectActualHits": 9,
+      "maxActualError": 0.00228506327,
+      "incorrectReplayQueries": 9,
+      "maxReplayError": 0.00228506327,
+      "role": "previous-choice"
+    },
+    {
+      "cacheContext": 0,
+      "capturedNodes": 21,
+      "actualQueryHits": 21,
+      "incorrectActualHits": 11,
+      "maxActualError": 0.00173449516,
+      "incorrectReplayQueries": 11,
+      "maxReplayError": 0.00173449516,
+      "role": "xg-choice"
+    },
+    {
+      "cacheContext": 1,
+      "capturedNodes": 15,
+      "actualQueryHits": 0,
+      "incorrectActualHits": 0,
+      "maxActualError": 0,
+      "incorrectReplayQueries": 0,
+      "maxReplayError": 0,
+      "role": "previous-choice"
+    },
+    {
+      "cacheContext": 1,
+      "capturedNodes": 21,
+      "actualQueryHits": 0,
+      "incorrectActualHits": 0,
+      "maxActualError": 0,
+      "incorrectReplayQueries": 0,
+      "maxReplayError": 0,
+      "role": "xg-choice"
+    }
+  ]
+}

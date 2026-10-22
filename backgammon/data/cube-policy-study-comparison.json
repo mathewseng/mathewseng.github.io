@@ -1,8 +1,9 @@
 {
-  "schema": 1,
-  "signature": "0294775ccc5713adcddbe80e50b70319cf315bb3c3f5fd358e22e0002be15a72",
+  "schema": 2,
+  "studyVersion": 2,
+  "signature": "c33006467f38e023b0971a1cabae19d1fba6eed3896e7cd8820868470a7e5c2a",
   "complete": false,
   "plannedTrials": 163840,
-  "status": "correcting",
-  "statusMessage": "Collection stopped after a deterministic regression exposed a wrong-policy cache hit. The partial run is archived without outcome-based analysis. A fresh experiment adds a cache-only control before comparing XG cube rules and stronger checker policies."
+  "status": "prepared",
+  "statusMessage": "The replacement 163,840-game experiment has passed worker validation. Its five policies isolate the cache fix, XG cube rules, wider checker selection and deeper checker play. The full fixed sample is required before any outcome analysis."
 }

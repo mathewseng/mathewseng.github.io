@@ -53,3 +53,6 @@ x.write_text(s)
 
 # Exact evaluation ties need a valid, portable ordering during simulations.
 subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent / 'engine/source/rollout-order-bg7.patch')], cwd=p, check=True)
+
+# Counterfactual cube values must retain the cube used for checker decisions.
+subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent / 'engine/source/checker-context-bg8.patch')], cwd=p, check=True)

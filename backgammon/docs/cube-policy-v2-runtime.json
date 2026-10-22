@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "bundle": "engine/source/cube-policy-v2-linux-arm64.tar.gz",
+  "bundleSHA256": "eff7c16e2104bd17ffdd87058257d8640d5c5d93af243573e8b3e56fec0f6d60",
+  "binarySHA256": "bb562b9b442f94fc47cc2d45bae46d5e8300ecb5e630c211201a9913ba5ee9b6",
+  "sourceArchive": "gnubg-core-955555c-bg6.tar.gz",
+  "sourceArchiveSHA256": "bf6aac810e16ef6b3980a93fb7975c51367bb89658d0d6344dda6890501c6ba4",
+  "assets": {
+    "data/gnubg.wd": "bb045bb416c70706ba34ad64595af2b43cac3722560b6ab01829eb719417153b",
+    "data/gnubg.weights": "d03c629d8b916236ce6eee05d891986830ec943fce6febd4e5b6725b284c66ee",
+    "data/gnubg_os0.bd": "38089567e87a681682bb4ff53f30d781af215fc04debbdff3f61b6db68547a49",
+    "data/gnubg_ts0.bd": "9eac8a2c697dae8a09f2e5653022084b9e725df6c32950cb5299b273fc64500f"
+  },
+  "preparationRunId": "39799370980",
+  "preparationCommit": "6d80c80",
+  "platform": "linux",
+  "architecture": "arm64",
+  "license": "GPL-3.0-or-later",
+  "correspondingSource": "Pinned GNUbg archive plus the complete recorded build inputs, cube patch and cache-context patch in the signed plan. The bundle retains LICENSE; neural weights and databases are read from the original pinned source archive."
+}

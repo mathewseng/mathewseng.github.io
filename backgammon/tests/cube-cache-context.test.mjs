@@ -26,6 +26,15 @@ test('aborted collection retains every raw byte but is not presented as complete
  assert.equal(r.signature,p.signature);assert.equal(r.status,'aborted-for-implementation-correctness');
  assert.equal(r.outcomesInspectedBeforeAbort,false);assert.equal(r.replacementExcludesEntirePlannedSeedSet,true);
 });
+test('the production engine patch repairs the independently reproduced ordinary-cube cache defect',()=>{
+ const r=read('../docs/live-cache-context-validation.json');
+ for(const [file,key] of [['../engine/source/checker-context-bg8.patch','patchSHA256'],['../scripts/validate-live-cache-context.py','scriptSHA256'],['../engine/source/gnubg-core-955555c-bg7.tar.gz','sourceArchiveSHA256']])assert.equal(hash(fs.readFileSync(new URL(file,import.meta.url))),r[key]);
+ assert.equal(r.cases.length,4);
+ for(const c of r.cases){
+  if(c.cacheContext){assert.equal(c.incorrectActualHits,0);assert.equal(c.incorrectReplayQueries,0);}
+  else{assert.ok(c.incorrectActualHits>0);assert.ok(c.maxActualError>.001);}
+ }
+});
 test('historical source fallback still rejects incorrect hashes and missing archived inputs',()=>{
  execFileSync('python3',['-c',`import importlib.util,pathlib,json
 s=importlib.util.spec_from_file_location('a',pathlib.Path('backgammon/scripts/summarize-fullgame-ablation.py'));m=importlib.util.module_from_spec(s);s.loader.exec_module(m)

@@ -1,0 +1,61 @@
+--- a/src/eval.c
++++ b/src/eval.c
+@@ -2151,6 +2151,33 @@
+     }
+ 
+     return iKey;
++}
++
++/* A continuation's checker decisions use pciMove, which may differ from the
++ * counterfactual cube being valued. Retain that context in money cache keys.
++ * Match keys have no spare score fields: do not cache incompatible policies. */
++static int
++CheckerPolicyCacheKey(const evalcontext *ec,int plies,const cubeinfo *branch,const cubeinfo *policy)
++{
++    int key=EvalKey(ec,plies,branch,TRUE);
++    if(plies>0 && !branch->nMatchTo) {
++        key ^= (policy->fCubeOwner<0?2:policy->fCubeOwner==policy->fMove)<<7;
++        key ^= policy->fJacoby<<9;
++        key ^= policy->fBeavers<<10;
++        key ^= LogCube(policy->nCube)<<11;
++        key ^= policy->fMove<<16;
++    }
++    return key;
++}
++static int
++CanCacheCheckerPolicy(const cubeinfo *branch,const cubeinfo *policy,int plies)
++{
++    if(!plies || !branch->nMatchTo)return 1;
++    return branch->nCube==policy->nCube && branch->fCubeOwner==policy->fCubeOwner &&
++        branch->fMove==policy->fMove && branch->nMatchTo==policy->nMatchTo &&
++        branch->anScore[0]==policy->anScore[0] && branch->anScore[1]==policy->anScore[1] &&
++        branch->fCrawford==policy->fCrawford && branch->fJacoby==policy->fJacoby &&
++        branch->fBeavers==policy->fBeavers && branch->bgv==policy->bgv;
+ }
+ 
+ extern int
+@@ -5815,7 +5842,8 @@
+             continue;
+         }
+ 
+-        ec.nEvalContext = EvalKey(pec, nPlies, &aciCubePos[ici], TRUE);
++        if(!CanCacheCheckerPolicy(&aciCubePos[ici],pciMove,nPlies)) {fAll=FALSE;break;}
++        ec.nEvalContext = CheckerPolicyCacheKey(pec, nPlies, &aciCubePos[ici], pciMove);
+ 
+         if (CacheLookup(&cEval, &ec, arOutput, arCubeful + ici) != CACHEHIT) {
+             fAll = FALSE;
+@@ -5836,12 +5864,12 @@
+         if (!fTop) {
+ 
+             for (ici = 0; ici < cci; ++ici) {
+-                if (aciCubePos[ici].nCube < 0)
++                if (aciCubePos[ici].nCube < 0 || !CanCacheCheckerPolicy(&aciCubePos[ici],pciMove,nPlies))
+                     continue;
+ 
+                 memcpy(ec.ar, arOutput, sizeof(float) * NUM_OUTPUTS);
+                 ec.ar[5] = arCubeful[ici]; /* Cubeful equity stored in slot 5 */
+-                ec.nEvalContext = EvalKey(pec, nPlies, &aciCubePos[ici], TRUE);
++                ec.nEvalContext = CheckerPolicyCacheKey(pec, nPlies, &aciCubePos[ici], pciMove);
+ 
+                 CacheAdd(&cEval, &ec, GetHashKey(cEval.hashMask, &ec));
+             }
