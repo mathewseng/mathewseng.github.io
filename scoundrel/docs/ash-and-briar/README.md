@@ -1,6 +1,8 @@
 # Ash & Briar
 
-The selected Scoundrel direction, revised on 2026-10-22 after reviewing official Runeterra illustrations. This catalog has 44 distinct names and 24 study images for 16 cards. The eight newest paintings revise the latest sample pair from each suit. The playable deck has not been changed.
+The selected Scoundrel direction, developed on 2026-10-22 after reviewing official Runeterra illustrations. The complete 44-card production deck is now used by the game and the [public Collection page](https://mathewseng.github.io/scoundrel/gallery/). Exact final prompts and hashes are in [the release manifest](../../art-prompts.json).
+
+This archive preserves the 44-name design set and 24 earlier study images for 16 cards, including the eight approved color-story paintings retained in the final deck. New production illustrations are in `../../assets/cards/`.
 
 ## Current art direction
 

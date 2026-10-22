@@ -32,19 +32,27 @@ last-card-at-20 rule, even when that potion did not add health.
 
 ## Artwork and theme
 
-`catalog.js` defines 44 unique names, identities, scenes and flavor texts.
-Spades are the volcanic **Cinderkin**; clubs are the oceanic **Tideborn**.
-Their creatures, scouts, artisans, spellcasters and elders vary in anatomy,
-scale, expression, pose, setting and palette. Every monster, weapon,
-and potion has its own WebP in `assets/cards/`. These are independently
-generated illustrations, not recolors or crops of one shared portrait. The
-dungeon background is `assets/dungeon.webp`. Original prompts and tool
-provenance are in `art-prompts.json`; all were made with the built-in image
-generation tool, then compressed and downsampled with `cwebp`. Responsive
-images select between 320px thumbnails and 640px full illustrations. The
-collection loads art lazily; its full-art viewer shows each card's name, faction/type and value.
-The [art direction](docs/art-direction.md) records the original faction design
-and the user's Runeterra/Hearthstone composition references.
+`catalog.js` defines the 44 distinct names, roles, scenes and flavor texts shared
+by the game and `/scoundrel/gallery/`. Spades are slate-and-charcoal **Stonekin**;
+clubs are green **Treefolk**. Diamonds are nine different blue-steel weapon types,
+and hearts span nine red healing-liquid shades, from rose and coral to garnet.
+Each illustration has its own silhouette, scene, local colors and lighting.
+
+Every card has an independently generated WebP in `assets/cards/`, with 960px
+full illustrations and 320px responsive thumbnails. The eight approved color-story
+samples are part of the final set; the other 36 were generated for the release.
+Exact successful prompts, references, provenance and asset hashes are recorded
+in `art-prompts.json`. Images use the built-in generation tool and proportional
+`cwebp` compression. The dungeon background remains `assets/dungeon.webp`.
+The [art direction](docs/art-direction.md) records the shared visual language.
+
+The dedicated **Collection** page has all 44 cards, suit filters, name/role search,
+shareable card links, a full-art viewer and navigation within the filtered set.
+Arrow keys, previous/next buttons and touch swipes browse the viewer; Escape closes
+it and returns focus. Pointer movement tilts cards gently and moves a soft light.
+Entrance and viewer transitions, tilt and light effects respect reduced motion.
+Images load lazily, with neighboring viewer artwork prefetched. The game retains
+its compact in-game collection and links to the full page.
 
 The requested fantasy value seals intentionally replace the site’s usual
 four-color playing-card faces on this page. Shared site tokens/chrome remain
@@ -155,9 +163,10 @@ node --test scoundrel/tests/*.test.cjs
 sh scripts/assemble-site.sh _site
 node scoundrel/tests/browser.cjs
 node scoundrel/tests/responsive.cjs
+node scoundrel/tests/gallery.cjs
 # With local WebKit installed, also check mobile Safari's rendering engine:
 SCOUNDREL_BROWSERS=chromium,webkit node scoundrel/tests/responsive.cjs
-SHELL_PAGES=/,/scoundrel/,/scoundrel/reports/ node scripts/shell-browser.cjs
+SHELL_PAGES=/,/scoundrel/,/scoundrel/gallery/,/scoundrel/reports/ node scripts/shell-browser.cjs
 ```
 
 Tests compare both solvers against an independent exhaustive search
@@ -170,8 +179,8 @@ The responsive check measures actual text bounds for all 44 names, verifies
 touch targets and both combat actions, and exercises the art viewer, enlarged
 text and phone EV rows across ten desktop/phone viewport sizes.
 
-Hearts and health use red, diamond weapons use blue, club Tideborn use green,
-and spade Cinderkin use orange-gold. Card labels, number seals and item actions
+Hearts and health use red, diamond weapons use blue, club Treefolk use green,
+and spade Stonekin use slate. Card labels, number seals and item actions
 share a black surface with light suit-colored text and borders. These semantic
 colors stay consistent across all atmosphere settings. UI copy is limited
 to names, status, actions, rules and analysis; flavor lore remains in the catalog

@@ -1,7 +1,7 @@
 {
   "edition": "Ash & Briar",
   "date": "2026-10-22",
-  "status": "Proposed names for all 44 cards; 24 study illustrations for 16 distinct cards, including eight preferred color-story revisions. Not applied to the live deck.",
+  "status": "Historical study catalog. All 44 production illustrations, names and roles are now in ../../catalog.js, with exact successful release prompts in ../../art-prompts.json.",
   "generator": "Built-in image_gen tool",
   "reference": "../palette-concepts/ash-and-briar.png",
   "cards": [
@@ -596,5 +596,6 @@
       "url": "https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01FR045-full.png",
       "observation": "Cold environment contrasts with warm brown fur and burgundy materials."
     }
-  ]
+  ],
+  "productionGallery": "/scoundrel/gallery/"
 }

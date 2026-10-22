@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" data-family="blackjack">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Explore all 44 illustrated Scoundrel cards: the Stonekin, Treefolk, weapons and healing potions of Ash & Briar." />
+  <title>Ash &amp; Briar · The Scoundrel collection</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+  <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+  <link rel="stylesheet" href="styles.css?v=20261022-ash" />
+  <link rel="preload" href="../assets/cinzel.ttf" as="font" type="font/ttf" crossorigin />
+  <script src="../engine.js?v=20261022-5" defer></script>
+  <script src="../catalog.js?v=20261022-ash" defer></script>
+  <script src="app.js?v=20261022-ash" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to collection</a>
+  <div class="collection-shell">
+    <header class="topbar collection-topbar">
+      <a class="wordmark" href="../">Scoundrel<span>A solo dungeon crawl</span></a>
+      <nav aria-label="Scoundrel"><a href="../">The dungeon</a><a href="./" aria-current="page">Collection</a><a href="../reports/">Reports</a></nav>
+      <a class="play-link" href="../">Enter the dungeon <span aria-hidden="true">↗</span></a>
+    </header>
+    <main id="main" tabindex="-1">
+      <section class="collection-heading" aria-labelledby="collection-title">
+        <div><p class="eyebrow">The illustrated card collection</p><h1 id="collection-title">Ash <i>&amp;</i> Briar</h1></div>
+        <p class="collection-intro">Two ancient peoples.<br />Nine weapons. Nine chances to heal.</p>
+      </section>
+      <div class="collection-tools">
+        <div class="suit-filters" role="group" aria-label="Filter by suit">
+          <button type="button" data-filter="all" aria-pressed="true">All cards <span>44</span></button>
+          <button type="button" data-filter="s" aria-pressed="false"><b aria-hidden="true">♠</b> Stonekin <span>13</span></button>
+          <button type="button" data-filter="c" aria-pressed="false"><b aria-hidden="true">♣</b> Treefolk <span>13</span></button>
+          <button type="button" data-filter="d" aria-pressed="false"><b aria-hidden="true">♦</b> Weapons <span>9</span></button>
+          <button type="button" data-filter="h" aria-pressed="false"><b aria-hidden="true">♥</b> Potions <span>9</span></button>
+        </div>
+        <label class="search-field"><span class="sr-only">Search cards</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="card-search" type="search" placeholder="Find a card…" autocomplete="off" /></label>
+      </div>
+      <div class="collection-status"><p id="result-count" role="status" aria-live="polite">44 cards</p><span>Choose a card to explore</span></div>
+      <section id="collection-grid" class="collection-grid" aria-label="Card collection"></section>
+      <div class="empty-state" id="empty-state" hidden><h2>No cards found</h2><p>Try another name, role or suit.</p><button type="button" id="reset-filters">Show all cards</button></div>
+      <noscript><p>Enable JavaScript to browse the collection. <a href="../">Return to Scoundrel</a>.</p></noscript>
+    </main>
+    <footer class="collection-footer"><span>44 encounters · Ash &amp; Briar</span><a href="../">Back to the dungeon <span aria-hidden="true">↗</span></a></footer>
+  </div>
+  <dialog id="card-viewer" class="card-viewer" aria-labelledby="viewer-name" aria-describedby="viewer-lore">
+    <button type="button" class="viewer-close round-control" id="close-viewer" aria-label="Close card viewer">×</button>
+    <div class="viewer-art"><img id="viewer-image" src="" alt="" width="960" height="1200" /><span class="viewer-seal" id="viewer-seal" aria-hidden="true"></span></div>
+    <div class="viewer-information">
+      <p class="eyebrow" id="viewer-category"></p><h2 id="viewer-name"></h2><p class="viewer-role" id="viewer-role"></p>
+      <p class="viewer-lore" id="viewer-lore"></p>
+      <dl class="viewer-facts"><div><dt id="viewer-value-label">Strength</dt><dd id="viewer-value"></dd></div><div><dt>Suit</dt><dd id="viewer-suit"></dd></div></dl>
+      <p class="viewer-rule" id="viewer-rule"></p>
+      <div class="viewer-navigation"><button type="button" class="round-control" id="previous-card" aria-label="Previous card">←</button><span id="viewer-position" aria-live="polite"></span><button type="button" class="round-control" id="next-card" aria-label="Next card">→</button></div>
+      <a id="download-art" class="art-link" href="" target="_blank" rel="noopener">Open full artwork <span aria-hidden="true">↗</span></a>
+      <p class="viewer-shortcuts">← → Browse <span>Esc Close</span></p>
+    </div>
+  </dialog>
+</body>
+</html>
