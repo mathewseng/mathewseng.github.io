@@ -9,11 +9,27 @@ test('worker captures snapshots and acknowledges work before completing its arch
   let key,finished=false;
   const data=work(1),p=writer.save(data,{history:true,stored:k=>key=k}).then(()=>finished=true);
   data.game.events[0].n=2;
-  assert.equal(sent[0].snapshot.game.events[0].n,1);
+  assert.equal(JSON.parse(sent[0].payload).game.events[0].n,1);
+  assert.equal(typeof sent[0].payload,'string','large game objects are expanded in the worker');
   worker.onmessage({data:{type:'stored',id:1,key:'saved-signature'}});
   assert.equal(key,'saved-signature'); assert.equal(finished,false);
   worker.onmessage({data:{type:'done',id:1}}); await p;
   assert.equal(writer.pending.size,0);
+});
+test('transport failure preserves grades, drafts and takeback branches in the captured save',async()=>{
+  const original={...work(1),feedback:{result:{equity:-.002,probabilities:[.5,.1,0,.2,0]}},
+    draft:[{from:5,to:'off',die:6}],game:{id:'match',events:[{actor:0,action:{type:'move',steps:[]},
+      evaluation:{result:{equity:.123}},initialDecision:{action:{type:'move',steps:[]}}}],
+      takebacks:[{prefix:[],events:[{action:{type:'roll',dice:[6,1]}}]}]}};
+  const expected=structuredClone(original);let written,signature;
+  const writer=new ProgressWriter({workerFactory:()=>({postMessage(){throw Error('transport');},terminate(){}}),
+    write:async(snapshot,history,stored,key)=>{written=snapshot;signature=key;}});
+  const pending=writer.save(original,{history:true});
+  original.game.events[0].evaluation.result.equity=99;
+  original.draft.length=0;original.game.takebacks.length=0;
+  await pending;
+  assert.deepEqual(written,expected);
+  assert.equal(signature,JSON.stringify(expected));
 });
 test('worker load/crash failure retries exact snapshots in order, then keeps using fallback',async()=>{
   const worker={postMessage(){},terminate(){this.terminated=true;}};

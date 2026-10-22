@@ -464,3 +464,23 @@ BG_MOBILE_PERF=1 BG_BENCH_TURNS=2 BG_MODULES=play-latency node backgammon/tests/
 `BG_SITE_ROOT` and `BG_TEST_OUT` allow an independent baseline site and report folder.
 Timing is reported separately from deterministic regression assertions about node
 reuse, input behavior, saved-state ordering, worker failure and replay correctness.
+
+`tests/mobile-fullgame.cjs` plays a complete computer game using real touch taps,
+Auto analysis, seeded application rolls, full motion and isolated browser storage.
+It records tap-to-frame timing, roll/confirm/bearoff actions, animation stalls and
+engine requests, then independently replays the saved result. History is exported
+only after measurement so automation serialization cannot inflate frame stalls.
+Run it against an assembled site with `BG_MODULES=mobile-fullgame`, or live:
+
+```sh
+BG_BASE_URL=https://mathewseng.github.io BG_BROWSER=webkit node backgammon/tests/mobile-fullgame.cjs
+BG_BROWSER=chromium BG_CPU_RATE=4 BG_PROFILE=1 node backgammon/tests/mobile-fullgame.cjs
+```
+
+Set `BG_EXPECT_RELEASE` to the deployed offline-manifest hash to assert the page
+loaded the intended release. `BG_TEST_OUT` keeps each run's report and screenshot.
+These are desktop browser emulations; CPU throttling is a stress test, not an
+iPhone chipset simulation. Completed-turn validation checks each submitted step
+directly when every die is used; partial turns still use exhaustive maximum-use
+and higher-die validation. Save snapshots are captured once as immutable JSON,
+expanded in the worker, and retained unchanged for ordered crash recovery.

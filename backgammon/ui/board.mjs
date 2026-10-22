@@ -1269,12 +1269,14 @@ export class Board {
     sound.play("roll");
     if (this.reducedMotion() || document.hidden) return;
     this.diceSettledAt = performance.now() + 740;
-    this.svg.querySelectorAll(".board-die").forEach((die, i) => {
+    const faces = [...this.svg.querySelectorAll(".board-die")].map(die => {
+      const face = die.querySelector(".board-die-face");
+      return {face, restingTransform:getComputedStyle(face).transform};
+    });
+    faces.forEach(({face, restingTransform}, i) => {
       // The outer SVG transform fixes the die's location. Animate the face inside
       // it, preserving focus/hit targets and displaying only the committed value.
-      const face = die.querySelector(".board-die-face");
       // Land at the selected die's raised resting pose, without a final snap.
-      const restingTransform = getComputedStyle(face).transform;
       const sign = i % 2 ? 1 : -1;
       const animation = face.animate(
         [

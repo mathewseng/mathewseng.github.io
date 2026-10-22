@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { clone } from './rules.mjs';
 import { put, saveMatchHistory } from './storage.mjs';
 
 // Shared by the worker and its fallback. Preserve the existing work record,
 // archive merging and annotations, and acknowledge work before archiving it.
-export async function writeProgress(snapshot, history, stored) {
+export async function writeProgress(snapshot, history, stored, signature = JSON.stringify(snapshot)) {
   await put('work', snapshot);
-  stored(JSON.stringify(snapshot));
+  stored(signature);
   if (history) await saveMatchHistory(snapshot.game, snapshot.game.names, snapshot.game.config.mode);
 }
 
@@ -22,7 +21,7 @@ export class ProgressWriter {
   fallback(entry) {
     this.fallbackQueue = this.fallbackQueue.catch(() => {}).then(async () => {
       try {
-        await this.write(entry.snapshot, entry.history, entry.stored);
+        await this.write(JSON.parse(entry.payload), entry.history, entry.stored, entry.payload);
         entry.resolve();
       } catch (error) { entry.reject(error); }
       finally { this.pending.delete(entry.id); }
@@ -57,15 +56,17 @@ export class ProgressWriter {
     } catch { this.failed(); }
   }
   save(work, {history = false, stored = () => {}} = {}) {
-    // Retain one independent copy for crash recovery. Serialization, IDB work,
-    // archive validation/merging and the recovery signature run off the UI thread.
-    const snapshot = clone(work), id = ++this.serial;
+    // Work records use the same JSON format as exported/restored matches.
+    // Capture that immutable representation once. A structuredClone followed
+    // by postMessage used to copy the entire growing history twice on every
+    // tap; the worker now expands it, and crash recovery keeps the exact bytes.
+    const payload = JSON.stringify(work), id = ++this.serial;
     this.start();
     return new Promise((resolve, reject) => {
-      const entry = {id,snapshot,history,stored,resolve,reject};
+      const entry = {id,payload,history,stored,resolve,reject};
       this.pending.set(id,entry);
       if (this.unavailable) this.fallback(entry);
-      else try { this.worker.postMessage({id,snapshot,history}); }
+      else try { this.worker.postMessage({id,payload,history}); }
       catch { this.failed(); }
     });
   }

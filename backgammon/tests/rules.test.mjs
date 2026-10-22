@@ -130,6 +130,35 @@ test("equivalent legal paths deduplicate only resulting positions", () => {
   for (const p of legalPaths(s))
     assert.equal(boardKey(commitTurn(s, p.steps)), boardKey(p.state));
 });
+test("direct turn validation agrees with exhaustive paths for doubles, bar entry, contact and bearoff", () => {
+  const bases = [rolled(),
+    position([[5,4],[3,4],[2,2],[1,2],[0,3],[23,-15]]),
+    position([[5,13],[23,-2],[21,-2],[18,-2],[12,-9]], [2,0]),
+    position([[1,1],[23,-15]], [0,0])];
+  let checked=0;
+  for (const base of bases) for (const turn of [0,1]) for (let hi=1;hi<=6;hi++) for(let lo=1;lo<=hi;lo++) {
+    const s={...structuredClone(base),turn,dice:[hi,lo]};
+    if(turn){s.points.reverse();s.points=s.points.map(n=>-n);s.bar.reverse();s.off.reverse();}
+    const before=structuredClone(s),paths=legalPaths(s),keys=new Set(paths.map(p=>JSON.stringify(p.steps)));
+    const samples=paths.filter((_,i)=>i===paths.length-1||i%Math.max(1,Math.floor(paths.length/5))===0);
+    for(const path of samples){
+      assert.deepEqual(commitTurn(s,path.steps),path.state);
+      const bad=path.steps.length ? [
+        path.steps.slice(0,-1),
+        [{...path.steps[0],die:7},...path.steps.slice(1)],
+        [{...path.steps[0],from:'off'},...path.steps.slice(1)],
+        [...path.steps,{...path.steps[0]}],
+      ] : [[{from:0,to:'off',die:hi}]];
+      for(const steps of bad){
+        if(keys.has(JSON.stringify(steps))) assert.deepEqual(commitTurn(s,steps),paths.find(p=>JSON.stringify(p.steps)===JSON.stringify(steps)).state);
+        else assert.throws(()=>commitTurn(s,steps));
+        checked++;
+      }
+    }
+    assert.deepEqual(s,before,'validation never mutates the submitted position');
+  }
+  assert.ok(checked>1000);
+});
 test("gammon, backgammon, single and cube ownership/redouble/pass", () => {
   let s = position([[23, -15]], undefined, {
     off: [15, 0],
