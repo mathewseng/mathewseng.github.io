@@ -10,6 +10,8 @@ module.exports=async function endedUndo(browser,base,out,name){
     try{
       await page.goto(base+'/backgammon/play/');await ready();
       for(const mode of ['computer','local']){
+        // Preserve the previous page's checkpoint before installing a new mode.
+        await page.goto(base+'/backgammon/');await ready();
         await page.evaluate(async mode=>{
           const {initialState,legalTurns}=await import('/backgammon/core/rules.mjs'),{playAction}=await import('/backgammon/core/table.mjs'),{put,saveSettings}=await import('/backgammon/core/storage.mjs'),{localConfig}=await import('/backgammon/core/play-session.mjs');
           const points=Array(24).fill(0);points[0]=1;points[23]=-15;
@@ -17,7 +19,7 @@ module.exports=async function endedUndo(browser,base,out,name){
           const won=playAction({id:'ended-undo-'+mode,started:true,state:s,initial:s,events:[],names:['You','Opponent'],config:localConfig({mode,humanSide:0,tutor:false,warning:false,strength:'quick'})},{type:'move',steps:legalTurns(s)[0].steps});
           saveSettings({motion:'reduce',analysisAhead:false,equityBar:false});await put('work',{id:'play',game:won,draft:[]});
         },mode);
-        await page.reload();await ready();await tap(page.locator('#resume-match'));
+        await page.goto(base+'/backgammon/play/');await ready();await tap(page.locator('#resume-match'));
         const won=(await read()).game;
         assert.equal(won.state.phase,'over');assert.equal(await page.locator('#undo-turn').isEnabled(),true);
         await tap(page.locator('#undo-turn'));

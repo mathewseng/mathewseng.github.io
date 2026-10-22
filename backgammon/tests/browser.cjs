@@ -611,6 +611,9 @@ const server = http.createServer((req, res) => {
         (report.replyFullgamePrecision ||= []).push(
           await run("reply-fullgame-report", browser, base, out, browserName),
         );
+        (report.correctedRolloutStudy ||= []).push(
+          await run("filtered-rollout-report", browser, base, out, browserName),
+        );
         (report.cubePolicyStudy ||= []).push(
           await run("cube-policy-report", browser, base, out, browserName),
         );
@@ -649,6 +652,12 @@ const server = http.createServer((req, res) => {
         );
         (report.researchScreen ||= []).push(
           {browser: browserName, cases: await run("research-screen", browser, base, out, browserName)},
+        );
+        (report.checkerVerification ||= []).push(
+          {browser: browserName, result: await run("verify-search", browser, base)},
+        );
+        (report.verifyUI ||= []).push(
+          await run("verify-ui", browser, base, out, browserName),
         );
         (report.engineCacheContext ||= []).push(
           {browser: browserName, cases: await run("engine-cache-context", browser, base)},

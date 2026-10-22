@@ -9,25 +9,32 @@ module.exports=async function(browser,base,out,name){
    const {EngineClient}=await import('/backgammon/engine/client.mjs'),r=await import('/backgammon/core/rules.mjs');
    const {shareURL}=await import('/backgammon/core/xgid.mjs');
    const index=await(await fetch('/backgammon/engine/opening-book-data/rollout/index.json')).json();
-   const client=new EngineClient({workerFactory:()=>{throw Error('Stored rollout started WASM');}}),states=[];
+   const {OpeningBook}=await import('/backgammon/engine/opening-book.mjs');
+   const {rolloutBookResult,ROLLOUT_BOOK_LIVE_POLICY_REVISION}=await import('/backgammon/engine/rollout-book.mjs');
+   if(ROLLOUT_BOOK_LIVE_POLICY_REVISION!==null)throw Error('Affected rollout policy became live');
+   const client=new EngineClient({workerFactory:()=>{throw Error('Stored direct fallback started WASM');}});
+   const direct=new OpeningBook({preferDeep:true}),states=[],depths={},screening={full:0,screened:0};
    try{
     for(const [board,rolls]of Object.entries(index.entries))for(const [roll,entry]of Object.entries(rolls)){
      const v=board.split(',').map(Number),s={...r.initialState({matchLength:0,phase:'move',dice:[...roll].map(Number),rules:{cube:true,jacoby:true,immediateRedoubles:0}}),points:v.slice(0,24),bar:v.slice(24,26),off:v.slice(26)};
-     const result=await client.analyze(s,{preset:'auto'});
-     if(result.book?.id!==index.id||result.method!=='rollout'||result.settings.trials!==entry.samples||result.candidates.some(c=>!Number.isFinite(c.standardError)||c.samples!==entry.samples))throw Error('Stored source/uncertainty changed');
+     const historical=rolloutBookResult(s,entry,index,'auto');
+     if(historical.method!=='rollout'||historical.settings.trials!==entry.samples||historical.candidates.some(c=>!Number.isFinite(c.standardError)))throw Error('Historical source is no longer parsable');
+     const result=await client.analyze(s,{preset:'auto'}),expected=await direct.lookup(s,{preset:'auto',kind:'checker'});
+     if(result.method==='rollout'||result.book?.id===index.id||result.status!=='complete'||![3,5].includes(result.settings.plies)||result.settings.trials||result.candidates.some(c=>c.standardError!==undefined||c.samples!==undefined))throw Error('Retired policy leaked into live analysis');
+     if(result.book?.id!==expected.book.id||result.settings.plies!==expected.settings.plies||JSON.stringify(result.candidates)!==JSON.stringify(expected.candidates))throw Error('Fallback differs from direct tree evaluations');
+     const total=r.legalTurns(s).length;
+     if(result.screening){if(result.screening.total!==total||result.screening.finalists!==result.candidates.length)throw Error('Misleading screened coverage');screening.screened++;}
+     else{if(result.candidates.length!==total)throw Error('Incomplete unscreened comparison');screening.full++;}
      const actual=result.candidates.at(-1),grade=await client.analyze(s,{preset:'auto',submitted:actual.steps});
-     if(grade.method!=='rollout'||grade.actual.key!==actual.key||Math.abs(grade.error-(result.candidates[0].equity-actual.equity))>1e-9)throw Error('Mixed-method grade');
-     states.push(s);
+     if(grade.method==='rollout'||grade.settings.plies!==result.settings.plies||grade.actual.key!==actual.key||Math.abs(grade.error-(result.candidates[0].equity-actual.equity))>1e-9)throw Error('Mixed-method grade');
+     depths[result.settings.plies]=(depths[result.settings.plies]||0)+1;states.push(s);
     }
-    const hint=await client.analyze(states[0],{preset:'auto'}),missing=r.legalTurns(states[0]).find(t=>!hint.candidates.some(c=>c.key===t.key));
-    if(!missing)throw Error('Expected a screened-out opening alternative');
-    const fallback=await client.analyze(states[0],{preset:'auto',submitted:missing.steps});
-    if(fallback.method==='rollout'||fallback.settings.plies!==5||!fallback.actual||fallback.candidates.length!==r.legalTurns(states[0]).length)throw Error('Unlisted opening must get one full five-ply comparison');
-    if(Math.abs(fallback.error-(fallback.candidates[0].equity-fallback.actual.equity))>1e-9)throw Error('Mixed-method fallback loss');
-    return {id:index.id,positions:states.length,samples:index.provenance.positions,states:[states[0],states.at(-1)],solverURL:shareURL(states[0]),solverPolicy:hint.settings.name};
+    const hint=await client.analyze(states[0],{preset:'auto'});
+    return {id:index.id,positions:states.length,samples:index.provenance.positions,depths,screening,states,solverURL:shareURL(states[0]),solverPolicy:hint.settings.name};
    }finally{client.destroy();}
   });
-  assert.equal(measured.positions,measured.samples);
+  assert.equal(measured.positions,measured.samples);assert.equal(measured.positions,66);
+  assert.deepEqual(measured.depths,{5:66});assert.deepEqual(measured.screening,{full:15,screened:51});
   for(const width of [1366,390]){
    await page.setViewportSize({width,height:900});await page.goto(measured.solverURL);
    await page.waitForFunction(policy=>document.querySelector('#analyze')?.textContent==='Analyze'&&document.body.textContent.includes(policy),measured.solverPolicy);
@@ -51,14 +58,40 @@ module.exports=async function(browser,base,out,name){
   await page.locator('#rollout-accuracy').screenshot({path:path.join(out,`${name}-rollout-comparison-mobile.png`)});
   await page.setViewportSize({width:1366,height:1000});
   await page.locator('#rollout-accuracy').screenshot({path:path.join(out,`${name}-rollout-comparison-desktop.png`)});
+  assert.equal(requests.filter(u=>/\/engine\/vendor\/|\/engine\/worker/.test(u)).length,0,'stored fallbacks never start WASM');
+  // Missing deep assets use three-ply tables where available; the two absent
+  // positions receive a complete real live grade instead of retired estimates.
+  await context.route('**/opening-book-data/deep/**',route=>route.abort());
   await context.route('**/opening-book-data/rollout/index.json',route=>route.abort());
-  const missing=await page.evaluate(async state=>{
+  const fallback=await page.evaluate(async states=>{
    const {EngineClient}=await import('/backgammon/engine/client.mjs');
-   const c=new EngineClient({workerFactory:()=>{throw Error('Missing rollout book started WASM despite five-ply coverage');}});
-   try{const r=await c.analyze(state,{preset:'auto'});return {plies:r.settings.plies,method:r.method||'tree'};}finally{c.destroy();}
-  },measured.states[0]);
-  assert.equal(missing.method,'tree');assert.equal(missing.plies,5);
-  assert.equal(requests.filter(u=>/\/engine\/vendor\/|\/engine\/worker/.test(u)).length,0);
+   const {OpeningBook}=await import('/backgammon/engine/opening-book.mjs');
+   const c=new EngineClient({workerFactory:()=>{throw Error('Missing deep book started WASM despite three-ply coverage');}}),direct=new OpeningBook();
+   try{let count=0,liveCount=0;for(const state of states){
+    const expected=await direct.lookup(state,{preset:'auto',kind:'checker'});
+    if(!expected){
+     const live=new EngineClient();
+     try{const result=await live.analyze(state,{preset:'standard'}),{legalTurns}=await import('/backgammon/core/rules.mjs');
+      if(result.book||result.method==='rollout'||result.settings.plies!==1||!live.worker||result.candidates.length!==legalTurns(state).length)throw Error('Absent book did not receive a complete live grade');
+      const actual=result.candidates.at(-1),grade=await live.analyze(state,{preset:'standard',submitted:actual.steps});
+      if(grade.actual.key!==actual.key||Math.abs(grade.error-(result.candidates[0].equity-actual.equity))>1e-9)throw Error('Mixed live fallback grade');
+      liveCount++;
+     }finally{live.destroy();}
+     continue;
+    }
+    const actual=await c.analyze(state,{preset:'auto'});
+    if(actual.method==='rollout'||actual.settings.plies!==3||actual.book.id!==expected.book.id||JSON.stringify(actual.candidates)!==JSON.stringify(expected.candidates))throw Error('Wrong three-ply fallback');
+    count++;
+   }return {threePly:count,live:liveCount};}finally{c.destroy();}
+  },measured.states);
+  assert.deepEqual(fallback,{threePly:64,live:2});
+  await context.unroute('**/opening-book-data/deep/**');
+  await context.route('**/opening-book-data/xg/index.json',route=>route.abort());
+  await page.goto(base+'/backgammon/openings/');
+  await page.locator('#opening-method').filter({hasText:'GNUbg · 5 ply'}).waitFor();
+  assert.equal(await page.locator('.opening-interval').count(),0,'tree fallback must not invent sampling intervals');
+  assert.ok((await page.locator('#opening-position-note').textContent()).includes('GNUbg fallback · beavers off'));
+  assert.ok(requests.some(u=>/\/engine\/vendor\/|\/engine\/worker/.test(u)),'missing direct data exercises the real engine');
   assert.deepEqual(errors,[]);
  }finally{await context.close();}
  if(name==='chromium'){
@@ -69,12 +102,12 @@ module.exports=async function(browser,base,out,name){
    await tab.reload();
    await tab.waitForFunction(()=>!!navigator.serviceWorker.controller,{},{timeout:45000});
    const lookup=async states=>{
-    const {EngineClient}=await import('/backgammon/engine/client.mjs');const c=new EngineClient({workerFactory:()=>{throw Error('Offline stored rollout started WASM');}});
-    try{const rows=[];for(const s of states){const r=await c.analyze(s,{preset:'auto'});rows.push({id:r.book.id,move:r.candidates[0].key,se:r.candidates[0].standardError});}return rows;}finally{c.destroy();}
+    const {EngineClient}=await import('/backgammon/engine/client.mjs');const c=new EngineClient({workerFactory:()=>{throw Error('Offline direct fallback started WASM');}});
+    try{const rows=[];for(const s of states){const r=await c.analyze(s,{preset:'auto'});if(r.method==='rollout'||r.settings.plies!==5)throw Error('Offline source changed');rows.push({id:r.book.id,move:r.candidates[0].key,plies:r.settings.plies});}return rows;}finally{c.destroy();}
    };
    const online=await tab.evaluate(lookup,measured.states);await offline.setOffline(true);await tab.reload();
    assert.deepEqual(await tab.evaluate(lookup,measured.states),online);
   }finally{await offline.close();}
  }
- return {positions:measured.positions,id:measured.id,uncertainty:true,missingBookFallback:true,offline:name==='chromium'};
+ return {positions:measured.positions,id:measured.id,historicalParsable:true,retired:true,depths:measured.depths,screening:measured.screening,threePlyFallbackPositions:64,liveFallbackPositions:2,guideFallback:true,offline:name==='chromium'};
 };

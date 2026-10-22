@@ -8,13 +8,15 @@ module.exports=async function revisionWarning(browser,base){
   try{
     await page.goto(base+'/backgammon/play/');await ready();
     for(const loss of [.002,.0021,.003]){
+      // An active Play page saves on pagehide; navigate away before seeding.
+      await page.goto(base+'/backgammon/');await ready();
       await page.evaluate(async()=>{
         const {initialState,legalTurns,positionKey}=await import('/backgammon/core/rules.mjs'),{put,saveSettings}=await import('/backgammon/core/storage.mjs'),{localConfig}=await import('/backgammon/core/play-session.mjs');
         const state=initialState({phase:'move',dice:[4,1],matchLength:0});
         saveSettings({analysisAhead:false,motion:'reduce',equityBar:false});
         await put('work',{id:'play',game:{id:'warning-boundary',initial:state,state,events:[],started:true,names:['You','GNUbg'],config:localConfig({tutor:true,warning:true})},positionKey:positionKey(state),draft:legalTurns(state)[0].steps});
       });
-      await page.reload();await ready();
+      await page.goto(base+'/backgammon/play/');await ready();
       await page.evaluate(async loss=>{
         const {AnalysisPanel}=await import('/backgammon/ui/analysis.mjs'),{EngineClient}=await import('/backgammon/engine/client.mjs');
         const {legalTurns,notation,positionKey}=await import('/backgammon/core/rules.mjs');
@@ -50,13 +52,14 @@ module.exports=async function revisionWarning(browser,base){
     }
     // An unlisted candidate opens immediately, before its exact grade exists.
     for(const response of ['revise','confirm','complete','fail']) {
+      await page.goto(base+'/backgammon/');await ready();
       await page.evaluate(async()=>{
         const r=await import('/backgammon/core/rules.mjs'),st=await import('/backgammon/core/storage.mjs');
         const {localConfig}=await import('/backgammon/core/play-session.mjs');
         const state=r.initialState({phase:'move',dice:[4,1],matchLength:0});
         await st.put('work',{id:'play',game:{id:'pending-warning',initial:state,state,events:[],started:true,names:['You','GNUbg'],config:localConfig({tutor:true,warning:true})},positionKey:r.positionKey(state),draft:r.legalTurns(state)[0].steps});
       });
-      await page.reload();await ready();
+      await page.goto(base+'/backgammon/play/');await ready();
       await page.evaluate(async()=>{
         const {AnalysisPanel}=await import('/backgammon/ui/analysis.mjs'),{EngineClient}=await import('/backgammon/engine/client.mjs');
         EngineClient.prototype.analyze=()=>new Promise(()=>{});

@@ -1,0 +1,377 @@
+{
+  "cases": 180,
+  "scoredMoves": 1914,
+  "changes": [
+    {
+      "id": "contact-13-cubeless",
+      "prunedMove": [
+        {
+          "from": 21,
+          "to": 15,
+          "die": 6
+        },
+        {
+          "from": 15,
+          "to": 12,
+          "die": 3
+        }
+      ],
+      "unprunedMove": [
+        {
+          "from": 12,
+          "to": 9,
+          "die": 3
+        },
+        {
+          "from": 21,
+          "to": 15,
+          "die": 6
+        }
+      ],
+      "sameDepthGainUnpruned": 0.0021771200000000324,
+      "reverseLossPruned": 0.0010110100000000344,
+      "maxEquityDelta": 0.0031881300000000667
+    }
+  ],
+  "maxDifferences": [
+    [
+      0.04656701490000001,
+      "contact-18-money"
+    ],
+    [
+      0.02179032599999997,
+      "contact-8-cubeless"
+    ],
+    [
+      0.016373097000000003,
+      "race-1-match"
+    ],
+    [
+      0.014709354000000008,
+      "contact-18-cubeless"
+    ],
+    [
+      0.01407683000000004,
+      "contact-8-match"
+    ],
+    [
+      0.010727055400000005,
+      "contact-2-match"
+    ],
+    [
+      0.008758731200000001,
+      "contact-8-money"
+    ],
+    [
+      0.0076818620000000115,
+      "contact-0-match"
+    ],
+    [
+      0.007163941999999979,
+      "contact-4-money"
+    ],
+    [
+      0.006571382999999986,
+      "contact-19-money"
+    ]
+  ],
+  "cpu": {
+    "pruned": 6696.932,
+    "unpruned": 11010.175
+  },
+  "medianRatio": 1.376203819377571,
+  "referenceCoverage": 57,
+  "referenceMeanLoss": {
+    "pruned": 0.002810184912280702,
+    "unpruned": 0.0023467585964912284
+  },
+  "referenceChanges": [
+    {
+      "id": "contact-13-cubeless",
+      "pruned": 0.042907,
+      "unpruned": 0.0164917
+    }
+  ],
+  "schema": 1,
+  "recordedAt": "2026-10-22T20:14:06.442351+00:00",
+  "title": "Internal pruning: coverage, equity sensitivity, and native cost",
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg8-equivalent ordinary search",
+  "method": "Separate deterministic diagnostic, not XG/full-game validation. Frozen v2 rollout inputs/results unchanged. 60 previously unused GNUbg benchmark positions, 20 per class; 180 contexts. Single native timing samples with ordinary concurrent work. Historical rollout references are noisy and from the same engine family.",
+  "reference": {
+    "pruned": {
+      "positions": 60,
+      "referenceCoveredCandidates": 263,
+      "rootEqualWeightedMAE": 0.01928312881123889,
+      "rootEqualWeightedBias": 0.004936933405772219,
+      "rootEqualWeightedRMSE": 0.02919161743867009,
+      "selectedCoveredPositions": 57,
+      "selectedMeanRegret": 0.002810184912280702,
+      "selectedMeanAbsError": 0.019205690680701767,
+      "selectedMeanBias": 0.002772978045614037
+    },
+    "unpruned": {
+      "positions": 60,
+      "referenceCoveredCandidates": 263,
+      "rootEqualWeightedMAE": 0.019382861628430555,
+      "rootEqualWeightedBias": 0.004852036224874996,
+      "rootEqualWeightedRMSE": 0.029373644715101538,
+      "selectedCoveredPositions": 57,
+      "selectedMeanRegret": 0.0023467585964912284,
+      "selectedMeanAbsError": 0.019157739268596503,
+      "selectedMeanBias": 0.0021129654089473674
+    },
+    "pairedRootMAEChanges": {
+      "improved": 8,
+      "worse": 13,
+      "maxImprovement": [
+        0.0012607564999999599,
+        "crashed-0-cubeless"
+      ],
+      "maxWorsening": [
+        -0.002157759400000004,
+        "contact-8-cubeless"
+      ]
+    }
+  },
+  "research": {
+    "roots": 18,
+    "moves": 45,
+    "changes": [],
+    "totalCpuMs": {
+      "pruned": 32772.983,
+      "unpruned": 73718.19900000001
+    },
+    "medianCpuRatio": 1.8959554172182207,
+    "minCpuRatio": 1.20148867571548,
+    "maxCpuRatio": 2.749700712203502,
+    "maximumDifferences": [
+      [
+        0.004077909999999907,
+        "crashed-0-match"
+      ],
+      [
+        0.003595589999999982,
+        "crashed-0-cubeless"
+      ],
+      [
+        0.000702739999999924,
+        "contact-10-match"
+      ],
+      [
+        0.0006772879999999981,
+        "contact-10-cubeless"
+      ],
+      [
+        0.0002923009999999948,
+        "contact-0-match"
+      ]
+    ],
+    "maxCPU": {
+      "pruned": [
+        5904.841,
+        "contact-0-match"
+      ],
+      "unpruned": [
+        13234.57,
+        "contact-10-match"
+      ]
+    }
+  },
+  "validation": {
+    "schema": 1,
+    "cases": 36,
+    "maxDifference": 5.000000025123796e-09,
+    "zeroPlyPruningEquality": 18,
+    "results": [
+      {
+        "id": "contact-0-cubeless",
+        "depth": 0,
+        "maxDifference": 2.999999970665357e-09
+      },
+      {
+        "id": "contact-0-cubeless",
+        "depth": 2,
+        "maxDifference": 4.999999997368221e-09
+      },
+      {
+        "id": "contact-0-money",
+        "depth": 0,
+        "maxDifference": 2.999999970665357e-09
+      },
+      {
+        "id": "contact-0-money",
+        "depth": 2,
+        "maxDifference": 4.909999998595205e-09
+      },
+      {
+        "id": "contact-0-match",
+        "depth": 0,
+        "maxDifference": 3.999999997894577e-09
+      },
+      {
+        "id": "contact-0-match",
+        "depth": 2,
+        "maxDifference": 3.999999997894577e-09
+      },
+      {
+        "id": "contact-10-cubeless",
+        "depth": 0,
+        "maxDifference": 5.000000025123796e-09
+      },
+      {
+        "id": "contact-10-cubeless",
+        "depth": 2,
+        "maxDifference": 3.000000026176508e-09
+      },
+      {
+        "id": "contact-10-money",
+        "depth": 0,
+        "maxDifference": 5.000000025123796e-09
+      },
+      {
+        "id": "contact-10-money",
+        "depth": 2,
+        "maxDifference": 4.999999969612645e-09
+      },
+      {
+        "id": "contact-10-match",
+        "depth": 0,
+        "maxDifference": 5.000000025123796e-09
+      },
+      {
+        "id": "contact-10-match",
+        "depth": 2,
+        "maxDifference": 3.999999997894577e-09
+      },
+      {
+        "id": "race-0-cubeless",
+        "depth": 0,
+        "maxDifference": 2.889100000001124e-09
+      },
+      {
+        "id": "race-0-cubeless",
+        "depth": 2,
+        "maxDifference": 9.999999994736442e-10
+      },
+      {
+        "id": "race-0-money",
+        "depth": 0,
+        "maxDifference": 2.889100000001124e-09
+      },
+      {
+        "id": "race-0-money",
+        "depth": 2,
+        "maxDifference": 9.999999994736442e-10
+      },
+      {
+        "id": "race-0-match",
+        "depth": 0,
+        "maxDifference": 2.889100000001124e-09
+      },
+      {
+        "id": "race-0-match",
+        "depth": 2,
+        "maxDifference": 9.999999994736442e-10
+      },
+      {
+        "id": "race-10-cubeless",
+        "depth": 0,
+        "maxDifference": 3.999999997894577e-09
+      },
+      {
+        "id": "race-10-cubeless",
+        "depth": 2,
+        "maxDifference": 4.999999969612645e-09
+      },
+      {
+        "id": "race-10-money",
+        "depth": 0,
+        "maxDifference": 3.999999997894577e-09
+      },
+      {
+        "id": "race-10-money",
+        "depth": 2,
+        "maxDifference": 4.999999969612645e-09
+      },
+      {
+        "id": "race-10-match",
+        "depth": 0,
+        "maxDifference": 2.1624000000005673e-09
+      },
+      {
+        "id": "race-10-match",
+        "depth": 2,
+        "maxDifference": 3.999999997894577e-09
+      },
+      {
+        "id": "crashed-0-cubeless",
+        "depth": 0,
+        "maxDifference": 2.0000000544584395e-09
+      },
+      {
+        "id": "crashed-0-cubeless",
+        "depth": 2,
+        "maxDifference": 3.000000026176508e-09
+      },
+      {
+        "id": "crashed-0-money",
+        "depth": 0,
+        "maxDifference": 3.999999997894577e-09
+      },
+      {
+        "id": "crashed-0-money",
+        "depth": 2,
+        "maxDifference": 2.9999999151542056e-09
+      },
+      {
+        "id": "crashed-0-match",
+        "depth": 0,
+        "maxDifference": 2.0000000544584395e-09
+      },
+      {
+        "id": "crashed-0-match",
+        "depth": 2,
+        "maxDifference": 3.5500000001263687e-09
+      },
+      {
+        "id": "crashed-10-cubeless",
+        "depth": 0,
+        "maxDifference": 2.0000000544584395e-09
+      },
+      {
+        "id": "crashed-10-cubeless",
+        "depth": 2,
+        "maxDifference": 4.299999998430559e-09
+      },
+      {
+        "id": "crashed-10-money",
+        "depth": 0,
+        "maxDifference": 3.000000026176508e-09
+      },
+      {
+        "id": "crashed-10-money",
+        "depth": 2,
+        "maxDifference": 3.200000001091219e-09
+      },
+      {
+        "id": "crashed-10-match",
+        "depth": 0,
+        "maxDifference": 1.9999999989472883e-09
+      },
+      {
+        "id": "crashed-10-match",
+        "depth": 2,
+        "maxDifference": 3.999999997894577e-09
+      }
+    ]
+  },
+  "dataSHA256": "394eb530eb776296e16c1b087e1917b2c5ec8ae22eb01786363afaa7ae671250",
+  "dataFile": "internal-pruning-audit-data.json.gz",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "platform": "macOS-26.5.1-x86_64-i386-64bit-Mach-O",
+    "native": "arm64 NEON",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin"
+  },
+  "recommendation": "Do not change Auto or advertise XG parity. Optional manual unpruned Research can remove internal pruning approximations but is slower and has no demonstrated general EV improvement."
+}

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 export const ENGINE_VERSION =
-  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg8";
+  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg9";
 export const PRESETS = Object.freeze({
   quick: {
     name: "Quick",
@@ -46,6 +46,17 @@ export const PRESETS = Object.freeze({
     finalists: 4,
     threshold: 0.04,
   },
+  verify: {
+    name: "Verify · unpruned",
+    plies: 4,
+    cubeful: true,
+    pruning: false,
+    deterministic: true,
+    noise: 0,
+    finalists: 4,
+    threshold: 0.04,
+    requires: "unprunedChecker",
+  },
 });
 export const CAPABILITIES = {
   checker: true,
@@ -69,4 +80,4 @@ export const SEARCH_OPTIONS = Object.freeze([
     `Fixed ${value.plies} ply · ${value.name}`]),
 ]);
 export const searchName = key => key === "auto" ? "Auto · adaptive" : PRESETS[key]?.name || "Auto";
-export const SEARCH_DESCRIPTION = "Auto completes at least 2 ply, usually 3. Checker searches may reach 4 when a conservative cost estimate allows it; cube decisions stop at 3 because warm-cache timings cannot reliably predict their 4-ply cost. Deeper work stops above a 5-second estimate or for a substantial, stable lead. Fixed depths do not adapt. Matching money/Jacoby/beaver-on positions can use explicitly attributed published XG references. Other compatible book positions use validated precomputed rollouts with recorded checker/cube policies, then stored 5-ply openings/replies or historical 3-ply later turns (except Fixed 4). The result identifies its method and sampling uncertainty.";
+export const SEARCH_DESCRIPTION = "Auto completes at least 2 ply, usually 3. Checker searches may reach 4 when a conservative cost estimate allows it; cube decisions stop at 3 because warm-cache timings cannot reliably predict their 4-ply cost. Deeper work stops above a 5-second estimate or for a substantial, stable lead. Fixed depths do not adapt. Verify independently rescans Research's 4-ply checker finalists without internal pruning; it is slower and does not establish XG accuracy. Its cube analysis uses Research's normal pruning. Matching money/Jacoby/beaver-on positions can use explicitly attributed published XG references. Other compatible book positions use stored 5-ply openings/replies or historical 3-ply later turns (except Fixed 4 and Verify). Historical filtered rollout-book estimates are retired following a checker-selection correction. The result identifies its method and sampling uncertainty.";

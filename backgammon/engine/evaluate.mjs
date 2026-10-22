@@ -46,6 +46,9 @@ export function createEvaluator(module) {
     "number",
     "number",
   ]);
+  const unprunedChecker = typeof module._bg_score_config === "function";
+  const configurableScore = unprunedChecker ? module.cwrap("bg_score_config", "number",
+    ["string", "string", "number", "number", "number"]) : null;
   function call(fn, args) {
     const ptr = fn(...args);
     if (!ptr) throw new Error("GNUbg returned no result.");
@@ -62,8 +65,17 @@ export function createEvaluator(module) {
       module._free(ptr);
     }
   }
+  function scoreChecker(args, pruning = true) {
+    if (pruning) return call(score, args);
+    if (!configurableScore)
+      throw new Error("This engine does not support unpruned checker verification. Refresh the app to update it.");
+    const result = call(configurableScore, [...args, 0]);
+    if (result.pruning !== false)
+      throw new Error("GNUbg did not confirm unpruned checker verification.");
+    return result;
+  }
   return {
-    capabilities: CAPABILITIES,
+    capabilities: { ...CAPABILITIES, unprunedChecker },
     gradePrepared(s, prepared, submitted) {
       assertState(s);
       if (prepared?.engine!==ENGINE_VERSION || prepared.type!=='checker' ||
@@ -74,8 +86,8 @@ export function createEvaluator(module) {
       const result=structuredClone(prepared);
       let actual=result.candidates.find(c=>c.key===key);
       if (!actual) {
-        const scored=call(score,[toXGID(s),toXGID({...after,phase:'roll',dice:[]}),
-          prepared.settings.plies,Number(rulesOf(s).immediateRedoubles>0)]);
+        const scored=scoreChecker([toXGID(s),toXGID({...after,phase:'roll',dice:[]}),
+          prepared.settings.plies,Number(rulesOf(s).immediateRedoubles>0)], prepared.settings.pruning !== false);
         actual={...scored,key,steps:structuredClone(submitted),notation:notation(submitted,s.turn)};
         result.candidates.push(actual);
         result.candidates.sort((a,b)=>b.equity-a.equity);
@@ -126,6 +138,8 @@ export function createEvaluator(module) {
       assertState(s);
       const settings = PRESETS[preset];
       if (!settings) throw new Error("Unknown evaluation preset.");
+      if (kind === "checker" && settings.requires === "unprunedChecker" && !unprunedChecker)
+        throw new Error("This engine does not support unpruned checker verification. Refresh the app to update it.");
       const started = performance.now(),
         xgid = toXGID(
           offerDepth(s) ? { ...s, phase: "roll", pending: null } : s,
@@ -133,7 +147,12 @@ export function createEvaluator(module) {
         beavers = Number(rulesOf(s).immediateRedoubles > 0);
       const base = {
         engine: ENGINE_VERSION,
-        settings: { ...settings, cubeful: s.rules.cube },
+        settings: { ...settings, cubeful: s.rules.cube,
+          ...(preset === "verify" && kind === "cube" ? {
+            name: "Verify · normal cube search", pruning: true,
+            verification: "checker-only; cube uses Research settings",
+          } : {}),
+        },
         positionKey: positionKey(s),
         status: "complete",
         perspective: s.turn,
@@ -261,18 +280,19 @@ export function createEvaluator(module) {
         const original = candidates;
         const inFilter = (c, i, filter) => i < 2 ||
           (i < filter.finalists && original[0].equity - c.equity <= filter.threshold);
-        const scoreFinalists = (choices, plies) => {
-          let cache = finalistCaches.get(plies);
+        const scoreFinalists = (choices, plies, pruning = true) => {
+          const cacheId = `${plies}:${pruning}`;
+          let cache = finalistCaches.get(cacheId);
           if (cache?.key !== base.positionKey || cache.rootKey !== rootKey) {
             cache = { key: base.positionKey, rootKey, rows: new Map() };
-            finalistCaches.set(plies, cache);
+            finalistCaches.set(cacheId, cache);
           }
           return choices.map(c => {
             const cached = cache.rows.get(c.key);
             if (cached) return { ...c, ...structuredClone(cached) };
             const turn = turns.find(t => t.key === c.key);
-            const scored = call(score, [xgid,
-              toXGID({ ...turn.state, dice: [], phase: "roll" }), plies, beavers]);
+            const scored = scoreChecker([xgid,
+              toXGID({ ...turn.state, dice: [], phase: "roll" }), plies, beavers], pruning);
             // Cache only native numbers. Legal paths and notation always come
             // from this request's independently validated complete turn set.
             cache.rows.set(c.key, structuredClone(scored));
@@ -302,7 +322,7 @@ export function createEvaluator(module) {
               equity: leader.equity, added, reason: 'expert-leader-retained' };
           }
         }
-        candidates = scoreFinalists(finalists, settings.plies);
+        candidates = scoreFinalists(finalists, settings.plies, settings.pruning);
         screening = {
           plies: 2,
           total: turns.length,
@@ -312,6 +332,8 @@ export function createEvaluator(module) {
           previousBest: original[0].key,
           ...(retainedLeader ? { retainedLeader } : {}),
           ...(screening ? { initial: screening } : {}),
+          ...(settings.pruning === false ? { pruning: true,
+            finalPruning: false, verification: "same Research shortlist; unpruned final checker scores" } : {}),
         };
       }
       let actual = null;

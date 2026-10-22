@@ -13,6 +13,8 @@ module.exports = async function diceUndo(browser, base, out, name) {
     const read = () => page.evaluate(async () => (await import('/backgammon/core/storage.mjs')).get('work','play'));
     const used = () => page.locator('#board .board-die.consumed').count();
     const load = async (dice, mode = 'advanced', state = null, {turn = 0, orientation = 0} = {}) => {
+      // Let the old Play document save its pagehide checkpoint before replacing it.
+      await page.goto(base+'/backgammon/');await ready();
       await page.evaluate(async ({dice, mode, state, turn, orientation}) => {
         const {put,saveSettings} = await import('/backgammon/core/storage.mjs');
         const {initialState} = await import('/backgammon/core/rules.mjs');
@@ -22,7 +24,7 @@ module.exports = async function diceUndo(browser, base, out, name) {
         saveSettings({interactionMode:mode, motion:'reduce', orientation});
         await put('work', {id:'play', game:{id:'die-undo', initial:s,state:s,events:[],started:true,names:['You','Friend'],config:localConfig({mode:'local'})},draft:[]});
       }, {dice,mode,state,turn,orientation});
-      await page.reload(); await ready(); await tap(page.locator('#resume-match'));
+      await page.goto(base+'/backgammon/play/'); await ready(); await tap(page.locator('#resume-match'));
     };
     const count = async n => waitForAsync(page,async n => (await (await import('/backgammon/core/storage.mjs')).get('work','play')).draft.length === n && document.querySelectorAll('#board .board-die.consumed').length === n, n);
     const tapBoard = async (x,y) => {

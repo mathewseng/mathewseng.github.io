@@ -13,6 +13,8 @@ module.exports = async function blockedPass(browser, base, out, name) {
     const read = () => page.evaluate(async()=>(await import('/backgammon/core/storage.mjs')).get('work','play'));
     const activate = locator => touch ? locator.tap() : locator.click();
     const load = async ({turn=0,mode='local',kind='closed'}={}) => {
+      // Seed only after the previous Play page has flushed its checkpoint.
+      await page.goto(base+'/backgammon/');await ready();
       await page.evaluate(async({turn,mode,kind})=>{
         const {put,saveSettings}=await import('/backgammon/core/storage.mjs');
         const {initialState,transition}=await import('/backgammon/core/rules.mjs');
@@ -31,7 +33,7 @@ module.exports = async function blockedPass(browser, base, out, name) {
           ...(mode==='computer'?{localRolls:{version:1,seed:'39'.padStart(64,'0'),cursor:0}}:{}),
           config:localConfig({mode,humanSide:1-turn,strength:'quick',reviewStrength:'quick',tutor:false,warning:false})},draft:[]});
       },{turn,mode,kind});
-      await page.reload();await ready();await activate(page.locator('#resume-match'));
+      await page.goto(base+'/backgammon/play/');await ready();await activate(page.locator('#resume-match'));
     };
     try {
       await page.addInitScript(()=>{

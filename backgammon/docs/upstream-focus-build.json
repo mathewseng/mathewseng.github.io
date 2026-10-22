@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "sourceArchiveSHA256": "6f7d969b13cfff786fba90ff8cc5e5d564b97f4f0aa69afe4f3838f18c445979",
+  "coreSourcesUnmodified": true,
+  "sourceFiles": {
+    "eval.c": "7006ff0aa09950b1bfb1bae5d712c98a7dc3fffd4fe0e0f19c5efd0e70e2fb32",
+    "rollout.c": "7c1911eea089d9ac9bc147c8440686cb928341b80c19e821ef003753d9da6be8",
+    "lib/neuralnet.c": "c9d764d58520d6575e00fe4dd6a6e1ff91132d7cd5a239dc0839427c46e28873",
+    "lib/isaac.c": "5a5180993d1d24195b663e32cdf49f578dfc72a77aa45e83ed7ca9908f669d8c",
+    "movefilters.inc": "4d904936ba75c152f87532e4edec169647d46f6920a166edc224e72818c2b1f1",
+    "gnubg.c": "f4ac1ff192104bfe296b425c9dc5f44a826bb1205c98809c231de1a5e649d416",
+    "positionid.c": "5795883d12b5a3d64bd5d56bf57e455352d0efce1b1d931a5437014a6cb3f1ea"
+  },
+  "binarySHA256": "961ff5dbadcac129c03fdf6a7535f5e741c16defcbc65db1cd314584f9c1ba45",
+  "architecture": "Mach-O 64-bit executable x86_64",
+  "host": "macOS-26.5.1-x86_64-i386-64bit-Mach-O",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.5.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+  "configureEnvironment": {
+    "ac_cv_lib_readline_readline": "no",
+    "CC": "clang -arch x86_64",
+    "CFLAGS": "-O2 -ffp-contract=off"
+  },
+  "configureArguments": [
+    "--build=x86_64-apple-darwin",
+    "--without-gtk",
+    "--without-gtk3",
+    "--without-python",
+    "--without-sqlite",
+    "--disable-threads",
+    "--enable-simd=no",
+    "--prefix=/tmp/bg-official-audit/install"
+  ],
+  "note": "The configured makefiles also supply their default -g -O3 -ffast-math before CFLAGS. Uses installed x86_64 libraries under Rosetta. GNU-generated parser files were restored byte-for-byte from the archive after make clean; evaluation, search and rollout sources were never patched. No native speed comparison is inferred."
+}

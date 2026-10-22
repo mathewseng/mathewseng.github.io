@@ -10,12 +10,12 @@
       content="Recorded GNUbg speed and accuracy measurements for the Backgammon analysis settings, and an on-device measurement."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=b7f0ebaa205e6396" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=b7f0ebaa205e6396" />
-    <link rel="stylesheet" href="../styles.css?bgv=b7f0ebaa205e6396" />
-    <link rel="stylesheet" href="../docs.css?bgv=b7f0ebaa205e6396" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=43792cf6bd0ebb42" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=43792cf6bd0ebb42" />
+    <link rel="stylesheet" href="../styles.css?bgv=43792cf6bd0ebb42" />
+    <link rel="stylesheet" href="../docs.css?bgv=43792cf6bd0ebb42" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="./app.js?bgv=b7f0ebaa205e6396"></script>
+    <script type="module" src="./app.js?bgv=43792cf6bd0ebb42"></script>
   </head>
   <body class="docs-page docs-page--report">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -59,6 +59,7 @@
             <a href="#opening-accuracy">Five-ply book vs XG</a>
             <a href="#rollout-accuracy">Rollout policies vs XG</a>
             <a href="#rollout-diagnostic">Remaining disagreements</a>
+            <a href="#corrected-rollout">Corrected checker study</a>
             <a href="#cube-policy-study">4–4 cube and checker test</a>
             <a href="#reply-fullgame-precision">Six-reply precision study</a>
             <a href="#fullgame-precision">Full-game tests</a>
@@ -117,18 +118,25 @@
             </section>
             <section class="docs-section" id="rollout-accuracy" aria-labelledby="rollout-accuracy-heading">
               <h2 id="rollout-accuracy-heading">Stronger rollout policies vs XG</h2>
+              <p class="notice">Historical results: filtered checker selection was affected by a later-discovered defect. <a href="#checker-selection">See the correction and its validation.</a> These results do not establish the corrected engine’s accuracy.</p>
               <p>Change how both simulated players choose checker moves and cube actions, then compare the resulting estimates on the same positions.</p>
               <div id="rollout-accuracy-content"></div>
             </section>
             <section class="docs-section" id="rollout-diagnostic" aria-labelledby="rollout-diagnostic-heading">
               <h2 id="rollout-diagnostic-heading">Are the remaining disagreements sampling noise?</h2>
+              <p class="notice">Historical results: filtered checker selection was affected by a later-discovered defect. <a href="#checker-selection">See the correction and its validation.</a> These results do not establish the corrected engine’s accuracy.</p>
               <p>Independent confirmation of opening 2–1 and the 23 reply choices still differing from XG after the first rollout comparison.</p>
               <div id="rollout-diagnostic-content"></div>
             </section>
             <section class="docs-section" id="fullgame-ablation" aria-labelledby="fullgame-ablation-heading">
               <h2 id="fullgame-ablation-heading">Cutoff or continuation policy?</h2>
+              <p class="notice">Historical results: filtered checker selection was affected by a later-discovered defect. <a href="#checker-selection">See the correction and its validation.</a> These results do not establish the corrected engine’s accuracy.</p>
               <p>Controlled full-game tests of opening 2–1 and the 14 persistent reply disagreements.</p>
               <div id="fullgame-ablation-content"></div>
+            </section>
+            <section class="docs-section" id="corrected-rollout" aria-labelledby="corrected-rollout-heading">
+              <h2 id="corrected-rollout-heading">Corrected checker selection: independent full-game study</h2>
+              <div id="corrected-rollout-content"></div>
             </section>
             <section class="docs-section" id="cube-policy-study" aria-labelledby="cube-policy-study-heading">
               <h2 id="cube-policy-study-heading">4–4 after the 4–1 slot: cube rules and checker policy</h2>
@@ -136,10 +144,12 @@
             </section>
             <section class="docs-section" id="reply-fullgame-precision" aria-labelledby="reply-fullgame-precision-heading">
               <h2 id="reply-fullgame-precision-heading">Six remaining replies: more full-game trials</h2>
+              <p class="notice">Historical results: filtered checker selection was affected by a later-discovered defect. <a href="#checker-selection">See the correction and its validation.</a> These results do not establish the corrected engine’s accuracy.</p>
               <div id="reply-fullgame-precision-content"></div>
             </section>
             <section class="docs-section" id="fullgame-precision" aria-labelledby="fullgame-precision-heading">
               <h2 id="fullgame-precision-heading">Full-game precision follow-up</h2>
+              <p class="notice">Historical results: filtered checker selection was affected by a later-discovered defect. <a href="#checker-selection">See the correction and its validation.</a> These results do not establish the corrected engine’s accuracy.</p>
               <p>Fresh fixed samples test the cutoff and checker effects again, with a separate, larger opening 2–1 comparison.</p>
               <div id="fullgame-precision-content"></div>
             </section>

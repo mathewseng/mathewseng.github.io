@@ -498,6 +498,21 @@
   font-weight: 600;
 }
 
+/* Keep the study's long policy labels from consuming the whole mobile
+   viewport while its numeric columns scroll beside the pinned position. */
+#corrected-rollout-content .report-table th:first-child {
+  min-width: 180px;
+  max-width: 180px;
+  white-space: normal;
+}
+
+@media (max-width: 700px) {
+  #corrected-rollout-content .report-table th:first-child {
+    min-width: 130px;
+    max-width: 130px;
+  }
+}
+
 /* ---------- Measured-on lines, links and controls ---------- */
 
 .docs-section .docs-meta {

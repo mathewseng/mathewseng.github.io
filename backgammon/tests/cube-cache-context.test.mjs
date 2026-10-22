@@ -46,11 +46,11 @@ for file in ['scripts/build-rollout-native.mjs','scripts/nonexistent-input.c']:
  else:raise AssertionError('invalid provenance accepted')
 `],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
 });
-test('bg8 ships exactly the cache patch with unchanged weights and separately versioned live results',()=>{
+test('historical bg8 source retains exactly the cache patch and original shared data',()=>{
  const r=read('../docs/bg8-release.json');
  assert.equal(r.emscripten,'4.0.15');assert.equal(r.dataUnchanged,true);assert.ok(r.engine.endsWith('+bg8'));
- for(const [file,digest] of Object.entries(r.assets))assert.equal(hash(fs.readFileSync(new URL('../engine/'+file,import.meta.url))),digest);
- assert.ok(fs.readFileSync(new URL('../engine/metadata.mjs',import.meta.url),'utf8').includes(r.engine));
+ for(const file of ['source/gnubg-core-955555c-bg8.tar.gz','vendor/gnubg-core-module.data'])
+  assert.equal(hash(fs.readFileSync(new URL('../engine/'+file,import.meta.url))),r.assets[file]);
  execFileSync('python3',['-c',`import tarfile,pathlib,tempfile,subprocess
 f=pathlib.Path('backgammon/engine/source');versions=[]
 for v in [7,8]:

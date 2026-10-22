@@ -642,7 +642,7 @@ export function about() {
       ),
       el(
         "a",
-        { href: "/backgammon/engine/source/gnubg-core-955555c-bg8.tar.gz" },
+        { href: "/backgammon/engine/source/gnubg-core-955555c-bg9.tar.gz" },
         "Download corresponding engine source",
       ),
       el(

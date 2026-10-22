@@ -1,0 +1,2520 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-22T20:31:08.526Z",
+  "method": "Deterministic integration audit, not a new equity trial or accuracy estimate. Independently built unmodified GNUbg 1.08.003, same neural/bearoff/MET data; Jacoby money, ordinary cube, pruning on, zero noise. All 21 immediate next rolls after each double-hit continuation, plus the original 44 decision at 0/2/3 ply. Compare up to five CLI finalists at the requested depth, including outcome probabilities; root filters are disabled so every reported move uses that depth and cube-efficiency context; validate parsed move boards against the full legal set. CLI starts fresh per position. The shipped scalar WASM uses its ordinary cache. This does not validate all later game decisions or XG agreement.",
+  "source": "https://deb.debian.org/debian/pool/main/g/gnubg/gnubg_1.08.003.orig.tar.gz",
+  "sourceArchiveSHA256": "6f7d969b13cfff786fba90ff8cc5e5d564b97f4f0aa69afe4f3838f18c445979",
+  "binarySHA256": "961ff5dbadcac129c03fdf6a7535f5e741c16defcbc65db1cd314584f9c1ba45",
+  "binaryVersion": "GNU Backgammon 1.08.003 20261022",
+  "scriptSHA256": "582cb33e87d4c74e8a3d95e842cc917bfe212efd20193e74977b4791d44aaa35",
+  "inputsSHA256": "a2adce251235be40ecf3a2d6d8a771372131d259f9edcaca4c90a3819f641ac1",
+  "wasmSHA256": "44d5a51bc0363037b5bd99046da2287f0194e4654c3e0772eb6d182381435d82",
+  "dataSHA256": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49",
+  "dataFiles": {
+    "gnubg.wd": "bb045bb416c70706ba34ad64595af2b43cac3722560b6ab01829eb719417153b",
+    "gnubg.weights": "d03c629d8b916236ce6eee05d891986830ec943fce6febd4e5b6725b284c66ee",
+    "gnubg_os0.bd": "38089567e87a681682bb4ff53f30d781af215fc04debbdff3f61b6db68547a49",
+    "gnubg_ts0.bd": "9eac8a2c697dae8a09f2e5653022084b9e725df6c32950cb5299b273fc64500f",
+    "met/Kazaross-XG2.xml": "7a232b171744b8db34306d11cff79a5974541328bb033b6bf16c012e8f7a3cc3"
+  },
+  "tolerance": 0.0001,
+  "cases": 45,
+  "comparisons": 89,
+  "maxEquityDifference": 0.0000035600000000135523,
+  "maxProbabilityDifference": 0.0000016999999999933735,
+  "passed": true,
+  "results": [
+    {
+      "id": "reply-44-0ply",
+      "xgid": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "plies": 0,
+      "legalMoves": 52,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 0,
+          "move": "24/20*/16* 8/4(2)",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.546427,
+          "bridgeEquity": 0.54642689,
+          "equityDifference": 1.0999999999761201e-7,
+          "upstreamProbabilities": [
+            0.606415,
+            0.274884,
+            0.029297,
+            0.078572,
+            0.002817
+          ],
+          "bridgeProbabilities": [
+            0.60641491,
+            0.27488458,
+            0.02929691,
+            0.07857209,
+            0.00281675
+          ],
+          "maxProbabilityDifference": 5.799999999722694e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 0,
+          "move": "24/20*/16* 13/9(2)",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.523023,
+          "bridgeEquity": 0.52302343,
+          "equityDifference": 4.2999999994020044e-7,
+          "upstreamProbabilities": [
+            0.608457,
+            0.252712,
+            0.021763,
+            0.078194,
+            0.002656
+          ],
+          "bridgeProbabilities": [
+            0.60845709,
+            0.2527118,
+            0.02176293,
+            0.07819442,
+            0.00265598
+          ],
+          "maxProbabilityDifference": 4.2000000000097515e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 0,
+          "move": "24/20*/16* 6/2(2)",
+          "board": "-2,2,0,0,0,3,0,3,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.474697,
+          "bridgeEquity": 0.47469664,
+          "equityDifference": 3.5999999997704535e-7,
+          "upstreamProbabilities": [
+            0.593503,
+            0.255554,
+            0.022502,
+            0.08513,
+            0.002525
+          ],
+          "bridgeProbabilities": [
+            0.593503,
+            0.25555444,
+            0.02250225,
+            0.08512986,
+            0.00252459
+          ],
+          "maxProbabilityDifference": 4.3999999999044803e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 0,
+          "move": "24/20*(2) 13/9(2)",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,-1,-3,0,-4,2,0,0,0,0,0,1,0,0",
+          "upstreamEquity": 0.450751,
+          "bridgeEquity": 0.45075142,
+          "equityDifference": 4.2000000000097515e-7,
+          "upstreamProbabilities": [
+            0.604384,
+            0.191121,
+            0.011617,
+            0.067002,
+            0.001322
+          ],
+          "bridgeProbabilities": [
+            0.60438442,
+            0.19112106,
+            0.01161698,
+            0.06700186,
+            0.00132208
+          ],
+          "maxProbabilityDifference": 4.2000000000097515e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 0,
+          "move": "24/20*(2) 8/4(2)",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,-1,-3,0,-4,2,0,0,0,0,0,1,0,0",
+          "upstreamEquity": 0.447447,
+          "bridgeEquity": 0.44744754,
+          "equityDifference": 5.399999999933236e-7,
+          "upstreamProbabilities": [
+            0.595895,
+            0.20632,
+            0.017175,
+            0.065123,
+            0.001974
+          ],
+          "bridgeProbabilities": [
+            0.59589511,
+            0.20632036,
+            0.01717466,
+            0.06512319,
+            0.00197357
+          ],
+          "maxProbabilityDifference": 4.300000000000484e-7
+        }
+      ]
+    },
+    {
+      "id": "reply-44-2ply",
+      "xgid": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 52,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "24/20*/16* 8/4(2)",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.630738,
+          "bridgeEquity": 0.63073444,
+          "equityDifference": 0.0000035600000000135523,
+          "upstreamProbabilities": [
+            0.609361,
+            0.273791,
+            0.031582,
+            0.080024,
+            0.002834
+          ],
+          "bridgeProbabilities": [
+            0.60936087,
+            0.2737909,
+            0.0315818,
+            0.08002376,
+            0.00283352
+          ],
+          "maxProbabilityDifference": 4.800000000001851e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "24/20*/16* 13/9(2)",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.621741,
+          "bridgeEquity": 0.62174058,
+          "equityDifference": 4.2000000000097515e-7,
+          "upstreamProbabilities": [
+            0.617711,
+            0.255092,
+            0.026205,
+            0.079138,
+            0.002667
+          ],
+          "bridgeProbabilities": [
+            0.61771107,
+            0.25509208,
+            0.02620538,
+            0.07913804,
+            0.00266737
+          ],
+          "maxProbabilityDifference": 3.800000000012127e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "24/20*(2) 13/9(2)",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,-1,-3,0,-4,2,0,0,0,0,0,1,0,0",
+          "upstreamEquity": 0.548146,
+          "bridgeEquity": 0.54814565,
+          "equityDifference": 3.499999999823089e-7,
+          "upstreamProbabilities": [
+            0.62686,
+            0.192374,
+            0.012094,
+            0.065278,
+            0.001722
+          ],
+          "bridgeProbabilities": [
+            0.62685955,
+            0.19237365,
+            0.01209369,
+            0.06527803,
+            0.00172232
+          ],
+          "maxProbabilityDifference": 4.499999999296733e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "24/20*/16* 6/2(2)",
+          "board": "-2,2,0,0,0,3,0,3,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.529137,
+          "bridgeEquity": 0.52913725,
+          "equityDifference": 2.500000000349445e-7,
+          "upstreamProbabilities": [
+            0.600891,
+            0.252061,
+            0.023982,
+            0.086315,
+            0.002824
+          ],
+          "bridgeProbabilities": [
+            0.60089087,
+            0.2520614,
+            0.02398189,
+            0.08631509,
+            0.00282383
+          ],
+          "maxProbabilityDifference": 4.0000000001150227e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "24/20*/16*(2)",
+          "board": "-2,0,0,0,0,5,0,3,0,0,0,-4,5,0,0,2,-3,0,-4,0,0,0,0,0,0,2,0,0",
+          "upstreamEquity": 0.513852,
+          "bridgeEquity": 0.51385248,
+          "equityDifference": 4.799999999693938e-7,
+          "upstreamProbabilities": [
+            0.618345,
+            0.206017,
+            0.018524,
+            0.079399,
+            0.001993
+          ],
+          "bridgeProbabilities": [
+            0.61834472,
+            0.20601721,
+            0.01852413,
+            0.07939911,
+            0.0019926
+          ],
+          "maxProbabilityDifference": 3.999999999997929e-7
+        }
+      ]
+    },
+    {
+      "id": "reply-44-3ply",
+      "xgid": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "plies": 3,
+      "legalMoves": 52,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 3,
+          "move": "24/20*/16* 8/4(2)",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.659757,
+          "bridgeEquity": 0.65975749,
+          "equityDifference": 4.899999999086191e-7,
+          "upstreamProbabilities": [
+            0.612715,
+            0.274642,
+            0.034927,
+            0.079293,
+            0.003319
+          ],
+          "bridgeProbabilities": [
+            0.6127153,
+            0.27464211,
+            0.03492715,
+            0.0792926,
+            0.00331879
+          ],
+          "maxProbabilityDifference": 3.999999999976245e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 3,
+          "move": "24/20*/16* 13/9(2)",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.634889,
+          "bridgeEquity": 0.6348899,
+          "equityDifference": 8.999999999703689e-7,
+          "upstreamProbabilities": [
+            0.618687,
+            0.255368,
+            0.028313,
+            0.078317,
+            0.003263
+          ],
+          "bridgeProbabilities": [
+            0.61868685,
+            0.25536752,
+            0.02831316,
+            0.07831696,
+            0.00326293
+          ],
+          "maxProbabilityDifference": 4.799999999693938e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 3,
+          "move": "24/20*(2) 13/9(2)",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,-1,-3,0,-4,2,0,0,0,0,0,1,0,0",
+          "upstreamEquity": 0.561404,
+          "bridgeEquity": 0.56140363,
+          "equityDifference": 3.699999999717818e-7,
+          "upstreamProbabilities": [
+            0.626667,
+            0.193134,
+            0.013704,
+            0.068744,
+            0.002194
+          ],
+          "bridgeProbabilities": [
+            0.62666714,
+            0.1931344,
+            0.01370412,
+            0.06874406,
+            0.00219409
+          ],
+          "maxProbabilityDifference": 4.0000000001150227e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 3,
+          "move": "24/20*/16* 6/2(2)",
+          "board": "-2,2,0,0,0,3,0,3,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "upstreamEquity": 0.549494,
+          "bridgeEquity": 0.54949391,
+          "equityDifference": 9.000000000813912e-8,
+          "upstreamProbabilities": [
+            0.597654,
+            0.254457,
+            0.029304,
+            0.084718,
+            0.003602
+          ],
+          "bridgeProbabilities": [
+            0.59765363,
+            0.25445729,
+            0.02930385,
+            0.08471835,
+            0.00360245
+          ],
+          "maxProbabilityDifference": 4.499999999999296e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 3,
+          "move": "24/20*/16* 24/20 13/9",
+          "board": "-2,0,0,0,0,5,0,3,1,0,0,-4,4,0,0,1,-3,0,-4,1,0,0,0,0,0,2,0,0",
+          "upstreamEquity": 0.522102,
+          "bridgeEquity": 0.52210188,
+          "equityDifference": 1.199999999368373e-7,
+          "upstreamProbabilities": [
+            0.60339,
+            0.230782,
+            0.024814,
+            0.086636,
+            0.003781
+          ],
+          "bridgeProbabilities": [
+            0.6033904,
+            0.23078176,
+            0.02481421,
+            0.08663619,
+            0.0037809
+          ],
+          "maxProbabilityDifference": 4.0000000001150227e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-11",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:11:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 9,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24(2) 6/5(2)",
+          "board": "-4,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-2,-2,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.417499,
+          "bridgeEquity": -0.41749895,
+          "equityDifference": 5.000000002919336e-8,
+          "upstreamProbabilities": [
+            0.425407,
+            0.09458,
+            0.004423,
+            0.24345,
+            0.027871
+          ],
+          "bridgeProbabilities": [
+            0.42540681,
+            0.09458042,
+            0.00442319,
+            0.24344979,
+            0.02787141
+          ],
+          "maxProbabilityDifference": 4.2000000000097515e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2)",
+          "board": "-2,-2,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.485294,
+          "bridgeEquity": -0.48529387,
+          "equityDifference": 1.299999999870849e-7,
+          "upstreamProbabilities": [
+            0.409789,
+            0.088405,
+            0.00359,
+            0.245795,
+            0.028008
+          ],
+          "bridgeProbabilities": [
+            0.40978873,
+            0.088405,
+            0.00359003,
+            0.24579512,
+            0.02800839
+          ],
+          "maxProbabilityDifference": 3.899999999994186e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/24 6/5",
+          "board": "-3,-1,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-3,-1,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.529555,
+          "bridgeEquity": -0.5295552,
+          "equityDifference": 2.0000000000575113e-7,
+          "upstreamProbabilities": [
+            0.412565,
+            0.08468,
+            0.003714,
+            0.274013,
+            0.039412
+          ],
+          "bridgeProbabilities": [
+            0.41256523,
+            0.08468009,
+            0.00371408,
+            0.27401251,
+            0.03941197
+          ],
+          "maxProbabilityDifference": 4.900000000196414e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/22 bar/24",
+          "board": "-3,0,-1,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.55637,
+          "bridgeEquity": -0.5563696,
+          "equityDifference": 4.0000000001150227e-7,
+          "upstreamProbabilities": [
+            0.397415,
+            0.084176,
+            0.00362,
+            0.260655,
+            0.032735
+          ],
+          "bridgeProbabilities": [
+            0.3974151,
+            0.08417635,
+            0.00362027,
+            0.26065505,
+            0.03273525
+          ],
+          "maxProbabilityDifference": 3.499999999961867e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/24 8/7",
+          "board": "-3,-1,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-2,-1,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.629659,
+          "bridgeEquity": -0.62966001,
+          "equityDifference": 0.0000010100000000790033,
+          "upstreamProbabilities": [
+            0.395176,
+            0.079396,
+            0.003078,
+            0.280912,
+            0.041104
+          ],
+          "bridgeProbabilities": [
+            0.39517593,
+            0.07939594,
+            0.00307837,
+            0.28091228,
+            0.04110372
+          ],
+          "maxProbabilityDifference": 3.6999999999997105e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-21",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:21:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24 bar/23",
+          "board": "-3,-1,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.59489,
+          "bridgeEquity": -0.59489012,
+          "equityDifference": 1.199999999368373e-7,
+          "upstreamProbabilities": [
+            0.392534,
+            0.082167,
+            0.003499,
+            0.263312,
+            0.032619
+          ],
+          "bridgeProbabilities": [
+            0.39253408,
+            0.0821669,
+            0.00349883,
+            0.2633118,
+            0.0326189
+          ],
+          "maxProbabilityDifference": 2.0000000000575113e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-22",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:22:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 13,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 13/9*",
+          "board": "-2,-2,0,2,0,5,0,1,0,0,0,-3,5,0,0,-1,-3,0,-4,0,0,0,0,1,1,0,0,0",
+          "upstreamEquity": -0.243256,
+          "bridgeEquity": -0.24325606,
+          "equityDifference": 5.999999999617422e-8,
+          "upstreamProbabilities": [
+            0.454301,
+            0.115937,
+            0.005907,
+            0.209978,
+            0.021723
+          ],
+          "bridgeProbabilities": [
+            0.45430142,
+            0.11593673,
+            0.00590653,
+            0.20997845,
+            0.02172335
+          ],
+          "maxProbabilityDifference": 4.6999999999981085e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 24/22(2)",
+          "board": "0,-2,-2,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.259478,
+          "bridgeEquity": -0.25947762,
+          "equityDifference": 3.7999999996651823e-7,
+          "upstreamProbabilities": [
+            0.450486,
+            0.103632,
+            0.004034,
+            0.214342,
+            0.016748
+          ],
+          "bridgeProbabilities": [
+            0.4504863,
+            0.10363236,
+            0.00403437,
+            0.21434243,
+            0.01674799
+          ],
+          "maxProbabilityDifference": 4.299999999957116e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 6/4(2)",
+          "board": "-2,-2,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-2,0,-2,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.293277,
+          "bridgeEquity": -0.29327714,
+          "equityDifference": 1.3999999998182133e-7,
+          "upstreamProbabilities": [
+            0.445138,
+            0.105005,
+            0.004664,
+            0.218636,
+            0.02151
+          ],
+          "bridgeProbabilities": [
+            0.44513845,
+            0.1050048,
+            0.00466403,
+            0.21863635,
+            0.02151012
+          ],
+          "maxProbabilityDifference": 4.500000000406956e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 13/11(2)",
+          "board": "-2,-2,0,2,0,5,0,1,0,0,0,-2,5,-2,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.398626,
+          "bridgeEquity": -0.39862549,
+          "equityDifference": 5.099999999536031e-7,
+          "upstreamProbabilities": [
+            0.422815,
+            0.099354,
+            0.004334,
+            0.232438,
+            0.02466
+          ],
+          "bridgeProbabilities": [
+            0.42281532,
+            0.09935414,
+            0.00433417,
+            0.23243825,
+            0.02465986
+          ],
+          "maxProbabilityDifference": 3.199999999980996e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 24/20",
+          "board": "-1,-2,0,2,-1,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.41039,
+          "bridgeEquity": -0.41038981,
+          "equityDifference": 1.8999999995550354e-7,
+          "upstreamProbabilities": [
+            0.416424,
+            0.092436,
+            0.004024,
+            0.223558,
+            0.017085
+          ],
+          "bridgeProbabilities": [
+            0.41642427,
+            0.09243624,
+            0.00402432,
+            0.22355819,
+            0.0170849
+          ],
+          "maxProbabilityDifference": 3.199999999998343e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-31",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:31:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24 bar/22",
+          "board": "-3,0,-1,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.55637,
+          "bridgeEquity": -0.5563696,
+          "equityDifference": 4.0000000001150227e-7,
+          "upstreamProbabilities": [
+            0.397415,
+            0.084176,
+            0.00362,
+            0.260655,
+            0.032735
+          ],
+          "bridgeProbabilities": [
+            0.3974151,
+            0.08417635,
+            0.00362027,
+            0.26065505,
+            0.03273525
+          ],
+          "maxProbabilityDifference": 3.499999999961867e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-32",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:32:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/22",
+          "board": "-2,-1,-1,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.503502,
+          "bridgeEquity": -0.50350159,
+          "equityDifference": 4.0999999995072756e-7,
+          "upstreamProbabilities": [
+            0.407075,
+            0.088136,
+            0.004036,
+            0.25284,
+            0.028587
+          ],
+          "bridgeProbabilities": [
+            0.40707481,
+            0.08813567,
+            0.00403638,
+            0.25283983,
+            0.02858669
+          ],
+          "maxProbabilityDifference": 3.8000000000034534e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-33",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:33:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 8,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 8/5(2)",
+          "board": "-2,0,-2,2,0,5,0,1,0,0,0,-4,5,0,0,1,-1,0,-4,-2,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.19197,
+          "bridgeEquity": -0.19196962,
+          "equityDifference": 3.799999999942738e-7,
+          "upstreamProbabilities": [
+            0.465168,
+            0.119016,
+            0.005355,
+            0.202888,
+            0.019715
+          ],
+          "bridgeProbabilities": [
+            0.46516824,
+            0.11901637,
+            0.00535501,
+            0.20288754,
+            0.01971525
+          ],
+          "maxProbabilityDifference": 4.600000000076765e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 13/10(2)",
+          "board": "-2,0,-2,2,0,5,0,1,0,0,0,-2,5,0,-2,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.250019,
+          "bridgeEquity": -0.25001919,
+          "equityDifference": 1.900000000110147e-7,
+          "upstreamProbabilities": [
+            0.450455,
+            0.109166,
+            0.004423,
+            0.205899,
+            0.018577
+          ],
+          "bridgeProbabilities": [
+            0.45045513,
+            0.10916605,
+            0.00442337,
+            0.2058991,
+            0.0185775
+          ],
+          "maxProbabilityDifference": 5.000000000005e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 6/3(2)",
+          "board": "-2,0,-2,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-2,0,0,-2,0,1,0,0,0,0",
+          "upstreamEquity": -0.303088,
+          "bridgeEquity": -0.30308783,
+          "equityDifference": 1.700000000215418e-7,
+          "upstreamProbabilities": [
+            0.435706,
+            0.102905,
+            0.004341,
+            0.208374,
+            0.016842
+          ],
+          "bridgeProbabilities": [
+            0.43570626,
+            0.10290509,
+            0.00434132,
+            0.20837389,
+            0.01684158
+          ],
+          "maxProbabilityDifference": 4.2000000000097515e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 13/10 8/5",
+          "board": "-2,0,-2,2,0,5,0,1,0,0,0,-3,5,0,-1,1,-2,0,-4,-1,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.306956,
+          "bridgeEquity": -0.30695444,
+          "equityDifference": 0.0000015600000000115521,
+          "upstreamProbabilities": [
+            0.450119,
+            0.098399,
+            0.003982,
+            0.236762,
+            0.028604
+          ],
+          "bridgeProbabilities": [
+            0.45011938,
+            0.09839937,
+            0.00398164,
+            0.2367603,
+            0.02860417
+          ],
+          "maxProbabilityDifference": 0.0000016999999999933735
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 13/7",
+          "board": "-2,0,-2,2,0,5,0,1,0,0,0,-3,5,0,0,1,-3,-1,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.309013,
+          "bridgeEquity": -0.3090131,
+          "equityDifference": 1.0000000000287557e-7,
+          "upstreamProbabilities": [
+            0.43879,
+            0.099632,
+            0.003705,
+            0.216891,
+            0.022067
+          ],
+          "bridgeProbabilities": [
+            0.43879044,
+            0.09963232,
+            0.00370482,
+            0.21689086,
+            0.02206736
+          ],
+          "maxProbabilityDifference": 4.3999999999044803e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-41",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:41:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24",
+          "board": "-3,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.79356,
+          "bridgeEquity": -0.79356027,
+          "equityDifference": 2.6999999991339507e-7,
+          "upstreamProbabilities": [
+            0.36804,
+            0.06972,
+            0.002667,
+            0.291402,
+            0.038978
+          ],
+          "bridgeProbabilities": [
+            0.36803991,
+            0.06971975,
+            0.00266654,
+            0.29140183,
+            0.03897808
+          ],
+          "maxProbabilityDifference": 4.600000000003039e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-42",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:42:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23",
+          "board": "-2,-1,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.738579,
+          "bridgeEquity": -0.73857886,
+          "equityDifference": 1.4000000003733248e-7,
+          "upstreamProbabilities": [
+            0.376871,
+            0.073399,
+            0.003006,
+            0.289238,
+            0.038334
+          ],
+          "bridgeProbabilities": [
+            0.37687099,
+            0.07339945,
+            0.00300583,
+            0.28923839,
+            0.03833418
+          ],
+          "maxProbabilityDifference": 4.4999999999906226e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-43",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:43:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/22",
+          "board": "-2,0,-1,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.737251,
+          "bridgeEquity": -0.73725086,
+          "equityDifference": 1.4000000003733248e-7,
+          "upstreamProbabilities": [
+            0.378739,
+            0.074857,
+            0.003154,
+            0.292814,
+            0.04007
+          ],
+          "bridgeProbabilities": [
+            0.37873852,
+            0.07485659,
+            0.00315382,
+            0.29281411,
+            0.04006987
+          ],
+          "maxProbabilityDifference": 4.799999999693938e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-44",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:44:0:0:1:0:10",
+      "plies": 2,
+      "pass": true,
+      "moves": []
+    },
+    {
+      "id": "continuation-0-51",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:51:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24 bar/20",
+          "board": "-3,0,0,2,-1,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.557631,
+          "bridgeEquity": -0.55763131,
+          "equityDifference": 3.1000000000336314e-7,
+          "upstreamProbabilities": [
+            0.393014,
+            0.08186,
+            0.003438,
+            0.253937,
+            0.029828
+          ],
+          "bridgeProbabilities": [
+            0.3930136,
+            0.08185978,
+            0.00343776,
+            0.25393701,
+            0.02982818
+          ],
+          "maxProbabilityDifference": 3.999999999559911e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-52",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:52:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/20",
+          "board": "-2,-1,0,2,-1,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.494551,
+          "bridgeEquity": -0.49455056,
+          "equityDifference": 4.400000000459592e-7,
+          "upstreamProbabilities": [
+            0.404643,
+            0.087054,
+            0.003888,
+            0.244611,
+            0.026009
+          ],
+          "bridgeProbabilities": [
+            0.40464342,
+            0.0870536,
+            0.00388767,
+            0.24461143,
+            0.02600924
+          ],
+          "maxProbabilityDifference": 4.299999999957116e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-53",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:53:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/22 bar/20",
+          "board": "-2,0,-1,2,-1,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.488178,
+          "bridgeEquity": -0.48817784,
+          "equityDifference": 1.6000000002680537e-7,
+          "upstreamProbabilities": [
+            0.405365,
+            0.086001,
+            0.003639,
+            0.245471,
+            0.027379
+          ],
+          "bridgeProbabilities": [
+            0.40536451,
+            0.08600143,
+            0.00363871,
+            0.24547063,
+            0.02737855
+          ],
+          "maxProbabilityDifference": 4.899999999641302e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-54",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:54:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/20",
+          "board": "-2,0,0,2,-1,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.802697,
+          "bridgeEquity": -0.80269694,
+          "equityDifference": 5.999999996841865e-8,
+          "upstreamProbabilities": [
+            0.369106,
+            0.071903,
+            0.00305,
+            0.299323,
+            0.040687
+          ],
+          "bridgeProbabilities": [
+            0.36910641,
+            0.07190266,
+            0.00304987,
+            0.29932278,
+            0.04068737
+          ],
+          "maxProbabilityDifference": 4.100000000062387e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-55",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:55:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 11,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 6/1*(2)",
+          "board": "-2,0,0,2,-2,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-2,0,0,0,0,-2,1,0,0,0",
+          "upstreamEquity": -0.19164,
+          "bridgeEquity": -0.1916403,
+          "equityDifference": 3.000000000086267e-7,
+          "upstreamProbabilities": [
+            0.444195,
+            0.128481,
+            0.004805,
+            0.15562,
+            0.007585
+          ],
+          "bridgeProbabilities": [
+            0.44419467,
+            0.12848067,
+            0.00480471,
+            0.15562002,
+            0.00758519
+          ],
+          "maxProbabilityDifference": 3.300000000205916e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 8/3(2)",
+          "board": "-2,0,0,2,-2,5,0,1,0,0,0,-4,5,0,0,1,-1,0,-4,0,0,-2,0,1,0,0,0,0",
+          "upstreamEquity": -0.203732,
+          "bridgeEquity": -0.203732,
+          "equityDifference": 0,
+          "upstreamProbabilities": [
+            0.446959,
+            0.118421,
+            0.005292,
+            0.167423,
+            0.010293
+          ],
+          "bridgeProbabilities": [
+            0.44695926,
+            0.11842065,
+            0.00529161,
+            0.16742286,
+            0.01029273
+          ],
+          "maxProbabilityDifference": 3.899999999994186e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 13/3",
+          "board": "-2,0,0,2,-2,5,0,1,0,0,0,-3,5,0,0,1,-3,0,-4,0,0,-1,0,1,0,0,0,0",
+          "upstreamEquity": -0.244,
+          "bridgeEquity": -0.24400057,
+          "equityDifference": 5.700000000052885e-7,
+          "upstreamProbabilities": [
+            0.44255,
+            0.105131,
+            0.004651,
+            0.181369,
+            0.012355
+          ],
+          "bridgeProbabilities": [
+            0.44255042,
+            0.10513127,
+            0.00465071,
+            0.18136936,
+            0.01235508
+          ],
+          "maxProbabilityDifference": 4.2000000000097515e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 13/8(2)",
+          "board": "-2,0,0,2,-2,5,0,1,0,0,0,-2,5,0,0,1,-5,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.253436,
+          "bridgeEquity": -0.25343561,
+          "equityDifference": 3.900000000167658e-7,
+          "upstreamProbabilities": [
+            0.435912,
+            0.102994,
+            0.004472,
+            0.167237,
+            0.010324
+          ],
+          "bridgeProbabilities": [
+            0.43591237,
+            0.10299421,
+            0.00447151,
+            0.16723663,
+            0.01032401
+          ],
+          "maxProbabilityDifference": 4.900000000005594e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 13/8 6/1*",
+          "board": "-2,0,0,2,-2,5,0,1,0,0,0,-3,5,0,0,1,-4,0,-3,0,0,0,0,-1,1,0,0,0",
+          "upstreamEquity": -0.266163,
+          "bridgeEquity": -0.26616275,
+          "equityDifference": 2.4999999997943334e-7,
+          "upstreamProbabilities": [
+            0.4342,
+            0.105276,
+            0.004458,
+            0.178157,
+            0.011255
+          ],
+          "bridgeProbabilities": [
+            0.43420017,
+            0.10527643,
+            0.00445754,
+            0.17815666,
+            0.01125475
+          ],
+          "maxProbabilityDifference": 4.5999999999987023e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-61",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:61:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24",
+          "board": "-3,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.79356,
+          "bridgeEquity": -0.79356027,
+          "equityDifference": 2.6999999991339507e-7,
+          "upstreamProbabilities": [
+            0.36804,
+            0.06972,
+            0.002667,
+            0.291402,
+            0.038978
+          ],
+          "bridgeProbabilities": [
+            0.36803991,
+            0.06971975,
+            0.00266654,
+            0.29140183,
+            0.03897808
+          ],
+          "maxProbabilityDifference": 4.600000000003039e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-62",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:62:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23",
+          "board": "-2,-1,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.738579,
+          "bridgeEquity": -0.73857886,
+          "equityDifference": 1.4000000003733248e-7,
+          "upstreamProbabilities": [
+            0.376871,
+            0.073399,
+            0.003006,
+            0.289238,
+            0.038334
+          ],
+          "bridgeProbabilities": [
+            0.37687099,
+            0.07339945,
+            0.00300583,
+            0.28923839,
+            0.03833418
+          ],
+          "maxProbabilityDifference": 4.4999999999906226e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-63",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:63:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/22",
+          "board": "-2,0,-1,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.737251,
+          "bridgeEquity": -0.73725086,
+          "equityDifference": 1.4000000003733248e-7,
+          "upstreamProbabilities": [
+            0.378739,
+            0.074857,
+            0.003154,
+            0.292814,
+            0.04007
+          ],
+          "bridgeProbabilities": [
+            0.37873852,
+            0.07485659,
+            0.00315382,
+            0.29281411,
+            0.04006987
+          ],
+          "maxProbabilityDifference": 4.799999999693938e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-64",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:64:0:0:1:0:10",
+      "plies": 2,
+      "pass": true,
+      "moves": []
+    },
+    {
+      "id": "continuation-0-65",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:65:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/20",
+          "board": "-2,0,0,2,-1,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.802697,
+          "bridgeEquity": -0.80269694,
+          "equityDifference": 5.999999996841865e-8,
+          "upstreamProbabilities": [
+            0.369106,
+            0.071903,
+            0.00305,
+            0.299323,
+            0.040687
+          ],
+          "bridgeProbabilities": [
+            0.36910641,
+            0.07190266,
+            0.00304987,
+            0.29932278,
+            0.04068737
+          ],
+          "maxProbabilityDifference": 4.100000000062387e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-0-66",
+      "xgid": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:66:0:0:1:0:10",
+      "plies": 2,
+      "pass": true,
+      "moves": []
+    },
+    {
+      "id": "continuation-1-11",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:11:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 9,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24(2) 6/5(2)",
+          "board": "-4,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-2,-2,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.500017,
+          "bridgeEquity": -0.5000174,
+          "equityDifference": 3.9999999990047996e-7,
+          "upstreamProbabilities": [
+            0.403115,
+            0.086109,
+            0.004002,
+            0.241265,
+            0.025625
+          ],
+          "bridgeProbabilities": [
+            0.40311545,
+            0.08610849,
+            0.0040022,
+            0.24126472,
+            0.0256252
+          ],
+          "maxProbabilityDifference": 5.100000000091143e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/24 6/5",
+          "board": "-3,-1,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-3,-1,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.571828,
+          "bridgeEquity": -0.57182765,
+          "equityDifference": 3.499999999823089e-7,
+          "upstreamProbabilities": [
+            0.398333,
+            0.081245,
+            0.003689,
+            0.264707,
+            0.034112
+          ],
+          "bridgeProbabilities": [
+            0.39833266,
+            0.08124502,
+            0.00368911,
+            0.26470667,
+            0.03411175
+          ],
+          "maxProbabilityDifference": 3.3999999998757247e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2)",
+          "board": "-2,-2,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.605654,
+          "bridgeEquity": -0.60565412,
+          "equityDifference": 1.199999999368373e-7,
+          "upstreamProbabilities": [
+            0.379952,
+            0.078945,
+            0.003082,
+            0.246028,
+            0.024108
+          ],
+          "bridgeProbabilities": [
+            0.37995148,
+            0.07894495,
+            0.00308244,
+            0.24602824,
+            0.02410798
+          ],
+          "maxProbabilityDifference": 5.200000000038507e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/22 bar/24",
+          "board": "-3,0,-1,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.659933,
+          "bridgeEquity": -0.65993315,
+          "equityDifference": 1.4999999997655777e-7,
+          "upstreamProbabilities": [
+            0.377039,
+            0.075434,
+            0.003021,
+            0.260565,
+            0.030128
+          ],
+          "bridgeProbabilities": [
+            0.37703919,
+            0.07543384,
+            0.00302079,
+            0.26056513,
+            0.03012782
+          ],
+          "maxProbabilityDifference": 2.099999999996202e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/24 8/7",
+          "board": "-3,-1,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-2,-1,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.662887,
+          "bridgeEquity": -0.66288698,
+          "equityDifference": 1.9999999989472883e-8,
+          "upstreamProbabilities": [
+            0.383076,
+            0.07682,
+            0.003029,
+            0.272108,
+            0.035584
+          ],
+          "bridgeProbabilities": [
+            0.38307607,
+            0.07682038,
+            0.00302916,
+            0.27210757,
+            0.03558352
+          ],
+          "maxProbabilityDifference": 4.799999999971494e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-21",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:21:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24 bar/23",
+          "board": "-3,-1,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.664887,
+          "bridgeEquity": -0.66488671,
+          "equityDifference": 2.9000000001389026e-7,
+          "upstreamProbabilities": [
+            0.37552,
+            0.076098,
+            0.003058,
+            0.260447,
+            0.029871
+          ],
+          "bridgeProbabilities": [
+            0.37552059,
+            0.07609823,
+            0.00305824,
+            0.26044714,
+            0.02987063
+          ],
+          "maxProbabilityDifference": 5.899999999670058e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-22",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:22:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 18,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/21(2)",
+          "board": "-2,0,0,-2,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.363822,
+          "bridgeEquity": -0.36382154,
+          "equityDifference": 4.599999999799209e-7,
+          "upstreamProbabilities": [
+            0.417293,
+            0.089899,
+            0.003316,
+            0.203337,
+            0.015531
+          ],
+          "bridgeProbabilities": [
+            0.41729295,
+            0.08989928,
+            0.00331633,
+            0.203337,
+            0.01553052
+          ],
+          "maxProbabilityDifference": 4.799999999988841e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 13/9*",
+          "board": "-2,-2,0,0,0,5,0,3,2,0,0,-3,3,0,0,-1,-3,0,-4,0,0,0,0,1,1,0,0,0",
+          "upstreamEquity": -0.381111,
+          "bridgeEquity": -0.38111076,
+          "equityDifference": 2.399999999846969e-7,
+          "upstreamProbabilities": [
+            0.419015,
+            0.100473,
+            0.004677,
+            0.220068,
+            0.021084
+          ],
+          "bridgeProbabilities": [
+            0.41901505,
+            0.10047322,
+            0.00467704,
+            0.22006755,
+            0.02108424
+          ],
+          "maxProbabilityDifference": 4.5000000001294005e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 24/22(2)",
+          "board": "0,-2,-2,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.426026,
+          "bridgeEquity": -0.42602596,
+          "equityDifference": 4.000000003445692e-8,
+          "upstreamProbabilities": [
+            0.405243,
+            0.089834,
+            0.003178,
+            0.218842,
+            0.015281
+          ],
+          "bridgeProbabilities": [
+            0.40524316,
+            0.08983425,
+            0.00317771,
+            0.21884173,
+            0.01528122
+          ],
+          "maxProbabilityDifference": 2.9000000000001247e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 6/4(2)",
+          "board": "-2,-2,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-2,0,-2,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.430593,
+          "bridgeEquity": -0.43059283,
+          "equityDifference": 1.700000000215418e-7,
+          "upstreamProbabilities": [
+            0.407731,
+            0.091052,
+            0.003801,
+            0.21965,
+            0.018323
+          ],
+          "bridgeProbabilities": [
+            0.40773106,
+            0.0910523,
+            0.00380142,
+            0.21964997,
+            0.01832274
+          ],
+          "maxProbabilityDifference": 4.199999999996741e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/23(2) 24/22 6/4",
+          "board": "-1,-2,-1,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-3,0,-1,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.52993,
+          "bridgeEquity": -0.52993017,
+          "equityDifference": 1.6999999996603066e-7,
+          "upstreamProbabilities": [
+            0.400203,
+            0.084849,
+            0.003844,
+            0.259932,
+            0.023622
+          ],
+          "bridgeProbabilities": [
+            0.40020293,
+            0.08484872,
+            0.00384376,
+            0.25993192,
+            0.02362196
+          ],
+          "maxProbabilityDifference": 2.7999999999139824e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-31",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:31:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24 bar/22",
+          "board": "-3,0,-1,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.659933,
+          "bridgeEquity": -0.65993315,
+          "equityDifference": 1.4999999997655777e-7,
+          "upstreamProbabilities": [
+            0.377039,
+            0.075434,
+            0.003021,
+            0.260565,
+            0.030128
+          ],
+          "bridgeProbabilities": [
+            0.37703919,
+            0.07543384,
+            0.00302079,
+            0.26056513,
+            0.03012782
+          ],
+          "maxProbabilityDifference": 2.099999999996202e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-32",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:32:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/22",
+          "board": "-2,-1,-1,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.578439,
+          "bridgeEquity": -0.578439,
+          "equityDifference": 0,
+          "upstreamProbabilities": [
+            0.387478,
+            0.07922,
+            0.003284,
+            0.252127,
+            0.025675
+          ],
+          "bridgeProbabilities": [
+            0.38747823,
+            0.07921959,
+            0.0032837,
+            0.25212729,
+            0.02567527
+          ],
+          "maxProbabilityDifference": 4.099999999923609e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-33",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:33:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 13,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 24/21(2)",
+          "board": "0,0,-2,-2,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.320031,
+          "bridgeEquity": -0.32003039,
+          "equityDifference": 6.100000000119898e-7,
+          "upstreamProbabilities": [
+            0.418634,
+            0.092835,
+            0.003414,
+            0.179377,
+            0.006513
+          ],
+          "bridgeProbabilities": [
+            0.41863418,
+            0.09283479,
+            0.0034144,
+            0.17937703,
+            0.00651343
+          ],
+          "maxProbabilityDifference": 4.300000000000484e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 8/5(2)",
+          "board": "-2,0,-2,0,0,5,0,3,2,0,0,-4,3,0,0,1,-1,0,-4,-2,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.336819,
+          "bridgeEquity": -0.33681881,
+          "equityDifference": 1.8999999995550354e-7,
+          "upstreamProbabilities": [
+            0.420854,
+            0.102397,
+            0.004374,
+            0.200794,
+            0.016073
+          ],
+          "bridgeProbabilities": [
+            0.42085433,
+            0.10239686,
+            0.00437442,
+            0.20079385,
+            0.01607337
+          ],
+          "maxProbabilityDifference": 4.200000000001078e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 13/10 8/5",
+          "board": "-2,0,-2,0,0,5,0,3,2,0,0,-3,3,0,-1,1,-2,0,-4,-1,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.388444,
+          "bridgeEquity": -0.38844436,
+          "equityDifference": 3.5999999997704535e-7,
+          "upstreamProbabilities": [
+            0.422159,
+            0.093377,
+            0.004062,
+            0.230381,
+            0.022924
+          ],
+          "bridgeProbabilities": [
+            0.42215902,
+            0.09337719,
+            0.00406198,
+            0.23038077,
+            0.02292375
+          ],
+          "maxProbabilityDifference": 2.5000000000025e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 13/10(2)",
+          "board": "-2,0,-2,0,0,5,0,3,2,0,0,-2,3,0,-2,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.392551,
+          "bridgeEquity": -0.3925505,
+          "equityDifference": 4.999999999588667e-7,
+          "upstreamProbabilities": [
+            0.412585,
+            0.095181,
+            0.003722,
+            0.21276,
+            0.017859
+          ],
+          "bridgeProbabilities": [
+            0.41258532,
+            0.09518094,
+            0.00372191,
+            0.21276045,
+            0.01785898
+          ],
+          "maxProbabilityDifference": 4.4999999998518447e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/22(2) 24/18",
+          "board": "-1,0,-2,0,0,5,-1,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.434763,
+          "bridgeEquity": -0.43476263,
+          "equityDifference": 3.7000000002729294e-7,
+          "upstreamProbabilities": [
+            0.39846,
+            0.086927,
+            0.003734,
+            0.20509,
+            0.010979
+          ],
+          "bridgeProbabilities": [
+            0.39846003,
+            0.08692651,
+            0.00373425,
+            0.20508984,
+            0.01097863
+          ],
+          "maxProbabilityDifference": 4.900000000057636e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-41",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:41:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24 bar/21",
+          "board": "-3,0,0,-1,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.659451,
+          "bridgeEquity": -0.65945083,
+          "equityDifference": 1.6999999996603066e-7,
+          "upstreamProbabilities": [
+            0.374169,
+            0.075562,
+            0.003063,
+            0.255279,
+            0.028628
+          ],
+          "bridgeProbabilities": [
+            0.37416935,
+            0.07556149,
+            0.00306345,
+            0.25527894,
+            0.0286278
+          ],
+          "maxProbabilityDifference": 5.100000000091143e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-42",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:42:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/21",
+          "board": "-2,-1,0,-1,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.575494,
+          "bridgeEquity": -0.57549411,
+          "equityDifference": 1.0999999999761201e-7,
+          "upstreamProbabilities": [
+            0.384611,
+            0.079497,
+            0.003199,
+            0.245968,
+            0.024466
+          ],
+          "bridgeProbabilities": [
+            0.38461125,
+            0.0794972,
+            0.00319942,
+            0.24596749,
+            0.02446648
+          ],
+          "maxProbabilityDifference": 5.099999999813587e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-43",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:43:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/22 bar/21",
+          "board": "-2,0,-1,-1,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.581248,
+          "bridgeEquity": -0.58124799,
+          "equityDifference": 9.99999993922529e-9,
+          "upstreamProbabilities": [
+            0.388078,
+            0.080535,
+            0.003627,
+            0.254996,
+            0.027893
+          ],
+          "bridgeProbabilities": [
+            0.38807809,
+            0.0805354,
+            0.00362676,
+            0.25499585,
+            0.02789297
+          ],
+          "maxProbabilityDifference": 3.999999999976245e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-44",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:44:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 11,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/21(2) 13/9*(2)",
+          "board": "-2,0,0,-2,0,5,0,3,2,0,0,-2,3,0,0,-2,-3,0,-4,0,0,0,0,1,1,0,0,0",
+          "upstreamEquity": -0.124063,
+          "bridgeEquity": -0.12406284,
+          "equityDifference": 1.6000000001292758e-7,
+          "upstreamProbabilities": [
+            0.470006,
+            0.123733,
+            0.005647,
+            0.160819,
+            0.009143
+          ],
+          "bridgeProbabilities": [
+            0.47000587,
+            0.12373327,
+            0.00564726,
+            0.16081901,
+            0.00914343
+          ],
+          "maxProbabilityDifference": 4.2999999999918104e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/21(2) 24/20 13/9*",
+          "board": "-1,0,0,-2,-1,5,0,3,2,0,0,-3,3,0,0,-1,-3,0,-4,0,0,0,0,1,1,0,0,0",
+          "upstreamEquity": -0.200801,
+          "bridgeEquity": -0.20080025,
+          "equityDifference": 7.499999999938112e-7,
+          "upstreamProbabilities": [
+            0.450863,
+            0.1151,
+            0.00572,
+            0.171632,
+            0.007678
+          ],
+          "bridgeProbabilities": [
+            0.45086312,
+            0.11510047,
+            0.00572007,
+            0.17163204,
+            0.00767773
+          ],
+          "maxProbabilityDifference": 4.7000000000241293e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/21(2) 13/9*/5",
+          "board": "-2,0,0,-2,0,5,0,3,2,0,0,-3,3,0,0,0,-3,0,-4,-1,0,0,0,1,1,0,0,0",
+          "upstreamEquity": -0.238523,
+          "bridgeEquity": -0.23852332,
+          "equityDifference": 3.199999999980996e-7,
+          "upstreamProbabilities": [
+            0.447818,
+            0.107555,
+            0.00533,
+            0.191231,
+            0.014214
+          ],
+          "bridgeProbabilities": [
+            0.44781804,
+            0.10755453,
+            0.0053296,
+            0.19123124,
+            0.01421374
+          ],
+          "maxProbabilityDifference": 4.7000000000241293e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/21(2) 24/20(2)",
+          "board": "0,0,0,-2,-2,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.246987,
+          "bridgeEquity": -0.24698694,
+          "equityDifference": 6.00000000239298e-8,
+          "upstreamProbabilities": [
+            0.428143,
+            0.096414,
+            0.003598,
+            0.138147,
+            0.003821
+          ],
+          "bridgeProbabilities": [
+            0.42814291,
+            0.09641362,
+            0.00359803,
+            0.13814667,
+            0.00382139
+          ],
+          "maxProbabilityDifference": 3.8999999999985227e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/21(2) 13/9* 8/4",
+          "board": "-2,0,0,-2,0,5,0,3,2,0,0,-3,3,0,0,-1,-2,0,-4,0,-1,0,0,1,1,0,0,0",
+          "upstreamEquity": -0.250125,
+          "bridgeEquity": -0.25012445,
+          "equityDifference": 5.4999999998806e-7,
+          "upstreamProbabilities": [
+            0.449842,
+            0.10966,
+            0.005468,
+            0.207669,
+            0.017355
+          ],
+          "bridgeProbabilities": [
+            0.44984186,
+            0.10966027,
+            0.00546847,
+            0.20766944,
+            0.01735495
+          ],
+          "maxProbabilityDifference": 4.6999999999981085e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-51",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:51:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24 bar/20",
+          "board": "-3,0,0,0,-1,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.669005,
+          "bridgeEquity": -0.66900706,
+          "equityDifference": 0.00000206000000002593,
+          "upstreamProbabilities": [
+            0.371396,
+            0.075329,
+            0.003062,
+            0.253719,
+            0.028241
+          ],
+          "bridgeProbabilities": [
+            0.37139559,
+            0.0753285,
+            0.00306192,
+            0.25371912,
+            0.02824054
+          ],
+          "maxProbabilityDifference": 4.999999999866223e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-52",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:52:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23 bar/20",
+          "board": "-2,-1,0,0,-1,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.56795,
+          "bridgeEquity": -0.56795001,
+          "equityDifference": 1.0000000050247593e-8,
+          "upstreamProbabilities": [
+            0.384658,
+            0.078856,
+            0.003123,
+            0.24089,
+            0.023492
+          ],
+          "bridgeProbabilities": [
+            0.38465762,
+            0.07885602,
+            0.00312266,
+            0.24089023,
+            0.02349241
+          ],
+          "maxProbabilityDifference": 4.099999999992998e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-53",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:53:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/22 bar/20",
+          "board": "-2,0,-1,0,-1,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.582044,
+          "bridgeEquity": -0.58204389,
+          "equityDifference": 1.0999999999761201e-7,
+          "upstreamProbabilities": [
+            0.387073,
+            0.079048,
+            0.003495,
+            0.252371,
+            0.026944
+          ],
+          "bridgeProbabilities": [
+            0.38707268,
+            0.07904801,
+            0.0034955,
+            0.25237143,
+            0.02694413
+          ],
+          "maxProbabilityDifference": 5.000000000000664e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-54",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:54:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/21 bar/20",
+          "board": "-2,0,0,-1,-1,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.603703,
+          "bridgeEquity": -0.6037035,
+          "equityDifference": 4.999999999588667e-7,
+          "upstreamProbabilities": [
+            0.38037,
+            0.078366,
+            0.003393,
+            0.248134,
+            0.025543
+          ],
+          "bridgeProbabilities": [
+            0.38037026,
+            0.07836644,
+            0.00339259,
+            0.2481343,
+            0.0255428
+          ],
+          "maxProbabilityDifference": 4.3999999999044803e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-55",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:55:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 11,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 8/3(2)",
+          "board": "-2,0,0,0,-2,5,0,3,2,0,0,-4,3,0,0,1,-1,0,-4,0,0,-2,0,1,0,0,0,0",
+          "upstreamEquity": -0.306685,
+          "bridgeEquity": -0.30668509,
+          "equityDifference": 9.000000000813912e-8,
+          "upstreamProbabilities": [
+            0.414939,
+            0.103507,
+            0.004035,
+            0.16229,
+            0.009444
+          ],
+          "bridgeProbabilities": [
+            0.41493899,
+            0.10350682,
+            0.00403529,
+            0.16228981,
+            0.00944395
+          ],
+          "maxProbabilityDifference": 2.9000000000001247e-7
+        },
+        {
+          "rank": 2,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 13/3",
+          "board": "-2,0,0,0,-2,5,0,3,2,0,0,-3,3,0,0,1,-3,0,-4,0,0,-1,0,1,0,0,0,0",
+          "upstreamEquity": -0.322156,
+          "bridgeEquity": -0.32215646,
+          "equityDifference": 4.599999999799209e-7,
+          "upstreamProbabilities": [
+            0.417024,
+            0.09709,
+            0.003894,
+            0.175325,
+            0.011913
+          ],
+          "bridgeProbabilities": [
+            0.41702437,
+            0.0970898,
+            0.00389442,
+            0.17532516,
+            0.01191334
+          ],
+          "maxProbabilityDifference": 4.200000000001078e-7
+        },
+        {
+          "rank": 3,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 13/8(2)",
+          "board": "-2,0,0,0,-2,5,0,3,2,0,0,-2,3,0,0,1,-5,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.338854,
+          "bridgeEquity": -0.33885366,
+          "equityDifference": 3.3999999998757247e-7,
+          "upstreamProbabilities": [
+            0.409236,
+            0.093137,
+            0.003574,
+            0.164575,
+            0.010245
+          ],
+          "bridgeProbabilities": [
+            0.40923631,
+            0.09313738,
+            0.00357365,
+            0.16457453,
+            0.01024467
+          ],
+          "maxProbabilityDifference": 4.7000000000241293e-7
+        },
+        {
+          "rank": 4,
+          "evaluatedPlies": 2,
+          "move": "bar/20(2) 6/1*(2)",
+          "board": "-2,0,0,0,-2,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-2,0,0,0,0,-2,1,0,0,0",
+          "upstreamEquity": -0.375978,
+          "bridgeEquity": -0.37597823,
+          "equityDifference": 2.300000000454716e-7,
+          "upstreamProbabilities": [
+            0.391965,
+            0.100942,
+            0.002969,
+            0.15748,
+            0.007386
+          ],
+          "bridgeProbabilities": [
+            0.39196485,
+            0.10094189,
+            0.00296875,
+            0.15748009,
+            0.00738561
+          ],
+          "maxProbabilityDifference": 3.9000000000028595e-7
+        },
+        {
+          "rank": 5,
+          "evaluatedPlies": 2,
+          "move": "bar/15(2)",
+          "board": "-2,0,0,0,0,5,0,3,2,-2,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,0,0,0",
+          "upstreamEquity": -0.376128,
+          "bridgeEquity": -0.37612841,
+          "equityDifference": 4.100000000062387e-7,
+          "upstreamProbabilities": [
+            0.411235,
+            0.09029,
+            0.003206,
+            0.191422,
+            0.013824
+          ],
+          "bridgeProbabilities": [
+            0.41123462,
+            0.09028997,
+            0.00320553,
+            0.1914219,
+            0.01382448
+          ],
+          "maxProbabilityDifference": 4.800000000006188e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-61",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:61:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/24",
+          "board": "-3,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.837159,
+          "bridgeEquity": -0.83715916,
+          "equityDifference": 1.6000000002680537e-7,
+          "upstreamProbabilities": [
+            0.35701,
+            0.067253,
+            0.00268,
+            0.287606,
+            0.036311
+          ],
+          "bridgeProbabilities": [
+            0.35701036,
+            0.06725325,
+            0.00268018,
+            0.28760594,
+            0.03631136
+          ],
+          "maxProbabilityDifference": 3.600000000325565e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-62",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:62:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/23",
+          "board": "-2,-1,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.760185,
+          "bridgeEquity": -0.76018548,
+          "equityDifference": 4.799999999693938e-7,
+          "upstreamProbabilities": [
+            0.367254,
+            0.070598,
+            0.002816,
+            0.279374,
+            0.033508
+          ],
+          "bridgeProbabilities": [
+            0.36725432,
+            0.07059815,
+            0.00281584,
+            0.27937376,
+            0.03350816
+          ],
+          "maxProbabilityDifference": 3.199999999980996e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-63",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:63:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/22",
+          "board": "-2,0,-1,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.754763,
+          "bridgeEquity": -0.75476336,
+          "equityDifference": 3.600000000325565e-7,
+          "upstreamProbabilities": [
+            0.370023,
+            0.070771,
+            0.002829,
+            0.281862,
+            0.034974
+          ],
+          "bridgeProbabilities": [
+            0.37002301,
+            0.07077143,
+            0.00282878,
+            0.28186181,
+            0.0349739
+          ],
+          "maxProbabilityDifference": 4.299999999957116e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-64",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:64:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/21",
+          "board": "-2,0,0,-1,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.797309,
+          "bridgeEquity": -0.79730934,
+          "equityDifference": 3.399999999320613e-7,
+          "upstreamProbabilities": [
+            0.364279,
+            0.070267,
+            0.003091,
+            0.288085,
+            0.036341
+          ],
+          "bridgeProbabilities": [
+            0.36427951,
+            0.07026727,
+            0.00309072,
+            0.2880851,
+            0.03634146
+          ],
+          "maxProbabilityDifference": 5.099999999536031e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-65",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:65:0:0:1:0:10",
+      "plies": 2,
+      "legalMoves": 1,
+      "moves": [
+        {
+          "rank": 1,
+          "evaluatedPlies": 2,
+          "move": "bar/20",
+          "board": "-2,0,0,0,-1,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,1,0,0",
+          "upstreamEquity": -0.820742,
+          "bridgeEquity": -0.82074219,
+          "equityDifference": 1.9000000006652584e-7,
+          "upstreamProbabilities": [
+            0.360283,
+            0.070015,
+            0.003131,
+            0.289427,
+            0.037152
+          ],
+          "bridgeProbabilities": [
+            0.36028326,
+            0.07001467,
+            0.00313056,
+            0.28942719,
+            0.03715199
+          ],
+          "maxProbabilityDifference": 4.39999999999989e-7
+        }
+      ]
+    },
+    {
+      "id": "continuation-1-66",
+      "xgid": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:66:0:0:1:0:10",
+      "plies": 2,
+      "pass": true,
+      "moves": []
+    }
+  ]
+}

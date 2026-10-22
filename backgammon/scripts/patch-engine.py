@@ -26,7 +26,7 @@ s=s.replace(needle, '''        if (fCubefulEquity)
             iKey ^= 0x6a47b47e ^ ((pec->nPlies >= 2) << 28);''')
 x.write_text(s)
 x=p/'Makefile.emcc'
-s=x.read_text().replace('"_hint",','"_hint", "_bg_score", "_bg_cube", "_bg_value", "_bg_rollout", "_bg_rollout_policy", "_bg_rollout_config",').replace('-s EXPORT_ES6','-s EXPORT_ES6 -s ENVIRONMENT=web,worker,node')
+s=x.read_text().replace('"_hint",','"_hint", "_bg_score", "_bg_score_config", "_bg_cube", "_bg_value", "_bg_rollout", "_bg_rollout_policy", "_bg_rollout_config",').replace('-s EXPORT_ES6','-s EXPORT_ES6 -s ENVIRONMENT=web,worker,node')
 s=s.replace('DISTDIR = dist', '''DISTDIR = dist
 
 # The scalar fallback keeps upstream -O2. SIMD preserves per-neuron operation
@@ -56,3 +56,9 @@ subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent
 
 # Counterfactual cube values must retain the cube used for checker decisions.
 subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent / 'engine/source/checker-context-bg8.patch')], cwd=p, check=True)
+
+# Keep deeper finalists ahead of discarded shallow scores during rollout play.
+subprocess.run(['patch', '-p1', '-i', str(Path(__file__).resolve().parent.parent / 'engine/source/filtered-rollout-bg9.patch')], cwd=p, check=True)
+
+# Some patch implementations retain a backup when line offsets differ.
+(p / 'src/eval.c.orig').unlink(missing_ok=True)

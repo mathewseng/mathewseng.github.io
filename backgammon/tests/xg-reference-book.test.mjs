@@ -52,7 +52,9 @@ test('reference lookup rejects incompatible rules and never grades an unlisted m
  assert.equal(referenceEligible({...state,matchLength:7},options),false);
  assert.equal(referenceEligible(state,{...options,rollout:{}}),false);
  const ordinary={...state,rules:{...state.rules,immediateRedoubles:0}};
- assert.equal((await book.lookup(ordinary,options)).method,'rollout');
+ const fallback=await book.lookup(ordinary,options);
+ assert.equal(fallback.book.source,'precomputed');assert.equal(fallback.settings.plies,5);
+ assert.notEqual(fallback.method,'rollout','retired filtered rollout book must not re-enter through reference fallback');
  assert.throws(()=>referenceResult(ordinary,entry,index));
 });
 test('all close XG openings have 21 replies and failed reference loading falls back visibly',async()=>{

@@ -184,9 +184,13 @@ module.exports = async function draftChoices(browser, base, out, name) {
             if (fixture === "forced-seven") {
               // A legacy computer draft may have the optional die first and an old
               // autoCommit marker. Recovery normalizes it but must not submit it.
-              await page.evaluate(async () => {
+              // Seed after leaving Play: its pagehide handler saves the live draft
+              // and would otherwise overwrite this deliberately older work record.
+              await page.goto(base + "/backgammon/");
+              const recoveredDraft = await page.evaluate(async () => {
                 const st = await import("/backgammon/core/storage.mjs"),
                   r = await import("/backgammon/core/rules.mjs"),
+                  t = await import("/backgammon/core/table.mjs"),
                   w = await st.get("work", "play");
                 w.draft = r
                   .legalPaths(w.game.state)
@@ -195,10 +199,13 @@ module.exports = async function draftChoices(browser, base, out, name) {
                 w.game.config.mode = "computer";
                 w.game.config.strength = "quick";
                 await st.put("work", w);
+                return t.draftAutomation(w.game.state, w.draft, r.legalPaths(w.game.state)).replacement;
               });
-              await page.reload();
+              assert.equal(recoveredDraft.length, 2);
+              assert.deepEqual(recoveredDraft[0], data.auto.steps[0]);
+              await page.goto(base + "/backgammon/play/#resume=" + data.id);
               await page.locator("#confirm").waitFor();
-              await page.waitForTimeout(150);
+              await waitDraft(recoveredDraft);
               w = await read();
               assert.equal(w.game.events.length, 0);
               assert.equal(w.draft.length, 2);

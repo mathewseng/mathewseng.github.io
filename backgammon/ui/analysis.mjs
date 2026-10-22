@@ -217,7 +217,7 @@ export function resultView(
       );
     }
   }
-  if (result.screening || result.method === "rollout") {
+  if (result.screening || result.method === "rollout" || result.settings.pruning === false || result.settings.verification) {
     const details = el(
       "details",
       {},
@@ -234,6 +234,12 @@ export function resultView(
     if (result.screening?.retainedLeader)
       details.append(el("p", { class: "muted small" },
         "Research keeps the 3-ply shortlist’s leader and evaluates it alongside every other finalist at 4 ply. Completed 3-ply work is reused for this check."));
+    if (result.settings.pruning === false)
+      details.append(el("p", { class: "muted small" },
+        "Verify evaluates every displayed 4-ply checker finalist without GNUbg’s internal pruning network. The Research shortlist and its 3-ply leader check still use normal pruning. This slower diagnostic can change equities; it does not establish greater playing strength or agreement with XG."));
+    if (result.settings.verification)
+      details.append(el("p", { class: "muted small" },
+        "Verify applies to checker decisions. This cube result uses Research’s normal 4-ply search with pruning enabled."));
     if (result.method === "rollout")
       details.append(
         el(

@@ -255,7 +255,8 @@ export class EngineClient {
           ? !(hint.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies &&
               (["predicted-cost", "maximum-depth"].includes(hint.budget?.reason) ||
                 (hint.budget?.reason === 'clear-lead' && hint.candidates?.[0]?.key === submittedKey)))
-          : hint.settings?.plies !== PRESETS[preset]?.plies)) return null;
+          : hint.settings?.plies !== PRESETS[preset]?.plies ||
+            (hint.settings?.pruning !== false) !== PRESETS[preset]?.pruning)) return null;
     return hint;
   }
   // Display-only snapshots, including completed shallow stages of an Auto
@@ -361,7 +362,7 @@ export class EngineClient {
               "Analysis reached its time limit. Completed rollout batches can be resumed; try a shallower tree setting.",
             ),
           ),
-        job.rollout || ["expert", "research"].includes(job.preset)
+        job.rollout || ["expert", "research", "verify"].includes(job.preset)
           ? 1800000
           : 300000,
       );

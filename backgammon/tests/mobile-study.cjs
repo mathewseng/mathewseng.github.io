@@ -101,6 +101,28 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     await page.locator("#mobile-tools").tap();
     await page.locator(".tool-menu-dialog #equity-toggle").tap();
     await page.waitForFunction(() => document.querySelector("#equity-bar")?.dataset.state === "ready");
+    // A constrained portrait board includes the equity rail's padding in its
+    // grid track. Wider fallback fonts must not push the review controls off
+    // screen or let that rail overlap the player strip.
+    const trainerFit = async (width,height,font) => {
+      await page.setViewportSize({width,height});
+      await page.evaluate(()=>scrollTo(0,0));
+      const fit = await page.evaluate(() => {
+        const box = selector => document.querySelector(selector).getBoundingClientRect().toJSON();
+        return {board:box("#board"),player:box("#player"),actions:box("#actions"),height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth};
+      });
+      assert.ok(fit.board.bottom <= fit.player.top+1,`trainer equity rail overlaps player ${width} ${font}: ${JSON.stringify(fit)}`);
+      assert.ok(fit.width <= width+1,`trainer horizontal overflow ${width} ${font}`);
+      if (width >=375) {
+        assert.ok(fit.height <= height+1,`trainer review scrolls ${width} ${font}: ${JSON.stringify(fit)}`);
+        assert.ok(fit.actions.bottom <= height+1,`trainer review actions offscreen ${width} ${font}: ${JSON.stringify(fit)}`);
+      }
+    };
+    for (const [width,height] of [[320,568],[375,667],[390,844]]) await trainerFit(width,height,"system");
+    const fallback = await page.addStyleTag({content:"body,button,input,select{font-family:Verdana,sans-serif!important}"});
+    for (const [width,height] of [[320,568],[375,667]]) await trainerFit(width,height,"Verdana");
+    await fallback.evaluate(node=>node.remove());
+    await page.setViewportSize({width:390,height:844});
     await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("0");
     assert.equal(await page.locator("#equity-bar").getAttribute("data-state"),"unavailable","alternate preview must not claim source equity");
     await page.getByLabel("Preview evaluated move",{exact:true}).selectOption("-1");

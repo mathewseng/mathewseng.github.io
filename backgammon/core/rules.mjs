@@ -313,11 +313,23 @@ export function applyStep(source, step, p = source.turn) {
 }
 const stepEqual = (a, b) =>
   a.from === b.from && a.to === b.to && a.die === b.die;
-export function legalPaths(s) {
+function enumeratePaths(s, distinctResults = false) {
   if (s.phase !== "move") return [];
   const dice = s.dice[0] === s.dice[1] ? Array(4).fill(s.dice[0]) : s.dice;
   const paths = [];
+  // Two routes to the same partial board with the same dice left have exactly
+  // the same completions. Solver callers need only the first route to each
+  // result; interactive drafts still require every legal path. Keep remaining
+  // dice in the key so maximum-use and higher-die checks retain their meaning.
+  // Ordinary rolls only meet again at their final board, which legalTurns
+  // already deduplicates. Avoid adding a per-node lookup to those short trees.
+  const visited = distinctResults && dice.length === 4 ? new Set() : null;
   function walk(b, remaining, steps) {
+    if (visited) {
+      const key = `${remaining.join(",")}|${boardKey(b)}`;
+      if (visited.has(key)) return;
+      visited.add(key);
+    }
     if (!remaining.length || b.off[s.turn] === 15) {
       paths.push({ steps, state: b });
       return;
@@ -343,9 +355,12 @@ export function legalPaths(s) {
   }
   return valid;
 }
+export function legalPaths(s) {
+  return enumeratePaths(s);
+}
 export function legalTurns(s) {
   const map = new Map();
-  for (const path of legalPaths(s)) {
+  for (const path of enumeratePaths(s, true)) {
     const key = boardKey(path.state);
     if (!map.has(key)) map.set(key, { ...path, key });
   }

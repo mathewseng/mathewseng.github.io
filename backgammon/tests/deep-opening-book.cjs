@@ -8,7 +8,7 @@ module.exports=async function deepOpeningBook(browser,base,out,name){
     await page.goto(base+'/backgammon/');
     measured=await page.evaluate(async()=>{
       const {EngineClient}=await import('/backgammon/engine/client.mjs'),r=await import('/backgammon/core/rules.mjs');
-      const {OpeningBook,bookBoardKey}=await import('/backgammon/engine/opening-book.mjs');
+      const {OpeningBook}=await import('/backgammon/engine/opening-book.mjs');
       const {shareURL}=await import('/backgammon/core/xgid.mjs');
       const client=new EngineClient({openingBook:new OpeningBook({preferDeep:true}),workerFactory:()=>{throw Error('Covered decision started WASM');}}),states=[],keys=[];
       try{
@@ -27,9 +27,8 @@ module.exports=async function deepOpeningBook(browser,base,out,name){
           if(grade.settings.plies!==5||Math.abs(grade.error-(answer.candidates[0].equity-actual.equity))>1e-8)throw Error('Inconsistent grading');
           keys.push(answer.candidates[0].key);
         }
-        const overlay=await(await fetch('/backgammon/engine/opening-book-data/rollout/index.json')).json();
-        const solverState=states.find(s=>!overlay.entries[bookBoardKey(s)]?.[[...s.dice].sort((a,b)=>b-a).join('')]);
-        if(!solverState)throw Error('Expected an uncovered five-ply fallback');
+        // The retired rollout overlay no longer overrides any direct book position.
+        const solverState=states[0];
         return {id:index.id,positions:states.length,states:[states[0],states.at(-1)],keys:[keys[0],keys.at(-1)],solverURL:shareURL(solverState)};
       }finally{client.destroy();}
     });

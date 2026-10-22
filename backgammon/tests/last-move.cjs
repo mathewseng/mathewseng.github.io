@@ -114,13 +114,14 @@ module.exports = async function lastMoveUX(browser, base, out, browserName) {
               initial.dice = [1, 2];
               steps = [];
             }
-            const action = { type: "move", steps },
+            const dice = [...initial.dice],
+              action = { type: "move", steps },
               state = r.transition(initial, action, 0);
             const game = { initial, state, events: [{ actor: 0, action }] };
             const markers = lastMove(game);
             d.lastMove = markers;
             d.set(state, []);
-            return { markers, dice: initial.dice, state };
+            return { markers, dice, recordedDice: initial.dice, state };
           },
           { kind, orientation },
         );
@@ -129,8 +130,11 @@ module.exports = async function lastMoveUX(browser, base, out, browserName) {
           await page
             .locator(".last-roll .board-die")
             .evaluateAll((ns) => ns.map((n) => Number(n.dataset.die))),
-          result.dice,
+          [...result.dice].sort((a,b) => b-a),
+          "historical dice display the higher die first",
         );
+        assert.deepEqual(result.recordedDice,result.dice,"rendering preserves the recorded roll order");
+        assert.deepEqual(result.markers.dice,result.dice,"rendering preserves the last-move history");
         assert.equal(await page.locator(".last-roll [role=button]").count(), 0);
         const arrowCount = await page.locator(".last-move-arrow").count();
         assert.equal(arrowCount > 0, kind !== "pass", `${kind}: arrows accompany moved checkers`);

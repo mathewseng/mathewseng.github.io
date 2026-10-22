@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg9",
+  "builtAt": "2026-10-22T20:29:07.877077+00:00",
+  "emscripten": "4.0.15",
+  "emsdkTagCommit": "389a68bc35dcff7ebae4614e1615099dafda00d1",
+  "scalarFlags": "-O2",
+  "simdFlags": "-O3 -flto -msimd128 -ffp-contract=off",
+  "dataUnchanged": true,
+  "assets": {
+    "vendor/gnubg-core-module.js": "dcbbc729055d5475df97f0199e087b4f410a6d5f819b13329e3acb8338b05858",
+    "vendor/gnubg-core-module.wasm": "44d5a51bc0363037b5bd99046da2287f0194e4654c3e0772eb6d182381435d82",
+    "vendor/simd/gnubg-core-module.js": "39c0393c2058053143e658c5c14a28069b72a60e1db3b1387e98394d48833898",
+    "vendor/simd/gnubg-core-module.wasm": "d193892f48e9a4435f0ebdf1cb35815475ac186957e24380609b6093d2553f26",
+    "source/gnubg-core-955555c-bg9.tar.gz": "559cd43de37b6194d28fdf66ef74f287bcef13552c9b48ef6c476be73b55e7dd",
+    "vendor/gnubg-core-module.data": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49"
+  },
+  "buildInputs": {
+    "scripts/build-engine.sh": "0f3e61b9e9f7bb5af4481abcbfb36a6796dc3ab30011073fc1e96888885d2599",
+    "scripts/patch-engine.py": "1d8ba1dd85a965908de1c3e3e0441f886a82c40a2a27a8f8edbee40bcc997823",
+    "scripts/archive-engine.py": "2485cea6751fb0c456471ae098aebdee3ec56f31b88ea9eff2f02cc25d65aba8",
+    "engine/source/bridge.c": "ac4e57573cf7cfab7f76fe5961cec367817c85597f482c714a1bfc12ca7a7269",
+    "engine/source/verify-checker.c": "d0ab4142ca398fa707a39e02e38955d5c21c431764dceacb690650ceb6ab72a8",
+    "engine/source/filtered-rollout-bg9.patch": "b576617ea939b99ed9f9ead9b3c1a35b61479b902e549a42718f641678532fa3"
+  },
+  "previousSourceSHA256": "101432178bf4902a24b8d2a28e4dd3f79a848b5a3ebf55a387d9e03a3506bbb1",
+  "sourceDelta": {
+    "changed": [
+      "Makefile.emcc",
+      "src/eval.c"
+    ],
+    "added": [
+      "src/verify-checker.c"
+    ]
+  },
+  "policy": "Filtered native checker selection keeps the deepest finalists ahead of discarded shallow candidates, restoring upstream behavior. Old filtered rollout estimates are retired from live lookup. Only manual Verify checker finalist scores disable internal pruning; Auto, Research and cube depth settings remain unchanged. No claim of XG equivalence is established by this release.",
+  "evidence": [
+    "checker-verification-native-validation.json",
+    "internal-pruning-audit.json",
+    "upstream-focus-validation.json",
+    "LEGAL-TURN-ENUMERATION.md",
+    "filtered-rollout-regression.json",
+    "bg9-rebuild-validation.json",
+    "FILTERED-ROLLOUT-FIX.md",
+    "bg9-browser-validation.json"
+  ]
+}
