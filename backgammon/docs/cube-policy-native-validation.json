@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "binarySHA256": "809665f0911f3634eb894f06256e473e553367494d7479602866caa9aa496bfb",
+  "legacyBinarySHA256": "6f42770f62d7f752da2e836bbb8eb9452f1acd4fe274d69a131b1a0118973877",
+  "cases": 16,
+  "trialsPerCase": 2,
+  "seed": 987654321,
+  "legacyOutputsExact": true,
+  "cubeTransitionTests": {
+    "cases": 56,
+    "players": 2,
+    "cubeValues": [
+      1,
+      2,
+      16,
+      128
+    ],
+    "rulesParity": "core/rules.mjs",
+    "separateCapAndOfferDepthTests": true
+  }
+}
