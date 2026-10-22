@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {gunzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
@@ -45,13 +45,14 @@ test('the published book follows the fresh acceptance rules and preserves every 
  const base=report.summaries.short,next=report.summaries['full-strong'],o=opening.rows[0],strong=o.policies['full-strong'];
  const cohortAccepted=next.meanAbsoluteGapError<base.meanAbsoluteGapError&&next.pairMeanFavorsXG>=base.pairMeanFavorsXG&&Object.values(report.cohortEffects).some(e=>e.familywise95.upper<0);
  const openingAccepted=strong.retainedReferenceGaps.every(g=>g.familywise95.lower>0)&&Math.abs(strong.gap.difference-o.referenceGap)<Math.abs(o.policies.short.gap.difference-o.referenceGap)&&Object.values(o.effects).some(e=>e.familywise95.upper<0);
+ const residual=existsSync(new URL('../docs/reply-fullgame-precision-comparison.json',import.meta.url))?read('../docs/reply-fullgame-precision-comparison.json'):null;
  const promoted=cohortAccepted?inputs.plan:openingAccepted?inputs.plan.filter(d=>d.kind==='opening'):[];
  assert.equal(baseline.entries.length,66);
  for(const d of baseline.entries){
   const selected=promoted.find(p=>p.board===d.board&&p.roll===d.roll),entry=index.entries[d.board][d.roll];
   if(!selected){assert.equal(hash(JSON.stringify(entry)),d.sha256);continue;}
-  const source=selected.kind==='opening'?opening:report,values=source.rows.find(r=>r.id===selected.id).policies['full-strong'].candidates;
-  assert.equal(entry.settings.policyId,'strong');assert.equal(entry.settings.truncationPlies,0);assert.equal(entry.samples,selected.kind==='opening'?32768:4096);
+  const source=selected.kind==='opening'?opening:residual?.rows.some(r=>r.id===selected.id)?residual:report,values=source.rows.find(r=>r.id===selected.id).policies['full-strong'].candidates;
+  assert.equal(entry.settings.policyId,'strong');assert.equal(entry.settings.truncationPlies,0);assert.equal(entry.samples,source.trialsPerMovePolicy);
   assert.equal(entry.comparisonSignature,source.signature);assert.deepEqual(entry.rows.map(r=>r[1]),values.map(c=>c.equity));assert.deepEqual(entry.standardErrors,values.map(c=>c.standardError));
  }
  if(promoted.length){

@@ -17,3 +17,8 @@ BG_ROLLOUT_WORKERS=12 BG_ROLLOUT_REMOTE_WORKERS=10 node backgammon/scripts/run-f
 ```
 
 The default checkpoint directory is `backgammon/test-results/reply-fullgame-precision-v1`. Scheduling may change without changing the signed sample. Progress reports counts only; inspect equities after the entire fixed sample completes.
+
+Published per-move reference values retain their original XG contributor credits.
+The summarizer joins credits by the legal resulting board against the unchanged
+reference collection, verifies each equity, and records the attribution file's
+SHA-256. This adds source metadata without changing the sample or inference.

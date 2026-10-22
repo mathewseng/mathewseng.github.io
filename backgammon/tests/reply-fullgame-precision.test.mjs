@@ -10,7 +10,7 @@ test('the six-reply plan preserves every retained move and uses independent fixe
  assert.equal(createHash('sha256').update(JSON.stringify(unsigned)).digest('hex'),signature);
  assert.equal(plan.plan.length,6);assert.equal(plan.plan.reduce((n,d)=>n+d.candidates.length,0),20);
  assert.equal(plan.trials,32768);assert.equal(plan.retainedComparisons,14);
- execFileSync('python3',['backgammon/scripts/summarize-reply-fullgame.py','--validate-plan'],{env:{...process.env,NODE:process.execPath,PYTHONDONTWRITEBYTECODE:'1'}});
+ execFileSync('python3',['backgammon/scripts/summarize-reply-fullgame.py','--validate-plan'],{env:{...process.env,NODE:process.execPath,PYTHONDONTWRITEBYTECODE:'1',NODE:process.execPath}});
 });
 test('paired inference tests a third retained leader and rejects missing or mismatched batches',()=>{
  const script=`import importlib.util,json,copy,pathlib
@@ -26,6 +26,7 @@ for d in i['plan']:
    records.append({'key':'|'.join([d['id'],'full-strong',str(batch),c['board']]),'id':d['id'],'policy':'full-strong','board':c['board'],'role':c['role'],'batch':batch,'seed':(d['seedBase']+batch*65536)%2**32,'value':value})
 r=m.summarize(i,records)
 assert r['conclusions']=={'persistent-policy-disagreement':1,'XG-choice-supported':5,'unresolved':0}
+assert all(c['referenceCredit']['author'] for row in r['rows'] for c in row['policies']['full-strong']['candidates'])
 third=next(r for r in r['rows'] if r['id']=='reply-2fda09c519d84905-32')
 assert third['policies']['full-strong']['gap']['difference']<0
 assert third['conclusion']=='persistent-policy-disagreement'
@@ -35,7 +36,7 @@ for bad in [records[:-1],records+[records[0]],copy.deepcopy(records)]:
  except ValueError:pass
  else:raise AssertionError('Malformed paired sample accepted')
 `;
- execFileSync('python3',['-c',script],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
+ execFileSync('python3',['-c',script],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1',NODE:process.execPath}});
 });
 
 test('the completed precision refinement preserves all other entries and never publishes partial results',()=>{

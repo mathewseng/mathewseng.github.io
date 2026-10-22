@@ -61,8 +61,25 @@ def validate(input_bytes):
         used.update(seeds)
     return inputs
 
+def reference_credits():
+    source_bytes = (FAMILY/'docs/deep-book-xg-reference.json').read_bytes()
+    credit_bytes = (FAMILY/'docs/xg-reference-attribution.json').read_bytes()
+    credits = json.loads(credit_bytes)
+    if credits['sourceSHA256'] != hashlib.sha256(source_bytes).hexdigest():
+        raise ValueError('Reference attribution source changed')
+    script = """import fs from 'node:fs';
+import {normalizeReference} from './backgammon/scripts/deep-book-comparison.mjs';
+const source=JSON.parse(fs.readFileSync('backgammon/docs/deep-book-xg-reference.json'));
+const credits=JSON.parse(fs.readFileSync('backgammon/docs/xg-reference-attribution.json'));
+const entries={};
+for(const d of normalizeReference(source))entries[d.board+'|'+d.roll]=Object.fromEntries(d.candidates.map(c=>[c.board,{equity:c.equity,credit:credits.sources[d.url].positions[d.title].find(a=>a.rank===c.rank)}]));
+process.stdout.write(JSON.stringify(entries));"""
+    entries = json.loads(subprocess.check_output([os.getenv('NODE','node'),'--input-type=module','-e',script],cwd=FAMILY.parent))
+    return entries, hashlib.sha256(credit_bytes).hexdigest()
+
 def summarize(inputs, records):
     report=ablation.summarize(inputs,records)
+    credits, report['referenceAttributionSHA256'] = reference_credits()
     report.pop('effectComparisons',None)
     report['retainedComparisons']=inputs['retainedComparisons']
     report['equityTolerance']=TOLERANCE
@@ -71,6 +88,10 @@ def summarize(inputs, records):
         policy=row['policies']['full-strong']
         for c in policy['candidates']:
             ref=next(v['reference'] for v in d['candidates'] if v['board']==c['board'])
+            published = credits[d['board']+'|'+d['roll']][c['board']]
+            if abs(published['equity']-c['referenceEquity']) > 1e-12:
+                raise ValueError('Reference candidate attribution mismatch')
+            c['referenceCredit'] = published['credit']
             c['referenceDifference']=c['equity']-c['referenceEquity']
             c['withinTolerance']=abs(c['referenceDifference'])<=TOLERANCE
             c['referenceConfidenceHalfWidth']=ref.get('confidenceHalfWidth')
