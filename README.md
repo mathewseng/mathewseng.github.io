@@ -6,7 +6,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 
 | Path | What it is |
 | --- | --- |
-| `index.html` | Searchable, grouped directory linking every project directly, with created and updated dates |
+| `index.html` | Illustrated project homepage with grouped links and created and updated dates |
 | `gym/` | Gym Tracker training app (Vite + React; the only page with a build step) |
 | `cards/` | Card Table Workshop |
 | `microtonal-lab/` | Tuning explorer and browser instrument |
@@ -31,7 +31,10 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
   import commit, and historical dates for the matheweon.github.io collection. `legacyPaths`
   records its original page URLs. Source-only helpers are linked individually as well.
   Run `node scripts/build-project-directory.mjs` after editing the catalog. It generates
-  the homepage and Music, Games, and Tools hubs, and stamps the imported page headers.
+  the homepage from `scripts/templates/home.html` and the Music, Games, and Tools hubs,
+  and stamps the imported page headers. The homepage preserves the original card fan
+  and illustrated tiles, with additional projects in matching groups; `home.css` only
+  styles its date labels and added tiles. Search is available in the category hubs.
   Creation follows the earliest recorded primary-file commit, following renames but
   stopping at copied templates; updates
   follow changes under each project's source paths. Imported creation dates are preserved;
@@ -81,7 +84,7 @@ That runs every `*.test.cjs` and `*.test.mjs` outside `gym/`, including the colo
 ```bash
 sh scripts/assemble-site.sh _site
 node scripts/shell-browser.cjs      # every page at 1440x900, 375x812 and 844x390: overflow, 44px targets, focus rings, 12px floor
-node scripts/project-directory-browser.cjs # search, category navigation, and no-JavaScript links
+node scripts/project-directory-browser.cjs # homepage links, category search, and no-JavaScript links
 node scripts/screenshots.cjs --compare   # every page at 1440x900 and 375x812 against scripts/screenshots/baseline/
 ```
 

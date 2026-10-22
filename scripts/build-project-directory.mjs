@@ -73,7 +73,37 @@ function directory(category) {
 </html>\n`;
 }
 
-writeFileSync(resolve(root, 'index.html'), directory());
+function homepage() {
+  const featured = new Set();
+  let html = readFileSync(resolve(root, 'scripts/templates/home.html'), 'utf8');
+  // Keep the original illustrated tiles and source link, adding only their dates.
+  html = html.replace(/<li\b([^>]*)>([\s\S]*?)<\/li>/g, (item, attributes, body) => {
+    const path = body.match(/<a\b[^>]*href="([^"]+)"/)?.[1];
+    const project = map.projects.find(p => p.path === path);
+    if (!project) return item;
+    featured.add(path);
+    const metadata = `<div class="project-dates">${dates(project)}</div>`;
+    body = body.includes('</p>') ? body.replace('</p>', `</p>${metadata}`) : `${body}${metadata}`;
+    return `<li${attributes} data-project="${esc(path)}">${body}</li>`;
+  });
+
+  const accents = { poker: 'poker', backgammon: 'backgammon', games: 'blackjack', music: 'microtonal', tools: 'gym' };
+  const groups = map.categories.map(category => {
+    const projects = map.projects.filter(p => p.category === category.id && !featured.has(p.path));
+    return `<section class="group" id="${category.id}" aria-labelledby="heading-${category.id}" style="--project-accent: var(--family-${accents[category.id]})">
+          <div class="group-head"><h2 id="heading-${category.id}">${esc(category.name)}</h2><span>${projects.length} projects</span></div>
+          <ul class="tiles" role="list">${projects.map((p, i) => `<li data-project="${esc(p.path)}">
+            <a class="tile tile--catalog" href="${esc(p.path)}" style="--i: ${i % 4}">
+              <div><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><div class="project-dates">${dates(p)}</div></div>
+              <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+            </a>
+          </li>`).join('\n')}</ul>
+        </section>`;
+  }).join('\n\n');
+  return html.replace('<!-- project-groups -->', groups);
+}
+
+writeFileSync(resolve(root, 'index.html'), homepage());
 for (const category of map.categories.filter(c => ['games', 'music', 'tools'].includes(c.id))) {
   mkdirSync(resolve(root, category.id), { recursive: true });
   writeFileSync(resolve(root, category.id, 'index.html'), directory(category));
