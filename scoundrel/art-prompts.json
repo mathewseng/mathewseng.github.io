@@ -1,0 +1,231 @@
+{
+  "generator": "Built-in image_gen tool",
+  "postProcessing": "WebP compression and proportional downsampling; no composite or shared card art",
+  "images": [
+    {
+      "id": "background",
+      "path": "assets/dungeon.webp",
+      "prompt": "Use case: stylized-concept. Asset type: landscape background illustration for an atmospheric solo dungeon card game named Scoundrel. Create an exquisite hand-painted dark fantasy environment, wide 16:9 landscape, a subterranean medieval crypt seen straight on. Massive worn stone arches, a central distant arched doorway leading down stone steps into darkness, tiny warm torch flames on each side, scattered broken masonry and ancient ironwork, subtle creeping ground fog. Rich painterly gouache/oil editorial game concept art, fine architectural detail, desaturated charcoal green and weathered slate stone with warm antique gold torchlight, restrained crimson accents. Cinematic chiaroscuro, immersive, melancholy and mysterious, understated premium fantasy board game illustration. Composition: clear central stone arch in upper middle, dark calm lower half for cards and UI to be overlaid by code, detailed framing architecture at left and right edges. No characters, no monsters, no cards, no interface, no text, no lettering, no logos, no watermark. Aim for a coherent physical location, no purple neon, no modern objects."
+    },
+    {
+      "id": "As",
+      "path": "assets/cards/As.webp",
+      "prompt": "Use case: stylized-concept. Asset type: portrait encounter illustration for an original dark fantasy dungeon card game. An ancient skeletal knight guardian in a worn black iron crown and ruined plate armor, chest-up three-quarter portrait, hooded skull with faint ember eyes, crypt stonework dissolving into shadow behind him. Menacing, still, majestic. Desaturated charcoal and bronze. Hand-painted richly detailed oil and gouache fantasy concept art, high contrast chiaroscuro, expressive aged brushwork, premium tabletop game aesthetic, serious and atmospheric. Portrait 2:3 framing, subject occupies center with dark negative space around edges. Coherent with a torchlit medieval underground stone cathedral. No text, no letters, no numbers, no borders, no cards, no interface, no watermark, no logos, no purple neon."
+    },
+    {
+      "id": "Td",
+      "path": "assets/cards/Td.webp",
+      "prompt": "Use case: stylized-concept. Asset type: portrait encounter illustration for an original dark fantasy dungeon card game. A single exquisite medieval longsword upright with its point down, weathered silver steel blade and antique brass crossguard, resting in an ancient dark stone alcove. Narrow blade, symmetrical composition, warm torchlight catches its edge. Deep charcoal and antique gold. Hand-painted richly detailed oil and gouache fantasy concept art, high contrast chiaroscuro, expressive aged brushwork, premium tabletop game aesthetic, serious and atmospheric. Portrait 2:3 framing, subject occupies center with dark negative space around edges. Coherent with a torchlit medieval underground stone cathedral. No text, no letters, no numbers, no borders, no cards, no interface, no watermark, no logos, no purple neon."
+    },
+    {
+      "id": "Th",
+      "path": "assets/cards/Th.webp",
+      "prompt": "Use case: stylized-concept. Asset type: portrait encounter illustration for an original dark fantasy dungeon card game. A single small rounded antique glass health potion bottle with a cork stopper, filled with luminous deep ruby red liquid, sitting on an ancient stone ledge in a dark medieval crypt. Soft crimson light through glass, tiny gold reflections, a subtle heart-shaped red highlight. Rich dark charcoal and burgundy. Hand-painted richly detailed oil and gouache fantasy concept art, high contrast chiaroscuro, expressive aged brushwork, premium tabletop game aesthetic, serious and atmospheric. Portrait 2:3 framing, subject occupies center with dark negative space around edges. Coherent with a torchlit medieval underground stone cathedral. No text, no letters, no numbers, no borders, no cards, no interface, no watermark, no logos, no purple neon."
+    },
+    {
+      "id": "3s",
+      "path": "assets/cards/3s.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: An undead skeletal hunting hound with black iron collar, narrow skull, broken ribs and misty breath. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "4s",
+      "path": "assets/cards/4s.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: A small hooded skeleton scout crouching with a bone dagger and a dim caged lantern. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "2s",
+      "path": "assets/cards/2s.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: A frail wax-covered skeleton servant holding one sputtering candle, hollow sockets, tattered linen. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "5s",
+      "path": "assets/cards/5s.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: An undead spear sentry in a rusted iron helmet, tall cracked tower shield and empty eye sockets. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "7s",
+      "path": "assets/cards/7s.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: An elegant skeletal duelist in a scorched noble coat, with a narrow silver rapier, theatrical poised stance. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Ts",
+      "path": "assets/cards/Ts.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: A tall undead inquisitor with a blank porcelain death mask and black ritual robes, holding a spiked iron censer. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "6s",
+      "path": "assets/cards/6s.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: A gaunt spectral skeletal jailer draped in heavy iron chains, holding antique keys and a hooked chain. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "9s",
+      "path": "assets/cards/9s.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: An undead court herald in torn embroidered robes blowing an ancient long brass trumpet, bone-white skull. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "8s",
+      "path": "assets/cards/8s.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: A broad skeletal berserker in jagged bone armor carrying two weathered axes, fierce forward stance. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Js",
+      "path": "assets/cards/Js.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: A skeletal mounted-order knight shown on foot in ornate silver plate armor and a torn black tabard, enormous sword. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Qs",
+      "path": "assets/cards/Qs.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: A regal undead queen with delicate skeletal face behind an elaborate black lace veil and tarnished silver tiara, solemn seated portrait. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "2c",
+      "path": "assets/cards/2c.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A tiny sentient mushroom creature with a red-brown cap, tiny root limbs and scattered luminous spores. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "4c",
+      "path": "assets/cards/4c.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A lean plant goblin woven from brambles, wearing a mushroom cap and carrying a crooked twig bow. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Ks",
+      "path": "assets/cards/Ks.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Hollow Court race: skeletal undead nobility and their servants, bone, black iron, faded charcoal robes, cold ivory with antique brass. A torchlit gothic stone crypt. Subject: An ancient skeletal fortress lord in massive black iron plate, hornless angular helmet under one arm, cold pale eyes. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "3c",
+      "path": "assets/cards/3c.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A mischievous small woodland imp made of tangled roots, moss skin, seedpod eyes and fern ears. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "8c",
+      "path": "assets/cards/8c.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A tall sentient vine sentinel in layered leaf and bark armor, long thorn spear and a crown of white wildflowers. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "5c",
+      "path": "assets/cards/5c.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A prowling feline predator made of twisted thorn vines, leaf mane, amber seed eyes, four powerful root legs. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "6c",
+      "path": "assets/cards/6c.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: An ancient fungal shaman with a wide shelf-mushroom hat, face of knotted bark, a staff topped with glowing spores. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "7c",
+      "path": "assets/cards/7c.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A stout wooden warrior with a face in deeply ridged bark, thick tree-trunk arms and a broad living oak shield. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Jc",
+      "path": "assets/cards/Jc.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A noble forest knight made of living carved oak, branching antler crest, woven vine armor and a large thorn-edged sword. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "9c",
+      "path": "assets/cards/9c.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A mysterious swamp witch with an elegant face carved from dark willow bark, hanging moss hair and a glowing green bog lantern. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Tc",
+      "path": "assets/cards/Tc.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A hulking boulder-and-root golem with massive twisted limbs, amber sap glowing through cracks in old bark. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Kc",
+      "path": "assets/cards/Kc.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A gigantic fungal guardian with a fortress of huge shelf mushrooms on its back, heavy root arms and a solemn bark face. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Qc",
+      "path": "assets/cards/Qc.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: A majestic plant queen with dark wooden face, a crown of bramble roses, cascading ivy robes and slender branch hands. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "Ac",
+      "path": "assets/cards/Ac.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. Briarborn race: living woodland creatures made of roots, fungi, leaves and thorns, never skeletal undead. Moss green, muted verdigris, earthy brown and amber sap. A forgotten overgrown stone crypt with roots and green mist. Subject: An immense ancient tree monarch with a wise deeply carved wooden face, magnificent branching stag antlers and hanging moss beard. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "2d",
+      "path": "assets/cards/2d.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A short rusted iron shiv with a chipped triangular blade and a crude dark leather-wrapped handle, lying diagonally on stone. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "4d",
+      "path": "assets/cards/4d.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A tall narrow medieval spear with a leaf-shaped silver steel point and a worn black ash shaft, upright in a stone alcove. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "3d",
+      "path": "assets/cards/3d.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A compact weathered iron hatchet with a crescent axe head, worn dark wood handle and thin bronze binding, propped against stone. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "6d",
+      "path": "assets/cards/6d.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A heavy medieval morningstar mace, spherical black iron head with short sharp spikes and a bound leather handle, on a stone pedestal. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "5d",
+      "path": "assets/cards/5d.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A simple noble medieval arming sword with a straight silver blade, leather grip and understated brass crossguard, upright point down. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "7d",
+      "path": "assets/cards/7d.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: An elegant single-edged crescent-curved medieval falchion, moon-silver blade, dark grip, round silver pommel, upright point down. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "8d",
+      "path": "assets/cards/8d.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A broad enormous two-handed medieval executioner sword with a squared blade tip, blackened steel and a long dark-red leather grip. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "2h",
+      "path": "assets/cards/2h.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A tiny slender cylindrical glass phial of deep ruby red healing liquid, simple wax stopper, delicate ember reflections on a stone shelf. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "9d",
+      "path": "assets/cards/9d.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: An exquisite ancient halberd with a bronze crescent axe blade, long central spear point, verdigris details and a dark shaft, stone alcove. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "3h",
+      "path": "assets/cards/3h.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A squat round green-tinted glass flask of dark crimson healing liquid, wrapped with living moss and one fern frond, cork stopper. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "6h",
+      "path": "assets/cards/6h.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A tall teardrop-shaped delicate smoky glass flask of luminous deep-red healing liquid, crescent silver stopper, subtle moonlit reflections. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "4h",
+      "path": "assets/cards/4h.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A sturdy angular square glass healing bottle with rich red liquid, iron protective cage and an iron clasp stopper on a stone ledge. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "5h",
+      "path": "assets/cards/5h.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: An elegant rose-shaped cut-glass perfume flask of luminous burgundy healing liquid, copper rose stopper, dried red rose petals beside it. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "7h",
+      "path": "assets/cards/7h.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A unique hourglass-shaped alchemist bottle of red healing liquid, two bulbous glass chambers, ornate bronze rings and a sealed cork. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "8h",
+      "path": "assets/cards/8h.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: An antique brass-caged triangular glass potion bottle with a tiny heart-shaped red gemstone and glowing crimson liquid, warm fire reflections. Distinct striking silhouette and readable composition."
+    },
+    {
+      "id": "9h",
+      "path": "assets/cards/9h.webp",
+      "prompt": "Use case: stylized-concept. Asset type: unique portrait encounter illustration for the dark fantasy card game Scoundrel. Hand-painted oil and gouache game art, exquisite detail, atmospheric cinematic chiaroscuro, textured brushwork, premium tabletop game quality. Portrait 2:3 composition, full subject legibly centered with calm dark edges. Coherent subterranean medieval world. Absolutely no text, numbers, lettering, borders, playing cards, interface, watermarks or logos. An ancient medieval weapon or healing treasure. Dark stone crypt background, antique gold torchlight, rich charcoal shadows. Subject: A magnificent faceted crystal chalice containing deep ruby red healing liquid, silver stem and gold filigree, in a dark crypt shrine. Distinct striking silhouette and readable composition."
+    }
+  ]
+}

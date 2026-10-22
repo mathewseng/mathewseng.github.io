@@ -32,6 +32,7 @@ const MIGRATED = new Set([
   "/poker/play/", "/poker/rush/", "/poker/ultimate-omaha/", "/poker/edge-the-dealer/",
   "/ofc/play/", "/ofc/fantasyland-trainer/", "/ofc/fantasyland-ev/",
   "/blackjack/strategy/", "/dice/reports/", "/microtonal-lab/", "/cards/",
+  "/scoundrel/", "/scoundrel/reports/",
   "/backgammon/play/", "/backgammon/trainer/", "/backgammon/solver/", "/backgammon/library/",
   "/backgammon/openings/", "/backgammon/controls/", "/backgammon/reports/", "/backgammon/refresh/",
   "/gym/",
