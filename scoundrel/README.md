@@ -24,20 +24,33 @@ last-card-at-20 rule, even when that potion did not add health.
 
 ## Artwork and theme
 
-`catalog.js` defines 44 unique names and subjects. Spades are the skeletal
-**Hollow Court**; clubs are the woodland **Briarborn**. Every monster, weapon,
+`catalog.js` defines 44 unique names, identities, scenes and flavor texts.
+Spades are the volcanic **Cinderkin**; clubs are the oceanic **Tideborn**.
+Their creatures, scouts, artisans, spellcasters and elders vary in anatomy,
+scale, expression, pose, setting and palette. Every monster, weapon,
 and potion has its own WebP in `assets/cards/`. These are independently
 generated illustrations, not recolors or crops of one shared portrait. The
 dungeon background is `assets/dungeon.webp`. Original prompts and tool
 provenance are in `art-prompts.json`; all were made with the built-in image
-generation tool, then compressed and downsampled with `cwebp`.
+generation tool, then compressed and downsampled with `cwebp`. Responsive
+images select between 320px thumbnails and 640px full illustrations. The
+collection loads art lazily; its full-art viewer includes each card's story.
+The [art direction](docs/art-direction.md) records the original faction design
+and the user's Runeterra/Hearthstone composition references.
 
 The requested fantasy value seals intentionally replace the site’s usual
 four-color playing-card faces on this page. Shared site tokens/chrome remain
 loaded first. Cinzel handles display type and controls; DM Sans handles longer
 copy. Both fonts are self-hosted with their OFL license files. Torchlight,
 Moonstone, and Overgrown atmospheres use existing site colors without
-redefining shared tokens. The collection is available from Settings.
+redefining shared tokens. Atmosphere filters apply to the dungeon backdrop,
+preserving each illustration's colors. The collection is available from Settings.
+
+Desktop shows a four-card row; portrait phones show a two-by-two room. Captions
+are in document flow and wrap without ellipsis. Action buttons are at least
+44px; short viewports scroll instead of cropping controls. On phones the EV
+table becomes stacked action rows, preserving all values without horizontal
+scrolling. Dialogs respect dynamic viewport height and device safe areas.
 
 ## Oracle and action values
 
@@ -89,6 +102,9 @@ study’s ordinary runs; there were no emergency timeouts.
 node --test scoundrel/tests/*.test.cjs
 sh scripts/assemble-site.sh _site
 node scoundrel/tests/browser.cjs
+node scoundrel/tests/responsive.cjs
+# With local WebKit installed, also check mobile Safari's rendering engine:
+SCOUNDREL_BROWSERS=chromium,webkit node scoundrel/tests/responsive.cjs
 SHELL_PAGES=/,/scoundrel/,/scoundrel/reports/ node scripts/shell-browser.cjs
 ```
 
@@ -97,3 +113,6 @@ over small dungeons, check its transitions against the full engine, replay all
 study witnesses, and verify all 44 art hashes differ. The browser test exercises
 all-action analysis, a full winning descent, save/resume, themes, collection,
 responsive layouts, report filters and CSV export against assembled files.
+The responsive check measures actual text bounds for all 44 names, verifies
+touch targets and both combat actions, and exercises the art viewer, enlarged
+text and phone EV rows across ten desktop/phone viewport sizes.

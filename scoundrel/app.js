@@ -22,6 +22,8 @@
   const names = { monster: "Monster", weapon: "Weapon", potion: "Potion" };
   const catalog = window.ScoundrelCatalog;
   const name = (c) => catalog[c.id].name;
+  const art = (c) => c.image + "?v=20261022";
+  const sources = (c) => c.image.replace("/cards/", "/cards/thumbs/") + "?v=20261022 320w, " + art(c) + " 640w";
 
   function preferences() {
     document.documentElement.dataset.atmosphere = ["ember", "moon", "moss"].includes(prefs.atmosphere) ? prefs.atmosphere : "ember";
@@ -59,13 +61,13 @@
     $("health-bar").firstElementChild.style.width = state.health * 5 + "%";
     $("health-caption").textContent = state.health === 20 ? "Unharmed" : state.health > 12 ? "Still standing" : state.health > 5 ? "Wounded" : state.health > 0 ? "At death’s door" : "Fallen";
     $("weapon-display").innerHTML = (state.weapon ? seal(state.weapon) : '<span class="weapon-empty" aria-hidden="true">◇</span>') + `<div class="weapon-numbers"><strong>${state.weapon?.value || "—"}</strong><span>${state.weapon ? "Power" : "Unarmed"}</span></div>`;
-    $("weapon-rule").textContent = !state.weapon ? "Find a diamond to arm yourself." : E.weaponLimit(state) === 15 ? "Power " + state.weapon.value + " · can fight any monster." : "Power " + state.weapon.value + " · next monster below " + E.weaponLimit(state) + ".";
+    $("weapon-rule").textContent = !state.weapon ? "Find a weapon to arm yourself." : E.weaponLimit(state) === 15 ? "Power " + state.weapon.value + " · any monster" : "Power " + state.weapon.value + " · next below " + E.weaponLimit(state);
     $("weapon-chain").innerHTML = state.slain.map((c) => `<span class="chain-mark" title="${esc(E.label(c))}">${c.value}</span>`).join("");
     $("deck-count").textContent = state.deck.length; $("cleared-count").textContent = 44 - E.remaining(state);
     $("dungeon-progress").style.width = (44 - E.remaining(state)) / 44 * 100 + "%";
     $("run-label").textContent = "Descent " + state.seed.slice(0, 14).toUpperCase();
     const focused = document.activeElement?.dataset.card;
-    $("room-cards").innerHTML = state.room.map((c, i) => !c ? '<div class="encounter-empty" aria-hidden="true"><span></span></div>' : `<button type="button" class="encounter${selected === c.id ? " is-selected" : ""}${!known.has(c.id) && motion() ? " is-new" : ""}" data-card="${c.id}" data-kind="${c.type}" data-suit="${c.suit}" style="--deal-index: ${i}" aria-label="${esc(name(c))}, ${catalog[c.id].race || names[c.type]}, value ${c.value}" aria-pressed="${selected === c.id}" ${state.phase !== "playing" ? "disabled" : ""}><img class="encounter-art" src="${catalog[c.id].image}" alt="" draggable="false" /><span class="encounter-top"><span>${catalog[c.id].race || names[c.type]}</span><span class="encounter-index" aria-hidden="true">${i + 1}</span></span><span class="encounter-bottom">${seal(c)}<span class="encounter-name"><strong>${esc(name(c))}</strong><small>${c.type === "monster" ? "Strength" : c.type === "weapon" ? "Power" : "Healing"}</small></span></span></button>`).join("");
+    $("room-cards").innerHTML = state.room.map((c, i) => !c ? '<div class="encounter-empty" aria-hidden="true"><span></span></div>' : `<button type="button" class="encounter${selected === c.id ? " is-selected" : ""}${!known.has(c.id) && motion() ? " is-new" : ""}" data-card="${c.id}" data-kind="${c.type}" data-suit="${c.suit}" style="--deal-index: ${i}" aria-label="${esc(name(c))}, ${catalog[c.id].race || names[c.type]}, value ${c.value}" aria-pressed="${selected === c.id}" ${state.phase !== "playing" ? "disabled" : ""}><span class="encounter-visual"><img class="encounter-art" src="${art(catalog[c.id])}" srcset="${sources(catalog[c.id])}" sizes="(max-width: 600px) calc((100vw - 58px) / 2), (max-width: 800px) calc((100vw - 100px) / 4), 240px" alt="" draggable="false" decoding="async" /><span class="encounter-top"><span>${catalog[c.id].race || names[c.type]}</span><span class="encounter-index" aria-hidden="true">${i + 1}</span></span></span><span class="encounter-bottom">${seal(c)}<span class="encounter-name"><strong>${esc(name(c))}</strong><small>${c.type === "monster" ? "Strength" : c.type === "weapon" ? "Power" : "Healing"}</small></span></span></button>`).join("");
     known = new Set(state.room.filter(Boolean).map((c) => c.id));
     if (focused) document.querySelector(`[data-card="${focused}"]`)?.focus({ preventScroll: true });
     $("flee-button").disabled = !E.canFlee(state);
@@ -79,11 +81,12 @@
   const button = (action, title, detail, primary = false) => `<button type="button" class="game-button ${primary ? "primary" : "secondary"}" data-action='${esc(JSON.stringify(action))}'><span>${title}</span><small>${detail}</small></button>`;
   function renderSelection() {
     const c = state.room.find((c) => c?.id === selected);
+    $("room-message").hidden = !!c && !state.potionUsed;
     let title = "Your next move", detail = "Weapons protect. Potions restore. Every choice matters.", buttons = "";
     if (state.phase === "ready") { title = "Deeper into the dungeon"; detail = "One encounter remains. Three more wait below."; buttons = button({ type: "descend" }, "Enter next room", "Carry one · reveal three", true); }
     else if (["won", "lost"].includes(state.phase)) { title = state.phase === "won" ? "Dungeon survived" : "The dungeon claimed you"; detail = "Final score: " + E.score(state); buttons = '<button class="game-button primary" id="review-result" type="button">View result</button>'; }
     else if (c) {
-      title = name(c) + " · " + E.label(c);
+      title = name(c);
       if (c.type === "monster") {
         const armed = E.canUseWeapon(state, c), damage = armed ? Math.max(0, c.value - state.weapon.value) : c.value;
         detail = armed ? "Weapon power " + state.weapon.value + ". Your next weapon target must be below " + c.value + "." : state.weapon ? "This monster is too strong for your weapon’s current chain." : "You are unarmed. You will take the monster’s full damage.";
@@ -136,7 +139,7 @@
       const r = analysis.find((r) => same(r.action, a)), c = state.room.find((c) => c?.id === a.id);
       const change = a.type === "fight" ? "−" + (a.mode === "weapon" ? Math.max(0, c.value - state.weapon.value) : c.value) + " health" : a.type === "drink" ? "+" + (state.potionUsed ? 0 : Math.min(c.value, 20 - state.health)) + " health" : "—";
       const val = r?.score == null ? "Searching…" : r.exact ? String(r.score) : `${r.score} to ${r.ceiling}`;
-      return `<tr${same(b?.action, a) ? ' class="is-best"' : ""}><td><button class="oracle-action" type="button" data-preview='${esc(JSON.stringify(a))}'>${esc(E.describe(state, a))}</button></td><td>${change}</td><td class="value-cell">${val}</td><td><span class="proof${r?.exact ? " exact" : ""}">${r?.score == null ? "Pending" : r.exact ? "Proven" : "Bounds"}</span></td></tr>`;
+      return `<tr${same(b?.action, a) ? ' class="is-best"' : ""}><td><button class="oracle-action" type="button" data-preview='${esc(JSON.stringify(a))}'>${esc(E.describe(state, a))}</button></td><td data-label="Health">${change}</td><td class="value-cell" data-label="EV · final score">${val}</td><td data-label="Certainty"><span class="proof${r?.exact ? " exact" : ""}">${r?.score == null ? "Pending" : r.exact ? "Proven" : "Bounds"}</span></td></tr>`;
     }).join("");
   }
   function analyze(deep = false) {
@@ -171,11 +174,20 @@
   $("rules-button").addEventListener("click", () => $("rules-dialog").showModal());
   $("settings-button").addEventListener("click", () => { $("local-stats").textContent = `${stats.played} completed descents · ${stats.won} survived · Best score ${stats.best ?? "—"}`; $("settings-dialog").showModal(); });
   function showCatalog(filter = "all") {
-    $("catalog-grid").innerHTML = Object.values(catalog).filter((c) => filter === "all" || c.id.endsWith(filter)).map((c) => `<figure><img src="${c.image}" alt="${esc(c.name)}" loading="lazy" /><figcaption>${seal(E.card(c.id))}<div><strong>${esc(c.name)}</strong><span>${c.race || (c.id.endsWith("d") ? "Weapon" : "Potion")}</span></div></figcaption></figure>`).join("");
+    $("catalog-grid").innerHTML = Object.values(catalog).filter((c) => filter === "all" || c.id.endsWith(filter)).map((c) => `<figure data-suit="${c.id.slice(-1)}"><button type="button" class="catalog-art-button" data-art="${c.id}" aria-label="View ${esc(c.name)} artwork"><img src="${art(c)}" srcset="${sources(c)}" sizes="(max-width: 600px) calc((100vw - 100px) / 2), 240px" alt="" loading="lazy" decoding="async" /><span>View art</span></button><figcaption>${seal(E.card(c.id))}<div><strong>${esc(c.name)}</strong><span>${c.role}</span></div></figcaption></figure>`).join("");
     for (const b of document.querySelectorAll("[data-filter]")) b.setAttribute("aria-pressed", String(b.dataset.filter === filter));
   }
   $("catalog-button").addEventListener("click", () => { $("settings-dialog").close(); showCatalog(); $("catalog-dialog").showModal(); });
-  $("catalog-dialog").addEventListener("click", (event) => { const b = event.target.closest("[data-filter]"); if (b) showCatalog(b.dataset.filter); });
+  $("catalog-dialog").addEventListener("click", (event) => {
+    const b = event.target.closest("[data-filter]"); if (b) showCatalog(b.dataset.filter);
+    const target = event.target.closest("[data-art]"); if (!target) return;
+    const c = catalog[target.dataset.art], card = E.card(c.id);
+    $("artwork-image").src = art(c); $("artwork-image").alt = c.subject;
+    $("artwork-title").textContent = c.name; $("artwork-role").textContent = (c.race ? c.race + " · " : "") + c.role;
+    $("artwork-lore").textContent = c.lore;
+    $("artwork-value").textContent = (card.type === "monster" ? "Strength " : card.type === "weapon" ? "Power " : "Healing ") + card.value;
+    $("artwork-dialog").showModal();
+  });
   $("journal-button").addEventListener("click", () => { $("journal-list").innerHTML = state.history.length ? state.history.slice().reverse().map((h) => `<li><b>Room ${h.room}</b> · ${esc(h.message)}</li>`).join("") : "<li>Your journey has just begun.</li>"; $("journal-dialog").showModal(); });
   for (const dialog of document.querySelectorAll("dialog")) dialog.addEventListener("click", (event) => { if (event.target.closest("[data-close]")) dialog.close(); if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
   $("sound-button").addEventListener("click", () => { prefs.sound = !prefs.sound; preferences(); sound("room"); });

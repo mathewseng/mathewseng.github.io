@@ -65,9 +65,7 @@ button:disabled { cursor: not-allowed; }
 .encounter, .encounter-empty { min-width: 0; width: 100%; aspect-ratio: .61; border-radius: 7px; }
 .encounter { display: block; position: relative; border: 1px solid color-mix(in srgb, var(--sc-gold) 40%, var(--surface)); overflow: hidden; background: var(--sc-panel); padding: 0; text-align: left; cursor: pointer; box-shadow: 0 15px 24px color-mix(in srgb, var(--page) 70%, transparent), inset 0 0 0 3px var(--sc-panel); transform-origin: 50% 80%; transition: transform .28s var(--spring), box-shadow .28s, border-color .28s; }
 .encounter::after { content: ""; position: absolute; inset: 5px; border: 1px solid color-mix(in srgb, var(--sc-gold) 20%, transparent); border-radius: 3px; pointer-events: none; }
-.encounter-art { position: absolute; inset: 0 0 28%; width: 100%; height: 72%; object-fit: cover; object-position: 50% 35%; filter: saturate(.8); transition: transform .55s var(--ease), filter .3s; pointer-events: none; }
-.encounter[data-kind="weapon"] .encounter-art { object-position: 50% 48%; }
-.encounter[data-suit="c"] .encounter-art { filter: saturate(.45) hue-rotate(24deg); object-position: 65% 45%; transform: scale(1.12); }
+.encounter-art { width: 100%; height: 100%; object-fit: cover; object-position: 50% 44%; transition: transform .55s var(--ease); pointer-events: none; }
 .encounter::before { content: ""; position: absolute; inset: 45% 0 0; z-index: 1; background: linear-gradient(transparent, var(--sc-panel) 45%); pointer-events: none; }
 .encounter-top { position: absolute; z-index: 2; inset: 12px 12px auto; display: flex; justify-content: space-between; align-items: center; color: var(--sc-gold-bright); font-size: 12px; text-shadow: 0 1px 6px var(--page); }
 .encounter-index { display: grid; place-items: center; width: 23px; height: 23px; border: 1px solid var(--sc-border); background: color-mix(in srgb, var(--page) 70%, transparent); border-radius: 3px; }
@@ -77,8 +75,7 @@ button:disabled { cursor: not-allowed; }
 .encounter-name strong { display: block; color: var(--sc-gold-bright); font: 600 clamp(12px, 1.1vw, 16px)/1.35 ScoundrelDisplay, Georgia, serif; }
 .encounter-name small { display: block; margin-top: 5px; font-size: 12px; color: var(--muted); }
 .encounter:hover:not(:disabled), .encounter.is-selected { transform: translateY(-9px); border-color: var(--sc-gold); box-shadow: 0 18px 28px color-mix(in srgb, var(--page) 75%, transparent), 0 0 24px color-mix(in srgb, var(--sc-gold) 13%, transparent); }
-.encounter:hover .encounter-art, .encounter.is-selected .encounter-art { transform: scale(1.045); filter: saturate(1.05); }
-.encounter[data-suit="c"]:hover .encounter-art { transform: scale(1.16); }
+.encounter:hover .encounter-art, .encounter.is-selected .encounter-art { transform: scale(1.035); }
 .encounter.is-best { border-color: var(--good); box-shadow: 0 0 0 1px var(--good), 0 0 26px var(--good-soft); }
 .best-ribbon { position: absolute; z-index: 3; top: 45px; left: 0; padding: 4px 9px; font-size: 12px; background: var(--good); color: var(--on-accent); }
 .encounter.is-new { animation: deal-card .65s var(--spring) both; animation-delay: calc(var(--deal-index, 0) * 95ms); }
@@ -139,8 +136,6 @@ button:disabled { cursor: not-allowed; }
 .value-seal::before { content: ""; position: absolute; inset: 4px; border: 1px solid var(--sc-border); border-radius: 1px 1px 8px 8px; }
 .value-seal span { position: relative; padding-top: 2px; }
 .encounter-name strong { font-family: ScoundrelDisplay, Georgia, serif; }
-.encounter[data-suit="c"] .encounter-art { filter: saturate(.8); object-position: 50% 35%; transform: none; }
-.encounter[data-suit="c"]:hover .encounter-art { transform: scale(1.045); }
 .game-button, .game-nav a, .rules-button, .back-link, .rail-label, .selection-copy > strong, .oracle-toggle > span:last-child, .catalog-filters button { font-family: ScoundrelDisplay, Georgia, serif; letter-spacing: .025em; }
 .game-button small, .rail-label, .selection-copy p { font-family: ScoundrelSans, var(--font-sans); letter-spacing: 0; }
 .chain-mark { display: grid; place-items: center; min-width: 24px; height: 27px; border: 1px solid var(--sc-border); border-radius: 2px; color: var(--sc-gold-bright); font: 600 13px/1 ScoundrelDisplay, Georgia, serif; background: var(--sc-panel); }
@@ -214,4 +209,183 @@ button:disabled { cursor: not-allowed; }
   .deck-divider { margin-block: 10px; }
   .progress-track { margin-block: 8px; }
   .action-stage { min-height: 80px; padding-block: 12px; }
+}
+
+/* Cinder & Tide: art stays vivid; captions participate in layout and can wrap. */
+.encounter, .catalog-grid figure { --sc-card-accent: var(--family-blackjack); }
+.encounter[data-suit="s"], .catalog-grid [data-suit="s"] { --sc-card-accent: var(--family-poker-2); }
+.encounter[data-suit="c"], .catalog-grid [data-suit="c"] { --sc-card-accent: var(--family-backgammon); }
+.encounter[data-suit="h"], .catalog-grid [data-suit="h"] { --sc-card-accent: var(--family-dice); }
+.encounter {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 190px;
+  border-color: color-mix(in srgb, var(--sc-card-accent) 48%, var(--page));
+  background: var(--page);
+}
+.encounter::before { display: none; }
+.encounter::after { inset: 3px; border-color: color-mix(in srgb, var(--sc-card-accent) 24%, transparent); }
+.encounter-visual { position: relative; display: block; min-height: 0; overflow: hidden; }
+.encounter-visual::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(0deg, var(--page), transparent 18%, transparent 75%, color-mix(in srgb, var(--page) 35%, transparent)); }
+.encounter-art { display: block; position: static; height: 100%; width: 100%; min-height: 0; inset: auto; filter: none; }
+.encounter-top { inset: 10px 10px auto; gap: 5px; align-items: flex-start; }
+.encounter-top > span:first-child { display: block; padding: 4px 7px; border-radius: 3px; background: color-mix(in srgb, var(--page) 82%, transparent); color: var(--sc-card-accent); line-height: 1.25; font-size: 12px; }
+.encounter-index { flex: 0 0 23px; color: var(--ink); background: color-mix(in srgb, var(--page) 82%, transparent); }
+.encounter-bottom { position: relative; inset: auto; padding: 5px 11px 13px; min-height: 76px; align-items: center; gap: 9px; background: var(--page); }
+.encounter-name { min-width: 0; padding: 0; }
+.encounter-name strong { color: var(--ink); font: 600 clamp(12px, 1.05vw, 16px)/1.35 ScoundrelDisplay, Georgia, serif; overflow-wrap: anywhere; }
+.encounter-name small { margin-top: 4px; line-height: 1.3; }
+.encounter .value-seal, .catalog-grid .value-seal { color: var(--sc-card-accent); border-color: color-mix(in srgb, var(--sc-card-accent) 65%, var(--page)); }
+.encounter.is-selected { border-color: var(--sc-card-accent); box-shadow: 0 0 0 1px var(--sc-card-accent), 0 15px 30px var(--page); }
+.encounter.is-best { border-color: var(--good); box-shadow: 0 0 0 1px var(--good), 0 0 26px var(--good-soft); }
+.best-ribbon { top: 42px; }
+.selection-copy, .encounter-actions, .dialog-top h2 { min-width: 0; }
+.selection-copy > strong, .selection-copy p, .game-button, .dialog-top h2 { overflow-wrap: anywhere; }
+.selection-copy > strong { display: block; line-height: 1.4; }
+.game-dialog { max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overscroll-behavior: contain; }
+.dialog-top .icon-button { flex: 0 0 44px; }
+.game-shell { padding-bottom: env(safe-area-inset-bottom); }
+
+/* The collection shows the whole painting, with a keyboard/touch art viewer. */
+.catalog-grid figure { display: flex; flex-direction: column; border-color: color-mix(in srgb, var(--sc-card-accent) 36%, var(--page)); }
+.catalog-art-button { position: relative; display: block; width: 100%; padding: 0; border: 0; background: var(--page); cursor: zoom-in; overflow: hidden; }
+.catalog-art-button img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; transition: transform .45s var(--ease); }
+.catalog-art-button > span { position: absolute; right: 9px; bottom: 9px; padding: 5px 8px; background: color-mix(in srgb, var(--page) 85%, transparent); color: var(--ink); font-size: 12px; border-radius: 3px; }
+.catalog-art-button:hover img { transform: scale(1.035); }
+.catalog-art-button:focus-visible { outline-offset: -4px; z-index: 1; }
+.catalog-grid figcaption { flex: 1; min-height: 78px; }
+.catalog-grid figcaption > div { min-width: 0; }
+.catalog-grid figcaption strong { line-height: 1.4; overflow-wrap: anywhere; color: var(--ink); }
+.catalog-grid figcaption > div > span { line-height: 1.4; }
+.artwork-dialog { width: min(1000px, calc(100% - 28px)); padding: 0; }
+.artwork-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(250px, 1fr); align-items: center; }
+.artwork-image { display: block; width: 100%; max-height: calc(100dvh - 34px); object-fit: contain; background: var(--page); }
+.artwork-copy { padding: 32px; }
+.artwork-copy .dialog-top { align-items: flex-start; }
+.artwork-copy h2 { font-size: clamp(22px, 2.3vw, 34px); line-height: 1.35; }
+.artwork-role { color: var(--sc-gold); font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+.artwork-lore { color: var(--muted); font-size: 16px; line-height: 1.7; margin-top: 26px; }
+.artwork-value { color: var(--sc-gold-bright); font: 600 18px/1.5 ScoundrelDisplay, Georgia, serif; margin-top: 26px; }
+
+@media (min-width: 801px) {
+  .game-shell:not(.report-shell) .game-topbar { min-height: 56px; padding-block: 6px; }
+  .masthead { padding-block: 13px; }
+  .masthead h1 { font-size: clamp(30px, 3vw, 42px); }
+  .masthead p { margin-top: 4px; }
+  .dungeon { grid-template-columns: 140px minmax(0, 1fr) 78px; grid-template-rows: 80px minmax(240px, 1fr) auto; gap: 0 24px; padding-inline: 26px; height: max(440px, calc(100dvh - 265px)); min-height: 440px; }
+  .encounter-area { padding-block: 0; }
+  .room-cards { max-height: 400px; }
+  .room-message { flex-basis: auto; min-height: 30px; padding-top: 10px; padding-bottom: 5px; }
+  .action-stage { min-height: 86px; padding-block: 12px; }
+  .under-table { min-height: 44px; }
+  .game-shell:not(.report-shell) > .game-footer { padding-block: 4px; }
+  .room-heading .ornament { display: none; }
+  .room-heading { padding-top: 0; }
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+  .dungeon { grid-template-columns: 110px minmax(0, 1fr) 60px; gap: 0 14px; padding-inline: 18px; }
+  .encounter-bottom { gap: 6px; padding-inline: 8px; }
+  .encounter .value-seal { width: 32px; flex-basis: 32px; height: 44px; font-size: 24px; }
+}
+@media (min-width: 801px) and (max-height: 650px) {
+  .dungeon { height: auto; min-height: 460px; }
+}
+@media (max-width: 800px) {
+  .game-shell { padding-inline: max(14px, env(safe-area-inset-left)); }
+  .game-topbar { min-height: 52px; padding-block: 4px; }
+  .masthead { padding-block: 12px; }
+  .masthead h1 { font-size: 30px; }
+  .masthead p { font-size: 12px; line-height: 1.4; margin-top: 4px; }
+  .dungeon { max-height: none; height: auto; min-height: 0; grid-template-rows: auto auto auto auto; padding-inline: 16px; overflow: visible; }
+  .dungeon-art, .dungeon-vignette { border-radius: inherit; }
+  .room-heading { padding: 14px 0 10px; }
+  .room-heading h2 { font-size: 20px; }
+  .room-heading p { line-height: 1.4; }
+  .room-pips { margin-top: 8px; }
+  .adventurer { padding: 4px 0 14px; min-height: 66px; gap: 12px; }
+  .health-block { width: 145px; padding-left: 52px; }
+  .health-value { top: 4px; }
+  .health-value strong { font-size: 32px; }
+  .health-caption { display: none; }
+  .weapon-block { max-width: 190px; }
+  .weapon-block p { line-height: 1.4; }
+  .encounter-area { padding-top: 0; }
+  .room-cards { gap: 9px; }
+  .encounter, .encounter-empty { aspect-ratio: .68; height: auto; min-height: 210px; max-height: none; }
+  .encounter-bottom { padding: 4px 8px 9px; min-height: 68px; flex-direction: row; align-items: center; gap: 6px; }
+  .encounter-name strong { font-size: 12px; }
+  .encounter .value-seal { width: 30px; height: 42px; flex-basis: 30px; font-size: 23px; }
+  .encounter-art { height: 100%; }
+  .encounter-top { inset: 7px 7px auto; }
+  .encounter-top > span:first-child { padding: 4px 5px; }
+  .encounter-index { display: none; }
+  .room-message { min-height: 0; padding: 10px 0; line-height: 1.45; }
+  .action-stage { padding: 12px 0; gap: 10px; margin-top: 0; }
+  .selection-copy { flex-basis: 100%; }
+  .selection-copy > strong { font-size: 15px; }
+  .selection-copy p { line-height: 1.5; max-width: none; margin-top: 3px; }
+  .encounter-actions { order: 2; flex: 1 1 100%; width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 8px; }
+  .encounter-actions:empty { display: none; }
+  .encounter-actions .game-button { min-width: 0; min-height: 50px; padding: 8px; line-height: 1.3; }
+  .flee-button { order: 3; margin: 0; min-height: 44px; }
+  .flee-button:disabled { display: none; }
+  .under-table { padding-block: 7px; }
+  .game-footer { padding-block: 4px; }
+  .game-footer #run-label { display: none; }
+  .artwork-layout { grid-template-columns: 1fr; }
+  .artwork-image { max-height: 57dvh; }
+  .artwork-copy { padding: 20px; }
+  .artwork-copy .dialog-top h2 { font-size: 23px; }
+  .artwork-role { margin-bottom: 8px; }
+  .artwork-lore { font-size: 14px; margin-top: 14px; }
+  .artwork-value { margin-top: 12px; font-size: 16px; }
+}
+@media (max-width: 600px) {
+  .masthead { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding-block: 8px; }
+  .masthead > div { display: contents; }
+  .masthead h1 { grid-column: 1; grid-row: 1; font-size: 28px; }
+  .masthead .game-button { grid-column: 2; grid-row: 1; min-height: 44px; }
+  .masthead p { grid-column: 1 / -1; grid-row: 2; max-width: none; margin: 0; }
+  .room-heading { display: grid; grid-template-columns: 1fr auto; justify-items: start; gap: 5px 12px; padding: 10px 0 8px; text-align: left; }
+  .room-heading h2 { grid-column: 1; grid-row: 1; }
+  .room-heading p { grid-column: 1 / -1; grid-row: 2; margin: 0; max-width: none; }
+  .room-pips { grid-column: 2; grid-row: 1; align-self: center; margin: 0; }
+  .adventurer { min-height: 56px; padding: 2px 0 9px; }
+  .room-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 460px; gap: 10px; }
+  .encounter, .encounter-empty { aspect-ratio: .9; min-height: 180px; }
+  .encounter:hover:not(:disabled), .encounter.is-selected { transform: translateY(-3px); }
+  .encounter-name strong { font-size: 13px; }
+  .encounter-name small { font-size: 12px; }
+  .encounter .value-seal { flex-basis: 31px; width: 31px; }
+  .action-stage { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 9px; padding-block: 9px; }
+  .selection-copy { display: contents; }
+  .selection-copy > strong { grid-column: 1; grid-row: 1; }
+  .selection-copy p { grid-column: 1 / -1; grid-row: 2; margin: 0; }
+  .encounter-actions { grid-column: 1 / -1; grid-row: 3; order: initial; }
+  .flee-button { grid-column: 2; grid-row: 1; order: initial; font-size: 12px; padding-inline: 8px; }
+  .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .oracle-heading { flex-wrap: wrap; gap: 12px; }
+  .oracle-table-wrap { overflow: visible; }
+  .oracle-table { min-width: 0; display: block; }
+  .oracle-table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .oracle-table tbody { display: block; }
+  .oracle-table tr { display: grid; grid-template-columns: 1fr 1.2fr .85fr; padding: 10px 0; gap: 0 8px; border-bottom: 1px solid var(--line); }
+  .oracle-table td { display: block; padding: 5px 8px; border: 0; font-size: 12px; }
+  .oracle-table td:first-child { grid-column: 1 / -1; }
+  .oracle-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 5px; font: 400 12px/1.3 ScoundrelSans, var(--font-sans); color: var(--muted); }
+  .oracle-action { min-height: 44px; width: 100%; line-height: 1.5; }
+  .oracle-table .value-cell { white-space: normal; }
+}
+@media (max-width: 380px) {
+  .game-shell { padding-inline: max(10px, env(safe-area-inset-left)); }
+  .dungeon { padding-inline: 11px; }
+  .encounter-bottom { padding-inline: 7px; gap: 5px; }
+  .encounter-name strong { font-size: 12px; }
+  .masthead h1 { font-size: 27px; }
+  .masthead .game-button { padding-inline: 9px; }
+}
+@media (hover: none) {
+  .encounter:hover:not(:disabled) { transform: none; }
+  .encounter.is-selected { transform: translateY(-3px); }
+  .encounter:hover .encounter-art { transform: none; }
 }

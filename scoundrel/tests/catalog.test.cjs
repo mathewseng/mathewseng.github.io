@@ -5,8 +5,10 @@ test("all 44 encounters have unique names, unique artwork, and the right race",(
   const names=new Set(), images=new Set();
   for(const c of E.makeDeck()){
     const entry=catalog[c.id]; assert.ok(!names.has(entry.name),entry.name); names.add(entry.name);
-    assert.equal(entry.race,c.suit==="s"?"Hollow Court":c.suit==="c"?"Briarborn":null);
+    assert.equal(entry.race,c.suit==="s"?"Cinderkin":c.suit==="c"?"Tideborn":null);
     const bytes=fs.readFileSync(path.join(__dirname,"..",entry.image));assert.ok(bytes.length>4000,entry.image);
+    const thumbnail=fs.readFileSync(path.join(__dirname,"..",entry.image.replace("/cards/","/cards/thumbs/")));
+    assert.ok(thumbnail.length>4000&&thumbnail.length<bytes.length,entry.image+" has a smaller responsive thumbnail");
     const hash=crypto.createHash("sha256").update(bytes).digest("hex");assert.ok(!images.has(hash),entry.image+" is unique art");images.add(hash);
   }
   assert.equal(images.size,44);
