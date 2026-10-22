@@ -6,8 +6,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const http = require("node:http");
-const root = path.resolve("_site"),
-  out = path.resolve("backgammon/test-results");
+const root = path.resolve(process.env.BG_SITE_ROOT || "_site"),
+  out = path.resolve(process.env.BG_TEST_OUT || "backgammon/test-results");
 fs.mkdirSync(out, { recursive: true });
 const MIME = {
   ".html": "text/html",

@@ -438,3 +438,29 @@ Validation: **483** repository tests, **28** final deployment/offline/update/CSS
 The [remaining-disagreement diagnostic](docs/ROLLOUT-DIAGNOSTIC.md) independently repeats the 23 disputed replies and opening 2–1 with 4,096 fresh trials per conflicting move, paired confidence intervals and a correction for all 24 comparisons. Its report distinguishes persistent, reversed and unresolved preferences; the two-move diagnostic does not replace the full opening-book candidate rankings.
 
 The independent [4–4 after 4–1 slot study](docs/CUBE-POLICY-STUDY.md) tests corrected cube rules and wider/deeper checker policies in full-game rollouts. The fixed plan and implementation checks are separate from the imported XG reference book.
+
+### Mobile rendering and save performance
+
+The board retains unchanged point stacks, updates dice independently when only
+selection changes, and batches animation style reads before writes. Drag hover
+only changes when its destination changes. Audio-device preparation runs while
+idle; normalized settings are cached without sharing mutable caller objects.
+Play saves run through `core/progress-worker.mjs`, preserving the existing IDB
+format and archive annotations. Saves are ordered, acknowledged after the work
+record commits, and retried through the main-thread fallback if the worker fails.
+Background reviews snapshot only their action prefix; history position keys reuse
+immutable replay states. Engine search depth and animation durations are unchanged.
+
+`docs/mobile-performance-2026-10-22.json` records paired old/new browser measurements,
+including the 1,356-event long-match fixture. These are desktop mobile-layout stress
+tests, not physical-phone measurements. Reproduce after assembling:
+
+```sh
+BG_MODULES=mobile-performance,interaction-latency,confirm-latency,progress-worker BG_BROWSERS=chromium,webkit node backgammon/tests/browser.cjs
+BG_MOBILE_PERF=1 BG_BENCH_TURNS=2 BG_MODULES=play-latency node backgammon/tests/browser.cjs
+```
+
+`BG_PROFILE=1` adds CPU profiles to the mobile/confirmation/Play workloads.
+`BG_SITE_ROOT` and `BG_TEST_OUT` allow an independent baseline site and report folder.
+Timing is reported separately from deterministic regression assertions about node
+reuse, input behavior, saved-state ordering, worker failure and replay correctness.

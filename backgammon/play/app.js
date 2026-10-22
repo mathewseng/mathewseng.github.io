@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { ProgressWriter } from "../core/progress-writer.mjs";
 import { presentMove } from "../core/move-presentation.mjs";
 import { keycap as shortcutBadge } from "../ui/keycap.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
@@ -103,6 +104,8 @@ const updatedOnLoad = resumedAfterUpdate();
 const pageProgress = readPageProgress();
 const ui = shell("play", "Play");
 document.querySelector(".app").classList.add("play-page");
+const progressWriter = new ProgressWriter();
+
 let setupStudyOpen;
 let config = {
     rules: defaultPlayRules(0),
@@ -1957,7 +1960,6 @@ async function persist(history = true) {
   draftSaveFrame = draftSaveTimer = null;
   if (game) {
     if (config.mode !== "online") ensureLocalRolls(game);
-    const current = game;
     saved = {
       id: "play",
       game,
@@ -1966,10 +1968,7 @@ async function persist(history = true) {
       feedback,
     };
     try {
-      const snapshot = clone(saved);
-      await put("work", snapshot);
-      persistedWork = JSON.stringify(snapshot);
-      if (history) await saveMatchHistory(current, current.names, current.config.mode);
+      await progressWriter.save(saved, { history, stored: key => { persistedWork = key; } });
     } catch (e) {
       showError(e);
     }

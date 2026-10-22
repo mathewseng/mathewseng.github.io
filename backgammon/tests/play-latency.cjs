@@ -4,7 +4,8 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const os = require('node:os');
 module.exports = async function playLatency(browser, base, out, name) {
-  const context = await browser.newContext({ viewport: {width:1366,height:768}, serviceWorkers:'block' });
+  const mobile = process.env.BG_MOBILE_PERF === '1';
+  const context = await browser.newContext({ viewport: mobile ? {width:390,height:844} : {width:1366,height:768}, hasTouch:mobile, serviceWorkers:'block' });
   const page = await context.newPage(), errors=[];
   page.on('pageerror', e=>errors.push(e.message));
   const ready=()=>page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
@@ -17,7 +18,7 @@ module.exports = async function playLatency(browser, base, out, name) {
     throw new Error('Timed out waiting for a committed decision');
   };
   const warning=()=>page.locator('dialog[open]').getByRole('button',{name:'Confirm anyway',exact:true});
-  const rows=[];
+  const rows=[]; let windowProfile;
   try {
     await page.goto(base+'/backgammon/play/'); await ready();
     await page.evaluate(async()=>{
@@ -40,6 +41,11 @@ module.exports = async function playLatency(browser, base, out, name) {
         return analyze.call(this,state,opts).then(result=>{Object.assign(row,{ms:performance.now()-row.at,cached:!!result.cached,reusedHint:!!result.reusedHint,preparation:result.preparation,plies:result.settings.plies,method:result.method,bookSource:result.book?.source,reason:result.budget?.reason,levels:result.budget?.levels});return result;},error=>{Object.assign(row,{ms:performance.now()-row.at,error:error.name});throw error;});
       };
     });
+    if (mobile && name === 'chromium') {
+      const cdp = await context.newCDPSession(page); windowProfile = cdp;
+      await cdp.send('Emulation.setCPUThrottlingRate',{rate:6});
+      await cdp.send('Profiler.enable'); await cdp.send('Profiler.start');
+    }
     await page.locator('#resume-match').click();
     const thinkMs=Number(process.env.BG_THINK_MS||2000), turns=Number(process.env.BG_BENCH_TURNS||4);
     for(let turn=0;turn<turns;turn++) {
@@ -81,9 +87,10 @@ module.exports = async function playLatency(browser, base, out, name) {
     await page.screenshot({path:path.join(out,`${name}-play-latency.png`)});
     const trace=await page.evaluate(()=>latency);
     assert.ok(trace.calls.filter(c=>c.plies!==undefined).every(c=>c.method==='reference'?c.plies===null&&c.bookSource==='published-xg-reference':c.plies>=2),'every completed Auto result uses an attributed reference or reaches at least two plies');
+    if(windowProfile) require('node:fs').writeFileSync(path.join(out,'mobile-play.cpuprofile'),JSON.stringify((await windowProfile.send('Profiler.stop')).profile));
     const engine=await page.evaluate(async()=>({version:(await import('/backgammon/engine/metadata.mjs')).ENGINE_VERSION,policy:(await import('/backgammon/engine/search-policy.mjs')).SEARCH_POLICY_VERSION}));
     return {recordedAt:new Date().toISOString(),environment:{cpu:os.cpus()[0].model,os:`${os.platform()} ${os.release()} ${os.arch()}`,browser:`${name} ${browser.version()}`},
-      engine,thinkMs,method:'Assembled site, real WASM, Auto for both sides, default Jacoby/beavers/raccoons, thinkMs pause plus 250ms per checker step, real animations, fixed test seed, indexed HMAC-SHA256 rolls. No fake engine or preloaded recommendations. Accessible move selector picks first legal step; costly-move warning is accepted. Local HTTP, desktop, not a phone benchmark. Timing includes UI and persistence; trace separates engine requests.',rows,trace,events:game.events.length,replayVerified:verified};
+      mobile, cpuSlowdown: mobile && name === 'chromium' ? 6 : 1, engine,thinkMs,method:'Assembled site, real WASM, Auto for both sides, default Jacoby/beavers/raccoons, thinkMs pause plus 250ms per checker step, real animations, fixed test seed, indexed HMAC-SHA256 rolls. No fake engine or preloaded recommendations. Accessible move selector picks first legal step; costly-move warning is accepted. Local HTTP; optional mobile viewport/CPU throttling is a stress test, not physical-phone measurement. Timing includes UI and persistence; trace separates engine requests.',rows,trace,events:game.events.length,replayVerified:verified};
   } finally {
     require('node:fs').writeFileSync(path.join(out,`${name}-play-latency-partial.json`),JSON.stringify({rows,trace:await page.evaluate(()=>window.latency).catch(()=>null)},null,2));
     await context.close();

@@ -25,7 +25,13 @@ export class AutoReview {
     const row = rows.find(r => !r.feedback) ||
       rows.find(r => r.initialAction && !r.initialFeedback && !r.forced);
     if (!row) return;
-    const job = { snapshot: clone(model), row, initial: !!row.feedback };
+    // Staleness checks need the action prefix, not every saved grade, takeback
+    // branch and result in a long match. Keep that prefix independent so a
+    // later rewind/edit still invalidates an in-flight review correctly.
+    const snapshot = clone({id:model.id, initial:model.initial,
+      config:{reviewStrength:model.config.reviewStrength},
+      events:model.events.slice(0,row.index+1).map(({actor,action})=>({actor,action}))});
+    const job = { snapshot, row, initial: !!row.feedback };
     this.job = job;
     this.changed();
     this.run(job);

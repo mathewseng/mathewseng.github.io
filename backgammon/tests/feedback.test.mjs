@@ -255,3 +255,22 @@ test("drag release lowers smoothly from the exact held pose without a second hop
     assert.ok(Math.abs((values[i][0]-100)/150-(values[i][1]-200)/200)<1e-10);
   }
 });
+
+test("idle audio preparation stays silent and a gesture reuses its context", async () => {
+  const ctx = context(); let creates = 0, enabled = true;
+  const player = new SoundPlayer({createContext:()=>{creates++;return ctx;},
+    preferences:()=>({...DEFAULT_SOUND,enabled}),visible:()=>true});
+  player.prepare(); player.prepare();
+  assert.equal(creates,1);
+  assert.equal(ctx.state,'suspended');
+  assert.equal(ctx.sources.length,0);
+  assert.equal(player.play('move'),false);
+  enabled=false;
+  await player.unlock();
+  assert.equal(ctx.state,'suspended','muting before the first gesture must not resume audio');
+  enabled=true;
+  await player.unlock();
+  assert.equal(creates,1,'first gesture has no audio-device construction');
+  assert.equal(ctx.state,'running');
+  player.destroy();
+});

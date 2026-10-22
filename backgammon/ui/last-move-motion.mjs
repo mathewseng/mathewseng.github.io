@@ -17,13 +17,15 @@ export function captureLastMoveEntry(board) {
 }
 
 export function animateLastMoveEntry(board, previous, animations, fresh) {
-  markers(board).forEach((node, index) => {
+  const targets = markers(board).map(node => {
+    const property = node.matches('.off-checker') ? 'strokeOpacity' : 'opacity';
+    return { node, property, target: getComputedStyle(node)[property] };
+  });
+  targets.forEach(({ node, property, target }, index) => {
     const pose = fresh ? null : previous[index];
     if (!fresh && !pose) return;
     // Off-tray strips are real checkers, so fade only their outline. Ghosts
     // and separate checker rings can fade as a whole, retaining their opacity.
-    const property = node.matches('.off-checker') ? 'strokeOpacity' : 'opacity';
-    const target = getComputedStyle(node)[property];
     const animation = node.animate(pose?.frames || [{ [property]: 0 }, { [property]: target }],
       { ...LAST_MOVE_ENTRY_TIMING, id: 'last-move-entry' });
     if (pose) animation.currentTime = pose.time;

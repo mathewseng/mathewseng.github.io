@@ -23,10 +23,15 @@ export const settingsDefaults = {
   boardTheme: DEFAULT_BOARD_THEME,
   sound: DEFAULT_SOUND,
 };
+let settingsText, normalizedSettings;
 export function settings() {
   try {
-    const saved = JSON.parse(localStorage.getItem(PREFIX + "settings") || "{}");
-    return {
+    const text = localStorage.getItem(PREFIX + "settings") || "{}";
+    // Gesture handlers read settings many times. Validate only when stored text
+    // changes (including another tab); callers still receive independent copies.
+    if (text === settingsText && normalizedSettings) return clone(normalizedSettings);
+    const saved = JSON.parse(text);
+    const normalized = {
       ...settingsDefaults,
       ...saved,
       boardTheme: normalizeBoardTheme(saved?.boardTheme),
@@ -39,6 +44,9 @@ export function settings() {
       moveHints: saved?.moveHints !== false,
       sound: normalizeSound(saved?.sound),
     };
+    settingsText = text;
+    normalizedSettings = normalized;
+    return clone(normalized);
   } catch {
     return { ...settingsDefaults };
   }

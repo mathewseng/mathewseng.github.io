@@ -889,13 +889,17 @@ export class Board {
     const p = this.pointer;
     p.clientX = clientX; p.clientY = clientY;
     const position = this.coordinates(clientX, clientY);
-    // Immediate translation: no easing/animation queue between pointer and piece.
-    this.dragGhost.setAttribute("transform", `translate(${position.x} ${position.y})`);
+    // Read the lift pose before moving the SVG, avoiding a forced layout on
+    // every pointer event. Translation still follows the finger immediately.
     const pose = new DOMMatrix(getComputedStyle(this.dragFace).transform);
+    this.dragGhost.setAttribute("transform", `translate(${position.x} ${position.y})`);
     this.dragPosition = { x:position.x + pose.e, y:position.y + pose.f, scale:pose.a };
-    this.svg.querySelectorAll(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
     const target = this.dropTarget(position);
-    this.svg.querySelector(`[data-point="${target}"]`)?.classList.add("drop-hover");
+    const hover = this.svg.querySelector(`[data-point="${target}"]`);
+    if (!hover?.classList.contains("drop-hover")) {
+      this.svg.querySelectorAll(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
+      hover?.classList.add("drop-hover");
+    }
     this.showDragLanding(target);
   }
   endDrag() {
@@ -1380,6 +1384,10 @@ export class Board {
   }
   animateDiceSelection(poses) {
     if (!poses?.dice.length || this.reducedMotion() || document.hidden) return;
+    // Collect every computed value before starting any animation. WAAPI
+    // invalidates style; alternating reads/writes used to relayout once per pip.
+    const pending = [];
+    const animate = (node, frames, options) => pending.push({node, frames, options});
     const timing = { duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)' };
     this.svg.querySelectorAll('.board-die').forEach((die, index) => {
       const before = poses.dice[index];
@@ -1392,18 +1400,18 @@ export class Board {
       const face = die.querySelector('.board-die-face'), style = getComputedStyle(face);
       const after = { transform: style.transform, filter: style.filter };
       if (before.transform !== after.transform || before.filter !== after.filter) {
-        this.animations.push(face.animate([
+        animate(face, [
           { transform: before.transform, filter: before.filter }, after,
-        ], { ...timing, id: 'dice-selection' }));
+        ], { ...timing, id: 'dice-selection' });
       }
       // Dim the face, pattern and pips together; keep used/forced/blocked marks
       // legible. Capture each part so undo can reverse an in-progress fade.
       [...face.children].filter(n => !n.classList.contains('die-status-mark')).forEach((part, i) => {
         const opacity = getComputedStyle(part).opacity;
         if (before.opacities[i] === undefined || before.opacities[i] === opacity) return;
-        this.animations.push(part.animate([
+        animate(part, [
           { opacity: before.opacities[i] }, { opacity },
-        ], { ...timing, id: 'dice-opacity' }));
+        ], { ...timing, id: 'dice-opacity' });
       });
       face.querySelectorAll('[data-die-mark]').forEach(mark => {
         const previous = before.marks[mark.dataset.dieMark], style = getComputedStyle(mark);
@@ -1417,7 +1425,7 @@ export class Board {
           strokeDashoffset: style.opacity === '0' ? from.strokeDashoffset : style.strokeDashoffset,
           stroke: style.opacity === '0' ? from.stroke : style.stroke };
         if (from.opacity === to.opacity && from.strokeDashoffset === to.strokeDashoffset && from.stroke === to.stroke) return;
-        this.animations.push(mark.animate([from, to], { ...timing, id: 'dice-mark' }));
+        animate(mark, [from, to], { ...timing, id: 'dice-mark' });
       });
     });
     const control = this.svg.querySelector('.dice-switch'), before = poses.control;
@@ -1426,10 +1434,12 @@ export class Board {
       control.querySelectorAll('[data-dice-icon]').forEach((icon, i) => {
         const opacity = getComputedStyle(icon).opacity;
         if (before.opacities[i] === opacity) return;
-        this.animations.push(icon.animate([{ opacity: before.opacities[i] }, { opacity }],
-          { ...timing, id: 'dice-control' }));
+        animate(icon, [{ opacity: before.opacities[i] }, { opacity }],
+          { ...timing, id: 'dice-control' });
       });
     }
+    for (const {node, frames, options} of pending)
+      this.animations.push(node.animate(frames, options));
   }
   animateCube(before) {
     sound.play("cube");
@@ -1456,6 +1466,35 @@ export class Board {
       { duration: 360, easing: "cubic-bezier(.2,.7,.25,1)" },
     );
     this.animations.push(animation);
+  }
+  updateChildren(children) {
+    // Keep untouched point stacks/frame nodes mounted. Replacing the entire
+    // SVG invalidates geometry/paint for every checker on every tap, even when
+    // only two points changed. Compare the last *rendered description*, not
+    // live markup that animation/focus has decorated in the meantime.
+    const counts = new Map(), next = new Map();
+    let cursor = this.svg.firstChild;
+    for (let node of children) {
+      const base = node.dataset.point !== undefined ? `point:${node.dataset.point}`
+        : `${node.tagName}:${node.classList[0] || ''}`;
+      const index = counts.get(base) || 0;
+      counts.set(base, index + 1);
+      const key = `${base}:${index}`, signature = node.outerHTML;
+      const old = this.childCache?.get(key);
+      // Dice have their own snapshot/animation handoff and may be replaced
+      // independently by the advanced die-switch fast path.
+      if (old?.signature === signature && old.node.parentNode === this.svg &&
+          !node.classList.contains('board-dice')) {
+        const tab = node.getAttribute('tabindex');
+        node = old.node;
+        if (tab !== null && node.getAttribute('tabindex') !== tab) node.setAttribute('tabindex', tab);
+      }
+      if (node !== cursor) this.svg.insertBefore(node, cursor);
+      cursor = node.nextSibling;
+      next.set(key, { node, signature });
+    }
+    while (cursor) { const following = cursor.nextSibling; cursor.remove(); cursor = following; }
+    this.childCache = next;
   }
   render(
     s,
@@ -1485,6 +1524,33 @@ export class Board {
       lastMove = null,
     } = {},
   ) {
+    const nextOptions = { orientation, numbers, moveHints, selected, destinations,
+      reachable, reverseTargets, undoSources, revisionTargets, sources, moves,
+      dropPreview, interactive, preview, editor, diceState, usedDice, forcedDice,
+      lockedDice, playableDice, advanced, boardShortcuts: shortcuts, chooseDie,
+      preferredDie, hideDice, lastMove };
+    // Advanced die switching changes only the dice. Keep the board, flights and
+    // their animation clocks alive instead of rebuilding hundreds of SVG nodes.
+    const diceOnlyKey = JSON.stringify({ ...nextOptions, preferredDie: null });
+    const diceOnly = this.state === s && this.diceOnlyKey === diceOnlyKey &&
+      this.renderOptions?.preferredDie !== preferredDie && advanced &&
+      !moveHints && selected === null && interactive && !preview && !editor &&
+      !playback && !hideDice && !lastMove && !this.pointer?.dragging;
+    this.diceOnlyKey = diceOnlyKey;
+    if (diceOnly) {
+      const poses = this.dicePoses();
+      const focused = this.svg.contains(document.activeElement) ? document.activeElement?.dataset.die : null;
+      const old = this.svg.querySelector('.board-dice');
+      this.renderOptions = nextOptions;
+      for (const animation of this.animations)
+        if (['dice-layout','dice-selection','dice-opacity','dice-mark','dice-control'].includes(animation.id)) animation.cancel();
+      this.animations = this.animations.filter(a => a.playState !== 'idle' && a.playState !== 'finished');
+      old.replaceWith(this.dice(diceState || s, { ...nextOptions, shortcuts }));
+      this.animateDiceLayout(poses);
+      this.animateDiceSelection(poses);
+      if (focused) this.svg.querySelector(`[data-die="${focused}"][role="button"]`)?.focus({preventScroll:true});
+      return;
+    }
     const dicePoses = this.dicePoses();
     const highlightMotion = !this.reducedMotion() && !document.hidden;
     const lastMoveEntry = highlightMotion ? captureLastMoveEntry(this.svg) : [];
@@ -1519,30 +1585,7 @@ export class Board {
       this.endDrag();
     this.state = s;
     this.options = { orientation, interactive };
-    this.renderOptions = {
-      orientation,
-      numbers,
-      moveHints,
-      selected,
-      destinations,
-      reachable,
-      reverseTargets,
-      undoSources,
-      revisionTargets,
-      sources,
-      moves,
-      dropPreview,
-      interactive,
-      preview,
-      editor,
-      diceState,
-      usedDice,
-      forcedDice, lockedDice, playableDice, advanced, boardShortcuts: shortcuts,
-      chooseDie,
-      preferredDie,
-      hideDice,
-      lastMove,
-    };
+    this.renderOptions = nextOptions;
     this.svg.classList.toggle("no-move-hints", !moveHints);
     this.svg.classList.toggle(
       "has-moves",
@@ -2070,7 +2113,7 @@ export class Board {
     const arrowKey = JSON.stringify([lastMove?.player, lastMove?.checkers, lastMove?.dice]);
     const newArrows = this.arrowKey !== arrowKey;
     this.arrowKey = arrowKey;
-    this.svg.replaceChildren(...children);
+    this.updateChildren(children);
     animateLastMoveExit(this.svg, lastMoveExit, this.animations);
     this.animateDiceLayout(dicePoses);
     this.animateDiceSelection(dicePoses);

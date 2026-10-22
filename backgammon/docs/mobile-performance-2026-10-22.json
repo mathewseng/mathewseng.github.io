@@ -1,0 +1,300 @@
+{
+  "recordedAt": "2026-10-22T15:48:33.681Z",
+  "baselineCommit": "90d8d332f3c78414835eb40e7a7aeb1e72c40451",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "platform": "darwin",
+    "architecture": "arm64"
+  },
+  "method": "Paired old/new assembled-site runs. 390x844 touch viewport; full animations. Chromium tap and long-match confirmation scenarios use 6x CPU slowdown; WebKit and 640-path bearoff action workload are unthrottled. Real GNUbg, IndexedDB, saved-match replay and 1356-event history. Desktop simulation, not physical-iPhone or low-battery measurements; concurrent host work and timing noise remain. No search-depth or animation-duration reduction.",
+  "results": {
+    "chromium": {
+      "mobile-performance": {
+        "before": {
+          "tapToFrameMs": {
+            "count": 12,
+            "median": 39.89999997615814,
+            "p95": 57.39999997615814,
+            "max": 57.39999997615814
+          },
+          "renderMs": {
+            "count": 12,
+            "median": 25.699999928474426,
+            "p95": 31.600000023841858,
+            "max": 31.600000023841858
+          },
+          "frameMs": {
+            "count": 662,
+            "median": 8.300000000000182,
+            "p95": 9.200000000000728,
+            "max": 175.5
+          },
+          "framesOver50ms": 3,
+          "cpuSlowdown": 6,
+          "styleRecalculations": 1088,
+          "styleMs": 397.519,
+          "layoutMs": 516.169,
+          "scenarios": [
+            "double",
+            "bearoff",
+            "beginner"
+          ]
+        },
+        "after": {
+          "tapToFrameMs": {
+            "count": 12,
+            "median": 37.700000047683716,
+            "p95": 44,
+            "max": 44
+          },
+          "renderMs": {
+            "count": 12,
+            "median": 26.700000047683716,
+            "p95": 33.700000047683716,
+            "max": 33.700000047683716
+          },
+          "frameMs": {
+            "count": 673,
+            "median": 8.300000000000182,
+            "p95": 9.299999999999727,
+            "max": 50.30000000000018
+          },
+          "framesOver50ms": 1,
+          "cpuSlowdown": 6,
+          "styleRecalculations": 733,
+          "styleMs": 384.247,
+          "layoutMs": 554.373,
+          "scenarios": [
+            "double",
+            "bearoff",
+            "beginner"
+          ]
+        }
+      },
+      "interaction-latency": {
+        "before": {
+          "viewport": "390×844 emulation; desktop CPU, not a low-battery phone",
+          "legalPaths": 640,
+          "action": {
+            "samples": 120,
+            "medianMs": 4.299999952316284,
+            "p95Ms": 5.299999952316284,
+            "maxMs": 7.100000023841858
+          },
+          "nextFrame": {
+            "samples": 120,
+            "medianMs": 8.100000023841858,
+            "p95Ms": 9.299999952316284,
+            "maxMs": 11
+          }
+        },
+        "after": {
+          "viewport": "390×844 emulation; desktop CPU, not a low-battery phone",
+          "legalPaths": 640,
+          "action": {
+            "samples": 120,
+            "medianMs": 3.399999976158142,
+            "p95Ms": 4.5,
+            "maxMs": 6.200000047683716
+          },
+          "nextFrame": {
+            "samples": 120,
+            "medianMs": 8.200000047683716,
+            "p95Ms": 9.200000047683716,
+            "maxMs": 9.799999952316284
+          }
+        }
+      },
+      "confirm-latency": {
+        "before": [
+          {
+            "touch": false,
+            "throttle": 1,
+            "historyEvents": 1356,
+            "firstPaintMs": 14.899999976158142,
+            "longestTaskMs": 0,
+            "longestFrameMs": 33.30000000000018,
+            "cachedGrade": true,
+            "replayed": true
+          },
+          {
+            "touch": true,
+            "throttle": 6,
+            "historyEvents": 1356,
+            "firstPaintMs": 97.30000007152557,
+            "longestTaskMs": 232,
+            "longestFrameMs": 300.70000000000005,
+            "cachedGrade": true,
+            "replayed": true
+          }
+        ],
+        "after": [
+          {
+            "touch": false,
+            "throttle": 1,
+            "historyEvents": 1356,
+            "firstPaintMs": 12.5,
+            "longestTaskMs": 0,
+            "longestFrameMs": 25,
+            "cachedGrade": true,
+            "replayed": true
+          },
+          {
+            "touch": true,
+            "throttle": 6,
+            "historyEvents": 1356,
+            "firstPaintMs": 69.30000007152557,
+            "longestTaskMs": 144,
+            "longestFrameMs": 175,
+            "cachedGrade": true,
+            "replayed": true
+          }
+        ]
+      }
+    },
+    "webkit": {
+      "mobile-performance": {
+        "before": {
+          "tapToFrameMs": {
+            "count": 12,
+            "median": 13,
+            "p95": 14,
+            "max": 14
+          },
+          "renderMs": {
+            "count": 12,
+            "median": 6.9999999999990905,
+            "p95": 9,
+            "max": 9
+          },
+          "frameMs": {
+            "count": 330,
+            "median": 17,
+            "p95": 18,
+            "max": 66
+          },
+          "framesOver50ms": 1,
+          "cpuSlowdown": 1,
+          "styleRecalculations": 0,
+          "styleMs": 0,
+          "layoutMs": 0,
+          "scenarios": [
+            "double",
+            "bearoff",
+            "beginner"
+          ]
+        },
+        "after": {
+          "tapToFrameMs": {
+            "count": 12,
+            "median": 12,
+            "p95": 13.99999999999909,
+            "max": 13.99999999999909
+          },
+          "renderMs": {
+            "count": 12,
+            "median": 6,
+            "p95": 7,
+            "max": 7
+          },
+          "frameMs": {
+            "count": 328,
+            "median": 17,
+            "p95": 18,
+            "max": 19
+          },
+          "framesOver50ms": 0,
+          "cpuSlowdown": 1,
+          "styleRecalculations": 0,
+          "styleMs": 0,
+          "layoutMs": 0,
+          "scenarios": [
+            "double",
+            "bearoff",
+            "beginner"
+          ]
+        }
+      },
+      "interaction-latency": {
+        "before": {
+          "viewport": "390×844 emulation; desktop CPU, not a low-battery phone",
+          "legalPaths": 640,
+          "action": {
+            "samples": 120,
+            "medianMs": 9,
+            "p95Ms": 11,
+            "maxMs": 12.999999999999986
+          },
+          "nextFrame": {
+            "samples": 120,
+            "medianMs": 15,
+            "p95Ms": 17.000000000000114,
+            "maxMs": 22
+          }
+        },
+        "after": {
+          "viewport": "390×844 emulation; desktop CPU, not a low-battery phone",
+          "legalPaths": 640,
+          "action": {
+            "samples": 120,
+            "medianMs": 7,
+            "p95Ms": 8.000000000000114,
+            "maxMs": 13
+          },
+          "nextFrame": {
+            "samples": 120,
+            "medianMs": 16,
+            "p95Ms": 17.999999999999886,
+            "maxMs": 21
+          }
+        }
+      },
+      "confirm-latency": {
+        "before": [
+          {
+            "touch": false,
+            "throttle": 1,
+            "historyEvents": 1356,
+            "firstPaintMs": 22,
+            "longestTaskMs": 0,
+            "longestFrameMs": 64,
+            "cachedGrade": true,
+            "replayed": true
+          },
+          {
+            "touch": true,
+            "throttle": 1,
+            "historyEvents": 1356,
+            "firstPaintMs": 22,
+            "longestTaskMs": 0,
+            "longestFrameMs": 77,
+            "cachedGrade": true,
+            "replayed": true
+          }
+        ],
+        "after": [
+          {
+            "touch": false,
+            "throttle": 1,
+            "historyEvents": 1356,
+            "firstPaintMs": 20,
+            "longestTaskMs": 0,
+            "longestFrameMs": 51,
+            "cachedGrade": true,
+            "replayed": true
+          },
+          {
+            "touch": true,
+            "throttle": 1,
+            "historyEvents": 1356,
+            "firstPaintMs": 20,
+            "longestTaskMs": 0,
+            "longestFrameMs": 44,
+            "cachedGrade": true,
+            "replayed": true
+          }
+        ]
+      }
+    }
+  }
+}

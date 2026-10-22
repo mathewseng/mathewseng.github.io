@@ -633,6 +633,8 @@ kbd:not(.keycap) {
 
 /* Board frame: the SVG board sits on the page colour and keeps its own frame. */
 .board-slot {
+  /* SVG animation reads must not relayout the surrounding match history. */
+  contain: layout style;
   position: relative;
   display: flex;
   align-items: center;
@@ -1295,6 +1297,15 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   stroke: var(--board-selection);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
+}
+
+/* Only the small animated sprites get compositing hints, never the full
+   board or every checker, so browsers can isolate their animated paint. */
+.moving-checker,
+.drag-checker,
+.drop-landing-ghost,
+.board-die-face {
+  will-change: transform, opacity;
 }
 
 /* Dice and cube on the board. */
@@ -2338,6 +2349,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .play-feedback .history-turn {
+  contain: layout style;
   display: grid;
   min-width: 0;
   padding: 0;

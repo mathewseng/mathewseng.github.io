@@ -17,7 +17,7 @@ export function setSoundPreferences(value) {
   }
 }
 
-// One lazy context per page. A trusted gesture unlocks it; blocked/unsupported
+// Prepare one silent context while idle. A trusted gesture unlocks it; blocked/unsupported
 // audio never delays a game action. No sound is queued to play after unlocking.
 export class SoundPlayer {
   constructor({
@@ -39,7 +39,7 @@ export class SoundPlayer {
     this.voices = new Set();
     this.last = new Map();
   }
-  unlock() {
+  prepare() {
     if (!this.preferences().enabled || !this.visible()) return;
     try {
       if (!this.context || this.context.state === "closed") {
@@ -51,9 +51,17 @@ export class SoundPlayer {
         this.master.connect(this.context.destination);
       }
       this.update();
+    } catch {
+      /* Audio is an optional enhancement. */
+    }
+  }
+  unlock() {
+    if (!this.preferences().enabled || !this.visible()) return;
+    this.prepare();
+    try {
       if (
-        this.context.state === "suspended" ||
-        this.context.state === "interrupted"
+        this.context?.state === "suspended" ||
+        this.context?.state === "interrupted"
       )
         return this.context.resume().catch(() => {});
     } catch {
@@ -139,6 +147,11 @@ let installed = false;
 export function installSound() {
   if (installed) return;
   installed = true;
+  // Creating the audio device can take >100 ms on a phone. Do it away from
+  // pointerdown; never start a source or resume autoplay before a gesture.
+  const prepare = () => sound.prepare();
+  if (globalThis.requestIdleCallback) requestIdleCallback(prepare);
+  else setTimeout(prepare, 0);
   const gesture = (event) => {
     if (event.isTrusted) sound.unlock();
   };
