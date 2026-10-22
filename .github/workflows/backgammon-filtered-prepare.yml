@@ -1,0 +1,26 @@
+name: Prepare corrected Backgammon rollout study
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Build both control and corrected research binaries
+        run: node backgammon/scripts/build-filtered-rollout-native.mjs /tmp/bg-filtered-rollout-v1
+      - name: Validate excluded cases before freezing the runtime
+        run: python3 backgammon/scripts/validate-filtered-rollout-platform.py /tmp/bg-filtered-rollout-v1
+      - name: Package the exact validated runtime
+        run: tar -C /tmp/bg-filtered-rollout-v1 -czf /tmp/filtered-rollout-linux-arm64.tar.gz gnubg-core gnubg-core-legacy runtime-build.json legacy-build.json legacy-validation.json platform-validation.json LICENSE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: filtered-rollout-linux-arm64
+          path: /tmp/filtered-rollout-linux-arm64.tar.gz
+          retention-days: 30
+          if-no-files-found: error
