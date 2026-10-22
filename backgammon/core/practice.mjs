@@ -53,6 +53,7 @@ export function replacePracticeRoll(source, player, dice) {
   );
   const table = clone(source),
     removed = table.events.slice(target.index);
+  delete table.initialDecision;
   table.undoLog ||= [];
   table.undoLog.push({
     by: player,
@@ -92,6 +93,7 @@ export function returnToDecision(source, index, expected) {
   if (positionKey(state) !== positionKey(expected))
     throw new Error("This review belongs to a different position.");
   const table = clone(source);
+  delete table.initialDecision;
   table.undoLog ||= [];
   table.undoLog.push({
     by: decisionPlayer(state),

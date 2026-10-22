@@ -35,12 +35,16 @@ module.exports=async function revisionWarning(browser,base){
         assert.equal((await read()).game.events.length,0,'warning leaves turn uncommitted');
         await page.getByRole('button',{name:'Revise',exact:true}).click();
         assert.equal((await read()).game.events.length,0);
+        const first=(await read()).game.initialDecision;
+        assert.equal(first.action.type,'move','first submitted choice survives revision');
+        assert.equal(first.evaluation.result.error,loss,'the first grade is saved before acceptance');
         assert.equal(await page.locator('#confirm').isEnabled(),true);
         await page.locator('#confirm').click();
         await page.getByRole('button',{name:'Confirm anyway',exact:true}).click();
       }
       const deadline=Date.now()+5000;while((await read()).game.events.length===0&&Date.now()<deadline)await page.waitForTimeout(25);
       assert.equal((await read()).game.events[0]?.action.type,'move');
+      assert.equal((await read()).game.events[0].initialDecision.evaluation.result.error,loss);
       assert.equal(await page.locator('dialog[open]').count(),0);
       cases.push({loss,warned:loss>.002,committedOnlyOnConfirmation:true});
     }

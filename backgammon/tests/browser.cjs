@@ -613,6 +613,9 @@ const server = http.createServer((req, res) => {
         (report.endedUndo ||= []).push(
           await run("ended-undo", browser, base, out, browserName),
         );
+        (report.gameLossSummary ||= []).push(
+          await run("game-loss-summary", browser, base, out, browserName),
+        );
         (report.diceSwitchMotion ||= []).push(
           await run("dice-switch-motion", browser, base, out, browserName),
         );

@@ -52,3 +52,24 @@ test("forced checker turns get equity too and normal foreground cancellation is 
   reviewer.update(); await tick(); reviewer.pause();
   assert.equal(decisionHistory(model)[0].status, "evaluated");
 });
+
+test("unfinished first attempts are backfilled separately from the accepted move, including cancellation and retry", async () => {
+  const model = fixture(), original = legalTurns(model.initial)[1].steps;
+  model.events[0].evaluation = { result: result(model.initial, { submitted: model.events[0].action.steps }) };
+  model.events[0].initialDecision = { action: { type: "move", steps: original } };
+  let calls = 0, saves = 0;
+  const reviewer = new AutoReview({ model: () => model, idle: () => true, save: async () => saves++,
+    engine: { analyze: async (s, o) => {
+      assert.deepEqual(o.submitted, original);
+      if (!calls++) throw new DOMException("Preempted", "AbortError");
+      const grade = result(s, o); grade.actual.equity = -.05; return grade;
+    } } });
+  reviewer.update(); await tick(); reviewer.pause();
+  assert.equal(reviewer.error, null);
+  reviewer.update(); await tick(); reviewer.pause();
+  const row = decisionHistory(model)[0];
+  assert.ok(Math.abs(row.initialFeedback.loss - .15) < 1e-10);
+  assert.equal(row.feedback.loss, 0);
+  assert.equal(saves, 1);
+  reviewer.update(); assert.equal(calls, 2);
+});

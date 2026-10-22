@@ -9,6 +9,7 @@ import { forcedTurn, blockedBarRoll } from "./table.mjs";
 import { historyStates } from "./history-states.mjs";
 import { decisionFeedback } from "./decision-feedback.mjs";
 import { CUBE_LABELS, gradeCube } from "../engine/cube-grade.mjs";
+import { sameDecisionAction } from "./decision-attempt.mjs";
 export function compactEvaluation(source, result) {
   const compact = clone(result);
   if (compact.type === "checker") {
@@ -57,6 +58,20 @@ export function decisionHistory(model) {
       result = null;
     }
     const forced = a.type === "move" && !!forcedTurn(source);
+    const initialAction = event.initialDecision?.action || null;
+    let initialFeedback = null;
+    if (initialAction) {
+      try {
+        const first = event.initialDecision.evaluation?.result;
+        if (first?.positionKey === positionKey(source))
+          initialFeedback = decisionFeedback(gradeDecision(source, first, initialAction), source);
+        else if (sameDecisionAction(initialAction, a)) initialFeedback = feedback;
+        // A cube evaluation contains all options, so a revised cube decision
+        // can be graded without another engine search.
+        else if (result?.type === "cube")
+          initialFeedback = decisionFeedback(gradeDecision(source, result, initialAction), source);
+      } catch { /* Missing/stale first-attempt analysis remains pending. */ }
+    }
     rows.push({
       index,
       game: source.gameNumber,
@@ -73,6 +88,8 @@ export function decisionHistory(model) {
       forced,
       result,
       feedback,
+      initialAction,
+      initialFeedback,
       status: feedback ? "evaluated" : forced ? "forced" : "pending",
     });
   });
@@ -144,6 +161,10 @@ export function mergeEvaluations(current, saved) {
     )
       break;
     if (!a.evaluation && b.evaluation) a.evaluation = clone(b.evaluation);
+    if (!a.initialDecision && b.initialDecision) a.initialDecision = clone(b.initialDecision);
+    else if (sameDecisionAction(a.initialDecision?.action, b.initialDecision?.action) &&
+      !a.initialDecision.evaluation && b.initialDecision.evaluation)
+      a.initialDecision.evaluation = clone(b.initialDecision.evaluation);
   }
   return current;
 }

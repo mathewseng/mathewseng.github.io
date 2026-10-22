@@ -3,6 +3,7 @@
 import { historyStateKey } from "./history-tree.mjs";
 import { historyStates } from "./history-states.mjs";
 import { certainBearoff } from "./certain-bearoff.mjs";
+import { acceptedAttempt, beginDecisionAttempt } from "./decision-attempt.mjs";
 import {
   clone,
   transition,
@@ -161,10 +162,15 @@ export function draftAutomation(state, draft, paths, advance = false) {
 }
 
 function append(table, action, actor, automatic = false) {
-  table.state = transition(table.state, action, actor);
+  const next = transition(table.state, action, actor);
+  const initialDecision = ["move", "roll", "double", "take", "pass", "beaver", "raccoon"].includes(action.type)
+    ? acceptedAttempt(table, action) : null;
+  table.state = next;
+  delete table.initialDecision;
   table.events.push({
     actor,
     action: clone(action),
+    ...(initialDecision ? { initialDecision } : {}),
     ...(automatic ? { automatic: true } : {}),
   });
 }
@@ -271,6 +277,11 @@ export function undoTurn(source, target, by, acceptedBy = null) {
   ];
   table.events = table.events.slice(0, target);
   table.state = restored;
+  delete table.initialDecision;
+  if (removed[0]?.initialDecision) {
+    const first = removed[0].initialDecision;
+    Object.assign(beginDecisionAttempt(table, first.action), clone(first));
+  }
   if (source.state.phase === 'over') table.reviewingTurn = true;
   table.undoRequest = null;
   return table;

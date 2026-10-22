@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { clone } from "./rules.mjs";
 import { decisionHistory, compactEvaluation, gradeDecision, sameDecisionPrefix } from "./decision-history.mjs";
+import { sameDecisionAction } from "./decision-attempt.mjs";
 
 // Uses the table's existing worker at a lower priority than play and hints.
 // One committed decision at a time; never grades a draft or changes game state.
@@ -20,9 +21,11 @@ export class AutoReview {
       this.error = null;
     }
     if (!model?.started || model.config?.mode !== "computer" || this.job || this.error || !this.idle()) return;
-    const row = decisionHistory(model).reverse().find(r => !r.feedback);
+    const rows = decisionHistory(model).reverse();
+    const row = rows.find(r => !r.feedback) ||
+      rows.find(r => r.initialAction && !r.initialFeedback && !r.forced);
     if (!row) return;
-    const job = { snapshot: clone(model), row };
+    const job = { snapshot: clone(model), row, initial: !!row.feedback };
     this.job = job;
     this.changed();
     this.run(job);
@@ -30,17 +33,22 @@ export class AutoReview {
   async run(job) {
     try {
       const { row, snapshot } = job;
+      const action = job.initial ? row.initialAction : row.action;
       const result = await this.engine.analyze(row.source, {
         preset: snapshot.config.reviewStrength || "auto",
-        submitted: row.action.type === "move" ? row.action.steps : null,
+        submitted: action.type === "move" ? action.steps : null,
         priority: -10,
       });
       const current = this.model();
       if (current?.id !== snapshot.id || current.config?.mode !== "computer" ||
           !sameDecisionPrefix(current, snapshot, row.index)) return;
       // A foreground review may have finished while this job was in flight.
-      if (!decisionHistory(current).find(r => r.index === row.index)?.feedback) {
-        current.events[row.index].evaluation = compactEvaluation(row.source, gradeDecision(row.source, result, row.action));
+      const latest = decisionHistory(current).find(r => r.index === row.index);
+      if (job.initial && sameDecisionAction(latest?.initialAction, action) && !latest.initialFeedback) {
+        current.events[row.index].initialDecision.evaluation = compactEvaluation(row.source, gradeDecision(row.source, result, action));
+        await this.save();
+      } else if (!job.initial && !latest?.feedback) {
+        current.events[row.index].evaluation = compactEvaluation(row.source, gradeDecision(row.source, result, action));
         await this.save();
       }
     } catch (error) {

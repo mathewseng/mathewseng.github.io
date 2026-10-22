@@ -1569,6 +1569,101 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   text-overflow: ellipsis;
 }
 
+.game-over-card {
+  max-height: min(680px, 80dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.game-loss-summary {
+  min-width: 0;
+  text-align: left;
+  font-size: var(--t-sm);
+}
+
+.game-loss-summary table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-loss-summary caption {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  font-weight: 650;
+}
+
+.game-loss-summary th,
+.game-loss-summary td {
+  padding: 5px 4px;
+  border: 0;
+  vertical-align: top;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.game-loss-summary th:first-child {
+  text-align: left;
+}
+
+.game-loss-summary thead th {
+  color: var(--muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--line);
+}
+
+.game-loss-summary tbody th {
+  font-weight: 550;
+}
+
+.game-loss-summary small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--t-xs);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.game-loss-summary .loss-summary-player th {
+  padding-top: 10px;
+  font-weight: 650;
+  border-top: 1px solid var(--line);
+}
+
+.loss-summary-player th::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--bg-seat-0);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+[data-summary-player="1"] .loss-summary-player th::before {
+  background: var(--bg-seat-1);
+}
+
+.loss-summary-help {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.loss-summary-help summary {
+  padding-block: 8px;
+  cursor: pointer;
+}
+
+.loss-summary-help p {
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
 /* Setup: the engine-strength explanation behind a disclosure. */
 .setup-engine > summary {
   min-height: 36px;

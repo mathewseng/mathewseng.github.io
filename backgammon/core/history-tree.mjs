@@ -137,6 +137,7 @@ export function returnToHistory(source, path) {
   }
   if (node.current) return clone(source);
   const table = clone(source);
+  delete table.initialDecision;
   table.undoLog ||= [];
   table.undoLog.push({
     by: decisionPlayer(source.state),

@@ -79,6 +79,8 @@ import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback, needsRevisionWarning } from "../core/decision-feedback.mjs";
+import { beginDecisionAttempt, recordInitialEvaluation } from "../core/decision-attempt.mjs";
+import { gameLossTable } from "../ui/game-loss-summary.mjs";
 import { PRESETS, SEARCH_OPTIONS, searchName, SEARCH_DESCRIPTION } from "../engine/metadata.mjs";
 import { Online } from "./network.mjs";
 import { ruleControls, ruleReference } from "../ui/rules.mjs";
@@ -143,11 +145,18 @@ boardWorkspace.append(ui.board.container, boardActions);
 const resultCard = el("section", { class: "bg-result-card game-over-card", hidden: true, "aria-label": "Game result" });
 ui.board.container.append(resultCard);
 let hiddenResult = "";
+let resultSignature = "";
 function renderResultCard(s) {
   const r = s?.phase === "over" ? s.result : null;
   const key = r ? `${s.gameNumber}:${s.scores.join("-")}` : "";
   resultCard.hidden = !r || key === hiddenResult;
-  if (resultCard.hidden) return;
+  if (resultCard.hidden) { resultSignature = ""; return; }
+  const losses = gameLossTable(decisionHistory(model()), s, names());
+  const signature = JSON.stringify([model()?.id, key, r, names(), losses.textContent]);
+  if (resultSignature === signature) return;
+  resultSignature = signature;
+  const helpOpen = resultCard.querySelector("details")?.open;
+  const scrollTop = resultCard.scrollTop;
   const winner = names()[r.winner];
   const level = { 1: "single game", 2: "gammon", 3: "backgammon" }[r.level] || "game";
   const stat = (label, value, extra) => el("div", { class: "stat" },
@@ -162,7 +171,10 @@ function renderResultCard(s) {
       stat("Score", `${s.scores[0]}–${s.scores[1]}`, s.matchLength ? `of ${s.matchLength}` : "unlimited"),
       stat("Cube", String(s.cube.value), s.cube.owner === null ? "centred" : names()[s.cube.owner]),
     ),
+    losses,
   );
+  if (helpOpen) losses.querySelector("details").open = true;
+  resultCard.scrollTop = scrollTop;
 }
 let openingTimer = null, openingSchedule = "", forcedSchedule = "";
 let acceptedCubeTimer = null, acceptedCubeKey = "";
@@ -177,6 +189,7 @@ const autoReview = new AutoReview({
     renderedFeedback = null;
     renderFeedback();
     renderReviewStatus();
+    renderResultCard(state());
   },
 });
 const feedbackStrip = el("div", {
@@ -239,7 +252,8 @@ reviewArea.append(feedbackFilters);
 function renderReviewStatus() {
   reviewStatus.hidden = !game?.started || config.mode !== "computer";
   if (reviewStatus.hidden) return;
-  const pending = decisionHistory(game).filter(r => !r.feedback).length;
+  const pending = decisionHistory(game).filter(r => !r.feedback ||
+    (r.initialAction && !r.initialFeedback && !r.forced)).length;
   reviewStatus.replaceChildren(
     el("span", {}, autoReview.error ? `Analysis paused: ${autoReview.error}` : pending
       ? `${autoReview.job ? "Analyzing" : "Queued for analysis"} · ${pending} decision${pending === 1 ? "" : "s"} remaining`
@@ -2109,6 +2123,7 @@ function showSessionReview() {
         await persist();
         renderedFeedback = null;
         renderFeedback();
+        renderResultCard(state());
       },
     },
   );
@@ -2494,6 +2509,10 @@ async function evaluateDecision(action) {
     return;
   }
   const job = assistance("submit");
+  beginDecisionAttempt(game, action);
+  // Persist the first submission even if the warning is revised or reloaded.
+  // This is metadata only; the legal game history remains uncommitted.
+  persist(false);
   const finish = async (result = null) => {
     if (!activeAssistance(job)) return;
     releaseAssistance();
@@ -2552,6 +2571,8 @@ async function evaluateDecision(action) {
     let [result] = await Promise.all([evaluation, painted]);
     if (!activeAssistance(job)) return;
     if (!checker) result = gradeCube(job.source, result, action.type);
+    recordInitialEvaluation(game, action, compactEvaluation(job.source, result));
+    persist(false);
     job.done = true;
     completedResult = result;
     if (warningCopy) {

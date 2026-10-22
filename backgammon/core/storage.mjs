@@ -120,22 +120,24 @@ export function validateItem(item) {
     const validateLine = (initial, events) => {
       const states = replay(initial, events);
       for (const [index, event] of events.entries()) {
-        if (!event.evaluation) continue;
-        if (!event.evaluation.result)
-          throw new Error("Missing decision evaluation.");
-        validateItem({
-          version: 1,
-          id: "evaluation",
-          kind: "position",
-          title: "",
-          notes: "",
-          collection: "",
-          tags: [],
-          createdAt: 0,
-          updatedAt: 0,
-          state: states[index],
-          analysis: event.evaluation.result,
-        });
+        for (const evaluation of [event.evaluation, event.initialDecision?.evaluation]) {
+          if (!evaluation) continue;
+          if (!evaluation.result)
+            throw new Error("Missing decision evaluation.");
+          validateItem({
+            version: 1,
+            id: "evaluation",
+            kind: "position",
+            title: "",
+            notes: "",
+            collection: "",
+            tags: [],
+            createdAt: 0,
+            updatedAt: 0,
+            state: states[index],
+            analysis: evaluation.result,
+          });
+        }
       }
     };
     validateLine(item.initial, item.events);
@@ -248,7 +250,7 @@ export function saveMatchHistory(model, names, mode = "local") {
     model.events.length,
     model.undoLog?.length || 0,
     names,
-    model.events.map((e) => e.evaluation?.result || null),
+    model.events.map((e) => [e.evaluation?.result || null, e.initialDecision || null]),
   ]);
   const previous = archives.get(id);
   if (previous?.key === key) return previous.promise;
