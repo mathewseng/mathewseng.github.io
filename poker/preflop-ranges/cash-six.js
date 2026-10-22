@@ -1,0 +1,3 @@
+const Cash6 = {
+
+}

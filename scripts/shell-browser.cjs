@@ -88,7 +88,7 @@ function inspect({ targets, minText, minTarget }) {
     scrollWidth: document.documentElement.scrollWidth,
     innerWidth,
     shell: !!document.querySelector('link[href*="shared/app.css"]'),
-    topbar: !!document.querySelector(".topbar"),
+    topbar: !!document.querySelector(".topbar, .directory-top, .legacy-header"),
     skipLink: !!document.querySelector('a.skip-link, a[href="#main"]'),
     main: !!main && main.getAttribute("tabindex") === "-1",
     smallText,

@@ -1,0 +1,12 @@
+/* Shared chrome for preserved early projects. Application selectors stay local. */
+body.legacy-project { margin: 0; min-width: 0; font-size: max(12px, 1rem); }
+.legacy-project .legacy-header { position: relative; z-index: 10; width: 100%; height: auto; min-height: 60px; padding: 8px max(16px, calc((100% - 1200px) / 2)); margin: 0 0 16px; background: var(--page); color: var(--ink); border-bottom: 1px solid var(--line-strong); font: 14px/1.5 var(--font-sans); text-align: left; box-sizing: border-box; }
+.legacy-header nav { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; padding: 0; margin: 0; }
+.legacy-header nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; margin: 0; color: var(--accent); font: inherit; text-decoration: none; }
+.legacy-header nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.legacy-header nav span { color: var(--muted); }
+.legacy-header nav strong { font: inherit; font-weight: 600; }
+.legacy-header .project-dates { display: flex; flex-wrap: wrap; gap: 4px 20px; padding: 0 4px 6px; font: 12px/1.5 var(--font-mono); color: var(--muted); }
+.legacy-project button, .legacy-project input:not([type="checkbox"]):not([type="radio"]), .legacy-project select { min-height: 44px; font-size: max(12px, 1em); }
+.legacy-project a:focus-visible, .legacy-project button:focus-visible, .legacy-project input:focus-visible, .legacy-project select:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.legacy-project .prototype-note, .legacy-project .legacy-notice { max-width: 70ch; margin: 16px auto; padding: 14px 18px; border-left: 2px solid var(--accent); background: var(--surface); color: var(--ink); font: 14px/1.6 var(--font-sans); text-align: left; }

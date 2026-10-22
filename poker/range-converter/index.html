@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" data-family="poker">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261022">
+    <link rel="stylesheet" href="../../shared/app.css?v=20261022">
+
+    <title>Range Converter · Poker</title>
+    <link rel="stylesheet" href="styles.css">
+      <link rel="stylesheet" href="../../shared/legacy.css?v=20261022">
+</head>
+  <body class="legacy-project">
+<header class="legacy-header" data-project-path="poker/range-converter/"><nav aria-label="Breadcrumb"><a href="../../">Home</a><span aria-hidden="true">/</span><a href="../">Poker</a><span aria-hidden="true">/</span><a href="./" aria-current="page">Range Converter</a></nav>
+<div class="project-dates"><!-- project-dates --><span>Created <time datetime="2023-08-05">Aug 5, 2023</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span><!-- /project-dates --></div></header>
+<main class="legacy-stage" id="legacy-stage"><p class="eyebrow">RANGE UTILITIES</p><h1>Range Converter</h1><p>Turn simplified spreadsheet ranges into weighted range notation. Use <code>A</code> for all in, <code>Y</code> for yellow, <code>R</code> for raise, <code>C</code> for call, and <code>F</code> for fold.</p><label for="input">Simplified ranges</label><textarea id="input" spellcheck="false" placeholder="AA-ARRR AKs-R90C AKo-RRCC 72o-FFFF" aria-describedby="range-help"></textarea><p id="range-help">Separate hands with spaces or new lines. Four letters represent quarters; <code>R90C</code> means 90% raise and 10% call. Spreadsheet hand/code pairs are accepted too.</p><button id="load-example" type="button">Try an example</button><p id="conversion-status" role="status">Paste ranges above to begin.</p><section class="range-output"><div class="copy-container"><h2>All in</h2><button class="copy-btn" data-output="allIn" data-label="All in" aria-label="Copy all in range">Copy</button></div><div class="range-value" id="allIn"></div></section><section class="range-output"><div class="copy-container"><h2>Yellow</h2><button class="copy-btn" data-output="yellow" data-label="Yellow" aria-label="Copy yellow range">Copy</button></div><div class="range-value" id="yellow"></div></section><section class="range-output"><div class="copy-container"><h2>Raise</h2><button class="copy-btn" data-output="raise" data-label="Raise" aria-label="Copy raise range">Copy</button></div><div class="range-value" id="raise"></div></section><section class="range-output"><div class="copy-container"><h2>Call</h2><button class="copy-btn" data-output="call" data-label="Call" aria-label="Copy call range">Copy</button></div><div class="range-value" id="call"></div></section><section class="range-output"><div class="copy-container"><h2>Fold</h2><button class="copy-btn" data-output="fold" data-label="Fold" aria-label="Copy fold range">Copy</button></div><div class="range-value" id="fold"></div></section><script src="app.js"></script></main>
+</body>
+</html>

@@ -6,10 +6,13 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 
 | Path | What it is |
 | --- | --- |
-| `index.html` | Landing page listing every top-level project |
+| `index.html` | Searchable, grouped directory linking every project directly, with created and updated dates |
 | `gym/` | Gym Tracker training app (Vite + React; the only page with a build step) |
 | `cards/` | Card Table Workshop |
 | `microtonal-lab/` | Tuning explorer and browser instrument |
+| `music/` | Music hub, ear training, perception tests, EWI fingerings, ChordNet prototype, and Musical Masterpieces |
+| `games/` | Games hub, Blu’s Adventure, and the archived Aperiodic Minesweeper, Cardsweeper, GuessJack, Word Hunt, and TFT prototypes |
+| `tools/` | Tools hub, Mandelbrot explorer, Sbeve text experiment, and Bank Discrepancy Allocator |
 | `scoundrel/` | Solo dungeon card game: 44 Ash & Briar encounters, an animated card collection in `gallery/`, hidden-deck action EVs, and an outcome report in `reports/` |
 | `ofc/` | OFC hub: `play/`, `fantasyland-trainer/`, `fantasyland-ev/` (its Overview tab replaced the old Fantasyland report); `ofc.css` is the family stylesheet |
 | `poker/` | Poker hub: `play/`, `rush/`, `ultimate-omaha/`, `edge-the-dealer/`, `222/`, `video-poker/` (35 single-draw variants and a payout lab with exact hold EVs), `dodge/`, `calculations/`; `table.css` (felt, seats, lobby, action stage) is shared by the four tables and `tools.css` by the four research tools |
@@ -22,6 +25,26 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `scripts/` | Repo tooling (test runner, redirect builder); not published |
 
 ## Conventions
+
+- `shared/site-map.json` is the project catalog. Its `projects` entries include category,
+  description, source paths, and dates; `origin` records the original repository, pinned
+  import commit, and historical dates for the matheweon.github.io collection. `legacyPaths`
+  records its original page URLs. Source-only helpers are linked individually as well.
+  Run `node scripts/build-project-directory.mjs` after editing the catalog. It generates
+  the homepage and Music, Games, and Tools hubs, and stamps the imported page headers.
+  Creation follows the earliest recorded primary-file commit, following renames but
+  stopping at copied templates; updates
+  follow changes under each project's source paths. Imported creation dates are preserved;
+  the migration itself is an update. Dates use UTC calendar days. Deploy refreshes them
+  automatically using full Git history.
+- Imported poker projects live in `poker/pokerdle/`, `poker/shot-clock/`,
+  `poker/preflop-ranges/`, `poker/preflop-classic/`, `poker/preflop-classic-v2/`,
+  `poker/heads-up-preflop/`, `poker/three-pick-two/`, `poker/range-converter/`, and
+  `poker/source-tools/`. Unfinished projects are explicitly labeled as prototypes.
+  Their interfaces retain their original character, with `shared/legacy.css` supplying
+  common navigation. Pinned browser dependencies and licenses live in `shared/vendor/`.
+- Imported legacy paths, including case-sensitive `.html` filenames, redirect on this
+  domain through `redirects.json`. The original matheweon.github.io domain is unchanged.
 
 - Folder and file names are kebab-case, and a page's folder path is its URL.
 - A group of related pages is a family with a hub `index.html` at its root (`ofc/`, `poker/`, `blackjack/`, `backgammon/`, `dice/`).
@@ -47,6 +70,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 ## Checks
 
 ```bash
+node scripts/build-project-directory.mjs
 node scripts/run-tests.mjs
 ```
 
@@ -57,6 +81,7 @@ That runs every `*.test.cjs` and `*.test.mjs` outside `gym/`, including the colo
 ```bash
 sh scripts/assemble-site.sh _site
 node scripts/shell-browser.cjs      # every page at 1440x900, 375x812 and 844x390: overflow, 44px targets, focus rings, 12px floor
+node scripts/project-directory-browser.cjs # search, category navigation, and no-JavaScript links
 node scripts/screenshots.cjs --compare   # every page at 1440x900 and 375x812 against scripts/screenshots/baseline/
 ```
 

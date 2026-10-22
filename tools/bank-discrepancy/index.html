@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" data-family="tools">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261022">
+    <link rel="stylesheet" href="../../shared/app.css?v=20261022">
+  <meta charset="UTF-8">
+
+  <title>Bank Discrepancy Allocator</title>
+  <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../../shared/legacy.css?v=20261022">
+</head>
+
+<body class="legacy-project">
+    <header class="legacy-header" data-project-path="/tools/bank-discrepancy/"><nav aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/tools/">Tools</a><span aria-hidden="true">/</span><strong>Bank Discrepancy Allocator</strong></nav>
+<div class="project-dates"><!-- project-dates --><span>Created <time datetime="2026-02-09">Feb 9, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span><!-- /project-dates --></div></header>
+
+  <div class="container">
+    <h1>Bank Discrepancy Allocator</h1>
+    <p class="subtitle">$525 discrepancy &mdash; anonymous weight voting</p>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('vote')">Vote</button>
+      <button class="tab" onclick="switchTab('aggregate')">Aggregate</button>
+    </div>
+
+    <!-- VOTE VIEW -->
+    <div id="vote-view">
+      <div class="card">
+        <div class="collapsible-header" onclick="toggleCollapse('vote-instructions')">
+          <h2>How It Works</h2>
+          <span class="collapse-icon" id="vote-instructions-icon">&#x25B2;</span>
+        </div>
+        <div class="collapsible-body" id="vote-instructions">
+          <div class="instructions">
+            <ol>
+              <li>Assign a <strong>weight</strong> to each player based on how likely you think the $525 discrepancy was
+                caused by them. Higher weight = more likely. Use any numbers you want &mdash; they'll be converted to
+                percentages automatically.</li>
+              <li>When you're done, click <strong>Generate Code</strong>. A code will be copied to your clipboard.</li>
+              <li><strong>DM the code to @matheweon</strong> (@VariantVillain on the GT Card Players Discord). Your
+                weights are encoded so he can't see individual responses &mdash; only the group average will be
+                computed.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Assign Weights</h2>
+        <table class="weight-table">
+          <colgroup>
+            <col class="col-name">
+            <col class="col-weight">
+            <col class="col-pct">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Weight</th>
+              <th>%</th>
+            </tr>
+          </thead>
+          <tbody id="weight-body"></tbody>
+        </table>
+      </div>
+
+      <button id="generate-btn" class="btn btn-primary" disabled onclick="generateCode()">
+        Generate Code
+      </button>
+    </div>
+
+    <!-- AGGREGATE VIEW -->
+    <div id="aggregate-view" class="hidden">
+      <div class="card">
+        <div class="collapsible-header" onclick="toggleCollapse('agg-instructions')">
+          <h2>Instructions</h2>
+          <span class="collapse-icon" id="agg-instructions-icon">&#x25B2;</span>
+        </div>
+        <div class="collapsible-body" id="agg-instructions">
+          <div class="instructions">
+            <ol>
+              <li>Paste all the codes you received below, <strong>one code per line</strong>.</li>
+              <li>Click <strong>Calculate Average</strong> to see the group's averaged allocation of the $525
+                discrepancy.</li>
+              <li>Each submission carries equal weight in the average.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Paste Codes</h2>
+        <textarea id="codes-input" class="code-textarea" placeholder="Paste codes here, one per line..."></textarea>
+        <div id="agg-error" class="error-msg hidden"></div>
+        <button class="btn btn-primary" onclick="calculateAverage()">Calculate Average</button>
+      </div>
+
+      <div id="results-card" class="card hidden">
+        <h2>Results</h2>
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>%</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+        <p id="results-meta" class="results-meta"></p>
+      </div>
+    </div>
+
+    <div class="toast" id="toast">Code copied to clipboard!</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+
+		body {
+			margin: 0;
+		}
+		.text {
+			position: fixed;
+			font-family: Verdana;
+			font-size: 20px;
+		}
+		.slider {
+			position: fixed;
+			left: 200px;
+		}
+		.value {
+			position: fixed;
+			font-family: Verdana;
+			font-size: 20px;
+			left: 345px;
+		}
+
+body.legacy-project > svg { display: block; width: min(100%, 1000px); height: auto; margin: 16px auto; }

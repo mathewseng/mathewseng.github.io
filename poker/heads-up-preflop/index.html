@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html id="html" lang="en" data-family="poker">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261022">
+    <link rel="stylesheet" href="../../shared/app.css?v=20261022">
+
+    <title>Heads-up Preflop · Poker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../../shared/legacy.css?v=20261022">
+</head>
+
+<body class="legacy-project">
+<header class="legacy-header" data-project-path="poker/heads-up-preflop/"><nav aria-label="Breadcrumb"><a href="../../">Home</a><span aria-hidden="true">/</span><a href="../">Poker</a><span aria-hidden="true">/</span><a href="./" aria-current="page">Heads-up Preflop</a></nav>
+<div class="project-dates"><!-- project-dates --><span>Created <time datetime="2021-04-16">Apr 16, 2021</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span><!-- /project-dates --></div></header>
+<main class="legacy-stage" id="legacy-stage">
+    <h1 class="text">Heads Up No Limit Preflop</h1>
+
+    <button id="info" onclick="info()">Show Info</button>
+
+    <p class="text info">Select action and enter your hand</p>
+    <p class="text info">Press Enter to roll</p>
+
+    <br class="text info"><br class="text info">
+
+    <p class="text info">Open: 2.5 BB, 3-Bet: 10 BB, 4-Bet: 22 BB, 5-Bet: All In</p>
+
+    <br class="text info"><br class="text info">
+
+    <label class="text info" for="darkMode"><input class="text info" type="checkbox" id="darkMode" onclick="darkMode()">Dark Mode</label>
+    <a class="text info">&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;</a>
+    <a class="text info" target="_blank" rel="noopener noreferrer" href="https://poker-coaching.s3.amazonaws.com/tools/preflop-charts/100bb-hunl-cash-game-charts.pdf">Link to ranges</a>
+
+    <br class="text info"><br class="text info">
+
+    <br class="text"><br class="text">
+
+    <label for="rfi" class="text" id="rfiText"><input type="radio" name="action" id="rfi" onclick="selectAction('rfi')">Button Raise First In</label><br class="text">
+    <label for="open" class="text selectedAction" id="openText"><input type="radio" name="action" id="open" onclick="selectAction('open')" checked>BB Facing Open</label><br class="text">
+    <label for="3bet" class="text" id="3betText"><input type="radio" name="action" id="3bet" onclick="selectAction('3bet')">Button Facing 3-Bet</label><br class="text">
+    <label for="4bet" class="text" id="4betText"><input type="radio" name="action" id="4bet" onclick="selectAction('4bet')">BB Facing 4-Bet</label><br class="text">
+
+    <br class="text">
+
+    <input aria-label="Starting hand" id="input" type="text" value="JKo"></input>
+    <button id="roll" onclick="roll()">Roll</button>
+
+    <br class="text"><br class="text">
+
+    <div id="hands"></div>
+
+    <p id="output" class="text"></p>
+
+    <script src="../../shared/vendor/jquery-3.7.1.min.js"></script>
+    <script src="app.js"></script>
+</main>
+</body>
+
+</html>

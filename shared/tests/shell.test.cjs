@@ -93,7 +93,11 @@ test("every page that links app.css links tokens.css before any other stylesheet
     const links = Array.from(html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g), (m) => m[1]);
     assert.ok(links.length && /shared\/tokens\.css/.test(links[0]), `${page} links tokens.css first (got ${links[0]})`);
     assert.ok(/shared\/app\.css/.test(links[1]), `${page} links app.css second`);
-    if (/shared\/hub\.css/.test(html)) {
+    if (/class="directory"/.test(html)) {
+      const categories = JSON.parse(read('shared/site-map.json')).categories;
+      assert.match(html, /aria-label="Project categories"/, `${page} has category navigation`);
+      for (const category of categories) assert.ok(html.includes(`#${category.id}"`), `${page} links ${category.name}`);
+    } else if (/shared\/hub\.css/.test(html)) {
       const switcher = Array.from(html.matchAll(/data-to="([a-z]+)"/g), (m) => m[1]);
       assert.deepEqual(switcher, ["ofc", "poker", "blackjack", "backgammon", "dice"], `${page} has the five switcher links in one order`);
       assert.match(html, /classList\.add\("is-ready"\)/, `${page} sets html.is-ready before first paint`);

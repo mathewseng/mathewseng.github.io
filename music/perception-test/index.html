@@ -1,0 +1,64 @@
+<!--
+    TO-DO:
+-->
+
+<!DOCTYPE html>
+<html id="html" lang="en" data-family="music">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261022">
+    <link rel="stylesheet" href="../../shared/app.css?v=20261022">
+    <title>Perception Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="../../shared/vendor/jquery-3.7.1.min.js"></script>
+    <script src="../../shared/vendor/jquery-ui-1.13.3.min.js"></script>
+    <script src="../../shared/vendor/tone-14.8.49.min.js"></script>
+    <script src="../../shared/vendor/d3-7.9.0.min.js"></script>
+    <link rel="stylesheet" href="../../shared/legacy.css?v=20261022">
+</head>
+
+<body id="body" scroll="no" class="legacy-project">
+    <header class="legacy-header" data-project-path="/music/perception-test/"><nav aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/music/">Music</a><span aria-hidden="true">/</span><strong>Perception Test</strong></nav>
+<div class="project-dates"><!-- project-dates --><span>Created <time datetime="2022-02-25">Feb 25, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span><!-- /project-dates --></div></header>
+
+    <p id="keyLegend">
+        <b>Space / Click</b>: Play / Replay<br>
+        <b>Left / Right / Swipe</b>: Navigate Tabs
+    </p>
+    <p id="scoreText">
+        <b>Pitch</b><br>
+        <b>Total</b>: 0<br>
+        <b>Score</b>: 0<br>
+        <b>High Score</b>: 0<br>
+        <b>Difficulty 1</b>: 0 / 0<br>
+        <b>Difficulty 2</b>: 0 / 0<br>
+        <b>Difficulty 3</b>: 0 / 0<br>
+        <b>Difficulty 4</b>: 0 / 0
+    </p>
+    <div class="exercise-controls" aria-label="Exercise controls"><button onclick="selectTab('left')" aria-label="Previous test">←</button><button onclick="play()">Play / replay</button><button onclick="selectTab('right')" aria-label="Next test">→</button></div>
+    <div id="tabs">
+        <div id="pitchTest" class="tab">
+            <h1>Pitch Test</h1>
+            <button id="pitch0" class="pitch" onclick="guessPitch(-1)"><span>Flat</span></button>
+            <button id="pitch1" class="pitch" onclick="guessPitch(0)"><span>Same</span></button>
+            <button id="pitch2" class="pitch" onclick="guessPitch(1)"><span>Sharp</span></button>
+            <h2 id="cents">An interval is played, then the same interval is played flat, the same, or sharp</h2>
+        </div>
+        <div id="rhythmTest" class="tab">
+            <h1>Rhythm Test</h1>
+            <button id="rhythm0" class="rhythm" onclick="guessRhythm(-1)"><span>Early</span></button>
+            <button id="rhythm1" class="rhythm" onclick="guessRhythm(0)"><span>Same</span></button>
+            <button id="rhythm2" class="rhythm" onclick="guessRhythm(1)"><span>Late</span></button>
+            <h2 id="ms">The second rhythm is played with the last note early, the same, or late</h2>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script src="pitch-test.js"></script>
+    <script src="rhythm-test.js"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,63 @@
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.text {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.introText {
+    font-family: American Typewriter, serif;
+    font-weight: bold;
+    fill: #3af;
+}
+
+#fpsText, #msLastFrameText {
+    font-size: 16px;
+    font-family: Helvetica;
+}
+
+.levelEditorGrid {
+    fill: #f00;
+    font-size: 8px;
+    font-family: Courier;
+    font-weight: bold;
+    z-index: -1;
+    position: relative;
+}
+
+.black {
+    fill: black;
+}
+
+.bluBlue {
+    fill: #3af;
+}
+
+.bluGreen {
+    fill: #af3;
+}
+
+.bluGreenLine {
+    fill: #99e62e;
+}
+
+.bluOrange {
+    fill: #f28c28;
+}
+
+.bluOutline {
+    fill: #4dc1ff;
+}
+
+.bluInnerOutline {
+    fill: #38b3ff;
+}
+body.legacy-project > svg { position: relative !important; display: block; max-width: none; }
