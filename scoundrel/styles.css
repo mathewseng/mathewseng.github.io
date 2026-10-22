@@ -198,3 +198,20 @@ button:disabled { cursor: not-allowed; }
 
 @media (max-width: 800px) { .weapon-display .value-seal { width: 32px; height: 45px; flex-basis: 32px; font-size: 23px; } }
 @media (max-width: 480px) { .encounter-actions { width: 100%; flex-basis: 100%; order: 2; } .flee-button { order: 3; } }
+@media (min-width: 801px) and (min-height: 601px) and (max-height: 800px) {
+  .masthead { padding-block: 12px 14px; }
+  .dungeon { min-height: 430px; height: max(430px, calc(100dvh - 300px)); grid-template-rows: 80px minmax(200px, 1fr) 90px; }
+  .room-heading .ornament { display: none; }
+  .room-heading h2 { font-size: 21px; }
+  .health-value { margin-block: 6px 9px; }
+  .health-value strong { font-size: 36px; }
+  .health-caption, .weapon-chain { display: none; }
+  .weapon-block { margin-top: 16px; padding-top: 12px; }
+  .weapon-display { min-height: 54px; }
+  .weapon-display .value-seal { width: 36px; flex-basis: 36px; height: 46px; font-size: 25px; }
+  .dungeon-rail { padding-bottom: 0; }
+  .deck-stack { width: 43px; height: 60px; margin-bottom: 10px; }
+  .deck-divider { margin-block: 10px; }
+  .progress-track { margin-block: 8px; }
+  .action-stage { min-height: 80px; padding-block: 12px; }
+}

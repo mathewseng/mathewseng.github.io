@@ -37,13 +37,14 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     }
     await page.locator("#result-dialog").waitFor({state:"visible"});assert.equal(await page.locator("#result-score").innerText(),String(witness.score));
     assert.equal(E.restore(await page.evaluate(()=>localStorage.getItem("scoundrel-run-v1"))).phase,"won");
-    // Fresh save for screenshots and the three responsive shell sizes.
+    // Fresh save for screenshots and four responsive shell sizes.
     await page.goto(server.base+"/scoundrel/?seed=showcase");await settle(page);
     const shots=process.env.SCOUNDREL_SCREENSHOTS;if(shots)fs.mkdirSync(shots,{recursive:true});
-    for(const viewport of [{width:1440,height:900},{width:375,height:812},{width:844,height:390}]){
+    for(const viewport of [{width:1440,height:900},{width:1280,height:720},{width:375,height:812},{width:844,height:390}]){
       await page.setViewportSize(viewport);await settle(page);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,JSON.stringify(viewport));
       assert.equal(await page.locator(".encounter").count(),4);
+      if(viewport.width>=1000)assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+2),"desktop game fits the viewport");
       if(shots)await page.screenshot({path:path.join(shots,`scoundrel-${viewport.width}.png`),fullPage:true});
     }
     await page.setViewportSize({width:1440,height:900});await page.goto(server.base+"/scoundrel/reports/");await page.locator("#report-content").waitFor({state:"visible"});await settle(page);
@@ -54,6 +55,6 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     if(shots)await page.screenshot({path:path.join(shots,"scoundrel-report.png"),fullPage:true});
     await page.setViewportSize({width:375,height:812});await settle(page);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
     if(shots)await page.screenshot({path:path.join(shots,"scoundrel-report-phone.png"),fullPage:true});
-    assert.deepEqual(errors,[]);console.log("Scoundrel browser checks passed: all-action oracle, full winning replay, save/resume, gallery, themes, reports, export, three viewports.");
+    assert.deepEqual(errors,[]);console.log("Scoundrel browser checks passed: all-action oracle, full winning replay, save/resume, gallery, themes, reports, export, four viewports.");
   } finally {await browser.close();await server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
