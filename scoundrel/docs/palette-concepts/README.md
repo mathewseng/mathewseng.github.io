@@ -1,6 +1,6 @@
 # Scoundrel palette and race exploration
 
-**Selected direction:** the user chose **Ash & Briar**. The [full naming set and eight sample illustrations](../ash-and-briar/README.md) continue that direction.
+**Selected direction:** the user chose **Ash & Briar**. The [full naming set and sixteen sample illustrations](../ash-and-briar/README.md) continue that direction.
 
 Three concept boards generated on 2026-10-22 with the built-in image generation tool. These explore a simpler replacement art direction; the playable deck still uses Cinder & Tide. Exact prompts, palette targets and generation provenance are in [prompts.json](prompts.json). The painted colors and generated swatches approximate those targets.
 
