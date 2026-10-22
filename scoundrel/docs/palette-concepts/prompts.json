@@ -1,0 +1,131 @@
+{
+  "generator": "Built-in image_gen tool",
+  "created": "2026-10-22",
+  "status": "Exploration boards; not applied to the playable deck.",
+  "reference": "https://playruneterra.com/en-sg/media",
+  "note": "Hex values are palette targets. Generated paintings and swatches are visual approximations, not sampled color specifications.",
+  "images": [
+    {
+      "path": "moon-and-moss.png",
+      "title": "Moon & Moss",
+      "prompt": "Use case: stylized-concept.\nAsset type: polished art-direction and COLOR PALETTE exploration board for the original Scoundrel dungeon card game. Landscape 3:2 board.\nPrimary request: A SIMPLE, restrained fantasy card design direction inspired by Legends of Runeterra's expressive painted character art, but greatly simplified. Original characters, no game logos or existing characters. Make the COLOR RELATIONSHIPS easy to judge.\nLayout: warm ivory paper background. Small elegant header \"01 / MOON & MOSS\". Below, four equal large upright card mockups in one horizontal row, ordered SPADES, CLUBS, DIAMONDS, HEARTS. Each card has one illustration taking almost all its area, an extremely thin dark frame and a tiny unornamented suit symbol in its top left; NO stats or rules. Under each card, its category label and a generous horizontal strip of THREE solid color swatches (shadow / main / light) with the MAIN hex code clearly typeset beneath.\nSPADES: label \"BATFOLK\". One original small bat-eared dusk-violet humanoid scout in a broad indigo cloak, pale angular face, two big ears, holding one short spear, simple energetic three-quarter pose. Calm pale lavender background with one broad dark arch silhouette. Main #7C6AB5, shadow #302C47, light #C9C0E4.\nCLUBS: label \"FROGFOLK\". One original stout moss-jade frog warrior with large friendly eyes and a simple reed spear, single cream neck scarf, large rounded silhouette. Calm light sage background with one broad lily pad shape. Main #43866D, shadow #233D35, light #BCD5AE.\nDIAMONDS: label \"MOONSTEEL\". One large simple pale icy-blue steel sword leaning diagonally across calm dark blue slate, broad clearly painted blade, plain leather handle. Main #7CB8D0, shadow #293B4B, light #D6EAF0.\nHEARTS: label \"RED POTIONS\". One squat round clear glass healing potion with saturated ruby-red liquid, large cork and one cream highlight, against calm muted burgundy. Main #D65353, shadow #592D38, light #F4B8A5. Liquid MUST be RED.\nStyle: charming mature painterly fantasy, confident large gouache brush shapes, clear strong facial expressions, dramatic readable light, simplified anatomy and materials, soft lost edges. Each illustration about 70% dominant color family, 20% neutral, 10% light. One subject, one prop, one broad background shape. Readable at thumbnail size. Flat areas deliberately left empty. Keep detail only on face or blade edge; overall much less detail than a typical collectible card.\nAvoid: photorealism, skin pores, individual fur strands, scale texture, excessive cloth folds, sparks, particles, dense plants, detailed scenery, baroque gold frames, filigree, ornate armor, decorative borders, floating debris, large lore text, noisy canvas grain, harsh plastic vector icons. Carefully typeset exact labels and hex values. The board is an attractive visual comparison, not a game screen."
+    },
+    {
+      "path": "ash-and-briar.png",
+      "title": "Ash & Briar",
+      "prompt": "Use case: stylized-concept.\nAsset type: polished art-direction and COLOR PALETTE exploration board for the original Scoundrel dungeon card game. Landscape 3:2 board.\nPrimary request: A SIMPLE, restrained fantasy card design direction inspired by Legends of Runeterra's expressive painted character art, but greatly simplified. Entirely original characters. Make the COLOR RELATIONSHIPS easy to judge. This direction keeps the familiar black-spade, green-club, blue-diamond, red-heart relationship.\nLayout: warm ivory paper background. Small elegant header \"02 / ASH & BRIAR\". Four equal large upright card mockups in one horizontal row, ordered SPADES, CLUBS, DIAMONDS, HEARTS. Each card has one illustration taking almost all its area, an extremely thin dark frame and a tiny unornamented suit symbol in its top left; NO stats or rules. Under each card, its category label and a generous horizontal strip of THREE solid color swatches (shadow / main / light) with the MAIN hex code clearly typeset beneath.\nSPADES: label \"STONEKIN\". One original chunky charcoal gargoyle warrior made of just a few broad stone planes, small horns, memorable square head, broad hands, holding one simple stone club. Quiet pale grey background with one dark rock silhouette. Main #687483, shadow #282D36, light #C6CCD0.\nCLUBS: label \"TREEFOLK\". One original small broad-shouldered living tree sentinel, simple twig-antler silhouette and friendly expressive face, three large leaf masses and smooth bark planes, one plain wooden staff. Quiet pale cream-green background with one forest silhouette shape. Main #6D9058, shadow #304231, light #D1DDB3.\nDIAMONDS: label \"SKYFORGED\". One large simple cool blue steel axe diagonally across a calm muted navy background, broad blade, one pale glint, plain handle. Main #5FA8CF, shadow #263B50, light #D1E9F3.\nHEARTS: label \"RED POTIONS\". One squat simple clear glass healing potion with saturated scarlet-red liquid, a large cork and one cream highlight, against calm muted burgundy. Main #D65454, shadow #5E3038, light #F0B8AD. Liquid MUST be RED.\nStyle: charming mature painterly fantasy, confident large gouache brush shapes, strong expressions, dramatic readable light, simplified anatomy and materials, soft lost edges. Each illustration about 70% dominant color family, 20% neutral, 10% light. One subject, one prop, one broad background shape. Flat areas deliberately left empty, no texture clutter. Thumbnail readability is the priority.\nAvoid: photorealism, pores, many individual leaves, rough bark texture, cracks everywhere, sparks, particles, dense plants, detailed scenery, baroque gold frames, filigree, ornate armor, decorative borders, floating debris, large lore text, noisy canvas grain, harsh plastic vector icons. Carefully typeset exact labels and hex values. The board is an attractive visual comparison, not a game screen."
+    },
+    {
+      "path": "ink-and-gold.png",
+      "title": "Ink & Gold",
+      "prompt": "Use case: stylized-concept.\nAsset type: polished art-direction and COLOR PALETTE exploration board for the original Scoundrel dungeon card game. Landscape 3:2 board.\nPrimary request: A SIMPLE, restrained fantasy card design direction inspired by Legends of Runeterra's expressive painted character art, but greatly simplified. Entirely original characters. Make the COLOR RELATIONSHIPS easy to judge. Explore GOLD weapons instead of blue, keep clubs green and potions red.\nLayout: warm ivory paper background. Small elegant header \"03 / INK & GOLD\". Four equal large upright card mockups in one horizontal row, ordered SPADES, CLUBS, DIAMONDS, HEARTS. Each card has one illustration taking almost all its area, an extremely thin dark frame and a tiny unornamented suit symbol in its top left; NO stats or rules. Under each card, its category label and a generous horizontal strip of THREE solid color swatches (shadow / main / light) with the MAIN hex code clearly typeset beneath.\nSPADES: label \"JACKALFOLK\". One original elegant jackal-headed night sentinel with two long triangular ears, smooth dark indigo fur painted as large untextured planes, simple cream scarf, one tall spear, striking three-quarter silhouette. Calm pale periwinkle background with one broad dark doorway shape. Main #636EA5, shadow #292E48, light #C2C9E4.\nCLUBS: label \"GOBLINS\". One original olive-jade green goblin with oversized swept ears, sly friendly grin and a broad short body, wearing a single simple off-white tunic and holding a plain wooden mallet. Calm pale sage background with one broad dark hill shape. Main #65896B, shadow #2D4238, light #C7D7B2.\nDIAMONDS: label \"SUNBRASS\". One large simple honey-gold sword diagonally across a calm muted dark ochre background, broad luminous blade, plain dark leather handle and unornamented crossguard. Main #CDA866, shadow #57452D, light #F3E1B4.\nHEARTS: label \"RED POTIONS\". One squat round clear glass healing potion with saturated warm ruby-red liquid, a large cork and one cream highlight, against calm muted burgundy. Main #D9535F, shadow #592D3B, light #F4B6B1. Liquid MUST be RED, not orange.\nStyle: charming mature painterly fantasy, confident large gouache brush shapes, clear strong facial expressions, dramatic readable light, simplified anatomy and materials, soft lost edges. Each illustration about 70% dominant color family, 20% neutral, 10% light. One subject, one prop, one broad background shape. Readable at thumbnail size. Flat areas deliberately left empty. Keep detail only on face or blade edge; overall much less detail than a typical collectible card.\nAvoid: photorealism, skin pores, individual fur strands, tiny jewelry, fabric microtexture, sparks, particles, dense plants, detailed scenery, baroque gold frames, filigree, ornate armor, decorative borders, floating debris, large lore text, noisy canvas grain, harsh plastic vector icons. Carefully typeset exact labels and hex values. The board is an attractive visual comparison, not a game screen."
+    }
+  ],
+  "palettes": [
+    {
+      "name": "Moon & Moss",
+      "spades": {
+        "race": "Batfolk",
+        "colors": [
+          "#302C47",
+          "#7C6AB5",
+          "#C9C0E4"
+        ]
+      },
+      "clubs": {
+        "race": "Frogfolk",
+        "colors": [
+          "#233D35",
+          "#43866D",
+          "#BCD5AE"
+        ]
+      },
+      "diamonds": {
+        "material": "Moonsteel",
+        "colors": [
+          "#293B4B",
+          "#7CB8D0",
+          "#D6EAF0"
+        ]
+      },
+      "hearts": {
+        "item": "Red potions",
+        "colors": [
+          "#592D38",
+          "#D65353",
+          "#F4B8A5"
+        ]
+      }
+    },
+    {
+      "name": "Ash & Briar",
+      "spades": {
+        "race": "Stonekin",
+        "colors": [
+          "#282D36",
+          "#687483",
+          "#C6CCD0"
+        ]
+      },
+      "clubs": {
+        "race": "Treefolk",
+        "colors": [
+          "#304231",
+          "#6D9058",
+          "#D1DDB3"
+        ]
+      },
+      "diamonds": {
+        "material": "Skyforged",
+        "colors": [
+          "#263B50",
+          "#5FA8CF",
+          "#D1E9F3"
+        ]
+      },
+      "hearts": {
+        "item": "Red potions",
+        "colors": [
+          "#5E3038",
+          "#D65454",
+          "#F0B8AD"
+        ]
+      }
+    },
+    {
+      "name": "Ink & Gold",
+      "spades": {
+        "race": "Jackalfolk",
+        "colors": [
+          "#292E48",
+          "#636EA5",
+          "#C2C9E4"
+        ]
+      },
+      "clubs": {
+        "race": "Goblins",
+        "colors": [
+          "#2D4238",
+          "#65896B",
+          "#C7D7B2"
+        ]
+      },
+      "diamonds": {
+        "material": "Sunbrass",
+        "colors": [
+          "#57452D",
+          "#CDA866",
+          "#F3E1B4"
+        ]
+      },
+      "hearts": {
+        "item": "Red potions",
+        "colors": [
+          "#592D3B",
+          "#D9535F",
+          "#F4B6B1"
+        ]
+      }
+    }
+  ]
+}
