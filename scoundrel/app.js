@@ -54,14 +54,13 @@
   function render() {
     const final = state.deck.length === 0;
     $("room-title").textContent = "Room " + roman(state.roomNumber);
-    $("room-instruction").textContent = state.phase === "won" ? "Every encounter survived." : state.phase === "lost" ? "Your descent ends here." : final ? "The final room. Clear every remaining encounter." : state.phase === "ready" ? "Room cleared. Carry the last encounter forward." : "Resolve three encounters. Carry one forward.";
+    $("room-instruction").textContent = state.phase === "won" ? "All cards cleared" : state.phase === "lost" ? "Game over" : final ? "Final room · clear all cards" : state.phase === "ready" ? "Carry the remaining card into the next room" : "Resolve 3 cards · carry 1 forward";
     $("room-pips").innerHTML = Array.from({ length: final ? state.room.filter(Boolean).length + state.resolved : 3 }, (_, i) => `<span class="${i < state.resolved ? "filled" : ""}"></span>`).join("");
     $("room-pips").setAttribute("aria-label", state.resolved + " encounters resolved");
     $("health-value").textContent = state.health; $("health-bar").setAttribute("aria-valuenow", state.health);
     $("health-bar").firstElementChild.style.width = state.health * 5 + "%";
-    $("health-caption").textContent = state.health === 20 ? "Unharmed" : state.health > 12 ? "Still standing" : state.health > 5 ? "Wounded" : state.health > 0 ? "At death’s door" : "Fallen";
     $("weapon-display").innerHTML = (state.weapon ? seal(state.weapon) : '<span class="weapon-empty" aria-hidden="true">◇</span>') + `<div class="weapon-numbers"><strong>${state.weapon?.value || "—"}</strong><span>${state.weapon ? "Power" : "Unarmed"}</span></div>`;
-    $("weapon-rule").textContent = !state.weapon ? "Find a weapon to arm yourself." : E.weaponLimit(state) === 15 ? "Power " + state.weapon.value + " · any monster" : "Power " + state.weapon.value + " · next below " + E.weaponLimit(state);
+    $("weapon-rule").textContent = !state.weapon ? "Unarmed" : E.weaponLimit(state) === 15 ? "Power " + state.weapon.value + " · any monster" : "Power " + state.weapon.value + " · next below " + E.weaponLimit(state);
     $("weapon-chain").innerHTML = state.slain.map((c) => `<span class="chain-mark" title="${esc(E.label(c))}">${c.value}</span>`).join("");
     $("deck-count").textContent = state.deck.length; $("cleared-count").textContent = 44 - E.remaining(state);
     $("dungeon-progress").style.width = (44 - E.remaining(state)) / 44 * 100 + "%";
@@ -72,19 +71,19 @@
     if (focused) document.querySelector(`[data-card="${focused}"]`)?.focus({ preventScroll: true });
     $("flee-button").disabled = !E.canFlee(state);
     $("flee-button").title = state.resolved ? "You already faced an encounter in this room." : state.fledPrevious ? "You cannot avoid two rooms in a row." : "Return all four cards to the bottom of the dungeon.";
-    $("room-message").textContent = state.phase === "ready" ? "The remaining encounter follows you into the next room." : state.phase === "lost" ? "The dungeon keeps its secrets. Try another descent." : state.phase === "won" ? "You found the way out." : state.potionUsed ? "Potion used this room. Additional potions will be discarded." : "Choose an encounter to see your options.";
+    $("room-message").textContent = state.potionUsed && state.phase === "playing" ? "Potion used · additional potions will be discarded" : "";
     renderSelection(); renderAnalysis();
-    $("save-status").textContent = write(RUN, state) ? "Progress saved on this device" : "Storage unavailable · keep this tab open";
+    $("save-status").textContent = write(RUN, state) ? "Saved locally" : "Storage unavailable · keep this tab open";
     if (["won", "lost"].includes(state.phase) && !resultShown) finish();
   }
 
-  const button = (action, title, detail, primary = false) => `<button type="button" class="game-button ${primary ? "primary" : "secondary"}" data-action='${esc(JSON.stringify(action))}'><span>${title}</span><small>${detail}</small></button>`;
+  const button = (action, title, detail, primary = false) => `<button type="button" class="game-button ${primary ? "primary" : "secondary"}" data-kind="${action.type === "drink" ? "potion" : action.type === "equip" || action.mode === "weapon" ? "weapon" : "other"}" data-action='${esc(JSON.stringify(action))}'><span>${title}</span><small>${detail}</small></button>`;
   function renderSelection() {
     const c = state.room.find((c) => c?.id === selected);
-    $("room-message").hidden = !!c && !state.potionUsed;
-    let title = "Your next move", detail = "Weapons protect. Potions restore. Every choice matters.", buttons = "";
-    if (state.phase === "ready") { title = "Deeper into the dungeon"; detail = "One encounter remains. Three more wait below."; buttons = button({ type: "descend" }, "Enter next room", "Carry one · reveal three", true); }
-    else if (["won", "lost"].includes(state.phase)) { title = state.phase === "won" ? "Dungeon survived" : "The dungeon claimed you"; detail = "Final score: " + E.score(state); buttons = '<button class="game-button primary" id="review-result" type="button">View result</button>'; }
+    $("room-message").hidden = !$("room-message").textContent;
+    let title = "Select a card", detail = "", buttons = "";
+    if (state.phase === "ready") { title = "Room cleared"; buttons = button({ type: "descend" }, "Enter next room", "Carry one · reveal three", true); }
+    else if (["won", "lost"].includes(state.phase)) { title = state.phase === "won" ? "Victory" : "Defeat"; detail = "Final score: " + E.score(state); buttons = '<button class="game-button primary" id="review-result" type="button">View result</button>'; }
     else if (c) {
       title = name(c);
       if (c.type === "monster") {
@@ -95,7 +94,7 @@
       } else if (c.type === "weapon") { detail = state.weapon ? "Replaces your " + state.weapon.value + "-power weapon and resets its chain." : "Reduce incoming damage by " + c.value + ". Any monster can start your chain."; buttons = button({ type: "equip", id: c.id }, "Equip weapon", c.value + " power · fresh chain", true); }
       else { const heal = state.potionUsed ? 0 : Math.min(c.value, 20 - state.health); detail = state.potionUsed ? "You already used a potion this room. This one will be discarded." : "Restore up to " + c.value + " health. Maximum health is 20."; buttons = button({ type: "drink", id: c.id }, state.potionUsed ? "Discard potion" : "Drink potion", "+" + heal + " health", true); }
     }
-    $("selection-title").textContent = title; $("selection-detail").textContent = detail; $("encounter-actions").innerHTML = buttons;
+    $("selection-title").textContent = title; $("selection-detail").textContent = detail; $("selection-detail").hidden = !detail; $("encounter-actions").innerHTML = buttons;
   }
   function select(id) {
     if (state.phase !== "playing") return;
@@ -134,7 +133,7 @@
     const b = best();
     if (b?.action.id) { const el = document.querySelector(`[data-card="${b.action.id}"]`); if (el) { el.classList.add("is-best"); const ribbon = document.createElement("span"); ribbon.className = "best-ribbon"; ribbon.textContent = "Oracle"; ribbon.setAttribute("aria-hidden", "true"); el.append(ribbon); } }
     const proven = b && analysis.every((r) => r.ceiling != null && r.ceiling <= b.score);
-    $("oracle-summary").textContent = !E.actions(state).length ? "Descent complete. Final score " + E.score(state) + "." : b ? `${proven ? "Proven best" : "Best found"}: ${E.describe(state, b.action)}. Achievable final score ${b.score}.${pending ? " Evaluating alternatives…" : ""}` : "Reading the dungeon…";
+    $("oracle-summary").textContent = !E.actions(state).length ? "Game over. Final score " + E.score(state) + "." : b ? `${proven ? "Proven best" : "Best found"}: ${E.describe(state, b.action)}. Achievable final score ${b.score}.${pending ? " Evaluating alternatives…" : ""}` : "Calculating moves…";
     $("action-values").innerHTML = E.actions(state).map((a) => {
       const r = analysis.find((r) => same(r.action, a)), c = state.room.find((c) => c?.id === a.id);
       const change = a.type === "fight" ? "−" + (a.mode === "weapon" ? Math.max(0, c.value - state.weapon.value) : c.value) + " health" : a.type === "drink" ? "+" + (state.potionUsed ? 0 : Math.min(c.value, 20 - state.health)) + " health" : "—";
@@ -160,8 +159,7 @@
   function finish() {
     resultShown = true; const won = state.phase === "won", score = E.score(state), runId = state.id;
     if (!stats.recorded.includes(runId)) { stats.played++; stats.won += Number(won); stats.best = Math.max(stats.best ?? -Infinity, score); stats.recorded = [...stats.recorded, runId].slice(-200); write(STATS, stats); }
-    $("result-title").textContent = won ? "You found the way out." : "The dungeon claimed you.";
-    $("result-copy").textContent = won ? "You survived every encounter. The light is yours again." : "Another descent. Another chance to find the light.";
+    $("result-title").textContent = won ? "Victory" : "Defeat";
     $("result-score").textContent = score; $("result-facts").textContent = `${state.monstersSlain} monsters defeated · ${state.roomsFled} rooms avoided${won && score > 20 ? " · final potion bonus +" + (score - 20) : ""}`;
     setTimeout(() => { if (state.id === runId && !$("result-dialog").open) $("result-dialog").showModal(); }, motion() ? 650 : 0);
   }
@@ -174,7 +172,7 @@
   $("rules-button").addEventListener("click", () => $("rules-dialog").showModal());
   $("settings-button").addEventListener("click", () => { $("local-stats").textContent = `${stats.played} completed descents · ${stats.won} survived · Best score ${stats.best ?? "—"}`; $("settings-dialog").showModal(); });
   function showCatalog(filter = "all") {
-    $("catalog-grid").innerHTML = Object.values(catalog).filter((c) => filter === "all" || c.id.endsWith(filter)).map((c) => `<figure data-suit="${c.id.slice(-1)}"><button type="button" class="catalog-art-button" data-art="${c.id}" aria-label="View ${esc(c.name)} artwork"><img src="${art(c)}" srcset="${sources(c)}" sizes="(max-width: 600px) calc((100vw - 100px) / 2), 240px" alt="" loading="lazy" decoding="async" /><span>View art</span></button><figcaption>${seal(E.card(c.id))}<div><strong>${esc(c.name)}</strong><span>${c.role}</span></div></figcaption></figure>`).join("");
+    $("catalog-grid").innerHTML = Object.values(catalog).filter((c) => filter === "all" || c.id.endsWith(filter)).map((c) => `<figure data-suit="${c.id.slice(-1)}"><button type="button" class="catalog-art-button" data-art="${c.id}" aria-label="View ${esc(c.name)} artwork"><img src="${art(c)}" srcset="${sources(c)}" sizes="(max-width: 600px) calc((100vw - 100px) / 2), 240px" alt="" loading="lazy" decoding="async" /></button><figcaption>${seal(E.card(c.id))}<div><strong>${esc(c.name)}</strong><span>${c.race || names[E.card(c.id).type]}</span></div></figcaption></figure>`).join("");
     for (const b of document.querySelectorAll("[data-filter]")) b.setAttribute("aria-pressed", String(b.dataset.filter === filter));
   }
   $("catalog-button").addEventListener("click", () => { $("settings-dialog").close(); showCatalog(); $("catalog-dialog").showModal(); });
@@ -183,12 +181,12 @@
     const target = event.target.closest("[data-art]"); if (!target) return;
     const c = catalog[target.dataset.art], card = E.card(c.id);
     $("artwork-image").src = art(c); $("artwork-image").alt = c.subject;
-    $("artwork-title").textContent = c.name; $("artwork-role").textContent = (c.race ? c.race + " · " : "") + c.role;
-    $("artwork-lore").textContent = c.lore;
+    $("artwork-title").textContent = c.name; $("artwork-role").textContent = c.race || names[card.type];
+    $("artwork-dialog").dataset.suit = card.suit;
     $("artwork-value").textContent = (card.type === "monster" ? "Strength " : card.type === "weapon" ? "Power " : "Healing ") + card.value;
     $("artwork-dialog").showModal();
   });
-  $("journal-button").addEventListener("click", () => { $("journal-list").innerHTML = state.history.length ? state.history.slice().reverse().map((h) => `<li><b>Room ${h.room}</b> · ${esc(h.message)}</li>`).join("") : "<li>Your journey has just begun.</li>"; $("journal-dialog").showModal(); });
+  $("journal-button").addEventListener("click", () => { $("journal-list").innerHTML = state.history.length ? state.history.slice().reverse().map((h) => `<li><b>Room ${h.room}</b> · ${esc(h.message)}</li>`).join("") : "<li>No moves yet.</li>"; $("journal-dialog").showModal(); });
   for (const dialog of document.querySelectorAll("dialog")) dialog.addEventListener("click", (event) => { if (event.target.closest("[data-close]")) dialog.close(); if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
   $("sound-button").addEventListener("click", () => { prefs.sound = !prefs.sound; preferences(); sound("room"); });
   $("atmosphere").addEventListener("change", (event) => { prefs.atmosphere = event.target.value; preferences(); });

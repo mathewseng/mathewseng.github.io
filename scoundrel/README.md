@@ -34,7 +34,7 @@ dungeon background is `assets/dungeon.webp`. Original prompts and tool
 provenance are in `art-prompts.json`; all were made with the built-in image
 generation tool, then compressed and downsampled with `cwebp`. Responsive
 images select between 320px thumbnails and 640px full illustrations. The
-collection loads art lazily; its full-art viewer includes each card's story.
+collection loads art lazily; its full-art viewer shows each card's name, faction/type and value.
 The [art direction](docs/art-direction.md) records the original faction design
 and the user's Runeterra/Hearthstone composition references.
 
@@ -116,3 +116,9 @@ responsive layouts, report filters and CSV export against assembled files.
 The responsive check measures actual text bounds for all 44 names, verifies
 touch targets and both combat actions, and exercises the art viewer, enlarged
 text and phone EV rows across ten desktop/phone viewport sizes.
+
+Health and potions use a deep red; weapons use royal blue. Filled seals and action
+buttons use light text, with lighter red/blue labels on dark surfaces. These
+semantic colors stay consistent across all atmosphere settings. UI copy is limited
+to names, status, actions, rules and analysis; flavor lore remains in the catalog
+metadata but is not shown in the interface.

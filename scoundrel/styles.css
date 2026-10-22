@@ -1,6 +1,19 @@
 @font-face { font-family: ScoundrelDisplay; src: url("assets/cinzel.ttf") format("truetype"); font-weight: 600; font-display: swap; }
 @font-face { font-family: ScoundrelSans; src: url("assets/dm-sans.ttf") format("truetype"); font-weight: 100 900; font-display: swap; }
 :root { --sc-gold: var(--family-blackjack); --sc-gold-bright: var(--family-blackjack-2); --sc-panel: color-mix(in oklab, var(--page) 94%, var(--sc-gold)); --sc-border: color-mix(in oklab, var(--sc-gold) 27%, var(--page)); --sc-muted: color-mix(in oklab, var(--muted) 85%, var(--sc-gold)); --sc-art-filter: saturate(.78); }
+/* Stable item colors across all atmosphere settings, with lighter text on dark surfaces. */
+:root {
+  --sc-health: color-mix(in srgb, var(--bad) 78%, var(--page));
+  --sc-weapon: color-mix(in srgb, var(--family-home) 58%, var(--page));
+  --sc-health-ink: color-mix(in srgb, var(--sc-health) 76%, var(--ink));
+  --sc-weapon-ink: color-mix(in srgb, var(--sc-weapon) 52%, var(--ink));
+}
+@supports (color: oklch(from red l c h)) {
+  :root {
+    --sc-health: oklch(from var(--bad) .52 .18 h);
+    --sc-weapon: oklch(from var(--family-home) .43 .18 h);
+  }
+}
 [data-atmosphere="moon"] { --sc-gold: var(--info); --sc-gold-bright: var(--ink); --sc-art-filter: saturate(.35) hue-rotate(150deg); }
 [data-atmosphere="moss"] { --sc-gold: var(--good); --sc-gold-bright: var(--family-backgammon); --sc-art-filter: saturate(.62) hue-rotate(38deg); }
 body { font-family: ScoundrelSans, var(--font-sans); background: var(--page); }
@@ -22,7 +35,6 @@ button:disabled { cursor: not-allowed; }
 .icon { flex: 0 0 auto; width: 19px; height: 19px; }
 .masthead { display: flex; align-items: center; justify-content: space-between; padding: 26px 0 25px; }
 .masthead h1 { color: var(--sc-gold-bright); font-family: ScoundrelDisplay, Georgia, serif; font-size: clamp(30px, 3vw, 46px); line-height: 1.15; letter-spacing: .035em; }
-.masthead p { color: var(--sc-muted); font-size: 13px; margin-top: 8px; }
 .game-button { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; min-width: 44px; border: 1px solid var(--sc-border); border-radius: 5px; padding: 12px 18px; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .2s, border-color .2s, transform .2s, box-shadow .2s; }
 .game-button:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--sc-gold); }
 .game-button:active:not(:disabled) { transform: translateY(1px); }
@@ -44,18 +56,18 @@ button:disabled { cursor: not-allowed; }
 .room-pips span.filled { background: var(--sc-gold); box-shadow: 0 0 8px var(--sc-gold); }
 .adventurer { grid-column: 1; grid-row: 2; align-self: center; padding: 8px 0; }
 .rail-label { font-size: 12px; line-height: 1.5; color: var(--sc-muted); letter-spacing: .04em; }
-.heart-mark { color: var(--bad); font-size: 15px; padding-right: 4px; }
+.health-block .rail-label, .health-value > span { color: var(--sc-health-ink); }
+.heart-mark { color: var(--sc-health); font-size: 15px; padding-right: 4px; }
 .health-value { display: flex; align-items: baseline; gap: 6px; margin: 9px 0 11px; }
-.health-value strong { font: 600 46px/1 ScoundrelDisplay, Georgia, serif; color: var(--ink); font-variant-numeric: tabular-nums; }
-.health-value > span { font-size: 16px; color: var(--sc-muted); }
+.health-value strong { font: 600 46px/1 ScoundrelDisplay, Georgia, serif; color: var(--sc-health-ink); font-variant-numeric: tabular-nums; }
+.health-value > span { font-size: 16px; }
 .vitality-track, .progress-track { overflow: hidden; height: 5px; border-radius: 2px; background: color-mix(in srgb, var(--ink) 15%, var(--page)); }
-.vitality-track span { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, color-mix(in oklab, var(--bad) 50%, var(--page)), var(--bad)); transition: width .65s var(--ease); box-shadow: 0 0 12px var(--bad); }
-.health-caption { display: block; margin-top: 9px; color: var(--sc-muted); font-size: 12px; }
+.vitality-track span { display: block; width: 100%; height: 100%; background: var(--sc-health); transition: width .65s var(--ease); box-shadow: 0 0 12px color-mix(in srgb, var(--sc-health) 45%, transparent); }
 .weapon-block { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--sc-border); }
 .weapon-display { display: flex; gap: 12px; align-items: center; margin-top: 14px; min-height: 76px; }
 .weapon-display .playing-card { --card-width: 48px; }
 .weapon-empty { display: grid; place-items: center; width: 46px; height: 64px; border: 1px dashed var(--sc-border); color: var(--sc-muted); font-size: 25px; border-radius: 4px; }
-.weapon-numbers strong { color: var(--sc-gold-bright); font-size: 25px; font-weight: 500; }
+.weapon-numbers strong { color: var(--sc-weapon-ink); font-size: 25px; font-weight: 500; }
 .weapon-numbers span { display: block; color: var(--sc-muted); font-size: 12px; }
 .weapon-block p { font-size: 12px; line-height: 1.6; margin-top: 10px; color: var(--sc-muted); }
 .weapon-chain { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 9px; }
@@ -110,16 +122,16 @@ button:disabled { cursor: not-allowed; }
 .game-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding: 17px 0 20px; color: var(--sc-muted); font-size: 12px; line-height: 1.6; }.game-footer a { text-decoration-color: var(--line-strong); text-underline-offset: 3px; }.game-footer > a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; min-height: 44px; }.game-footer .icon { width: 14px; height: 14px; }
 .oracle-panel { border: 1px solid var(--sc-border); border-radius: 8px; padding: 22px 26px; margin: 0 0 24px; background: var(--sc-panel); }.oracle-heading { display: flex; gap: 18px; justify-content: space-between; align-items: center; }.oracle-heading h2 { font: 600 21px/1.4 ScoundrelDisplay, Georgia, serif; color: var(--sc-gold-bright); }.oracle-heading p { color: var(--muted); font-size: 12px; margin-top: 7px; line-height: 1.5; }.oracle-summary { padding: 17px 0; color: var(--sc-gold-bright); font-size: 14px; }.oracle-table-wrap { overflow: auto; }.oracle-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }.oracle-table th { padding: 10px 12px; font-size: 12px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--sc-border); white-space: nowrap; }.oracle-table td { padding: 11px 12px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }.oracle-table tr.is-best { background: var(--good-soft); }.oracle-table tr.is-best td:first-child { color: var(--good); }.oracle-table .value-cell { white-space: nowrap; font-family: var(--font-mono); }.proof { font-size: 12px; color: var(--sc-muted); }.proof.exact { color: var(--good); }.oracle-action { color: inherit; text-align: left; border: 0; background: transparent; padding: 0; min-height: 32px; font: inherit; cursor: pointer; }.oracle-action:hover { text-decoration: underline; }.solver-note { color: var(--sc-muted); font-size: 12px; line-height: 1.7; margin-top: 15px; max-width: 85ch; }
 .game-dialog { color: var(--ink); background: var(--sc-panel); border: 1px solid var(--sc-border); border-radius: 10px; padding: 28px; width: min(580px, calc(100% - 28px)); max-height: min(88dvh, 850px); box-shadow: 0 35px 100px var(--page); overflow-y: auto; }.game-dialog::backdrop { background: color-mix(in srgb, var(--page) 78%, transparent); backdrop-filter: blur(8px); }.game-dialog[open] { animation: dialog-enter .25s var(--ease); }.dialog-top { display: flex; justify-content: space-between; align-items: center; gap: 15px; }.dialog-top h2, .result-dialog h2 { color: var(--sc-gold-bright); font: 600 23px/1.4 ScoundrelDisplay, Georgia, serif; }.dialog-intro, .game-dialog > p { font-size: 14px; line-height: 1.7; color: var(--muted); margin: 12px 0 22px; }.rule-row { display: flex; gap: 18px; margin-top: 22px; }.rule-row > strong { color: var(--sc-gold); font: 600 20px/1.5 ScoundrelDisplay, Georgia, serif; width: 40px; flex: 0 0 40px; }.rule-row h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }.rule-row p, details p { font-size: 13px; line-height: 1.75; color: var(--muted); }details { margin-top: 24px; font-size: 13px; }summary { cursor: pointer; min-height: 44px; display: list-item; padding-top: 10px; }details p { margin-top: 12px; }.compact-dialog { max-width: 430px; }.setting-label { display: block; margin: 26px 0 10px; font-size: 13px; }.game-dialog select { width: 100%; min-height: 46px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--control-border); border-radius: 5px; padding: 10px; }.setting-check { display: flex; gap: 12px; align-items: center; min-height: 52px; font-size: 13px; margin-top: 12px; }.setting-check input { accent-color: var(--sc-gold); width: 18px; height: 18px; }.game-dialog .muted-copy { font-size: 12px; margin: 0; }.local-stats { border-top: 1px solid var(--sc-border); padding-top: 18px; margin-top: 25px; font-size: 13px; color: var(--muted); line-height: 1.9; }.dialog-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }.dialog-actions > button { flex: 1; }.journal-list { padding-left: 20px; font-size: 13px; color: var(--muted); line-height: 1.8; }.journal-list li { padding: 8px 0 8px 5px; border-bottom: 1px solid var(--line); }.journal-list b { color: var(--sc-gold); font-weight: 500; }.result-dialog { text-align: center; max-width: 500px; padding: 40px 30px 30px; }.result-sigil { display: block; color: var(--sc-gold); font-size: 30px; margin-bottom: 23px; }.result-score { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 20px; }.result-score strong { font: 600 70px/1.2 ScoundrelDisplay, Georgia, serif; color: var(--sc-gold-bright); }.result-score span { font-size: 12px; color: var(--muted); }.result-facts { font-size: 13px; color: var(--muted); line-height: 1.8; }.result-report { display: inline-block; font-size: 12px; color: var(--sc-muted); margin-top: 22px; min-height: 32px; }.noscript { margin: 30px; color: var(--warn); }
-.combat-flash { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 35%, var(--bad)); z-index: 4; }.combat-flash.hit { animation: hit-flash .65s ease-out; }.combat-flash.heal { background: radial-gradient(ellipse at center, transparent 35%, var(--good)); animation: hit-flash .7s ease-out; }.floating-number { position: absolute; top: 42%; left: 50%; pointer-events: none; z-index: 6; font: 600 50px/1 ScoundrelDisplay, Georgia, serif; color: var(--bad); opacity: 0; text-shadow: 0 3px 15px var(--page); }.floating-number.show { animation: float-number .95s var(--ease); }.floating-number.positive { color: var(--good); }.departing-card { pointer-events: none; position: fixed; z-index: 20; margin: 0; }
+.combat-flash { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 35%, var(--sc-health)); z-index: 4; }.combat-flash.hit { animation: hit-flash .65s ease-out; }.combat-flash.heal { animation: hit-flash .7s ease-out; }.floating-number { position: absolute; top: 42%; left: 50%; pointer-events: none; z-index: 6; font: 600 50px/1 ScoundrelDisplay, Georgia, serif; color: var(--sc-health-ink); opacity: 0; text-shadow: 0 3px 15px var(--page); }.floating-number.show { animation: float-number .95s var(--ease); }.departing-card { pointer-events: none; position: fixed; z-index: 20; margin: 0; }
 @keyframes deal-card { from { opacity: 0; transform: translateY(-25px) rotateY(45deg) scale(.9); } to { opacity: 1; transform: translateY(0) rotateY(0) scale(1); } }
 @keyframes dialog-enter { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes hit-flash { 0% { opacity: 0; } 20% { opacity: .22; } 100% { opacity: 0; } }
 @keyframes float-number { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.8); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -55px); } }
 @media (min-width: 1500px) { .dungeon { grid-template-columns: 190px minmax(0, 1fr) 125px; gap: 0 45px; padding-inline: 42px; }.room-cards { gap: 25px; }.encounter { max-height: 360px; }.room-heading { padding-top: 10px; } }
 @media (max-width: 1100px) { .game-shell { padding-inline: 22px; }.dungeon { grid-template-columns: 130px minmax(0, 1fr) 68px; padding-inline: 22px; gap: 0 18px; }.encounter-bottom { inset-inline: 9px; gap: 6px; }.encounter-name strong { font-size: 12px; }.encounter-name small { font-size: 12px; }.weapon-display { gap: 8px; }.deck-stack { width: 48px; height: 68px; }.room-heading h2 { font-size: 22px; }.encounter-top { inset-inline: 9px; }.encounter-top > span:first-child { display: none; } }
-@media (max-width: 800px) { .game-shell { padding-inline: 16px; }.game-nav { position: static; transform: none; gap: 16px; margin-left: auto; }.game-topbar { gap: 8px; }.topbar-actions { gap: 1px; margin-left: 10px; }.rules-button { padding-inline: 7px; }.rules-button > span { display: none; }.masthead { padding: 20px 0; }.masthead h1 { font-size: 32px; }.dungeon { grid-template-columns: 1fr; grid-template-rows: 85px 90px minmax(220px, 1fr) auto; height: auto; min-height: 560px; padding: 0 20px; gap: 0; }.room-heading { grid-column: 1; grid-row: 1; padding-top: 5px; }.ornament { display: none; }.room-heading h2 { font-size: 21px; }.adventurer { grid-column: 1; grid-row: 2; display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 8px 0 16px; }.health-block { width: 145px; position: relative; padding-left: 58px; }.health-value { position: absolute; left: 0; top: 6px; margin: 0; }.health-value strong { font-size: 35px; }.health-value > span { display: none; }.health-block .rail-label { margin-bottom: 5px; }.health-caption { margin-top: 4px; }.weapon-block { display: grid; grid-template-columns: 35px auto; gap: 0 10px; align-items: center; padding: 0; margin: 0; border: 0; max-width: 190px; }.weapon-block > .rail-label { grid-column: 2; font-size: 12px; }.weapon-display { grid-column: 1; grid-row: 1 / 3; min-height: 45px; margin: 0; }.weapon-display .playing-card { --card-width: 32px; }.weapon-empty { width: 32px; height: 45px; }.weapon-numbers { display: none; }.weapon-block p { grid-column: 2; margin: 3px 0 0; font-size: 12px; }.weapon-chain { display: none; }.encounter-area { grid-column: 1; grid-row: 3; padding-top: 10px; }.room-cards { gap: 12px; max-width: 650px; margin: auto; }.encounter { aspect-ratio: .62; }.encounter-name strong { font-size: clamp(12px, 2vw, 16px); }.encounter-bottom .playing-card { --card-width: clamp(30px, 5vw, 45px); }.dungeon-rail { display: none; }.action-stage { grid-column: 1; grid-row: 4; flex-wrap: wrap; gap: 12px; align-self: end; padding-block: 18px; }.selection-copy { flex-basis: calc(100% - 150px); }.encounter-actions { order: 3; width: 100%; justify-content: center; }.encounter-actions:empty { display: none; }.encounter-actions .game-button { flex: 1; }.flee-button { margin-left: auto; padding-inline: 12px; }.under-table { gap: 5px 20px; padding: 8px 0; }.keyboard-hint { display: none; }.under-table > #save-status { margin-left: auto; }.game-footer { flex-wrap: wrap; gap: 2px 15px; }.game-footer #run-label { order: 3; width: 100%; }.game-footer > a { margin-left: auto; }.oracle-panel { padding: 18px; }.oracle-heading { align-items: flex-start; } }
-@media (max-width: 480px) { .game-shell { padding-inline: 12px; }.game-topbar { min-height: 60px; }.back-link { font-size: 12px; gap: 5px; }.game-nav { gap: 12px; }.game-nav a { font-size: 12px; }.topbar-actions { margin-left: 0; }.topbar-actions > .icon-button { min-width: 38px; width: 38px; }.topbar-actions > .rules-button { min-width: 38px; width: 38px; }.game-topbar .icon { width: 17px; height: 17px; }.masthead { gap: 10px; padding: 17px 0 18px; }.masthead h1 { font-size: 28px; }.masthead p { font-size: 12px; max-width: 170px; line-height: 1.5; }.masthead .game-button { padding: 10px 12px; font-size: 12px; gap: 6px; }.dungeon { padding-inline: 13px; grid-template-rows: 80px 78px minmax(185px, 1fr) auto; min-height: 490px; }.room-heading p { font-size: 12px; max-width: 270px; }.room-pips { margin-top: 9px; }.health-block { width: 135px; padding-left: 48px; }.health-value strong { font-size: 31px; }.heart-mark { font-size: 13px; }.adventurer { gap: 10px; }.weapon-block { grid-template-columns: 31px auto; gap: 0 7px; max-width: 150px; }.room-cards { gap: 7px; }.encounter, .encounter-empty { aspect-ratio: .48; }.encounter-top { inset: 8px 8px auto; }.encounter-index { width: 20px; height: 20px; font-size: 12px; }.encounter-art { height: 65%; bottom: 35%; object-position: 52% 35%; }.encounter-bottom { inset: auto 7px 11px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }.encounter-bottom .playing-card { --card-width: 30px; }.encounter-name { padding: 0; }.encounter-name strong { font: 500 12px/1.2 ScoundrelSans, var(--font-sans); }.encounter-name small { margin-top: 3px; font-size: 12px; }.encounter::before { top: 35%; }.encounter::after { inset: 3px; }.room-message { padding-top: 14px; min-height: 43px; font-size: 12px; }.selection-copy strong { font-size: 14px; }.selection-copy p { font-size: 12px; }.flee-button { min-height: 44px; font-size: 12px; }.action-stage { gap: 10px; padding: 13px 0 15px; }.selection-copy { flex-basis: calc(100% - 125px); }.selection-copy p { max-width: 23ch; }.encounter-actions .game-button { min-width: 110px; font-size: 12px; }.under-table { font-size: 12px; gap: 2px 10px; }.oracle-toggle { gap: 7px; }.oracle-tag { display: none; }.game-footer { font-size: 12px; padding-top: 9px; }.game-footer > span:first-child { max-width: 215px; }.oracle-panel { padding: 16px 12px; }.oracle-heading h2 { font-size: 19px; }.oracle-table { font-size: 12px; min-width: 490px; }.oracle-table td, .oracle-table th { padding: 10px 8px; }.oracle-summary { font-size: 13px; }.best-ribbon { top: 34px; padding: 3px 6px; font-size: 12px; }.game-dialog { padding: 20px; }.rule-row { gap: 10px; }.rule-row > strong { width: 30px; flex-basis: 30px; }.result-dialog { padding: 30px 20px; } }
-@media (max-height: 600px) and (min-width: 801px) { .masthead { padding-block: 13px; }.masthead h1 { font-size: 28px; }.masthead p { margin-top: 3px; }.dungeon { min-height: 420px; height: 420px; grid-template-rows: 77px 245px 96px; }.encounter { max-height: 220px; aspect-ratio: .68; }.room-message { padding-top: 10px; }.health-value strong { font-size: 32px; }.weapon-block { margin-top: 12px; padding-top: 12px; }.weapon-display { min-height: 50px; }.weapon-display .playing-card { --card-width: 35px; }.dungeon-rail { padding-bottom: 0; }.deck-stack { height: 60px; width: 43px; margin-bottom: 10px; }.deck-divider { margin-block: 10px; }.room-heading p { margin-top: 4px; }.room-pips { margin-top: 7px; } }
+@media (max-width: 800px) { .game-shell { padding-inline: 16px; }.game-nav { position: static; transform: none; gap: 16px; margin-left: auto; }.game-topbar { gap: 8px; }.topbar-actions { gap: 1px; margin-left: 10px; }.rules-button { padding-inline: 7px; }.rules-button > span { display: none; }.masthead { padding: 20px 0; }.masthead h1 { font-size: 32px; }.dungeon { grid-template-columns: 1fr; grid-template-rows: 85px 90px minmax(220px, 1fr) auto; height: auto; min-height: 560px; padding: 0 20px; gap: 0; }.room-heading { grid-column: 1; grid-row: 1; padding-top: 5px; }.ornament { display: none; }.room-heading h2 { font-size: 21px; }.adventurer { grid-column: 1; grid-row: 2; display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 8px 0 16px; }.health-block { width: 145px; position: relative; padding-left: 58px; }.health-value { position: absolute; left: 0; top: 6px; margin: 0; }.health-value strong { font-size: 35px; }.health-value > span { display: none; }.health-block .rail-label { margin-bottom: 5px; }.weapon-block { display: grid; grid-template-columns: 35px auto; gap: 0 10px; align-items: center; padding: 0; margin: 0; border: 0; max-width: 190px; }.weapon-block > .rail-label { grid-column: 2; font-size: 12px; }.weapon-display { grid-column: 1; grid-row: 1 / 3; min-height: 45px; margin: 0; }.weapon-display .playing-card { --card-width: 32px; }.weapon-empty { width: 32px; height: 45px; }.weapon-numbers { display: none; }.weapon-block p { grid-column: 2; margin: 3px 0 0; font-size: 12px; }.weapon-chain { display: none; }.encounter-area { grid-column: 1; grid-row: 3; padding-top: 10px; }.room-cards { gap: 12px; max-width: 650px; margin: auto; }.encounter { aspect-ratio: .62; }.encounter-name strong { font-size: clamp(12px, 2vw, 16px); }.encounter-bottom .playing-card { --card-width: clamp(30px, 5vw, 45px); }.dungeon-rail { display: none; }.action-stage { grid-column: 1; grid-row: 4; flex-wrap: wrap; gap: 12px; align-self: end; padding-block: 18px; }.selection-copy { flex-basis: calc(100% - 150px); }.encounter-actions { order: 3; width: 100%; justify-content: center; }.encounter-actions:empty { display: none; }.encounter-actions .game-button { flex: 1; }.flee-button { margin-left: auto; padding-inline: 12px; }.under-table { gap: 5px 20px; padding: 8px 0; }.keyboard-hint { display: none; }.under-table > #save-status { margin-left: auto; }.game-footer { flex-wrap: wrap; gap: 2px 15px; }.game-footer #run-label { order: 3; width: 100%; }.game-footer > a { margin-left: auto; }.oracle-panel { padding: 18px; }.oracle-heading { align-items: flex-start; } }
+@media (max-width: 480px) { .game-shell { padding-inline: 12px; }.game-topbar { min-height: 60px; }.back-link { font-size: 12px; gap: 5px; }.game-nav { gap: 12px; }.game-nav a { font-size: 12px; }.topbar-actions { margin-left: 0; }.topbar-actions > .icon-button { min-width: 38px; width: 38px; }.topbar-actions > .rules-button { min-width: 38px; width: 38px; }.game-topbar .icon { width: 17px; height: 17px; }.masthead { gap: 10px; padding: 17px 0 18px; }.masthead h1 { font-size: 28px; }.masthead .game-button { padding: 10px 12px; font-size: 12px; gap: 6px; }.dungeon { padding-inline: 13px; grid-template-rows: 80px 78px minmax(185px, 1fr) auto; min-height: 490px; }.room-heading p { font-size: 12px; max-width: 270px; }.room-pips { margin-top: 9px; }.health-block { width: 135px; padding-left: 48px; }.health-value strong { font-size: 31px; }.heart-mark { font-size: 13px; }.adventurer { gap: 10px; }.weapon-block { grid-template-columns: 31px auto; gap: 0 7px; max-width: 150px; }.room-cards { gap: 7px; }.encounter, .encounter-empty { aspect-ratio: .48; }.encounter-top { inset: 8px 8px auto; }.encounter-index { width: 20px; height: 20px; font-size: 12px; }.encounter-art { height: 65%; bottom: 35%; object-position: 52% 35%; }.encounter-bottom { inset: auto 7px 11px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }.encounter-bottom .playing-card { --card-width: 30px; }.encounter-name { padding: 0; }.encounter-name strong { font: 500 12px/1.2 ScoundrelSans, var(--font-sans); }.encounter-name small { margin-top: 3px; font-size: 12px; }.encounter::before { top: 35%; }.encounter::after { inset: 3px; }.room-message { padding-top: 14px; min-height: 43px; font-size: 12px; }.selection-copy strong { font-size: 14px; }.selection-copy p { font-size: 12px; }.flee-button { min-height: 44px; font-size: 12px; }.action-stage { gap: 10px; padding: 13px 0 15px; }.selection-copy { flex-basis: calc(100% - 125px); }.selection-copy p { max-width: 23ch; }.encounter-actions .game-button { min-width: 110px; font-size: 12px; }.under-table { font-size: 12px; gap: 2px 10px; }.oracle-toggle { gap: 7px; }.oracle-tag { display: none; }.game-footer { font-size: 12px; padding-top: 9px; }.game-footer > span:first-child { max-width: 215px; }.oracle-panel { padding: 16px 12px; }.oracle-heading h2 { font-size: 19px; }.oracle-table { font-size: 12px; min-width: 490px; }.oracle-table td, .oracle-table th { padding: 10px 8px; }.oracle-summary { font-size: 13px; }.best-ribbon { top: 34px; padding: 3px 6px; font-size: 12px; }.game-dialog { padding: 20px; }.rule-row { gap: 10px; }.rule-row > strong { width: 30px; flex-basis: 30px; }.result-dialog { padding: 30px 20px; } }
+@media (max-height: 600px) and (min-width: 801px) { .masthead { padding-block: 13px; }.masthead h1 { font-size: 28px; }.dungeon { min-height: 420px; height: 420px; grid-template-rows: 77px 245px 96px; }.encounter { max-height: 220px; aspect-ratio: .68; }.room-message { padding-top: 10px; }.health-value strong { font-size: 32px; }.weapon-block { margin-top: 12px; padding-top: 12px; }.weapon-display { min-height: 50px; }.weapon-display .playing-card { --card-width: 35px; }.dungeon-rail { padding-bottom: 0; }.deck-stack { height: 60px; width: 43px; margin-bottom: 10px; }.deck-divider { margin-block: 10px; }.room-heading p { margin-top: 4px; }.room-pips { margin-top: 7px; } }
 @media (prefers-reduced-motion: reduce) { .departing-card { display: none; }.embers { display: none; } }
 [data-motion="off"] *, [data-motion="off"] *::before, [data-motion="off"] *::after { animation-duration: .01ms; transition-duration: .01ms; }[data-motion="off"] .embers { display: none; }
 @media (forced-colors: active) { .encounter { border: 2px solid ButtonText; }.encounter.is-selected, .encounter.is-best { outline: 3px solid Highlight; }.encounter::before { background: Canvas; }.game-button.primary { background: Highlight; color: HighlightText; }.toggle-track { border: 1px solid ButtonText; }.toggle-track::after { background: ButtonText; } }
@@ -200,7 +212,7 @@ button:disabled { cursor: not-allowed; }
   .room-heading h2 { font-size: 21px; }
   .health-value { margin-block: 6px 9px; }
   .health-value strong { font-size: 36px; }
-  .health-caption, .weapon-chain { display: none; }
+  .weapon-chain { display: none; }
   .weapon-block { margin-top: 16px; padding-top: 12px; }
   .weapon-display { min-height: 54px; }
   .weapon-display .value-seal { width: 36px; flex-basis: 36px; height: 46px; font-size: 25px; }
@@ -212,10 +224,11 @@ button:disabled { cursor: not-allowed; }
 }
 
 /* Cinder & Tide: art stays vivid; captions participate in layout and can wrap. */
-.encounter, .catalog-grid figure { --sc-card-accent: var(--family-blackjack); }
-.encounter[data-suit="s"], .catalog-grid [data-suit="s"] { --sc-card-accent: var(--family-poker-2); }
-.encounter[data-suit="c"], .catalog-grid [data-suit="c"] { --sc-card-accent: var(--family-backgammon); }
-.encounter[data-suit="h"], .catalog-grid [data-suit="h"] { --sc-card-accent: var(--family-dice); }
+:where(.encounter, .catalog-grid figure, .artwork-dialog) { --sc-card-accent: var(--family-blackjack); --sc-card-ink: var(--sc-card-accent); }
+[data-suit="s"] { --sc-card-accent: var(--family-poker-2); }
+[data-suit="c"] { --sc-card-accent: var(--family-backgammon); }
+[data-suit="h"] { --sc-card-accent: var(--sc-health); --sc-card-ink: var(--sc-health-ink); }
+[data-suit="d"], .weapon-block { --sc-card-accent: var(--sc-weapon); --sc-card-ink: var(--sc-weapon-ink); }
 .encounter {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -229,13 +242,34 @@ button:disabled { cursor: not-allowed; }
 .encounter-visual::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(0deg, var(--page), transparent 18%, transparent 75%, color-mix(in srgb, var(--page) 35%, transparent)); }
 .encounter-art { display: block; position: static; height: 100%; width: 100%; min-height: 0; inset: auto; filter: none; }
 .encounter-top { inset: 10px 10px auto; gap: 5px; align-items: flex-start; }
-.encounter-top > span:first-child { display: block; padding: 4px 7px; border-radius: 3px; background: color-mix(in srgb, var(--page) 82%, transparent); color: var(--sc-card-accent); line-height: 1.25; font-size: 12px; }
+.encounter-top > span:first-child { display: block; padding: 4px 7px; border-radius: 3px; background: color-mix(in srgb, var(--page) 82%, transparent); color: var(--sc-card-ink); line-height: 1.25; font-size: 12px; }
 .encounter-index { flex: 0 0 23px; color: var(--ink); background: color-mix(in srgb, var(--page) 82%, transparent); }
 .encounter-bottom { position: relative; inset: auto; padding: 5px 11px 13px; min-height: 76px; align-items: center; gap: 9px; background: var(--page); }
 .encounter-name { min-width: 0; padding: 0; }
 .encounter-name strong { color: var(--ink); font: 600 clamp(12px, 1.05vw, 16px)/1.35 ScoundrelDisplay, Georgia, serif; overflow-wrap: anywhere; }
 .encounter-name small { margin-top: 4px; line-height: 1.3; }
 .encounter .value-seal, .catalog-grid .value-seal { color: var(--sc-card-accent); border-color: color-mix(in srgb, var(--sc-card-accent) 65%, var(--page)); }
+[data-suit="h"] .value-seal, [data-suit="d"] .value-seal, .weapon-display .value-seal {
+  color: var(--ink);
+  background: var(--sc-card-accent);
+  border-color: var(--sc-card-ink);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--sc-card-accent) 75%, var(--page)), 0 4px 8px color-mix(in srgb, var(--page) 50%, transparent);
+}
+[data-suit="h"] .value-seal::before, [data-suit="d"] .value-seal::before, .weapon-display .value-seal::before { border-color: color-mix(in srgb, var(--ink) 24%, transparent); }
+.encounter:is([data-suit="h"], [data-suit="d"]) { border-color: var(--sc-card-accent); }
+.encounter:is([data-suit="h"], [data-suit="d"]) .encounter-top > span:first-child { color: var(--ink); background: var(--sc-card-accent); }
+.encounter:is([data-suit="h"], [data-suit="d"]) .encounter-name small { color: var(--sc-card-ink); }
+.weapon-block > .rail-label, .weapon-block .weapon-numbers span, .weapon-block p { color: var(--sc-weapon-ink); }
+.weapon-empty, .weapon-chain .chain-mark { color: var(--sc-weapon-ink); border-color: var(--sc-weapon); background: color-mix(in srgb, var(--sc-weapon) 16%, var(--page)); }
+.game-button[data-kind="weapon"], .game-button[data-kind="potion"] { --sc-action-accent: var(--sc-weapon); background: var(--sc-action-accent); border-color: var(--sc-weapon-ink); color: var(--ink); box-shadow: inset 0 1px color-mix(in srgb, var(--ink) 18%, transparent); }
+.game-button[data-kind="potion"] { --sc-action-accent: var(--sc-health); border-color: var(--sc-health-ink); }
+.game-button:is([data-kind="weapon"], [data-kind="potion"]):hover { background: color-mix(in srgb, var(--sc-action-accent) 85%, var(--ink)); border-color: var(--ink); }
+.oracle-table td[data-label="Health"], .rule-row[data-suit="h"] > strong { color: var(--sc-health-ink); }
+.rule-row[data-suit="d"] > strong { color: var(--sc-weapon-ink); }
+.catalog-filters [data-filter="h"] { color: var(--sc-health-ink); }
+.catalog-filters [data-filter="d"] { color: var(--sc-weapon-ink); }
+.catalog-filters [data-filter="h"][aria-pressed="true"] { background: var(--sc-health); color: var(--ink); border-color: var(--sc-health-ink); }
+.catalog-filters [data-filter="d"][aria-pressed="true"] { background: var(--sc-weapon); color: var(--ink); border-color: var(--sc-weapon-ink); }
 .encounter.is-selected { border-color: var(--sc-card-accent); box-shadow: 0 0 0 1px var(--sc-card-accent), 0 15px 30px var(--page); }
 .encounter.is-best { border-color: var(--good); box-shadow: 0 0 0 1px var(--good), 0 0 26px var(--good-soft); }
 .best-ribbon { top: 42px; }
@@ -250,7 +284,6 @@ button:disabled { cursor: not-allowed; }
 .catalog-grid figure { display: flex; flex-direction: column; border-color: color-mix(in srgb, var(--sc-card-accent) 36%, var(--page)); }
 .catalog-art-button { position: relative; display: block; width: 100%; padding: 0; border: 0; background: var(--page); cursor: zoom-in; overflow: hidden; }
 .catalog-art-button img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; transition: transform .45s var(--ease); }
-.catalog-art-button > span { position: absolute; right: 9px; bottom: 9px; padding: 5px 8px; background: color-mix(in srgb, var(--page) 85%, transparent); color: var(--ink); font-size: 12px; border-radius: 3px; }
 .catalog-art-button:hover img { transform: scale(1.035); }
 .catalog-art-button:focus-visible { outline-offset: -4px; z-index: 1; }
 .catalog-grid figcaption { flex: 1; min-height: 78px; }
@@ -263,15 +296,13 @@ button:disabled { cursor: not-allowed; }
 .artwork-copy { padding: 32px; }
 .artwork-copy .dialog-top { align-items: flex-start; }
 .artwork-copy h2 { font-size: clamp(22px, 2.3vw, 34px); line-height: 1.35; }
-.artwork-role { color: var(--sc-gold); font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
-.artwork-lore { color: var(--muted); font-size: 16px; line-height: 1.7; margin-top: 26px; }
-.artwork-value { color: var(--sc-gold-bright); font: 600 18px/1.5 ScoundrelDisplay, Georgia, serif; margin-top: 26px; }
+.artwork-role { color: var(--sc-card-ink); font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+.artwork-value { color: var(--sc-card-ink); font: 600 18px/1.5 ScoundrelDisplay, Georgia, serif; margin-top: 26px; }
 
 @media (min-width: 801px) {
   .game-shell:not(.report-shell) .game-topbar { min-height: 56px; padding-block: 6px; }
   .masthead { padding-block: 13px; }
   .masthead h1 { font-size: clamp(30px, 3vw, 42px); }
-  .masthead p { margin-top: 4px; }
   .dungeon { grid-template-columns: 140px minmax(0, 1fr) 78px; grid-template-rows: 80px minmax(240px, 1fr) auto; gap: 0 24px; padding-inline: 26px; height: max(440px, calc(100dvh - 265px)); min-height: 440px; }
   .encounter-area { padding-block: 0; }
   .room-cards { max-height: 400px; }
@@ -295,7 +326,6 @@ button:disabled { cursor: not-allowed; }
   .game-topbar { min-height: 52px; padding-block: 4px; }
   .masthead { padding-block: 12px; }
   .masthead h1 { font-size: 30px; }
-  .masthead p { font-size: 12px; line-height: 1.4; margin-top: 4px; }
   .dungeon { max-height: none; height: auto; min-height: 0; grid-template-rows: auto auto auto auto; padding-inline: 16px; overflow: visible; }
   .dungeon-art, .dungeon-vignette { border-radius: inherit; }
   .room-heading { padding: 14px 0 10px; }
@@ -306,7 +336,6 @@ button:disabled { cursor: not-allowed; }
   .health-block { width: 145px; padding-left: 52px; }
   .health-value { top: 4px; }
   .health-value strong { font-size: 32px; }
-  .health-caption { display: none; }
   .weapon-block { max-width: 190px; }
   .weapon-block p { line-height: 1.4; }
   .encounter-area { padding-top: 0; }
@@ -337,7 +366,6 @@ button:disabled { cursor: not-allowed; }
   .artwork-copy { padding: 20px; }
   .artwork-copy .dialog-top h2 { font-size: 23px; }
   .artwork-role { margin-bottom: 8px; }
-  .artwork-lore { font-size: 14px; margin-top: 14px; }
   .artwork-value { margin-top: 12px; font-size: 16px; }
 }
 @media (max-width: 600px) {
@@ -345,7 +373,6 @@ button:disabled { cursor: not-allowed; }
   .masthead > div { display: contents; }
   .masthead h1 { grid-column: 1; grid-row: 1; font-size: 28px; }
   .masthead .game-button { grid-column: 2; grid-row: 1; min-height: 44px; }
-  .masthead p { grid-column: 1 / -1; grid-row: 2; max-width: none; margin: 0; }
   .room-heading { display: grid; grid-template-columns: 1fr auto; justify-items: start; gap: 5px 12px; padding: 10px 0 8px; text-align: left; }
   .room-heading h2 { grid-column: 1; grid-row: 1; }
   .room-heading p { grid-column: 1 / -1; grid-row: 2; margin: 0; max-width: none; }

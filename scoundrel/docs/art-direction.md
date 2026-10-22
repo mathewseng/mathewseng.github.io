@@ -2,7 +2,7 @@
 
 Visual thesis: expressive painted fantasy scenes, luminous color and bold silhouettes set into an aged, quiet dungeon table.
 
-Content plan: four readable encounter artworks form the playing surface; strength, name and faction stay visible; actions explain the selected encounter; the collection reveals each illustration and its short story.
+Content plan: four readable encounter artworks form the playing surface; strength, name and faction stay visible; actions explain the selected encounter; the collection reveals each illustration with its name, faction/type and value.
 
 Interaction thesis: staggered dealing establishes the room, a small lift identifies the selected encounter, and a full-art collection view lets the painting breathe. Reduced motion removes movement. Touch never depends on hover.
 
