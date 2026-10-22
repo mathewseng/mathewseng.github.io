@@ -27,4 +27,23 @@ test('corrected rollout plan freezes all retained candidates, disjoint seeds, an
  assert.equal(plan.seedExclusions.diagnosticOffsets,64);
  assert.deepEqual(Object.fromEntries(['moveGaps','policyGapEffects','candidatePolicyEffects','absoluteEquities'].map(k=>[k,plan.comparisons[k]])),{moveGaps:19,policyGapEffects:2,candidatePolicyEffects:4,absoluteEquities:28});
  assert.equal(plan.collectionEnabled,!!plan.runtime);
+ assert.equal(plan.referenceAttributions['opening-21'].c0.trials,46656);
+ assert.equal(plan.referenceAttributions['opening-21'].c2.trials,5184,'candidate attribution must not copy the leader');
+ assert.equal(plan.referenceAttributions['opening-21'].c2.author,'Stick Rice');
+});
+
+test('corrected runtime cannot be skipped by same-second make timestamps',()=>{
+ const builder=fs.readFileSync(path.join(family,'scripts/build-filtered-rollout-native.mjs'),'utf8');
+ const objectDelete=builder.indexOf("fs.unlinkSync(path.join(out,'obj/eval.o'))"),targetDelete=builder.indexOf("fs.unlinkSync(path.join(out,'gnubg-core'))");
+ const rebuild=builder.indexOf("execFileSync('make'",targetDelete);
+ assert.ok(objectDelete>=0&&targetDelete>objectDelete&&rebuild>targetDelete);
+ const fixture=JSON.parse(fs.readFileSync(path.join(family,'docs/filtered-rollout-v1-smoke-fixture.json')));
+ assert.notEqual(fixture.binaries.fixed,fixture.binaries.legacy);
+ const build=JSON.parse(fs.readFileSync(path.join(family,'docs/filtered-rollout-v1-mac-build.json')));
+ assert.deepEqual(build.binaries,fixture.binaries);
+ const isolation=build.sourceIsolation;
+ for(const [before,after,want] of [['sourceBefore','sourceAfter',['src/eval.c']],['objectsBefore','objectsAfter',['obj/eval.o']]]){
+  assert.deepEqual(Object.keys(isolation[before]),Object.keys(isolation[after]));
+  assert.deepEqual(Object.keys(isolation[after]).filter(k=>isolation[before][k]!==isolation[after][k]),want);
+ }
 });

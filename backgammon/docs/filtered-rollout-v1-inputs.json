@@ -1,9 +1,269 @@
 {
-  "signature": "5883d0a2d617ce22b2bd67fc48cbcfbab1cca4ed364b4e46d82de3bc718f5c49",
+  "signature": "bb08b90fd63cdb78f89a8be78b95e7674595814b0960da7d7b8051c7fbe53052",
   "schema": 1,
   "id": "filtered-rollout-v1",
   "runtime": null,
   "collectionEnabled": false,
+  "referenceSource": {
+    "file": "engine/opening-book-data/xg/index.json",
+    "sha256": "9e9b0bbf21401015866e01f3ea7ae51321a48c26dffd3473d2af1ad343cc454c"
+  },
+  "referenceAttributions": {
+    "opening-21": {
+      "c0": {
+        "source": "https://www.extremegammon.com/OB/Opening_in_unlimited_game.html",
+        "method": "rollout",
+        "trials": 46656,
+        "policy": "Moves and cube decisions: XG Roller+",
+        "rank": 2,
+        "author": "Neil Kazaross",
+        "date": "12/16/2010",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c1": {
+        "source": "https://www.extremegammon.com/OB/Opening_in_unlimited_game.html",
+        "method": "rollout",
+        "trials": 46656,
+        "policy": "Moves and cube decisions: XG Roller+",
+        "rank": 1,
+        "author": "Neil Kazaross",
+        "date": "12/16/2010",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c2": {
+        "source": "https://www.extremegammon.com/OB/Opening_in_unlimited_game.html",
+        "method": "rollout",
+        "trials": 5184,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 3,
+        "author": "Stick Rice",
+        "date": "12/9/2009",
+        "engine": "eXtreme Gammon 1.10"
+      },
+      "c3": {
+        "source": "https://www.extremegammon.com/OB/Opening_in_unlimited_game.html",
+        "method": "rollout",
+        "trials": 5184,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 4,
+        "author": "Stick Rice",
+        "date": "12/9/2009",
+        "engine": "eXtreme Gammon 1.10"
+      }
+    },
+    "reply-fd57f8a8e221b7f8-51": {
+      "c0": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_32D.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "rank": 2,
+        "author": "David Rockwell",
+        "date": "9/2/2013",
+        "engine": "eXtreme Gammon 2.10"
+      },
+      "c1": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_32D.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "rank": 1,
+        "author": "David Rockwell",
+        "date": "9/2/2013",
+        "engine": "eXtreme Gammon 2.10"
+      },
+      "c2": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_32D.html",
+        "method": "rollout",
+        "trials": 31104,
+        "policy": "Moves and cube decisions: 4-ply",
+        "rank": 3,
+        "author": "David Rockwell",
+        "date": "9/2/2013",
+        "engine": "eXtreme Gammon 2.10"
+      },
+      "c3": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_32D.html",
+        "method": "rollout",
+        "trials": 15552,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 4,
+        "author": "David Rockwell",
+        "date": "6/12/2012",
+        "engine": "eXtreme Gammon 2.00"
+      }
+    },
+    "reply-7985255600f3563f-44": {
+      "c0": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_41$.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 2,
+        "author": "David Rockwell",
+        "date": "7/1/2012",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c1": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_41$.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 1,
+        "author": "David Rockwell",
+        "date": "7/1/2012",
+        "engine": "eXtreme Gammon 2.00"
+      }
+    },
+    "reply-cf59cb9355405192-52": {
+      "c0": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_51$.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "rank": 2,
+        "author": "David Rockwell",
+        "date": "1/1/2013",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c1": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_51$.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "rank": 1,
+        "author": "David Rockwell",
+        "date": "1/1/2013",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c2": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_51$.html",
+        "method": "rollout",
+        "trials": 15552,
+        "policy": "Moves and cube decisions: 4-ply",
+        "rank": 3,
+        "author": "David Rockwell",
+        "date": "1/1/2013",
+        "engine": "eXtreme Gammon 2.00"
+      }
+    },
+    "reply-d8b0ad29eebeddb9-33": {
+      "c0": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_64P.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 2,
+        "author": "David Rockwell",
+        "date": "12/8/2012",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c1": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_64P.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 1,
+        "author": "David Rockwell",
+        "date": "12/8/2012",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c2": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_64P.html",
+        "method": "rollout",
+        "trials": 51840,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 3,
+        "author": "David Rockwell",
+        "date": "12/8/2012",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c3": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_64P.html",
+        "method": "rollout",
+        "trials": 31104,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 4,
+        "author": "David Rockwell",
+        "date": "12/8/2012",
+        "engine": "eXtreme Gammon 2.00"
+      },
+      "c4": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_64P.html",
+        "method": "rollout",
+        "trials": 15552,
+        "policy": "Moves and cube decisions: 3-ply",
+        "rank": 5,
+        "author": "David Rockwell",
+        "date": "12/8/2012",
+        "engine": "eXtreme Gammon 2.00"
+      }
+    },
+    "reply-ea77bd807985fd53-21": {
+      "c0": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_64S.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "rank": 2,
+        "author": "David Rockwell",
+        "date": "8/24/2013",
+        "engine": "eXtreme Gammon 2.10"
+      },
+      "c1": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_64S.html",
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "rank": 1,
+        "author": "David Rockwell",
+        "date": "8/24/2013",
+        "engine": "eXtreme Gammon 2.10"
+      }
+    },
+    "reply-2fda09c519d84905-32": {
+      "c0": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_62$.html",
+        "method": "rollout",
+        "trials": 31104,
+        "policy": "Moves: 3-ply, cube decisions: XG Roller",
+        "rank": 2,
+        "author": "Steven Carey",
+        "date": "4/12/2013",
+        "engine": "eXtreme Gammon 2.10"
+      },
+      "c1": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_62$.html",
+        "method": "rollout",
+        "trials": 31104,
+        "policy": "Moves: 3-ply, cube decisions: XG Roller",
+        "rank": 1,
+        "author": "Steven Carey",
+        "date": "4/12/2013",
+        "engine": "eXtreme Gammon 2.10"
+      },
+      "c2": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_62$.html",
+        "method": "rollout",
+        "trials": 31104,
+        "policy": "Moves: 3-ply, cube decisions: XG Roller",
+        "rank": 4,
+        "author": "Steven Carey",
+        "date": "4/12/2013",
+        "engine": "eXtreme Gammon 2.10"
+      },
+      "c3": {
+        "source": "https://www.extremegammon.com/OB/Replies_to_62$.html",
+        "method": "rollout",
+        "trials": 31104,
+        "policy": "Moves: 3-ply, cube decisions: XG Roller",
+        "rank": 3,
+        "author": "Steven Carey",
+        "date": "4/12/2013",
+        "engine": "eXtreme Gammon 2.10"
+      }
+    }
+  },
   "sources": [
     {
       "file": "docs/opening-fullgame-precision-inputs.json",
@@ -15,8 +275,14 @@
     }
   ],
   "patchSHA256": "b576617ea939b99ed9f9ead9b3c1a35b61479b902e549a42718f641678532fa3",
-  "runnerSHA256": "7583afaec083be70019f04f1058cd7d486bc1c1afa8a518fb150bbd9b88b6903",
-  "plannerSHA256": "317574a3a241cd1b75abdaad38308bb074eae79ce8f5b29fcab885aa29dca8db",
+  "runnerSHA256": "e2aa59f2f5631f672e45c16ccca6d4313926075aab042f16db2c36d71f8e95c1",
+  "plannerSHA256": "9c9e49676973f7f5e0e804607248cc883b5c61672b88039593d88d54ef51d9da",
+  "analysisInputs": {
+    "scripts/merge-filtered-rollout-shards.py": "0ef1a775fd78d8a36bd00367b040e950fd171c2653f74c1be7c397e1d7e0907b",
+    "scripts/summarize-filtered-rollout-study.py": "b0fdf433944b284a4c03013f08986b5717e01517b509f38bceaf1b23a793ec32",
+    "scripts/summarize-fullgame-ablation.py": "d46649c7f78ff7d94ad45952b9ca6c86c4b31d138d4140d1461fa27848c1b45f",
+    "scripts/summarize-rollout-diagnostic.py": "4c702b49799afd2a21bccedd51ee533fae7e1e679e02384b84afa1b20c66d86a"
+  },
   "plan": [
     {
       "id": "opening-21",

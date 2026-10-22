@@ -13,6 +13,11 @@ with tarfile.open(source) as a:
  assert build['id']==PREFIX and build['platform']=='linux' and build['architecture']=='arm64'
  assert build['files']=={'legacy':'gnubg-core-legacy','fixed':'gnubg-core'}
  for name,digest in build['binaries'].items():assert HASH(get(build['files'][name]))==digest
+ assert build['binaries']['fixed']!=build['binaries']['legacy']
+ isolation=build['sourceIsolation']
+ for before,after,want in [('sourceBefore','sourceAfter',['src/eval.c']),('objectsBefore','objectsAfter',['obj/eval.o'])]:
+  assert set(isolation[before])==set(isolation[after])
+  assert [n for n in isolation[after] if isolation[before][n]!=isolation[after][n]]==want
  assert validation['binaries']==build['binaries'] and validation['allWithinTolerance'] and validation['cases']==12
  assert legacy['binarySHA256']==build['binaries']['legacy'] and legacy['allWithinTolerance'] and legacy['cases']==26
  frozen=json.loads((FAMILY/'docs/cube-policy-v2-runtime.json').read_bytes())
