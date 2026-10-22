@@ -1,0 +1,53 @@
+/* Every physical card has its own encounter, name, race and illustration. */
+(function (root) {
+  "use strict";
+  const rows = [
+    ["2s", "Candle Thrall", "A frail wax-covered skeleton servant holding one sputtering candle, hollow sockets, tattered linen."],
+    ["3s", "Crypt Hound", "An undead skeletal hunting hound with black iron collar, narrow skull, broken ribs and misty breath."],
+    ["4s", "Ossuary Scout", "A small hooded skeleton scout crouching with a bone dagger and a dim caged lantern."],
+    ["5s", "Grave Sentry", "An undead spear sentry in a rusted iron helmet, tall cracked tower shield and empty eye sockets."],
+    ["6s", "Chain Gaoler", "A gaunt spectral skeletal jailer draped in heavy iron chains, holding antique keys and a hooked chain."],
+    ["7s", "Ash Duelist", "An elegant skeletal duelist in a scorched noble coat, with a narrow silver rapier, theatrical poised stance."],
+    ["8s", "Bone Reaver", "A broad skeletal berserker in jagged bone armor carrying two weathered axes, fierce forward stance."],
+    ["9s", "Pallid Herald", "An undead court herald in torn embroidered robes blowing an ancient long brass trumpet, bone-white skull."],
+    ["Ts", "Silent Inquisitor", "A tall undead inquisitor with a blank porcelain death mask and black ritual robes, holding a spiked iron censer."],
+    ["Js", "Marrow Knight", "A skeletal mounted-order knight shown on foot in ornate silver plate armor and a torn black tabard, enormous sword."],
+    ["Qs", "Veiled Regent", "A regal undead queen with delicate skeletal face behind an elaborate black lace veil and tarnished silver tiara, solemn seated portrait."],
+    ["Ks", "Black Castellan", "An ancient skeletal fortress lord in massive black iron plate, hornless angular helmet under one arm, cold pale eyes."],
+    ["As", "The Hollow King", "An ancient skeletal king in a black iron crown and ruined dark plate armor, faint ember eyes, hooded skull."],
+    ["2c", "Sporeling", "A tiny sentient mushroom creature with a red-brown cap, tiny root limbs and scattered luminous spores."],
+    ["3c", "Moss Imp", "A mischievous small woodland imp made of tangled roots, moss skin, seedpod eyes and fern ears."],
+    ["4c", "Thorn Forager", "A lean plant goblin woven from brambles, wearing a mushroom cap and carrying a crooked twig bow."],
+    ["5c", "Bramble Stalker", "A prowling feline predator made of twisted thorn vines, leaf mane, amber seed eyes, four powerful root legs."],
+    ["6c", "Rotcap Shaman", "An ancient fungal shaman with a wide shelf-mushroom hat, face of knotted bark, a staff topped with glowing spores."],
+    ["7c", "Barkguard", "A stout wooden warrior with a face in deeply ridged bark, thick tree-trunk arms and a broad living oak shield."],
+    ["8c", "Briar Warden", "A tall sentient vine sentinel in layered leaf and bark armor, long thorn spear and a crown of white wildflowers."],
+    ["9c", "Fen Witch", "A mysterious swamp witch with an elegant face carved from dark willow bark, hanging moss hair and a glowing green bog lantern."],
+    ["Tc", "Rootbreaker", "A hulking boulder-and-root golem with massive twisted limbs, amber sap glowing through cracks in old bark."],
+    ["Jc", "Thorn Paladin", "A noble forest knight made of living carved oak, branching antler crest, woven vine armor and a large thorn-edged sword."],
+    ["Qc", "Briar Matriarch", "A majestic plant queen with dark wooden face, a crown of bramble roses, cascading ivy robes and slender branch hands."],
+    ["Kc", "Canker Titan", "A gigantic fungal guardian with a fortress of huge shelf mushrooms on its back, heavy root arms and a solemn bark face."],
+    ["Ac", "Oldwood Monarch", "An immense ancient tree monarch with a wise deeply carved wooden face, magnificent branching stag antlers and hanging moss beard."],
+    ["2d", "Rusted Shiv", "A short rusted iron shiv with a chipped triangular blade and a crude dark leather-wrapped handle, lying diagonally on stone."],
+    ["3d", "Grave Hatchet", "A compact weathered iron hatchet with a crescent axe head, worn dark wood handle and thin bronze binding, propped against stone."],
+    ["4d", "Watcher’s Spear", "A tall narrow medieval spear with a leaf-shaped silver steel point and a worn black ash shaft, upright in a stone alcove."],
+    ["5d", "Pilgrim’s Sword", "A simple noble medieval arming sword with a straight silver blade, leather grip and understated brass crossguard, upright point down."],
+    ["6d", "Iron Morningstar", "A heavy medieval morningstar mace, spherical black iron head with short sharp spikes and a bound leather handle, on a stone pedestal."],
+    ["7d", "Moon Falchion", "An elegant single-edged crescent-curved medieval falchion, moon-silver blade, dark grip, round silver pommel, upright point down."],
+    ["8d", "Executioner’s Blade", "A broad enormous two-handed medieval executioner sword with a squared blade tip, blackened steel and a long dark-red leather grip."],
+    ["9d", "Sunken Halberd", "An exquisite ancient halberd with a bronze crescent axe blade, long central spear point, verdigris details and a dark shaft, stone alcove."],
+    ["Td", "Crownblade", "An exquisite medieval longsword upright point down, weathered silver steel blade and ornate antique brass crossguard in a dark stone alcove."],
+    ["2h", "Ember Phial", "A tiny slender cylindrical glass phial of deep ruby red healing liquid, simple wax stopper, delicate ember reflections on a stone shelf."],
+    ["3h", "Mossheart Draught", "A squat round green-tinted glass flask of dark crimson healing liquid, wrapped with living moss and one fern frond, cork stopper."],
+    ["4h", "Warden’s Tonic", "A sturdy angular square glass healing bottle with rich red liquid, iron protective cage and an iron clasp stopper on a stone ledge."],
+    ["5h", "Bloodrose Cordial", "An elegant rose-shaped cut-glass perfume flask of luminous burgundy healing liquid, copper rose stopper, dried red rose petals beside it."],
+    ["6h", "Vesper Elixir", "A tall teardrop-shaped delicate smoky glass flask of luminous deep-red healing liquid, crescent silver stopper, subtle moonlit reflections."],
+    ["7h", "Alchemist’s Reserve", "A unique hourglass-shaped alchemist bottle of red healing liquid, two bulbous glass chambers, ornate bronze rings and a sealed cork."],
+    ["8h", "Heartfire Tincture", "An antique brass-caged triangular glass potion bottle with a tiny heart-shaped red gemstone and glowing crimson liquid, warm fire reflections."],
+    ["9h", "Saint’s Red Mercy", "A magnificent faceted crystal chalice containing deep ruby red healing liquid, silver stem and gold filigree, in a dark crypt shrine."],
+    ["Th", "Sovereign’s Elixir", "A rounded antique glass bottle filled with luminous ruby red healing liquid, a cork stopper and ornate gold heart-shaped clasp."],
+  ];
+  const catalog = Object.fromEntries(rows.map(([id, name, subject]) => [id, { id, name, subject, race: id.endsWith("s") ? "Hollow Court" : id.endsWith("c") ? "Briarborn" : null, image: "assets/cards/" + id + ".webp" }]));
+  root.ScoundrelCatalog = catalog;
+  if (typeof module !== "undefined" && module.exports) module.exports = catalog;
+})(typeof self !== "undefined" ? self : globalThis);

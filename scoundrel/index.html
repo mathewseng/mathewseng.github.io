@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" data-family="blackjack" data-atmosphere="ember">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content="Descend into Scoundrel, a solo dungeon card game. Fight monsters, find weapons, and survive with animated encounters and an optional oracle solver." />
+    <title>Scoundrel · A solo dungeon crawl</title>
+    <link rel="icon" href="assets/favicon.svg" />
+    <link rel="stylesheet" href="../shared/tokens.css?v=20261016" />
+    <link rel="stylesheet" href="../shared/app.css?v=20261016" />
+    <link rel="stylesheet" href="styles.css?v=20261021" />
+    <link rel="preload" href="assets/dungeon.webp" as="image" />
+    <link rel="preload" href="assets/cinzel.ttf" as="font" type="font/ttf" crossorigin />
+    <script src="engine.js?v=20261021" defer></script>
+    <script src="catalog.js?v=20261021" defer></script>
+    <script src="app.js?v=20261021" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to game</a>
+    <div class="game-shell">
+      <header class="topbar game-topbar">
+        <a class="back-link" href="/" aria-label="Back to projects"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-arrow-left" /></svg><span>Projects</span></a>
+        <nav class="game-nav" aria-label="Scoundrel"><a href="./" aria-current="page">The dungeon</a><a href="reports/">Reports</a></nav>
+        <div class="topbar-actions">
+          <button class="icon-button" id="sound-button" type="button" aria-label="Enable sound" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-sound-off" /></svg></button>
+          <button class="icon-button" id="settings-button" type="button" aria-label="Atmosphere and settings"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-settings" /></svg></button>
+          <button class="rules-button" id="rules-button" type="button"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-rules" /></svg><span>How to play</span></button>
+        </div>
+      </header>
+
+      <main id="main" tabindex="-1">
+        <div class="masthead">
+          <div><h1>Scoundrel</h1><p>One deck. One dungeon. Make it out alive.</p></div>
+          <button class="game-button secondary" id="new-run" type="button"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-refresh" /></svg>New descent</button>
+        </div>
+
+        <section class="dungeon" aria-label="Dungeon table" id="dungeon">
+          <div class="dungeon-art" aria-hidden="true"></div>
+          <canvas id="embers" class="embers" aria-hidden="true"></canvas>
+          <div class="dungeon-vignette" aria-hidden="true"></div>
+          <div class="room-heading"><div class="ornament" aria-hidden="true">◆</div><h2 id="room-title">Room I</h2><p id="room-instruction">Resolve three encounters. Carry one forward.</p><div id="room-pips" class="room-pips" aria-label="0 of 3 encounters resolved"></div></div>
+
+          <aside class="adventurer" aria-label="Your adventurer">
+            <div class="health-block" id="health-block"><div class="rail-label"><span class="heart-mark" aria-hidden="true">♥</span> Vitality</div><div class="health-value"><strong id="health-value">20</strong><span>/ 20</span></div><div class="vitality-track" role="progressbar" aria-label="Health" aria-valuemin="0" aria-valuemax="20" aria-valuenow="20" id="health-bar"><span></span></div><span class="health-caption" id="health-caption">Unharmed</span></div>
+            <div class="weapon-block"><div class="rail-label">Equipped weapon</div><div id="weapon-display" class="weapon-display"></div><p id="weapon-rule">Find a diamond to arm yourself.</p><div id="weapon-chain" class="weapon-chain" aria-label="Monsters defeated by this weapon"></div></div>
+          </aside>
+
+          <div class="encounter-area"><div id="room-cards" class="room-cards" aria-label="Room encounters"></div><div class="room-message" id="room-message" role="status" aria-live="polite">Choose an encounter to see your options.</div></div>
+
+          <aside class="dungeon-rail" aria-label="Dungeon progress"><div class="deck-stack" aria-hidden="true"><span></span><span></span><span><i>◆</i></span></div><strong id="deck-count">40</strong><span class="rail-label">In the depths</span><div class="deck-divider"></div><strong id="cleared-count">0</strong><span class="rail-label">Cards resolved</span><div class="progress-track"><span id="dungeon-progress"></span></div><button type="button" class="text-button" id="journal-button"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-history" /></svg>Journal</button></aside>
+
+          <div class="action-stage" id="action-stage"><div class="selection-copy"><strong id="selection-title">Your next move</strong><p id="selection-detail">Weapons protect. Potions restore. Every choice matters.</p></div><div id="encounter-actions" class="encounter-actions"></div><button class="game-button flee-button" id="flee-button" type="button"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-arrow-right" /></svg>Avoid room</button></div>
+          <div class="combat-flash" id="combat-flash" aria-hidden="true"></div>
+          <div class="floating-number" id="floating-number" aria-hidden="true"></div>
+        </section>
+
+        <div class="under-table"><label class="oracle-toggle"><input type="checkbox" id="oracle-toggle" /><span class="toggle-track" aria-hidden="true"></span><span>Best move <span class="oracle-tag">Oracle</span></span></label><span id="save-status">Progress saved on this device</span><span class="keyboard-hint"><kbd>1</kbd>–<kbd>4</kbd> select <kbd>Enter</kbd> act <kbd>F</kbd> avoid</span></div>
+        <section class="oracle-panel" id="oracle-panel" aria-labelledby="oracle-title" hidden><div class="oracle-heading"><div><h2 id="oracle-title">The oracle</h2><p>Perfect information: sees the remaining deck. EV is final score for this fixed order.</p></div><button class="text-button" id="deepen-button" type="button">Search deeper</button></div><div id="oracle-summary" class="oracle-summary" role="status" aria-live="polite">Reading the dungeon…</div><div class="oracle-table-wrap"><table class="oracle-table"><thead><tr><th scope="col">Action</th><th scope="col">Damage / healing</th><th scope="col">EV / score</th><th scope="col">Proof</th></tr></thead><tbody id="action-values"></tbody></table></div><p class="solver-note">A range is a guaranteed achievable score through an upper bound on the optimum. “Proven” means the bounds meet. Search runs on your device.</p></section>
+      </main>
+      <footer class="game-footer"><span>A game by <a href="https://www.stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Zach Gage &amp; Kurt Bieg</a></span><span id="run-label"></span><a href="https://youtu.be/Gt2tYzM93h4" target="_blank" rel="noopener">Watch the rules <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-external" /></svg></a></footer>
+    </div>
+
+    <dialog id="rules-dialog" class="game-dialog"><div class="dialog-top"><h2>Survive the dungeon</h2><button class="icon-button" type="button" data-close aria-label="Close rules"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-close" /></svg></button></div><p class="dialog-intro">Start with 20 health. Make it through all 44 cards.</p><div class="rule-row"><strong>01</strong><div><h3>Choose three. Leave one.</h3><p>A room has four encounters. Resolve three in any order, then take the remaining card into the next room. Clear every card in the final room.</p></div></div><div class="rule-row"><strong>♠ ♣</strong><div><h3>Fight the monsters</h3><p>Take their full value in damage, or reduce it by your weapon’s power. J = 11, Q = 12, K = 13, A = 14. You can always choose to fight barehanded.</p></div></div><div class="rule-row"><strong>♦</strong><div><h3>Arm yourself</h3><p>Diamonds replace your current weapon and reset its chain. After a weapon defeats a monster, it can only fight monsters strictly weaker than that last kill. Barehanded combat preserves the chain.</p></div></div><div class="rule-row"><strong>♥</strong><div><h3>Drink carefully</h3><p>Hearts restore health, up to 20. Only the first potion in a room heals you. Additional potions are discarded, even if the first restored nothing.</p></div></div><div class="rule-row"><strong>↗</strong><div><h3>Know when to leave</h3><p>Avoid an untouched four-card room to move its cards to the bottom. You cannot avoid two rooms in a row, or leave after resolving a card.</p></div></div><details><summary>Scoring and the oracle</summary><p>Survive to score your remaining health. Finish at 20 health with a potion as your final card to add its value. On defeat, your score is health after the fatal hit minus all unresolved monster values, including the current room. The optional oracle uses the actual deck order to find the highest final score. Estimated values are lower bounds until optimality is proved.</p><p>This adaptation uses strictly decreasing weapon chains, in this adaptation. The original PDF has ambiguous wording about equal ranks; ties are not allowed here.</p></details><button class="game-button primary full" type="button" data-close>Enter the dungeon</button></dialog>
+    <dialog id="settings-dialog" class="game-dialog compact-dialog"><div class="dialog-top"><h2>Atmosphere</h2><button class="icon-button" type="button" data-close aria-label="Close settings"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-close" /></svg></button></div><label class="setting-label" for="atmosphere">Dungeon light</label><select id="atmosphere"><option value="ember">Torchlight</option><option value="moon">Moonstone</option><option value="moss">Overgrown</option></select><label class="setting-check"><input id="motion-setting" type="checkbox" checked /> Atmospheric motion</label><p class="muted-copy">Your device’s reduced-motion preference is always respected.</p><button class="game-button secondary full" type="button" id="catalog-button">Explore all 44 cards</button><div class="local-stats" id="local-stats"></div></dialog>
+    <dialog id="catalog-dialog" class="game-dialog catalog-dialog"><div class="dialog-top"><h2>The dungeon’s inhabitants</h2><button class="icon-button" type="button" data-close aria-label="Close card collection"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-close" /></svg></button></div><p class="dialog-intro">The Hollow Court rises from the crypt. The Briarborn reclaim it.</p><div class="catalog-filters" role="group" aria-label="Filter collection"><button type="button" data-filter="all" aria-pressed="true">All 44</button><button type="button" data-filter="s" aria-pressed="false">Hollow Court</button><button type="button" data-filter="c" aria-pressed="false">Briarborn</button><button type="button" data-filter="d" aria-pressed="false">Weapons</button><button type="button" data-filter="h" aria-pressed="false">Potions</button></div><div id="catalog-grid" class="catalog-grid"></div></dialog>
+    <dialog id="journal-dialog" class="game-dialog"><div class="dialog-top"><h2>Your descent</h2><button class="icon-button" type="button" data-close aria-label="Close journal"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-close" /></svg></button></div><ol id="journal-list" class="journal-list"></ol></dialog>
+    <dialog id="new-dialog" class="game-dialog compact-dialog"><div class="dialog-top"><h2>Begin again?</h2><button class="icon-button" type="button" data-close aria-label="Keep playing"><svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-close" /></svg></button></div><p>Your current descent will be replaced.</p><div class="dialog-actions"><button class="game-button secondary" type="button" data-close>Keep playing</button><button class="game-button primary" id="confirm-new" type="button">New descent</button></div></dialog>
+    <dialog id="result-dialog" class="game-dialog result-dialog"><span class="result-sigil" aria-hidden="true">◆</span><h2 id="result-title">The dungeon is behind you.</h2><p id="result-copy"></p><div class="result-score"><strong id="result-score">20</strong><span>Final score</span></div><div class="result-facts" id="result-facts"></div><div class="dialog-actions"><button class="game-button secondary" type="button" data-close>Review the table</button><button class="game-button primary" id="result-new" type="button">Descend again</button></div><a class="result-report" href="reports/">Explore the outcome report</a></dialog>
+    <noscript><p class="noscript">Enable JavaScript to play Scoundrel. All gameplay stays in your browser.</p></noscript>
+  </body>
+</html>

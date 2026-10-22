@@ -102,7 +102,8 @@
   "apps": [
     { "name": "Card Table Workshop", "path": "/cards/" },
     { "name": "Gym Tracker", "path": "/gym/" },
-    { "name": "Microtonal Lab", "path": "/microtonal-lab/" }
+    { "name": "Microtonal Lab", "path": "/microtonal-lab/" },
+    { "name": "Scoundrel", "path": "/scoundrel/" }
   ],
   "source": [{ "name": "Jazz Piano ML", "href": "https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml" }]
 }
