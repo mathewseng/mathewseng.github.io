@@ -6,13 +6,15 @@ const revision = createHash("sha256").update(fs.readFileSync(source)).update(fs.
 function compile() {
   const binary = path.join(os.tmpdir(), "scoundrel-hidden-" + revision.slice(0, 16));
   if (!fs.existsSync(binary)) {
-    const result = spawnSync(process.env.CXX || "c++", ["-O3", "-std=c++17", source, "-o", binary], { encoding: "utf8" });
+    const temporary = binary + "." + process.pid + ".tmp";
+    const result = spawnSync(process.env.CXX || "c++", ["-O3", "-std=c++17", source, "-o", temporary], { encoding: "utf8" });
     if (result.error || result.status !== 0) throw Error("Cannot compile hidden-deck solver: " + (result.error?.message || result.stderr));
+    fs.renameSync(temporary, binary);
   }
   return binary;
 }
-function createSolver(binary = compile()) {
-  const child = spawn(binary, [], { stdio: ["pipe", "pipe", "inherit"] }), output = createInterface({ input: child.stdout });
+function createSolver(binary = compile(), { sharedCache = true } = {}) {
+  const child = spawn(binary, [], { env: { ...process.env, SCOUNDREL_PLAN_CACHE: sharedCache ? binary + ".rooms" : "" }, stdio: ["pipe", "pipe", "inherit"] }), output = createInterface({ input: child.stdout });
   let pending = null;
   output.on("line", text => {
     const job = pending; pending = null; if (!job) return;

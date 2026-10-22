@@ -4,17 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#08090d" />
-    <meta name="description" content="1,000 Scoundrel games played with a hidden deck: sampled mean, median, survival, score distribution, and verified move histories." />
+    <meta name="description" content="Scoundrel games played with a hidden deck: sampled mean, median, survival, score distribution, and verified move histories." />
     <title>Scoundrel · Outcome report</title>
     <link rel="icon" href="../assets/favicon.svg" />
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../styles.css?v=20261022-5" />
-    <link rel="stylesheet" href="styles.css?v=20261022-6" />
+    <link rel="stylesheet" href="styles.css?v=20261022-7" />
     <script src="../engine.js?v=20261022-5" defer></script>
     <script src="../catalog.js?v=20261022" defer></script>
-    <script src="statistics.js?v=20261022-6" defer></script>
-    <script src="app.js?v=20261022-6" defer></script>
+    <script src="history-codec.js?v=20261022-7" defer></script>
+    <script src="statistics.js?v=20261022-7" defer></script>
+    <script src="app.js?v=20261022-7" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to report</a>
@@ -24,7 +25,7 @@
         <section class="report-intro"><div><h1>Outcome report</h1><a class="source-link" href="#method">Method &amp; rules <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-arrow-right" /></svg></a></div></section>
         <div class="report-loading" id="loading" role="status">Loading results…</div>
         <div id="report-content" hidden>
-          <section class="report-summary" aria-labelledby="summary-title"><h2 id="summary-title">1,000 deals. Hidden deck.</h2><p id="study-summary"></p><p class="evidence-note">The unseen order stays hidden. These are measured outcomes of a simulation-guided policy, not proven optimal-play values.</p></section>
+          <section class="report-summary" aria-labelledby="summary-title"><h2 id="summary-title">Hidden-deck study.</h2><p id="study-summary"></p><p class="evidence-note">The unseen order stays hidden. These are measured outcomes of a simulation-guided policy, not proven optimal-play values.</p></section>
           <section class="report-metrics" aria-label="Outcome statistics">
             <div><span>Mean final score</span><strong id="mean">—</strong><small id="mean-detail"></small></div>
             <div><span>Median final score</span><strong id="median">—</strong><small id="median-detail"></small></div>
@@ -48,7 +49,7 @@
               <div><h3>Avoid left or right</h3><p>Left returns the room in displayed order: 1 → 2 → 3 → 4. Right returns it reversed: 4 → 3 → 2 → 1. Both go to the bottom of the deck. You can only avoid an untouched room, and cannot avoid consecutive rooms.</p></div>
               <div><h3>Scoring &amp; combat</h3><p>Weapon chains strictly decrease. Only the first potion in a room heals. Clear every card in the final room. Survive to score remaining health, with a final-potion bonus at 20 health. Defeat scores include overkill and every unresolved monster.</p></div>
             </div>
-            <details><summary>Seeds, verification, and sources</summary><p id="technical-method"></p><p>The fixed seeds use Fisher–Yates shuffles of the 44-card deck. No deals are discarded or replaced. The sample mean estimates this policy’s expected outcome. It is not an exact population EV or a proof of the best possible hidden-deck strategy.</p><p><a href="https://www.stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Zach Gage &amp; Kurt Bieg’s original rules</a> leave the order of an avoided room unspecified; this version explicitly offers the two orders above. The PDF’s equal-rank wording is ambiguous; this game and report use strictly decreasing weapon chains.</p><p><a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/scoundrel" target="_blank" rel="noopener">Engine, solver, generator, and tests on GitHub</a>. The raw results contain every played line and the simulation budget.</p></details>
+            <details><summary>Seeds, verification, and sources</summary><p id="technical-method"></p><p>The fixed seeds use Fisher–Yates shuffles of the 44-card deck. No deals are discarded or replaced. The sample mean estimates this policy’s expected outcome. It is not an exact population EV or a proof of the best possible hidden-deck strategy.</p><p><a href="https://www.stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Zach Gage &amp; Kurt Bieg’s original rules</a> leave the order of an avoided room unspecified; this version explicitly offers the two orders above. The PDF’s equal-rank wording is ambiguous; this game and report use strictly decreasing weapon chains.</p><p><a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/scoundrel" target="_blank" rel="noopener">Engine, solver, generator, and tests on GitHub</a>. The raw results contain every score, the simulation budget, and links to checksum-verified history files.</p></details>
           </section>
           <section class="report-section" aria-labelledby="deals-title"><div class="section-heading"><div><h2 id="deals-title">Deals</h2><p id="deals-caption"></p></div><button class="text-button" type="button" id="clear-filter" hidden>Clear score filter</button></div><div class="deals-table-wrap"><table class="deals-table"><thead><tr><th scope="col">Deal</th><th scope="col">Final score</th><th scope="col">Outcome</th><th scope="col">Explore</th></tr></thead><tbody id="deals-body"></tbody></table></div><button class="game-button secondary load-more" id="load-more" type="button">Show more deals</button></section>
         </div>

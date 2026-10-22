@@ -103,48 +103,50 @@ Exact label. Other EVs are simulation estimates of future play, not guaranteed
 scores or a proof of the best hidden-deck strategy. Their raw standard errors
 are diagnostics; tree search changes its continuation policy while learning.
 
-## 1,000-deal policy report
+## Hidden-deck policy report
 
-`/scoundrel/reports/` evaluates the hidden-deck policy on the fixed seeds
-`scoundrel-study-v1-0000` through `scoundrel-study-v1-0999`, preserving and
-extending the original 128-seed cohort. No deals are filtered or replaced.
-The previous full-information outcomes are superseded: hindsight solutions
-cannot represent normal Scoundrel play.
+`/scoundrel/reports/` evaluates consecutive fixed seeds beginning at
+`scoundrel-study-v1-0000`. No deals are filtered or replaced. The report states
+the actual cohort size and fixed simulation budget; these are measured policy
+outcomes, not perfect-information solutions or proven optimal population EVs.
 
-Mean, median, survival, and the graph describe the **actual recorded scores**
-from these 1,000 policy runs. They estimate this policy’s performance, not the
-true optimal population EV. Whole-number medians have no decimal suffix;
-a half point is retained when the two middle scores differ by an odd number.
-The chart shows a thin bar for each integer score, retaining zero-count scores
-on a continuous axis. Mean, median, and first/third quartile lines use the
-selected cohort; a compact legend keeps their exact values readable on phones.
-Quartiles use linear interpolation between adjacent order statistics (R-7).
-The full chart fits the available width, and the Score control provides precise
-touch and keyboard filtering alongside direct bar selection.
-Filters affect the chart and deal list; headline statistics always use all
-1,000 games. Each deal has a verified move history and a seeded play link.
-CSV and raw JSON are available.
+The chart has one thin bar per integer score, including zero-count positions,
+with mean, median, and first/third quartile lines. Quartiles use R-7 linear
+interpolation. Whole-number medians have no decimal suffix. The full plot fits
+phones; a Score control supports precise touch/keyboard filtering. Cohort filters
+affect the plot and deal list; headline statistics always describe the full study.
+Every deal has a verified history and seeded play link. CSV export includes the
+budget. The compact JSON manifest contains every score; lossless histories live
+in checksum-indexed shards of 1,000 games and load only when opened.
 
-Regenerate the report (Node and a C++17 compiler required):
+Regenerate a large report (Node and a C++17 compiler required):
 
 ```sh
-node scoundrel/scripts/generate-report.cjs 1000 --iterations=2048
+node scoundrel/scripts/generate-report.cjs 100000 --iterations=8192 --workers=12 --output=/path/study/outcomes.json --checkpoint=/path/study/checkpoint.jsonl --deadline=2026-10-22T11:35:00Z
+node scoundrel/scripts/publish-study.cjs /path/study/outcomes.json
 ```
 
-The generator compiles `solver/hidden-policy.cpp` into the OS temporary directory
-and uses persistent workers. Every decision sends **only a public observation**
-to the native process. C++ implements the same tree search and rollout policy
-as the browser. A fixed 2,048 simulations per decision makes the study independent
-of machine speed; native and browser results are checked against one another at
-fixed budgets. The compiled policy is identified by a digest of its source,
-the browser solver, and the engine.
+Every decision sends **only a public observation** to a persistent native worker.
+The native implementation matches the browser policy at the same simulation
+budget. Fixed-size buffers, exact canonical state keys, cached visible-room
+transitions, precomputed utility arithmetic, and a shared combinadic room cache
+reduce overhead. The shared cache is a sparse ~4 GiB file in the OS temporary
+directory, keyed by the compiled revision; workers share its physical pages.
+If mapping is unavailable, a bounded private cache is used. No actual unseen
+card order enters either cache. Native/browser and shared/private parity are
+tested. The policy digest includes the native source, browser solver, and engine.
 
-Checkpoints resume completed games for that exact policy/budget. The published
-JSON is replaced atomically only after all 1,000 games finish and their move
-histories replay correctly. `CXX` selects a compiler; `--workers=N` controls
-concurrency; `--checkpoint=/path/file.jsonl` chooses the checkpoint;
-`--output=/path/results.json` allows smaller development cohorts. Native worker
-elapsed time and heuristic allocation counts are stored with each run.
+The runner checkpoints every game, writes a progress JSON file, and resumes
+only a compatible revision/budget/seed cohort. It repairs a torn final checkpoint
+record and replay-checks resumed games. At `--deadline`, or on SIGTERM/SIGINT, it
+stops assigning new games, completes active ones, and publishes the complete
+contiguous prefix. It never drops losses to meet the deadline. Shards are written
+before the manifest is atomically replaced. `--progress`, `--seed-prefix`, `CXX`,
+`--workers`, `--checkpoint`, and `--output` control development runs. The separate
+publisher verifies every checksum and move history before updating website data.
+
+The [October 22 overnight study](docs/overnight-study-2026-10-22.md) records the
+benchmark, frozen run, deadline, and monitoring/publication instructions.
 
 ## Verification
 
@@ -160,7 +162,7 @@ SHELL_PAGES=/,/scoundrel/,/scoundrel/reports/ node scripts/shell-browser.cjs
 
 Tests compare both solvers against an independent exhaustive search
 over small dungeons, check compact transitions against the full engine, replay all
-1,000 policy histories, check invariance to hidden deck permutations, and verify all 44 art hashes differ. The browser test exercises
+all published policy histories, check invariance to hidden deck permutations, and verify all 44 art hashes differ. The browser test exercises
 all-action analysis, a full winning descent, save/resume, themes, collection,
 responsive layouts, both avoidance directions, report filters, recorded move-history
 viewers and CSV export against assembled files.

@@ -57,10 +57,10 @@ test("sampled transitions match the real engine when draws reveal the same cards
   }
 });
 
-test("all 1,000 hidden-deck policy runs replay to their recorded outcomes", () => {
+test("all published hidden-deck policy runs replay to their recorded outcomes", () => {
   const data = require("../reports/outcomes.json"); Stats.validate(data);
   assert.equal(data.policy.revision, require("../scripts/native-solver.cjs").revision, "published study matches the current solver and rules");
-  for (const row of data.rows) {
+  for (const row of require("../scripts/study-data.cjs").iterateRows(data, require.resolve("../reports/outcomes.json"))) {
     let state = E.createGame({ seed: row.seed });
     for (const action of row.line) state = E.transition(state, action);
     assert.ok(["won", "lost"].includes(state.phase)); assert.equal(E.score(state), row.score);
@@ -84,7 +84,9 @@ test("quartiles interpolate order statistics and handle empty, singleton, and ti
 });
 
 test("report rejects hindsight studies, incomplete cohorts, and invalid outcomes", () => {
-  const data = require("../reports/outcomes.json"); assert.equal(Stats.validate(data), data);
+  const source = require("../reports/outcomes.json"); assert.equal(Stats.validate(source), source);
+  const rows = require("../scripts/study-data.cjs").readRows(source, require.resolve("../reports/outcomes.json"), 10);
+  const data = { ...source, version: 3, requestedDeals: rows.length, rows }; Stats.validate(data);
   assert.throws(() => Stats.validate({ ...data, version: 2 }));
   assert.throws(() => Stats.validate({ ...data, rows: data.rows.slice(1) }));
   assert.throws(() => Stats.validate({ ...data, policy: { ...data.policy, exact: true } }));

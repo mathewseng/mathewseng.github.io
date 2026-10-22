@@ -108,11 +108,11 @@ async function readable(page, label) {
             await page.goto(server.base+'/scoundrel/reports/');await page.locator('#report-content').waitFor({state:'visible'});await page.evaluate(()=>document.fonts.ready);
             await readable(page,'outcome report');
             assert.ok(await page.locator('.deals-table-wrap').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'deal table fits phone width');
-            assert.equal(await page.locator('#median').innerText(),String(require('../reports/statistics.js').summarize(require('../reports/outcomes.json').rows).median));
+            assert.equal(await page.locator('#median').innerText(),String(require('../reports/statistics.js').summarize(require('../reports/statistics.js').studyRows(require('../reports/outcomes.json'))).median));
             assert.ok(await page.locator('#histogram').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'full chart fits viewport');
             assert.equal(await page.locator('.chart-reference').count(),4);
             if(phone){await page.locator('#score-picker').selectOption('0');assert.equal(await page.locator('#clear-filter').isVisible(),true);await page.locator('#clear-filter').click();}
-            await page.locator('[data-solution]').first().click();await readable(page,'solution dialog');
+            await page.locator('[data-solution]').first().click();await page.locator('#solution-line li').first().waitFor();await readable(page,'solution dialog');
             if(output && [390,1280].includes(viewport.width))await page.screenshot({path:path.join(output,`${browserName}-solution-${viewport.width}.png`)});
             await page.locator('#close-solution').click();
           }

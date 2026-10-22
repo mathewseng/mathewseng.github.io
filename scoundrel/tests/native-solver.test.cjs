@@ -44,3 +44,24 @@ test("native and browser sampling agree at a fixed simulation budget", async () 
     }
   } finally { native.close(); }
 });
+
+test("shared room cache, private cache, and browser give identical sampled continuations", async () => {
+  const binary = Native.compile(), shared = Native.createSolver(binary), privateCache = Native.createSolver(binary, { sharedCache: false });
+  try {
+    for (let i = 0; i < 8; i++) {
+      let state = E.createGame({ seed: "cache-regression-" + i });
+      for (let j = 0; j < i * 3 && E.actions(state).length; j++) {
+        const actions = E.actions(state);state = E.transition(state, actions[(j + i) % actions.length]);
+      }
+      if (!E.actions(state).length) continue;
+      const observation = E.observe(state), options = { iterations: 512, timeMs: 60000 };
+      const [a, b] = await Promise.all([shared.analyze(observation, options), privateCache.analyze(observation, options)]);
+      const c = S.analyze(observation, options);
+      assert.deepEqual(a.results, b.results);
+      for (let j = 0; j < a.results.length; j++) {
+        assert.equal(a.results[j].samples, c.results[j].samples);
+        assert.ok(Math.abs(a.results[j].score - c.results[j].score) < 1e-9);
+      }
+    }
+  } finally { shared.close(); privateCache.close(); }
+});

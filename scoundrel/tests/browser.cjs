@@ -2,6 +2,8 @@
 const assert=require("node:assert/strict"), fs=require("node:fs"), path=require("node:path");
 const {chromium}=require("playwright"), {launchQuietBrowser}=require("../../scripts/quiet-browser.cjs"), {serveSite,settle}=require("../../scripts/site-pages.cjs");
 const E=require("../engine.js"), study=require("../reports/outcomes.json");
+study.rows=require("../reports/statistics.js").studyRows(study);
+const historyRows=require("../scripts/study-data.cjs").readRows(study,require.resolve("../reports/outcomes.json"),100);
 const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
 (async()=>{
   const server=await serveSite(root), browser=await launchQuietBrowser(chromium), errors=[];
@@ -40,7 +42,7 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     await page.locator('[data-filter="c"]').click();assert.equal(await page.locator("#catalog-grid figure").count(),13);
     await page.locator("#catalog-dialog [data-close]").click();
     await page.locator("#settings-button").click();await page.locator("#atmosphere").selectOption("ember");await page.locator("#settings-dialog [data-close]").click();
-    const witness=study.rows.find(r=>r.survived);
+    const witness=historyRows.find(r=>r.survived);
     await page.goto(server.base+"/scoundrel/?seed="+witness.seed);await settle(page);
     for(const [i,a]of witness.line.entries()){
       if(a.id)await page.locator(`[data-card="${a.id}"]`).click();
@@ -62,12 +64,12 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     }
     await page.setViewportSize({width:1440,height:900});await page.goto(server.base+"/scoundrel/reports/");await page.locator("#report-content").waitFor({state:"visible"});await settle(page);
     const summary=require('../reports/statistics.js').summarize(study.rows);
-    assert.equal(await page.locator("#mean").innerText(),String(summary.mean));
+    assert.equal(await page.locator("#mean").innerText(),summary.mean.toLocaleString("en-US",{maximumFractionDigits:3}));
     assert.equal(await page.locator("#median").innerText(),String(summary.median));
     assert.equal(await page.locator("#deals-body tr").count(),20);
-    assert.equal(await page.locator("#proof-rate").innerText(),"1,000");
+    assert.equal(await page.locator("#proof-rate").innerText(),study.rows.length.toLocaleString("en-US"));
     const plotted=await page.locator('.chart-group').evaluateAll(es=>es.map(e=>({score:Number(e.dataset.score),count:Number(e.dataset.count),width:Number(e.querySelector('.chart-bar').getAttribute('width'))})));
-    assert.equal(plotted.reduce((sum,bar)=>sum+bar.count,0),1000,'histogram accounts for the full cohort');
+    assert.equal(plotted.reduce((sum,bar)=>sum+bar.count,0),study.rows.length,'histogram accounts for the full cohort');
     assert.equal(plotted.length,summary.max-summary.min+1,'one bar per integer score');
     for(let i=1;i<plotted.length;i++)assert.equal(plotted[i].score,plotted[i-1].score+1,'score axis retains zero counts');
     assert.ok(plotted.every(bar=>bar.width<=3),'bars stay thin');
@@ -79,16 +81,16 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     }
     await checkMarkers(summary);
     await page.locator('[data-solution]').first().click();
-    assert.equal(await page.locator('#solution-line li').count(),study.rows[0].line.length);
+    await page.waitForFunction(n=>document.querySelectorAll('#solution-line li').length===n,historyRows[0].line.length);
     assert.ok((await page.locator('#solution-title').innerText()).includes(String(study.rows[0].score)));
     await page.locator('#close-solution').click();
     await page.locator("#cohort").selectOption("below");
-    assert.ok((await page.locator('#distribution-subtitle').innerText()).startsWith(String(study.rows.filter(r=>r.score<30).length)));
+    assert.ok((await page.locator('#distribution-subtitle').innerText()).startsWith(study.rows.filter(r=>r.score<30).length.toLocaleString("en-US")));
     assert.equal(await page.locator("#median").innerText(),String(summary.median),"cohort filters do not alter full-study metrics");
     await checkMarkers(require('../reports/statistics.js').summarize(study.rows.filter(r=>r.score<30)));
     await page.locator("#cohort").selectOption("all");await page.locator(".chart-group").last().click();assert.equal(await page.locator("#clear-filter").isVisible(),true);await page.locator("#clear-filter").click();
     const downloadEvent=page.waitForEvent("download");await page.locator("#download").click();const download=await downloadEvent;assert.ok(download.suggestedFilename().endsWith(".csv"));
-    const csv=fs.readFileSync(await download.path(),'utf8');assert.equal(csv.trim().split('\n').length,1001);assert.ok(csv.startsWith('deal,seed,final_score,outcome,simulations_per_decision'));assert.ok(!csv.includes('incomplete'));
+    const csv=fs.readFileSync(await download.path(),'utf8');assert.equal(csv.trim().split('\n').length,study.rows.length+1);assert.ok(csv.startsWith('deal,seed,final_score,outcome,simulations_per_decision'));assert.ok(!csv.includes('incomplete'));
     if(shots)await page.screenshot({path:path.join(shots,"scoundrel-report.png"),fullPage:true});
     await page.setViewportSize({width:375,height:812});await settle(page);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
     assert.ok(await page.locator('#histogram svg').isVisible());
@@ -96,7 +98,7 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     await checkMarkers(summary);
     await page.locator('#score-picker').selectOption('0');
     assert.equal(await page.locator('#clear-filter').isVisible(),true);
-    assert.ok((await page.locator('#deals-caption').innerText()).startsWith(String(study.rows.filter(r=>r.score===0).length)));
+    assert.ok((await page.locator('#deals-caption').innerText()).startsWith(study.rows.filter(r=>r.score===0).length.toLocaleString("en-US")));
     assert.ok((await page.locator('#deals-body tr td:nth-child(2)').allTextContents()).every(score=>score==='0'));
     await page.locator('#clear-filter').click();
     if(shots){await page.screenshot({path:path.join(shots,"scoundrel-report-phone.png"),fullPage:true});await page.locator('.distribution-section').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(shots,"scoundrel-report-phone-chart.png")});}
