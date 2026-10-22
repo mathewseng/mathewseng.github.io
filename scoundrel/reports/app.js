@@ -81,13 +81,29 @@
   function chooseScore(score) {
     activeScore = score; visible = 20;
     $("score-picker").value = score == null ? "" : String(score);
-    $("chart-caption").textContent = score == null ? "Select a bar or choose a score to inspect its deals." : `${rows.filter(r => r.score === score).length} deals with score ${score}. The deal table is filtered.`;
-    draw(); renderDeals();
+    $("chart-caption").textContent = score == null ? "Select a bar or use ← / →. Esc clears selection." : `Score ${score} · ${f(rows.filter(r => r.score === score).length)} deals. ← / → to move; Esc to clear.`;
+    // Keep the chart and its focus in place while stepping through a large study.
+    for (const bar of $("histogram").querySelectorAll("[data-score]")) bar.classList.toggle("is-active", score != null && Number(bar.dataset.score) === score);
+    renderDeals();
   }
   $("cohort").addEventListener("change", () => { activeScore = null; visible = 20; render(); chooseScore(null); });
   $("histogram").addEventListener("click", event => {
     const bar = event.target.closest("[data-score]");
-    if (bar) { const score = Number(bar.dataset.score); chooseScore(activeScore === score ? null : score); }
+    if (bar) { $("histogram").focus({ preventScroll: true }); const score = Number(bar.dataset.score); chooseScore(activeScore === score ? null : score); }
+  });
+  $("histogram").addEventListener("keydown", event => {
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || !["ArrowLeft", "ArrowRight", "Home", "End", "Escape"].includes(event.key)) return;
+    const bars = $("histogram").querySelectorAll("[data-score]");
+    if (!bars.length) return;
+    event.preventDefault();
+    const first = Number(bars[0].dataset.score), last = Number(bars[bars.length - 1].dataset.score);
+    if (event.key === "Escape") chooseScore(null);
+    else if (event.key === "Home") chooseScore(first);
+    else if (event.key === "End") chooseScore(last);
+    else {
+      const direction = event.key === "ArrowRight" ? 1 : -1;
+      chooseScore(activeScore == null ? (direction > 0 ? first : last) : Math.max(first, Math.min(last, activeScore + direction)));
+    }
   });
   $("score-picker").addEventListener("change", event => chooseScore(event.target.value === "" ? null : Number(event.target.value)));
   $("clear-filter").addEventListener("click", () => chooseScore(null));
