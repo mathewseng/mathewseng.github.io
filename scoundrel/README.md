@@ -117,8 +117,9 @@ The responsive check measures actual text bounds for all 44 names, verifies
 touch targets and both combat actions, and exercises the art viewer, enlarged
 text and phone EV rows across ten desktop/phone viewport sizes.
 
-Health and potions use a deep red; weapons use royal blue. Filled seals and action
-buttons use light text, with lighter red/blue labels on dark surfaces. These
-semantic colors stay consistent across all atmosphere settings. UI copy is limited
+Hearts and health use red, diamond weapons use blue, club Tideborn use green,
+and spade Cinderkin use orange-gold. Card labels, number seals and item actions
+share a black surface with light suit-colored text and borders. These semantic
+colors stay consistent across all atmosphere settings. UI copy is limited
 to names, status, actions, rules and analysis; flavor lore remains in the catalog
 metadata but is not shown in the interface.
