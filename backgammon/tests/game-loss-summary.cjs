@@ -54,7 +54,14 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       assert.equal((await value(0, "checker", "accepted").innerText()).trim(), "0.020\n0.020 / move");
       assert.equal((await value(0, "cube", "initial").innerText()).trim(), "0.060\n1 mistake");
       assert.equal((await value(0, "cube", "accepted").innerText()).trim(), "0.000\n0 mistakes");
-      assert.equal(await value(1, "checker", "initial").locator("strong").innerText(), "0.080");
+      assert.equal(await card.locator('[data-summary-player="1"]').count(), 0, "bot losses are hidden");
+      assert.equal(await card.locator('[data-summary-player]').count(), 1);
+      assert.ok(!(await card.locator('.game-loss-summary').innerText()).includes('GNUbg'));
+      for (const [kind,stage,tone] of [["checker","initial","large"],["checker","accepted","small"],["cube","initial","medium"],["cube","accepted","perfect"]])
+        assert.equal(await value(0,kind,stage).locator('strong').getAttribute('data-loss-tone'),tone);
+      assert.equal(await value(0,"checker","initial").locator('small span').getAttribute('data-loss-tone'),'large');
+      const colors = await card.locator('[data-loss-tone]').evaluateAll(nodes => [...new Set(nodes.map(node => getComputedStyle(node).color))]);
+      assert.equal(colors.length,4,'EV totals and averages use the existing loss colors');
       const bounds = await card.evaluate(node => {
         const box = node.getBoundingClientRect();
         return { left: box.left, right: box.right, top: box.top, bottom: box.bottom,
@@ -68,16 +75,19 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       assert.ok(await card.locator("details").evaluate(node => node.open));
       assert.match(await card.innerText(), /0.002/);
       await card.locator("summary").click();
-      await page.screenshot({ path: path.join(out, `${name}-game-loss-summary-${layout}.png`), fullPage: true });
+      await card.evaluate(node => { node.scrollTop = 0; });
+      await card.screenshot({ path: path.join(out, `${name}-game-loss-summary-${layout}.png`) });
       // A pending original grade updates in place when background review finishes,
       // without changing the accepted grade or the game/score.
+      // Leave Play before replacing its save so pagehide cannot checkpoint the old fixture.
+      await page.goto(base + '/backgammon/');
       await page.evaluate(async () => {
         const { get, put } = await import("/backgammon/core/storage.mjs");
         const work = await get("work", "play");
         delete work.game.events[1].initialDecision.evaluation;
         await put("work", work);
       });
-      await page.reload(); await ready();
+      await page.goto(base + '/backgammon/play/'); await ready();
       await page.evaluate(async () => {
         const { EngineClient } = await import("/backgammon/engine/client.mjs");
         const { positionKey } = await import("/backgammon/core/rules.mjs");
@@ -90,11 +100,26 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       await resume();
       await page.waitForFunction(() => typeof window.completeSummaryGrade === "function");
       assert.match(await value(0, "checker", "initial").innerText(), /1 pending/);
+      assert.equal(await value(0,"checker","initial").locator('strong').getAttribute('data-loss-tone'),null,'unknown loss stays ungraded');
       await page.evaluate(() => window.completeSummaryGrade());
       await page.waitForFunction(() => document.querySelector('[data-summary-player="0"] [data-loss-kind="checker"] [data-stage="initial"] strong')?.textContent === "0.120");
       assert.equal(await value(0, "checker", "accepted").locator("strong").innerText(), "0.020");
       const archived = await page.evaluate(async () => (await (await import("/backgammon/core/storage.mjs")).get("items", "loss-summary")));
       assert.ok(archived.events[1].initialDecision.evaluation, "background initial grade is archived as well as saved to play");
+      assert.equal(await value(0,"checker","initial").locator('strong').getAttribute('data-loss-tone'),'large');
+      // Human control can be either color. Local/online summaries retain both humans.
+      for (const [mode,humanSide,expected] of [["computer",1,["1"]],["local",0,["0","1"]]]) {
+        await page.goto(base + '/backgammon/');
+        await page.evaluate(async ({mode,humanSide}) => {
+          const {get,put} = await import('/backgammon/core/storage.mjs');
+          const work = await get('work','play');
+          work.game.config.mode = mode;
+          work.game.config.humanSide = humanSide;
+          await put('work',work);
+        },{mode,humanSide});
+        await page.goto(base + '/backgammon/play/'); await ready(); await resume();
+        assert.deepEqual(await card.locator('[data-summary-player]').evaluateAll(nodes=>nodes.map(node=>node.dataset.summaryPlayer)),expected);
+      }
       assert.deepEqual(errors, []);
       report.push({ layout, bounds, initialAndAccepted: true, liveUpdate: true });
     } catch (error) {

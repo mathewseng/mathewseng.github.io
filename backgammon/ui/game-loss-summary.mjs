@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { el } from "./shell.mjs";
 import { gameLossSummary } from "../core/game-loss-summary.mjs";
+import { lossTone } from "../core/decision-feedback.mjs";
 
-export function gameLossTable(rows, state, names) {
+export function gameLossTable(rows, state, names, visiblePlayers = [0, 1]) {
   const summary = gameLossSummary(rows, state.gameNumber, state.matchLength);
   const number = value => value === null ? "—" : value.toFixed(3);
+  const value = (tag, amount) => el(tag,
+    amount === null ? {} : { "data-loss-tone": lossTone(amount).tone }, number(amount));
   const cell = (stats, checker, stage) => {
     const known = stats.evaluated > 0 || stats.count === 0;
     return el("td", { "data-stage": stage },
-      el("strong", {}, known ? number(stats.total) : "—"),
-      el("small", {}, checker
-        ? `${number(stats.average)} / move`
-        : known ? `${stats.mistakes} mistake${stats.mistakes === 1 ? "" : "s"}` : "— mistakes"),
+      value("strong", known ? stats.total : null),
+      checker ? el("small", {}, value("span", stats.average), " / move")
+        : el("small", {},
+          known ? `${stats.mistakes} mistake${stats.mistakes === 1 ? "" : "s"}` : "— mistakes"),
       ...(stats.pending + stats.unavailable ? [el("small", { class: "loss-summary-pending" },
         [stats.pending ? `${stats.pending} pending` : "",
           stats.unavailable ? `${stats.unavailable} unrecorded` : ""].filter(Boolean).join(" · "))] : []),
@@ -25,7 +28,7 @@ export function gameLossTable(rows, state, names) {
         el("th", { scope: "col" }, "Initial"),
         el("th", { scope: "col" }, "Accepted"),
       )),
-      ...summary.players.map(player => el("tbody", { "data-summary-player": player.player },
+      ...summary.players.filter(player => visiblePlayers.includes(player.player)).map(player => el("tbody", { "data-summary-player": player.player },
         el("tr", { class: "loss-summary-player" },
           el("th", { colspan: 3, scope: "rowgroup" }, names[player.player])),
         ...["checker", "cube"].map(kind => el("tr", { "data-loss-kind": kind },

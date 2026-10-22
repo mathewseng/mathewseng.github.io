@@ -154,8 +154,9 @@ function renderResultCard(s) {
   const key = r ? `${s.gameNumber}:${s.scores.join("-")}` : "";
   resultCard.hidden = !r || key === hiddenResult;
   if (resultCard.hidden) { resultSignature = ""; return; }
-  const losses = gameLossTable(decisionHistory(model()), s, names());
-  const signature = JSON.stringify([model()?.id, key, r, names(), losses.textContent]);
+  const losses = gameLossTable(decisionHistory(model()), s, names(),
+    config.mode === "computer" ? [config.humanSide] : [0, 1]);
+  const signature = JSON.stringify([model()?.id, key, r, names(), losses.innerHTML]);
   if (resultSignature === signature) return;
   resultSignature = signature;
   const helpOpen = resultCard.querySelector("details")?.open;

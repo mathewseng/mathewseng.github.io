@@ -1696,6 +1696,10 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   color: var(--muted);
 }
 
+.game-loss-summary [data-loss-tone] {
+  color: var(--loss-color);
+}
+
 .game-loss-summary .loss-summary-player th {
   padding-top: 10px;
   font-weight: 650;
