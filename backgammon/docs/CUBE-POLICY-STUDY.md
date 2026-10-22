@@ -32,11 +32,11 @@ The signed replacement design retains 16,384 games per move per arm and adds a c
 
 The normal 2-ply filter retains up to 8 moves within 0.160 equity after 0-ply screening. Huge retains up to 20 within 0.440. Large 3-ply retains up to 16 within 0.320, then up to 4 within 0.080 after 2-ply scoring. These are explicit changes to candidate selection and continuation decisions, not relabeling the opening reference book.
 
-All arms run full games with no fixed-turn cutoff or weakened late policy. Exact two-sided bearoff termination remains eligible. Variance reduction uses the same 1-ply control values in every arm; increasing checker depth does not silently change the control variate. Cube search stays at 2-ply. No sample pooling, outcome-based stopping or reference-value substitution is permitted.
+All arms run full games with no fixed-turn cutoff or weakened late policy. Exact two-sided bearoff termination remains eligible. Variance reduction uses the same 1-ply control depth in every arm (the control values reflect that arm's rules and cache behavior); increasing checker depth does not silently change the control variate. Cube search stays at 2-ply. No sample pooling, outcome-based stopping or reference-value substitution is permitted.
 
 Four primary paired changes in the XG-choice-minus-alternative gap isolate: Cache−Legacy, Matched−Cache, Wide−Matched and Deep−Matched. They form one simultaneous 95% Student-t family. Five policy move gaps form a separate family; eight per-candidate policy effects form a third. Published XG marginal bounds are retained, and the 0.005 absolute-equity target is reported separately from move ordering. A negative result will remain visible. This one selected position cannot establish general opening/reply accuracy.
 
-Status: replacement plan signed and worker validation complete; full-sample collection is next. Timing and validation outputs are excluded from inference.
+Status: replacement plan signed and worker validation complete; [full-sample collection is running](https://github.com/mathewseng/mathewseng.github.io/actions/runs/39801091859). Timing and validation outputs are excluded from inference.
 
 The same defect was also reproduced in the production bg7 source with ordinary cube rules: 20 incorrect hits across these two post-move boards. The standalone `checker-context-bg8.patch` repairs every captured query; see [production-source regression evidence](live-cache-context-validation.json). Browser rollout support for immediate redoubles remains separate from the research implementation.
 
