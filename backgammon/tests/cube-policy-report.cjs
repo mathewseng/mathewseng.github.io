@@ -6,10 +6,13 @@ module.exports=async function(browser,base){
   const section=page.locator('#cube-policy-study-content');await section.locator('p').first().waitFor();
   assert.equal(await section.locator('.error').count(),0);
   const input=JSON.parse(fs.readFileSync('backgammon/docs/cube-policy-study-v2-inputs.json'));
-  const r={complete:true,studyVersion:2,records:5120,totalTrials:163840,source:input.plan[0].source,policies:input.policies.map(p=>({id:p.id,gap:{difference:0,direction:'unresolved',familywise95:{lower:-.01,upper:.01}},candidates:input.plan[0].candidates.map(c=>({role:c.role,equity:c.reference.xgEquity,referenceEquity:c.reference.xgEquity,referenceDifference:0,withinTolerance:true,referenceCredit:{author:'Fixture contributor'}})),cubeActions:[100,2,1,0,0,0,0,103,1000,0],maxCube:8})),effects:input.effects.map(([after,before])=>({after,before,difference:0,familywise95:{lower:-.01,upper:.01}}))};
+  const r={complete:true,studyVersion:2,records:5120,totalTrials:163840,source:input.plan[0].source,policies:input.policies.map(p=>({id:p.id,gap:{difference:0,direction:'unresolved',familywise95:{lower:-.01,upper:.01}},candidates:input.plan[0].candidates.map(c=>({role:c.role,equity:c.reference.xgEquity,standardError:.002,referenceConfidenceHalfWidth:c.reference.confidenceHalfWidth,referenceEquity:c.reference.xgEquity,referenceDifference:0,withinTolerance:true,referenceCredit:{author:'Fixture contributor'}})),cubeActions:[100,2,1,0,0,0,0,103,1000,0],maxCube:8})),effects:input.effects.map(([after,before])=>({after,before,difference:0,familywise95:{lower:-.01,upper:.01}}))};
   await page.route('**/data/cube-policy-study-comparison.json',route=>route.fulfill({json:r}));await page.reload();await section.locator('table').first().waitFor();
   assert.equal(await section.locator('table').count(),4);
   assert.equal(await section.getByText('XG · Fixture contributor',{exact:true}).count(),10);
+  assert.equal(await section.getByText('SE 0.00200',{exact:true}).count(),10);
+  assert.match(await section.locator('table').nth(2).textContent(),/± 0[.]0032/);
+  assert.match(await section.locator('table').nth(2).textContent(),/± 0[.]0033/);
   for(const[i,n]of [[0,5],[1,4],[2,10],[3,3]])assert.equal(await section.locator('table').nth(i).locator('tbody tr').count(),n);
   assert.doesNotMatch(await section.textContent(),/undefined|NaN/);
   assert.equal(await section.getByRole('link',{name:'All 20 worker records and validation'}).getAttribute('href'),'../docs/cube-policy-study-v2-execution.json');
