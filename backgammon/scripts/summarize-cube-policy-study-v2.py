@@ -116,7 +116,7 @@ def main():
     r=summarize(p,records);r['inputsSHA256']=HASH(input_bytes);r['rawSHA256']=HASH(raw);r['nativeBinarySHA256']=p['build']['binarySHA256']
     r['executionSHA256']=HASH(execution_bytes)
     r['executionUrl']='https://github.com/mathewseng/mathewseng.github.io/actions/runs/'+complete['runId']
-    r['methodClarification']='The frozen plan says identical 1-ply control-variate evaluations. This means identical control depth; control values reflect each arm\'s rules and cache context. The Deep contrast changes both checker depth and filter, while the matched cube contrast includes corrected offer handling and the cube ceiling.'
+    r['methodClarification']='The frozen plan says identical 1-ply control-variate evaluations. This means identical control depth; control values reflect each arm\'s rules and cache context. Separately evaluated cube branches have distinct cube contexts and cubeful estimates within one shared checker search under the original cube context; they are not independent checker searches. Actual subsequent rollout turns use the accepted cube context. The Deep contrast changes both checker depth and filter, while the matched cube contrast includes corrected offer handling and the cube ceiling.'
     encoded=(json.dumps(r,indent=2)+'\n').encode()
     (FAMILY/f'docs/{PREFIX}-comparison.json').write_bytes(encoded)
     (FAMILY/'data/cube-policy-study-comparison.json').write_bytes(encoded)

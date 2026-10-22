@@ -82,9 +82,9 @@ with tempfile.TemporaryDirectory() as folder:
 `;
  execFileSync('python3',['-c',script],{env});
 });
-test('published replacement estimates, paired effects and provenance recompute from every raw batch',()=>{
+test('published replacement estimates, paired effects and provenance recompute from every raw batch',t=>{
  const f=new URL('../docs/cube-policy-study-v2-comparison.json',import.meta.url);
- if(!fs.existsSync(f))return;
+ if(!fs.existsSync(f)){t.skip('The fixed sample is still collecting');return;}
  const report=JSON.parse(fs.readFileSync(f));assert.equal(report.complete,true);assert.equal(report.records,5120);assert.equal(report.totalTrials,163840);assert.equal(report.policies.length,5);assert.equal(report.effects.length,4);assert.equal(report.candidateEffects.length,8);
  for(const p of report.policies)for(const c of p.candidates)assert.equal(c.samples,16384);
  assert.equal(fs.readFileSync(f,'utf8'),fs.readFileSync(new URL('../data/cube-policy-study-comparison.json',import.meta.url),'utf8'));
