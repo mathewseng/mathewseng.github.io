@@ -5,6 +5,14 @@ module.exports=async function(browser,base){
   await page.goto(base+'/backgammon/reports/#cube-policy-study');
   const section=page.locator('#cube-policy-study-content');await section.locator('p').first().waitFor();
   assert.equal(await section.locator('.error').count(),0);
+  const published=JSON.parse(fs.readFileSync('backgammon/data/cube-policy-study-comparison.json'));
+  if(published.complete){
+   assert.equal(await section.locator('table').count(),4);
+   assert.match(await section.textContent(),/both paired effect intervals stay within ±0[.]00005 equity/);
+   assert.match(await section.textContent(),/does not meet the requested 0[.]005 EV target/);
+   assert.match(await section.locator('table').nth(1).textContent(),/-0[.]00000085/);
+   assert.match(await section.locator('table').nth(1).textContent(),/-0[.]00000043/);
+  }
   const input=JSON.parse(fs.readFileSync('backgammon/docs/cube-policy-study-v2-inputs.json'));
   const r={complete:true,studyVersion:2,records:5120,totalTrials:163840,source:input.plan[0].source,policies:input.policies.map(p=>({id:p.id,gap:{difference:0,direction:'unresolved',familywise95:{lower:-.01,upper:.01}},candidates:input.plan[0].candidates.map(c=>({role:c.role,equity:c.reference.xgEquity,standardError:.002,referenceConfidenceHalfWidth:c.reference.confidenceHalfWidth,referenceEquity:c.reference.xgEquity,referenceDifference:0,withinTolerance:true,referenceCredit:{author:'Fixture contributor'}})),cubeActions:[100,2,1,0,0,0,0,103,1000,0],maxCube:8})),effects:input.effects.map(([after,before])=>({after,before,difference:0,familywise95:{lower:-.01,upper:.01}}))};
   await page.route('**/data/cube-policy-study-comparison.json',route=>route.fulfill({json:r}));await page.reload();await section.locator('table').first().waitFor();

@@ -2,9 +2,722 @@
   "schema": 2,
   "studyVersion": 2,
   "signature": "c33006467f38e023b0971a1cabae19d1fba6eed3896e7cd8820868470a7e5c2a",
-  "complete": false,
-  "plannedTrials": 163840,
-  "status": "running",
-  "statusMessage": "The fixed 163,840-game experiment is collecting full-game trials across 20 validated shards. Results will appear only after all 5,120 batches finish and validate. The five arms separate the cache fix, XG cube rules, wider checker selection and deeper checker play.",
-  "executionUrl": "https://github.com/mathewseng/mathewseng.github.io/actions/runs/39801091859"
+  "complete": true,
+  "recordedAt": "2026-10-22T17:52:38.209333+00:00",
+  "records": 5120,
+  "totalTrials": 163840,
+  "trialsPerMovePolicy": 16384,
+  "method": "Fixed independent 16384 full-game trials per candidate and policy, 512 paired blocks of 32, 163840 games total. Both retained 41$-44 candidates under five policies. Shared dice across candidates and policies; every seed disjoint from preceding studies and timing/validation samples. Cube strength stays at GNUbg 2-ply; checker policies vary normal 2-ply, huge-filter 2-ply, large-filter 3-ply throughout every full game. Identical 1-ply control-variate evaluations across all policies; no dice rotation, fixed-turn cutoff, late policy reduction, pooling, optional stopping, or reference-value correction. Exact two-sided bearoff evaluation remains eligible. XG rules mean money/Jacoby/beaver/raccoon, original responder retains ownership, cube ceiling 1024. Actual legal cube branches are separately evaluated; future search-node beaver backups use scale-invariant continuation approximations. Both evaluator caches are cleared before each paired block for all arms, keeping block outcomes independent of worker scheduling. Legacy retains the old cache-key defect within its block. Cache-only changes only that key; matched adds corrected XG cube rules; wide/deep add checker strength. All 20 fixed shards use the same validated Linux ARM64 executable and weights. All seeds planned for the aborted v1 experiment are excluded. Five paired move gaps and four differences of gaps have separate simultaneous 95% Student-t families. Eight per-candidate policy effects form a third family. Absolute differences against published XG EVs are descriptive; original XG margins retained. Selection follows the previous completed experiment; this is one diagnostic position, not an all-openings accuracy claim.",
+  "source": "https://www.extremegammon.com/OB/Replies_to_41$.html",
+  "referenceGap": 0.011299999999999977,
+  "equityTolerance": 0.005,
+  "policies": [
+    {
+      "id": "legacy",
+      "label": "Previous ordinary-cube policy and cache",
+      "candidates": [
+        {
+          "role": "previous-choice",
+          "move": "8/4 8/4 24/20 20/16",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.6044786889453125,
+          "standardError": 0.003785099657088845,
+          "cubeless": 0.4366903370703125,
+          "probabilities": [
+            0.6087230057617188,
+            0.2740321539453125,
+            0.0322413442578125,
+            0.0832713034765625,
+            0.00378834986328125
+          ],
+          "referenceEquity": 0.6005,
+          "referenceDifference": 0.003978688945312503,
+          "withinTolerance": true,
+          "referenceConfidenceHalfWidth": 0.0033,
+          "referenceCredit": {
+            "rank": 2,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        },
+        {
+          "role": "xg-choice",
+          "move": "13/9 13/9 24/20 20/16",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.5875740639648438,
+          "standardError": 0.0038782596988642523,
+          "cubeless": 0.434570755234375,
+          "probabilities": [
+            0.6195917824804688,
+            0.2519672317382812,
+            0.02513938892578125,
+            0.07826817560546875,
+            0.00347943423828125
+          ],
+          "referenceEquity": 0.6118,
+          "referenceDifference": -0.024225936035156215,
+          "withinTolerance": false,
+          "referenceConfidenceHalfWidth": 0.0032,
+          "referenceCredit": {
+            "rank": 1,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        }
+      ],
+      "gap": {
+        "difference": -0.01690462498046875,
+        "standardError": 0.005125047055762522,
+        "batches": 512,
+        "interval95": {
+          "halfWidth": 0.010068755711004268,
+          "lower": -0.02697338069147302,
+          "upper": -0.006835869269464483,
+          "criticalValue": 1.964617222330304
+        },
+        "familywise95": {
+          "halfWidth": 0.013250730506473076,
+          "lower": -0.03015535548694183,
+          "upper": -0.0036538944739956756,
+          "criticalValue": 2.585484652589514
+        },
+        "direction": "alternative-ahead"
+      },
+      "sampledLeaderAgrees": false,
+      "cubeActions": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        863417,
+        1510672,
+        0
+      ],
+      "maxCube": 64
+    },
+    {
+      "id": "cache",
+      "label": "Cache-context fix only; ordinary cube",
+      "candidates": [
+        {
+          "role": "previous-choice",
+          "move": "8/4 8/4 24/20 20/16",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.6044786590234374,
+          "standardError": 0.0037850991641696185,
+          "cubeless": 0.436690314140625,
+          "probabilities": [
+            0.6087230005859375,
+            0.27403214890625,
+            0.0322413419140625,
+            0.0832713091015625,
+            0.00378834994140625
+          ],
+          "referenceEquity": 0.6005,
+          "referenceDifference": 0.003978659023437414,
+          "withinTolerance": true,
+          "referenceConfidenceHalfWidth": 0.0033,
+          "referenceCredit": {
+            "rank": 2,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        },
+        {
+          "role": "xg-choice",
+          "move": "13/9 13/9 24/20 20/16",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.58757318859375,
+          "standardError": 0.003878256704196277,
+          "cubeless": 0.434570634375,
+          "probabilities": [
+            0.6195909558789062,
+            0.2519686122265625,
+            0.0251397830078125,
+            0.07826836908203125,
+            0.0034794872265625
+          ],
+          "referenceEquity": 0.6118,
+          "referenceDifference": -0.02422681140625005,
+          "withinTolerance": false,
+          "referenceConfidenceHalfWidth": 0.0032,
+          "referenceCredit": {
+            "rank": 1,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        }
+      ],
+      "gap": {
+        "difference": -0.016905470429687496,
+        "standardError": 0.005125058175994625,
+        "batches": 512,
+        "interval95": {
+          "halfWidth": 0.010068777558003774,
+          "lower": -0.02697424798769127,
+          "upper": -0.006836692871683722,
+          "criticalValue": 1.964617222330304
+        },
+        "familywise95": {
+          "halfWidth": 0.013250759257662512,
+          "lower": -0.03015622968735001,
+          "upper": -0.0036547111720249843,
+          "criticalValue": 2.585484652589514
+        },
+        "direction": "alternative-ahead"
+      },
+      "sampledLeaderAgrees": false,
+      "cubeActions": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        863417,
+        1510672,
+        0
+      ],
+      "maxCube": 64
+    },
+    {
+      "id": "matched",
+      "label": "XG cube rules \u00b7 2-ply normal checker",
+      "candidates": [
+        {
+          "role": "previous-choice",
+          "move": "8/4 8/4 24/20 20/16",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.6044792104296876,
+          "standardError": 0.003784977157211332,
+          "cubeless": 0.43659366197265626,
+          "probabilities": [
+            0.608686975390625,
+            0.2740075016015625,
+            0.032239908046875,
+            0.08327016955078125,
+            0.0037880433203125
+          ],
+          "referenceEquity": 0.6005,
+          "referenceDifference": 0.003979210429687519,
+          "withinTolerance": true,
+          "referenceConfidenceHalfWidth": 0.0033,
+          "referenceCredit": {
+            "rank": 2,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        },
+        {
+          "role": "xg-choice",
+          "move": "13/9 13/9 24/20 20/16",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.5875733131054688,
+          "standardError": 0.00387827019716609,
+          "cubeless": 0.43443884408203126,
+          "probabilities": [
+            0.6195333367773438,
+            0.25194760818359374,
+            0.02513881443359375,
+            0.0782630443359375,
+            0.00347938640625
+          ],
+          "referenceEquity": 0.6118,
+          "referenceDifference": -0.024226686894531224,
+          "withinTolerance": false,
+          "referenceConfidenceHalfWidth": 0.0032,
+          "referenceCredit": {
+            "rank": 1,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        }
+      ],
+      "gap": {
+        "difference": -0.016905897324218752,
+        "standardError": 0.005124414838143747,
+        "batches": 512,
+        "interval95": {
+          "halfWidth": 0.010067513645382163,
+          "lower": -0.026973410969600917,
+          "upper": -0.006838383678836589,
+          "criticalValue": 1.964617222330304
+        },
+        "familywise95": {
+          "halfWidth": 0.013249095917522637,
+          "lower": -0.03015499324174139,
+          "upper": -0.0036568014066961155,
+          "criticalValue": 2.585484652589514
+        },
+        "direction": "alternative-ahead"
+      },
+      "sampledLeaderAgrees": false,
+      "cubeActions": [
+        817976,
+        34356,
+        12367,
+        0,
+        0,
+        0,
+        0,
+        864699,
+        1513527,
+        0
+      ],
+      "maxCube": 64
+    },
+    {
+      "id": "wide",
+      "label": "XG cube rules \u00b7 2-ply huge checker filter",
+      "candidates": [
+        {
+          "role": "previous-choice",
+          "move": "8/4 8/4 24/20 20/16",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.595041377109375,
+          "standardError": 0.003659566114936886,
+          "cubeless": 0.4328873715625,
+          "probabilities": [
+            0.6074704835351562,
+            0.27305466302734377,
+            0.032052882890625,
+            0.0835078116796875,
+            0.0036878016796875
+          ],
+          "referenceEquity": 0.6005,
+          "referenceDifference": -0.005458622890625042,
+          "withinTolerance": false,
+          "referenceConfidenceHalfWidth": 0.0033,
+          "referenceCredit": {
+            "rank": 2,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        },
+        {
+          "role": "xg-choice",
+          "move": "13/9 13/9 24/20 20/16",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.5814703591210938,
+          "standardError": 0.0038242092007611046,
+          "cubeless": 0.43118026283203126,
+          "probabilities": [
+            0.6185678753320313,
+            0.25102366384765623,
+            0.02485504482421875,
+            0.07830926423828125,
+            0.00354673361328125
+          ],
+          "referenceEquity": 0.6118,
+          "referenceDifference": -0.030329640878906217,
+          "withinTolerance": false,
+          "referenceConfidenceHalfWidth": 0.0032,
+          "referenceCredit": {
+            "rank": 1,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        }
+      ],
+      "gap": {
+        "difference": -0.013571017988281251,
+        "standardError": 0.00507020249284752,
+        "batches": 512,
+        "interval95": {
+          "halfWidth": 0.009961007138150279,
+          "lower": -0.02353202512643153,
+          "upper": -0.003610010850130973,
+          "criticalValue": 1.964617222330304
+        },
+        "familywise95": {
+          "halfWidth": 0.01310893073077836,
+          "lower": -0.026679948719059612,
+          "upper": -0.0004620872575028922,
+          "criticalValue": 2.585484652589514
+        },
+        "direction": "alternative-ahead"
+      },
+      "sampledLeaderAgrees": false,
+      "cubeActions": [
+        819225,
+        34421,
+        12385,
+        0,
+        0,
+        0,
+        0,
+        866031,
+        1516181,
+        0
+      ],
+      "maxCube": 64
+    },
+    {
+      "id": "deep",
+      "label": "XG cube rules \u00b7 3-ply large checker filter",
+      "candidates": [
+        {
+          "role": "previous-choice",
+          "move": "8/4 8/4 24/20 20/16",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.6040289326367188,
+          "standardError": 0.003469023235574684,
+          "cubeless": 0.4385317566015625,
+          "probabilities": [
+            0.6077515599023438,
+            0.2786156049804687,
+            0.03380724005859375,
+            0.08548926775390625,
+            0.003975450546875
+          ],
+          "referenceEquity": 0.6005,
+          "referenceDifference": 0.003528932636718718,
+          "withinTolerance": true,
+          "referenceConfidenceHalfWidth": 0.0033,
+          "referenceCredit": {
+            "rank": 2,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        },
+        {
+          "role": "xg-choice",
+          "move": "13/9 13/9 24/20 20/16",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "samples": 16384,
+          "equity": 0.5974402991796876,
+          "standardError": 0.0037758720403060194,
+          "cubeless": 0.438736370390625,
+          "probabilities": [
+            0.620180581171875,
+            0.25549510341796877,
+            0.026059128671875,
+            0.07953128103515625,
+            0.003680022421875
+          ],
+          "referenceEquity": 0.6118,
+          "referenceDifference": -0.01435970082031246,
+          "withinTolerance": false,
+          "referenceConfidenceHalfWidth": 0.0032,
+          "referenceCredit": {
+            "rank": 1,
+            "author": "David Rockwell",
+            "date": "7/1/2012",
+            "engine": "eXtreme Gammon 2.00"
+          }
+        }
+      ],
+      "gap": {
+        "difference": -0.006588633457031252,
+        "standardError": 0.00515532336362735,
+        "batches": 512,
+        "interval95": {
+          "halfWidth": 0.010128237066864085,
+          "lower": -0.01671687052389534,
+          "upper": 0.003539603609832833,
+          "criticalValue": 1.964617222330304
+        },
+        "familywise95": {
+          "halfWidth": 0.013329009435794665,
+          "lower": -0.019917642892825917,
+          "upper": 0.006740375978763413,
+          "criticalValue": 2.585484652589514
+        },
+        "direction": "unresolved"
+      },
+      "sampledLeaderAgrees": false,
+      "cubeActions": [
+        820183,
+        34147,
+        12322,
+        0,
+        0,
+        0,
+        0,
+        866652,
+        1520432,
+        0
+      ],
+      "maxCube": 64
+    }
+  ],
+  "effects": [
+    {
+      "after": "cache",
+      "before": "legacy",
+      "difference": -8.454492187450705e-07,
+      "standardError": 7.616950093749931e-07,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 1.4964391335811537e-06,
+        "lower": -2.3418883523262242e-06,
+        "upper": 6.509899148360832e-07,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 1.9092498192500016e-06,
+        "lower": -2.754699037995072e-06,
+        "upper": 1.063800600504931e-06,
+        "criticalValue": 2.506580449853061
+      },
+      "direction": "unresolved",
+      "identicalGapBlocks": 30
+    },
+    {
+      "after": "matched",
+      "before": "cache",
+      "difference": -4.268945312576461e-07,
+      "standardError": 1.7043501072027673e-05,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 3.348395573491057e-05,
+        "lower": -3.3910850266168215e-05,
+        "upper": 3.305706120365292e-05,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 4.2720906584194256e-05,
+        "lower": -4.31478011154519e-05,
+        "upper": 4.229401205293661e-05,
+        "criticalValue": 2.506580449853061
+      },
+      "direction": "unresolved",
+      "identicalGapBlocks": 8
+    },
+    {
+      "after": "wide",
+      "before": "matched",
+      "difference": 0.003334879335937501,
+      "standardError": 0.0026910262282128453,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 0.005286836473689515,
+        "lower": -0.001951957137752014,
+        "upper": 0.008621715809627017,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 0.00674527373368014,
+        "lower": -0.0034103943977426385,
+        "upper": 0.010080153069617641,
+        "criticalValue": 2.506580449853061
+      },
+      "direction": "unresolved",
+      "identicalGapBlocks": 0
+    },
+    {
+      "after": "deep",
+      "before": "matched",
+      "difference": 0.0103172638671875,
+      "standardError": 0.006504148422183051,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 0.012778162006813296,
+        "lower": -0.002460898139625795,
+        "upper": 0.023095425874000798,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 0.01630317127798667,
+        "lower": -0.005985907410799169,
+        "upper": 0.02662043514517417,
+        "criticalValue": 2.506580449853061
+      },
+      "direction": "unresolved",
+      "identicalGapBlocks": 0
+    }
+  ],
+  "candidateEffects": [
+    {
+      "after": "cache",
+      "before": "legacy",
+      "role": "previous-choice",
+      "difference": -2.992187500181452e-08,
+      "standardError": 4.96655736183082e-08,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 9.757384128744188e-08,
+        "lower": -1.274957162892564e-07,
+        "upper": 6.765196628562736e-08,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 1.3636937871365984e-07,
+        "lower": -1.6629125371547437e-07,
+        "upper": 1.0644750371184532e-07,
+        "criticalValue": 2.7457526165244985
+      }
+    },
+    {
+      "after": "cache",
+      "before": "legacy",
+      "role": "xg-choice",
+      "difference": -8.75371093746885e-07,
+      "standardError": 7.593293026238785e-07,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 1.491791425354931e-06,
+        "lower": -2.367162519101816e-06,
+        "upper": 6.164203316080459e-07,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 2.084930419483237e-06,
+        "lower": -2.960301513230122e-06,
+        "upper": 1.209559325736352e-06,
+        "criticalValue": 2.7457526165244985
+      }
+    },
+    {
+      "after": "matched",
+      "before": "cache",
+      "role": "previous-choice",
+      "difference": 5.514062500040166e-07,
+      "standardError": 1.694929495238843e-05,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 3.32988767698184e-05,
+        "lower": -3.2747470519814385e-05,
+        "upper": 3.385028301982242e-05,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 4.653857096376601e-05,
+        "lower": -4.598716471376199e-05,
+        "upper": 4.708997721377002e-05,
+        "criticalValue": 2.7457526165244985
+      }
+    },
+    {
+      "after": "matched",
+      "before": "cache",
+      "role": "xg-choice",
+      "difference": 1.2451171874637047e-07,
+      "standardError": 1.8382888376149196e-06,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 3.6115339099958267e-06,
+        "lower": -3.4870221912494562e-06,
+        "upper": 3.736045628742197e-06,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 5.047486385808944e-06,
+        "lower": -4.9229746670625735e-06,
+        "upper": 5.1719981045553145e-06,
+        "criticalValue": 2.7457526165244985
+      }
+    },
+    {
+      "after": "wide",
+      "before": "matched",
+      "role": "previous-choice",
+      "difference": -0.0094378333203125,
+      "standardError": 0.001977204699469261,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 0.003884450404649723,
+        "lower": -0.013322283724962223,
+        "upper": -0.005553382915662777,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 0.005428914976972258,
+        "lower": -0.014866748297284758,
+        "upper": -0.004008918343340242,
+        "criticalValue": 2.7457526165244985
+      }
+    },
+    {
+      "after": "wide",
+      "before": "matched",
+      "role": "xg-choice",
+      "difference": -0.006102953984374999,
+      "standardError": 0.002073068765549296,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 0.0040727865998731695,
+        "lower": -0.01017574058424817,
+        "upper": -0.00203016738450183,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 0.005692133987242191,
+        "lower": -0.01179508797161719,
+        "upper": -0.0004108199971328084,
+        "criticalValue": 2.7457526165244985
+      }
+    },
+    {
+      "after": "deep",
+      "before": "matched",
+      "role": "previous-choice",
+      "difference": -0.00045027779296875046,
+      "standardError": 0.004659297840475746,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 0.009153736781365045,
+        "lower": -0.009604014574333795,
+        "upper": 0.008703458988396294,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 0.012793279236653226,
+        "lower": -0.013243557029621976,
+        "upper": 0.012343001443684476,
+        "criticalValue": 2.7457526165244985
+      }
+    },
+    {
+      "after": "deep",
+      "before": "matched",
+      "role": "xg-choice",
+      "difference": 0.00986698607421875,
+      "standardError": 0.004851333452223885,
+      "batches": 512,
+      "interval95": {
+        "halfWidth": 0.009531013251506175,
+        "lower": 0.0003359728227125755,
+        "upper": 0.019397999325724925,
+        "criticalValue": 1.964617222330304
+      },
+      "familywise95": {
+        "halfWidth": 0.013320561520076562,
+        "lower": -0.003453575445857811,
+        "upper": 0.02318754759429531,
+        "criticalValue": 2.7457526165244985
+      }
+    }
+  ],
+  "gapComparisons": 5,
+  "effectComparisons": 4,
+  "candidateEffectComparisons": 8,
+  "inputsSHA256": "a2adce251235be40ecf3a2d6d8a771372131d259f9edcaca4c90a3819f641ac1",
+  "rawSHA256": "072861de84e1bfb790bd1ee502fc1c6fc8885278bf09ad1c3a3fed9191a2b3e6",
+  "nativeBinarySHA256": "bb562b9b442f94fc47cc2d45bae46d5e8300ecb5e630c211201a9913ba5ee9b6",
+  "executionSHA256": "3c82ce2a924aa882a0e1d85d561ce59979ace0ba878885763319206033672a1f",
+  "executionUrl": "https://github.com/mathewseng/mathewseng.github.io/actions/runs/39801091859",
+  "methodClarification": "The frozen plan says identical 1-ply control-variate evaluations. This means identical control depth; control values reflect each arm's rules and cache context. Separately evaluated cube branches have distinct cube contexts and cubeful estimates within one shared checker search under the original cube context; they are not independent checker searches. Actual subsequent rollout turns use the accepted cube context. The Deep contrast changes both checker depth and filter, while the matched cube contrast includes corrected offer handling and the cube ceiling."
 }

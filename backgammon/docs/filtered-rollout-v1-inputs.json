@@ -1,0 +1,2053 @@
+{
+  "signature": "5883d0a2d617ce22b2bd67fc48cbcfbab1cca4ed364b4e46d82de3bc718f5c49",
+  "schema": 1,
+  "id": "filtered-rollout-v1",
+  "runtime": null,
+  "collectionEnabled": false,
+  "sources": [
+    {
+      "file": "docs/opening-fullgame-precision-inputs.json",
+      "sha256": "964bcee6b659a4bdcdb429b691fa998df174af4ddbbe4d665e3568c717e561dd"
+    },
+    {
+      "file": "docs/reply-fullgame-precision-inputs.json",
+      "sha256": "5d983f989ca61bf974632fdb1e6e6f4a6bb681617df31c03beec08c0be10df03"
+    }
+  ],
+  "patchSHA256": "b576617ea939b99ed9f9ead9b3c1a35b61479b902e549a42718f641678532fa3",
+  "runnerSHA256": "7583afaec083be70019f04f1058cd7d486bc1c1afa8a518fb150bbd9b88b6903",
+  "plannerSHA256": "317574a3a241cd1b75abdaad38308bb074eae79ce8f5b29fcab885aa29dca8db",
+  "plan": [
+    {
+      "id": "opening-21",
+      "kind": "opening",
+      "cohort": "opening",
+      "source": "https://www.extremegammon.com/OB/Opening_in_unlimited_game.html",
+      "referenceBest": {
+        "rank": 1,
+        "move": "13/11 6/5",
+        "equity": 0.0115,
+        "confidenceHalfWidth": 0.0025,
+        "probabilities": [
+          [
+            0.506,
+            0.1423,
+            0.0066
+          ],
+          [
+            0.494,
+            0.1461,
+            0.0087
+          ]
+        ],
+        "method": "rollout",
+        "trials": 46656,
+        "policy": "Moves and cube decisions: XG Roller+",
+        "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0"
+      },
+      "board": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+      "roll": "21",
+      "candidates": [
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 10,
+              "die": 2
+            },
+            {
+              "from": 23,
+              "to": 22,
+              "die": 1
+            }
+          ],
+          "notation": "13/11 24/23",
+          "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "historical": {
+            "equity": 0.00337713,
+            "cubeless": 0.00258273,
+            "probabilities": [
+              0.49920785,
+              0.13719812,
+              0.0056214,
+              0.13351703,
+              0.00513547
+            ]
+          },
+          "fourPly": {
+            "equity": -0.00259104,
+            "cubeless": 0.00266766,
+            "probabilities": [
+              0.49940515,
+              0.13670526,
+              0.00563458,
+              0.13300167,
+              0.00548081
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.00532669,
+            "cubeless": 0.00331644,
+            "probabilities": [
+              0.4992696,
+              0.13758257,
+              0.00557057,
+              0.13331054,
+              0.00506537
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:1:0:10",
+          "after": "XGID=-b----E-C--AeD---c-e---AA-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/11 24/23",
+            "board": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+            "xgEquity": 0.0036,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0021,
+            "threePly": 0.00337713,
+            "fourPly": -0.00259104,
+            "fivePly": 0.00532669
+          },
+          "role": "previous-choice",
+          "candidateId": "c0"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 10,
+              "die": 2
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "die": 1
+            }
+          ],
+          "notation": "13/11 6/5",
+          "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "historical": {
+            "equity": 0.00157189,
+            "cubeless": -0.00240998,
+            "probabilities": [
+              0.50118589,
+              0.14144771,
+              0.00596471,
+              0.14367177,
+              0.00852242
+            ]
+          },
+          "fourPly": {
+            "equity": -0.00214507,
+            "cubeless": 0.00055517,
+            "probabilities": [
+              0.50251549,
+              0.14185956,
+              0.00655434,
+              0.1436573,
+              0.00923242
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.00373925,
+            "cubeless": -0.00185521,
+            "probabilities": [
+              0.50127095,
+              0.14112809,
+              0.00585431,
+              0.14309646,
+              0.00828305
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:1:0:10",
+          "after": "XGID=-b---AD-C--AeD---c-e----B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/11 6/5",
+            "board": "-2,0,0,0,1,4,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+            "xgEquity": 0.0115,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0025,
+            "threePly": 0.00157189,
+            "fourPly": -0.00214507,
+            "fivePly": 0.00373925
+          },
+          "role": "xg-choice",
+          "candidateId": "c1"
+        },
+        {
+          "steps": [
+            {
+              "from": 23,
+              "to": 21,
+              "die": 2
+            },
+            {
+              "from": 21,
+              "to": 20,
+              "die": 1
+            }
+          ],
+          "notation": "24/22 22/21",
+          "board": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+          "historical": {
+            "equity": -0.02135936,
+            "cubeless": -0.0172518,
+            "probabilities": [
+              0.49329907,
+              0.12536673,
+              0.00534461,
+              0.12985802,
+              0.00470326
+            ]
+          },
+          "fourPly": {
+            "equity": -0.03147037,
+            "cubeless": -0.01861221,
+            "probabilities": [
+              0.49267685,
+              0.12572899,
+              0.00493731,
+              0.12980588,
+              0.00482635
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.02528142,
+            "cubeless": -0.01868087,
+            "probabilities": [
+              0.49249005,
+              0.12559718,
+              0.00528622,
+              0.12987638,
+              0.004668
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:1:0:10",
+          "after": "XGID=-b----E-C---eE---c-e-A--A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "24/22 22/21",
+            "board": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,1,0,0,1,0,0,0,0",
+            "xgEquity": -0.0405,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0113,
+            "threePly": -0.02135936,
+            "fourPly": -0.03147037,
+            "fivePly": -0.02528142
+          },
+          "role": "other-retained",
+          "candidateId": "c2"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 10,
+              "die": 2
+            },
+            {
+              "from": 10,
+              "to": 9,
+              "die": 1
+            }
+          ],
+          "notation": "13/11 11/10",
+          "board": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "historical": {
+            "equity": -0.03432473,
+            "cubeless": -0.02600373,
+            "probabilities": [
+              0.48827708,
+              0.14055967,
+              0.00572985,
+              0.14158717,
+              0.00726024
+            ]
+          },
+          "fourPly": {
+            "equity": -0.03980548,
+            "cubeless": -0.02487392,
+            "probabilities": [
+              0.48924243,
+              0.13924132,
+              0.00593643,
+              0.14157037,
+              0.00696616
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.03292369,
+            "cubeless": -0.02463941,
+            "probabilities": [
+              0.48877692,
+              0.13981225,
+              0.00572139,
+              0.14104381,
+              0.00668308
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:1:0:10",
+          "after": "XGID=-b----E-C-A-eD---c-e----B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/11 11/10",
+            "board": "-2,0,0,0,0,5,0,3,0,1,0,-5,4,0,0,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+            "xgEquity": -0.0437,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0115,
+            "threePly": -0.03432473,
+            "fourPly": -0.03980548,
+            "fivePly": -0.03292369
+          },
+          "role": "other-retained",
+          "candidateId": "c3"
+        }
+      ],
+      "seedBase": 1638892257,
+      "seedNonce": 0,
+      "previousChoice": "-2,0,0,0,0,5,0,3,0,0,1,-5,4,0,0,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+      "previousGap": 0.0007745656250000002
+    },
+    {
+      "id": "reply-fd57f8a8e221b7f8-51",
+      "kind": "reply",
+      "cohort": "reply-disagreement",
+      "source": "https://www.extremegammon.com/OB/Replies_to_32D.html",
+      "referenceBest": {
+        "rank": 1,
+        "move": "13/8 6/5",
+        "equity": -0.1838,
+        "confidenceHalfWidth": 0.002,
+        "probabilities": [
+          [
+            0.46240000000000003,
+            0.12990000000000002,
+            0.006999999999999999
+          ],
+          [
+            0.5376,
+            0.1804,
+            0.0108
+          ]
+        ],
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "board": "-2,0,0,0,1,4,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0"
+      },
+      "board": "-2,0,0,0,0,5,0,3,0,0,0,-3,5,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+      "roll": "51",
+      "candidates": [
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 7,
+              "die": 5
+            },
+            {
+              "from": 23,
+              "to": 22,
+              "die": 1
+            }
+          ],
+          "notation": "13/8 24/23",
+          "board": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+          "historical": {
+            "equity": -0.15373059,
+            "cubeless": -0.11865728,
+            "probabilities": [
+              0.46246523,
+              0.12498481,
+              0.00606268,
+              0.16762173,
+              0.00701349
+            ]
+          },
+          "fourPly": {
+            "equity": -0.16586255,
+            "cubeless": -0.11788687,
+            "probabilities": [
+              0.46310186,
+              0.12542811,
+              0.00575083,
+              0.1686023,
+              0.00666724
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.16352329,
+            "cubeless": -0.11920079,
+            "probabilities": [
+              0.4619925,
+              0.12505154,
+              0.00602301,
+              0.1675244,
+              0.00673595
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---cEaa-c-e----B-:0:0:1:51:0:0:1:0:10",
+          "after": "XGID=-b----E-D---cDaa-c-e---AA-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/8 24/23",
+            "board": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+            "xgEquity": -0.1865,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0018,
+            "threePly": -0.15373059,
+            "fourPly": -0.16586255,
+            "fivePly": -0.16352329
+          },
+          "role": "previous-choice",
+          "candidateId": "c0"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 7,
+              "die": 5
+            },
+            {
+              "from": 5,
+              "to": 4,
+              "die": 1
+            }
+          ],
+          "notation": "13/8 6/5",
+          "board": "-2,0,0,0,1,4,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "historical": {
+            "equity": -0.16774198,
+            "cubeless": -0.12994927,
+            "probabilities": [
+              0.46091688,
+              0.12609825,
+              0.00616191,
+              0.17314237,
+              0.01090081
+            ]
+          },
+          "fourPly": {
+            "equity": -0.18030225,
+            "cubeless": -0.12827462,
+            "probabilities": [
+              0.46212006,
+              0.12619448,
+              0.00630496,
+              0.17418858,
+              0.01082558
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.176468,
+            "cubeless": -0.12912136,
+            "probabilities": [
+              0.46097189,
+              0.12597875,
+              0.00609516,
+              0.17268234,
+              0.01045672
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---cEaa-c-e----B-:0:0:1:51:0:0:1:0:10",
+          "after": "XGID=-b---AD-D---cDaa-c-e----B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/8 6/5",
+            "board": "-2,0,0,0,1,4,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+            "xgEquity": -0.1838,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.002,
+            "threePly": -0.16774198,
+            "fourPly": -0.18030225,
+            "fivePly": -0.176468
+          },
+          "role": "xg-choice",
+          "candidateId": "c1"
+        },
+        {
+          "steps": [
+            {
+              "from": 23,
+              "to": 22,
+              "die": 1
+            },
+            {
+              "from": 22,
+              "to": 17,
+              "die": 5
+            }
+          ],
+          "notation": "24/23 23/18",
+          "board": "-2,0,0,0,0,5,0,3,0,0,0,-3,5,-1,-1,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+          "historical": {
+            "equity": -0.17521304,
+            "cubeless": -0.1375111,
+            "probabilities": [
+              0.46124196,
+              0.11494092,
+              0.0057548,
+              0.17314443,
+              0.0075463
+            ]
+          },
+          "fourPly": {
+            "equity": -0.18880247,
+            "cubeless": -0.13697872,
+            "probabilities": [
+              0.46113002,
+              0.1157665,
+              0.00547544,
+              0.17364666,
+              0.00683404
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.18905187,
+            "cubeless": -0.13963574,
+            "probabilities": [
+              0.45990002,
+              0.1149063,
+              0.00564368,
+              0.17295645,
+              0.00702931
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---cEaa-c-e----B-:0:0:1:51:0:0:1:0:10",
+          "after": "XGID=-b----E-C---cEaa-cAe----A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "24/23 23/18",
+            "board": "-2,0,0,0,0,5,0,3,0,0,0,-3,5,-1,-1,0,-3,1,-5,0,0,0,0,1,0,0,0,0",
+            "xgEquity": -0.2098,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0026,
+            "threePly": -0.17521304,
+            "fourPly": -0.18880247,
+            "fivePly": -0.18905187
+          },
+          "role": "other-retained",
+          "candidateId": "c2"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 7,
+              "die": 5
+            },
+            {
+              "from": 7,
+              "to": 6,
+              "die": 1
+            }
+          ],
+          "notation": "13/8 8/7",
+          "board": "-2,0,0,0,0,5,1,3,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+          "historical": {
+            "equity": -0.18756659,
+            "cubeless": -0.14271183,
+            "probabilities": [
+              0.45077908,
+              0.1252362,
+              0.00589412,
+              0.16520451,
+              0.0101958
+            ]
+          },
+          "fourPly": {
+            "equity": -0.19816774,
+            "cubeless": -0.14133728,
+            "probabilities": [
+              0.45202827,
+              0.12494525,
+              0.00584842,
+              0.16577594,
+              0.01041154
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.19696529,
+            "cubeless": -0.14294781,
+            "probabilities": [
+              0.45031917,
+              0.12492255,
+              0.00576655,
+              0.16463906,
+              0.00963618
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---cEaa-c-e----B-:0:0:1:51:0:0:1:0:10",
+          "after": "XGID=-b----EAC---cDaa-c-e----B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/8 8/7",
+            "board": "-2,0,0,0,0,5,1,3,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,0,2,0,0,0,0",
+            "xgEquity": -0.2192,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0048,
+            "threePly": -0.18756659,
+            "fourPly": -0.19816774,
+            "fivePly": -0.19696529
+          },
+          "role": "other-retained",
+          "candidateId": "c3"
+        }
+      ],
+      "seedBase": 4193168366,
+      "seedNonce": 0,
+      "previousChoice": "-2,0,0,0,0,5,0,4,0,0,0,-3,4,-1,-1,0,-3,0,-5,0,0,0,1,1,0,0,0,0",
+      "previousGap": 0.005085845000000033
+    },
+    {
+      "id": "reply-7985255600f3563f-44",
+      "kind": "reply",
+      "cohort": "reply-disagreement",
+      "source": "https://www.extremegammon.com/OB/Replies_to_41$.html",
+      "referenceBest": {
+        "rank": 1,
+        "move": "24/20* 20/16* 13/9(2)",
+        "equity": 0.6118,
+        "confidenceHalfWidth": 0.0032,
+        "probabilities": [
+          [
+            0.6183,
+            0.2492,
+            0.0256
+          ],
+          [
+            0.38170000000000004,
+            0.0776,
+            0.0034000000000000002
+          ]
+        ],
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 3-ply",
+        "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0"
+      },
+      "board": "-2,0,0,0,0,5,0,3,0,0,0,-4,5,0,0,-1,-3,0,-4,-1,0,0,0,2,0,0,0,0",
+      "roll": "44",
+      "candidates": [
+        {
+          "steps": [
+            {
+              "from": 7,
+              "to": 3,
+              "die": 4
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "die": 4
+            },
+            {
+              "from": 23,
+              "to": 19,
+              "die": 4
+            },
+            {
+              "from": 19,
+              "to": 15,
+              "die": 4
+            }
+          ],
+          "notation": "8/4 8/4 24/20 20/16",
+          "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "historical": {
+            "equity": 0.65975749,
+            "cubeless": 0.4523885,
+            "probabilities": [
+              0.6127153,
+              0.27464211,
+              0.03492715,
+              0.0792926,
+              0.00331879
+            ]
+          },
+          "fourPly": {
+            "equity": 0.64895844,
+            "cubeless": 0.4454807,
+            "probabilities": [
+              0.61064881,
+              0.27458927,
+              0.03322947,
+              0.08084691,
+              0.00278874
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.65425658,
+            "cubeless": 0.44658378,
+            "probabilities": [
+              0.60932851,
+              0.27572224,
+              0.03555091,
+              0.0800388,
+              0.00330756
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+          "after": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "8/4 8/4 24/20 20/16",
+            "board": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+            "xgEquity": 0.6005,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0033,
+            "threePly": 0.65975749,
+            "fourPly": 0.64895844,
+            "fivePly": 0.65425658
+          },
+          "role": "previous-choice",
+          "candidateId": "c0"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 8,
+              "die": 4
+            },
+            {
+              "from": 12,
+              "to": 8,
+              "die": 4
+            },
+            {
+              "from": 23,
+              "to": 19,
+              "die": 4
+            },
+            {
+              "from": 19,
+              "to": 15,
+              "die": 4
+            }
+          ],
+          "notation": "13/9 13/9 24/20 20/16",
+          "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+          "historical": {
+            "equity": 0.6348899,
+            "cubeless": 0.43947449,
+            "probabilities": [
+              0.61868685,
+              0.25536752,
+              0.02831316,
+              0.07831696,
+              0.00326293
+            ]
+          },
+          "fourPly": {
+            "equity": 0.63815105,
+            "cubeless": 0.44126603,
+            "probabilities": [
+              0.62006497,
+              0.25502497,
+              0.02717912,
+              0.07843003,
+              0.00263799
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.63374531,
+            "cubeless": 0.43684053,
+            "probabilities": [
+              0.61725318,
+              0.2558606,
+              0.02826325,
+              0.07859148,
+              0.00319819
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+          "after": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/9 13/9 24/20 20/16",
+            "board": "-2,0,0,0,0,5,0,3,2,0,0,-4,3,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+            "xgEquity": 0.6118,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0032,
+            "threePly": 0.6348899,
+            "fourPly": 0.63815105,
+            "fivePly": 0.63374531
+          },
+          "role": "xg-choice",
+          "candidateId": "c1"
+        }
+      ],
+      "seedBase": 1737855947,
+      "seedNonce": 0,
+      "previousChoice": "-2,0,0,2,0,5,0,1,0,0,0,-4,5,0,0,1,-3,0,-4,0,0,0,0,1,0,2,0,0",
+      "previousGap": 0.018488934374999988
+    },
+    {
+      "id": "reply-cf59cb9355405192-52",
+      "kind": "reply",
+      "cohort": "reply-disagreement",
+      "source": "https://www.extremegammon.com/OB/Replies_to_51$.html",
+      "referenceBest": {
+        "rank": 1,
+        "move": "13/8 6/4",
+        "equity": -0.2344,
+        "confidenceHalfWidth": 0.0019,
+        "probabilities": [
+          [
+            0.44789999999999996,
+            0.12619999999999998,
+            0.0062
+          ],
+          [
+            0.5521,
+            0.1759,
+            0.0098
+          ]
+        ],
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "board": "-2,0,0,1,0,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0"
+      },
+      "board": "-2,0,0,0,0,5,0,3,0,0,0,-4,5,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+      "roll": "52",
+      "candidates": [
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 7,
+              "die": 5
+            },
+            {
+              "from": 23,
+              "to": 21,
+              "die": 2
+            }
+          ],
+          "notation": "13/8 24/22",
+          "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+          "historical": {
+            "equity": -0.20237352,
+            "cubeless": -0.15217587,
+            "probabilities": [
+              0.44922692,
+              0.11264035,
+              0.00438786,
+              0.16147007,
+              0.00618785
+            ]
+          },
+          "fourPly": {
+            "equity": -0.21291621,
+            "cubeless": -0.1488459,
+            "probabilities": [
+              0.45013022,
+              0.11376885,
+              0.00446178,
+              0.16146576,
+              0.00587121
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.21218207,
+            "cubeless": -0.15151918,
+            "probabilities": [
+              0.44899011,
+              0.11297289,
+              0.00441733,
+              0.16088164,
+              0.00600798
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE---d-da---B-:0:0:1:52:0:0:1:0:10",
+          "after": "XGID=-b----E-D---dD---d-da-A-A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/8 24/22",
+            "board": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+            "xgEquity": -0.2346,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0018,
+            "threePly": -0.20237352,
+            "fourPly": -0.21291621,
+            "fivePly": -0.21218207
+          },
+          "role": "previous-choice",
+          "candidateId": "c0"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 7,
+              "die": 5
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "die": 2
+            }
+          ],
+          "notation": "13/8 6/4",
+          "board": "-2,0,0,1,0,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+          "historical": {
+            "equity": -0.21014124,
+            "cubeless": -0.1541571,
+            "probabilities": [
+              0.44690192,
+              0.1222684,
+              0.0047635,
+              0.16575322,
+              0.00923963
+            ]
+          },
+          "fourPly": {
+            "equity": -0.21754198,
+            "cubeless": -0.14994785,
+            "probabilities": [
+              0.44884455,
+              0.12140707,
+              0.00504645,
+              0.16569564,
+              0.00839483
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.2154205,
+            "cubeless": -0.15205944,
+            "probabilities": [
+              0.44734514,
+              0.12135633,
+              0.0047867,
+              0.16434075,
+              0.00855199
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE---d-da---B-:0:0:1:52:0:0:1:0:10",
+          "after": "XGID=-b--A-D-D---dD---d-da---B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/8 6/4",
+            "board": "-2,0,0,1,0,4,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+            "xgEquity": -0.2344,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0019,
+            "threePly": -0.21014124,
+            "fourPly": -0.21754198,
+            "fivePly": -0.2154205
+          },
+          "role": "xg-choice",
+          "candidateId": "c1"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 7,
+              "die": 5
+            },
+            {
+              "from": 12,
+              "to": 10,
+              "die": 2
+            }
+          ],
+          "notation": "13/8 13/11",
+          "board": "-2,0,0,0,0,5,0,4,0,0,1,-4,3,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+          "historical": {
+            "equity": -0.21866645,
+            "cubeless": -0.16327079,
+            "probabilities": [
+              0.4432435,
+              0.12467773,
+              0.00506382,
+              0.16997489,
+              0.00952444
+            ]
+          },
+          "fourPly": {
+            "equity": -0.23617281,
+            "cubeless": -0.16242094,
+            "probabilities": [
+              0.44378859,
+              0.12378407,
+              0.00534115,
+              0.17015272,
+              0.00897061
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.231481,
+            "cubeless": -0.16245829,
+            "probabilities": [
+              0.44311064,
+              0.12397834,
+              0.00516557,
+              0.16904171,
+              0.00878177
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE---d-da---B-:0:0:1:52:0:0:1:0:10",
+          "after": "XGID=-b----E-D--AdC---d-da---B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/8 13/11",
+            "board": "-2,0,0,0,0,5,0,4,0,0,1,-4,3,0,0,0,-4,0,-4,-1,0,0,0,2,0,0,0,0",
+            "xgEquity": -0.2525,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0037,
+            "threePly": -0.21866645,
+            "fourPly": -0.23617281,
+            "fivePly": -0.231481
+          },
+          "role": "other-retained",
+          "candidateId": "c2"
+        }
+      ],
+      "seedBase": 1961316261,
+      "seedNonce": 0,
+      "previousChoice": "-2,0,0,0,0,5,0,4,0,0,0,-4,4,0,0,0,-4,0,-4,-1,0,1,0,1,0,0,0,0",
+      "previousGap": 0.004153103124999974
+    },
+    {
+      "id": "reply-d8b0ad29eebeddb9-33",
+      "kind": "reply",
+      "cohort": "reply-disagreement",
+      "source": "https://www.extremegammon.com/OB/Replies_to_64P.html",
+      "referenceBest": {
+        "rank": 1,
+        "move": "24/21(2) 13/10(2)",
+        "equity": 0.2739,
+        "confidenceHalfWidth": 0.0021,
+        "probabilities": [
+          [
+            0.5623,
+            0.1595,
+            0.0064
+          ],
+          [
+            0.43770000000000003,
+            0.09759999999999999,
+            0.0034999999999999996
+          ]
+        ],
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 3-ply",
+        "board": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0"
+      },
+      "board": "-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+      "roll": "33",
+      "candidates": [
+        {
+          "steps": [
+            {
+              "from": 5,
+              "to": 2,
+              "die": 3
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "die": 3
+            },
+            {
+              "from": 7,
+              "to": 4,
+              "die": 3
+            },
+            {
+              "from": 7,
+              "to": 4,
+              "die": 3
+            }
+          ],
+          "notation": "6/3 6/3 8/5 8/5",
+          "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+          "historical": {
+            "equity": 0.26341721,
+            "cubeless": 0.19113885,
+            "probabilities": [
+              0.55815011,
+              0.20185363,
+              0.00976684,
+              0.13020736,
+              0.00657448
+            ]
+          },
+          "fourPly": {
+            "equity": 0.25877988,
+            "cubeless": 0.19095281,
+            "probabilities": [
+              0.5588401,
+              0.20001607,
+              0.01009553,
+              0.13023458,
+              0.00660439
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.26841465,
+            "cubeless": 0.18574998,
+            "probabilities": [
+              0.55697829,
+              0.1999511,
+              0.00945965,
+              0.13101795,
+              0.00659939
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---b-d---bB-:0:0:1:33:0:0:1:0:10",
+          "after": "XGID=-b-B-BC-A---eE---b-d---bB-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "6/3 6/3 8/5 8/5",
+            "board": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+            "xgEquity": 0.269,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0022,
+            "threePly": 0.26341721,
+            "fourPly": 0.25877988,
+            "fivePly": 0.26841465
+          },
+          "role": "previous-choice",
+          "candidateId": "c0"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            }
+          ],
+          "notation": "13/10 13/10 24/21 24/21",
+          "board": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+          "historical": {
+            "equity": 0.25398195,
+            "cubeless": 0.18690349,
+            "probabilities": [
+              0.55943412,
+              0.15519822,
+              0.00575058,
+              0.09109838,
+              0.00181515
+            ]
+          },
+          "fourPly": {
+            "equity": 0.24982111,
+            "cubeless": 0.18409455,
+            "probabilities": [
+              0.5596748,
+              0.1527507,
+              0.00549476,
+              0.09110446,
+              0.00239604
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.26783946,
+            "cubeless": 0.18695803,
+            "probabilities": [
+              0.5603689,
+              0.1545898,
+              0.00554916,
+              0.09183379,
+              0.00208493
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---b-d---bB-:0:0:1:33:0:0:1:0:10",
+          "after": "XGID=-b----E-C-B-eC---b-d-B-b--:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/10 13/10 24/21 24/21",
+            "board": "-2,0,0,0,0,5,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+            "xgEquity": 0.2739,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0021,
+            "threePly": 0.25398195,
+            "fourPly": 0.24982111,
+            "fivePly": 0.26783946
+          },
+          "role": "xg-choice",
+          "candidateId": "c1"
+        },
+        {
+          "steps": [
+            {
+              "from": 5,
+              "to": 2,
+              "die": 3
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            }
+          ],
+          "notation": "6/3 6/3 24/21 24/21",
+          "board": "-2,0,2,0,0,3,0,3,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+          "historical": {
+            "equity": 0.24141091,
+            "cubeless": 0.17651349,
+            "probabilities": [
+              0.55491138,
+              0.15370785,
+              0.00541535,
+              0.09081205,
+              0.00162041
+            ]
+          },
+          "fourPly": {
+            "equity": 0.23932412,
+            "cubeless": 0.17567831,
+            "probabilities": [
+              0.55469406,
+              0.15126599,
+              0.00573503,
+              0.08868997,
+              0.00202085
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.25808609,
+            "cubeless": 0.1779827,
+            "probabilities": [
+              0.5559842,
+              0.1528689,
+              0.00522412,
+              0.09018733,
+              0.00189138
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---b-d---bB-:0:0:1:33:0:0:1:0:10",
+          "after": "XGID=-b-B--C-C---eE---b-d-B-b--:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "6/3 6/3 24/21 24/21",
+            "board": "-2,0,2,0,0,3,0,3,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+            "xgEquity": 0.2539,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0022,
+            "threePly": 0.24141091,
+            "fourPly": 0.23932412,
+            "fivePly": 0.25808609
+          },
+          "role": "other-retained",
+          "candidateId": "c2"
+        },
+        {
+          "steps": [
+            {
+              "from": 7,
+              "to": 4,
+              "die": 3
+            },
+            {
+              "from": 7,
+              "to": 4,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            }
+          ],
+          "notation": "8/5 8/5 24/21 24/21",
+          "board": "-2,0,0,0,2,5,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+          "historical": {
+            "equity": 0.22809169,
+            "cubeless": 0.17285992,
+            "probabilities": [
+              0.54833305,
+              0.16516259,
+              0.00544428,
+              0.09280908,
+              0.00160398
+            ]
+          },
+          "fourPly": {
+            "equity": 0.22440471,
+            "cubeless": 0.171095,
+            "probabilities": [
+              0.54682022,
+              0.16488265,
+              0.00603244,
+              0.09105808,
+              0.00240246
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.24223524,
+            "cubeless": 0.1732405,
+            "probabilities": [
+              0.5482052,
+              0.16587836,
+              0.00521734,
+              0.0923693,
+              0.0018963
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---b-d---bB-:0:0:1:33:0:0:1:0:10",
+          "after": "XGID=-b---BE-A---eE---b-d-B-b--:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "8/5 8/5 24/21 24/21",
+            "board": "-2,0,0,0,2,5,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,2,0,-2,0,0,0,0,0",
+            "xgEquity": 0.2447,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0029,
+            "threePly": 0.22809169,
+            "fourPly": 0.22440471,
+            "fivePly": 0.24223524
+          },
+          "role": "other-retained",
+          "candidateId": "c3"
+        },
+        {
+          "steps": [
+            {
+              "from": 5,
+              "to": 2,
+              "die": 3
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "die": 3
+            },
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            }
+          ],
+          "notation": "6/3 6/3 13/10 13/10",
+          "board": "-2,0,2,0,0,3,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+          "historical": {
+            "equity": 0.22747108,
+            "cubeless": 0.16336536,
+            "probabilities": [
+              0.5541715,
+              0.1840412,
+              0.0090657,
+              0.13191178,
+              0.00617275
+            ]
+          },
+          "fourPly": {
+            "equity": 0.22396547,
+            "cubeless": 0.16399947,
+            "probabilities": [
+              0.55589139,
+              0.18332991,
+              0.00918338,
+              0.13437888,
+              0.00591773
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": 0.23379952,
+            "cubeless": 0.1594184,
+            "probabilities": [
+              0.5540629,
+              0.18195099,
+              0.00897104,
+              0.13352722,
+              0.00610221
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---eE---b-d---bB-:0:0:1:33:0:0:1:0:10",
+          "after": "XGID=-b-B--C-C-B-eC---b-d---bB-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "6/3 6/3 13/10 13/10",
+            "board": "-2,0,2,0,0,3,0,3,0,2,0,-5,3,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+            "xgEquity": 0.2348,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0044,
+            "threePly": 0.22747108,
+            "fourPly": 0.22396547,
+            "fivePly": 0.23379952
+          },
+          "role": "other-retained",
+          "candidateId": "c4"
+        }
+      ],
+      "seedBase": 1963741844,
+      "seedNonce": 0,
+      "previousChoice": "-2,0,2,0,2,3,0,1,0,0,0,-5,5,0,0,0,-2,0,-4,0,0,0,-2,2,0,0,0,0",
+      "previousGap": 0.0021268668749999664
+    },
+    {
+      "id": "reply-ea77bd807985fd53-21",
+      "kind": "reply",
+      "cohort": "reply-disagreement",
+      "source": "https://www.extremegammon.com/OB/Replies_to_64S.html",
+      "referenceBest": {
+        "rank": 1,
+        "move": "13/11 8/7*",
+        "equity": -0.1297,
+        "confidenceHalfWidth": 0.002,
+        "probabilities": [
+          [
+            0.4725,
+            0.1348,
+            0.0063
+          ],
+          [
+            0.5275,
+            0.1661,
+            0.0108
+          ]
+        ],
+        "method": "rollout",
+        "trials": 62208,
+        "policy": "Moves and cube decisions: 4-ply",
+        "board": "-1,0,0,0,0,5,1,2,0,0,1,-4,4,0,0,-1,-3,0,-5,0,0,0,0,2,0,1,0,0"
+      },
+      "board": "-1,0,0,0,0,5,-1,3,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,0,0,2,0,0,0,0",
+      "roll": "21",
+      "candidates": [
+        {
+          "steps": [
+            {
+              "from": 23,
+              "to": 21,
+              "die": 2
+            },
+            {
+              "from": 7,
+              "to": 6,
+              "die": 1
+            }
+          ],
+          "notation": "24/22 8/7",
+          "board": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+          "historical": {
+            "equity": -0.11139393,
+            "cubeless": -0.08648058,
+            "probabilities": [
+              0.47165769,
+              0.12301195,
+              0.00529553,
+              0.15098242,
+              0.00712102
+            ]
+          },
+          "fourPly": {
+            "equity": -0.11506748,
+            "cubeless": -0.0842992,
+            "probabilities": [
+              0.4724794,
+              0.12423742,
+              0.00531197,
+              0.15090203,
+              0.00790536
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.11856949,
+            "cubeless": -0.09039649,
+            "probabilities": [
+              0.47002614,
+              0.12366751,
+              0.00520243,
+              0.15215887,
+              0.00715984
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-a----EaC---dE--ac-e----B-:0:0:1:21:0:0:1:0:10",
+          "after": "XGID=aa----EAB---dE--ac-e--A-A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "24/22 8/7",
+            "board": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+            "xgEquity": -0.1333,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0019,
+            "threePly": -0.11139393,
+            "fourPly": -0.11506748,
+            "fivePly": -0.11856949
+          },
+          "role": "previous-choice",
+          "candidateId": "c0"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 10,
+              "die": 2
+            },
+            {
+              "from": 7,
+              "to": 6,
+              "die": 1
+            }
+          ],
+          "notation": "13/11 8/7",
+          "board": "-1,0,0,0,0,5,1,2,0,0,1,-4,4,0,0,-1,-3,0,-5,0,0,0,0,2,0,1,0,0",
+          "historical": {
+            "equity": -0.1092329,
+            "cubeless": -0.08999219,
+            "probabilities": [
+              0.47320616,
+              0.1299445,
+              0.00565758,
+              0.16106105,
+              0.01094555
+            ]
+          },
+          "fourPly": {
+            "equity": -0.1202521,
+            "cubeless": -0.09088265,
+            "probabilities": [
+              0.47281349,
+              0.12997068,
+              0.00583231,
+              0.16108136,
+              0.01123126
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.11954347,
+            "cubeless": -0.09356686,
+            "probabilities": [
+              0.47147179,
+              0.12951294,
+              0.00550377,
+              0.16112679,
+              0.01040035
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-a----EaC---dE--ac-e----B-:0:0:1:21:0:0:1:0:10",
+          "after": "XGID=aa----EAB--AdD--ac-e----B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/11 8/7",
+            "board": "-1,0,0,0,0,5,1,2,0,0,1,-4,4,0,0,-1,-3,0,-5,0,0,0,0,2,0,1,0,0",
+            "xgEquity": -0.1297,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.002,
+            "threePly": -0.1092329,
+            "fourPly": -0.1202521,
+            "fivePly": -0.11954347
+          },
+          "role": "xg-choice",
+          "candidateId": "c1"
+        }
+      ],
+      "seedBase": 4073136715,
+      "seedNonce": 0,
+      "previousChoice": "-1,0,0,0,0,5,1,2,0,0,0,-4,5,0,0,-1,-3,0,-5,0,0,1,0,1,0,1,0,0",
+      "previousGap": 0.006421221874999994
+    },
+    {
+      "id": "reply-2fda09c519d84905-32",
+      "kind": "reply",
+      "cohort": "reply-disagreement",
+      "source": "https://www.extremegammon.com/OB/Replies_to_62$.html",
+      "referenceBest": {
+        "rank": 1,
+        "move": "13/10 6/4",
+        "equity": -0.2028,
+        "confidenceHalfWidth": 0.0034,
+        "probabilities": [
+          [
+            0.4587,
+            0.129,
+            0.006
+          ],
+          [
+            0.5413,
+            0.1814,
+            0.013000000000000001
+          ]
+        ],
+        "method": "rollout",
+        "trials": 31104,
+        "policy": "Moves: 3-ply, cube decisions: XG Roller",
+        "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0"
+      },
+      "board": "-2,0,0,0,0,5,0,3,0,0,0,-4,5,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+      "roll": "32",
+      "candidates": [
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 12,
+              "to": 10,
+              "die": 2
+            }
+          ],
+          "notation": "13/10 13/11",
+          "board": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+          "historical": {
+            "equity": -0.18336087,
+            "cubeless": -0.13979962,
+            "probabilities": [
+              0.45419538,
+              0.13192742,
+              0.005728,
+              0.17414896,
+              0.01169684
+            ],
+            "mwc": null
+          },
+          "fourPly": {
+            "equity": -0.20678604,
+            "cubeless": -0.1447418,
+            "probabilities": [
+              0.45249569,
+              0.13150352,
+              0.00610683,
+              0.17579432,
+              0.01154923
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.19932212,
+            "cubeless": -0.14303717,
+            "probabilities": [
+              0.45229328,
+              0.13184439,
+              0.00581902,
+              0.17424895,
+              0.01103817
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE---c-ea---B-:0:0:1:32:0:0:1:0:10",
+          "after": "XGID=-b----E-C-AAdC---c-ea---B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/10 13/11",
+            "board": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+            "xgEquity": -0.2137,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0034,
+            "threePly": -0.18336087,
+            "fourPly": -0.20678604,
+            "fivePly": -0.19932212
+          },
+          "role": "previous-choice",
+          "candidateId": "c0"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "die": 2
+            }
+          ],
+          "notation": "13/10 6/4",
+          "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+          "historical": {
+            "equity": -0.19346787,
+            "cubeless": -0.14231676,
+            "probabilities": [
+              0.4570297,
+              0.12895373,
+              0.0054999,
+              0.17799439,
+              0.0128354
+            ],
+            "mwc": null
+          },
+          "fourPly": {
+            "equity": -0.2108708,
+            "cubeless": -0.14639574,
+            "probabilities": [
+              0.4557991,
+              0.12859461,
+              0.00581541,
+              0.17974484,
+              0.01265912
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.20123988,
+            "cubeless": -0.14372137,
+            "probabilities": [
+              0.45587218,
+              0.12901063,
+              0.00558127,
+              0.177671,
+              0.01238664
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE---c-ea---B-:0:0:1:32:0:0:1:0:10",
+          "after": "XGID=-b--A-D-C-A-dD---c-ea---B-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/10 6/4",
+            "board": "-2,0,0,1,0,4,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+            "xgEquity": -0.2028,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0034,
+            "threePly": -0.19346787,
+            "fourPly": -0.2108708,
+            "fivePly": -0.20123988
+          },
+          "role": "xg-choice",
+          "candidateId": "c1"
+        },
+        {
+          "steps": [
+            {
+              "from": 12,
+              "to": 9,
+              "die": 3
+            },
+            {
+              "from": 23,
+              "to": 21,
+              "die": 2
+            }
+          ],
+          "notation": "13/10 24/22",
+          "board": "-2,0,0,0,0,5,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,1,0,1,0,0,0,0",
+          "historical": {
+            "equity": -0.19410698,
+            "cubeless": -0.14919066,
+            "probabilities": [
+              0.45393074,
+              0.11738503,
+              0.0050201,
+              0.17184281,
+              0.00761445
+            ],
+            "mwc": null
+          },
+          "fourPly": {
+            "equity": -0.20468941,
+            "cubeless": -0.14679053,
+            "probabilities": [
+              0.45450246,
+              0.11800517,
+              0.00506057,
+              0.17098767,
+              0.00787354
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.20245326,
+            "cubeless": -0.14855123,
+            "probabilities": [
+              0.45359576,
+              0.11737699,
+              0.00499564,
+              0.17068042,
+              0.00743495
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE---c-ea---B-:0:0:1:32:0:0:1:0:10",
+          "after": "XGID=-b----E-C-A-dD---c-ea-A-A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "13/10 24/22",
+            "board": "-2,0,0,0,0,5,0,3,0,1,0,-4,4,0,0,0,-3,0,-5,-1,0,1,0,1,0,0,0,0",
+            "xgEquity": -0.2175,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0032,
+            "threePly": -0.19410698,
+            "fourPly": -0.20468941,
+            "fivePly": -0.20245326
+          },
+          "role": "other-retained",
+          "candidateId": "c2"
+        },
+        {
+          "steps": [
+            {
+              "from": 23,
+              "to": 20,
+              "die": 3
+            },
+            {
+              "from": 12,
+              "to": 10,
+              "die": 2
+            }
+          ],
+          "notation": "24/21 13/11",
+          "board": "-2,0,0,0,0,5,0,3,0,0,1,-4,4,0,0,0,-3,0,-5,-1,1,0,0,1,0,0,0,0",
+          "historical": {
+            "equity": -0.19777369,
+            "cubeless": -0.14885448,
+            "probabilities": [
+              0.45502371,
+              0.11543573,
+              0.00499706,
+              0.17153351,
+              0.00780118
+            ],
+            "mwc": null
+          },
+          "fourPly": {
+            "equity": -0.21301253,
+            "cubeless": -0.14888796,
+            "probabilities": [
+              0.45486391,
+              0.11575842,
+              0.0050511,
+              0.17128219,
+              0.00814311
+            ],
+            "mwc": null
+          },
+          "fivePly": {
+            "equity": -0.20765036,
+            "cubeless": -0.14855096,
+            "probabilities": [
+              0.45460665,
+              0.11535016,
+              0.00495169,
+              0.17040183,
+              0.00766427
+            ],
+            "mwc": null
+          },
+          "original": "XGID=-b----E-C---dE---c-ea---B-:0:0:1:32:0:0:1:0:10",
+          "after": "XGID=-b----E-C--AdD---c-eaA--A-:0:0:1:00:0:0:1:0:10",
+          "reference": {
+            "move": "24/21 13/11",
+            "board": "-2,0,0,0,0,5,0,3,0,0,1,-4,4,0,0,0,-3,0,-5,-1,1,0,0,1,0,0,0,0",
+            "xgEquity": -0.2161,
+            "referenceMethod": "rollout",
+            "confidenceHalfWidth": 0.0031,
+            "threePly": -0.19777369,
+            "fourPly": -0.21301253,
+            "fivePly": -0.20765036
+          },
+          "role": "other-retained",
+          "candidateId": "c3"
+        }
+      ],
+      "seedBase": 804590272,
+      "seedNonce": 0,
+      "previousChoice": "-2,0,0,0,0,5,0,3,0,1,1,-4,3,0,0,0,-3,0,-5,-1,0,0,0,2,0,0,0,0",
+      "previousGap": 0.0026073012499999992
+    }
+  ],
+  "policies": [
+    {
+      "id": "fixed-normal",
+      "label": "Corrected normal 2-ply checker",
+      "runtime": "fixed",
+      "caseIds": [
+        "opening-21",
+        "reply-fd57f8a8e221b7f8-51",
+        "reply-7985255600f3563f-44",
+        "reply-cf59cb9355405192-52",
+        "reply-d8b0ad29eebeddb9-33",
+        "reply-ea77bd807985fd53-21",
+        "reply-2fda09c519d84905-32"
+      ],
+      "checkerPlies": 2,
+      "lateCheckerPlies": 2,
+      "filter": 0,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCubePlies": 2,
+      "endpointPlies": 2,
+      "rulesMode": 3,
+      "vrPlies": 1,
+      "cacheContext": 1
+    },
+    {
+      "id": "buggy-normal",
+      "label": "Mixed-depth sort control, normal 2-ply checker",
+      "runtime": "legacy",
+      "caseIds": [
+        "reply-7985255600f3563f-44"
+      ],
+      "checkerPlies": 2,
+      "lateCheckerPlies": 2,
+      "filter": 0,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCubePlies": 2,
+      "endpointPlies": 2,
+      "rulesMode": 3,
+      "vrPlies": 1,
+      "cacheContext": 1
+    },
+    {
+      "id": "fixed-deep",
+      "label": "Corrected large-filter 3-ply checker",
+      "runtime": "fixed",
+      "caseIds": [
+        "reply-7985255600f3563f-44"
+      ],
+      "checkerPlies": 3,
+      "lateCheckerPlies": 3,
+      "filter": 2,
+      "cubePlies": 2,
+      "truncationPlies": 0,
+      "lateAfterPlies": 0,
+      "lateCubePlies": 2,
+      "endpointPlies": 2,
+      "rulesMode": 3,
+      "vrPlies": 1,
+      "cacheContext": 1
+    }
+  ],
+  "trials": 16384,
+  "batchSize": 32,
+  "shards": 20,
+  "plannedRecords": 14336,
+  "plannedGames": 458752,
+  "seedExclusions": {
+    "sources": [
+      {
+        "file": "docs/rollout-policy-batches.jsonl.gz",
+        "sha256": "d57073dd7d6165c8e7854a92433c2301ad52df1c63f656e5e4f74ace86a1a961"
+      },
+      {
+        "file": "docs/rollout-diagnostic-batches.jsonl.gz",
+        "sha256": "d95ed5a414b8659485916c916ccdc1001d96765c65583f13d025ad2e4c35a1ba"
+      },
+      {
+        "file": "docs/fullgame-ablation-inputs.json",
+        "sha256": "bf7369e5803c5187c09db2f484c779df00bd36769dc23c3fc262fc4379e180bc"
+      },
+      {
+        "file": "docs/opening-fullgame-confirmation-inputs.json",
+        "sha256": "1ce431ecd9d1fe6622933f407af631140077d4dd1b7d1125590414b79424cb52"
+      },
+      {
+        "file": "docs/fullgame-precision-inputs.json",
+        "sha256": "456973550196744eb2f4dac83fb542831da682e46ad9fcf0376e44698715749e"
+      },
+      {
+        "file": "docs/opening-fullgame-precision-inputs.json",
+        "sha256": "964bcee6b659a4bdcdb429b691fa998df174af4ddbbe4d665e3568c717e561dd"
+      },
+      {
+        "file": "docs/reply-fullgame-precision-inputs.json",
+        "sha256": "5d983f989ca61bf974632fdb1e6e6f4a6bb681617df31c03beec08c0be10df03"
+      },
+      {
+        "file": "docs/cube-policy-study-inputs.json",
+        "sha256": "5d51dd691fda04fc18b66431b7c6254999cd9a6873fbbe66b6d26f3f910a889b"
+      },
+      {
+        "file": "docs/cube-policy-study-v2-inputs.json",
+        "sha256": "a2adce251235be40ecf3a2d6d8a771372131d259f9edcaca4c90a3819f641ac1"
+      }
+    ],
+    "diagnosticSeeds": [
+      123456789,
+      987654321,
+      31811004
+    ],
+    "diagnosticOffsets": 64
+  },
+  "rules": {
+    "matchLength": 0,
+    "jacoby": true,
+    "immediateRedoubles": 2,
+    "cubeLimit": 1024,
+    "startingCube": 1,
+    "cubeOwner": null
+  },
+  "comparisons": {
+    "moveGaps": 19,
+    "policyGapEffects": 2,
+    "candidatePolicyEffects": 4,
+    "absoluteEquities": 28,
+    "confidence": 0.95,
+    "equityTolerance": 0.005,
+    "gapEffects": [
+      [
+        "fixed-normal",
+        "buggy-normal"
+      ],
+      [
+        "fixed-deep",
+        "fixed-normal"
+      ]
+    ],
+    "absoluteMethod": "Report every mean-minus-published-XG value and abs(error)<=.005 flag. Also report own simultaneous 95% interval for each difference centered on the printed XG point estimate; full containment within [-.005, .005] is separate from mean agreement. Retain original XG printed margins without treating them as zero or claiming a joint simultaneous reference interval.",
+    "inference": "Paired 512 independent 32-trial block means. Two-sided Student-t intervals, Bonferroni family sizes separately: 19 move gaps, 2 policy-gap effects, 4 candidate-policy effects, 28 absolute EVs. No significant/unresolved distinction based only on point-estimate ranking."
+  },
+  "method": "Fixed 16,384 full-game trials per retained candidate/policy. Corrected normal 2-ply checker/2-ply cube on all 24 candidates from six remaining replies plus opening 21. Focused 41$-44 additionally uses the matched buggy-normal 2-ply control and corrected large-filter 3-ply checker, each for both retained candidates. Shared dice across candidates/policies within each position/batch, new seeds disjoint from every preceding planned run and diagnostic. No fixed-turn cutoff, late weakening, dice rotation, optional stopping, interim equity inspection, reference correction or pooling with old results. Same 1-ply variance-control depth; actual values depend on the resulting policy trajectory. Exact two-sided bearoff remains eligible. Legal Jacoby/beaver/raccoon offer branches and cube cap 1024 use prior validated research rules; future cube backups remain GNUbg approximations. Counterfactual branches share checker lookahead under the original cube context. Clear both caches before each 32-trial batch. The two executables differ only in the final mixed-depth sort correction. All 20 shards must use the same hash-bound validated Linux ARM64 binaries/assets. Fixed sample size may leave small ranking or ±.005 questions unresolved. This selected seven-position cohort does not establish all-opening/reply accuracy."
+}

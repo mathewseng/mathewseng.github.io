@@ -1,0 +1,770 @@
+{
+  "schema": 1,
+  "binaries": {
+    "legacy": "492649aac0d81ee61c7ca82ab7e56f1aecc93f9d8140d02f6033a3b9855d0919",
+    "fixed": "492649aac0d81ee61c7ca82ab7e56f1aecc93f9d8140d02f6033a3b9855d0919"
+  },
+  "cases": [
+    {
+      "name": "opening-21|fixed-normal|c0",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---eE---c-e----B-:0:0:1:21:0:0:1:0:10",
+        "XGID=-b----E-C--AeD---c-e---AA-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-fd57f8a8e221b7f8-51|fixed-normal|c0",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---cEaa-c-e----B-:0:0:1:51:0:0:1:0:10",
+        "XGID=-b----E-D---cDaa-c-e---AA-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-7985255600f3563f-44|fixed-normal|c0",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+        "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-7985255600f3563f-44|fixed-normal|c1",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+        "XGID=bb----E-CB--dC--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-7985255600f3563f-44|buggy-normal|c0",
+      "runtime": "legacy",
+      "input": [
+        "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+        "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-7985255600f3563f-44|buggy-normal|c1",
+      "runtime": "legacy",
+      "input": [
+        "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+        "XGID=bb----E-CB--dC--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-7985255600f3563f-44|fixed-deep|c0",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+        "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        3,
+        2,
+        0,
+        0,
+        3,
+        2,
+        2,
+        3,
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-7985255600f3563f-44|fixed-deep|c1",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+        "XGID=bb----E-CB--dC--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        3,
+        2,
+        0,
+        0,
+        3,
+        2,
+        2,
+        3,
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-cf59cb9355405192-52|fixed-normal|c0",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---dE---d-da---B-:0:0:1:52:0:0:1:0:10",
+        "XGID=-b----E-D---dD---d-da-A-A-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-d8b0ad29eebeddb9-33|fixed-normal|c0",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---eE---b-d---bB-:0:0:1:33:0:0:1:0:10",
+        "XGID=-b-B-BC-A---eE---b-d---bB-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-ea77bd807985fd53-21|fixed-normal|c0",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-a----EaC---dE--ac-e----B-:0:0:1:21:0:0:1:0:10",
+        "XGID=aa----EAB---dE--ac-e--A-A-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "reply-2fda09c519d84905-32|fixed-normal|c0",
+      "runtime": "fixed",
+      "input": [
+        "XGID=-b----E-C---dE---c-ea---B-:0:0:1:32:0:0:1:0:10",
+        "XGID=-b----E-C-AAdC---c-ea---B-:0:0:1:00:0:0:1:0:10",
+        2,
+        31811004,
+        2,
+        2,
+        0,
+        0,
+        2,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1
+      ]
+    }
+  ],
+  "results": [
+    {
+      "name": "opening-21|fixed-normal|c0",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.33458561,
+        "cubeless": 0.08442312,
+        "probabilities": [
+          0.58770835,
+          0.05888613,
+          0.0,
+          0.14491928,
+          0.00049516
+        ],
+        "mwc": null,
+        "standardError": 0.3502304,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          52,
+          2,
+          1,
+          0,
+          0,
+          0,
+          0,
+          55,
+          92,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-fd57f8a8e221b7f8-51|fixed-normal|c0",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.04795659,
+        "cubeless": -0.02387995,
+        "probabilities": [
+          0.46212205,
+          0.1269287,
+          0.00632464,
+          0.08583568,
+          0.0
+        ],
+        "mwc": null,
+        "standardError": 0.25318217,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          67,
+          2,
+          1,
+          0,
+          0,
+          0,
+          0,
+          70,
+          122,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-7985255600f3563f-44|fixed-normal|c0",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.75336504,
+        "cubeless": 0.50171679,
+        "probabilities": [
+          0.66004473,
+          0.22443126,
+          0.02337042,
+          0.06243292,
+          0.00374231
+        ],
+        "mwc": null,
+        "standardError": 0.37440729,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          60,
+          2,
+          1,
+          0,
+          0,
+          0,
+          0,
+          63,
+          120,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-7985255600f3563f-44|fixed-normal|c1",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.20142192,
+        "cubeless": 0.2634497,
+        "probabilities": [
+          0.56589812,
+          0.23544505,
+          0.00730643,
+          0.10653371,
+          0.00456486
+        ],
+        "mwc": null,
+        "standardError": 0.01325494,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          69,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          71,
+          138,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-7985255600f3563f-44|buggy-normal|c0",
+      "runtime": "legacy",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.75336504,
+        "cubeless": 0.50171679,
+        "probabilities": [
+          0.66004473,
+          0.22443126,
+          0.02337042,
+          0.06243292,
+          0.00374231
+        ],
+        "mwc": null,
+        "standardError": 0.37440729,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          60,
+          2,
+          1,
+          0,
+          0,
+          0,
+          0,
+          63,
+          120,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-7985255600f3563f-44|buggy-normal|c1",
+      "runtime": "legacy",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.20142192,
+        "cubeless": 0.2634497,
+        "probabilities": [
+          0.56589812,
+          0.23544505,
+          0.00730643,
+          0.10653371,
+          0.00456486
+        ],
+        "mwc": null,
+        "standardError": 0.01325494,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          69,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          71,
+          138,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-7985255600f3563f-44|fixed-deep|c0",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 3,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 3,
+        "lateCubePlies": 2,
+        "equity": 0.77537608,
+        "cubeless": 0.51983774,
+        "probabilities": [
+          0.65907711,
+          0.24700791,
+          0.01115455,
+          0.05397233,
+          0.00250696
+        ],
+        "mwc": null,
+        "standardError": 0.01963305,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 2,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          24,
+          2,
+          2,
+          0,
+          0,
+          0,
+          0,
+          28,
+          48,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-7985255600f3563f-44|fixed-deep|c1",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 3,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 3,
+        "lateCubePlies": 2,
+        "equity": 0.49836206,
+        "cubeless": 0.46291572,
+        "probabilities": [
+          0.62477756,
+          0.25807393,
+          0.05561299,
+          0.09847721,
+          0.00184882
+        ],
+        "mwc": null,
+        "standardError": 0.20689631,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 2,
+        "vrPlies": 1,
+        "maxCube": 4,
+        "cubeActions": [
+          64,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          68,
+          129,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-cf59cb9355405192-52|fixed-normal|c0",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -0.18035132,
+        "cubeless": -0.16823296,
+        "probabilities": [
+          0.52217215,
+          0.17415674,
+          0.00800969,
+          0.37508467,
+          0.01965815
+        ],
+        "mwc": null,
+        "standardError": 0.05739039,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 4,
+        "cubeActions": [
+          52,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          56,
+          83,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-d8b0ad29eebeddb9-33|fixed-normal|c0",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.10461944,
+        "cubeless": 0.2396543,
+        "probabilities": [
+          0.56617224,
+          0.20430325,
+          0.01011272,
+          0.10108729,
+          0.00601908
+        ],
+        "mwc": null,
+        "standardError": 0.21507221,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          36,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          38,
+          49,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-ea77bd807985fd53-21|fixed-normal|c0",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -0.55436635,
+        "cubeless": -0.27614421,
+        "probabilities": [
+          0.41033763,
+          0.07614516,
+          0.0,
+          0.16149819,
+          0.00650984
+        ],
+        "mwc": null,
+        "standardError": 0.27121323,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          80,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          82,
+          108,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "reply-2fda09c519d84905-32|fixed-normal|c0",
+      "runtime": "fixed",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": -0.09639433,
+        "cubeless": -0.07281286,
+        "probabilities": [
+          0.45006925,
+          0.1759212,
+          0.00637831,
+          0.15129369,
+          0.00395638
+        ],
+        "mwc": null,
+        "standardError": 0.07773206,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          52,
+          1,
+          2,
+          0,
+          0,
+          0,
+          0,
+          55,
+          59,
+          0
+        ],
+        "cacheContext": 1
+      }
+    }
+  ],
+  "seed": 31811004,
+  "trialsPerCase": 2,
+  "excludedFromStudy": true
+}

@@ -1,0 +1,14 @@
+--- a/src/eval.c
++++ b/src/eval.c
+@@ -5418,8 +5418,9 @@
+         }
+     }
+ 
+-    // It seems sometimes the list comes out not fully sorted
+-    qsort(pml->amMoves, pml->cMoves, sizeof(move), (cfunc)CompareMoves);
++    /* cMoves again includes the screened-out shallow evaluations. Keep the
++     * already-sorted deepest finalists first, as upstream GNUbg does; sorting
++     * the whole list would let a shallow score replace the searched winner. */
+     pml->iMoveBest = 0;
+     pml->rBestScore = pml->amMoves[0].rScore;
+ 

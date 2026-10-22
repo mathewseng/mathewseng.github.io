@@ -6,6 +6,31 @@ The previous GNUbg experiment used Jacoby without beavers. XG's published refere
 
 For historical context, [Nack Ballard's September 2009 reply chart](https://timothychow.net/2ndroll_bill.pdf), credited to Stick's bgonline.org, recommends the double hit and making the 4-point for this exact reply. The row and explanatory footnote were checked visually. The chart provides no engine settings, sample count or equity uncertainty, so it is not an independent quantitative validation of our result or evidence against the later XG rollout.
 
+## Completed diagnosis
+
+[All 20 workers completed successfully](https://github.com/mathewseng/mathewseng.github.io/actions/runs/39801091859). The full, fixed sample contains 163,840 games in 5,120 validated batches. No interim EVs were inspected, and no samples were dropped or added after seeing the results. [The results](cube-policy-study-v2-comparison.json), [raw batches](cube-policy-study-v2-batches.jsonl.gz), and [worker execution evidence](cube-policy-study-v2-execution.json) are published together.
+
+Both moves double hit with 24/20* 20/16*. Positive gaps below favor XG's 13/9(2). Intervals provide simultaneous 95% coverage across the five policy gaps.
+
+| Policy | 8/4(2) EV | 13/9(2) EV | Move gap | Simultaneous 95% interval |
+| --- | ---: | ---: | ---: | --- |
+| Published XG | 0.60050 | 0.61180 | +0.01130 | Separate printed candidate margins: ±0.0033 and ±0.0032 |
+| Legacy | 0.60448 | 0.58757 | −0.01690 | [−0.03016, −0.00365] |
+| Cache fix only | 0.60448 | 0.58757 | −0.01691 | [−0.03016, −0.00365] |
+| Matched cube rules | 0.60448 | 0.58757 | −0.01691 | [−0.03015, −0.00366] |
+| Wider 2-ply checker | 0.59504 | 0.58147 | −0.01357 | [−0.02668, −0.00046] |
+| Deeper 3-ply checker | 0.60403 | 0.59744 | −0.00659 | [−0.01992, +0.00674] |
+
+**Matching the cube rules does not explain this disagreement.** Matched−Cache changes the move gap by −0.00000043, with paired simultaneous 95% interval [−0.00004315, +0.00004229]. Across all three matched-rule arms, no beaver or raccoon was actually chosen, and the largest cube was 64, below the 1024 ceiling. The rule corrections remain necessary for legal handling, but their effect on this position is tiny under these policies.
+
+**The verified cache defect is also not the material cause here.** Cache−Legacy changes the gap by −0.00000085, with interval [−0.00000275, +0.00000106]. The bg8 production fix remains justified by the deterministic regression; this experiment does not support presenting that fix as the explanation for the old 0.027 gap discrepancy.
+
+**The checker experiments have not established a solution.** Wider−Matched shifts the gap by +0.00333, with interval [−0.00341, +0.01008]; the wider policy still supports 8/4(2). Deeper−Matched shifts it by +0.01032, with interval [−0.00599, +0.02662]. The deeper sample mean is closer to XG, but neither its improvement nor its move ordering is resolved by the predeclared simultaneous intervals. These effect intervals form their own four-comparison family; they are not obtained by subtracting the marginal gap intervals.
+
+Wider checker play lowers both candidate EVs by resolved amounts: −0.00944 for 8/4(2) and −0.00610 for 13/9(2), using the separate eight-comparison candidate-effect family. This demonstrates sensitivity to continuation policy; it does not show improved agreement with XG. The deeper policy's 13/9(2) estimate is still 0.01436 below the published XG mean (GNUbg SE 0.00378), outside the requested 0.005 point-estimate tolerance. Its 8/4(2) estimate is 0.00353 above XG (SE 0.00347). No tested policy brings both EV means within 0.005 or establishes XG's move as the winner.
+
+The supported inference is that the old ranking is reproducible under the original checker policy and survives the tested rule/cache corrections. The residual may reflect checker or cube continuation-policy/evaluator differences from XG; this study does not isolate a specific remaining model defect or prove XG's published mean to be ground truth. A direct comparison of later decisions against an actual XG analysis is needed to identify which continuation choices differ. The wider/deeper policies are not promoted as an accuracy fix, and no reference values or offsets are substituted into these independent results.
+
 ## Verified implementation problems
 
 The pinned GNUbg rollout executes `DOUBLE_BEAVER` through its ordinary double/take branch, accepting a cube of 2 instead of 4. Its internal cubeful search backup also compares ordinary take equity without the immediate beaver response. Enabling a boolean flag alone would therefore produce a misleading rule comparison. The old bridge intentionally disabled beavers, so these newly identified issues did not invalidate its declared ordinary-cube experiment.
@@ -42,7 +67,7 @@ All arms run full games with no fixed-turn cutoff or weakened late policy. Exact
 
 Four primary paired changes in the XG-choice-minus-alternative gap isolate: Cache−Legacy, Matched−Cache, Wide−Matched and Deep−Matched. They form one simultaneous 95% Student-t family. Five policy move gaps form a separate family; eight per-candidate policy effects form a third. Published XG marginal bounds are retained, and the 0.005 absolute-equity target is reported separately from move ordering. A negative result will remain visible. This one selected position cannot establish general opening/reply accuracy.
 
-Status: replacement plan signed and worker validation complete; [full-sample collection is running](https://github.com/mathewseng/mathewseng.github.io/actions/runs/39801091859). Timing and validation outputs are excluded from inference.
+Status: the complete fixed experiment passed input, sample, seed, runtime and worker validation. Timing and validation outputs are excluded from inference. See the completed diagnosis above.
 
 The same defect was also reproduced in the production bg7 source with ordinary cube rules: 20 incorrect hits across these two post-move boards. The standalone `checker-context-bg8.patch` repairs every captured query; see [production-source regression evidence](live-cache-context-validation.json). Browser rollout support for immediate redoubles remains separate from the research implementation.
 

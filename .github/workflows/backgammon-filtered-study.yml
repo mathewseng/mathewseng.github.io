@@ -1,0 +1,40 @@
+name: Corrected Backgammon full-game study
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sample:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Unpack the frozen control and corrected runtimes
+        run: python3 backgammon/scripts/unpack-filtered-rollout-runtime.py /tmp/bg-filtered-rollout-v1
+      - name: Validate this worker on excluded cases
+        run: |
+          mkdir -p backgammon/test-results/filtered-rollout-v1
+          python3 backgammon/scripts/validate-filtered-rollout-platform.py /tmp/bg-filtered-rollout-v1 --output backgammon/test-results/filtered-rollout-v1/platform-validation.json
+      - name: Run the complete fixed shard without interim equity output
+        env:
+          BG_ROLLOUT_NATIVE: /tmp/bg-filtered-rollout-v1
+          BG_ROLLOUT_WORKERS: 4
+          BG_STUDY_SHARD: ${{ matrix.shard }}
+          BG_STUDY_OUT: backgammon/test-results/filtered-rollout-v1
+        run: node backgammon/scripts/run-filtered-rollout-study.mjs
+      - name: Preserve completed batches even after a failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: filtered-rollout-v1-shard-${{ matrix.shard }}
+          path: backgammon/test-results/filtered-rollout-v1/
+          retention-days: 30
+          if-no-files-found: error
