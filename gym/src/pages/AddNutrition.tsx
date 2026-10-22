@@ -98,7 +98,7 @@ function formFromEntry(entry: NutritionEntry): NutritionForm {
 function EditNotFound({ id, seedDate }: { id: string; seedDate?: string }) {
   return (
     <>
-      <PageHeader eyebrow="Edit local entry" title="Nutrition entry not found" />
+      <PageHeader title="Nutrition entry not found" />
       <Surface>
         <EmptyState
           icon={FileQuestion}
@@ -332,7 +332,6 @@ function NutritionEditor({ existing }: { existing?: NutritionEntry }) {
   return (
     <>
       <PageHeader
-        eyebrow={existing ? "Edit local entry" : "Daily nutrition"}
         title={existing ? "Update nutrition" : "Log nutrition"}
         description="Blank means unknown. Targets stay yours to choose, and supplement tracking never turns into a prescription."
       />

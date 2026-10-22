@@ -208,10 +208,6 @@ a {
     padding: 2px 0 4px;
   }
 
-  .title-block .eyebrow {
-    display: none;
-  }
-
   .title-input {
     font-size: var(--t-lg);
   }
@@ -360,15 +356,8 @@ body.side-collapsed .side {
   gap: 8px;
   margin: 0 2px 8px;
   color: var(--ct-felt-muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.area-label .btn {
-  letter-spacing: 0;
-  text-transform: none;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .table .btn--ghost {
@@ -1269,9 +1258,7 @@ body.side-collapsed .side {
 .eval .kind {
   color: var(--ct-felt-muted);
   font-size: var(--t-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 .eval strong {
@@ -1469,10 +1456,8 @@ body.side-collapsed .side {
 .block-head h3 {
   margin: 0;
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .block-head .row {
@@ -2369,9 +2354,7 @@ input[type="range"] {
   background: var(--surrender);
   color: var(--on-accent);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .replay-text {
@@ -2488,9 +2471,8 @@ input[type="range"] {
   grid-column: 1 / -1;
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: var(--t-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .eval-picker label {
@@ -2543,14 +2525,6 @@ input[type="range"] {
   border-color: var(--accent);
   background: var(--accent-soft);
   box-shadow: 0 0 0 1px var(--accent);
-}
-
-.preset .fam {
-  color: var(--warn);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .preset h3 {
@@ -2761,9 +2735,7 @@ input[type="range"] {
   padding: 6px 10px 2px;
   color: var(--muted);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .menu .sw {
@@ -2981,9 +2953,8 @@ input[type="range"] {
 .rules-preview h3 {
   margin: 14px 0 6px;
   color: var(--warn);
-  font-size: var(--t-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .rules-preview h4 {
@@ -3166,9 +3137,7 @@ input[type="range"] {
   width: 74px;
   color: var(--muted);
   font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .pal-hint {
@@ -3495,9 +3464,8 @@ table.compare th {
 .diff-area h3 {
   margin: 0;
   color: var(--muted);
-  font-size: var(--t-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .diff-line {
@@ -3945,10 +3913,6 @@ table.compare th {
 
   .title-block {
     flex: 1 1 100%;
-  }
-
-  .title-block .eyebrow {
-    display: none;
   }
 
   .title-input {

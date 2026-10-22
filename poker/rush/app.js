@@ -1139,7 +1139,7 @@
     els.inviteCode.textContent = room.roomCode || "------";
     els.roomTitle.textContent = full ? "Ready to race" : "Waiting for a player";
     els.roomLede.textContent = room.isHost
-      ? "Share the code or the invite link. Start the race once your opponent is in."
+      ? ""
       : `${host ? host.name : "The host"} starts the race once both players are in. Keep this page open.`;
     els.rosterCount.textContent = `${roster.length} of 2`;
     const fragment = document.createDocumentFragment();

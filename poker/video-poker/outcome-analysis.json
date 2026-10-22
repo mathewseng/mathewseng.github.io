@@ -1,0 +1,4059 @@
+{
+  "version": 1,
+  "hashes": {
+    "engine.js": "5cccedefd6f5eb9ca2d18622b64ab12f94cda74b3ae09eea83ecd36301af621f",
+    "solver.js": "d6a791b9bee89c6414ddaca3cb59a65b1fdcc00c7a9c21d703d448bd31be2531",
+    "cribbage.js": "3f77fb33d3fbc72a2c4703c642cdcd3beaf2ed17726507364cccc0ecde4ea14a",
+    "cribbage-solver.js": "16d051f98aa0f77ade1edec9febe931f5f344de6d74dc68010ec3bbbaf85bc8b",
+    "cribbage-distribution.js": "7d6907f301f1fbeed19dfa45217b9a7c9f839e60ae30f8c4eb30ff1c2a24565d",
+    "outcomes.js": "fb0c346890faa291091e689916568fc1f3772c63be98a6b6ce3c8fb3fae42fbb",
+    "scripts/cribbage-analyze.cpp": "9608cb97eb13f561910bad9b5f98813edc99195f78ea7207f1b88490f7d3887c",
+    "scripts/cribbage-outcomes.cpp": "f144582aa8c99226ad7b3f8fc0cfffdcec8cd11b3e2b8a52cc15b46b58a4d4fa",
+    "scripts/analyze-outcomes.cjs": "c8429ae87a7c810da0bd1d806bc4f291cf9d4028b4b3654c1264f7ff82b0a000",
+    "analysis.json": "d0093ef241356108bd593a2689e0bb2523bc47f0c5b4658646b8ffca7d28dcba",
+    "cribbage-analysis.json": "38d03363036cc3e9ad3bfec0dedf828dd006e1966819464ece0edece05e4483c",
+    "cribbage-net-analysis.json": "c25b7a767729f24fdeb53089ad73e686167dae17cddd79d51b6cfcf62a37c62b"
+  },
+  "entries": [
+    {
+      "id": "jacks",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 25,
+        "fullHouse": 9,
+        "flush": 6,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 2,
+        "highPair": 1
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5454346692330998
+          },
+          {
+            "pnl": 0,
+            "probability": 0.21458503112563215
+          },
+          {
+            "pnl": 1,
+            "probability": 0.12927890248018561
+          },
+          {
+            "pnl": 2,
+            "probability": 0.07444869857114075
+          },
+          {
+            "pnl": 3,
+            "probability": 0.011229367241341517
+          },
+          {
+            "pnl": 5,
+            "probability": 0.011014510968028933
+          },
+          {
+            "pnl": 8,
+            "probability": 0.011512207336285354
+          },
+          {
+            "pnl": 24,
+            "probability": 0.002362545685876717
+          },
+          {
+            "pnl": 49,
+            "probability": 0.00010930909037144615
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000024758268037588522
+          }
+        ],
+        "netEV": -0.004560956304905366,
+        "win": 0.2399802996412679,
+        "push": 0.21458503112563215,
+        "loss": 0.5454346692330998,
+        "standardDeviation": 4.4175418987352995,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "tens",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 25,
+        "fullHouse": 6,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 2,
+        "highPair": 1
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5054821815581787
+          },
+          {
+            "pnl": 0,
+            "probability": 0.25425066719109063
+          },
+          {
+            "pnl": 1,
+            "probability": 0.1290066561965951
+          },
+          {
+            "pnl": 2,
+            "probability": 0.07426503681752224
+          },
+          {
+            "pnl": 3,
+            "probability": 0.012357242393168343
+          },
+          {
+            "pnl": 4,
+            "probability": 0.010654007623736653
+          },
+          {
+            "pnl": 5,
+            "probability": 0.011497380969242398
+          },
+          {
+            "pnl": 24,
+            "probability": 0.0023583223680393437
+          },
+          {
+            "pnl": 49,
+            "probability": 0.00010282243483969967
+          },
+          {
+            "pnl": 799,
+            "probability": 0.00002568244758711535
+          }
+        ],
+        "netEV": -0.008612477443680773,
+        "win": 0.24026715125073092,
+        "push": 0.25425066719109063,
+        "loss": 0.5054821815581787,
+        "standardDeviation": 4.4160569754147545,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "bonus",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 25,
+        "fullHouse": 8,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 2,
+        "highPair": 1,
+        "aces": 80,
+        "lowQuads": 40
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5448545238597978
+          },
+          {
+            "pnl": 0,
+            "probability": 0.21525918629904128
+          },
+          {
+            "pnl": 1,
+            "probability": 0.12930787117160064
+          },
+          {
+            "pnl": 2,
+            "probability": 0.07446816844741244
+          },
+          {
+            "pnl": 3,
+            "probability": 0.011221277941823565
+          },
+          {
+            "pnl": 4,
+            "probability": 0.01088000486488148
+          },
+          {
+            "pnl": 7,
+            "probability": 0.011514283634352354
+          },
+          {
+            "pnl": 24,
+            "probability": 0.0016398956159058313
+          },
+          {
+            "pnl": 39,
+            "probability": 0.0005272535387041343
+          },
+          {
+            "pnl": 49,
+            "probability": 0.00010683688537900623
+          },
+          {
+            "pnl": 79,
+            "probability": 0.0001958426060758703
+          },
+          {
+            "pnl": 799,
+            "probability": 0.00002485513502552167
+          }
+        ],
+        "netEV": -0.008340268127751158,
+        "win": 0.23988628984116084,
+        "push": 0.21525918629904128,
+        "loss": 0.5448545238597978,
+        "standardDeviation": 4.572098163318423,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "bonus-deluxe",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 80,
+        "fullHouse": 9,
+        "flush": 6,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5483704759605121
+          },
+          {
+            "pnl": 0,
+            "probability": 0.3396564281944152
+          },
+          {
+            "pnl": 2,
+            "probability": 0.07409082174622762
+          },
+          {
+            "pnl": 3,
+            "probability": 0.012779651772360047
+          },
+          {
+            "pnl": 5,
+            "probability": 0.011120537374848713
+          },
+          {
+            "pnl": 8,
+            "probability": 0.011489599019808212
+          },
+          {
+            "pnl": 49,
+            "probability": 0.00010901535534468087
+          },
+          {
+            "pnl": 79,
+            "probability": 0.002359704495837801
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000023766080645644404
+          }
+        ],
+        "netEV": -0.0035828920993219437,
+        "win": 0.11197309584507273,
+        "push": 0.3396564281944152,
+        "loss": 0.5483704759605121,
+        "standardDeviation": 5.668689164205967,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "double-bonus",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 50,
+        "fullHouse": 10,
+        "flush": 7,
+        "straight": 5,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 160,
+        "lowQuads": 80
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.567136050884511
+          },
+          {
+            "pnl": 0,
+            "probability": 0.31703741701352567
+          },
+          {
+            "pnl": 2,
+            "probability": 0.07219944830931911
+          },
+          {
+            "pnl": 4,
+            "probability": 0.015019409180746944
+          },
+          {
+            "pnl": 6,
+            "probability": 0.014953347333779095
+          },
+          {
+            "pnl": 9,
+            "probability": 0.01118989008909264
+          },
+          {
+            "pnl": 49,
+            "probability": 0.001720771327377466
+          },
+          {
+            "pnl": 79,
+            "probability": 0.0005240628043200143
+          },
+          {
+            "pnl": 159,
+            "probability": 0.00019879055171619043
+          },
+          {
+            "pnl": 799,
+            "probability": 0.00002081250561177189
+          }
+        ],
+        "netEV": 0.0017252235510802974,
+        "win": 0.11582653210196324,
+        "push": 0.31703741701352567,
+        "loss": 0.567136050884511,
+        "standardDeviation": 5.315593971292604,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "double-double",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 6,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 160,
+        "lowQuads": 80,
+        "acesKicker": 400,
+        "lowKicker": 160
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5528369339241471
+          },
+          {
+            "pnl": 0,
+            "probability": 0.3343860776213193
+          },
+          {
+            "pnl": 2,
+            "probability": 0.07526512890268407
+          },
+          {
+            "pnl": 3,
+            "probability": 0.012766256895506943
+          },
+          {
+            "pnl": 5,
+            "probability": 0.011358532523093734
+          },
+          {
+            "pnl": 8,
+            "probability": 0.010860004343459857
+          },
+          {
+            "pnl": 49,
+            "probability": 0.0017397832379489062
+          },
+          {
+            "pnl": 79,
+            "probability": 0.0003844055387503561
+          },
+          {
+            "pnl": 159,
+            "probability": 0.00031677660911768474
+          },
+          {
+            "pnl": 399,
+            "probability": 0.0000615901922641516
+          },
+          {
+            "pnl": 799,
+            "probability": 0.0000245102117079464
+          }
+        ],
+        "netEV": -0.010192165130578607,
+        "win": 0.11277698845453364,
+        "push": 0.3343860776213193,
+        "loss": 0.5528369339241471,
+        "standardDeviation": 6.479581877898724,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "triple-double",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 50,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 7,
+        "straight": 4,
+        "trips": 2,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 160,
+        "lowQuads": 80,
+        "acesKicker": 800,
+        "lowKicker": 400
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5674913913982623
+          },
+          {
+            "pnl": 0,
+            "probability": 0.3177923086047762
+          },
+          {
+            "pnl": 1,
+            "probability": 0.07365454752459999
+          },
+          {
+            "pnl": 3,
+            "probability": 0.01265315837381645
+          },
+          {
+            "pnl": 6,
+            "probability": 0.015618163016941562
+          },
+          {
+            "pnl": 8,
+            "probability": 0.010350638152001362
+          },
+          {
+            "pnl": 49,
+            "probability": 0.0017068005492956878
+          },
+          {
+            "pnl": 79,
+            "probability": 0.00031989931458912727
+          },
+          {
+            "pnl": 159,
+            "probability": 0.00014811659702889123
+          },
+          {
+            "pnl": 399,
+            "probability": 0.0001725765938958599
+          },
+          {
+            "pnl": 799,
+            "probability": 0.00009239987479252258
+          }
+        ],
+        "netEV": -0.0042219128152555935,
+        "win": 0.11471629999696145,
+        "push": 0.3177923086047762,
+        "loss": 0.5674913913982623,
+        "standardDeviation": 9.913692322894153,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "triple-plus",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 100,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 240,
+        "lowQuads": 120
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5529056635113443
+          },
+          {
+            "pnl": 0,
+            "probability": 0.33466137512829947
+          },
+          {
+            "pnl": 2,
+            "probability": 0.0752501484307526
+          },
+          {
+            "pnl": 3,
+            "probability": 0.012735325935695303
+          },
+          {
+            "pnl": 4,
+            "probability": 0.011053296489888365
+          },
+          {
+            "pnl": 8,
+            "probability": 0.010857931695375692
+          },
+          {
+            "pnl": 49,
+            "probability": 0.00162920654311245
+          },
+          {
+            "pnl": 99,
+            "probability": 0.00011835913671710972
+          },
+          {
+            "pnl": 119,
+            "probability": 0.0005276290471292117
+          },
+          {
+            "pnl": 239,
+            "probability": 0.0002353050831350191
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000025758998550521837
+          }
+        ],
+        "netEV": -0.001966862853177504,
+        "win": 0.11243296136035627,
+        "push": 0.33466137512829947,
+        "loss": 0.5529056635113443,
+        "standardDeviation": 6.6535126457555975,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "super-double",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 80,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 160,
+        "lowQuads": 80,
+        "faceQuads": 120
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5483906292382742
+          },
+          {
+            "pnl": 0,
+            "probability": 0.33951949868220804
+          },
+          {
+            "pnl": 2,
+            "probability": 0.07499439154764805
+          },
+          {
+            "pnl": 3,
+            "probability": 0.012818233904009558
+          },
+          {
+            "pnl": 4,
+            "probability": 0.010920756460432631
+          },
+          {
+            "pnl": 8,
+            "probability": 0.010835714001384026
+          },
+          {
+            "pnl": 49,
+            "probability": 0.0010498014437723944
+          },
+          {
+            "pnl": 79,
+            "probability": 0.0006390482932011821
+          },
+          {
+            "pnl": 119,
+            "probability": 0.0005858275980868279
+          },
+          {
+            "pnl": 159,
+            "probability": 0.00022148002573850836
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000024618805244667658
+          }
+        ],
+        "netEV": -0.003054087015161182,
+        "win": 0.11208987207951784,
+        "push": 0.33951949868220804,
+        "loss": 0.5483906292382742,
+        "standardDeviation": 6.1605702228887,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "white-hot",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 80,
+        "quads": 50,
+        "fullHouse": 9,
+        "flush": 5,
+        "straight": 4,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1,
+        "aces": 240,
+        "lowQuads": 120
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5526468528070845
+          },
+          {
+            "pnl": 0,
+            "probability": 0.3348487785798768
+          },
+          {
+            "pnl": 2,
+            "probability": 0.0752884986718505
+          },
+          {
+            "pnl": 3,
+            "probability": 0.012724779212334116
+          },
+          {
+            "pnl": 4,
+            "probability": 0.011097368691395123
+          },
+          {
+            "pnl": 8,
+            "probability": 0.010861734203552686
+          },
+          {
+            "pnl": 49,
+            "probability": 0.0016301681201126533
+          },
+          {
+            "pnl": 79,
+            "probability": 0.00011323072605074078
+          },
+          {
+            "pnl": 119,
+            "probability": 0.00052763028967751
+          },
+          {
+            "pnl": 239,
+            "probability": 0.0002353375447071752
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000025621153357915072
+          }
+        ],
+        "netEV": -0.004283724999237938,
+        "win": 0.1125043686130384,
+        "push": 0.3348487785798768,
+        "loss": 0.5526468528070845,
+        "standardDeviation": 6.613076391820722,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "all-american",
+      "pays": {
+        "royal": 800,
+        "straightFlush": 200,
+        "quads": 40,
+        "fullHouse": 8,
+        "flush": 8,
+        "straight": 8,
+        "trips": 3,
+        "twoPair": 1,
+        "highPair": 1
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5807643658329515
+          },
+          {
+            "pnl": 0,
+            "probability": 0.30285667732238436
+          },
+          {
+            "pnl": 2,
+            "probability": 0.06883482597986827
+          },
+          {
+            "pnl": 7,
+            "probability": 0.04512758543978643
+          },
+          {
+            "pnl": 39,
+            "probability": 0.002251744192757444
+          },
+          {
+            "pnl": 199,
+            "probability": 0.0001417863731401127
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000023014859111977867
+          }
+        ],
+        "netEV": 0.007220768408183056,
+        "win": 0.11637895684466423,
+        "push": 0.30285667732238436,
+        "loss": 0.5807643658329515,
+        "standardDeviation": 5.1768520713515676,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "deuces",
+      "pays": {
+        "royal": 800,
+        "deuces": 200,
+        "wildRoyal": 25,
+        "fiveKind": 15,
+        "straightFlush": 9,
+        "quads": 5,
+        "fullHouse": 3,
+        "flush": 2,
+        "straight": 2,
+        "trips": 1
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5468001073070459
+          },
+          {
+            "pnl": 0,
+            "probability": 0.2845443598225409
+          },
+          {
+            "pnl": 1,
+            "probability": 0.07314511668450425
+          },
+          {
+            "pnl": 2,
+            "probability": 0.02122913778951743
+          },
+          {
+            "pnl": 4,
+            "probability": 0.06493816591639344
+          },
+          {
+            "pnl": 8,
+            "probability": 0.004119878190798653
+          },
+          {
+            "pnl": 14,
+            "probability": 0.0032016039648417732
+          },
+          {
+            "pnl": 24,
+            "probability": 0.0017958432610858655
+          },
+          {
+            "pnl": 199,
+            "probability": 0.00020370319906224437
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000022083864209562628
+          }
+        ],
+        "netEV": 0.007619612039129,
+        "win": 0.1686555328704132,
+        "push": 0.2845443598225409,
+        "loss": 0.5468001073070459,
+        "standardDeviation": 5.082776608542104,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "nsud",
+      "pays": {
+        "royal": 800,
+        "deuces": 200,
+        "wildRoyal": 25,
+        "fiveKind": 16,
+        "straightFlush": 10,
+        "quads": 4,
+        "fullHouse": 4,
+        "flush": 3,
+        "straight": 2,
+        "trips": 1
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5571988550891358
+          },
+          {
+            "pnl": 0,
+            "probability": 0.26718757941017063
+          },
+          {
+            "pnl": 1,
+            "probability": 0.05733568755019498
+          },
+          {
+            "pnl": 2,
+            "probability": 0.0207628616795929
+          },
+          {
+            "pnl": 3,
+            "probability": 0.08715337090560363
+          },
+          {
+            "pnl": 9,
+            "probability": 0.00513677077519719
+          },
+          {
+            "pnl": 15,
+            "probability": 0.003108439126440122
+          },
+          {
+            "pnl": 24,
+            "probability": 0.0019067136373711595
+          },
+          {
+            "pnl": 199,
+            "probability": 0.00018671018733213898
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000023011638961596527
+          }
+        ],
+        "netEV": -0.002717053483248452,
+        "win": 0.17561356550069374,
+        "push": 0.26718757941017063,
+        "loss": 0.5571988550891358,
+        "standardDeviation": 5.077427172275001,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "bonus-deuces",
+      "pays": {
+        "royal": 800,
+        "deuces": 200,
+        "wildRoyal": 25,
+        "fiveKind": 20,
+        "straightFlush": 10,
+        "quads": 4,
+        "fullHouse": 4,
+        "flush": 3,
+        "straight": 1,
+        "trips": 1,
+        "deucesAce": 400,
+        "fiveAces": 80,
+        "fiveLow": 40
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5584330308420548
+          },
+          {
+            "pnl": 0,
+            "probability": 0.3207101425859486
+          },
+          {
+            "pnl": 2,
+            "probability": 0.021508310019970174
+          },
+          {
+            "pnl": 3,
+            "probability": 0.08970295629836747
+          },
+          {
+            "pnl": 9,
+            "probability": 0.00416622443734007
+          },
+          {
+            "pnl": 19,
+            "probability": 0.002078164973218571
+          },
+          {
+            "pnl": 24,
+            "probability": 0.0020772594493505777
+          },
+          {
+            "pnl": 39,
+            "probability": 0.0007814584586545076
+          },
+          {
+            "pnl": 79,
+            "probability": 0.0003338573162161121
+          },
+          {
+            "pnl": 199,
+            "probability": 0.00015724068696697872
+          },
+          {
+            "pnl": 399,
+            "probability": 0.000027749140588217976
+          },
+          {
+            "pnl": 799,
+            "probability": 0.00002360579132385052
+          }
+        ],
+        "netEV": -0.001396721757901679,
+        "win": 0.12085682657199652,
+        "push": 0.3207101425859486,
+        "loss": 0.5584330308420548,
+        "standardDeviation": 5.720377268395672,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "joker",
+      "pays": {
+        "royal": 800,
+        "fiveKind": 200,
+        "wildRoyal": 100,
+        "straightFlush": 50,
+        "quads": 20,
+        "fullHouse": 7,
+        "flush": 5,
+        "straight": 3,
+        "trips": 2,
+        "twoPair": 1,
+        "highPair": 1
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.5560291515564013
+          },
+          {
+            "pnl": 0,
+            "probability": 0.2528311900445715
+          },
+          {
+            "pnl": 1,
+            "probability": 0.13393710117803487
+          },
+          {
+            "pnl": 2,
+            "probability": 0.01659493265458468
+          },
+          {
+            "pnl": 4,
+            "probability": 0.015576620754653079
+          },
+          {
+            "pnl": 6,
+            "probability": 0.015679089133822027
+          },
+          {
+            "pnl": 19,
+            "probability": 0.008555379692664462
+          },
+          {
+            "pnl": 49,
+            "probability": 0.0005748807854316508
+          },
+          {
+            "pnl": 99,
+            "probability": 0.00010404651308757843
+          },
+          {
+            "pnl": 199,
+            "probability": 0.00009334397593652353
+          },
+          {
+            "pnl": 799,
+            "probability": 0.000024263710812583226
+          }
+        ],
+        "netEV": 0.006462966345415471,
+        "win": 0.1911396583990274,
+        "push": 0.2528311900445715,
+        "loss": 0.5560291515564013,
+        "standardDeviation": 5.12298839560287,
+        "deals": 2869685,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "low27",
+      "pays": {
+        "lowJ": 1,
+        "lowT": 2,
+        "low9": 4,
+        "low8": 6,
+        "low7": 8,
+        "wheel": 12
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.6525147251304753
+          },
+          {
+            "pnl": 0,
+            "probability": 0.10209818562357022
+          },
+          {
+            "pnl": 1,
+            "probability": 0.10955214594032242
+          },
+          {
+            "pnl": 3,
+            "probability": 0.08567513762032175
+          },
+          {
+            "pnl": 5,
+            "probability": 0.03900173982820229
+          },
+          {
+            "pnl": 7,
+            "probability": 0.008182939926327105
+          },
+          {
+            "pnl": 11,
+            "probability": 0.0029751259307809314
+          }
+        ],
+        "netEV": -0.0009215024652961951,
+        "win": 0.24538708924595448,
+        "push": 0.10209818562357022,
+        "loss": 0.6525147251304753,
+        "standardDeviation": 1.8080763397065067,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "low27",
+      "pays": {
+        "lowJ": 1,
+        "lowT": 2,
+        "low9": 4,
+        "low8": 4,
+        "low7": 6,
+        "wheel": 8
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -2,
+            "probability": 0.08811573729331287
+          },
+          {
+            "pnl": -1,
+            "probability": 0.5474653093236435
+          },
+          {
+            "pnl": 0,
+            "probability": 0.11564610752337398
+          },
+          {
+            "pnl": 1,
+            "probability": 0.10628619732923318
+          },
+          {
+            "pnl": 2,
+            "probability": 0.013817507363012065
+          },
+          {
+            "pnl": 3,
+            "probability": 0.0682574930759029
+          },
+          {
+            "pnl": 5,
+            "probability": 0.004219455768167397
+          },
+          {
+            "pnl": 6,
+            "probability": 0.0505730279018439
+          },
+          {
+            "pnl": 7,
+            "probability": 0.001406382745828051
+          },
+          {
+            "pnl": 10,
+            "probability": 0.003059259710431247
+          },
+          {
+            "pnl": 14,
+            "probability": 0.001153521965251044
+          }
+        ],
+        "netEV": -0.003881062536779417,
+        "win": 0.24877284585966977,
+        "push": 0.11564610752337398,
+        "loss": 0.6355810466169564,
+        "standardDeviation": 2.0500808007889244,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "badeucey",
+      "pays": {
+        "qualify": 1,
+        "lowT": 0,
+        "low9": 3,
+        "low8": 6,
+        "low7": 9,
+        "wheel": 12,
+        "badT": 0,
+        "bad9": 3,
+        "bad8": 6,
+        "bad7": 9,
+        "bad6": 12,
+        "bad5": 15
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.7124375211084133
+          },
+          {
+            "pnl": 0,
+            "probability": 0.1958169955708669
+          },
+          {
+            "pnl": 3,
+            "probability": 0.02514427720882841
+          },
+          {
+            "pnl": 6,
+            "probability": 0.028972909797717657
+          },
+          {
+            "pnl": 9,
+            "probability": 0.014317865596432437
+          },
+          {
+            "pnl": 12,
+            "probability": 0.013269857591609901
+          },
+          {
+            "pnl": 15,
+            "probability": 0.004960608098655611
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0029290114594127613
+          },
+          {
+            "pnl": 21,
+            "probability": 0.001802109053672994
+          },
+          {
+            "pnl": 27,
+            "probability": 0.0003488445143901426
+          }
+        ],
+        "netEV": -0.0006737294634808263,
+        "win": 0.09174548332071991,
+        "push": 0.1958169955708669,
+        "loss": 0.7124375211084133,
+        "standardDeviation": 2.8577160810697446,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "badeucey",
+      "pays": {
+        "qualify": 1,
+        "lowT": 0,
+        "low9": 2,
+        "low8": 4,
+        "low7": 6,
+        "wheel": 8,
+        "badT": 0,
+        "bad9": 2,
+        "bad8": 4,
+        "bad7": 8,
+        "bad6": 12,
+        "bad5": 16
+      },
+      "rules": {
+        "fiveCard": "high-card",
+        "minBadugi": 4,
+        "maxLowRank": 14,
+        "maxBadugiRank": 14
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -2,
+            "probability": 0.12975941960079024
+          },
+          {
+            "pnl": -1,
+            "probability": 0.5578308792464047
+          },
+          {
+            "pnl": 0,
+            "probability": 0.22747714805183192
+          },
+          {
+            "pnl": 2,
+            "probability": 0.014726916726252951
+          },
+          {
+            "pnl": 4,
+            "probability": 0.020652570236258314
+          },
+          {
+            "pnl": 6,
+            "probability": 0.0019614712466332865
+          },
+          {
+            "pnl": 8,
+            "probability": 0.02009937153530117
+          },
+          {
+            "pnl": 10,
+            "probability": 0.0011320211264566396
+          },
+          {
+            "pnl": 12,
+            "probability": 0.0043369845202666174
+          },
+          {
+            "pnl": 14,
+            "probability": 0.0009397943302685413
+          },
+          {
+            "pnl": 16,
+            "probability": 0.010396675474814826
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0005300869375329177
+          },
+          {
+            "pnl": 20,
+            "probability": 0.0014472182442835304
+          },
+          {
+            "pnl": 24,
+            "probability": 0.004300785358300537
+          },
+          {
+            "pnl": 28,
+            "probability": 0.0014468208118656835
+          },
+          {
+            "pnl": 32,
+            "probability": 0.0017548811312756056
+          },
+          {
+            "pnl": 36,
+            "probability": 0.0007705266693598693
+          },
+          {
+            "pnl": 40,
+            "probability": 0.00021135046205204638
+          },
+          {
+            "pnl": 48,
+            "probability": 0.0002250782900508193
+          }
+        ],
+        "netEV": -0.0044851567646633575,
+        "win": 0.08493255310097335,
+        "push": 0.22747714805183192,
+        "loss": 0.6875902988471949,
+        "standardDeviation": 3.797523374322497,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.6814820741930601
+          },
+          {
+            "pnl": 0,
+            "probability": 0.1412525366322078
+          },
+          {
+            "pnl": 1,
+            "probability": 0.03661911486765846
+          },
+          {
+            "pnl": 2,
+            "probability": 0.06046299096502911
+          },
+          {
+            "pnl": 3,
+            "probability": 0.027549232506401865
+          },
+          {
+            "pnl": 4,
+            "probability": 0.022684076965782007
+          },
+          {
+            "pnl": 5,
+            "probability": 0.004503194119034185
+          },
+          {
+            "pnl": 6,
+            "probability": 0.022699987559246935
+          },
+          {
+            "pnl": 7,
+            "probability": 0.000897987373986176
+          },
+          {
+            "pnl": 8,
+            "probability": 0.0015359455198385634
+          },
+          {
+            "pnl": 9,
+            "probability": 0.0002888827629536373
+          },
+          {
+            "pnl": 14,
+            "probability": 0.000023976534801403367
+          }
+        ],
+        "netEV": -0.17032798393194312,
+        "win": 0.17726538917473234,
+        "push": 0.1412525366322078,
+        "loss": 0.6814820741930601,
+        "standardDeviation": 1.6254261161752932,
+        "deals": 270725,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -2,
+            "probability": 0.05433165082728049
+          },
+          {
+            "pnl": -1,
+            "probability": 0.6283619849134775
+          },
+          {
+            "pnl": 0,
+            "probability": 0.14429806253488048
+          },
+          {
+            "pnl": 1,
+            "probability": 0.022580294756960797
+          },
+          {
+            "pnl": 2,
+            "probability": 0.05916472370394942
+          },
+          {
+            "pnl": 3,
+            "probability": 0.01854895154295113
+          },
+          {
+            "pnl": 4,
+            "probability": 0.024800013356704398
+          },
+          {
+            "pnl": 5,
+            "probability": 0.001698864531224933
+          },
+          {
+            "pnl": 6,
+            "probability": 0.022816073273400676
+          },
+          {
+            "pnl": 7,
+            "probability": 0.0004479350126160396
+          },
+          {
+            "pnl": 8,
+            "probability": 0.009380851076169566
+          },
+          {
+            "pnl": 9,
+            "probability": 0.00010148210711026504
+          },
+          {
+            "pnl": 10,
+            "probability": 0.0024284869430588607
+          },
+          {
+            "pnl": 12,
+            "probability": 0.009270195803362817
+          },
+          {
+            "pnl": 14,
+            "probability": 0.0005551087913046879
+          },
+          {
+            "pnl": 16,
+            "probability": 0.0009710987504658709
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0002215681690024739
+          },
+          {
+            "pnl": 28,
+            "probability": 0.00002265390607961801
+          }
+        ],
+        "netEV": -0.0533233228203821,
+        "win": 0.17300830172436152,
+        "push": 0.14429806253488048,
+        "loss": 0.682693635740758,
+        "standardDeviation": 2.2770434794384,
+        "deals": 270725,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -5,
+            "probability": 0.04358012385912049
+          },
+          {
+            "pnl": -4,
+            "probability": 0.027757315122733186
+          },
+          {
+            "pnl": -3,
+            "probability": 0.22751933361404691
+          },
+          {
+            "pnl": -2,
+            "probability": 0.08611271116288247
+          },
+          {
+            "pnl": -1,
+            "probability": 0.18445527013195764
+          },
+          {
+            "pnl": 0,
+            "probability": 0.11210333384047858
+          },
+          {
+            "pnl": 1,
+            "probability": 0.1526859710225755
+          },
+          {
+            "pnl": 2,
+            "probability": 0.03788373435192007
+          },
+          {
+            "pnl": 3,
+            "probability": 0.05419886363426008
+          },
+          {
+            "pnl": 4,
+            "probability": 0.024562160906488616
+          },
+          {
+            "pnl": 5,
+            "probability": 0.021203828176115005
+          },
+          {
+            "pnl": 6,
+            "probability": 0.004368944845425518
+          },
+          {
+            "pnl": 7,
+            "probability": 0.020876754715263974
+          },
+          {
+            "pnl": 8,
+            "probability": 0.0008817307895192468
+          },
+          {
+            "pnl": 9,
+            "probability": 0.001502614736921588
+          },
+          {
+            "pnl": 10,
+            "probability": 0.0002837076480061875
+          },
+          {
+            "pnl": 15,
+            "probability": 0.000023601442284734166
+          }
+        ],
+        "netEV": -0.5767313288084912,
+        "win": 0.31847191226878047,
+        "push": 0.11210333384047858,
+        "loss": 0.5694247538907407,
+        "standardDeviation": 2.6238804925502137,
+        "deals": 270725,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -6,
+            "probability": 0.004863693431545891
+          },
+          {
+            "pnl": -5,
+            "probability": 0.04358012385912079
+          },
+          {
+            "pnl": -4,
+            "probability": 0.03558756997426468
+          },
+          {
+            "pnl": -3,
+            "probability": 0.22273611754529626
+          },
+          {
+            "pnl": -2,
+            "probability": 0.11248439240492317
+          },
+          {
+            "pnl": -1,
+            "probability": 0.1507679883452644
+          },
+          {
+            "pnl": 0,
+            "probability": 0.11480793122772277
+          },
+          {
+            "pnl": 1,
+            "probability": 0.10862564967636434
+          },
+          {
+            "pnl": 2,
+            "probability": 0.06842673387579108
+          },
+          {
+            "pnl": 3,
+            "probability": 0.03359948804114274
+          },
+          {
+            "pnl": 4,
+            "probability": 0.029949081632226184
+          },
+          {
+            "pnl": 5,
+            "probability": 0.00940792159744418
+          },
+          {
+            "pnl": 6,
+            "probability": 0.017732116628050392
+          },
+          {
+            "pnl": 7,
+            "probability": 0.01239755288723328
+          },
+          {
+            "pnl": 8,
+            "probability": 0.009198019661860334
+          },
+          {
+            "pnl": 9,
+            "probability": 0.0003835877480573092
+          },
+          {
+            "pnl": 10,
+            "probability": 0.01079722893213367
+          },
+          {
+            "pnl": 12,
+            "probability": 0.0029205397379901284
+          },
+          {
+            "pnl": 14,
+            "probability": 0.009639986927668043
+          },
+          {
+            "pnl": 15,
+            "probability": 0.000005263501543789807
+          },
+          {
+            "pnl": 16,
+            "probability": 0.0007108571742936144
+          },
+          {
+            "pnl": 18,
+            "probability": 0.001086385454345408
+          },
+          {
+            "pnl": 20,
+            "probability": 0.00026819238333631375
+          },
+          {
+            "pnl": 30,
+            "probability": 0.000023577352381214413
+          }
+        ],
+        "netEV": -0.33499529560629754,
+        "win": 0.315172183211862,
+        "push": 0.11480793122772277,
+        "loss": 0.5700198855604152,
+        "standardDeviation": 3.412501232599425,
+        "deals": 270725,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "pays": {
+        "fee": 10
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.7573250762984359
+          },
+          {
+            "pnl": 0,
+            "probability": 0.028784597403056025
+          },
+          {
+            "pnl": 1,
+            "probability": 0.08810109679313405
+          },
+          {
+            "pnl": 2,
+            "probability": 0.01965534138351836
+          },
+          {
+            "pnl": 3,
+            "probability": 0.0348695419422422
+          },
+          {
+            "pnl": 4,
+            "probability": 0.009204051432890563
+          },
+          {
+            "pnl": 5,
+            "probability": 0.028382848509363384
+          },
+          {
+            "pnl": 6,
+            "probability": 0.01404656219142969
+          },
+          {
+            "pnl": 7,
+            "probability": 0.006052799282478163
+          },
+          {
+            "pnl": 8,
+            "probability": 0.0002092901190501732
+          },
+          {
+            "pnl": 9,
+            "probability": 0.00596602849284091
+          },
+          {
+            "pnl": 10,
+            "probability": 0.0030112882856693263
+          },
+          {
+            "pnl": 11,
+            "probability": 0.00037859528035292524
+          },
+          {
+            "pnl": 12,
+            "probability": 0.00028245805731995263
+          },
+          {
+            "pnl": 13,
+            "probability": 0.0036732409280476933
+          },
+          {
+            "pnl": 17,
+            "probability": 0.00004203257968029361
+          },
+          {
+            "pnl": 18,
+            "probability": 0.000015151020490098445
+          }
+        ],
+        "netEV": -0.07815034520284292,
+        "win": 0.21389032629850774,
+        "push": 0.028784597403056025,
+        "loss": 0.7573250762984359,
+        "standardDeviation": 2.100703485819268,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "pays": {
+        "fee": 11
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -2,
+            "probability": 0.0827582979395654
+          },
+          {
+            "pnl": -1,
+            "probability": 0.708803199478731
+          },
+          {
+            "pnl": 0,
+            "probability": 0.0838567225149975
+          },
+          {
+            "pnl": 1,
+            "probability": 0.012624649625504959
+          },
+          {
+            "pnl": 2,
+            "probability": 0.02623005769069915
+          },
+          {
+            "pnl": 3,
+            "probability": 0.006054628219941342
+          },
+          {
+            "pnl": 4,
+            "probability": 0.030419228368476922
+          },
+          {
+            "pnl": 5,
+            "probability": 0.008924959097951811
+          },
+          {
+            "pnl": 6,
+            "probability": 0.006720746625813722
+          },
+          {
+            "pnl": 7,
+            "probability": 0.00012119600793840836
+          },
+          {
+            "pnl": 8,
+            "probability": 0.014470901643122399
+          },
+          {
+            "pnl": 9,
+            "probability": 0.0015977282534573693
+          },
+          {
+            "pnl": 10,
+            "probability": 0.005725233970959105
+          },
+          {
+            "pnl": 11,
+            "probability": 0.00009934895913092212
+          },
+          {
+            "pnl": 12,
+            "probability": 0.004454490470845085
+          },
+          {
+            "pnl": 14,
+            "probability": 0.00009122983143306244
+          },
+          {
+            "pnl": 16,
+            "probability": 0.0028656349537887495
+          },
+          {
+            "pnl": 17,
+            "probability": 0.000001987202825243571
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0015544081433901732
+          },
+          {
+            "pnl": 20,
+            "probability": 0.000247801390534227
+          },
+          {
+            "pnl": 22,
+            "probability": 0.00020244488601680206
+          },
+          {
+            "pnl": 24,
+            "probability": 0.002126382467881382
+          },
+          {
+            "pnl": 32,
+            "probability": 0.00003511402426196016
+          },
+          {
+            "pnl": 34,
+            "probability": 0.000013608232733074463
+          }
+        ],
+        "netEV": -0.2044809244294994,
+        "win": 0.12458178006670584,
+        "push": 0.0838567225149975,
+        "loss": 0.7915614974182965,
+        "standardDeviation": 2.671815249917019,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "pays": {
+        "fee": 9
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -9,
+            "probability": 0.003850643615934199
+          },
+          {
+            "pnl": -8,
+            "probability": 0.003916696020378212
+          },
+          {
+            "pnl": -7,
+            "probability": 0.04746225167705588
+          },
+          {
+            "pnl": -6,
+            "probability": 0.029429423634359658
+          },
+          {
+            "pnl": -5,
+            "probability": 0.10119276241327534
+          },
+          {
+            "pnl": -4,
+            "probability": 0.060050807526213994
+          },
+          {
+            "pnl": -3,
+            "probability": 0.12997031763980518
+          },
+          {
+            "pnl": -2,
+            "probability": 0.07507675174721819
+          },
+          {
+            "pnl": -1,
+            "probability": 0.1404399608236357
+          },
+          {
+            "pnl": 0,
+            "probability": 0.08115637368925543
+          },
+          {
+            "pnl": 1,
+            "probability": 0.09001858896497672
+          },
+          {
+            "pnl": 2,
+            "probability": 0.03448179878534675
+          },
+          {
+            "pnl": 3,
+            "probability": 0.08767443451877742
+          },
+          {
+            "pnl": 4,
+            "probability": 0.02017114179204657
+          },
+          {
+            "pnl": 5,
+            "probability": 0.030974982073638992
+          },
+          {
+            "pnl": 6,
+            "probability": 0.008638181428716344
+          },
+          {
+            "pnl": 7,
+            "probability": 0.025120564466854664
+          },
+          {
+            "pnl": 8,
+            "probability": 0.013112193838046923
+          },
+          {
+            "pnl": 9,
+            "probability": 0.005852547043758682
+          },
+          {
+            "pnl": 10,
+            "probability": 0.00019021796776634952
+          },
+          {
+            "pnl": 11,
+            "probability": 0.0052174641692052095
+          },
+          {
+            "pnl": 12,
+            "probability": 0.002528156594813634
+          },
+          {
+            "pnl": 13,
+            "probability": 0.00038468091609051674
+          },
+          {
+            "pnl": 14,
+            "probability": 0.00023235248275504044
+          },
+          {
+            "pnl": 15,
+            "probability": 0.0027997311131200933
+          },
+          {
+            "pnl": 19,
+            "probability": 0.00004258056752354352
+          },
+          {
+            "pnl": 20,
+            "probability": 0.000014394489430722841
+          }
+        ],
+        "netEV": -0.8176858034810397,
+        "win": 0.32745401121286827,
+        "push": 0.08115637368925543,
+        "loss": 0.5913896150978764,
+        "standardDeviation": 3.8891438608692046,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "pays": {
+        "fee": 9
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -14,
+            "probability": 0.0002678689066176298
+          },
+          {
+            "pnl": -12,
+            "probability": 0.000022180650528194996
+          },
+          {
+            "pnl": -10,
+            "probability": 0.0011540695407173621
+          },
+          {
+            "pnl": -9,
+            "probability": 0.003850643615933933
+          },
+          {
+            "pnl": -8,
+            "probability": 0.011284153072220573
+          },
+          {
+            "pnl": -7,
+            "probability": 0.047194549349554395
+          },
+          {
+            "pnl": -6,
+            "probability": 0.047634261109108005
+          },
+          {
+            "pnl": -5,
+            "probability": 0.10003912854101622
+          },
+          {
+            "pnl": -4,
+            "probability": 0.07234051128219783
+          },
+          {
+            "pnl": -3,
+            "probability": 0.11208509851264604
+          },
+          {
+            "pnl": -2,
+            "probability": 0.09936521017479155
+          },
+          {
+            "pnl": -1,
+            "probability": 0.09894287383683324
+          },
+          {
+            "pnl": 0,
+            "probability": 0.08256328954747805
+          },
+          {
+            "pnl": 1,
+            "probability": 0.05494120413642592
+          },
+          {
+            "pnl": 2,
+            "probability": 0.05454814198098994
+          },
+          {
+            "pnl": 3,
+            "probability": 0.04635057073858148
+          },
+          {
+            "pnl": 4,
+            "probability": 0.023653036364433264
+          },
+          {
+            "pnl": 5,
+            "probability": 0.011931476248907957
+          },
+          {
+            "pnl": 6,
+            "probability": 0.04446104739998826
+          },
+          {
+            "pnl": 7,
+            "probability": 0.010321067495931584
+          },
+          {
+            "pnl": 8,
+            "probability": 0.015423330489390418
+          },
+          {
+            "pnl": 9,
+            "probability": 0.0025607215253920573
+          },
+          {
+            "pnl": 10,
+            "probability": 0.01836984646899134
+          },
+          {
+            "pnl": 11,
+            "probability": 0.0018952512023276307
+          },
+          {
+            "pnl": 12,
+            "probability": 0.005646354560685632
+          },
+          {
+            "pnl": 13,
+            "probability": 0.000041941386634671474
+          },
+          {
+            "pnl": 14,
+            "probability": 0.01400341018356873
+          },
+          {
+            "pnl": 15,
+            "probability": 0.0009558024792598732
+          },
+          {
+            "pnl": 16,
+            "probability": 0.006980431395499369
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0033189138460476613
+          },
+          {
+            "pnl": 19,
+            "probability": 0.00000187033907864691
+          },
+          {
+            "pnl": 20,
+            "probability": 0.00012494664454167274
+          },
+          {
+            "pnl": 22,
+            "probability": 0.0033835610669227904
+          },
+          {
+            "pnl": 24,
+            "probability": 0.001729832472375434
+          },
+          {
+            "pnl": 26,
+            "probability": 0.00035079939611222267
+          },
+          {
+            "pnl": 28,
+            "probability": 0.00019692043899320174
+          },
+          {
+            "pnl": 30,
+            "probability": 0.002009085424534718
+          },
+          {
+            "pnl": 38,
+            "probability": 0.000041654176792040105
+          },
+          {
+            "pnl": 40,
+            "probability": 0.000014943997950705524
+          }
+        ],
+        "netEV": -0.3870977310643203,
+        "win": 0.3232561618603572,
+        "push": 0.08256328954747805,
+        "loss": 0.594180548592165,
+        "standardDeviation": 5.3470677362012795,
+        "deals": 2598960,
+        "estimated": false,
+        "method": "Exhaustive starting hands and legal draws under optimal play"
+      }
+    },
+    {
+      "id": "cribbage6",
+      "pays": {
+        "fee": 18
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.8320419682542226
+          },
+          {
+            "pnl": 0,
+            "probability": 0.010324638992666491
+          },
+          {
+            "pnl": 1,
+            "probability": 0.04309082082010359
+          },
+          {
+            "pnl": 2,
+            "probability": 0.01967961849572115
+          },
+          {
+            "pnl": 3,
+            "probability": 0.019416970827505712
+          },
+          {
+            "pnl": 4,
+            "probability": 0.007760122624787381
+          },
+          {
+            "pnl": 5,
+            "probability": 0.017642546572309195
+          },
+          {
+            "pnl": 6,
+            "probability": 0.0039849192089261775
+          },
+          {
+            "pnl": 7,
+            "probability": 0.01346225521541174
+          },
+          {
+            "pnl": 8,
+            "probability": 0.006227375047142621
+          },
+          {
+            "pnl": 9,
+            "probability": 0.012620400285071469
+          },
+          {
+            "pnl": 10,
+            "probability": 0.0014681793343754186
+          },
+          {
+            "pnl": 11,
+            "probability": 0.006109209744306793
+          },
+          {
+            "pnl": 12,
+            "probability": 0.000776943706782997
+          },
+          {
+            "pnl": 13,
+            "probability": 0.0018896988488520566
+          },
+          {
+            "pnl": 14,
+            "probability": 0.0001996562579848826
+          },
+          {
+            "pnl": 15,
+            "probability": 0.0008547644950048926
+          },
+          {
+            "pnl": 16,
+            "probability": 0.0000016843115945448404
+          },
+          {
+            "pnl": 17,
+            "probability": 0.0001373060500883516
+          },
+          {
+            "pnl": 18,
+            "probability": 0.00002185185352368083
+          },
+          {
+            "pnl": 19,
+            "probability": 0.001757810781269246
+          },
+          {
+            "pnl": 21,
+            "probability": 0.00023857004057791517
+          },
+          {
+            "pnl": 27,
+            "probability": 0.0002926882317710694
+          }
+        ],
+        "netEV": -0.11008526165626559,
+        "win": 0.15763339275311092,
+        "push": 0.010324638992666491,
+        "loss": 0.8320419682542226,
+        "standardDeviation": 2.540608247745355,
+        "deals": 8192,
+        "estimated": true,
+        "method": "Sampled starting hands; exact optimal decisions and conditional payout frequencies",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "pays": {
+        "fee": 19
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -2,
+            "probability": 0.10607085096035128
+          },
+          {
+            "pnl": -1,
+            "probability": 0.7389244809349121
+          },
+          {
+            "pnl": 0,
+            "probability": 0.04233138677619977
+          },
+          {
+            "pnl": 1,
+            "probability": 0.012431518099980688
+          },
+          {
+            "pnl": 2,
+            "probability": 0.01803744029389428
+          },
+          {
+            "pnl": 3,
+            "probability": 0.004514766153991418
+          },
+          {
+            "pnl": 4,
+            "probability": 0.01711670994256093
+          },
+          {
+            "pnl": 5,
+            "probability": 0.002223398373709247
+          },
+          {
+            "pnl": 6,
+            "probability": 0.010575661255237331
+          },
+          {
+            "pnl": 7,
+            "probability": 0.003880407565394282
+          },
+          {
+            "pnl": 8,
+            "probability": 0.013714393308254448
+          },
+          {
+            "pnl": 9,
+            "probability": 0.000597349204186279
+          },
+          {
+            "pnl": 10,
+            "probability": 0.0044898320285056605
+          },
+          {
+            "pnl": 11,
+            "probability": 0.0004965907965986551
+          },
+          {
+            "pnl": 12,
+            "probability": 0.006965004337869641
+          },
+          {
+            "pnl": 13,
+            "probability": 0.000023108673148021664
+          },
+          {
+            "pnl": 14,
+            "probability": 0.002842763752763919
+          },
+          {
+            "pnl": 15,
+            "probability": 6.100336418405454e-7
+          },
+          {
+            "pnl": 16,
+            "probability": 0.006175357892957476
+          },
+          {
+            "pnl": 17,
+            "probability": 0.000006811579256174852
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0016632545871965159
+          },
+          {
+            "pnl": 20,
+            "probability": 0.003421814993321514
+          },
+          {
+            "pnl": 22,
+            "probability": 0.00032525814359628795
+          },
+          {
+            "pnl": 24,
+            "probability": 0.0008880923492739856
+          },
+          {
+            "pnl": 26,
+            "probability": 0.0001359040110748317
+          },
+          {
+            "pnl": 28,
+            "probability": 0.0004726860572436318
+          },
+          {
+            "pnl": 30,
+            "probability": 0.0000010695225008234456
+          },
+          {
+            "pnl": 32,
+            "probability": 0.00007897311257959989
+          },
+          {
+            "pnl": 34,
+            "probability": 0.000015895409598704336
+          },
+          {
+            "pnl": 36,
+            "probability": 0.0011403039824192957
+          },
+          {
+            "pnl": 40,
+            "probability": 0.00019966564421387698
+          },
+          {
+            "pnl": 52,
+            "probability": 0.00023864022356719265
+          }
+        ],
+        "netEV": -0.1225928724096861,
+        "win": 0.11267328132853652,
+        "push": 0.04233138677619977,
+        "loss": 0.8449953318952634,
+        "standardDeviation": 3.512515236203761,
+        "deals": 8192,
+        "estimated": true,
+        "method": "Sampled starting hands; exact optimal decisions and conditional payout frequencies",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "pays": {
+        "fee": 14
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -14,
+            "probability": 0.0004554727701817841
+          },
+          {
+            "pnl": -13,
+            "probability": 0.00033183292267817464
+          },
+          {
+            "pnl": -12,
+            "probability": 0.005277631949306767
+          },
+          {
+            "pnl": -11,
+            "probability": 0.004709280883171987
+          },
+          {
+            "pnl": -10,
+            "probability": 0.01667814055011307
+          },
+          {
+            "pnl": -9,
+            "probability": 0.011766349406938144
+          },
+          {
+            "pnl": -8,
+            "probability": 0.039199270581949414
+          },
+          {
+            "pnl": -7,
+            "probability": 0.025967439985292273
+          },
+          {
+            "pnl": -6,
+            "probability": 0.06189005891027824
+          },
+          {
+            "pnl": -5,
+            "probability": 0.04793172750662365
+          },
+          {
+            "pnl": -4,
+            "probability": 0.0869438798442433
+          },
+          {
+            "pnl": -3,
+            "probability": 0.056328433845335216
+          },
+          {
+            "pnl": -2,
+            "probability": 0.09154411659067095
+          },
+          {
+            "pnl": -1,
+            "probability": 0.05270915727221372
+          },
+          {
+            "pnl": 0,
+            "probability": 0.09257396293398758
+          },
+          {
+            "pnl": 1,
+            "probability": 0.0401812692999859
+          },
+          {
+            "pnl": 2,
+            "probability": 0.09131269153357255
+          },
+          {
+            "pnl": 3,
+            "probability": 0.04822565903406485
+          },
+          {
+            "pnl": 4,
+            "probability": 0.0658053104865508
+          },
+          {
+            "pnl": 5,
+            "probability": 0.01374383625634004
+          },
+          {
+            "pnl": 6,
+            "probability": 0.043203066297775775
+          },
+          {
+            "pnl": 7,
+            "probability": 0.019478970704081854
+          },
+          {
+            "pnl": 8,
+            "probability": 0.01956719875660749
+          },
+          {
+            "pnl": 9,
+            "probability": 0.006813431418235517
+          },
+          {
+            "pnl": 10,
+            "probability": 0.01544864714629117
+          },
+          {
+            "pnl": 11,
+            "probability": 0.0035987948920447183
+          },
+          {
+            "pnl": 12,
+            "probability": 0.0112256422437097
+          },
+          {
+            "pnl": 13,
+            "probability": 0.005602068297646595
+          },
+          {
+            "pnl": 14,
+            "probability": 0.010617980493291
+          },
+          {
+            "pnl": 15,
+            "probability": 0.0011955665070560162
+          },
+          {
+            "pnl": 16,
+            "probability": 0.004845013262703397
+          },
+          {
+            "pnl": 17,
+            "probability": 0.0006640621910063969
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0015168132699527313
+          },
+          {
+            "pnl": 19,
+            "probability": 0.00018874444835993202
+          },
+          {
+            "pnl": 20,
+            "probability": 0.0006830840728134337
+          },
+          {
+            "pnl": 21,
+            "probability": 0.0000016455883499677232
+          },
+          {
+            "pnl": 22,
+            "probability": 0.00011090299171133957
+          },
+          {
+            "pnl": 23,
+            "probability": 0.000023181311839269082
+          },
+          {
+            "pnl": 24,
+            "probability": 0.0012623313453304099
+          },
+          {
+            "pnl": 26,
+            "probability": 0.00017045135855895053
+          },
+          {
+            "pnl": 32,
+            "probability": 0.00020688083913608798
+          }
+        ],
+        "netEV": -0.19866416205805634,
+        "win": 0.40569324404701596,
+        "push": 0.09257396293398758,
+        "loss": 0.5017327930189966,
+        "standardDeviation": 5.514572240430398,
+        "deals": 8192,
+        "estimated": true,
+        "method": "Sampled starting hands; exact optimal decisions and conditional payout frequencies",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "pays": {
+        "fee": 15
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -22,
+            "probability": 0.00008776785775554492
+          },
+          {
+            "pnl": -20,
+            "probability": 0.000010880180027173955
+          },
+          {
+            "pnl": -18,
+            "probability": 0.00041622384682422203
+          },
+          {
+            "pnl": -16,
+            "probability": 0.00021245702610342624
+          },
+          {
+            "pnl": -15,
+            "probability": 0.00045547277018178457
+          },
+          {
+            "pnl": -14,
+            "probability": 0.0022596539316812572
+          },
+          {
+            "pnl": -13,
+            "probability": 0.005277631949306773
+          },
+          {
+            "pnl": -12,
+            "probability": 0.007847581561490515
+          },
+          {
+            "pnl": -11,
+            "probability": 0.016592141827321327
+          },
+          {
+            "pnl": -10,
+            "probability": 0.022047277853255956
+          },
+          {
+            "pnl": -9,
+            "probability": 0.038786231178060036
+          },
+          {
+            "pnl": -8,
+            "probability": 0.033788190587441445
+          },
+          {
+            "pnl": -7,
+            "probability": 0.0600032228612692
+          },
+          {
+            "pnl": -6,
+            "probability": 0.062228707582518424
+          },
+          {
+            "pnl": -5,
+            "probability": 0.07684611315733349
+          },
+          {
+            "pnl": -4,
+            "probability": 0.06232722740251028
+          },
+          {
+            "pnl": -3,
+            "probability": 0.0746310764362394
+          },
+          {
+            "pnl": -2,
+            "probability": 0.06643300463253585
+          },
+          {
+            "pnl": -1,
+            "probability": 0.0668301515825309
+          },
+          {
+            "pnl": 0,
+            "probability": 0.041065935960648274
+          },
+          {
+            "pnl": 1,
+            "probability": 0.05890849448067211
+          },
+          {
+            "pnl": 2,
+            "probability": 0.06115756921090134
+          },
+          {
+            "pnl": 3,
+            "probability": 0.03748872121149736
+          },
+          {
+            "pnl": 4,
+            "probability": 0.0257912459639802
+          },
+          {
+            "pnl": 5,
+            "probability": 0.021471561906889983
+          },
+          {
+            "pnl": 6,
+            "probability": 0.03517484064242605
+          },
+          {
+            "pnl": 7,
+            "probability": 0.008978566810447704
+          },
+          {
+            "pnl": 8,
+            "probability": 0.009011509237014305
+          },
+          {
+            "pnl": 9,
+            "probability": 0.006718472716017002
+          },
+          {
+            "pnl": 10,
+            "probability": 0.02290839640565221
+          },
+          {
+            "pnl": 11,
+            "probability": 0.0044368763150618015
+          },
+          {
+            "pnl": 12,
+            "probability": 0.012946803652211316
+          },
+          {
+            "pnl": 13,
+            "probability": 0.004012628291758076
+          },
+          {
+            "pnl": 14,
+            "probability": 0.01100791275314458
+          },
+          {
+            "pnl": 15,
+            "probability": 0.001701767048008942
+          },
+          {
+            "pnl": 16,
+            "probability": 0.004477657768040323
+          },
+          {
+            "pnl": 17,
+            "probability": 0.0005216587697880397
+          },
+          {
+            "pnl": 18,
+            "probability": 0.008991375677430555
+          },
+          {
+            "pnl": 19,
+            "probability": 0.00018309704646982832
+          },
+          {
+            "pnl": 20,
+            "probability": 0.002219417095884554
+          },
+          {
+            "pnl": 21,
+            "probability": 0.000046254511323219423
+          },
+          {
+            "pnl": 22,
+            "probability": 0.006332037215474806
+          },
+          {
+            "pnl": 23,
+            "probability": 0.0004645908630620642
+          },
+          {
+            "pnl": 24,
+            "probability": 0.0032300142431447654
+          },
+          {
+            "pnl": 25,
+            "probability": 0.000025776326135530507
+          },
+          {
+            "pnl": 26,
+            "probability": 0.006260880180027177
+          },
+          {
+            "pnl": 28,
+            "probability": 0.0009008703286259351
+          },
+          {
+            "pnl": 30,
+            "probability": 0.0033528270562280388
+          },
+          {
+            "pnl": 31,
+            "probability": 0.00004186075462933658
+          },
+          {
+            "pnl": 32,
+            "probability": 0.00036701508975626215
+          },
+          {
+            "pnl": 34,
+            "probability": 0.0008457081643541411
+          },
+          {
+            "pnl": 36,
+            "probability": 0.000050524886260704974
+          },
+          {
+            "pnl": 38,
+            "probability": 0.00043931105810139794
+          },
+          {
+            "pnl": 40,
+            "probability": 0.0000013027266551383447
+          },
+          {
+            "pnl": 42,
+            "probability": 0.0000714891355813573
+          },
+          {
+            "pnl": 44,
+            "probability": 0.00002056217319252315
+          },
+          {
+            "pnl": 46,
+            "probability": 0.0009428577984327013
+          },
+          {
+            "pnl": 50,
+            "probability": 0.00015842603600543553
+          },
+          {
+            "pnl": 62,
+            "probability": 0.00019216826467803125
+          }
+        ],
+        "netEV": -0.5760394830756341,
+        "win": 0.3618530498149651,
+        "push": 0.041065935960648274,
+        "loss": 0.597081014224387,
+        "standardDeviation": 7.558998690537592,
+        "deals": 8192,
+        "estimated": true,
+        "method": "Sampled starting hands; exact optimal decisions and conditional payout frequencies",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage7",
+      "pays": {
+        "fee": 31
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -1,
+            "probability": 0.8543454221003837
+          },
+          {
+            "pnl": 0,
+            "probability": 0.03295597654054173
+          },
+          {
+            "pnl": 1,
+            "probability": 0.009722063223598018
+          },
+          {
+            "pnl": 2,
+            "probability": 0.0216992472997671
+          },
+          {
+            "pnl": 3,
+            "probability": 0.005008477696100464
+          },
+          {
+            "pnl": 4,
+            "probability": 0.01706467760879709
+          },
+          {
+            "pnl": 5,
+            "probability": 0.004975180965328457
+          },
+          {
+            "pnl": 6,
+            "probability": 0.012376955331061252
+          },
+          {
+            "pnl": 7,
+            "probability": 0.003271281502786672
+          },
+          {
+            "pnl": 8,
+            "probability": 0.008109374872848551
+          },
+          {
+            "pnl": 9,
+            "probability": 0.001773389797599761
+          },
+          {
+            "pnl": 10,
+            "probability": 0.007321493147572092
+          },
+          {
+            "pnl": 11,
+            "probability": 0.0008965612665831959
+          },
+          {
+            "pnl": 12,
+            "probability": 0.004835170598948618
+          },
+          {
+            "pnl": 13,
+            "probability": 0.0003658346045562311
+          },
+          {
+            "pnl": 14,
+            "probability": 0.005355774672124217
+          },
+          {
+            "pnl": 15,
+            "probability": 0.0005665176876095109
+          },
+          {
+            "pnl": 16,
+            "probability": 0.0019737866597647935
+          },
+          {
+            "pnl": 17,
+            "probability": 0.00006446558825039771
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0031532881392213703
+          },
+          {
+            "pnl": 19,
+            "probability": 0.00017836209932784152
+          },
+          {
+            "pnl": 20,
+            "probability": 0.0010084597643493453
+          },
+          {
+            "pnl": 21,
+            "probability": 7.827859883349612e-7
+          },
+          {
+            "pnl": 22,
+            "probability": 0.0014863012836632064
+          },
+          {
+            "pnl": 23,
+            "probability": 0.000014507732744248295
+          },
+          {
+            "pnl": 24,
+            "probability": 0.00045671962994287875
+          },
+          {
+            "pnl": 25,
+            "probability": 0.00005794367568121975
+          },
+          {
+            "pnl": 26,
+            "probability": 0.0003760143139998328
+          },
+          {
+            "pnl": 27,
+            "probability": 0.00006879073634570798
+          },
+          {
+            "pnl": 28,
+            "probability": 0.00014649845666589797
+          },
+          {
+            "pnl": 30,
+            "probability": 0.00014034643261475244
+          },
+          {
+            "pnl": 31,
+            "probability": 0.000033364225467862216
+          },
+          {
+            "pnl": 34,
+            "probability": 4.469049778115539e-7
+          },
+          {
+            "pnl": 38,
+            "probability": 0.00015245891334069172
+          },
+          {
+            "pnl": 40,
+            "probability": 0.00004406374144679818
+          }
+        ],
+        "netEV": -0.09873107630062483,
+        "win": 0.11269860135907424,
+        "push": 0.03295597654054173,
+        "loss": 0.8543454221003837,
+        "standardDeviation": 3.0556182796411884,
+        "deals": 4096,
+        "estimated": true,
+        "method": "Sampled starting hands; exact optimal decisions and conditional payout frequencies",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "pays": {
+        "fee": 32
+      },
+      "rules": {
+        "payout": "return",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -2,
+            "probability": 0.11540942396740683
+          },
+          {
+            "pnl": -1,
+            "probability": 0.7738733543324686
+          },
+          {
+            "pnl": 0,
+            "probability": 0.009262170468322263
+          },
+          {
+            "pnl": 1,
+            "probability": 0.012640328710252023
+          },
+          {
+            "pnl": 2,
+            "probability": 0.011449666888803134
+          },
+          {
+            "pnl": 3,
+            "probability": 0.009663369513599179
+          },
+          {
+            "pnl": 4,
+            "probability": 0.004519287153383167
+          },
+          {
+            "pnl": 5,
+            "probability": 0.0068296494144077175
+          },
+          {
+            "pnl": 6,
+            "probability": 0.008761440051128642
+          },
+          {
+            "pnl": 7,
+            "probability": 0.004191449333410997
+          },
+          {
+            "pnl": 8,
+            "probability": 0.002930952315968636
+          },
+          {
+            "pnl": 9,
+            "probability": 0.0036500088316409334
+          },
+          {
+            "pnl": 10,
+            "probability": 0.005954601437106768
+          },
+          {
+            "pnl": 11,
+            "probability": 0.002315704739925631
+          },
+          {
+            "pnl": 12,
+            "probability": 0.0016538243822779959
+          },
+          {
+            "pnl": 13,
+            "probability": 0.002312309180838039
+          },
+          {
+            "pnl": 14,
+            "probability": 0.00401015975089187
+          },
+          {
+            "pnl": 15,
+            "probability": 0.0008897970974055499
+          },
+          {
+            "pnl": 16,
+            "probability": 0.0010562393363192008
+          },
+          {
+            "pnl": 17,
+            "probability": 0.0016081593589733689
+          },
+          {
+            "pnl": 18,
+            "probability": 0.003656916941698218
+          },
+          {
+            "pnl": 19,
+            "probability": 0.0004029924325072812
+          },
+          {
+            "pnl": 20,
+            "probability": 0.0005337654635463063
+          },
+          {
+            "pnl": 21,
+            "probability": 0.0007141637185779257
+          },
+          {
+            "pnl": 22,
+            "probability": 0.0023736565946860183
+          },
+          {
+            "pnl": 23,
+            "probability": 0.00018775736729198959
+          },
+          {
+            "pnl": 24,
+            "probability": 0.00022319353443281794
+          },
+          {
+            "pnl": 25,
+            "probability": 0.00015335640319023047
+          },
+          {
+            "pnl": 26,
+            "probability": 0.0027296555391284004
+          },
+          {
+            "pnl": 27,
+            "probability": 0.000047832178774088597
+          },
+          {
+            "pnl": 28,
+            "probability": 0.00038786890394812597
+          },
+          {
+            "pnl": 29,
+            "probability": 0.0000377265344968992
+          },
+          {
+            "pnl": 30,
+            "probability": 0.0012254072452946903
+          },
+          {
+            "pnl": 32,
+            "probability": 0.00002912416838652349
+          },
+          {
+            "pnl": 33,
+            "probability": 1.999201514299216e-7
+          },
+          {
+            "pnl": 34,
+            "probability": 0.0016137040698723378
+          },
+          {
+            "pnl": 36,
+            "probability": 0.00012129690147949815
+          },
+          {
+            "pnl": 37,
+            "probability": 0.000044148904705972476
+          },
+          {
+            "pnl": 38,
+            "probability": 0.0006350966186994646
+          },
+          {
+            "pnl": 39,
+            "probability": 0.00001643225731361218
+          },
+          {
+            "pnl": 40,
+            "probability": 2.3677519589583938e-7
+          },
+          {
+            "pnl": 42,
+            "probability": 0.000822827396682788
+          },
+          {
+            "pnl": 44,
+            "probability": 0.000008367422407211788
+          },
+          {
+            "pnl": 46,
+            "probability": 0.00027798800793441534
+          },
+          {
+            "pnl": 48,
+            "probability": 0.000047549211225629166
+          },
+          {
+            "pnl": 50,
+            "probability": 0.0002426011765810136
+          },
+          {
+            "pnl": 52,
+            "probability": 0.00006385802454570708
+          },
+          {
+            "pnl": 54,
+            "probability": 0.00010127669841060273
+          },
+          {
+            "pnl": 58,
+            "probability": 0.0001419119100578065
+          },
+          {
+            "pnl": 60,
+            "probability": 0.00003964632700552098
+          },
+          {
+            "pnl": 74,
+            "probability": 0.00011076654994714772
+          },
+          {
+            "pnl": 78,
+            "probability": 0.00002677853729361769
+          }
+        ],
+        "netEV": -0.03681531082518992,
+        "win": 0.10145505123180201,
+        "push": 0.009262170468322263,
+        "loss": 0.8892827782998755,
+        "standardDeviation": 4.493089066580285,
+        "deals": 4096,
+        "estimated": true,
+        "method": "Sampled starting hands; exact optimal decisions and conditional payout frequencies",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "pays": {
+        "fee": 23
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": false,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -23,
+            "probability": 0.00002801284349847698
+          },
+          {
+            "pnl": -22,
+            "probability": 0.000012921278829886296
+          },
+          {
+            "pnl": -21,
+            "probability": 0.0006600760245005672
+          },
+          {
+            "pnl": -20,
+            "probability": 0.00044887136309560734
+          },
+          {
+            "pnl": -19,
+            "probability": 0.002072918946878958
+          },
+          {
+            "pnl": -18,
+            "probability": 0.0013750094342396405
+          },
+          {
+            "pnl": -17,
+            "probability": 0.005186685083864909
+          },
+          {
+            "pnl": -16,
+            "probability": 0.003294108905396592
+          },
+          {
+            "pnl": -15,
+            "probability": 0.010483951372610765
+          },
+          {
+            "pnl": -14,
+            "probability": 0.0077501938538908684
+          },
+          {
+            "pnl": -13,
+            "probability": 0.016633702198496508
+          },
+          {
+            "pnl": -12,
+            "probability": 0.014534556952806537
+          },
+          {
+            "pnl": -11,
+            "probability": 0.02960675986955513
+          },
+          {
+            "pnl": -10,
+            "probability": 0.024030551156111746
+          },
+          {
+            "pnl": -9,
+            "probability": 0.04125998050144531
+          },
+          {
+            "pnl": -8,
+            "probability": 0.028709291499899172
+          },
+          {
+            "pnl": -7,
+            "probability": 0.056834852316346524
+          },
+          {
+            "pnl": -6,
+            "probability": 0.042008171851662765
+          },
+          {
+            "pnl": -5,
+            "probability": 0.0607956380267481
+          },
+          {
+            "pnl": -4,
+            "probability": 0.03578355291773113
+          },
+          {
+            "pnl": -3,
+            "probability": 0.07371499578600073
+          },
+          {
+            "pnl": -2,
+            "probability": 0.04189153972604855
+          },
+          {
+            "pnl": -1,
+            "probability": 0.06871800757104256
+          },
+          {
+            "pnl": 0,
+            "probability": 0.02905414866398631
+          },
+          {
+            "pnl": 1,
+            "probability": 0.0551071727099057
+          },
+          {
+            "pnl": 2,
+            "probability": 0.025939430413629377
+          },
+          {
+            "pnl": 3,
+            "probability": 0.06006965515526219
+          },
+          {
+            "pnl": 4,
+            "probability": 0.02688723703283797
+          },
+          {
+            "pnl": 5,
+            "probability": 0.042135099300564326
+          },
+          {
+            "pnl": 6,
+            "probability": 0.014214610527761696
+          },
+          {
+            "pnl": 7,
+            "probability": 0.03279345661739256
+          },
+          {
+            "pnl": 8,
+            "probability": 0.01224500323680275
+          },
+          {
+            "pnl": 9,
+            "probability": 0.03191415536060122
+          },
+          {
+            "pnl": 10,
+            "probability": 0.009342146826332392
+          },
+          {
+            "pnl": 11,
+            "probability": 0.021028317841652593
+          },
+          {
+            "pnl": 12,
+            "probability": 0.005221011248819733
+          },
+          {
+            "pnl": 13,
+            "probability": 0.01573464800591886
+          },
+          {
+            "pnl": 14,
+            "probability": 0.004670474676441786
+          },
+          {
+            "pnl": 15,
+            "probability": 0.011523004376178791
+          },
+          {
+            "pnl": 16,
+            "probability": 0.003014684097946973
+          },
+          {
+            "pnl": 17,
+            "probability": 0.0075964143451370016
+          },
+          {
+            "pnl": 18,
+            "probability": 0.0017244612164146749
+          },
+          {
+            "pnl": 19,
+            "probability": 0.0063947887970134554
+          },
+          {
+            "pnl": 20,
+            "probability": 0.0008235179486049157
+          },
+          {
+            "pnl": 21,
+            "probability": 0.004209529748958645
+          },
+          {
+            "pnl": 22,
+            "probability": 0.00031822786847264967
+          },
+          {
+            "pnl": 23,
+            "probability": 0.0044675540664807275
+          },
+          {
+            "pnl": 24,
+            "probability": 0.00047508178794488444
+          },
+          {
+            "pnl": 25,
+            "probability": 0.0016465319169851637
+          },
+          {
+            "pnl": 26,
+            "probability": 0.00005626888356161744
+          },
+          {
+            "pnl": 27,
+            "probability": 0.0024509489911730548
+          },
+          {
+            "pnl": 28,
+            "probability": 0.00014061159710083583
+          },
+          {
+            "pnl": 29,
+            "probability": 0.0007581867291020053
+          },
+          {
+            "pnl": 30,
+            "probability": 0.0000012609623787636222
+          },
+          {
+            "pnl": 31,
+            "probability": 0.0010799709475824767
+          },
+          {
+            "pnl": 32,
+            "probability": 0.00001261617888688443
+          },
+          {
+            "pnl": 33,
+            "probability": 0.0003375956343435088
+          },
+          {
+            "pnl": 34,
+            "probability": 0.00004414437324095027
+          },
+          {
+            "pnl": 35,
+            "probability": 0.00028648632788803613
+          },
+          {
+            "pnl": 36,
+            "probability": 0.0000465867022312663
+          },
+          {
+            "pnl": 37,
+            "probability": 0.00011450321168253585
+          },
+          {
+            "pnl": 39,
+            "probability": 0.0001104214768874952
+          },
+          {
+            "pnl": 40,
+            "probability": 0.00002915023045892381
+          },
+          {
+            "pnl": 43,
+            "probability": 1.0408151078572582e-7
+          },
+          {
+            "pnl": 47,
+            "probability": 0.00011667508537855612
+          },
+          {
+            "pnl": 49,
+            "probability": 0.000029755317844024956
+          }
+        ],
+        "netEV": -0.6216363734408643,
+        "win": 0.4051115018553128,
+        "push": 0.02905414866398631,
+        "loss": 0.565834349480701,
+        "standardDeviation": 8.120423150962047,
+        "deals": 4096,
+        "estimated": true,
+        "method": "Sampled starting hands; exact optimal decisions and conditional payout frequencies",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "pays": {
+        "fee": 24
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "doubleOnDraw": true,
+      "result": {
+        "payouts": [
+          {
+            "pnl": -36,
+            "probability": 0.000006215144069431856
+          },
+          {
+            "pnl": -32,
+            "probability": 0.00005264520333106813
+          },
+          {
+            "pnl": -30,
+            "probability": 0.000018722445593811863
+          },
+          {
+            "pnl": -28,
+            "probability": 0.0002508366930832408
+          },
+          {
+            "pnl": -26,
+            "probability": 0.00010042873187858646
+          },
+          {
+            "pnl": -24,
+            "probability": 0.0009473445665638493
+          },
+          {
+            "pnl": -23,
+            "probability": 0.000012921278829886296
+          },
+          {
+            "pnl": -22,
+            "probability": 0.0011830804798723907
+          },
+          {
+            "pnl": -21,
+            "probability": 0.00044887136309560734
+          },
+          {
+            "pnl": -20,
+            "probability": 0.004254195282179641
+          },
+          {
+            "pnl": -19,
+            "probability": 0.0013750094342396405
+          },
+          {
+            "pnl": -18,
+            "probability": 0.00634329013195796
+          },
+          {
+            "pnl": -17,
+            "probability": 0.003294108905396592
+          },
+          {
+            "pnl": -16,
+            "probability": 0.015764769048958963
+          },
+          {
+            "pnl": -15,
+            "probability": 0.007731471408297055
+          },
+          {
+            "pnl": -14,
+            "probability": 0.020901616069085766
+          },
+          {
+            "pnl": -13,
+            "probability": 0.014434609964233095
+          },
+          {
+            "pnl": -12,
+            "probability": 0.0381751249468227
+          },
+          {
+            "pnl": -11,
+            "probability": 0.023507908008218784
+          },
+          {
+            "pnl": -10,
+            "probability": 0.04451686592414197
+          },
+          {
+            "pnl": -9,
+            "probability": 0.027550875817955157
+          },
+          {
+            "pnl": -8,
+            "probability": 0.06792837242319784
+          },
+          {
+            "pnl": -7,
+            "probability": 0.0375699183002643
+          },
+          {
+            "pnl": -6,
+            "probability": 0.06136195923430755
+          },
+          {
+            "pnl": -5,
+            "probability": 0.030383792983201003
+          },
+          {
+            "pnl": -4,
+            "probability": 0.0766365878683171
+          },
+          {
+            "pnl": -3,
+            "probability": 0.032017871500499735
+          },
+          {
+            "pnl": -2,
+            "probability": 0.05857723398436595
+          },
+          {
+            "pnl": -1,
+            "probability": 0.020655974156504848
+          },
+          {
+            "pnl": 0,
+            "probability": 0.05551281777795539
+          },
+          {
+            "pnl": 1,
+            "probability": 0.017012893285443444
+          },
+          {
+            "pnl": 2,
+            "probability": 0.04492452228324895
+          },
+          {
+            "pnl": 3,
+            "probability": 0.016498047758973924
+          },
+          {
+            "pnl": 4,
+            "probability": 0.046314281461668695
+          },
+          {
+            "pnl": 5,
+            "probability": 0.007801558443379628
+          },
+          {
+            "pnl": 6,
+            "probability": 0.027264301905825104
+          },
+          {
+            "pnl": 7,
+            "probability": 0.0059042765529165
+          },
+          {
+            "pnl": 8,
+            "probability": 0.034028942926878594
+          },
+          {
+            "pnl": 9,
+            "probability": 0.004147192520504172
+          },
+          {
+            "pnl": 10,
+            "probability": 0.015995278443833038
+          },
+          {
+            "pnl": 11,
+            "probability": 0.002148543389946531
+          },
+          {
+            "pnl": 12,
+            "probability": 0.022843157178835706
+          },
+          {
+            "pnl": 13,
+            "probability": 0.0015909625506678497
+          },
+          {
+            "pnl": 14,
+            "probability": 0.011011854247137118
+          },
+          {
+            "pnl": 15,
+            "probability": 0.0012988111213999586
+          },
+          {
+            "pnl": 16,
+            "probability": 0.019626095238371666
+          },
+          {
+            "pnl": 17,
+            "probability": 0.0005432020534603913
+          },
+          {
+            "pnl": 18,
+            "probability": 0.007129303142083762
+          },
+          {
+            "pnl": 19,
+            "probability": 0.0003017244058266348
+          },
+          {
+            "pnl": 20,
+            "probability": 0.013282365273011533
+          },
+          {
+            "pnl": 21,
+            "probability": 0.00011217527835846483
+          },
+          {
+            "pnl": 22,
+            "probability": 0.0043077103269676485
+          },
+          {
+            "pnl": 23,
+            "probability": 0.00013247299523162147
+          },
+          {
+            "pnl": 24,
+            "probability": 0.009350529888288743
+          },
+          {
+            "pnl": 25,
+            "probability": 0.00002141541086748335
+          },
+          {
+            "pnl": 26,
+            "probability": 0.003394130285008423
+          },
+          {
+            "pnl": 27,
+            "probability": 0.00003646410185141428
+          },
+          {
+            "pnl": 28,
+            "probability": 0.007217133056212397
+          },
+          {
+            "pnl": 29,
+            "probability": 2.941986031335686e-7
+          },
+          {
+            "pnl": 30,
+            "probability": 0.0021734504175835593
+          },
+          {
+            "pnl": 31,
+            "probability": 0.0000036105285294898998
+          },
+          {
+            "pnl": 32,
+            "probability": 0.004845795364200201
+          },
+          {
+            "pnl": 33,
+            "probability": 0.000011469396207325142
+          },
+          {
+            "pnl": 34,
+            "probability": 0.0012867222510209418
+          },
+          {
+            "pnl": 35,
+            "probability": 0.000019090465727944313
+          },
+          {
+            "pnl": 36,
+            "probability": 0.004130508756121938
+          },
+          {
+            "pnl": 38,
+            "probability": 0.0006451557263065179
+          },
+          {
+            "pnl": 39,
+            "probability": 0.000004147916780193088
+          },
+          {
+            "pnl": 40,
+            "probability": 0.0025494707771233894
+          },
+          {
+            "pnl": 42,
+            "probability": 0.00023075999042341812
+          },
+          {
+            "pnl": 44,
+            "probability": 0.0028074254733275396
+          },
+          {
+            "pnl": 46,
+            "probability": 0.0004013124617900976
+          },
+          {
+            "pnl": 48,
+            "probability": 0.0012693783376496366
+          },
+          {
+            "pnl": 50,
+            "probability": 0.000046054004538742886
+          },
+          {
+            "pnl": 52,
+            "probability": 0.0015438783272404238
+          },
+          {
+            "pnl": 54,
+            "probability": 0.00010439410194134031
+          },
+          {
+            "pnl": 56,
+            "probability": 0.0005290860549536059
+          },
+          {
+            "pnl": 58,
+            "probability": 9.667637756300542e-7
+          },
+          {
+            "pnl": 60,
+            "probability": 0.0007335729793260678
+          },
+          {
+            "pnl": 62,
+            "probability": 0.000009005650357394535
+          },
+          {
+            "pnl": 64,
+            "probability": 0.0002503533111954261
+          },
+          {
+            "pnl": 66,
+            "probability": 0.0000435256714780697
+          },
+          {
+            "pnl": 68,
+            "probability": 0.0002223958136703412
+          },
+          {
+            "pnl": 70,
+            "probability": 0.000027565056975485678
+          },
+          {
+            "pnl": 72,
+            "probability": 0.0000877321740557569
+          },
+          {
+            "pnl": 76,
+            "probability": 0.00012197035895709575
+          },
+          {
+            "pnl": 78,
+            "probability": 0.00003585300812317524
+          },
+          {
+            "pnl": 92,
+            "probability": 0.00008887180830313095
+          },
+          {
+            "pnl": 96,
+            "probability": 0.00002139825109483539
+          }
+        ],
+        "netEV": -0.6104849646661358,
+        "win": 0.34848456092358115,
+        "push": 0.05551281777795539,
+        "loss": 0.5960026212984636,
+        "standardDeviation": 11.325238688087737,
+        "deals": 4096,
+        "estimated": true,
+        "method": "Sampled starting hands; exact optimal decisions and conditional payout frequencies",
+        "seed": 739021
+      }
+    }
+  ]
+}

@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
-    <link rel="stylesheet" href="styles.css?v=20261016" />
+    <link rel="stylesheet" href="styles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
     <script src="../../shared/cards.js?v=20261016"></script>
     <script src="../../shared/tabs.js?v=20261016"></script>
@@ -42,7 +42,6 @@
 
       <div class="tool-head">
         <div>
-          <p class="eyebrow eyebrow--plain">Blackjack · Realtime EV engine</p>
           <h1>Strategy Lab</h1>
         </div>
         <div class="stat-strip bj-metrics">
@@ -69,7 +68,6 @@
           <section class="panel bj-chart chart-panel" id="chart-panel" aria-labelledby="chart-title">
             <div class="panel-head">
               <div class="bj-chart-title">
-                <p class="eyebrow eyebrow--plain">Strategy chart</p>
                 <h2 id="chart-title">6D S17, DAS, Peek</h2>
               </div>
               <div class="panel-actions bj-toolbar">
@@ -116,7 +114,6 @@
           <aside class="panel bj-hand solver-panel" id="solver-panel" aria-labelledby="solver-title">
             <div class="panel-head">
               <div>
-                <p class="eyebrow eyebrow--plain">Instant hand solve</p>
                 <h2 id="solver-title">Hand</h2>
               </div>
               <div class="panel-actions">
@@ -165,7 +162,7 @@
               </div>
 
               <div class="cell-inspector" id="cell-inspector">
-                <p class="eyebrow eyebrow--plain">Selected cell</p>
+                <h3>Selected cell</h3>
                 <div id="cell-detail">Tap any chart cell for action, count index, and margin.</div>
               </div>
             </div>
@@ -174,7 +171,6 @@
           <section class="panel bj-count count-panel" id="count-panel" aria-labelledby="count-title">
             <div class="panel-head">
               <div>
-                <p class="eyebrow eyebrow--plain">Hi-Lo</p>
                 <h2 id="count-title">Count</h2>
               </div>
               <div class="panel-actions">
@@ -249,7 +245,6 @@
           <aside class="panel bj-rules rules-panel" id="rules-panel" aria-labelledby="rules-title">
             <div class="panel-head">
               <div>
-                <p class="eyebrow eyebrow--plain">Configuration</p>
                 <h2 id="rules-title">Table rules</h2>
               </div>
               <div class="panel-actions">
@@ -507,7 +502,6 @@
     <dialog class="dialog dialog--sheet dealer-modal" id="dealer-modal" aria-labelledby="dealer-modal-title">
       <div class="dialog-head">
         <div>
-          <p class="eyebrow eyebrow--plain">Dealer outcome</p>
           <h2 id="dealer-modal-title">Dealer 2</h2>
         </div>
         <button class="btn btn--ghost btn--icon" id="dealer-modal-close" type="button" aria-label="Close dealer distribution">

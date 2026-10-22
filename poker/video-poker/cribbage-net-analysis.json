@@ -1,0 +1,690 @@
+{
+  "version": 1,
+  "rules": {
+    "payout": "net PnL = points - fee",
+    "scoreCap": 7
+  },
+  "hashes": {
+    "engine.js": "5cccedefd6f5eb9ca2d18622b64ab12f94cda74b3ae09eea83ecd36301af621f",
+    "solver.js": "d6a791b9bee89c6414ddaca3cb59a65b1fdcc00c7a9c21d703d448bd31be2531",
+    "cribbage.js": "3f77fb33d3fbc72a2c4703c642cdcd3beaf2ed17726507364cccc0ecde4ea14a",
+    "cribbage-solver.js": "16d051f98aa0f77ade1edec9febe931f5f344de6d74dc68010ec3bbbaf85bc8b",
+    "scripts/cribbage-analyze.cpp": "9608cb97eb13f561910bad9b5f98813edc99195f78ea7207f1b88490f7d3887c",
+    "scripts/cribbage-net-analyze.cpp": "2021bf64069f5be9bbc0bfb30a5cfa2fc80ddddec95dd17744755a3277a3787b",
+    "scripts/analyze-cribbage-net.cjs": "c095f686466086d62d69d6f84c04ff4e2837bcb3e09cc94ec7d6bae81e97b29b"
+  },
+  "recommendations": [
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-net-fee4",
+      "doubleOnDraw": false,
+      "name": "Fee 4",
+      "pays": {
+        "fee": 4
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 4. Maximum loss 4.",
+      "result": {
+        "netEV": 0.42326867119149253,
+        "expectedReturn": 1.4232686711914926,
+        "averageStake": 1,
+        "rtp": 1.4232686711914926,
+        "deals": 270725,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-net-fee5",
+      "doubleOnDraw": false,
+      "name": "Fee 5",
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 5. Maximum loss 5.",
+      "result": {
+        "netEV": -0.5767313288085175,
+        "expectedReturn": 0.4232686711914825,
+        "averageStake": 1,
+        "rtp": 0.4232686711914825,
+        "deals": 270725,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-net-fee6",
+      "doubleOnDraw": false,
+      "name": "Fee 6",
+      "pays": {
+        "fee": 6
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 6. Maximum loss 6.",
+      "result": {
+        "netEV": -1.5767313288085287,
+        "expectedReturn": -0.5767313288085287,
+        "averageStake": 1,
+        "rtp": -0.5767313288085287,
+        "deals": 270725,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-net-2x-fee4",
+      "doubleOnDraw": true,
+      "name": "Fee 4",
+      "pays": {
+        "fee": 4
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 4. Maximum loss 4, or 8 at 2×.",
+      "result": {
+        "netEV": 1.0124401057940926,
+        "expectedReturn": 2.4810854100696487,
+        "averageStake": 1.4686453042755563,
+        "rtp": 1.6893700629053536,
+        "deals": 270725,
+        "doubleCount": 126874,
+        "doubleFrequency": 0.4686453042755564,
+        "doubleTieCount": 612,
+        "doubleTieFrequency": 0.002260596546310832,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-net-2x-fee5",
+      "doubleOnDraw": true,
+      "name": "Fee 5",
+      "pays": {
+        "fee": 5
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 5. Maximum loss 5, or 10 at 2×.",
+      "result": {
+        "netEV": -0.33499529560632607,
+        "expectedReturn": 0.8648384840593863,
+        "averageStake": 1.1998337796657124,
+        "rtp": 0.7207985795335253,
+        "deals": 270725,
+        "doubleCount": 54100,
+        "doubleFrequency": 0.19983377966571245,
+        "doubleTieCount": 192,
+        "doubleTieFrequency": 0.0007092067596269276,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage4",
+      "key": "cribbage4-net-2x-fee6",
+      "doubleOnDraw": true,
+      "name": "Fee 6",
+      "pays": {
+        "fee": 6
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 6. Maximum loss 6, or 12 at 2×.",
+      "result": {
+        "netEV": -1.4796207267936368,
+        "expectedReturn": -0.38856153388570447,
+        "averageStake": 1.0910591929079323,
+        "rtp": -0.35613240455826745,
+        "deals": 270725,
+        "doubleCount": 24652,
+        "doubleFrequency": 0.09105919290793241,
+        "doubleTieCount": 1080,
+        "doubleTieFrequency": 0.003989288022901469,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-net-fee8",
+      "doubleOnDraw": false,
+      "name": "Fee 8",
+      "pays": {
+        "fee": 8
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 8. Maximum loss 8.",
+      "result": {
+        "netEV": 0.18231419651956857,
+        "expectedReturn": 1.1823141965195685,
+        "averageStake": 1,
+        "rtp": 1.1823141965195685,
+        "deals": 2598960,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-net-fee9",
+      "doubleOnDraw": false,
+      "name": "Fee 9",
+      "pays": {
+        "fee": 9
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 9. Maximum loss 9.",
+      "result": {
+        "netEV": -0.8176858034808533,
+        "expectedReturn": 0.1823141965191467,
+        "averageStake": 1,
+        "rtp": 0.1823141965191467,
+        "deals": 2598960,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-net-fee10",
+      "doubleOnDraw": false,
+      "name": "Fee 10",
+      "pays": {
+        "fee": 10
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 10. Maximum loss 10.",
+      "result": {
+        "netEV": -1.8176858034810217,
+        "expectedReturn": -0.8176858034810217,
+        "averageStake": 1,
+        "rtp": -0.8176858034810217,
+        "deals": 2598960,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-net-2x-fee8",
+      "doubleOnDraw": true,
+      "name": "Fee 8",
+      "pays": {
+        "fee": 8
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 8. Maximum loss 8, or 16 at 2×.",
+      "result": {
+        "netEV": 0.9562891097606606,
+        "expectedReturn": 2.3713905349461193,
+        "averageStake": 1.4151014251854588,
+        "rtp": 1.6757742538739457,
+        "deals": 2598960,
+        "doubleCount": 1078832,
+        "doubleFrequency": 0.4151014251854588,
+        "doubleTieCount": 3264,
+        "doubleTieFrequency": 0.0012558869701726845,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-net-2x-fee9",
+      "doubleOnDraw": true,
+      "name": "Fee 9",
+      "pays": {
+        "fee": 9
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 9. Maximum loss 9, or 18 at 2×.",
+      "result": {
+        "netEV": -0.3870977310643032,
+        "expectedReturn": 0.8849049161484281,
+        "averageStake": 1.2720026472127313,
+        "rtp": 0.6956785177196534,
+        "deals": 2598960,
+        "doubleCount": 706924,
+        "doubleFrequency": 0.27200264721273126,
+        "doubleTieCount": 4116,
+        "doubleTieFrequency": 0.001583710407239819,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage5",
+      "key": "cribbage5-net-2x-fee10",
+      "doubleOnDraw": true,
+      "name": "Fee 10",
+      "pays": {
+        "fee": 10
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 10. Maximum loss 10, or 20 at 2×.",
+      "result": {
+        "netEV": -1.5814329261819016,
+        "expectedReturn": -0.43448491620868146,
+        "averageStake": 1.14694800997322,
+        "rtp": -0.37881831820679146,
+        "deals": 2598960,
+        "doubleCount": 381912,
+        "doubleFrequency": 0.14694800997322005,
+        "doubleTieCount": 792,
+        "doubleTieFrequency": 0.0003047372795271955,
+        "estimated": false,
+        "method": "Exhaustive: every initial hand, every hold and legal draw"
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-net-fee13",
+      "doubleOnDraw": false,
+      "name": "Fee 13",
+      "pays": {
+        "fee": 13
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 13. Maximum loss 13.",
+      "result": {
+        "netEV": 0.8013358379419507,
+        "expectedReturn": 1.8013358379419508,
+        "averageStake": 1,
+        "rtp": 1.8013358379419508,
+        "deals": 8192,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": true,
+        "netEVSE": 0.03215545051558065,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-net-fee14",
+      "doubleOnDraw": false,
+      "name": "Fee 14",
+      "pays": {
+        "fee": 14
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 14. Maximum loss 14.",
+      "result": {
+        "netEV": -0.1986641620580509,
+        "expectedReturn": 0.8013358379419491,
+        "averageStake": 1,
+        "rtp": 0.8013358379419491,
+        "deals": 8192,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": true,
+        "netEVSE": 0.03215545051558055,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-net-fee15",
+      "doubleOnDraw": false,
+      "name": "Fee 15",
+      "pays": {
+        "fee": 15
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 15. Maximum loss 15.",
+      "result": {
+        "netEV": -1.1986641620580565,
+        "expectedReturn": -0.19866416205805648,
+        "averageStake": 1,
+        "rtp": -0.19866416205805648,
+        "deals": 8192,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": true,
+        "netEVSE": 0.03215545051558062,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-net-2x-fee14",
+      "doubleOnDraw": true,
+      "name": "Fee 14",
+      "pays": {
+        "fee": 14
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 14. Maximum loss 14, or 28 at 2×.",
+      "result": {
+        "netEV": 0.7526438104749785,
+        "expectedReturn": 2.1501047479749786,
+        "averageStake": 1.3974609375,
+        "rtp": 1.5385794982015222,
+        "deals": 8192,
+        "doubleCount": 3256,
+        "doubleFrequency": 0.3974609375,
+        "doubleTieCount": 2,
+        "doubleTieFrequency": 0.000244140625,
+        "estimated": true,
+        "netEVSE": 0.05125315167357663,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-net-2x-fee15",
+      "doubleOnDraw": true,
+      "name": "Fee 15",
+      "pays": {
+        "fee": 15
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 15. Maximum loss 15, or 30 at 2×.",
+      "result": {
+        "netEV": -0.57603948307563,
+        "expectedReturn": 0.68494684504937,
+        "averageStake": 1.260986328125,
+        "rtp": 0.5431834031601587,
+        "deals": 8192,
+        "doubleCount": 2138,
+        "doubleFrequency": 0.260986328125,
+        "doubleTieCount": 6,
+        "doubleTieFrequency": 0.000732421875,
+        "estimated": true,
+        "netEVSE": 0.04740409220326283,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage6",
+      "key": "cribbage6-net-2x-fee16",
+      "doubleOnDraw": true,
+      "name": "Fee 16",
+      "pays": {
+        "fee": 16
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 16. Maximum loss 16, or 32 at 2×.",
+      "result": {
+        "netEV": -1.7889149310420465,
+        "expectedReturn": -0.6261952044795465,
+        "averageStake": 1.1627197265625,
+        "rtp": -0.5385607469917528,
+        "deals": 8192,
+        "doubleCount": 1333,
+        "doubleFrequency": 0.1627197265625,
+        "doubleTieCount": 2,
+        "doubleTieFrequency": 0.000244140625,
+        "estimated": true,
+        "netEVSE": 0.043946471850073575,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 920731
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-net-fee22",
+      "doubleOnDraw": false,
+      "name": "Fee 22",
+      "pays": {
+        "fee": 22
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 22. Maximum loss 22.",
+      "result": {
+        "netEV": 0.37836362655913375,
+        "expectedReturn": 1.3783636265591337,
+        "averageStake": 1,
+        "rtp": 1.3783636265591337,
+        "deals": 4096,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": true,
+        "netEVSE": 0.06646797580716084,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-net-fee23",
+      "doubleOnDraw": false,
+      "name": "Fee 23",
+      "pays": {
+        "fee": 23
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 23. Maximum loss 23.",
+      "result": {
+        "netEV": -0.6216363734408662,
+        "expectedReturn": 0.3783636265591338,
+        "averageStake": 1,
+        "rtp": 0.3783636265591338,
+        "deals": 4096,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": true,
+        "netEVSE": 0.06646797580716088,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-net-fee24",
+      "doubleOnDraw": false,
+      "name": "Fee 24",
+      "pays": {
+        "fee": 24
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 24. Maximum loss 24.",
+      "result": {
+        "netEV": -1.621636373440868,
+        "expectedReturn": -0.6216363734408681,
+        "averageStake": 1,
+        "rtp": -0.6216363734408681,
+        "deals": 4096,
+        "doubleCount": 0,
+        "doubleFrequency": 0,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": true,
+        "netEVSE": 0.06646797580716089,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-net-2x-fee23",
+      "doubleOnDraw": true,
+      "name": "Fee 23",
+      "pays": {
+        "fee": 23
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 23. Maximum loss 23, or 46 at 2×.",
+      "result": {
+        "netEV": 0.6969768278462997,
+        "expectedReturn": 2.0473186247212998,
+        "averageStake": 1.350341796875,
+        "rtp": 1.5161484517914379,
+        "deals": 4096,
+        "doubleCount": 1435,
+        "doubleFrequency": 0.350341796875,
+        "doubleTieCount": 1,
+        "doubleTieFrequency": 0.000244140625,
+        "estimated": true,
+        "netEVSE": 0.10725062386446163,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-net-2x-fee24",
+      "doubleOnDraw": true,
+      "name": "Fee 24",
+      "pays": {
+        "fee": 24
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 24. Maximum loss 24, or 48 at 2×.",
+      "result": {
+        "netEV": -0.6104849646661371,
+        "expectedReturn": 0.6605111290838629,
+        "averageStake": 1.27099609375,
+        "rtp": 0.51967990486506,
+        "deals": 4096,
+        "doubleCount": 1110,
+        "doubleFrequency": 0.27099609375,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": true,
+        "netEVSE": 0.1018076605032412,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    },
+    {
+      "id": "cribbage7",
+      "key": "cribbage7-net-2x-fee25",
+      "doubleOnDraw": true,
+      "name": "Fee 25",
+      "pays": {
+        "fee": 25
+      },
+      "rules": {
+        "payout": "net",
+        "scoreCap": 7
+      },
+      "summary": "Net PnL = cribbage points − 25. Maximum loss 25, or 50 at 2×.",
+      "result": {
+        "netEV": -1.8436274186848856,
+        "expectedReturn": -0.6444086686848856,
+        "averageStake": 1.19921875,
+        "rtp": -0.5373570657437483,
+        "deals": 4096,
+        "doubleCount": 816,
+        "doubleFrequency": 0.19921875,
+        "doubleTieCount": 0,
+        "doubleTieFrequency": 0,
+        "estimated": true,
+        "netEVSE": 0.09668410517684438,
+        "method": "Sampled initial deals; exact EV of every hold and legal draw on each deal",
+        "seed": 739021
+      }
+    }
+  ]
+}

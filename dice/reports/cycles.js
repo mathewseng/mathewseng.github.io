@@ -37,7 +37,7 @@ function diagram(cycle) {
 }
 export function createCycles(root, { onPlay }) {
   let selected = SIMPLE_CYCLES[0];
-  root.innerHTML = `<div class="match-section-head"><div><p class="eyebrow eyebrow--plain">Non-transitive scoring</p><h3>Simple three-rule cycles</h3></div><span class="hint">${SIMPLE_CYCLES.length} examples · exact counts, no simulation</span></div>
+  root.innerHTML = `<div class="match-section-head"><div><h3>Simple three-rule cycles</h3></div><span class="hint">${SIMPLE_CYCLES.length} examples · exact counts, no simulation</span></div>
     <p class="cycle-intro">A beats B, B beats C, C beats A. Each side rolls its own pair, and each rule keeps the same score adjustment against every opponent.</p>
     <div class="cycle-layout">
       <aside class="cycle-browser" aria-label="Choose a cycle">

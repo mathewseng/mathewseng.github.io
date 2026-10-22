@@ -471,33 +471,6 @@ body::after {
     background: var(--surface-3);
   }
 
-  .eyebrow {
-    color: var(--muted);
-    font-size: var(--t-xs);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .eyebrow-accent {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--accent);
-    font-size: var(--t-xs);
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  .eyebrow-accent::before {
-    content: "";
-    width: 22px;
-    height: 1px;
-    background: currentColor;
-    opacity: 0.7;
-  }
-
   .page-title {
     font-size: var(--t-xl);
     font-weight: 700;
@@ -517,9 +490,7 @@ body::after {
     margin-bottom: 0.4rem;
     color: var(--muted);
     font-size: var(--t-xs);
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-weight: 600;
   }
 
   /* ---------- Fields ---------- */
@@ -1055,8 +1026,6 @@ body::after {
     font-size: var(--t-xs);
     font-weight: 700;
     line-height: 1;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

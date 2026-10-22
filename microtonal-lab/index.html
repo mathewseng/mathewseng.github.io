@@ -15,7 +15,7 @@
     />
     <link rel="stylesheet" href="../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../shared/app.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
     <script src="../shared/tabs.js?v=20261016"></script>
     <script src="../shared/keycap.js?v=20261016"></script>
@@ -49,7 +49,6 @@
 
       <div class="tool-head">
         <div>
-          <p class="eyebrow eyebrow--plain">Tuning explorer · Browser instrument</p>
           <h1>Microtonal Lab</h1>
         </div>
       </div>
@@ -65,7 +64,6 @@
         <aside class="panel preset-panel" data-pane="tunings" aria-labelledby="tuningsTitle">
           <div class="panel-head">
             <div>
-              <p class="ml-kicker">Tuning bank</p>
               <h2 id="tuningsTitle">Tunings</h2>
             </div>
             <output id="presetCount" class="badge badge--plain" aria-label="Matching tunings">0</output>
@@ -144,7 +142,6 @@
                 <canvas id="tuningCanvas" width="1200" height="700" aria-label="Pitch map of the active tuning and the live signal" role="img"></canvas>
                 <div class="scope-overlay">
                   <div class="scope-title">
-                    <p class="ml-kicker">Active preset</p>
                     <h2 id="activePresetName">12-EDO</h2>
                   </div>
                   <div class="mini-meters">
@@ -168,7 +165,6 @@
             <div class="panel readout-panel">
               <div class="panel-head">
                 <div>
-                  <p class="ml-kicker">Pitch readout</p>
                   <h2 id="focusedNote">Step 0</h2>
                 </div>
                 <output id="frequencyReadout" class="badge badge--plain badge--accent" aria-label="Frequency">261.63 Hz</output>
@@ -214,7 +210,6 @@
           <section class="panel keyboard-panel" data-pane="play" aria-labelledby="keyboardTitle">
             <div class="panel-head keyboard-head">
               <div>
-                <p class="ml-kicker"><span class="ml-fine-only">QWERTY pitch grid</span><span class="ml-coarse-only">Isomorphic pitch grid</span></p>
                 <h2 id="keyboardTitle">Keyboard</h2>
               </div>
               <div class="range-controls stepper" role="group" aria-label="Keyboard range">
@@ -234,7 +229,6 @@
         <aside class="panel builder-panel" data-pane="builder" aria-labelledby="builderTitle">
           <div class="panel-head">
             <div>
-              <p class="ml-kicker">Build a scale</p>
               <h2 id="builderTitle">Builder</h2>
             </div>
           </div>
@@ -305,7 +299,6 @@
 
             <section class="scale-map" aria-labelledby="scaleMapTitle">
               <div class="scale-map-head">
-                <p class="ml-kicker">Scale map</p>
                 <h2 id="scaleMapTitle">Steps</h2>
               </div>
               <div id="scaleMap" class="scale-map-list list"></div>

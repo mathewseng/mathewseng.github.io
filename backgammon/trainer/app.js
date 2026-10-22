@@ -52,7 +52,7 @@ async function boot() {
 await startUpdates();
 resumedAfterUpdate();
 const pageProgress = readPageProgress();
-const ui = shell("trainer", "Trainer", "One position. One decision.");
+const ui = shell("trainer", "Trainer");
 const analysis = new AnalysisPanel();
 let catalog = [],
   pool = [],
@@ -579,7 +579,7 @@ function finish() {
     );
   summaryCard.replaceChildren(
     hideCardButton(summaryCard, "Hide the summary to see the board"),
-    el("p", { class: "eyebrow eyebrow--plain" }, "Session complete"),
+    el("p", { class: "bg-result-kind" }, "Session complete"),
     el("h2", {}, `${count} decision${count === 1 ? "" : "s"} studied`),
     stats(),
     ...(s.recorded < count

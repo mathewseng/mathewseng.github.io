@@ -6,7 +6,7 @@ import { el, signed, pct, cubeFace, renderOptionTable, metric, evColor, pctColor
 import { nodeOptions, seatOf } from "./table-view.js";
 
 export function ownerLabel(cube, names) {
-  if (cube.owner == null) return "centered";
+  if (cube.owner == null) return "Centered";
   return cube.level > 1 ? names[cube.owner] : `${names[cube.owner]} · option`;
 }
 export function fillDropSelect(select, value = null, scoring = "classic") {

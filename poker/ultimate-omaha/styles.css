@@ -100,7 +100,7 @@
 /* Phones: the felt is kept short so the player's own hole cards sit above
    the sticky action stage at first view. The board labels run up the side
    of their row instead of above it, and the street line is left to the
-   header badge and the stage kicker, which say the same thing. */
+   header badge and the stage status line, which say the same thing. */
 @media (max-width: 640px) {
   .board-line {
     grid-template-columns: min-content max-content;
@@ -115,7 +115,6 @@
     writing-mode: vertical-rl;
     transform: rotate(180deg);
     text-align: center;
-    letter-spacing: 0.08em;
   }
 
   .table-surface #felt-phase {

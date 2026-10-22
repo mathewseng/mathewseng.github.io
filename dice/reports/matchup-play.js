@@ -37,7 +37,7 @@ export function createMatchupPlay(root, { onChange, onCompare }) {
               (
                 side,
               ) => `<section class="match-play-side" aria-label="Side ${side.toUpperCase()}">
-            <div class="match-play-side-heading"><span class="eyebrow eyebrow--plain">Side ${side.toUpperCase()}</span><h4 id="match-play-${side}-name"></h4></div>
+            <div class="match-play-side-heading"><span class="hint">Side ${side.toUpperCase()}</span><h4 id="match-play-${side}-name"></h4></div>
             <div id="match-play-${side}-dice" class="match-play-dice" role="img" aria-label="Two dice ready to roll"></div>
             <div class="match-play-score"><strong id="match-play-${side}-score">—</strong><span id="match-play-${side}-detail">Ready to roll</span></div>
           </section>`,

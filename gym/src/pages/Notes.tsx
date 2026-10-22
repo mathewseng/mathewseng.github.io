@@ -35,7 +35,6 @@ export default function Notes() {
   return (
     <>
       <PageHeader
-        eyebrow="Notes"
         title="Training notes"
         description="The standards, context and caveats that make a number comparable, or say when it should not be compared at all."
       />

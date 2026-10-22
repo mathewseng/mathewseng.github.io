@@ -27,7 +27,6 @@ export default function Goals() {
   return (
     <>
       <PageHeader
-        eyebrow="Goals"
         title="Goals & milestones"
         description="Each goal has a definition of success, a visible next step, and enough context to keep progress honest."
         actions={
@@ -99,7 +98,9 @@ export default function Goals() {
 
                 {goal.milestones?.length ? (
                   <div className="mt-6">
-                    <p className="eyebrow">Milestone ladder</p>
+                    <p className="text-xs font-semibold text-[var(--muted)]">
+                      Milestone ladder
+                    </p>
                     <ol className="mt-3 space-y-2">
                       {goal.milestones.slice(0, 5).map((milestone, index) => (
                         <li
@@ -147,7 +148,9 @@ export default function Goals() {
                     aria-hidden="true"
                   />
                   <div className="min-w-0">
-                    <p className="eyebrow">Next action</p>
+                    <p className="text-xs font-semibold text-[var(--muted)]">
+                      Next action
+                    </p>
                     <p className="mt-1 text-xs leading-5">
                       {goal.progressionRules?.[0] ??
                         goal.safetyNotes?.[0] ??

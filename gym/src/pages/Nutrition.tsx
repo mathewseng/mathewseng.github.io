@@ -62,7 +62,6 @@ export default function Nutrition() {
   return (
     <>
       <PageHeader
-        eyebrow="Nutrition"
         title="Nutrition & recovery"
         description="Track what is known, leave unknowns blank, and read supplement observations as context, not prescriptions."
         actions={
@@ -192,7 +191,7 @@ export default function Nutrition() {
           </Surface>
 
           <Surface className="p-5">
-            <p className="eyebrow">Known travel gap</p>
+            <p className="text-xs font-semibold text-[var(--muted)]">Known travel gap</p>
             <h3 className="mt-2 text-lg font-bold">~10 days paused</h3>
             <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
               No creatine was reported during travel. Exact dates are unknown, so the
@@ -204,7 +203,7 @@ export default function Nutrition() {
           </Surface>
 
           <Surface className="p-5">
-            <p className="eyebrow">Data quality</p>
+            <p className="text-xs font-semibold text-[var(--muted)]">Data quality</p>
             <div className="mt-3 space-y-2">
               {nutritionObservations
                 .filter((item) => item.status === "unknown")

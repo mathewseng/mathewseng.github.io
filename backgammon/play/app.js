@@ -99,7 +99,7 @@ async function boot() {
 await startUpdates();
 const updatedOnLoad = resumedAfterUpdate();
 const pageProgress = readPageProgress();
-const ui = shell("play", "Play", "Your table. Your pace.");
+const ui = shell("play", "Play");
 document.querySelector(".app").classList.add("play-page");
 let setupStudyOpen;
 let config = {
@@ -155,7 +155,7 @@ function renderResultCard(s) {
     el("strong", { class: "stat-value" }, value, ...(extra ? [el("small", {}, extra)] : [])));
   resultCard.replaceChildren(
     hideCardButton(resultCard, "Hide the result to see the board", () => { hiddenResult = key; }),
-    el("p", { class: "eyebrow eyebrow--plain" }, r.matchOver ? "Match complete" : `Game ${s.gameNumber} over`),
+    el("p", { class: "bg-result-kind" }, r.matchOver ? "Match complete" : `Game ${s.gameNumber} over`),
     el("h2", {}, `${winner} ${winner === "You" ? "win" : "wins"} a ${level}`),
     el("div", { class: "stat-strip game-over-stats" },
       stat("Points", `+${r.points}`, winner),

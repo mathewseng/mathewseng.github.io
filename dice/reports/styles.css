@@ -515,6 +515,12 @@ td.sum-rule-cell {
   gap: 8px;
 }
 
+.inspector-heading h2 {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+}
+
 .inspector-method {
   padding-top: 12px;
   border-top: 1px solid var(--line);
@@ -611,7 +617,6 @@ td.sum-rule-cell {
   margin-left: 4px;
   font-family: var(--font-sans);
   font-size: var(--t-xs);
-  letter-spacing: 0.08em;
 }
 
 .chart-head {
@@ -630,8 +635,6 @@ td.sum-rule-cell {
 .chart-head span {
   color: var(--muted);
   font-size: var(--t-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .chart-scroll {
@@ -1075,10 +1078,8 @@ td.sum-rule-cell {
 
 .pnl-block > span {
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 500;
 }
 
 .pnl-block strong {
@@ -1421,6 +1422,12 @@ td.sum-rule-cell {
   min-width: 0;
 }
 
+.paytable-heading h2 {
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+}
+
 .paytable-heading label {
   display: block;
   margin-top: 2px;
@@ -1497,10 +1504,6 @@ td.sum-rule-cell {
 /* ---------- Short desktop windows ---------- */
 
 @media (min-width: 881px) and (max-height: 820px) {
-  .tool-head .eyebrow {
-    display: none;
-  }
-
   .app-shell {
     gap: 6px;
   }
@@ -1561,10 +1564,6 @@ td.sum-rule-cell {
 
   .tool-head {
     padding: 0;
-  }
-
-  .tool-head .eyebrow {
-    display: none;
   }
 
   .tool-head h1 {
@@ -1634,10 +1633,6 @@ td.sum-rule-cell {
 
   .results-panel .panel-head {
     padding: 6px 10px;
-  }
-
-  .results-panel .panel-head .eyebrow {
-    display: none;
   }
 
   .results-panel .panel-head h2 {
@@ -1803,10 +1798,6 @@ td.sum-rule-cell {
     flex: 1 1 auto;
   }
 
-  .play-top .eyebrow {
-    display: none;
-  }
-
   .play-top h2 {
     font-size: var(--t-md);
   }
@@ -1919,7 +1910,7 @@ td.sum-rule-cell {
     padding: 8px 10px 10px;
   }
 
-  .paytable-heading .eyebrow {
+  .paytable-heading h2 {
     display: none;
   }
 

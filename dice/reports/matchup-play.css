@@ -156,8 +156,6 @@
 .match-play-stats thead th {
   font-size: var(--t-xs);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .match-play-stats th:first-child {

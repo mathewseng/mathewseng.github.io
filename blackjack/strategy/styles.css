@@ -116,10 +116,6 @@ body {
   font-size: var(--t-md);
 }
 
-.panel-head .eyebrow {
-  display: none;
-}
-
 .panel-body {
   position: relative;
   display: flex;
@@ -586,6 +582,13 @@ body {
   border-top: 1px solid var(--line);
 }
 
+.cell-inspector h3 {
+  color: var(--ink);
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+}
+
 .cell-inspector strong {
   color: var(--ink);
 }
@@ -641,10 +644,8 @@ body {
 
 .prob-title {
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 /* ---------- Count panel ---------- */
@@ -1020,10 +1021,6 @@ body {
     grid-template-columns: var(--chart-col) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
   }
 
-  .panel-head .eyebrow {
-    display: inline-flex;
-  }
-
   .panel-head h2 {
     font-size: var(--t-lg);
   }
@@ -1036,10 +1033,6 @@ body {
 
 /* Short desktop windows (1366x768, 1280x720): a one-row tool head. */
 @media (min-width: 1000px) and (max-height: 820px) {
-  .tool-head .eyebrow {
-    display: none;
-  }
-
   .bj-metrics .stat {
     flex-direction: row;
     align-items: baseline;
@@ -1066,10 +1059,6 @@ body {
 
   .tool-head {
     padding: 0;
-  }
-
-  .tool-head .eyebrow {
-    display: none;
   }
 
   .tool-head h1 {
@@ -1127,10 +1116,6 @@ body {
   .workspace[data-view="count"] .panel-body,
   .workspace[data-view="rules"] .panel-body {
     overflow: visible;
-  }
-
-  .panel-head .eyebrow {
-    display: inline-flex;
   }
 
   .bj-chart-title h2 {

@@ -20,7 +20,7 @@ Qualification and point awards are separate: five-card low points always require
 
 ## Session PnL
 
-The base bet is always 1. PnL starts at zero and stays unchanged during a hand. Settlement adds the payout minus the full stake: 1 normally or 2 when choosing 2×. Negative PnL never blocks play or triggers a refill. Changing games or applying settings preserves PnL and hands played; a study hand changes neither. Reloading starts a new session. The meters show PnL and hands played, with no base-bet or Last return display. Hand history lists every completed hand newest first, with its game, 2× marker when used, and net win/loss or push. The summary counts wins, losses and pushes. History persists across game and settings changes for the session and resets on reload, together with PnL.
+The base bet is always 1. PnL starts at zero and stays unchanged during a hand. Settlement adds the payout minus the full stake: 1 normally or 2 when choosing 2×. Negative PnL never blocks play or triggers a refill. The game selector stays available during a hand or calculation. Switching games cancels the unfinished hand and its solver without settling it, and preserves PnL, hands played and completed history. Applying settings also preserves PnL and hands played; a study hand changes neither. Reloading starts a new session. The meters show PnL and hands played, with no base-bet or Last return display. Hand history lists every completed hand newest first, with its game, 2× marker when used, and net win/loss or push. The summary counts wins, losses and pushes. History persists across game and settings changes for the session and resets on reload, together with PnL.
 
 A zero payout displays **You lose**; returning exactly the stake displays **Push**; a win displays **Won +N**, where N is the payout minus the entire stake (including 2× when used).
 
@@ -43,26 +43,35 @@ Per-hand rows retain `ev = netEV + 1` for compatibility and expose `netEV`, `gro
 
 ## Cribbage
 
-Eight menu entries pair hand sizes 4, 5, 6 and 7 with base stake or optional 2× on draw. Each has an independently saved integer fee and scoring settings. All final cards score; there is no starter, crib or pegging.
+The Cribbage dropdown section has sixteen entries: hand sizes 4, 5, 6 and 7, Capped loss or Points − fee settlement, and base stake or optional 2× on draw. Each has an independently saved integer fee and scoring settings. All final cards score; there is no starter, crib or pegging.
 
 The default scoring extends the cribbage row in `ofc/fantasyland-core.js`: each fifteen is 2; each pair is 2; each copy of the longest run of at least three cards scores its full length; a flush of at least four cards scores its length; each jack sharing its suit with another card scores 1. Aces are low and worth 1 toward fifteens; faces count 10. Six- and seven-card runs/flushes receive their full length by default. The editor also provides the literal OFC cap of 5 (its existing run-window algorithm), and an alternative settlement convention.
 
-Default **total return = max(0, cribbage points − fee)**, including the stake. A score equal to the fee loses the bet; fee + 1 pushes; fee + 2 wins +1. At 2×, both the return and stake double. The fee is subtracted once from the total score before applying the stake multiplier. The optional **net PnL = points − fee** convention permits negative results beyond the initial unit; the engine represents its total return as `1 + points − fee`, and settlement then subtracts the stake normally.
+Default **total return = max(0, cribbage points − fee)**, including the stake. A score equal to the fee loses the bet; fee + 1 pushes; fee + 2 wins +1. At 2×, both the return and stake double. The fee is subtracted once from the total score before applying the stake multiplier. The separate **Points − fee** games use **net PnL = points − fee** and permit negative results beyond the initial unit; the engine represents its total return as `1 + points − fee`, and settlement then subtracts the stake normally.
 
-Fee presets include the selected fee and its adjacent integers. Each mode defaults to the highest computed return at or below 100%, using the point estimate for sampled results. The one-point fee increments are coarse: preserving the specified scoring does not allow all eight games to approach 100% closely. The lab exposes the adjacent option above 100% as well as more conservative options. Sampling uncertainty is shown explicitly and may cross 100%; a sampled default is not a certified house edge.
+Fee presets include the selected fee and its adjacent integers. Each mode defaults to the closest non-positive net EV, using the point estimate for sampled results. The one-point fee increments are coarse: preserving the specified scoring does not allow all sixteen games to approach zero EV closely. The lab exposes the adjacent positive-EV option as well as more conservative options. Sampled EVs are explicitly marked as estimates; a sampled default is not a certified negative-EV game.
 
-Default fees and returns (six/seven-card figures are estimates):
+Capped-loss default fees and net EV per initial hand (six/seven-card figures are estimates):
 
-| Cards | Fee | RTP | Fee with 2× | RTP with 2× | Optimal 2× frequency |
+| Cards | Fee | Net EV | Fee with 2× | Net EV with 2× | Optimal 2× frequency |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 4 | 5 | 82.97% | 5 | 95.36% | 14.88% |
-| 5 | 10 | 92.18% | 11 | 82.30% | 15.55% |
-| 6 | 18 | ≈ 88.99% | 19 | ≈ 89.51% | ≈ 16.86% |
-| 7 | 31 | ≈ 90.13% | 32 | ≈ 96.84% | ≈ 16.55% |
+| 4 | 5 | -0.170328 | 5 | -0.053323 | 14.88% |
+| 5 | 10 | -0.078150 | 11 | -0.204481 | 15.55% |
+| 6 | 18 | ≈ -0.110085 | 19 | ≈ -0.122593 | ≈ 16.86% |
+| 7 | 31 | ≈ -0.098731 | 32 | ≈ -0.036815 | ≈ 16.55% |
+
+Points-minus-fee defaults:
+
+| Cards | Fee | Net EV | Fee with 2× | Net EV with 2× | Optimal 2× frequency |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4 | 5 | -0.576731 | 5 | -0.334995 | 19.98% |
+| 5 | 9 | -0.817686 | 9 | -0.387098 | 27.20% |
+| 6 | 14 | ≈ -0.198664 | 15 | ≈ -0.576039 | ≈ 26.10% |
+| 7 | 23 | ≈ -0.621636 | 24 | ≈ -0.610485 | ≈ 27.10% |
 
 ### Cribbage analysis
 
-Every individual hold and stake choice has an **exact conditional draw EV**, including the payout floor and discarded-card exclusion. There are 16/32/64/128 holds for 4/5/6/7 cards, or 31/63/127/255 decisions with 2× enabled. The UI uses net PnL EV for all cribbage games.
+Every individual hold and stake choice has an **exact conditional draw EV**, including the payout floor and discarded-card exclusion. There are 16/32/64/128 holds for 4/5/6/7 cards, or 31/63/127/255 decisions with 2× enabled. The game summary, payout lab, fee options and decision review all show signed net PnL EV per initial hand for cribbage. This includes the fee and the entire stake, including 2× when chosen. Sampled game EVs carry an ≈ marker and sample count; exact hold EVs do not. Other poker variants continue showing game RTP. Stored analysis retains RTP and its ratio-estimator uncertainty for reproducibility; these percentage intervals are not displayed as net-EV intervals.
 
 `cribbage-solver.js` enumerates rank multiplicities, then analytically counts suit assignments. Inclusion–exclusion on isolated-jack events gives the suited-jack distribution. Suit-count generating functions give the flush corrections; with at most seven cards, two four-card flushes cannot coexist. The resulting joint distribution preserves nonlinear interactions with `max(0, points − fee)`. The browser uses this compact solver for all cribbage hand reviews and never allocates a 133-million-hand index. Computation stays in the worker, leaving hold taps responsive; six/seven-card hands wrap on narrow screens.
 
@@ -156,7 +165,7 @@ RTP = average over all D of max over H ⊆ D of EV(H | D)
 
 A five-bit superset Möbius transform computes the 32 numerators in 80 subtractions. Subsets use colex combinatorial indexing (`sum choose(card[i], i+1)`) with separate offsets by size. This handles all 2,598,960 starting hands (2,869,685 with a joker), without suit-isomorphism assumptions. Float64 arrays hold the subset sums; compensated summation accumulates full-game EV. Tie handling favors holding more cards within 1e-12; this has no material effect on reported RTP. Per-hand ranking shows all 32 decisions and EV loss relative to the maximum. After each draw, a decision review automatically shows the chosen hold’s EV, the best hold’s EV and the EV given up, calculated from the original deal rather than the final cards. The top five alternatives are shown with the chosen hold pinned when it falls outside them; all 32 remain available. A pre-draw solution is reused when available, and starting a new hand discards stale review replies while retaining the worker’s hand index.
 
-The same `engine.js` evaluator and `solver.js` are used in play, browser worker and offline analysis. The worker never blocks the UI. Its payout index is reused across hands and study queries with unchanged settings, so only the first solve builds the full index. Explicit cancellation, game changes and payout/rule edits terminate the worker; starting a new hand also stops an active full-game solve. Holds update existing card nodes in place, preserve focus and have no transition delay. Touch/pen holds change on pointer-down; the following click is suppressed, and scrolling, pointer cancellation or a second touch restores the prior hold. Mouse, keyboard and assistive clicks keep native activation. Devices with a touch pointer skip card-deal animations. Edits to payouts, qualifiers or the doubling rule invalidate old results, and changing games, rules or payouts during a live wager is disabled. A manually entered study hand cannot pay credits: Deal always starts a new random hand.
+The same `engine.js` evaluator and `solver.js` are used in play, browser worker and offline analysis. The worker never blocks the UI. Its payout index is reused across hands and study queries with unchanged settings, so only the first solve builds the full index. Explicit cancellation, game changes and payout/rule edits terminate the worker; starting a new hand also stops an active full-game solve. Holds update existing card nodes in place, preserve focus and have no transition delay. Touch/pen holds change on pointer-down; the following click is suppressed, and scrolling, pointer cancellation or a second touch restores the prior hold. Mouse, keyboard and assistive clicks keep native activation. Devices with a touch pointer skip card-deal animations. Edits to payouts, qualifiers or the doubling rule invalidate old results, and editing rules or payouts during a live wager is disabled. The game selector stays enabled and cancels an unfinished hand when switching. A manually entered study hand cannot pay credits: Deal always starts a new random hand.
 
 ## Reproduce and test
 
@@ -176,3 +185,23 @@ Tests cover rank categories, wild cards, kicker boundaries, the lowball wheel, B
 ## References
 
 Paytables and independent return benchmarks: [Wizard of Odds summary](https://wizardofodds.com/games/video-poker/summary/), [All American](https://wizardofodds.com/games/video-poker/tables/all-american/), [full-pay Deuces Wild](https://wizardofodds.com/games/video-poker/tables/deuces-wild/), and [Joker Poker](https://wizardofodds.com/games/video-poker/tables/joker-poker-kings-or-better/). Custom-game results are original calculations in this repository.
+
+### Points-minus-fee games and payout frequencies
+
+Points − fee games can lose the entire fee, or twice the fee at 2×. Their integer fees are optimized separately, with three adjacent options for each game in `cribbage-net-analysis.json`. Four/five-card results exhaust every starting hand. Six/seven-card results use the same seeded sample sizes as capped-loss games. Legacy saved net-settlement edits migrate into the new entries; all sixteen entries retain independent settings.
+
+Reproduce net fee choices with `node poker/video-poker/scripts/analyze-cribbage-net.cjs`. The native analyzer computes expected rank points, flushes and suited jacks independently and is checked against the exact JS draw solver. Linear settlement makes the fee a constant for a given stake: each deal only needs its best expected score with any hold and with a non-pat hold to optimize every integer fee.
+
+The payout lab shows optimal-play win/push/loss rates, PnL standard deviation, and a bar/table for each net payout with its probability and reciprocal frequency. Charts measure completed-hand net PnL, after the entire stake, and aggregate identical net amounts across stakes and hand categories. Badeucey awards are combined before grouping. These are policy frequencies, not the distribution of random final hands or the player's session history. On EV ties the policy prefers 1×, then more held cards, then the first mask; other optimal tie choices can produce different payout frequencies at the same EV.
+
+`outcomes.js` counts four/five-card distributions exactly: for each initial hand's optimal hold it adds inclusion–exclusion coefficients to final-hand subsets, then weights each final hand once. This avoids enumerating every initial-hand/draw pair. Six/seven-card charts average exact conditional score distributions over reproducibly sampled initial hands; the whole-game chart is estimated, including rare payout frequencies. Counts shown as “1 in” are long-run frequencies, not guarantees or waiting times. Edited settings clear stale charts; Solve full game / Estimate game recalculates them in the worker.
+
+Reproduce the 35 default charts with `node poker/video-poker/scripts/analyze-outcomes.cjs`. `outcome-analysis.json` records configurations, seeds, sample sizes and source hashes. Histogram means are checked against independently computed game EVs. Tests also compare distributions to direct draw enumeration on small decks, validate conditional cribbage score histograms, and compare native linear score EVs to the JS solver for every hold.
+
+### Game browser and layout
+
+The game dropdown is replaced by a searchable game browser with Custom variants, Cribbage, Classic, Bonus and Wild cards filters. It opens as a dialog on desktop and a bottom sheet on narrow screens. Arrow keys browse results, Enter selects, and Escape closes; native dialog behavior contains focus and returns it to the trigger. Selecting the active game preserves the hand. Selecting another game uses the existing cancellation and PnL behavior. The hidden select remains the internal selection state for settings and recommendations; browser tests choose games through the visible picker.
+
+The page keeps the shared color tokens and playing-card component, with lighter panel chrome, segmented workspace navigation, tabular metrics and a system font stack that avoids font-loading delay. Card holds remain immediate on touch devices. Selector motion respects reduced-motion preferences. `tests/game-picker.cjs` covers search, all 35 choices, keyboard/focus behavior, mobile sizing and active-hand preservation.
+
+Cribbage uses a compact matrix in the game browser: rows are 4–7 cards, and columns pair 1×/2× under Capped loss and Points − fee. This stays a four-column grid down to 320px with at least 44px tap targets. Search preserves column meanings, arrow keys move spatially within the matrix, and reopening from a cribbage game selects the Cribbage filter. `tests/cribbage-grid.cjs` checks all sixteen mobile choices and responsive alignment.

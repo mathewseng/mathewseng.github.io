@@ -1518,9 +1518,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   display: none;
 }
 
-.bg-result-card > .eyebrow {
-  justify-content: center;
+.bg-result-card > .bg-result-kind {
+  margin: 0;
   padding-inline: 36px;
+  color: var(--muted);
+  font-size: var(--t-sm);
 }
 
 /* Hides the card so the final position can be studied (hideCardButton). */
@@ -2056,8 +2058,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   color: var(--muted);
   font-size: var(--t-xs);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .cube-option-status {
@@ -3906,10 +3906,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .solver-group-title {
   margin: 0;
   color: var(--muted);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .solver-group > .btn {
@@ -3982,6 +3980,8 @@ button.library-item {
 /* Library inspector groups: Open, Edit, Export, then a separated danger zone. */
 .library-selected-kind {
   margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
 }
 
 .library-selected-title {
@@ -3999,10 +3999,8 @@ button.library-item {
 .library-group-title {
   margin: 0;
   color: var(--muted);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .library-group > .btn {

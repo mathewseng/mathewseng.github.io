@@ -1880,7 +1880,6 @@
   function presetCard(preset, selectedId) {
     const minis = { Poker: ["A♠", "K♥", "b"], Casino: ["A♦", "K♠", "b"], Cribbage: ["5♥", "5♣", "J♦"], Rummy: ["7♠", "8♠", "9♠"], "Trick-taking": ["Q♠", "A♥", "b"], Shedding: ["8♣", "8♥", "b"], Kids: ["K♣", "2♦", "b"], Solitaire: ["K♥", "Q♠", "J♥"], Freeform: ["b", "A♣", "b"], Drafting: ["b", "Q♥", "b"], "Draw & discard": ["b", "K♣", "2♥"], "Deck-building": ["●", "🏰", "b"], Climbing: ["9♠", "9♥", "K♣"], Custom: ["★", "b", "b"] }[preset.family] || ["★", "b", "b"];
     return `<button type="button" class="preset${preset.id === selectedId ? " on" : ""}" data-preset="${esc(preset.id)}" data-search="${esc(`${preset.name} ${preset.family} ${preset.tagline || ""} ${preset.description || ""}`.toLowerCase())}">
-      <span class="fam">${esc(preset.family)}</span>
       <h3>${esc(preset.name)}</h3>
       <p>${esc(preset.tagline || preset.description)}</p>
       <div class="mini">${minis.map((m) => (m === "b" ? Cards.html("BACK") : m === "★" ? Cards.html("JK") : Cards.normalize(m) ? Cards.html(m) : `<span class="mini-custom">${esc(m)}</span>`)).join("")}</div>

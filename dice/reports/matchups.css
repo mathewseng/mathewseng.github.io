@@ -77,10 +77,6 @@
   min-width: 0;
 }
 
-.match-section-head .eyebrow {
-  margin-bottom: 4px;
-}
-
 .match-section-head .hint {
   margin-top: 4px;
 }
@@ -172,10 +168,8 @@
 
 .match-metrics > div > span {
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 500;
 }
 
 .match-metrics strong {

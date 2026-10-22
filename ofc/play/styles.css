@@ -201,6 +201,12 @@
   align-content: start;
 }
 
+.table-game-label {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+}
+
 .table-status-actions {
   display: flex;
   flex-wrap: wrap;
@@ -223,11 +229,6 @@
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 70%, transparent);
 }
 
-.score-player .stat-label {
-  text-transform: none;
-  letter-spacing: 0;
-}
-
 .score-btn,
 .score-gone {
   display: inline-block;
@@ -238,7 +239,6 @@
   color: var(--accent);
   font-size: var(--t-xs);
   font-weight: 700;
-  letter-spacing: 0.04em;
   vertical-align: middle;
 }
 
@@ -625,10 +625,6 @@ body:has(#turn-actions:not([hidden])) .toast-stack--alerts {
 }
 
 @media (max-width: 640px) {
-  .lobby .tool-head .lede {
-    display: none;
-  }
-
   .setup-fields .field,
   .setup-actions,
   .setup-actions .btn {

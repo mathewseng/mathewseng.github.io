@@ -136,7 +136,6 @@ export default function Workouts() {
   return (
     <>
       <PageHeader
-        eyebrow="History"
         title="Training calendar"
         description="Scan the month, inspect every set, and filter by the recovery context that shaped the session."
         actions={

@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
-    <link rel="stylesheet" href="../table.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <link rel="stylesheet" href="../table.css?v=20261021-less" />
+    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
   </head>
 
@@ -44,9 +44,7 @@
         <section id="menu-screen" class="screen active menu-screen" aria-labelledby="menu-title">
           <div class="tool-head">
             <div>
-              <p class="eyebrow">Poker · Double board</p>
               <h1 id="menu-title">Ultimate Omaha</h1>
-              <p class="lede">Four hole cards, two boards, fixed multiplier payouts. Host a room and share the code; friends join peer-to-peer.</p>
             </div>
           </div>
           <div class="menu-grid">
@@ -91,9 +89,8 @@
         <section id="lobby-screen" class="screen lobby-screen" aria-labelledby="lobby-title">
           <div class="tool-head">
             <div>
-              <p class="eyebrow">Poker · Lobby</p>
               <h1 id="lobby-title">Waiting for players</h1>
-              <p class="lede you-are">You are <strong id="your-name" class="your-name"></strong>. Share the code; the host deals when everyone is in.</p>
+              <span id="your-name" hidden></span>
             </div>
             <div class="lobby-code room-info">
               <span class="lobby-code-pill"><span class="room-label">Room</span><strong id="room-code" class="room-code">------</strong><button id="copy-code-btn" class="btn btn--ghost btn--icon" type="button" aria-label="Copy room code" title="Copy room code"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-copy" /></svg></button></span>
@@ -132,7 +129,6 @@
         <section id="game-screen" class="screen game-screen" aria-labelledby="game-title">
           <header class="game-header tool-head">
             <div>
-              <p class="eyebrow">Poker · Double board</p>
               <h1 id="game-title">Ultimate Omaha</h1>
             </div>
             <div class="game-header-actions">
@@ -198,7 +194,7 @@
 
               <section class="action-area action-stage" id="action-area" aria-label="Your action">
                 <div class="action-stage-status action-header">
-                  <p class="eyebrow eyebrow--plain" id="action-kicker">Action</p>
+                  <p class="live-note" id="action-kicker">Action</p>
                   <h2 class="action-stage-title" id="action-title">Waiting for the deal</h2>
                   <span class="current-bet-info">Your bet <strong id="current-bet">$0</strong></span>
                 </div>
@@ -258,7 +254,7 @@
     <!-- Rules -->
     <dialog class="dialog dialog--sheet rules-modal" id="rules-modal" aria-labelledby="rules-title">
       <div class="dialog-head">
-        <div><p class="eyebrow eyebrow--plain">Rules</p><h2 id="rules-title">Ultimate Omaha</h2></div>
+        <h2 id="rules-title">Ultimate Omaha</h2>
         <button class="btn btn--ghost btn--icon modal-close" id="close-rules" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button>
       </div>
       <div class="dialog-body modal-content rules-body">

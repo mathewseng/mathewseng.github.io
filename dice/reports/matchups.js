@@ -70,7 +70,7 @@ export function createMatchups(root) {
   root.innerHTML = `
     <div class="match-shell" data-panel="compare">
       <header class="match-heading">
-        <div><p class="eyebrow eyebrow--plain">Exact two-dice probabilities</p><h2 id="match-title" tabindex="-1">Two dice against two dice</h2>
+        <div><h2 id="match-title" tabindex="-1">Two dice against two dice</h2>
         <p class="hint">Four independent fair d6. Higher score wins; equal scores tie. Every one of the 1,296 ordered outcomes counts equally.</p></div>
         <span class="badge badge--good exact-tag">36 × 36 outcomes</span>
       </header>
@@ -120,12 +120,12 @@ export function createMatchups(root) {
           <details class="match-details disclosure"><summary>Every exact score margin</summary><div id="match-margin-table" class="match-table-wrap table-wrap"></div></details>
         </section>
         <div class="match-roll-section">
-          <div><p class="eyebrow eyebrow--plain">After A rolls</p><h3>How strong is your roll?</h3><p class="hint">Each cell shows A’s chance of beating B’s 36 possible rolls. Rows are A’s first die; columns are A’s second die. Select a cell for ties and exact counts.</p>
+          <div><h3>How strong is your roll?</h3><p class="hint">Each cell shows A’s chance of beating B’s 36 possible rolls. Rows are A’s first die; columns are A’s second die. Select a cell for ties and exact counts.</p>
           <p id="match-roll-detail" class="match-roll-detail" role="status"></p>
           <div class="match-heat-legend"><span>0% wins</span><i></i><span>100% wins</span></div></div>
           <div id="match-roll-grid" class="match-roll-grid"></div>
         </div>
-        <section class="match-featured" id="match-featured"><div class="match-section-head"><div><p class="eyebrow eyebrow--plain">Start exploring</p><h3 tabindex="-1" id="match-featured-title">${featured.length} interesting matchups</h3></div><span class="hint">First seven: the essentials · no added handicap</span></div>
+        <section class="match-featured" id="match-featured"><div class="match-section-head"><div><h3 tabindex="-1" id="match-featured-title">${featured.length} interesting matchups</h3></div><span class="hint">First seven: the essentials · no added handicap</span></div>
           ${comparisonTable("match-featured-body", featured, "Interesting two-dice matchups")}
         </section>
       </section>
@@ -154,7 +154,7 @@ export function createMatchups(root) {
       </section>
       <section data-match-panel="events" aria-label="Single pair event probabilities" hidden>
         <div class="match-section-head"><div><h3>One pair, 36 equally likely rolls</h3><p class="hint">These events describe a single pair of dice. Events can overlap; their probabilities are not meant to sum to 100%.</p></div></div>
-        <div class="match-event-intro"><div><p class="eyebrow eyebrow--plain">Sum distribution</p><div id="match-sum-chart"></div></div><div><h3>The middle is more likely</h3><p>A seven has six ways to happen. A two or twelve has only one. An unordered pair such as 2 and 5 has two ordered outcomes; doubles have one.</p><p>“At least one 6” is 11/36, while “exactly one 6” is 10/36. Double six belongs only to the first event.</p><p class="hint">All rules assume fair six-sided dice and independent rolls. Percentages are rounded; counts and fractions are exact.</p></div></div>
+        <div class="match-event-intro"><div><h3>Sum distribution</h3><div id="match-sum-chart"></div></div><div><h3>The middle is more likely</h3><p>A seven has six ways to happen. A two or twelve has only one. An unordered pair such as 2 and 5 has two ordered outcomes; doubles have one.</p><p>“At least one 6” is 11/36, while “exactly one 6” is 10/36. Double six belongs only to the first event.</p><p class="hint">All rules assume fair six-sided dice and independent rolls. Percentages are rounded; counts and fractions are exact.</p></div></div>
         <div class="match-events-toolbar"><div class="field"><label for="match-event-search">Find an event</label><input id="match-event-search" type="search" placeholder="e.g. doubles, prime, sum" /></div><span id="match-event-status" class="hint" role="status"></span></div>
         <div id="match-events"></div>
       </section>

@@ -548,10 +548,10 @@ function renderDetail() {
   if (!r) return;
   const inFilter = state.filtered.some((h) => h.id === r.id);
   $("hand-detail").innerHTML = `
-    <div class="detail-head"><div class="detail-eyebrow"><span>Hand inspector</span><span>${inFilter ? "In current filter" : "Outside current filter"}</span></div>
+    <div class="detail-head"><div class="detail-label"><span>Hand inspector</span><span>${inFilter ? "In current filter" : "Outside current filter"}</span></div>
     <div class="detail-title">${cards(r.cards, true)}${pinButton(r.id, "selected hand", { text: true })}</div>
     <p class="detail-subtitle">${r.pairing} · ${r.suitedness}<br>${r.combinations} combinations · ${pct(r.combinations / 270725, 4)} of all deals</p></div>
-    <dl class="detail-metrics"><div><dt>MEAN DRAWS</dt><dd>${num(r.mean, 3)} <small>±${num(1.96 * r.meanSE, 3)}</small></dd></div><div><dt>EXACT NEXT BUST</dt><dd>${pct(r.firstBust, 2)}</dd></div><div><dt>10TH–90TH PERCENTILE</dt><dd>${r.p10}–${r.p90} <small>draws</small></dd></div><div><dt>STANDARD DEVIATION</dt><dd>${num(r.sd, 3)}</dd></div></dl>
+    <dl class="detail-metrics"><div><dt>Mean draws</dt><dd>${num(r.mean, 3)} <small>±${num(1.96 * r.meanSE, 3)}</small></dd></div><div><dt>Exact next bust</dt><dd>${pct(r.firstBust, 2)}</dd></div><div><dt>10th–90th percentile</dt><dd>${r.p10}–${r.p90} <small>draws</small></dd></div><div><dt>Standard deviation</dt><dd>${num(r.sd, 3)}</dd></div></dl>
     <div class="detail-histogram"><div class="detail-divider"></div><h3>Draws to bust</h3><div class="chart">${histogram(r, phoneLayout.matches ? chartOptions() : { small: true })}</div></div>
     <div class="detail-outcomes"><div class="detail-divider"></div><h3>Ranking at the first bust</h3><div class="outcome-list">${outcomes(r, true)}</div></div>
     <p class="detail-note">${count(r.trials)} simulated runouts. Mean ± approximate 95% MC interval. Outcome tooltips show 95% Wilson intervals; zero observations do not prove impossibility.</p>

@@ -111,19 +111,25 @@ export default function WorkoutCard({
         >
           <span className="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-2">
             <span className="min-w-0">
-              <span className="eyebrow block">Exercises</span>
+              <span className="block text-xs font-semibold text-[var(--muted)]">
+                Exercises
+              </span>
               <span className="mt-0.5 block text-sm font-bold">
                 {workout.exercises.length}
               </span>
             </span>
             <span className="min-w-0">
-              <span className="eyebrow block">Reps</span>
+              <span className="block text-xs font-semibold text-[var(--muted)]">
+                Reps
+              </span>
               <span className="mt-0.5 block text-sm font-bold">
                 {totals.completedReps}
               </span>
             </span>
             <span className="min-w-0">
-              <span className="eyebrow block">Volume</span>
+              <span className="block text-xs font-semibold text-[var(--muted)]">
+                Volume
+              </span>
               <span className="mt-0.5 block text-sm font-bold">
                 {totals.volumeLb.toLocaleString()} lb
               </span>
@@ -149,7 +155,7 @@ export default function WorkoutCard({
             <div className="mb-5">
               <div className="mb-2 flex items-center gap-2">
                 <CloudSun size={15} className="text-[var(--muted)]" aria-hidden="true" />
-                <p className="eyebrow">Context · 0–6</p>
+                <p className="text-xs font-semibold text-[var(--muted)]">Context · 0–6</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {contextScores.map(([label, value]) => (

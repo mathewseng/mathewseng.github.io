@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
     <link rel="stylesheet" href="../tools.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body class="app-shell">
@@ -42,12 +42,7 @@
     <main id="main" tabindex="-1" class="app">
       <div class="tool-head">
         <div>
-          <p class="eyebrow">Poker · Flips &amp; cube</p>
           <h1>222</h1>
-          <p class="lede">
-            Six cards, three forced two-card hands worth 3, 2 and 1 points, and a 4-point scoop. Simulate a table of two to
-            seven, solve any spot, train the doubling cube against the equilibrium, or play online.
-          </p>
         </div>
       </div>
       <div class="tabs" role="tablist" aria-label="Views" id="view-tabs">
@@ -156,7 +151,6 @@
                 <p class="muted" id="sim-deck-help">Select a card in a hand or on the board, then pick a deck card to swap it in.</p>
               </div>
               <div class="deck-grid deck-matrix" id="sim-deck"></div>
-              <p class="phone-only mobile-hint">Swipe the deck to reach lower ranks.</p>
             </section>
           </aside>
         </div>
@@ -489,10 +483,6 @@
           <li><b>Hidden information.</b> While a cube action remains, each seat's numbers are against the opponent's range: every hand the opponent could hold given the cards you see, weighted by the equilibrium strategy once a cube action has been taken (after a flop take, for example, the button's range is its doubling range and the opponent's is its taking range). The solver samples hands for both players and the unknown board cards and runs counterfactual regret minimization over every cube decision that remains, including the chains of re-raises and the decisions on later cube streets in every cube state. It runs until the exploitability bound is below the tolerance, then removes probabilities under 1%, so every mix it shows is consistent with the equities it shows: options in a mix have equal equity within the tolerance, and options with lower equity get 0%.</li>
           <li><b>Tabled.</b> Once no cube action remains the hands are turned up and the numbers are exact (or finely sampled) over every runout. Tick "Table hands" in the simulator or spot solver to see the face-up minimax of a pending decision; when more than a river remains, that face-up view treats later cube streets as cubeless.</li>
         </ul>
-        <p class="field-hint">
-          <a href="/poker/">Poker hub</a> ·
-          <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/poker/222" target="_blank" rel="noopener">Source on GitHub ↗</a>
-        </p>
       </div>
     </dialog>
 

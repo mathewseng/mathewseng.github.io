@@ -2021,17 +2021,16 @@ export class Board {
           "text-anchor": "middle",
           fill: boardColor("caption"),
           "font-size": 14,
-          "letter-spacing": 2,
         },
         historicalDice
-          ? "LAST ROLL"
+          ? "Last roll"
           : preview
-            ? "MOVE PREVIEW"
+            ? "Move preview"
             : editor
-              ? "POSITION EDITOR"
+              ? "Position editor"
               : interactive
                 ? ""
-                : "BACKGAMMON",
+                : "Backgammon",
       ),
     );
     children.push(

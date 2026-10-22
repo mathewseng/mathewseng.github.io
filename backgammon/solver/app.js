@@ -51,7 +51,7 @@ async function boot() {
 await startUpdates();
 resumedAfterUpdate();
 const pageProgress = readPageProgress();
-const ui = shell("solver", "Solver", "Edit a position. Explore the decision.");
+const ui = shell("solver", "Solver");
 let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   editing = false,
   result = null,

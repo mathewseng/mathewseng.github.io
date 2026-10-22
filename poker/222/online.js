@@ -462,7 +462,7 @@ export function initOnline({ pool }) {
     const cp = $("on-cube-panel");
     cp.hidden = !h.cubeEnabled;
     if (h.cubeEnabled) {
-      $("on-cube-face").replaceChildren(cubeFace(h.cube.level, h.cube.owner == null ? "centered" : h.cube.level > 1 ? names[h.cube.owner] : `${names[h.cube.owner]} · option`));
+      $("on-cube-face").replaceChildren(cubeFace(h.cube.level, h.cube.owner == null ? "Centered" : h.cube.level > 1 ? names[h.cube.owner] : `${names[h.cube.owner]} · option`));
       $("on-cube-title").textContent = `Cube at ${h.cube.level} · drop ${h.dropUnit ?? 6}`;
       $("on-cube-sub").textContent = VARIANTS[h.variant].blurb;
     }

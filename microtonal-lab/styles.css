@@ -126,20 +126,9 @@ body {
 
 /* ---------- Labels ---------- */
 
-.ml-kicker {
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 600;
-  line-height: var(--lh-data);
-}
-
 .panel-head h2 {
   font-size: var(--t-md);
   font-weight: 600;
-}
-
-.ml-coarse-only {
-  display: none;
 }
 
 /* ---------- Workbench: three columns on wide desktops ---------- */
@@ -871,11 +860,6 @@ body {
     min-height: 0;
   }
 
-  /* A shorter overlay leaves the pitch map its radius: the preset name keeps its line. */
-  .scope-title .ml-kicker {
-    display: none;
-  }
-
   .mini-meters div {
     padding: 3px 8px;
   }
@@ -956,10 +940,6 @@ body {
 
   .tool-head {
     padding: 4px 0 2px;
-  }
-
-  .tool-head .eyebrow {
-    display: none;
   }
 
   .tool-head h1 {
@@ -1066,14 +1046,6 @@ body {
     --key-size: max(44px, 2.75rem);
     --key-height: max(56px, 3.5rem);
     --key-gap: 4px;
-  }
-
-  .ml-fine-only {
-    display: none;
-  }
-
-  .ml-coarse-only {
-    display: inline;
   }
 
   .key-letter {

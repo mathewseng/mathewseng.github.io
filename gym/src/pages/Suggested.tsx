@@ -78,7 +78,6 @@ export default function Suggested() {
   return (
     <>
       <PageHeader
-        eyebrow="Planning"
         title="Session builder"
         description="Rate each signal from 0–6. The rules below adjust exercise choice and volume, then say exactly why."
         actions={

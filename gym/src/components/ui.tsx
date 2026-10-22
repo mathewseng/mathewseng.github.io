@@ -312,12 +312,10 @@ export function SearchField({
 /* ---------- Page furniture ---------- */
 
 export function PageHeader({
-  eyebrow,
   title,
   description,
   actions,
 }: {
-  eyebrow?: string;
   title: string;
   description?: string;
   actions?: ReactNode;
@@ -325,7 +323,6 @@ export function PageHeader({
   return (
     <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-3xl">
-        {eyebrow ? <p className="eyebrow-accent mb-2">{eyebrow}</p> : null}
         <h1 className="page-title">{title}</h1>
         {description ? (
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -358,7 +355,7 @@ export function MetricCard({
   return (
     <Surface className="min-w-0 overflow-hidden p-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="eyebrow">{label}</p>
+        <p className="text-xs font-semibold text-[var(--muted)]">{label}</p>
         {Icon ? (
           <span
             className="grid h-8 w-8 shrink-0 place-items-center rounded-sm"

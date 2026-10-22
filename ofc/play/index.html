@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/cards.css?v=20261016" />
-    <link rel="stylesheet" href="../ofc.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261016" />
+    <link rel="stylesheet" href="../ofc.css?v=20261021-less" />
+    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
     <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body>
@@ -43,9 +43,7 @@
         <section class="lobby" id="setup-view" aria-labelledby="setup-title">
           <div class="tool-head">
             <div>
-              <p class="eyebrow">OFC · Play</p>
               <h1 id="setup-title">Create or join a table</h1>
-              <p class="lede">Pineapple OFC for two or three players over a peer-to-peer room. Pick a name, create a table or paste an invite, and share the code.</p>
             </div>
           </div>
 
@@ -166,7 +164,6 @@
         <section class="room-lobby" id="room-view" hidden aria-labelledby="waiting-title">
           <div class="tool-head">
             <div>
-              <p class="eyebrow">OFC · Play</p>
               <h1 id="waiting-title">Waiting for players</h1>
             </div>
           </div>
@@ -197,7 +194,7 @@
         <section class="table-view" id="table-view" hidden aria-labelledby="turn-label">
           <header class="tool-head table-status">
             <div>
-              <p class="eyebrow" id="game-label">High · Hand 1</p>
+              <p class="table-game-label" id="game-label">High · Hand 1</p>
               <h1 id="turn-label">Your turn</h1>
             </div>
             <div class="table-status-actions">
@@ -213,13 +210,13 @@
           <p class="ofc-inline-error" id="table-error"></p>
 
           <section class="panel dealer-selection" id="dealer-selection" hidden>
-            <div class="panel-head"><div><p class="eyebrow eyebrow--plain">Opening cards dealt</p><h2 id="dealer-heading">BTN chooses the game</h2></div></div>
+            <div class="panel-head"><div><h2 id="dealer-heading">BTN chooses the game</h2></div></div>
             <div class="panel-body"><div class="segmented segmented--wrap" id="dealer-variant-buttons" role="group" aria-label="Variant for this hand"></div></div>
           </section>
 
           <section class="panel showdown" id="showdown-panel" hidden aria-labelledby="showdown-title">
             <div class="panel-head">
-              <div><p class="eyebrow eyebrow--plain">Hand complete</p><h2 id="showdown-title">Results</h2></div>
+              <div><h2 id="showdown-title">Results</h2></div>
               <div class="panel-actions">
                 <button class="btn btn--primary" id="next-hand-button" type="button">Deal next hand</button>
                 <span class="showdown-waiting" id="showdown-waiting" hidden>Waiting for the host to deal the next hand.</span>
@@ -261,7 +258,7 @@
 
     <dialog class="dialog dialog--wide dialog--sheet rules-modal" id="rules-modal" aria-labelledby="rules-title">
       <div class="dialog-head">
-        <div><p class="eyebrow eyebrow--plain">Rules</p><h2 id="rules-title">Natural and Fantasyland</h2></div>
+        <div><h2 id="rules-title">Natural and Fantasyland</h2></div>
         <button class="btn btn--ghost btn--icon" data-close-dialog="rules-modal" type="button" aria-label="Close rules">
           <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
         </button>
@@ -272,7 +269,7 @@
 
     <dialog class="dialog dialog--wide dialog--sheet ledger-modal" id="ledger-modal" aria-labelledby="ledger-title">
       <div class="dialog-head">
-        <div><p class="eyebrow eyebrow--plain">Local record</p><h2 id="ledger-title">Table ledger</h2></div>
+        <div><h2 id="ledger-title">Table ledger</h2></div>
         <button class="btn btn--ghost btn--icon" data-close-dialog="ledger-modal" type="button" aria-label="Close ledger">
           <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
         </button>
@@ -297,7 +294,7 @@
 
     <dialog class="dialog dialog--sheet" id="discards-modal" aria-labelledby="discards-title">
       <div class="dialog-head">
-        <div><p class="eyebrow eyebrow--plain">Private history</p><h2 id="discards-title">Your discards</h2></div>
+        <div><h2 id="discards-title">Your discards</h2></div>
         <button class="btn btn--ghost btn--icon" data-close-dialog="discards-modal" aria-label="Close discards" type="button">
           <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg>
         </button>

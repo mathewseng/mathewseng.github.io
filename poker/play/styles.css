@@ -63,13 +63,6 @@
   width: 100%;
 }
 
-.step {
-  color: var(--accent);
-  font-size: var(--t-xs);
-  font-weight: 800;
-  letter-spacing: 0.16em;
-}
-
 /* ---------- Setup view ---------- */
 
 .setup-tabs {
@@ -266,12 +259,6 @@
   gap: var(--s-2);
 }
 
-.lobby-mix-panel .field-hint {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-}
-
 .lobby-mix .chip {
   font-variant-numeric: tabular-nums;
 }
@@ -459,6 +446,10 @@
   gap: 2px;
 }
 
+.results-panel .action-stage-status .live-note {
+  flex-basis: auto;
+}
+
 .results-panel .action-stage-status h2 {
   font-size: var(--t-lg);
 }
@@ -595,10 +586,8 @@
 
 .guide-game h3 span {
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 500;
 }
 
 .guide-game p {
@@ -631,10 +620,8 @@
 
 .ledger-entry > span {
   color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--t-sm);
+  font-weight: 600;
 }
 
 .ledger-net {
@@ -837,7 +824,7 @@
   }
 }
 
-/* Short desktop windows: smaller hero cards, no lede. */
+/* Short desktop windows: smaller hero cards. */
 @media (min-width: 881px) and (max-height: 820px) {
   .hero-hand {
     --card-w-board: clamp(44px, 8vh, 72px);
@@ -908,10 +895,6 @@
     padding-inline: 12px;
     scroll-padding-inline: 12px;
     mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
-  }
-
-  .view .tool-head .lede {
-    display: none;
   }
 
   .game-header .game-header-actions {
@@ -1015,10 +998,6 @@
   .game-header,
   .game-view > .table-banner {
     grid-column: 1 / -1;
-  }
-
-  .game-header .lede {
-    display: none;
   }
 
   .table-surface {

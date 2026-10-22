@@ -149,10 +149,8 @@
   display: block;
   margin-bottom: 6px;
   color: var(--muted);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .rank-controls {
@@ -601,8 +599,6 @@
   color: var(--muted);
   font-size: var(--t-xs);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -877,9 +873,8 @@
 }
 
 /* Phones: the page keeps a visible H1 (notes §3.12), wrapped rather than
-   clipped; the eyebrow and lede go to save height. The solver telemetry strip
-   moves out of the way of the view switcher: the Solver tab carries the same
-   figures. */
+   clipped. The solver telemetry strip moves out of the way of the view
+   switcher: the Solver tab carries the same figures. */
 @media (max-width: 700px) {
   .app > .tool-head {
     padding: 2px 0 0;
@@ -900,8 +895,6 @@
     line-height: var(--lh-heading);
   }
 
-  .app > .tool-head .eyebrow,
-  .app > .tool-head .lede,
   .summary-grid {
     display: none;
   }

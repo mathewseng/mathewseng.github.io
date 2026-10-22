@@ -224,8 +224,7 @@ export default function AppShell({ children }: PropsWithChildren) {
                   <Brand />
                 </div>
                 <div className="hidden lg:block">
-                  <p className="eyebrow">Gym Tracker</p>
-                  <p className="mt-0.5 text-sm font-semibold">{pageName}</p>
+                  <p className="text-sm font-semibold">{pageName}</p>
                 </div>
                 <div className="topbar-actions">
                   <div className="hidden min-h-10 items-center gap-2 rounded-full border border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_70%,transparent)] px-3.5 text-xs font-semibold text-[var(--muted)] sm:flex">
@@ -293,7 +292,9 @@ export default function AppShell({ children }: PropsWithChildren) {
                 </NavLink>
               </nav>
               <div className="well mt-5 p-4">
-                <p className="eyebrow">{benchGoal.targetValue} lb bench goal</p>
+                <p className="text-xs font-semibold text-[var(--muted)]">
+                  {benchGoal.targetValue} lb bench goal
+                </p>
                 <div className="mt-2 flex items-end justify-between gap-4">
                   <strong className="text-xl font-extrabold">
                     {benchGoal.currentValue} / {benchGoal.targetValue} lb
