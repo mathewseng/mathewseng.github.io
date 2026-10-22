@@ -1,0 +1,46 @@
+/* Small additions to the original illustrated homepage. */
+.home .project-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: var(--lh-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.home .project-dates > span {
+  white-space: nowrap;
+}
+
+.home .tile--catalog {
+  --accent: var(--project-accent, var(--family-home));
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.home .tile--catalog > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.home .tile--catalog .go {
+  flex: none;
+  align-self: center;
+}
+
+.home .hub-links h3 {
+  font: inherit;
+}
+
+.home .hub-links .project-dates {
+  flex-basis: 100%;
+  margin: 0 0 8px;
+}
+
+@media (max-width: 640px) {
+  .home .tile--catalog {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
