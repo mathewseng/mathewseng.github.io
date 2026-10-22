@@ -34,7 +34,10 @@ function worker(){const child=spawn(native+'/gnubg-core',[],{cwd:native,stdio:['
  createInterface({input:child.stdout}).on('line',l=>{if(l==='READY')return ready();if(l.startsWith('{')){const v=JSON.parse(l);if(!Number.isFinite(v.equity)||!Number.isFinite(v.cubeless)||v.probabilities?.length!==5)pending.reject(Error('Invalid evaluation'));else pending.resolve(v);pending=null;}});
  child.on('exit',code=>{if(pending)pending.reject(Error('Native exit '+code));});
  return async(c,depth)=>{await started;return new Promise((resolve,reject)=>{pending={resolve,reject};child.stdin.write(`${c.original}\t${c.after}\t${depth}\t0\n`);});};}
-const pool=[worker(),worker()];
+const workers=Number(process.env.BG_FALLBACK_WORKERS||2);
+if(!Number.isInteger(workers)||workers<1||workers>8)throw Error('Use 1–8 fallback workers');
+const pool=Array.from({length:workers},worker);
+for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{for(const child of children)child.kill('SIGTERM');});
 async function run(depth,candidates){let cursor=0;const todo=[...new Map(candidates.map(c=>[key(c,depth),c])).values()].filter(c=>!scores.has(key(c,depth)));console.log(depth+' ply: '+todo.length+' new candidate scores');
  await Promise.all(pool.map(async score=>{while(cursor<todo.length){const c=todo[cursor++],v=await score(c,depth),r={key:key(c,depth),after:c.after,original:c.original,depth,value:v};scores.set(r.key,r);fs.appendFileSync(scoresFile,JSON.stringify(r)+'\n');}}));}
 const select=(cs,depth,min,window)=>{const sorted=[...cs].sort((a,b)=>value(b,depth).equity-value(a,depth).equity);return sorted.filter((c,i)=>i<min||value(sorted[0],depth).equity-value(c,depth).equity<=window+1e-8);};

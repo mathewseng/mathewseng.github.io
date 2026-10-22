@@ -17,7 +17,7 @@ p=pathlib.Path('backgammon/scripts/summarize-reply-fullgame.py');s=importlib.uti
 i=m.validate(pathlib.Path('backgammon/docs/reply-fullgame-precision-inputs.json').read_bytes())
 raw=gzip.decompress(pathlib.Path('backgammon/docs/reply-fullgame-precision-batches.jsonl.gz').read_bytes())
 r=m.summarize(i,[json.loads(line) for line in raw.splitlines()]);published=json.loads(pathlib.Path('backgammon/docs/reply-fullgame-precision-comparison.json').read_bytes())
-assert all(published.get(k)==v for k,v in r.items())`;
+assert all(published.get(k)==v for k,v in r.items() if k!="recordedAt")`;
 execFileSync('python3',['-c',verify],{cwd:new URL('../../',import.meta.url).pathname,env:{...process.env,NODE:process.execPath,PYTHONDONTWRITEBYTECODE:'1'}});
 const index=read('engine/opening-book-data/rollout/index.json'),baseline=read('docs/reply-fullgame-book-baseline.json');
 if(index.id!==ROLLOUT_BOOK_ID||baseline.signature!==inputs.signature)throw Error('Book/plan changed');

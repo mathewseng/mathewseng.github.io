@@ -71,7 +71,7 @@ export class OpeningGuideData {
   async openings() {
     if(this.referenceBook){
       const positions=await Promise.all(OPENING_ROLLS.map(async roll=>{
-        const state=openingState(roll);state.rules.immediateRedoubles=1;
+        const state=openingState(roll);state.rules.immediateRedoubles=2;
         const result=await this.referenceBook.lookup(state);
         return result?[roll,resultPosition(state,result,.040)]:null;
       }));
@@ -85,7 +85,7 @@ export class OpeningGuideData {
         if(result)openings.set(roll,resultPosition(position.state,result,result.book.openingWindow));
       }));
       if(this.referenceBook)await Promise.all([...openings].map(async([roll,position])=>{
-        const state={...position.state,rules:{...position.state.rules,immediateRedoubles:1}};
+        const state={...position.state,rules:{...position.state.rules,immediateRedoubles:2}};
         const result=await this.referenceBook.lookup(state);
         if(result)openings.set(roll,resultPosition(state,result,.040));
       }));
@@ -106,7 +106,7 @@ export class OpeningGuideData {
     const key = bookBoardKey(state), id = `${key}:${roll}:${player}`;
     if (this.positions.has(id)) return this.positions.get(id);
     if(this.referenceBook){
-      const referenceState={...state,rules:{...state.rules,immediateRedoubles:1}};
+      const referenceState={...state,rules:{...state.rules,immediateRedoubles:2}};
       const reference=await this.referenceBook.lookup(referenceState);
       if(reference){
         const result=resultPosition(referenceState,reference,.040);

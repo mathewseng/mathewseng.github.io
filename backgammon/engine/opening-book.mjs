@@ -80,7 +80,7 @@ export function bookResult(state, entry, index, requestedPreset, submitted = nul
     book: { id: index.id, source: 'precomputed',
       stage: board === START ? 'opening' : laterTurn === 3 ? 'third-turn' : laterTurn === 4 ? 'fourth-turn' : 'reply',
       openingWindow: index.threshold,
-      builtAt: laterTurn ? index.continuationBuild.builtAt : index.provenance.builtAt },
+      builtAt: laterTurn ? index.continuationBuild.builtAt : index.provenance.xgCoverageSupplement?.board === board ? index.provenance.xgCoverageSupplement.builtAt : index.provenance.builtAt },
   };
 }
 export class OpeningBook {

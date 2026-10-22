@@ -79,7 +79,7 @@ module.exports=async function openingGuide(browser,base,out,name){
       };
       const alternativesMatch=async()=>{
         const button=page.locator('#opening-rolls [aria-pressed="true"]');
-        const labels=await button.locator('.opening-alternative-notation').evaluateAll(ns=>ns.map(n=>[...n.children].map(s=>s.textContent).join(' ')));
+        const labels=await button.locator('.opening-alternative-notation').evaluateAll(ns=>ns.map(n=>[...n.children].filter(s=>s.tagName!=='SUP').map(s=>s.textContent).join(' ')));
         const ranked=await page.locator('#opening-moves button strong').allTextContents();
         assert.deepEqual(labels,ranked.slice(1),'roll button includes every close alternative in ranked order');
         if(labels.length)assert.match(await button.getAttribute('aria-label'),/Close alternatives:/);
@@ -143,7 +143,7 @@ module.exports=async function openingGuide(browser,base,out,name){
       assert.ok((await page.locator('#opening-caption').textContent()).includes(selected));
       const state=JSON.parse(new URLSearchParams(new URL(await page.locator('#opening-solver').getAttribute('href')).hash.slice(1)).get('state'));
       assert.equal(state.turn,0);assert.deepEqual(state.dice,[6,4]);
-      assert.equal(state.rules.immediateRedoubles,1);
+      assert.equal(state.rules.immediateRedoubles,2);
       await page.locator('#openings').screenshot({path:path.join(out,`${name}-opening-replies-${layout}.png`)});
       const whiteNotation=await page.locator('#opening-moves button').first().locator('strong').textContent();
       await activate(page.locator('#opening-side [data-side="1"]'));

@@ -3,6 +3,7 @@ import { el, button, select, field } from "../ui/shell.mjs";
 import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
 import { startUpdates } from "../ui/updates.mjs";
 import { EngineClient } from "../engine/client.mjs";
+import { renderReplyPrecision } from "./reply-fullgame-precision.mjs";
 import { renderFullgamePrecision } from "./fullgame-precision.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
@@ -402,6 +403,7 @@ if ($('fullgame-ablation-content')) try {
     downloads(link('Independent opening confirmation','../docs/opening-fullgame-confirmation-comparison.json'),link('Opening confirmation plan','../docs/opening-fullgame-confirmation-inputs.json'),link('Opening confirmation batches (gzip)','../docs/opening-fullgame-confirmation-batches.jsonl.gz'),link('Full results and intervals','../docs/fullgame-ablation-comparison.json'),link('Fixed plan and seeds','../docs/fullgame-ablation-inputs.json'),link('Raw full-game batches (gzip)','../docs/fullgame-ablation-batches.jsonl.gz'),link('Native implementation checks','../docs/fullgame-native-validation.json'),link('Second-host parity checks','../docs/fullgame-remote-validation.json'),link('Runtime weights and database checks','../docs/fullgame-runtime-validation.json'),link('Secondary cohort plan','../docs/fullgame-cohort-analysis-plan.json'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/FULLGAME-ABLATION.md')),
   );draw();
 } catch(e) { failed($('fullgame-ablation-content'),e); }
+if ($('reply-fullgame-precision-content')) await renderReplyPrecision($('reply-fullgame-precision-content'), {json,table,link,downloads,failed});
 if ($('fullgame-precision-content')) await renderFullgamePrecision($('fullgame-precision-content'), {json,table,link,measured,downloads,failed});
 $("method-content").append(
   el(

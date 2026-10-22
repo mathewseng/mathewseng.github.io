@@ -458,7 +458,7 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s computation${result.cached ? " · cached" : ""}. ${result.evaluatedCount ?? result.candidates.length} ${result.method === "reference" ? "source-listed positions; imported XG values, Jacoby and beavers on" : "legal resulting positions evaluated"}; small differences are estimates.`,
+            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s computation${result.cached ? " · cached" : ""}. ${result.evaluatedCount ?? result.candidates.length} ${result.method === "reference" ? "source-listed positions; imported XG values, Jacoby, beavers and raccoons on" : "legal resulting positions evaluated"}; small differences are estimates.`,
           ),
         ),
       );
@@ -518,6 +518,7 @@ export function decisionReview(
                 "span",
                 { class: "review-notation" },
                 c.notation,
+                ...(c.referenceCredit ? [el("small", {}, `XG · ${c.referenceCredit.author}`)] : []),
                 ...(played
                   ? [
                       el(

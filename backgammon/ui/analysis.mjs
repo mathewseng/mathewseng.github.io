@@ -153,7 +153,7 @@ export function resultView(
           ),
         );
         if (result.method === "reference")
-          b.append(el("div", {class:"small"}, `${c.referenceMethod}${c.referenceTrials ? ` · ${c.referenceTrials.toLocaleString()} trials` : ''}${Number.isFinite(c.referenceHalfWidth) ? ` · published ±${c.referenceHalfWidth.toFixed(4)} equity` : ''}`));
+          b.append(el("div", {class:"small"}, `By ${c.referenceCredit.author} · ${c.referenceCredit.date} · ${c.referenceMethod}${c.referenceTrials ? ` · ${c.referenceTrials.toLocaleString()} trials` : ''}${Number.isFinite(c.referenceHalfWidth) ? ` · published ±${c.referenceHalfWidth.toFixed(4)} equity` : ''}`));
         if (result.method === "rollout")
           b.append(
             el(

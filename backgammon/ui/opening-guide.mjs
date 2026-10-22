@@ -39,6 +39,7 @@ export function openingGuide(root) {
   let openings, position, mode='opening', openingRoll='31', replyRoll='31';
   let openingChoice=0, replyChoice=0, replySide=0, before=false, generation=0, pickerKey=null;
   let replyPositions;
+  const credits=node('p',{class:'small muted','aria-label':'XG contributors'});picker.after(credits);
   const choice = () => mode==='opening' ? openingChoice : replyChoice;
   const status = (message,error=false) => {
     $('opening-status').textContent=message;
@@ -89,13 +90,16 @@ export function openingGuide(root) {
       button.setAttribute('aria-pressed',String(button.dataset.canonical===(mode==='opening'?openingRoll:replyRoll)));
   }
   function rollSummaries(positions) {
+    const authors=[...new Set([...positions.values()].flatMap(p=>p.moves.map(m=>m.referenceCredit?.author).filter(Boolean)))];
+    const credit=move=>move.referenceCredit?node('sup',{},String(authors.indexOf(move.referenceCredit.author)+1)):'';
+    credits.hidden=!authors.length;credits.textContent=authors.length?`XG contributors: ${authors.map((author,i)=>`${i+1}. ${author}`).join(' · ')}`:'';
     for(const button of picker.children){
       const p=positions.get(button.dataset.canonical);
       if(!p)continue;
       const summary=openingSummary(p,0),notation=p.moves[0].notation;
       // Keep each checker journey together where it fits, but permit natural
       // breaks before slash/count segments in narrow six-column phone cells.
-      button.querySelector('.opening-roll-notation').replaceChildren(...notationParts(notation));
+      button.querySelector('.opening-roll-notation').replaceChildren(...notationParts(notation),credit(p.moves[0]));
       button.querySelector('.opening-roll-idea').textContent=summary.label.split(' + ')[0];
       button.dataset.openingKind=summary.kind;
       const alternatives=p.moves.slice(1).map((move,i)=>({...move,...openingSummary(p,i+1)}));
@@ -103,15 +107,15 @@ export function openingGuide(root) {
       labels.hidden=colors.hidden=!alternatives.length;
       labels.replaceChildren(...alternatives.map(move=>node('span',{
         class:'opening-roll-alternative','data-opening-kind':move.kind,
-        title:`${move.notation} · ${move.description} · ${move.loss===0?'Also best':`${lossLabel(move.loss)} equity loss`}`,
+        title:`${move.notation} · ${move.description}${move.referenceCredit?` · XG by ${move.referenceCredit.author}`:''} · ${move.loss===0?'Also best':`${lossLabel(move.loss)} equity loss`}`,
       },node('span',{class:'opening-kind-dot','aria-hidden':'true'}),
-      node('span',{class:'opening-alternative-notation'},...notationParts(move.notation)))));
+      node('span',{class:'opening-alternative-notation'},...notationParts(move.notation),credit(move)))));
       // Keep the same lower-third color segments in both layouts, including
       // when Compact hides the text to leave room beside the board.
       colors.replaceChildren(...alternatives.map(move=>node('span',{'data-opening-kind':move.kind})));
-      const close=alternatives.map(move=>`${move.notation} · ${move.description}`).join('\n');
-      button.setAttribute('aria-label',`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(button.dataset.canonical)}, best ${notation}. ${summary.description}${close?` Close alternatives: ${close}`:''}`);
-      button.title=`Best: ${notation} · ${summary.description}${close?`\nClose alternatives:\n${close}`:''}`;
+      const close=alternatives.map(move=>`${move.notation} · ${move.description}${move.referenceCredit?` · XG by ${move.referenceCredit.author}`:''}`).join('\n');
+      button.setAttribute('aria-label',`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(button.dataset.canonical)}, best ${notation}. ${summary.description}${p.moves[0].referenceCredit?` · XG by ${p.moves[0].referenceCredit.author}`:''}${close?` Close alternatives: ${close}`:''}`);
+      button.title=`Best: ${notation} · ${summary.description}${p.moves[0].referenceCredit?` · XG by ${p.moves[0].referenceCredit.author}`:''}${close?`\nClose alternatives:\n${close}`:''}`;
     }
   }
   function preview() {
@@ -125,7 +129,7 @@ export function openingGuide(root) {
       lastMove:before?null:moveTrace(after,player,move.steps,position.state.dice),
     });
     $('opening-board').setAttribute('aria-label',`${player?'Black':'White'} · ${before?'before the move':move.notation}`);
-    $('opening-idea').textContent=openingIdea(position,choice());
+    $('opening-idea').textContent=openingIdea(position,choice())+(move.referenceCredit?` · XG by ${move.referenceCredit.author}, ${move.referenceCredit.date}`:'');
     for (const row of list.children) row.setAttribute('aria-pressed',String(+row.dataset.choice===choice()));
     revealChoice();
     root.dataset.choice=String(choice());
@@ -152,7 +156,7 @@ export function openingGuide(root) {
       const row=node('button',{type:'button',class:'opening-move','data-choice':i,'aria-pressed':String(i===choice()),
         'aria-label':`${move.notation}. ${openingIdea(position,i)} Equity ${format(move.equity)}${Number.isFinite(move.referenceHalfWidth)?`, XG published bound plus or minus ${move.referenceHalfWidth.toFixed(3)}`:Number.isFinite(move.standardError)?`, approximate 95 percent sampling interval plus or minus ${(1.96*move.standardError).toFixed(3)}`:''}, ${move.loss===0?'best estimate':`estimated loss ${lossLabel(move.loss)}`}`},
         node('span',{class:'opening-notation'},node('span',{class:'opening-rank'},String(i+1)),
-          node('span',{},node('strong',{},move.notation),node('span',{class:'opening-move-idea'},openingIdea(position,i)))),
+          node('span',{},node('strong',{},move.notation),node('span',{class:'opening-move-idea'},openingIdea(position,i)),...(move.referenceCredit?[node('span',{class:'opening-move-idea'},`XG · ${move.referenceCredit.author}`)]:[]))),
         node('span',{class:'opening-equity'},format(move.equity),...(Number.isFinite(move.referenceHalfWidth)?[node('span',{class:'opening-interval'},`±${move.referenceHalfWidth.toFixed(3)}`)]:Number.isFinite(move.standardError)?[node('span',{class:'opening-interval'},`±${(1.96*move.standardError).toFixed(3)}`)]:[])),
         node('span',{class:move.loss===0?'opening-best':'opening-loss'},lossLabel(move.loss)));
       row.addEventListener('click',() => {
@@ -164,7 +168,7 @@ export function openingGuide(root) {
     list.scrollTop=0;
     $('opening-solver').href=shareURL(position.state);
     $('opening-next').hidden=mode==='reply';
-    $('opening-position-note').textContent=(mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.')+(position.method==='reference'?' XG reference · Jacoby and beavers on. Intervals are XG’s published bounds where provided; other entries use XGRoller++ estimates.':position.method==='rollout'?' GNUbg fallback · beavers off. EV intervals show approximate 95% sampling uncertainty; model and screening error are excluded.':' GNUbg fallback · beavers off.');
+    $('opening-position-note').textContent=(mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.')+(position.method==='reference'?' XG reference · Jacoby, beavers and raccoons on. Intervals are XG’s published bounds where provided; other entries use XGRoller++ estimates.':position.method==='rollout'?' GNUbg fallback · beavers off. EV intervals show approximate 95% sampling uncertainty; model and screening error are excluded.':' GNUbg fallback · beavers off.');
     panel.hidden=false;
     preview();
   }
