@@ -348,6 +348,14 @@ module.exports = async function assistanceUX(
         width: document.documentElement.scrollWidth,
         height: document.querySelector(".app").getBoundingClientRect().height,
       }));
+      if(fit.width>376||fit.height>668){
+        console.log(`${family} phone geometry`,JSON.stringify(await page.evaluate(()=>({
+          stageRows:getComputedStyle(document.querySelector('.stage')).gridTemplateRows,
+          boardHeight:document.querySelector('.board-slot').getBoundingClientRect().height,
+          controlsBottom:document.querySelector('#all-controls').getBoundingClientRect().bottom,
+        }))));
+        await shot(`font-overflow-${family}-375x667`);
+      }
       assert.ok(
         fit.width <= 376 && fit.height <= 668,
         `${family} phone layout: ${JSON.stringify(fit)}`,

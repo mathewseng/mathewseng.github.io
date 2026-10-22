@@ -822,6 +822,16 @@ button kbd.keycap,
   opacity: 0.55;
 }
 
+/* Bound the native select itself as well as its grid track. WebKit can retain
+   the widest option's overflow after a portrait viewport shrinks. */
+.study-preview-controls select {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Equity rail aligned to the rendered board (ui/equity-bar.mjs positions it). */
 .board-slot.has-equity-bar > .bg-board {
   width: calc(100% - var(--bg-equity-width) - 6px);
@@ -899,7 +909,10 @@ button kbd.keycap,
 /* Portrait phones keep the full board width, with equity below the frame.
    Content-box sizing reserves the strip without shrinking the board's ratio. */
 @media (max-width: 700px) and (orientation: portrait) {
-  .board-slot.has-equity-bar {
+  .board-slot.has-equity-bar,
+  .app[data-page="solver"] .board-slot {
+    /* Solver reserves this rail while hidden so toggling equity does not
+       shift its board, editor or preview controls. */
     box-sizing: content-box;
     padding-bottom: 28px;
   }
@@ -911,6 +924,9 @@ button kbd.keycap,
 
   .equity-bar {
     flex-direction: row;
+    /* The rail is positioned after ResizeObserver; constrain its previous
+       inline width while a narrower portrait board is being laid out. */
+    max-width: 100%;
     height: 24px;
     gap: 8px;
   }
@@ -4285,6 +4301,12 @@ button.library-item {
   overflow: visible;
 }
 
+/* WebKit needs the moved inspector's intrinsic size as this flex item's
+   basis; a zero basis collapses the Results sheet to its heading. */
+.bg-dialog.drawer > .dialog-body {
+  flex-basis: auto;
+}
+
 /* Dialog controls are 44px at every width: Settings opens from the keyboard
    on desktops too, and mobile-settings.cjs measures its tabs and selects
    with a touch context at 1366×768. */
@@ -5731,10 +5753,27 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 }
 
-/* Short Solver and Trainer screens reserve space for the controls; the board
+/* Short portrait screens reserve space for the controls; the board
    uses the remaining height without distorting its SVG. */
 @media (max-width: 700px) and (min-height: 501px) and (max-height: 740px) {
+  /* The full-width board plus its equity rail can exceed a short phone's
+     remaining height. Keep controls visible and shrink the board track. */
+  .play-page.live-table:has(.board-slot.has-equity-bar) { height: 100dvh; }
+  .play-page.live-table:has(.board-slot.has-equity-bar) .stage {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(140px, 1fr) auto 60px minmax(110px, auto);
+  }
+  .play-page.live-table .board-workspace > .board-slot.has-equity-bar {
+    box-sizing: border-box;
+    height: 100%;
+    max-height: 100%;
+    aspect-ratio: auto;
+  }
   .app[data-page="solver"] #subtitle { min-height: 2lh; }
+  .app[data-page="solver"].editing-position .board-slot {
+    box-sizing: border-box;
+  }
   .app[data-page="solver"]:not(.editing-position),
   .app[data-page="trainer"] { height: 100dvh; }
   .app[data-page="solver"]:not(.editing-position) .stage,

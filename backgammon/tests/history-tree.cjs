@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict"),
   path = require("node:path");
+const { waitForAsync } = require("./play-helpers.cjs");
 module.exports = async function historyTreeUX(browser, base, out, name) {
   const context = await browser.newContext({
       viewport: { width: 1366, height: 768 },
@@ -85,6 +86,8 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
       initial,
       "Z cannot undo a committed turn in roll phase",
     );
+    // Save the old document before replacing its persisted fixture.
+    await page.goto(base + "/backgammon/");
     await page.evaluate(async () => {
       const st = await import("/backgammon/core/storage.mjs"),
         r = await import("/backgammon/core/rules.mjs"),
@@ -95,7 +98,7 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
       w.draft = [];
       await st.put("work", w);
     });
-    await page.reload();
+    await page.goto(base + "/backgammon/play/#resume=" + fixture.id);
     await page.locator("#confirm").waitFor();
     const rolled = await read();
     await page.keyboard.press("z");
@@ -116,9 +119,15 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
       .first()
       .click();
     await page.locator(`[data-point="${step.to}"] .point-number-hit`).click();
+    await waitForAsync(page,async count =>
+      (await (await import('/backgammon/core/storage.mjs')).get('work','play')).draft.length > count,
+      rolled.draft.length);
     const moved = await read();
     assert.ok(moved.draft.length > rolled.draft.length);
     await page.keyboard.press("z");
+    await waitForAsync(page,async count =>
+      (await (await import('/backgammon/core/storage.mjs')).get('work','play')).draft.length < count,
+      moved.draft.length);
     assert.ok((await read()).draft.length < moved.draft.length);
     assert.deepEqual((await read()).game.events, rolled.game.events);
     // Remapping undo keeps its draft-only semantics.

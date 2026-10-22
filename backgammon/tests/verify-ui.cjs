@@ -39,13 +39,18 @@ module.exports = async function verifyUI(browser,base,out,name) {
       if(!await explanation.isVisible()) await page.getByText('Analysis method & limits',{exact:true}).click();
       await explanation.waitFor({state:'visible'});
       await explanation.scrollIntoViewIfNeeded();
+      // Inspect the painted scroll position inside the results sheet.
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       const layout=await explanation.evaluate(node=> {
-        const r=node.getBoundingClientRect(),style=getComputedStyle(node);
+        const r=node.getBoundingClientRect(),style=getComputedStyle(node),body=node.closest('.dialog-body')?.getBoundingClientRect();
         return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,fontSize:parseFloat(style.fontSize),
+          scrollViewport:body?{top:body.top,bottom:body.bottom}:null,
           overflow:document.documentElement.scrollWidth>innerWidth+1};
       });
       assert.ok(!layout.overflow && layout.left>=-1 && layout.right<=width+1,`Verify method fits ${width}: ${JSON.stringify(layout)}`);
       assert.ok(layout.top>=-1 && layout.bottom<=height+1,`Verify method readable within viewport ${width}: ${JSON.stringify(layout)}`);
+      if(layout.scrollViewport)assert.ok(layout.top>=layout.scrollViewport.top-1&&layout.bottom<=layout.scrollViewport.bottom+1,
+        `Verify method fits the results sheet's scrollable body: ${JSON.stringify(layout)}`);
       assert.ok(layout.fontSize>=12,'Verify explanation keeps a readable font size');
       const file=`${name}-verify-method-${width}.png`;
       await page.screenshot({path:path.join(out,file),animations:'disabled'});screenshots.push(file);

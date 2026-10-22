@@ -10,9 +10,11 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       const random = crypto.getRandomValues.bind(crypto), bytes = [5,0];
       crypto.getRandomValues = a => a instanceof Uint8Array && a.length === 1 && bytes.length ? ((a[0] = bytes.shift()),a) : random(a);
     });
-    await page.goto(base + "/backgammon/play/");
+    // Seed preferences before starting Play, without immediately navigating
+    // away from its pending reference-book request.
+    await page.goto(base + "/backgammon/");
     await page.evaluate(async () => (await import('/backgammon/core/storage.mjs')).saveSettings({interactionMode:'beginner', moveHints:true, equityBar:false, motion:'reduce'}));
-    await page.reload();
+    await page.goto(base + "/backgammon/play/");
     await page.setViewportSize({width:390,height:844});
     await page.getByRole("button", {name:"Computer",exact:true}).waitFor();
     assert.equal(await page.getByRole("button", {name:"Computer",exact:true}).getAttribute("aria-pressed"), "true", "setup communicates the chosen mode");
@@ -47,7 +49,7 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       assert.ok(!metrics.overflow, `horizontal overflow ${width}`);
       if (width >= 375) assert.ok(metrics.confirm.bottom <= height + 1, `confirm offscreen ${width}: ${JSON.stringify(metrics)}`);
       if (width <= 700 && height > 500) {
-        assert.ok(Math.abs(metrics.board.height / metrics.board.width - 660/876) < .01, "board keeps its aspect ratio");
+        assert.ok(Math.abs(metrics.board.height / metrics.board.width - 660/876) < .01, `board keeps its aspect ratio at ${width}x${height}: ${JSON.stringify(metrics)}`);
         for (const gap of [metrics.board.top - metrics.opponent.bottom, metrics.player.top - metrics.board.bottom])
           assert.ok(gap >= -1 && gap < 3, "player strips hug the board without overlap");
         assert.ok(metrics.confirm.height >= 48, "large primary touch target");

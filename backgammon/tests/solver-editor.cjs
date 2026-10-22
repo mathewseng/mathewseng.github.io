@@ -9,6 +9,15 @@ module.exports = async function solverEditor(browser, base, out, name) {
     assert.fail('Editor state was not saved: '+JSON.stringify({state:await saved(),selected:await page.locator('#board .selected').evaluateAll(es=>es.map(e=>e.dataset.point))}));
   };
   const point=p=>page.locator(`#board [data-point="${p}"]`);
+  const openTools=async()=>{
+    // Resizing across the setup breakpoint resets this disclosure. Wait for
+    // that layout change before opening it, so the resize handler cannot
+    // close the tools between our setup and the Direction/Flip interactions.
+    await page.waitForFunction(()=>document.querySelector('.app')?.classList.contains('setup-docked')===
+      matchMedia('(min-width: 1025px) and (min-height: 501px)').matches);
+    const tools=page.locator('#editor-tools');
+    if(!await tools.evaluate(node=>node.open))await tools.locator('summary').click();
+  };
   const tap=async(p,checker=false)=>{
     if(checker)return point(p).locator(':scope > .checker').last().click();
     const q=await point(p).evaluate(g=>{
@@ -53,7 +62,7 @@ module.exports = async function solverEditor(browser, base, out, name) {
     await page.locator('#editor-redo').click();await waitState(s=>s.off[0]===0);
     // No checkers are created when a tray is empty, or mixed with the other color.
     const stable=await saved();await tap(9);await tap(18);assert.deepEqual(await saved(),stable);
-    await page.locator('#editor-tools').evaluate(n=>n.open=true);
+    await openTools();
     // Toolbar setup edits preserve context and can all be undone.
     await page.locator('#editor-clear').click();await waitState(s=>s.off[0]===15&&s.off[1]===15);
     // Context can be set before placing checkers on an empty draft.
@@ -80,7 +89,7 @@ module.exports = async function solverEditor(browser, base, out, name) {
     await waitState(s=>JSON.stringify(s)===JSON.stringify(stable));
     for(const [width,height] of [[390,844],[844,390],[1440,900]]) {
       await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));
-      await page.locator('#editor-tools').evaluate(n=>n.open=true);
+      await openTools();
       for(const orientation of [0,1]) {
         if(orientation)await page.locator('#editor-flip').click();
         await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
@@ -202,7 +211,7 @@ module.exports = async function solverEditor(browser, base, out, name) {
     const cp=await page.evaluate(async()=>(await(await import('/backgammon/core/storage.mjs')).get('work','solver-rollout'))?.checkpoint);
     assert.equal(cp.completed,64,'rollout samples are saved for resuming');
     await page.locator('#edit-position').click();
-    await page.locator('#editor-tools').evaluate(n=>n.open=true);
+    await openTools();
     const preserved=await saved();
     await page.locator('#editor-direction').click();await page.locator('#editor-flip').click();
     await page.reload();await page.locator('.bg-board.is-editor').waitFor();

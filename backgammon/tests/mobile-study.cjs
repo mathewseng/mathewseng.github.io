@@ -106,13 +106,16 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     // screen or let that rail overlap the player strip.
     const trainerFit = async (width,height,font) => {
       await page.setViewportSize({width,height});
-      await page.evaluate(()=>scrollTo(0,0));
+      // Equity positions follow ResizeObserver through requestAnimationFrame;
+      // measure after the rail has adopted the resized board's geometry.
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{scrollTo(0,0);resolve();}))));
+      await page.waitForFunction(()=>document.querySelector('#equity-bar').getBoundingClientRect().right<=document.querySelector('#board').getBoundingClientRect().right+1,null,{timeout:5000});
       const fit = await page.evaluate(() => {
         const box = selector => document.querySelector(selector).getBoundingClientRect().toJSON();
         return {board:box("#board"),player:box("#player"),actions:box("#actions"),height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth};
       });
       assert.ok(fit.board.bottom <= fit.player.top+1,`trainer equity rail overlaps player ${width} ${font}: ${JSON.stringify(fit)}`);
-      assert.ok(fit.width <= width+1,`trainer horizontal overflow ${width} ${font}`);
+      assert.ok(fit.width <= width+1,`trainer horizontal overflow ${width} ${font}: ${JSON.stringify(fit)}`);
       if (width >=375) {
         assert.ok(fit.height <= height+1,`trainer review scrolls ${width} ${font}: ${JSON.stringify(fit)}`);
         assert.ok(fit.actions.bottom <= height+1,`trainer review actions offscreen ${width} ${font}: ${JSON.stringify(fit)}`);
