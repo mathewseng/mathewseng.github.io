@@ -38,6 +38,8 @@ export class EquityBar {
     this.enabled = settings().equityBar === true;
     this.life = new AbortController();
     const options = { signal: this.life.signal };
+    this.portrait = matchMedia("(max-width: 700px) and (orientation: portrait)");
+    this.portrait.addEventListener("change", () => this.schedulePosition(), options);
     toggle.onclick = () => {
       this.enabled = !this.enabled;
       try {
@@ -80,6 +82,16 @@ export class EquityBar {
       c = this.board.container.getBoundingClientRect();
     const width = Math.min(r.width, (r.height * 876) / 660),
       height = (width * 660) / 876;
+    if (this.portrait.matches) {
+      Object.assign(this.node.style, {
+        left: `${r.left - c.left + (r.width - width) / 2}px`,
+        top: `${r.top - c.top + (r.height + height) / 2 + 4}px`,
+        width: `${width}px`,
+        height: "",
+      });
+      return;
+    }
+    this.node.style.width = "";
     Object.assign(this.node.style, {
       left: `${r.left - c.left + (r.width - width) / 2 - this.node.offsetWidth - 4}px`,
       top: `${r.top - c.top + (r.height - height) / 2}px`,
@@ -110,7 +122,7 @@ export class EquityBar {
     );
     if (reading) {
       const equity = orientation ? -reading.ivory : reading.ivory;
-      this.fill.style.height = `${equityFraction(equity) * 100}%`;
+      this.fill.style.setProperty("--equity-fraction", `${equityFraction(equity) * 100}%`);
       this.label.textContent = equity >= 0 ? equity.toFixed(3) : "";
       this.topLabel.textContent = equity < 0 ? (-equity).toFixed(3) : "";
       this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${equity.toFixed(3)} ${reading.units} · ${reading.setting}. Nonlinear equity scale, not win probability.`;

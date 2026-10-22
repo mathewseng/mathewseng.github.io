@@ -822,7 +822,7 @@ button kbd.keycap,
   opacity: 0.55;
 }
 
-/* Equity rail beside the board (ui/equity-bar.mjs positions it). */
+/* Equity rail aligned to the rendered board (ui/equity-bar.mjs positions it). */
 .board-slot.has-equity-bar > .bg-board {
   width: calc(100% - var(--bg-equity-width) - 6px);
   margin-left: calc(var(--bg-equity-width) + 6px);
@@ -863,6 +863,7 @@ button kbd.keycap,
   position: absolute;
   bottom: 0;
   width: 100%;
+  height: var(--equity-fraction);
   background: var(--equity-bottom);
 }
 
@@ -893,6 +894,64 @@ button kbd.keycap,
   font-size: var(--t-xs);
   font-weight: 600;
   cursor: pointer;
+}
+
+/* Portrait phones keep the full board width, with equity below the frame.
+   Content-box sizing reserves the strip without shrinking the board's ratio. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .board-slot.has-equity-bar {
+    box-sizing: content-box;
+    padding-bottom: 28px;
+  }
+
+  .board-slot.has-equity-bar > .bg-board {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .equity-bar {
+    flex-direction: row;
+    height: 24px;
+    gap: 8px;
+  }
+
+  .equity-number {
+    flex: 0 0 40px;
+    width: 40px;
+  }
+
+  .equity-meter {
+    width: auto;
+    height: 10px;
+  }
+
+  .equity-fill {
+    right: 0;
+    width: var(--equity-fraction);
+    height: 100%;
+  }
+
+  .equity-meter::after {
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 100%;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  .board-slot.has-equity-bar:has(.equity-bar[data-state="error"]) {
+    padding-bottom: 48px;
+  }
+
+  .equity-bar[data-state="error"] {
+    height: 44px;
+  }
+
+  .equity-retry {
+    flex: 0 0 56px;
+    width: 56px;
+  }
 }
 
 /* HTML dice: opening roll, theme samples and dieFace(). */
@@ -5282,22 +5341,20 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 
-  /* A narrower rail with no gap leaves the board its full width
-     (dice-undo.cjs) and still fits "+0.73" at the 12px floor. */
-  .play-page.live-table .board-slot.has-equity-bar > .bg-board {
-    width: calc(100% - var(--bg-equity-width));
-    margin-left: var(--bg-equity-width);
-  }
+  @media (orientation: landscape) {
+    .play-page.live-table .board-slot.has-equity-bar > .bg-board {
+      width: calc(100% - var(--bg-equity-width));
+      margin-left: var(--bg-equity-width);
+    }
 
-  .play-page.live-table .equity-meter {
-    width: 10px;
-  }
+    .play-page.live-table .equity-meter {
+      width: 10px;
+    }
 
-  /* Medium weight keeps "0.730" inside the 32px rail when the stack falls
-     back to DejaVu Sans (Linux), whose bold digits are wider than SF's. */
-  .play-page.live-table .equity-number {
-    font-weight: 500;
-    letter-spacing: -0.05em;
+    .play-page.live-table .equity-number {
+      font-weight: 500;
+      letter-spacing: -0.05em;
+    }
   }
 
   .play-page.live-table .tool-head {
