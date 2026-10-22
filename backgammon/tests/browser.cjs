@@ -406,9 +406,13 @@ const server = http.createServer((req, res) => {
                   layout.boardBottom <= layout.playerTop + 1,
                   `board overlaps player strip ${route} ${w}x${h}`,
                 );
-              // Play intentionally scrolls to analysis; its setup form also reflows.
+              // Play and the portrait Solver intentionally scroll to controls
+              // and analysis. Solver still reserves a visible board above them.
               // Live board/action fit is checked by control-polish at these sizes.
-              if (route && route !== "play/" && w > 320) {
+              const scrollingSolver = route === "solver/" && w <= 1024 && h > 500;
+              if (scrollingSolver)
+                assert.ok(layout.boardBottom <= h + 1, `Solver board offscreen ${w}x${h}`);
+              if (route && route !== "play/" && !scrollingSolver && w > 320) {
                 assert.ok(
                   layout.height <= h + 1,
                   `document scroll ${route} ${w}: ${layout.height}`,
