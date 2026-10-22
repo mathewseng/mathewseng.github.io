@@ -91,7 +91,7 @@ export function openingGuide(root) {
   }
   function rollSummaries(positions) {
     const authors=[...new Set([...positions.values()].flatMap(p=>p.moves.map(m=>m.referenceCredit?.author).filter(Boolean)))];
-    const credit=move=>move.referenceCredit?node('sup',{},String(authors.indexOf(move.referenceCredit.author)+1)):'';
+    const credit=move=>move.referenceCredit?node('sup',{},`[${authors.indexOf(move.referenceCredit.author)+1}]`):'';
     credits.hidden=!authors.length;credits.textContent=authors.length?`XG contributors: ${authors.map((author,i)=>`${i+1}. ${author}`).join(' · ')}`:'';
     for(const button of picker.children){
       const p=positions.get(button.dataset.canonical);
