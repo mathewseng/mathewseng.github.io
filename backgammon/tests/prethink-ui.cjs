@@ -11,7 +11,8 @@ module.exports=async function prethinkUI(browser,base,out,name){
    const{initialState}=await import('/backgammon/core/rules.mjs');
    const{localConfig,defaultPlayRules}=await import('/backgammon/core/play-session.mjs');
    saveSettings({equityBar:false,motion:'reduce',analysisAhead:true});
-   const s=initialState({phase:'move',dice:[4,1],rules:defaultPlayRules(0),matchLength:0});
+   // Keep this interaction test on live WASM; prethink-future covers money-book reuse too.
+   const s=initialState({phase:'move',dice:[4,1],rules:defaultPlayRules(7),matchLength:7});
    await put('work',{id:'play',game:{id:'prethink-browser',started:true,state:s,initial:s,events:[],names:['You','GNUbg'],config:localConfig({strength:'quick',reviewStrength:'auto'})},draft:[]});
   });
   await page.reload();await ready();

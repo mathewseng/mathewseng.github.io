@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import test from 'node:test';
+import {validateItem} from '../core/storage.mjs';
+import {OpeningBook} from '../engine/opening-book.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -83,4 +85,15 @@ test('reference results cannot mutate the source and synchronous download failur
  assert.equal((await book.lookup(state)).candidates[0].referenceCredit.author,author);
  const probability=first.candidates[0].probabilities[0];first.candidates[0].probabilities[0]=-1;
  assert.equal((await book.lookup(state)).candidates[0].probabilities[0],probability);
+});
+
+test('reference provenance and five-ply books survive saved-position validation',async()=>{
+ const state=stateFor(refs[0]),reference=await new XGReferenceBook({fetcher}).lookup(state);
+ const record=analysis=>({version:1,id:'reference-save',kind:'position',title:'Opening',notes:'',collection:'',tags:[],createdAt:0,updatedAt:0,state,analysis});
+ assert.equal(validateItem(record(reference)).analysis,reference);
+ for(const mutate of [a=>a.reference.url='javascript:alert(1)',a=>a.candidates[0].referenceCredit.author='',a=>a.settings.plies=2,a=>a.method='tree']){
+  const invalid=structuredClone(reference);mutate(invalid);assert.throws(()=>validateItem(record(invalid)));
+ }
+ const ordinary={...state,rules:{...state.rules,immediateRedoubles:0}},deep=await new OpeningBook({preferDeep:true,fetcher}).lookup(ordinary,{kind:'checker',preset:'auto'});
+ assert.equal(deep.settings.plies,5);assert.equal(validateItem({...record(deep),state:ordinary}).analysis,deep);
 });

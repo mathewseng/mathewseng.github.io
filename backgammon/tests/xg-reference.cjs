@@ -13,6 +13,7 @@ module.exports=async function(browser,base,out,name){
    try{for(const[board,rolls]of Object.entries(index.entries))for(const[roll,entry]of Object.entries(rolls)){
     const v=board.split(',').map(Number),s=r.initialState({matchLength:0,phase:'move',dice:[...roll].map(Number),rules:{cube:true,jacoby:true,immediateRedoubles:2},points:v.slice(0,24),bar:v.slice(24,26),off:v.slice(26)});
     first??=s;const result=await c.analyze(s,{preset:'auto'});
+    if(positions===0){const storage=await import('/backgammon/core/storage.mjs');const item=storage.itemRecord('position',{title:'Reference save',state:s,analysis:result});await storage.put('items',item);const saved=await storage.get('items',item.id);if(saved.analysis.method!=='reference'||!saved.analysis.candidates[0].referenceCredit.author)throw Error('Reference failed to persist');}
     if(result.method!=='reference'||result.book.id!==index.id||result.reference.url!==entry.source)throw Error('Incorrect reference metadata');
     const last=result.candidates.at(-1),grade=await c.analyze(s,{preset:'auto',submitted:last.steps});
     if(grade.method!=='reference'||grade.actual.key!==last.key||Math.abs(grade.error-result.candidates[0].equity+last.equity)>1e-12)throw Error('Mixed-source grading');

@@ -37,7 +37,7 @@ module.exports = async function playLatency(browser, base, out, name) {
       EngineClient.prototype.cancelActive=function(message){latency.cancels.push({at:performance.now(),priority:this.active?.priority,phase:this.active?.state.phase});return cancel.call(this,message);};
       EngineClient.prototype.analyze=function(state,opts={}){
         const row={at:performance.now(),sequence:state.sequence,phase:state.phase,turn:state.turn,priority:opts.priority??10,submitted:!!opts.submitted};latency.calls.push(row);
-        return analyze.call(this,state,opts).then(result=>{Object.assign(row,{ms:performance.now()-row.at,cached:!!result.cached,reusedHint:!!result.reusedHint,preparation:result.preparation,plies:result.settings.plies,reason:result.budget?.reason,levels:result.budget?.levels});return result;},error=>{Object.assign(row,{ms:performance.now()-row.at,error:error.name});throw error;});
+        return analyze.call(this,state,opts).then(result=>{Object.assign(row,{ms:performance.now()-row.at,cached:!!result.cached,reusedHint:!!result.reusedHint,preparation:result.preparation,plies:result.settings.plies,method:result.method,bookSource:result.book?.source,reason:result.budget?.reason,levels:result.budget?.levels});return result;},error=>{Object.assign(row,{ms:performance.now()-row.at,error:error.name});throw error;});
       };
     });
     await page.locator('#resume-match').click();
@@ -80,7 +80,7 @@ module.exports = async function playLatency(browser, base, out, name) {
     assert.ok(verified); assert.deepEqual(errors,[]);
     await page.screenshot({path:path.join(out,`${name}-play-latency.png`)});
     const trace=await page.evaluate(()=>latency);
-    assert.ok(trace.calls.filter(c=>c.plies!==undefined).every(c=>c.plies>=2),'every completed Auto result reaches at least two plies');
+    assert.ok(trace.calls.filter(c=>c.plies!==undefined).every(c=>c.method==='reference'?c.plies===null&&c.bookSource==='published-xg-reference':c.plies>=2),'every completed Auto result uses an attributed reference or reaches at least two plies');
     const engine=await page.evaluate(async()=>({version:(await import('/backgammon/engine/metadata.mjs')).ENGINE_VERSION,policy:(await import('/backgammon/engine/search-policy.mjs')).SEARCH_POLICY_VERSION}));
     return {recordedAt:new Date().toISOString(),environment:{cpu:os.cpus()[0].model,os:`${os.platform()} ${os.release()} ${os.arch()}`,browser:`${name} ${browser.version()}`},
       engine,thinkMs,method:'Assembled site, real WASM, Auto for both sides, default Jacoby/beavers/raccoons, thinkMs pause plus 250ms per checker step, real animations, fixed test seed, indexed HMAC-SHA256 rolls. No fake engine or preloaded recommendations. Accessible move selector picks first legal step; costly-move warning is accepted. Local HTTP, desktop, not a phone benchmark. Timing includes UI and persistence; trace separates engine requests.',rows,trace,events:game.events.length,replayVerified:verified};

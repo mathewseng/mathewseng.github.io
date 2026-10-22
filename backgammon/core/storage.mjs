@@ -161,12 +161,23 @@ export function validateItem(item) {
       Array.isArray(c.probabilities) &&
       c.probabilities.length === 5 &&
       c.probabilities.every((n) => valid(n) && n >= -0.0001 && n <= 1.0001);
+    const isReference = a.method === "reference";
+    const credit = c => c?.referenceCredit &&
+      typeof c.referenceCredit.author === "string" && c.referenceCredit.author.trim().length > 0 && c.referenceCredit.author.length <= 120 &&
+      typeof c.referenceCredit.date === "string" && c.referenceCredit.date.length <= 40 &&
+      typeof c.referenceCredit.engine === "string" && c.referenceCredit.engine.length <= 100;
+    if (isReference && (a.type !== "checker" || a.settings?.plies !== null ||
+        a.engine !== "eXtreme Gammon · published opening book 3.70 (2013)" ||
+        a.book?.id !== "xg-public-opening-3.70-v1" || a.book.source !== "published-xg-reference" ||
+        !/^https:\/\/www\.extremegammon\.com\/OB\/[A-Za-z0-9_$.-]+\.html$/.test(a.reference?.url) ||
+        !Array.isArray(a.candidates) || !a.candidates.length || !a.candidates.every(credit) || (a.actual && !credit(a.actual))))
+      throw new Error("Invalid reference provenance.");
     if (
       a.status !== "complete" ||
       typeof a.engine !== "string" ||
       a.engine.length > 150 ||
       !a.settings ||
-      ![0, 1, 2, 3, 4].includes(a.settings.plies) ||
+      !(isReference ? a.settings.plies === null : [0, 1, 2, 3, 4, 5].includes(a.settings.plies)) ||
       typeof a.settings.name !== "string"
     )
       throw new Error("Invalid analysis metadata.");
