@@ -9,6 +9,8 @@ module.exports = async function equityBarUX(browser, base, out, name) {
   });
   const page = await context.newPage(),
     errors = [];
+  const engineWorkers = () => page.workers().filter(w =>
+    new URL(w.url()).pathname.endsWith('/engine/worker.mjs'));
   const readEquity = () => page.locator('#equity-bar').evaluate(n => {
     const bottom=n.querySelector('.equity-bottom-number').textContent;
     const top=n.querySelector('.equity-top-number').textContent;
@@ -149,7 +151,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     await page.locator('#equity-bar[data-state="ready"]').waitFor();
     await clickTool(page, "#equity-toggle");
     await page.waitForTimeout(50);
-    assert.equal(page.workers().length, 0);
+    assert.equal(engineWorkers().length, 0, "hiding equity releases its engine; saving stays independent");
     // Cancellation during initialization must release the worker and reject stale completion.
     // Block both backends: a failed SIMD load alone intentionally falls back.
     const wasmAssets = /\/engine\/vendor\/(?:simd\/)?gnubg-core-module\.wasm(?:\?.*)?$/;
@@ -161,7 +163,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     await page.locator('#equity-bar[data-state="loading"]').waitFor();
     await clickTool(page, "#equity-toggle");
     await page.waitForTimeout(300);
-    assert.equal(page.workers().length, 0);
+    assert.equal(engineWorkers().length, 0, "cancelled engine initialization leaves no evaluation worker");
     assert.equal(await page.locator("#equity-bar").isVisible(), false);
     await page.unroute(wasmAssets);
     await page.route(wasmAssets, (route) => route.abort());
