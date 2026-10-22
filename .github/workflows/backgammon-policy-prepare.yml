@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: 22
       - name: Build the research engine
-        run: node backgammon/scripts/build-cube-policy-native.mjs /tmp/bg-cube-study-v2
+        run: node backgammon/scripts/build-cube-policy-native.mjs /tmp/bg-cube-study-v2 || { tail -120 /tmp/bg-cube-study-v2/build.log; exit 1; }
       - name: Check all five policies against excluded deterministic cases
         run: python3 backgammon/scripts/validate-cube-policy-platform.py /tmp/bg-cube-study-v2 --output /tmp/bg-cube-study-v2/platform-validation.json
       - name: Reproduce and repair the cache-context error
