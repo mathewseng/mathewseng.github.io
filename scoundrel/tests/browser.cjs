@@ -7,18 +7,31 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
   const server=await serveSite(root), browser=await launchQuietBrowser(chromium), errors=[];
   try {
     const context=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:"reduce"});
-    const page=await context.newPage();page.on("pageerror",e=>errors.push(e.message));page.on("response",r=>{if(r.status()>=400)errors.push(r.status()+" "+r.url());});
+    const page=await context.newPage();
+    await page.addInitScript(()=>{const RealWorker=window.Worker;window.Worker=class extends RealWorker{postMessage(message,...args){window.lastAnalysisMessage=message;return super.postMessage(message,...args);}};});
+    page.on("pageerror",e=>errors.push(e.message));page.on("response",r=>{if(r.status()>=400)errors.push(r.status()+" "+r.url());});
     await page.goto(server.base+"/scoundrel/?seed=test1");await settle(page);
     assert.equal(await page.locator(".encounter").count(),4);assert.equal(await page.locator(".playing-card").count(),0);
     assert.equal(new Set(await page.locator(".encounter-art").evaluateAll(es=>es.map(e=>e.src))).size,4);
     await page.locator("#oracle-toggle").check();
     await page.waitForFunction(()=>document.querySelectorAll("#action-values tr").length>0 && !document.querySelector("#action-values").textContent.includes("Searching"),null,{timeout:45000});
     assert.ok((await page.locator("#oracle-summary").innerText()).includes("score"));
+    const analysisMessage=await page.evaluate(()=>window.lastAnalysisMessage);
+    assert.ok(analysisMessage.observation);assert.equal('state' in analysisMessage,false);
+    for(const key of ['deck','initialDeck','seed','history'])assert.equal(key in analysisMessage.observation,false);
     const before=E.restore(await page.evaluate(()=>localStorage.getItem("scoundrel-run-v1")));
     assert.equal(await page.locator("#action-values tr").count(),E.actions(before).length);
+    const fleeRows=await page.locator('[data-preview]').evaluateAll(es=>es.map(e=>JSON.parse(e.dataset.preview)).filter(a=>a.type==='flee'));
+    assert.deepEqual(fleeRows.map(a=>a.direction),['left','right']);
+    await page.locator('#flee-button').click();
+    assert.equal(await page.locator('[data-avoid]').count(),2);
+    assert.equal(await page.locator('[data-avoid-ev]').count(),2);
+    assert.deepEqual(await page.locator('[data-avoid="right"] .avoid-card strong').allTextContents(),before.room.map(c=>String(c.value)).reverse());
+    await page.locator('#avoid-dialog [data-close]').click();
+    assert.equal(E.restore(await page.evaluate(()=>localStorage.getItem("scoundrel-run-v1"))).steps,0);
     const suggested=JSON.parse(await page.locator("#action-values tr.is-best [data-preview]").getAttribute("data-preview"));
     if(suggested.id)await page.locator(`[data-card="${suggested.id}"]`).click();
-    if(suggested.type==="flee")await page.locator("#flee-button").click();
+    if(suggested.type==="flee"){await page.locator("#flee-button").click();await page.locator(`[data-avoid="${suggested.direction || "left"}"]`).click();}
     else await page.locator("[data-action]").filter({hasText:suggested.mode==="bare"?"barehanded":suggested.mode==="weapon"?"Use weapon":suggested.type==="equip"?"Equip":"Drink"}).click();
     await page.waitForFunction(()=>JSON.parse(localStorage.getItem("scoundrel-run-v1")).steps===1);
     await page.locator("#oracle-toggle").uncheck();await page.reload();await settle(page);assert.equal(E.restore(await page.evaluate(()=>localStorage.getItem("scoundrel-run-v1"))).steps,1);
@@ -27,11 +40,11 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     await page.locator('[data-filter="c"]').click();assert.equal(await page.locator("#catalog-grid figure").count(),13);
     await page.locator("#catalog-dialog [data-close]").click();
     await page.locator("#settings-button").click();await page.locator("#atmosphere").selectOption("ember");await page.locator("#settings-dialog [data-close]").click();
-    const witness=study.rows.find(r=>r.exact);
+    const witness=study.rows.find(r=>r.survived);
     await page.goto(server.base+"/scoundrel/?seed="+witness.seed);await settle(page);
     for(const [i,a]of witness.line.entries()){
       if(a.id)await page.locator(`[data-card="${a.id}"]`).click();
-      if(a.type==="flee")await page.locator("#flee-button").click();
+      if(a.type==="flee"){await page.locator("#flee-button").click();await page.locator(`[data-avoid="${a.direction || "left"}"]`).click();}
       else await page.locator("[data-action]").filter({hasText:a.mode==="bare"?"barehanded":a.mode==="weapon"?"Use weapon":a.type==="equip"?"Equip":a.type==="drink"?"potion":"Enter next room"}).click();
       const actual=E.restore(await page.evaluate(()=>localStorage.getItem("scoundrel-run-v1")));assert.equal(actual.steps,i+1);
     }
@@ -48,13 +61,30 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
       if(shots)await page.screenshot({path:path.join(shots,`scoundrel-${viewport.width}.png`),fullPage:true});
     }
     await page.setViewportSize({width:1440,height:900});await page.goto(server.base+"/scoundrel/reports/");await page.locator("#report-content").waitFor({state:"visible"});await settle(page);
-    assert.match(await page.locator("#mean").innerText(),/\d/);assert.equal(await page.locator("#deals-body tr").count(),20);
-    await page.locator("#cohort").selectOption("proven");assert.equal(await page.locator("#cohort-warning").isVisible(),true);assert.equal(await page.locator("#proof-rate").innerText(),"100.0%");
+    const summary=require('../reports/statistics.js').summarize(study.rows);
+    assert.equal(await page.locator("#mean").innerText(),String(summary.mean));
+    assert.equal(await page.locator("#median").innerText(),String(summary.median));
+    assert.equal(await page.locator("#deals-body tr").count(),20);
+    assert.equal(await page.locator("#proof-rate").innerText(),"1,000");
+    const plotted=await page.locator('.chart-count').allTextContents();
+    assert.equal(plotted.reduce((sum,n)=>sum+Number(n),0),1000,'histogram accounts for the full cohort');
+    const bins=await page.locator('.chart-group').evaluateAll(es=>es.map(e=>[Number(e.dataset.score),Number(e.dataset.high)]));
+    for(let i=1;i<bins.length;i++)assert.equal(bins[i][0],bins[i-1][1]+1,'score axis retains empty bins');
+    await page.locator('[data-solution]').first().click();
+    assert.equal(await page.locator('#solution-line li').count(),study.rows[0].line.length);
+    assert.ok((await page.locator('#solution-title').innerText()).includes(String(study.rows[0].score)));
+    await page.locator('#close-solution').click();
+    await page.locator("#cohort").selectOption("below");
+    assert.ok((await page.locator('#distribution-subtitle').innerText()).startsWith(String(study.rows.filter(r=>r.score<30).length)));
+    assert.equal(await page.locator("#median").innerText(),String(summary.median),"cohort filters do not alter full-study metrics");
     await page.locator("#cohort").selectOption("all");await page.locator(".chart-group").last().click();assert.equal(await page.locator("#clear-filter").isVisible(),true);await page.locator("#clear-filter").click();
-    const downloadEvent=page.waitForEvent("download");await page.locator("#download").click();assert.ok((await downloadEvent).suggestedFilename().endsWith(".csv"));
+    const downloadEvent=page.waitForEvent("download");await page.locator("#download").click();const download=await downloadEvent;assert.ok(download.suggestedFilename().endsWith(".csv"));
+    const csv=fs.readFileSync(await download.path(),'utf8');assert.equal(csv.trim().split('\n').length,1001);assert.ok(csv.startsWith('deal,seed,final_score,outcome,simulations_per_decision'));assert.ok(!csv.includes('incomplete'));
     if(shots)await page.screenshot({path:path.join(shots,"scoundrel-report.png"),fullPage:true});
     await page.setViewportSize({width:375,height:812});await settle(page);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
-    if(shots)await page.screenshot({path:path.join(shots,"scoundrel-report-phone.png"),fullPage:true});
-    assert.deepEqual(errors,[]);console.log("Scoundrel browser checks passed: all-action oracle, full winning replay, save/resume, gallery, themes, reports, export, four viewports.");
+    assert.ok(await page.locator('.mobile-score-row').first().isVisible());
+    await page.locator('.mobile-score-row').first().click();assert.equal(await page.locator('#clear-filter').isVisible(),true);await page.locator('#clear-filter').click();
+    if(shots){await page.screenshot({path:path.join(shots,"scoundrel-report-phone.png"),fullPage:true});await page.locator('.distribution-section').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(shots,"scoundrel-report-phone-chart.png")});}
+    assert.deepEqual(errors,[]);console.log("Scoundrel browser checks passed: all-action hidden-deck analysis, winning replay, save/resume, gallery, themes, reports, export, four viewports.");
   } finally {await browser.close();await server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

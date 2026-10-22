@@ -23,7 +23,7 @@ async function readable(page, label) {
   const issues = await page.evaluate(()=>{
     const problems=[];
     if(document.documentElement.scrollWidth>innerWidth+1)problems.push("document overflows horizontally");
-    const selector=".encounter-name strong,.encounter-name small,.encounter-top>span:first-child,.selection-copy>strong,.selection-copy p,.game-button span,.game-button small,.catalog-grid figcaption strong,.catalog-grid figcaption>div>span,#artwork-title,#artwork-lore,#artwork-role";
+    const selector=".encounter-name strong,.encounter-name small,.encounter-top>span:first-child,.selection-copy>strong,.selection-copy p,.game-button span,.game-button small,.catalog-grid figcaption strong,.catalog-grid figcaption>div>span,#artwork-title,#artwork-role,.avoid-choice-title strong,.avoid-choice-title>span,.avoid-value,#avoid-description,.report-metrics strong,.report-metrics small,#study-summary,#deals-caption,.deals-table th,.deals-table td,#solution-title,.solution-line li>div>span,.mobile-score-row strong,.mobile-score-row>span:last-child";
     for(const el of document.querySelectorAll(selector)){
       if(!el.getClientRects().length || el.closest("dialog:not([open])"))continue;
       const range=document.createRange();range.selectNodeContents(el);
@@ -67,6 +67,26 @@ async function readable(page, label) {
           for(const box of await page.locator("#encounter-actions button").evaluateAll(es=>es.map(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height}))))assert.ok(box.w>=44&&box.h>=44,"44px action target");
           if(viewport.width>=1000)assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+2),`${viewport.width}: desktop fits`);
           if(output){await page.evaluate(()=>Promise.all([...document.querySelectorAll(".encounter-art")].map(i=>i.decode())));await page.screenshot({path:path.join(output,`${browserName}-${viewport.width}x${viewport.height}.png`),fullPage:true});}
+          await page.locator('#flee-button').click();await readable(page,'avoidance preview');
+          assert.equal(await page.locator('[data-avoid]').count(),2);
+          if(output && [390,1280].includes(viewport.width))await page.screenshot({path:path.join(output,`${browserName}-avoid-${viewport.width}.png`)});
+          await page.locator('#avoid-dialog [data-close]').click();
+          if(phone){
+            await page.locator('#room-cards').dispatchEvent('pointerdown',{pointerType:'touch',isPrimary:true,pointerId:7,clientX:200,clientY:300});
+            await page.locator('#room-cards').dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:7,clientX:100,clientY:305});
+            assert.equal(await page.locator('#avoid-dialog').isVisible(),true,'horizontal swipe opens choice');
+            assert.equal(await page.evaluate(()=>document.activeElement.dataset.avoid),'left');
+            await page.locator('#avoid-dialog [data-close]').click();
+            await page.locator('#room-cards').dispatchEvent('pointerdown',{pointerType:'touch',isPrimary:true,pointerId:8,clientX:200,clientY:300});
+            await page.locator('#room-cards').dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:8,clientX:195,clientY:400});
+            assert.equal(await page.locator('#avoid-dialog').isVisible(),false,'vertical scroll does not avoid');
+          }
+          await page.locator('#flee-button').click();
+          const preAvoid=E.restore(await page.evaluate(()=>localStorage.getItem('scoundrel-run-v1')));
+          await page.locator('[data-avoid="right"]').click();
+          const postAvoid=E.restore(await page.evaluate(()=>localStorage.getItem('scoundrel-run-v1')));
+          assert.deepEqual(postAvoid,E.transition(preAvoid,{type:'flee',direction:'right'}));
+          assert.equal(await page.locator('#flee-button').isDisabled(),true);
           if(viewport.width===390 || viewport.width===1280){
             await page.locator("#settings-button").click();await page.locator("#catalog-button").click();
             await readable(page,"all collection captions");
@@ -83,6 +103,16 @@ async function readable(page, label) {
             // Simulate enlarged text, including headings that must remain inside cards.
             await page.addStyleTag({content:".encounter-name strong{font-size:20px!important}.selection-copy p{font-size:18px!important}"});
             await readable(page,"enlarged text");
+          }
+          if([320,375,390,1280].includes(viewport.width)){
+            await page.goto(server.base+'/scoundrel/reports/');await page.locator('#report-content').waitFor({state:'visible'});await page.evaluate(()=>document.fonts.ready);
+            await readable(page,'exact report');
+            assert.ok(await page.locator('.deals-table-wrap').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'deal table fits phone width');
+            assert.equal(await page.locator('#median').innerText(),String(require('../reports/statistics.js').summarize(require('../reports/outcomes.json').rows).median));
+            if(phone){await page.locator('.mobile-score-row').first().click();assert.equal(await page.locator('#clear-filter').isVisible(),true);await page.locator('#clear-filter').click();}
+            await page.locator('[data-solution]').first().click();await readable(page,'solution dialog');
+            if(output && [390,1280].includes(viewport.width))await page.screenshot({path:path.join(output,`${browserName}-solution-${viewport.width}.png`)});
+            await page.locator('#close-solution').click();
           }
           assert.deepEqual(errors,[]);await context.close();
         }

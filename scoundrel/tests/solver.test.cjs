@@ -1,33 +1,83 @@
 const test = require("node:test"), assert = require("node:assert/strict");
-const E=require("../engine.js"), S=require("../solver.js"), Stats=require("../reports/statistics.js");
-// Independent exhaustive reference uses only public rules transitions.
-function brute(s) { if(!E.actions(s).length)return E.score(s); return Math.max(...E.actions(s).map(a=>brute(E.transition(s,a)))); }
-test("solver agrees with independent exhaustive search on small rooms, ties and potion choices",()=>{
-  const cases=[
-    {deck:["8d","8s","8c","Th"],health:15},
-    {deck:["As","2h","3d","4s"],health:3},
-    {deck:["8d","Qs","3h","2s","Th","7c"],health:12},
-    {deck:["5h","7h","9d","Ks","2s"],health:18},
-    {deck:["5s","5c","6h","8d","As","Th"],health:11},
-  ];
-  for(const {deck,health} of cases){const s=E.createGame({deck,seed:"endgame"});s.health=health;const optimal=brute(s), r=S.solve(s,{timeMs:10000,maxNodes:1000000,beamWidth:8,rollouts:8});assert.equal(r.exact,true);assert.equal(r.score,optimal);let replay=s;for(const a of r.line)replay=E.transition(replay,a);assert.equal(E.score(replay),optimal);}
+const E = require("../engine.js"), S = require("../solver.js"), Stats = require("../reports/statistics.js");
+
+test("analysis cannot receive a private deck or seed, and hidden permutations produce identical EVs", () => {
+  const first = E.createGame({ seed: "privacy-fixture" }), second = JSON.parse(JSON.stringify(first));
+  second.deck.reverse(); second.initialDeck.reverse(); second.seed = "different-hidden-shuffle";
+  const a = E.observe(first), b = E.observe(second);
+  assert.deepEqual(a, b); assert.equal(a.unknownCards.length, 40);
+  for (const key of ["deck", "initialDeck", "seed", "history"]) assert.equal(key in a, false);
+  assert.throws(() => S.pack(first), /public observation/);
+  const options = { iterations: 384, timeMs: 60000 };
+  assert.deepEqual(S.analyze(a, options).results, S.analyze(b, options).results);
 });
-test("every compact transition matches the engine, including automatic refills",()=>{
-  for(let seed=0;seed<10;seed++){
-    let s=E.createGame({seed:"compact-"+seed});
-    for(let i=0;i<80&&E.actions(s).length;i++){
-      if(s.phase==="ready"){s=E.transition(s,{type:"descend"});continue;}
-      const legal=E.actions(s);
-      for(const a of legal){const compact=S.pack(s), c=s.room.find(c=>c?.id===a.id), move=a.type==="flee"?{flee:true}:{c:c.value+(c.type==="weapon"?16:c.type==="potion"?32:0),...(a.type==="fight"?{armed:a.mode==="weapon"}:{})};const next=S.step(compact,move);let actual=E.transition(s,a);if(actual.phase==="ready")actual=E.transition(actual,{type:"descend"});if(next.score!=null)assert.equal(next.score,E.score(actual));else { const expected=S.pack(actual); if(!expected.f) { expected.r.sort((a,b)=>a-b); next.state.r.sort((a,b)=>a-b); } assert.deepEqual(next.state,expected); }}
-      s=E.transition(s,legal[(i*7+seed)%legal.length]);
+
+test("every legal action receives an EV; terminal losses are exact without knowing the order", () => {
+  const state = E.createGame({ deck: ["As", "2h", "5d", "4s", "3s", "8h"], seed: "fatal" }); state.health = 1;
+  const result = S.analyze(E.observe(state), { iterations: 512, timeMs: 60000 });
+  assert.equal(result.results.length, E.actions(state).length);
+  for (const row of result.results) { assert.ok(Number.isFinite(row.score)); assert.ok(row.samples > 0); if (!row.exact) assert.ok(row.samples >= 48); }
+  const fatal = result.results.find(r => r.action.id === "As");
+  assert.equal(fatal.score, -20); assert.equal(fatal.exact, true);
+});
+
+test("equivalent encounters and return queues share estimates while every action stays available", () => {
+  const state = E.createGame({ deck: ["2s", "3s", "3c", "2c", "4d", "5h", "6s", "7c"], seed: "equivalent" });
+  const { results } = S.analyze(E.observe(state), { iterations: 512, timeMs: 60000 });
+  assert.equal(results.length, E.actions(state).length);
+  for (const [first, second] of [["2s", "2c"], ["3s", "3c"]]) {
+    const a = results.find(r => r.action.id === first), b = results.find(r => r.action.id === second);
+    assert.equal(a.score, b.score); assert.equal(a.samples, b.samples);
+  }
+  const avoidance = results.filter(r => r.action.type === "flee");
+  assert.deepEqual(avoidance.map(r => r.action.direction), ["left", "right"]);
+  assert.equal(avoidance[0].score, avoidance[1].score);
+  assert.equal(avoidance[0].samples, avoidance[1].samples);
+});
+
+test("sampled transitions match the real engine when draws reveal the same cards", () => {
+  for (let seed = 0; seed < 12; seed++) {
+    let state = E.createGame({ seed: "transitions-" + seed });
+    for (let turn = 0; E.actions(state).length && turn < 80; turn++) {
+      const legal = E.actions(state);
+      for (const action of legal) {
+        const observed = E.observe(state), compact = S.pack(observed);
+        let actual = E.transition(state, action);
+        if (actual.phase === "ready") actual = E.transition(actual, { type: "descend" });
+        const nextCards = actual.room.filter(Boolean);
+        const draws = action.type === "flee" ? nextCards : action.type === "descend" || nextCards.length > state.room.filter(Boolean).length - 1 ? nextCards.slice(1) : [];
+        const unknown = compact.u.slice(); let cursor = 0;
+        const rng = () => { const target = S.encode(draws[cursor++]), index = unknown.indexOf(target), length = unknown.length; assert.ok(index >= 0); unknown.splice(index, 1); return (index + .5) / length; };
+        const next = S.step(compact, S.actionMove(observed, action), rng);
+        if (next.score != null) assert.equal(next.score, E.score(actual));
+        else { const expected = S.pack(E.observe(actual)); if (!expected.f) { expected.r.sort((a,b)=>a-b); next.state.r.sort((a,b)=>a-b); } assert.deepEqual(next.state, expected); }
+      }
+      state = E.transition(state, legal[(turn * 7 + seed) % legal.length]);
     }
   }
 });
-test("published report rows all replay to their claimed scores and obey optimal bounds",()=>{
-  const data=require("../reports/outcomes.json"); assert.equal(data.rows.length,data.requestedDeals);assert.equal(new Set(data.rows.map(r=>r.seed)).size,data.rows.length);
-  for(const row of data.rows){let s=E.createGame({seed:row.seed});for(const a of row.line)s=E.transition(s,a);assert.ok(["won","lost"].includes(s.phase));assert.equal(E.score(s),row.score);assert.ok(row.score<=row.upper);assert.ok(row.upper<=30);if(row.exact)assert.equal(row.score,row.upper);}
+
+test("all 1,000 hidden-deck policy runs replay to their recorded outcomes", () => {
+  const data = require("../reports/outcomes.json"); Stats.validate(data);
+  assert.equal(data.policy.revision, require("../scripts/native-solver.cjs").revision, "published study matches the current solver and rules");
+  for (const row of data.rows) {
+    let state = E.createGame({ seed: row.seed });
+    for (const action of row.line) state = E.transition(state, action);
+    assert.ok(["won", "lost"].includes(state.phase)); assert.equal(E.score(state), row.score);
+    assert.equal(row.survived, state.phase === "won"); assert.equal(row.verified, true);
+  }
 });
-test("statistics handle even medians, loss scores, proof coverage, and missing cohorts",()=>{
-  const s=Stats.summarize([{score:-10,upper:20,exact:false},{score:20,upper:20,exact:true},{score:30,upper:30,exact:true},{score:10,upper:30,exact:false}]);
-  assert.equal(s.mean,12.5);assert.equal(s.meanUpper,25);assert.equal(s.median,15);assert.equal(s.medianUpper,25);assert.equal(s.wins,3);assert.equal(s.exact,2);assert.equal(Stats.median([]),null);assert.equal(Stats.summarize([]).mean,null);
+
+test("statistics preserve whole-number medians and half points only when needed", () => {
+  const s = Stats.summarize([{ score: -10 }, { score: 20 }, { score: 30 }, { score: 10 }]);
+  assert.equal(s.sum, 50); assert.equal(s.mean, 12.5); assert.equal(s.median, 15); assert.equal(s.wins, 3);
+  assert.equal(Stats.median([29, 30]), 29.5); assert.equal(Stats.median([30, 30]), 30); assert.equal(Stats.median([]), null);
+});
+
+test("report rejects hindsight studies, incomplete cohorts, and invalid outcomes", () => {
+  const data = require("../reports/outcomes.json"); assert.equal(Stats.validate(data), data);
+  assert.throws(() => Stats.validate({ ...data, version: 2 }));
+  assert.throws(() => Stats.validate({ ...data, rows: data.rows.slice(1) }));
+  assert.throws(() => Stats.validate({ ...data, policy: { ...data.policy, exact: true } }));
+  for (const patch of [{ verified: false }, { score: 31 }, { seed: "wrong" }, { index: 1 }]) assert.throws(() => Stats.validate({ ...data, rows: [{ ...data.rows[0], ...patch }, ...data.rows.slice(1)] }));
 });

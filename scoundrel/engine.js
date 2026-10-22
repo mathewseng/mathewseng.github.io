@@ -51,7 +51,7 @@
     const initialDeck = deck.map((c) => c.id);
     return {
       version: 1, id: options.id || seed + "-" + Date.now().toString(36), seed, initialDeck,
-      room: deck.splice(0, 4), deck, health: MAX_HEALTH, deathHealth: null,
+      room: deck.splice(0, 4), deck, knownBottom: [], health: MAX_HEALTH, deathHealth: null,
       weapon: null, slain: [], discard: [], roomNumber: 1, resolved: 0,
       potionUsed: false, fledPrevious: false, phase: "playing", lastCard: null,
       history: [], steps: 0, monstersSlain: 0, roomsFled: 0,
@@ -63,6 +63,12 @@
   const weaponLimit = (s) => s.slain.length ? s.slain[s.slain.length - 1].value : 15;
   const canUseWeapon = (s, c) => !!s.weapon && c.type === "monster" && c.value < weaponLimit(s);
   const canFlee = (s) => s.phase === "playing" && s.resolved === 0 && !s.fledPrevious && s.room.filter(Boolean).length === 4;
+  const fleeOrder = (s, direction = "left") => {
+    if (!["left", "right"].includes(direction)) throw new Error("Invalid avoidance direction");
+    const cards = s.room.filter(Boolean);
+    return direction === "right" ? cards.reverse() : cards;
+  };
+  const sameAction = (a, b) => a?.type === b?.type && a?.id === b?.id && a?.mode === b?.mode && (a?.type !== "flee" || (a.direction || "left") === (b.direction || "left"));
 
   function actions(s) {
     if (s.phase === "ready") return [{ type: "descend" }];
@@ -74,7 +80,7 @@
         list.push({ type: "fight", id: c.id, mode: "bare" });
       } else list.push({ type: c.type === "weapon" ? "equip" : "drink", id: c.id });
     }
-    if (canFlee(s)) list.push({ type: "flee" });
+    if (canFlee(s)) list.push({ type: "flee", direction: "left" }, { type: "flee", direction: "right" });
     return list;
   }
 
@@ -85,7 +91,7 @@
   }
 
   function describe(s, a) {
-    if (a.type === "flee") return "Avoid this room";
+    if (a.type === "flee") return "Avoid " + (a.direction || "left") + (a.direction === "right" ? " · reverse order" : " · keep order");
     if (a.type === "descend") return "Enter the next room";
     const c = s.room.find((c) => c?.id === a.id);
     if (!c) return "";
@@ -95,21 +101,27 @@
   }
 
   function transition(state, action) {
-    if (!actions(state).some((a) => a.type === action.type && a.id === action.id && a.mode === action.mode))
+    if (!actions(state).some((a) => sameAction(a, action)))
       throw new Error("That action is not available");
-    const s = { ...state, room: state.room.slice(), deck: state.deck.slice(), discard: state.discard.slice(), slain: state.slain.slice(), history: state.history.slice() };
+    const s = { ...state, room: state.room.slice(), deck: state.deck.slice(), knownBottom: (state.knownBottom || []).slice(), discard: state.discard.slice(), slain: state.slain.slice(), history: state.history.slice() };
     let message, kind = "room", delta = 0;
     if (action.type === "flee") {
-      s.deck.push(...s.room.filter(Boolean));
+      const unknownCount = s.deck.length - s.knownBottom.length;
+      s.knownBottom.push(...fleeOrder(s, action.direction).map(c => c.id));
+      s.deck.push(...fleeOrder(s, action.direction));
       s.room = s.deck.splice(0, 4);
+      s.knownBottom.splice(0, Math.max(0, 4 - unknownCount));
       s.roomNumber++;
       s.fledPrevious = true;
       s.roomsFled++;
       s.potionUsed = false;
-      message = "Room avoided. Its cards return to the bottom of the dungeon.";
+      message = "Avoided " + (action.direction || "left") + ". Returned " + fleeOrder(state, action.direction).map(label).join(" → ") + " to the bottom.";
     } else if (action.type === "descend") {
+      const unknownCount = s.deck.length - s.knownBottom.length;
       s.room = s.room.filter(Boolean);
+      const drawCount = Math.min(4 - s.room.length, s.deck.length);
       while (s.room.length < 4 && s.deck.length) s.room.push(s.deck.shift());
+      s.knownBottom.splice(0, Math.max(0, drawCount - unknownCount));
       s.roomNumber++;
       s.resolved = 0;
       s.potionUsed = false;
@@ -155,13 +167,28 @@
     return s;
   }
 
+  // The analysis boundary is an explicit allowlist. No shuffle seed, initial
+  // deck order, or unseen deck order may reach a recommendation algorithm.
+  function observe(s) {
+    const bottom = (s.knownBottom || []).map(card);
+    const visible = [...s.room.filter(Boolean), ...s.discard, ...s.slain, ...bottom, ...(s.weapon ? [s.weapon] : [])];
+    const seen = new Set(visible.map(c => c.id));
+    return {
+      phase: s.phase, health: s.health, weapon: s.weapon && card(s.weapon),
+      slain: s.slain.map(card), room: s.room.map(c => c && card(c)),
+      potionUsed: s.potionUsed, resolved: s.resolved, fledPrevious: s.fledPrevious,
+      unknownCards: s.initialDeck.filter(id => !seen.has(id)).sort().map(card), bottom,
+    };
+  }
+
   function restore(raw) {
     try {
       const s = typeof raw === "string" ? JSON.parse(raw) : raw;
       if (s.version !== 1 || typeof s.seed !== "string" || typeof s.id !== "string" || !["playing", "ready", "won", "lost"].includes(s.phase)) return null;
       for (const key of ["deck", "room", "discard", "slain", "initialDeck", "history"]) if (!Array.isArray(s[key])) return null;
       if (!Number.isInteger(s.health) || s.health < 0 || s.health > 20 || !Number.isInteger(s.resolved) || s.resolved < 0 || s.resolved > 4 || s.room.length > 4) return null;
-      const restored = { ...s, deck: s.deck.map(card), room: s.room.map((c) => c && card(c)), discard: s.discard.map(card), slain: s.slain.map(card), weapon: s.weapon && card(s.weapon), lastCard: s.lastCard && card(s.lastCard) };
+      const restored = { ...s, knownBottom: s.knownBottom || [], deck: s.deck.map(card), room: s.room.map((c) => c && card(c)), discard: s.discard.map(card), slain: s.slain.map(card), weapon: s.weapon && card(s.weapon), lastCard: s.lastCard && card(s.lastCard) };
+      if (!Array.isArray(restored.knownBottom) || restored.knownBottom.length > restored.deck.length || restored.knownBottom.some((id, i) => id !== restored.deck[restored.deck.length - restored.knownBottom.length + i].id)) return null;
       const all = [...restored.deck, ...restored.room.filter(Boolean), ...restored.discard, ...restored.slain, ...(restored.weapon ? [restored.weapon] : [])].map((c) => c.id);
       const valid = makeDeck().map((c) => c.id).sort().join();
       if (all.sort().join() !== valid || s.initialDeck.map((id) => card(id).id).sort().join() !== valid) return null;
@@ -174,7 +201,7 @@
     } catch { return null; }
   }
 
-  const api = { MAX_HEALTH, SYMBOLS, SUITS, card, makeDeck, random, shuffled, createGame, label, remaining, weaponLimit, canUseWeapon, canFlee, actions, score, describe, transition, restore };
+  const api = { MAX_HEALTH, SYMBOLS, SUITS, card, makeDeck, random, shuffled, createGame, label, remaining, weaponLimit, canUseWeapon, canFlee, fleeOrder, sameAction, actions, score, describe, transition, observe, restore };
   root.Scoundrel = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof self !== "undefined" ? self : globalThis);

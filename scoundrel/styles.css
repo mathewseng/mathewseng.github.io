@@ -403,3 +403,23 @@ button:disabled { cursor: not-allowed; }
   .encounter.is-selected { transform: translateY(-3px); }
   .encounter:hover .encounter-art { transform: none; }
 }
+
+/* Avoidance previews use the same four suit colors and black number seals. */
+.room-cards { touch-action: pan-y pinch-zoom; }
+.avoid-dialog { width: min(640px, calc(100vw - 32px)); }
+.avoid-dialog > p { color: var(--muted); line-height: 1.7; font-size: 14px; }
+.avoid-choices { display: grid; gap: 16px; margin-top: 20px; }
+.avoid-choice { display: block; width: 100%; padding: 16px; border: 1px solid var(--sc-border); border-radius: 6px; background: var(--page); color: var(--ink); text-align: left; cursor: pointer; }
+.avoid-choice:hover, .avoid-choice:focus-visible { border-color: var(--sc-gold-bright); background: var(--sc-panel); }
+.avoid-choice-title { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+.avoid-choice-title strong { font: 600 16px/1.5 ScoundrelDisplay, Georgia, serif; color: var(--sc-gold-bright); }
+.avoid-choice-title > span, .avoid-value { font: 400 12px/1.5 ScoundrelSans, var(--font-sans); color: var(--muted); }
+.avoid-preview { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; margin-top: 12px; }
+.avoid-preview > i { font-style: normal; color: var(--sc-gold); }
+.avoid-card { display: block; aspect-ratio: 1.2; position: relative; border: 1px solid var(--sc-card-accent); border-radius: 4px; overflow: hidden; }
+.avoid-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.avoid-card > span { position: absolute; top: 0; left: 0; padding: 1px 5px; font-size: 12px; background: var(--page); color: var(--muted); }
+.avoid-card > strong { position: absolute; right: 0; bottom: 0; min-width: 25px; text-align: center; padding: 1px 4px; background: var(--page); color: var(--sc-card-accent); font: 600 20px/1.3 ScoundrelDisplay, Georgia, serif; }
+.avoid-value { display: block; margin-top: 10px; color: var(--sc-gold-bright); }
+.avoid-value[hidden] { display: none; }
+@media (max-width: 600px) { .avoid-choice { padding: 12px; }.avoid-preview { gap: 5px; }.avoid-card { aspect-ratio: .8; }.avoid-choice-title strong { font-size: 15px; } }

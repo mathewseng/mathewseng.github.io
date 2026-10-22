@@ -14,6 +14,34 @@ test("avoiding preserves room order, queues cards at the bottom and prevents con
   const n=act(s,"flee"); assert.equal(JSON.stringify(s),before); assert.deepEqual(n.deck.map(c=>c.id),["2s","3s","4s","5s"]);
   assert.deepEqual(n.room.map(c=>c.id),["6s","7s","8s","9s"]); assert.equal(E.canFlee(n),false); assert.throws(()=>act(n,"flee"));
 });
+test("left and right avoidance return opposite orders, including the final room", () => {
+  const s=game(["2s","3c","4d","5h","6s","7s","8s","9s"]);
+  assert.deepEqual(E.actions(s).filter(a=>a.type==="flee"),[{type:"flee",direction:"left"},{type:"flee",direction:"right"}]);
+  const right=E.transition(s,{type:"flee",direction:"right"});
+  assert.deepEqual(right.deck.map(c=>c.id),["5h","4d","3c","2s"]);
+  assert.deepEqual(right.room.map(c=>c.id),["6s","7s","8s","9s"]);
+  assert.equal(E.canFlee(right),false);
+  assert.throws(()=>E.transition(s,{type:"flee",direction:"up"}));
+  assert.equal(E.sameAction({type:"flee",direction:"left"},{type:"flee",direction:"right"}),false);
+  assert.equal(E.sameAction({type:"flee"},{type:"flee",direction:"left"}),true,"old replay lines retain left-order semantics");
+  const final=E.transition(game(["2s","3c","4d","5h"]),{type:"flee",direction:"right"});
+  assert.deepEqual(final.room.map(c=>c.id),["5h","4d","3c","2s"]);
+  assert.equal(final.deck.length,0);assert.equal(E.canFlee(final),false);
+  const played=act(s,"fight","2s","bare");assert.equal(E.actions(played).some(a=>a.type==="flee"),false);
+});
+test("public knowledge remembers returned cards and consumes that memory as cards are revealed", () => {
+  const initial = game(["2s","3c","4d","5h","6s","7h"]);
+  assert.deepEqual(E.observe(initial).bottom, []);
+  assert.deepEqual(E.observe(initial).unknownCards.map(c=>c.id), ["6s","7h"]);
+  const returned = E.transition(initial, {type:"flee",direction:"right"});
+  assert.deepEqual(returned.room.map(c=>c.id), ["6s","7h","5h","4d"]);
+  assert.deepEqual(returned.knownBottom, ["3c","2s"]);
+  assert.equal(E.observe(returned).unknownCards.length, 0);
+  assert.deepEqual(E.observe(returned).bottom.map(c=>c.id), ["3c","2s"]);
+  let next=act(returned,"fight","6s","bare");next=act(next,"drink","7h");next=act(next,"drink","5h");next=act(next,"descend");
+  assert.deepEqual(next.knownBottom, []);
+  assert.deepEqual(next.room.map(c=>c.id), ["4d","3c","2s"]);
+});
 test("a room resolves exactly three cards before carrying its fourth to the next room", () => {
   let s=game(["2d","3d","4d","5d","6h","7h","8h"]);
   for(const id of ["2d","3d","4d"])s=act(s,"equip",id);

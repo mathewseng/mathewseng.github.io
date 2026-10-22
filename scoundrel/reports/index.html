@@ -4,35 +4,56 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#08090d" />
-    <meta name="description" content="Reproducible Scoundrel oracle outcomes: mean, median, score distribution, proof coverage, and bounds on optimal play across seeded dungeons." />
+    <meta name="description" content="1,000 Scoundrel games played with a hidden deck: sampled mean, median, survival, score distribution, and verified move histories." />
     <title>Scoundrel · Outcome report</title>
     <link rel="icon" href="../assets/favicon.svg" />
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-    <link rel="stylesheet" href="../styles.css?v=20261022-3" />
-    <link rel="stylesheet" href="styles.css?v=20261022-2" />
-    <script src="statistics.js?v=20261021" defer></script>
-    <script src="app.js?v=20261021" defer></script>
+    <link rel="stylesheet" href="../styles.css?v=20261022-5" />
+    <link rel="stylesheet" href="styles.css?v=20261022-5" />
+    <script src="../engine.js?v=20261022-5" defer></script>
+    <script src="../catalog.js?v=20261022" defer></script>
+    <script src="statistics.js?v=20261022-5" defer></script>
+    <script src="app.js?v=20261022-5" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to report</a>
     <div class="game-shell report-shell">
       <header class="topbar game-topbar"><a class="back-link" href="/" aria-label="Back to projects"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-arrow-left" /></svg><span>Projects</span></a><nav class="game-nav" aria-label="Scoundrel"><a href="../">The dungeon</a><a href="./" aria-current="page">Reports</a></nav><a class="game-button secondary return-game" href="../">Play Scoundrel</a></header>
       <main id="main" tabindex="-1">
-        <section class="report-intro"><div><h1>Outcome report</h1><a class="source-link" href="#method">Read the method <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-arrow-right" /></svg></a></div></section>
+        <section class="report-intro"><div><h1>Outcome report</h1><a class="source-link" href="#method">Method &amp; rules <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-arrow-right" /></svg></a></div></section>
         <div class="report-loading" id="loading" role="status">Loading results…</div>
         <div id="report-content" hidden>
-          <section class="report-summary" aria-labelledby="summary-title"><h2 id="summary-title">Results</h2><p id="study-summary"></p><p class="evidence-note">Oracle play sees the complete remaining deck. These outcomes do not describe ordinary play with hidden cards. Unsolved deals retain explicit bounds.</p></section>
-          <div class="report-controls"><label for="cohort">Deals shown<select id="cohort"><option value="all">All sampled deals</option><option value="proven">Proven optimal only</option><option value="unresolved">Not yet proven</option></select></label><button class="game-button secondary" id="download" type="button">Download CSV</button><a class="text-button" href="outcomes.json" download>Raw results</a></div>
-          <p id="cohort-warning" class="cohort-warning" role="status" hidden></p>
-          <section class="report-metrics" aria-label="Outcome statistics"><div><span>Mean final score</span><strong id="mean">—</strong><small id="mean-detail"></small></div><div><span>Median final score</span><strong id="median">—</strong><small id="median-detail"></small></div><div><span>Survival</span><strong id="win-rate">—</strong><small id="win-detail"></small></div><div><span>Proven optimal</span><strong id="proof-rate">—</strong><small id="proof-detail"></small></div></section>
-          <section class="distribution-section" aria-labelledby="distribution-title"><div class="section-heading"><div><h2 id="distribution-title">Score distribution</h2><p id="distribution-subtitle">Final scores achieved by the search, across every selected deal.</p></div><label for="distribution">Distribution<select id="distribution"><option value="score">Achieved scores</option><option value="upper">Optimal-score upper bounds</option></select></label></div><div class="chart-legend"><span><i class="legend-proven"></i>Proven optimal</span><span><i class="legend-bound"></i>Achievable, not yet proven</span></div><div id="histogram" class="histogram" role="group" aria-label="Score distribution"></div><p class="chart-caption" id="chart-caption" role="status">Select a bar to inspect its deals.</p><div class="range-strip"><span id="range-detail"></span><span id="dispersion-detail"></span></div></section>
-          <section class="report-section" aria-labelledby="bounds-title"><h2 id="bounds-title">Search bounds</h2><p id="bounds-copy"></p><p>Mean and median intervals describe unresolved search, not statistical confidence. The uncertainty from sampling different shuffled dungeons is separate.</p><div class="sampling-note" id="sampling-note"></div></section>
-          <section class="report-section" id="method" aria-labelledby="method-title"><h2 id="method-title">Method</h2><div class="method-grid"><div><h3>Scoring</h3><p>Maximize final score. Surviving scores equal remaining health; a final potion at full health adds its value. Defeat scores include negative health after the fatal blow and all unresolved monsters.</p></div><div><h3>Deck information</h3><p>The oracle knows the initial dungeon order and how avoiding a room changes it. There is no residual randomness within a fixed deal, so an action’s EV equals its eventual score under the best continuation.</p></div><div><h3>Verified lower bounds</h3><p>Room-based beam search finds complete legal lines. Memoized exhaustive search improves them. Each result is replayed through the rules engine. An admissible upper bound assumes all remaining healing can be used and ignores future damage.</p></div><div><h3>Strict weapon chains</h3><p>A weapon’s next monster must be strictly weaker than its previous kill. Potions are limited to one effective use per room; avoiding consecutive rooms is prohibited. The final room is fully cleared.</p></div></div><details><summary>Seeds, search budget, and sources</summary><p id="technical-method"></p><p>Every row uses its own seeded Fisher–Yates shuffle of the 44-card deck. Seeds are a reproducible pseudorandom sample, not an enumeration of all 44! orders. The reported bounds apply to this sample, not the entire population of possible deals.</p><p>Rules: <a href="https://www.stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Zach Gage &amp; Kurt Bieg’s original Scoundrel</a>, also available in this <a href="https://aiscoundrel.com/Scoundrel.pdf" target="_blank" rel="noopener">readable mirror</a>. Inspiration: <a href="https://youtu.be/Gt2tYzM93h4" target="_blank" rel="noopener">the video tutorial</a>. The original PDF’s wording about equal monster ranks is ambiguous; this study uses strictly decreasing weapon chains.</p><p>Inspect or rerun <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/scoundrel" target="_blank" rel="noopener">the engine, solver, and report generator on GitHub</a>. The tracked results contain every complete witness line.</p></details></section>
-          <section class="report-section" aria-labelledby="deals-title"><div class="section-heading"><div><h2 id="deals-title">Deals</h2><p id="deals-caption"></p></div><button class="text-button" type="button" id="clear-filter" hidden>Clear score filter</button></div><div class="deals-table-wrap"><table class="deals-table"><thead><tr><th scope="col">Deal</th><th scope="col">Achieved</th><th scope="col">Optimal bounds</th><th scope="col">Status</th><th scope="col">Explore</th></tr></thead><tbody id="deals-body"></tbody></table></div><button class="game-button secondary load-more" id="load-more" type="button">Show more deals</button></section>
+          <section class="report-summary" aria-labelledby="summary-title"><h2 id="summary-title">1,000 deals. Hidden deck.</h2><p id="study-summary"></p><p class="evidence-note">The unseen order stays hidden. These are measured outcomes of a simulation-guided policy, not proven optimal-play values.</p></section>
+          <section class="report-metrics" aria-label="Outcome statistics">
+            <div><span>Mean final score</span><strong id="mean">—</strong><small id="mean-detail"></small></div>
+            <div><span>Median final score</span><strong id="median">—</strong><small id="median-detail"></small></div>
+            <div><span>Survival</span><strong id="win-rate">—</strong><small id="win-detail"></small></div>
+            <div><span>Deals played</span><strong id="proof-rate">—</strong><small id="proof-detail"></small></div>
+          </section>
+          <div class="report-controls"><label for="cohort">Outcomes shown<select id="cohort"><option value="all">All deals</option><option value="below">Scores below 30</option><option value="won">Survived</option><option value="lost">Defeated</option></select></label><button class="game-button secondary" id="download" type="button">Download CSV</button><a class="text-button" href="outcomes.json" download>Raw results</a></div>
+          <section class="distribution-section" aria-labelledby="distribution-title">
+            <div class="section-heading"><div><h2 id="distribution-title">Final score distribution</h2><p id="distribution-subtitle"></p></div></div>
+            <div id="histogram" class="histogram" role="group" aria-label="Final score frequencies"></div>
+            <p class="chart-caption" id="chart-caption" role="status">Select a score to inspect its deals.</p>
+            <div class="distribution-detail"><span id="score-detail"></span><span id="dispersion-detail"></span></div>
+          </section>
+          <section class="report-section" id="method" aria-labelledby="method-title">
+            <h2 id="method-title">Method &amp; rules</h2>
+            <p id="proof-copy"></p>
+            <div class="method-grid">
+              <div><h3>No peeking</h3><p>Analysis receives the visible room, health, equipment, unseen card counts, and the remembered order of returned cards. It never receives the shuffle seed or unseen deck order. Future draws are sampled only when reached.</p></div>
+              <div><h3>Future play &amp; pruning</h3><p>Monte Carlo tree search compares future decisions. A visible-room planner handles healing, weapon chains, and the carried card. Equivalent actions share work, and unlikely contenders receive fewer simulations. A fully known small endgame is solved exactly.</p></div>
+              <div><h3>Avoid left or right</h3><p>Left returns the room in displayed order: 1 → 2 → 3 → 4. Right returns it reversed: 4 → 3 → 2 → 1. Both go to the bottom of the deck. You can only avoid an untouched room, and cannot avoid consecutive rooms.</p></div>
+              <div><h3>Scoring &amp; combat</h3><p>Weapon chains strictly decrease. Only the first potion in a room heals. Clear every card in the final room. Survive to score remaining health, with a final-potion bonus at 20 health. Defeat scores include overkill and every unresolved monster.</p></div>
+            </div>
+            <details><summary>Seeds, verification, and sources</summary><p id="technical-method"></p><p>The fixed seeds use Fisher–Yates shuffles of the 44-card deck. No deals are discarded or replaced. The sample mean estimates this policy’s expected outcome. It is not an exact population EV or a proof of the best possible hidden-deck strategy.</p><p><a href="https://www.stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Zach Gage &amp; Kurt Bieg’s original rules</a> leave the order of an avoided room unspecified; this version explicitly offers the two orders above. The PDF’s equal-rank wording is ambiguous; this game and report use strictly decreasing weapon chains.</p><p><a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/scoundrel" target="_blank" rel="noopener">Engine, solver, generator, and tests on GitHub</a>. The raw results contain every played line and the simulation budget.</p></details>
+          </section>
+          <section class="report-section" aria-labelledby="deals-title"><div class="section-heading"><div><h2 id="deals-title">Deals</h2><p id="deals-caption"></p></div><button class="text-button" type="button" id="clear-filter" hidden>Clear score filter</button></div><div class="deals-table-wrap"><table class="deals-table"><thead><tr><th scope="col">Deal</th><th scope="col">Final score</th><th scope="col">Outcome</th><th scope="col">Explore</th></tr></thead><tbody id="deals-body"></tbody></table></div><button class="game-button secondary load-more" id="load-more" type="button">Show more deals</button></section>
         </div>
       </main>
       <footer class="game-footer"><span>Scoundrel by Zach Gage &amp; Kurt Bieg</span><span id="study-date"></span><a href="../">Back to the dungeon <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-arrow-right" /></svg></a></footer>
     </div>
+    <dialog id="solution-dialog" class="game-dialog solution-dialog" aria-labelledby="solution-title"><div class="dialog-top"><h2 id="solution-title">Run history</h2><button class="icon-button" type="button" id="close-solution" aria-label="Close run history"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div><p id="solution-proof"></p><ol id="solution-line" class="solution-line"></ol></dialog>
   </body>
 </html>

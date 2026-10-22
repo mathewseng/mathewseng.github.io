@@ -9,14 +9,14 @@
   const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
   const seed = () => Array.from(crypto.getRandomValues(new Uint32Array(2)), (n) => n.toString(36)).join("");
   const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-${name}" /></svg>`;
-  const same = (a, b) => a?.type === b?.type && a?.id === b?.id && a?.mode === b?.mode;
+  const same = E.sameAction;
   let prefs = { sound: false, motion: true, atmosphere: "ember", oracle: false, ...read(PREFS, {}) };
   let stats = read(STATS, { played: 0, won: 0, best: null, recorded: [] });
   if (!Array.isArray(stats.recorded)) stats = { played: 0, won: 0, best: null, recorded: [] };
   const requestedSeed = new URLSearchParams(location.search).get("seed");
   const saved = E.restore(read(RUN, null));
   let state = requestedSeed && /^[a-zA-Z0-9-]{1,80}$/.test(requestedSeed) && saved?.seed !== requestedSeed ? E.createGame({ seed: requestedSeed }) : saved || E.createGame({ seed: seed() });
-  let selected = null, worker = null, request = 0, analysis = [], incumbentLine = [], audio = null, known = new Set(), resultShown = false;
+  let selected = null, worker = null, request = 0, analysis = [], audio = null, known = new Set(), resultShown = false;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)"), motion = () => prefs.motion && !reduced.matches;
   const roman = (n) => n < 40 ? ["", "X", "XX", "XXX"][Math.floor(n / 10)] + ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"][n % 10] : String(n);
   const names = { monster: "Monster", weapon: "Weapon", potion: "Potion" };
@@ -103,7 +103,19 @@
     renderSelection();
   }
   function depart(action) {
-    if (!motion() || !action.id) return;
+    if (!motion()) return;
+    if (action.type === "flee") {
+      for (const el of $("room-cards").querySelectorAll(".encounter")) {
+        const r = el.getBoundingClientRect(), clone = el.cloneNode(true);
+        clone.classList.remove("is-new"); clone.classList.add("departing-card"); clone.setAttribute("aria-hidden", "true"); clone.tabIndex = -1;
+        Object.assign(clone.style, { left: r.x + "px", top: r.y + "px", width: r.width + "px", height: r.height + "px" }); document.body.append(clone);
+        const direction = action.direction === "right" ? 1 : -1;
+        clone.animate([{ transform: "translateX(0)", opacity: 1 }, { transform: `translateX(${direction * Math.min(innerWidth, 650)}px) rotate(${direction * 12}deg) scale(.8)`, opacity: 0 }], { duration: 400, easing: "cubic-bezier(.2,.8,.2,1)" }).finished.catch(() => {}).finally(() => clone.remove());
+      }
+      known.clear();
+      return;
+    }
+    if (!action.id) return;
     const el = document.querySelector(`[data-card="${action.id}"]`); if (!el) return;
     const r = el.getBoundingClientRect(), clone = el.cloneNode(true), target = $(action.type === "equip" ? "weapon-display" : "health-block").getBoundingClientRect();
     clone.classList.remove("is-new"); clone.classList.add("departing-card"); clone.setAttribute("aria-hidden", "true"); clone.tabIndex = -1;
@@ -112,8 +124,6 @@
   }
   function act(action) {
     if (!E.actions(state).some((a) => same(a, action))) return;
-    const row = analysis.find((r) => same(r.action, action));
-    incumbentLine = row?.line?.slice(1) || (same(incumbentLine[0], action) ? incumbentLine.slice(1) : []);
     depart(action); const oldHealth = state.health;
     state = E.transition(state, action); selected = null; analysis = [];
     const event = state.history.at(-1); sound(event.kind); render();
@@ -130,15 +140,16 @@
   function renderAnalysis(pending = false) {
     for (const el of document.querySelectorAll(".encounter.is-best")) { el.classList.remove("is-best"); el.querySelector(".best-ribbon")?.remove(); }
     if (!prefs.oracle) return;
+    updateAvoidValues();
     const b = best();
-    if (b?.action.id) { const el = document.querySelector(`[data-card="${b.action.id}"]`); if (el) { el.classList.add("is-best"); const ribbon = document.createElement("span"); ribbon.className = "best-ribbon"; ribbon.textContent = "Oracle"; ribbon.setAttribute("aria-hidden", "true"); el.append(ribbon); } }
-    const proven = b && analysis.every((r) => r.ceiling != null && r.ceiling <= b.score);
-    $("oracle-summary").textContent = !E.actions(state).length ? "Game over. Final score " + E.score(state) + "." : b ? `${proven ? "Proven best" : "Best found"}: ${E.describe(state, b.action)}. Achievable final score ${b.score}.${pending ? " Evaluating alternatives…" : ""}` : "Calculating moves…";
+    if (b?.action.id) { const el = document.querySelector(`[data-card="${b.action.id}"]`); if (el) { el.classList.add("is-best"); const ribbon = document.createElement("span"); ribbon.className = "best-ribbon"; ribbon.textContent = "Best EV"; ribbon.setAttribute("aria-hidden", "true"); el.append(ribbon); } }
+    const proven = b && analysis.every(r => r.exact);
+    $("oracle-summary").textContent = !E.actions(state).length ? "Game over. Final score " + E.score(state) + "." : b ? `${proven ? "Exact best" : "Recommended"}: ${E.describe(state, b.action)}. ${proven ? "Final score" : "Estimated final score"} ${b.score.toLocaleString("en-US", { maximumFractionDigits: 1 })}.${pending ? " Evaluating alternatives…" : ""}` : "Calculating moves…";
     $("action-values").innerHTML = E.actions(state).map((a) => {
       const r = analysis.find((r) => same(r.action, a)), c = state.room.find((c) => c?.id === a.id);
       const change = a.type === "fight" ? "−" + (a.mode === "weapon" ? Math.max(0, c.value - state.weapon.value) : c.value) + " health" : a.type === "drink" ? "+" + (state.potionUsed ? 0 : Math.min(c.value, 20 - state.health)) + " health" : "—";
-      const val = r?.score == null ? "Searching…" : r.exact ? String(r.score) : `${r.score} to ${r.ceiling}`;
-      return `<tr${same(b?.action, a) ? ' class="is-best"' : ""}><td><button class="oracle-action" type="button" data-preview='${esc(JSON.stringify(a))}'>${esc(E.describe(state, a))}</button></td><td data-label="Health">${change}</td><td class="value-cell" data-label="EV · final score">${val}</td><td data-label="Certainty"><span class="proof${r?.exact ? " exact" : ""}">${r?.score == null ? "Pending" : r.exact ? "Proven" : "Bounds"}</span></td></tr>`;
+      const val = r?.score == null ? "Searching…" : r.score.toLocaleString("en-US", { maximumFractionDigits: 1 });
+      return `<tr${same(b?.action, a) ? ' class="is-best"' : ""}><td><button class="oracle-action" type="button" data-preview='${esc(JSON.stringify(a))}'>${esc(E.describe(state, a))}</button></td><td data-label="Health">${change}</td><td class="value-cell" data-label="EV · final score">${val}</td><td data-label="Analysis"><span class="proof${r?.exact ? " exact" : ""}">${r?.score == null ? "Pending" : r.exact ? "Exact" : r.samples.toLocaleString() + " samples"}</span></td></tr>`;
     }).join("");
   }
   function analyze(deep = false) {
@@ -146,15 +157,15 @@
     if (!prefs.oracle || !E.actions(state).length) { renderAnalysis(); return; }
     if (!window.Worker) { $("oracle-summary").textContent = "This browser does not support the worker required for analysis."; return; }
     try {
-      worker = new Worker("solver-worker.js?v=20261021");
-      worker.onmessage = ({ data }) => { if (data.requestId !== requestId) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; renderAnalysis(data.pending); if (best()?.line?.length) incumbentLine = best().line; };
+      worker = new Worker("solver-worker.js?v=20261022-5");
+      worker.onmessage = ({ data }) => { if (data.requestId !== requestId) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; renderAnalysis(data.pending); };
       worker.onerror = () => { $("oracle-summary").textContent = "The analysis worker could not load. Try reloading the page."; };
-      worker.postMessage({ requestId, state, deep, incumbentLine }); renderAnalysis(true);
+      worker.postMessage({ requestId, observation: E.observe(state), deep }); renderAnalysis(true);
     } catch { $("oracle-summary").textContent = "Analysis needs a browser that supports Web Workers."; }
   }
   function start() {
     for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
-    state = E.createGame({ seed: seed() }); selected = null; resultShown = false; analysis = []; incumbentLine = []; known = new Set(); render(); analyze(); sound("room");
+    state = E.createGame({ seed: seed() }); selected = null; resultShown = false; analysis = []; known = new Set(); render(); analyze(); sound("room");
   }
   function finish() {
     resultShown = true; const won = state.phase === "won", score = E.score(state), runId = state.id;
@@ -163,10 +174,46 @@
     $("result-score").textContent = score; $("result-facts").textContent = `${state.monstersSlain} monsters defeated · ${state.roomsFled} rooms avoided${won && score > 20 ? " · final potion bonus +" + (score - 20) : ""}`;
     setTimeout(() => { if (state.id === runId && !$("result-dialog").open) $("result-dialog").showModal(); }, motion() ? 650 : 0);
   }
-  $("room-cards").addEventListener("click", (event) => { const el = event.target.closest("[data-card]"); if (el) select(el.dataset.card); });
+  function updateAvoidValues() {
+    for (const el of document.querySelectorAll("[data-avoid-ev]")) {
+      const row = analysis.find(r => same(r.action, { type: "flee", direction: el.dataset.avoidEv }));
+      el.hidden = !prefs.oracle;
+      el.textContent = row?.score == null ? "EV: calculating…" : row.exact ? `EV ${row.score} · exact` : `EV ${row.score.toLocaleString("en-US", { maximumFractionDigits: 1 })} · ${row.samples.toLocaleString()} samples`;
+    }
+  }
+  function openAvoid(direction = "left") {
+    if (!E.canFlee(state)) return;
+    $("avoid-choices").innerHTML = ["left", "right"].map(dir => {
+      const cards = E.fleeOrder(state, dir);
+      return `<button class="avoid-choice" type="button" data-avoid="${dir}" aria-label="Avoid ${dir}. Return ${cards.map(c => esc(name(c)) + ', value ' + c.value).join('; ')}"><span class="avoid-choice-title"><strong>${dir === "left" ? "←" : "→"} Avoid ${dir}</strong><span>${dir === "left" ? "Keep order" : "Reverse order"}</span></span><span class="avoid-preview" aria-hidden="true">${cards.map((c, i) => `<span class="avoid-card" data-suit="${c.suit}"><img src="${catalog[c.id].image.replace('/cards/', '/cards/thumbs/')}" alt="" /><span>${state.room.findIndex(current => current?.id === c.id) + 1}</span><strong>${c.value}</strong></span>`).join('<i>→</i>')}</span><span class="avoid-value" data-avoid-ev="${dir}"></span></button>`;
+    }).join("");
+    updateAvoidValues();
+    $("avoid-dialog").showModal();
+    $("avoid-choices").querySelector(`[data-avoid="${direction}"]`).focus();
+  }
+  $("avoid-choices").addEventListener("click", event => {
+    const choice = event.target.closest("[data-avoid]");
+    if (choice) { $("avoid-dialog").close(); act({ type: "flee", direction: choice.dataset.avoid }); }
+  });
+  // Horizontal touch gestures open the matching choice. The preview keeps an
+  // incidental swipe from committing a turn; vertical scrolling remains native.
+  let swipe = null, suppressClickUntil = 0;
+  $("room-cards").addEventListener("pointerdown", event => {
+    if (event.isPrimary && event.pointerType !== "mouse" && E.canFlee(state)) swipe = { x: event.clientX, y: event.clientY, id: event.pointerId, step: state.steps };
+  });
+  $("room-cards").addEventListener("pointerup", event => {
+    const start = swipe; swipe = null;
+    if (!start || start.id !== event.pointerId || start.step !== state.steps) return;
+    const dx = event.clientX - start.x, dy = event.clientY - start.y;
+    if (Math.abs(dx) >= 65 && Math.abs(dx) > Math.abs(dy) * 1.8 && E.canFlee(state)) {
+      suppressClickUntil = Date.now() + 500; openAvoid(dx < 0 ? "left" : "right");
+    }
+  });
+  $("room-cards").addEventListener("pointercancel", () => { swipe = null; });
+  $("room-cards").addEventListener("click", (event) => { if (Date.now() < suppressClickUntil) return; const el = event.target.closest("[data-card]"); if (el) select(el.dataset.card); });
   $("encounter-actions").addEventListener("click", (event) => { const el = event.target.closest("[data-action]"); if (el) act(JSON.parse(el.dataset.action)); if (event.target.closest("#review-result")) $("result-dialog").showModal(); });
-  $("action-values").addEventListener("click", (event) => { const el = event.target.closest("[data-preview]"); if (!el) return; const a = JSON.parse(el.dataset.preview); if (a.id) { selected = null; select(a.id); $("action-stage").scrollIntoView({ behavior: motion() ? "smooth" : "instant", block: "nearest" }); } else $(a.type === "flee" ? "flee-button" : "encounter-actions").querySelector("button")?.focus(); });
-  $("flee-button").addEventListener("click", () => act({ type: "flee" }));
+  $("action-values").addEventListener("click", (event) => { const el = event.target.closest("[data-preview]"); if (!el) return; const a = JSON.parse(el.dataset.preview); if (a.id) { selected = null; select(a.id); $("action-stage").scrollIntoView({ behavior: motion() ? "smooth" : "instant", block: "nearest" }); } else if (a.type === "flee") openAvoid(a.direction); else $("encounter-actions").querySelector("button")?.focus(); });
+  $("flee-button").addEventListener("click", () => openAvoid());
   $("new-run").addEventListener("click", () => state.steps ? $("new-dialog").showModal() : start());
   $("confirm-new").addEventListener("click", start); $("result-new").addEventListener("click", start);
   $("rules-button").addEventListener("click", () => $("rules-dialog").showModal());
@@ -197,7 +244,7 @@
     if (event.repeat || event.ctrlKey || event.altKey || event.metaKey || document.querySelector("dialog[open]") || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName)) return;
     const i = Number(event.key) - 1;
     if (i >= 0 && i < 4) { const c = state.room[i]; if (c) { event.preventDefault(); select(c.id); } }
-    else if (event.key.toLowerCase() === "f" && E.canFlee(state)) { event.preventDefault(); act({ type: "flee" }); }
+    else if (event.key.toLowerCase() === "f" && E.canFlee(state)) { event.preventDefault(); openAvoid(); }
     else if (event.key === "Enter" && (!event.target.closest("button, a") || (event.target.closest(".encounter")?.dataset.card === selected && selected))) { const el = $("encounter-actions").querySelector("[data-action]"); if (el) { event.preventDefault(); act(JSON.parse(el.dataset.action)); } }
     else if (event.key === "Escape") { selected = null; renderSelection(); for (const el of document.querySelectorAll(".encounter")) { el.classList.remove("is-selected"); el.setAttribute("aria-pressed", "false"); } }
   });
