@@ -9,8 +9,8 @@ const { serveSite, settle } = require("../../scripts/site-pages.cjs"), E = requi
     await context.addInitScript(() => {
       const RealWorker = window.Worker;
       window.Worker = class extends RealWorker {
-        constructor(...args) { super(...args); this.addEventListener("message", ({ data }) => { window.latestAnalysis = data; }); }
-        postMessage(message, ...args) { window.latestRequest = message; return super.postMessage(message, ...args); }
+        constructor(...args) { super(...args); this.addEventListener("message", ({ data }) => { window.latestAnalysis = data; window.analysisUpdates.push(data); }); }
+        postMessage(message, ...args) { window.latestRequest = message; window.analysisUpdates = []; return super.postMessage(message, ...args); }
       };
     });
     const page = await context.newPage(), errors = [];
@@ -22,12 +22,12 @@ const { serveSite, settle } = require("../../scripts/site-pages.cjs"), E = requi
     await page.evaluate(state => localStorage.setItem("scoundrel-run-v1", JSON.stringify(state)), shortSearch);
     await page.goto(server.base + "/scoundrel/"); await settle(page);
     await page.locator("#oracle-toggle").check();
-    await page.locator("#deepen-button").click();
-    await page.waitForFunction(() => window.latestRequest?.deep && window.latestAnalysis?.requestId === window.latestRequest.requestId && window.latestAnalysis.pending === false, null, { timeout: 120000 });
+    await page.waitForFunction(() => window.latestAnalysis?.requestId === window.latestRequest.requestId && window.latestAnalysis.pending === false, null, { timeout: 120000 });
     const completed = await page.evaluate(() => window.latestAnalysis);
     assert.equal(completed.simulations, 100000); assert.equal(completed.target, 100000);
     assert.ok((await page.locator("#search-progress").innerText()).includes("100,000 simulations · complete"));
-    assert.equal(await page.locator("#deepen-button").isDisabled(), true);
+    assert.deepEqual(await page.evaluate(() => window.analysisUpdates.map(message => message.simulations)), [...Array.from({ length: 10 }, (_, i) => (i + 1) * 1000), ...Array.from({ length: 9 }, (_, i) => (i + 2) * 10000)]);
+    assert.equal(await page.locator("#deepen-button").count(), 0, "automatic search needs no manual button");
     const scores = (await page.locator("#action-values .value-cell").allTextContents()).map(value => Number(value.replaceAll(",", "")));
     assert.ok(scores.every((value, i) => !i || scores[i - 1] >= value));
     const output = process.env.SCOUNDREL_SCREENSHOTS;
@@ -59,14 +59,13 @@ const { serveSite, settle } = require("../../scripts/site-pages.cjs"), E = requi
     const returned = E.restore(await page.evaluate(() => localStorage.getItem("scoundrel-run-v1")));
     assert.deepEqual(returned.room.map(card => card.id), emptyDeck.room.map(card => card.id).reverse());
 
-    // An action during a deep search starts a fresh worker/request immediately.
+    // An action during an automatic search starts a fresh 100k request immediately.
     await page.goto(server.base + "/scoundrel/?seed=cancel-100k"); await settle(page);
-    await page.locator("#deepen-button").click();
     const request = await page.evaluate(() => window.latestRequest.requestId);
     await page.locator(".encounter").first().click(); await page.locator("[data-action]").first().click();
-    await page.waitForFunction(previous => window.latestRequest?.requestId > previous && window.latestAnalysis?.requestId === window.latestRequest.requestId && !window.latestAnalysis.pending, request);
-    assert.equal(await page.evaluate(() => window.latestRequest.deep), false);
+    await page.waitForFunction(previous => window.latestRequest?.requestId > previous && window.latestAnalysis?.requestId === window.latestRequest.requestId && window.latestAnalysis.simulations >= 1000, request);
+    assert.equal(await page.evaluate(() => window.latestAnalysis.target), 100000);
     assert.deepEqual(errors, []);
-    console.log("Analysis browser checks passed: full 100k worker search, EV sorting, equivalent best choices, empty-deck order and cancellation.");
+    console.log("Analysis browser checks passed: automatic 100k search, exact 1k/10k checkpoints, EV sorting, equivalent best choices, empty-deck order and cancellation.");
   } finally { await browser.close(); await server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

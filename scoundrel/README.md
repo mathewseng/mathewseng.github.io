@@ -113,11 +113,11 @@ deck with perfect information and averaging those oracle scores.
   are exact even when unresolved card order is unknown, since their composition
   and total monster value are known.
 
-The browser normally searches for up to 1.8 seconds / 12,000 simulations;
-**Search 100k** runs the full 100,000 simulations without a wall-clock cutoff
-(unless all root values are already exact). A live counter reports progress.
-The worker reports intermediate EVs at most every 120ms and is canceled when
-the state changes. Only fully determined actions carry an
+With Best move enabled, the browser automatically runs 100,000 simulations
+for each position without a wall-clock cutoff (unless all root values are
+already exact). EVs and the live counter update at 1,000-simulation intervals
+through 10,000, then at 10,000-simulation intervals through 100,000. The worker
+is canceled and a fresh automatic search starts when the state changes. Only fully determined actions carry an
 Exact label. Other EVs are simulation estimates of future play, not guaranteed
 scores or a proof of the best hidden-deck strategy. Their raw standard errors
 are diagnostics; tree search changes its continuation policy while learning.

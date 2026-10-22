@@ -54,16 +54,20 @@ test("ordered returns remain distinct and pending draws never consume random sam
 
 test("100k search completes its full simulation budget", () => {
   const state = E.createGame({ deck: ["2s", "2c", "3h", "4h", "5d"] });
-  const result = S.analyze(E.observe(state), { iterations: 100000, timeMs: Infinity });
+  const checkpoints = [];
+  const result = S.analyze(E.observe(state), { iterations: 100000, timeMs: Infinity, progressInterval: 1000, onProgress: progress => checkpoints.push(progress.simulations) });
+  assert.deepEqual(checkpoints, Array.from({ length: 100 }, (_, i) => (i + 1) * 1000));
   assert.equal(result.simulations, 100000);
   assert.ok(result.results.every(row => Number.isFinite(row.score)));
 });
 
-test("deep worker requests 100k without a time cutoff and reports the target", () => {
+test("automatic worker searches 100k and emits precisely the requested checkpoints", () => {
   let options; const messages = [];
-  const sandbox = { importScripts() {}, self: { postMessage(message) { messages.push(message); } }, ScoundrelSolver: { analyze(observation, opts) { options = opts; return { results: [], simulations: opts.iterations }; } } };
+  const sandbox = { importScripts() {}, self: { postMessage(message) { messages.push(message); } }, ScoundrelSolver: { analyze(observation, opts) { options = opts; for (let simulations = opts.progressInterval; simulations <= opts.iterations; simulations += opts.progressInterval) opts.onProgress({ results: [], simulations }); return { results: [], simulations: opts.iterations }; } } };
   vm.runInNewContext(fs.readFileSync(require.resolve("../solver-worker.js"), "utf8"), sandbox);
-  sandbox.self.onmessage({ data: { requestId: 1, observation: {}, deep: true } });
+  sandbox.self.onmessage({ data: { requestId: 1, observation: {} } });
   assert.equal(options.iterations, 100000); assert.equal(options.timeMs, Infinity);
   assert.equal(messages.at(-1).target, 100000); assert.equal(messages.at(-1).pending, false);
+  assert.deepEqual(messages.map(message => message.simulations), [...Array.from({ length: 10 }, (_, i) => (i + 1) * 1000), ...Array.from({ length: 9 }, (_, i) => (i + 2) * 10000)]);
+  assert.ok(messages.slice(0, -1).every(message => message.pending));
 });

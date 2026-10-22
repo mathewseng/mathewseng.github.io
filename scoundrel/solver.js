@@ -186,8 +186,10 @@
         s = next.state;
       }
       for (const [node, a] of path) { node.n++; if (!a.exact) { a.n++; a.sum += score; a.squares += score * score; } }
-      if ((simulations & 127) === 127) {
+      if (options.onProgress && (simulations + 1) % (options.progressInterval ?? 128) === 0) {
         options.onProgress?.({ results: results(), simulations: simulations + 1, heuristicSkips });
+      }
+      if ((simulations & 127) === 127) {
         if (Date.now() - started >= timeMs && rootNode.actions.every(a => a.n)) { simulations++; break; }
       }
     }
