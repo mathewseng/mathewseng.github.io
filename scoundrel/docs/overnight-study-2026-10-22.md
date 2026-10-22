@@ -3,14 +3,16 @@
 User request: improve solver speed and accuracy, target approximately 100,000
 hidden-deck games, and publish by **08:00 America/New_York** (12:00 UTC).
 
-## Active run
+## Completed run
 
-- Target: 100,000 consecutive seeds, `scoundrel-study-v1-0000` onward.
+- Completed all **100,000** consecutive seeds, `scoundrel-study-v1-0000` through
+  `scoundrel-study-v1-99999`, with no restarts or excluded outcomes.
 - Budget: **8,192 simulations per decision**, four times the previous report.
 - Twelve persistent workers. Native policy revision:
   `a09ccb03f12ea7614c61a1e8d79537c0285f3167a295bc0a97865784413f6b8b`.
-- Started 01:05 Eastern. Stop assigning games at **07:35 Eastern** (11:35 UTC),
-  finish active games, replay-check, and publish the completed contiguous cohort.
+- Started 01:05 Eastern; finished generation and replay verification at
+  **06:02:59 Eastern** (10:02:58.791 UTC), before the 07:35 assignment cutoff.
+  Total elapsed time was 17,871.687 seconds (4 hours, 57 minutes, 51.687 seconds).
 - Runner accepts only public observations; the deck and game seed remain in the
   game environment. Both avoidance directions remain in the search.
 - No outcomes are discarded and the policy/budget stays fixed throughout.
@@ -21,19 +23,34 @@ hidden-deck games, and publish by **08:00 America/New_York** (12:00 UTC).
   `results/outcomes.json` and its `histories/` hold the completed report.
 - `caffeinate -i -w <runner PID>` prevents idle system sleep while computing.
   It ends automatically with the runner. Do not stop unrelated jobs.
-- App heartbeat `finish-scoundrel-100-000-game-report` checks every 20 minutes
-  through 08:00 Eastern. Stop it after verifying the final report live.
+- App heartbeat `finish-scoundrel-100-000-game-report` monitored every 20 minutes
+  through completion. Stop it after verifying the final report live.
 
-Inspect the process and progress **before resuming**. Never start a duplicate.
-If a worker fails, the runner aborts its pool and preserves completed records.
-Resume with the command in `launch.json` from its frozen `source` directory;
-update `launch.json` with the new PID and keep that process awake. The generator
-rejects mismatched revisions/budgets, repairs a torn last JSONL record, and
-replays saved histories. If the deadline is past, do not start new experiments.
+| Statistic | Completed cohort |
+| --- | ---: |
+| Deals / verified histories | 100,000 |
+| Total score | −1,512,779 |
+| Mean score | −15.12779 |
+| Median score | −1 |
+| First quartile | −14 |
+| Third quartile | 6 |
+| Survived | 48,070 (48.07%) |
+| Defeated | 51,930 (51.93%) |
+| Lowest / highest score | −188 / 30 |
+
+These are measured outcomes of the fixed hidden-deck policy, not exact
+population expectations or proven optimal-play values. Quartiles use R-7
+interpolation. The checkpoint independently matches every published score and
+contains each index from 0 through 99,999 exactly once.
 
 ## Publication
 
-Once progress says `complete`, from the repository root:
+The completed manifest and 100 immutable history shards replace the initial
+1,000-game / 4,096-simulation pilot. The manifest is 312,469 bytes; histories
+total about 8 MiB and load on demand. Manifest SHA-256:
+`6da2ee8c23d114298514620fba6b2bb80cc97ddd29ed56b0d9d974a0607d6383`.
+
+Verification and publication commands, from the repository root:
 
 ```sh
 node scoundrel/scripts/publish-study.cjs /Users/mathewseng/.codex/scoundrel-study-20261022/run/results/outcomes.json
@@ -42,17 +59,19 @@ sh scripts/assemble-site.sh _site
 node scoundrel/tests/browser.cjs
 ```
 
-The publisher checks the policy revision, every shard checksum, and every replay
-before replacing the report. Run `node scoundrel/tests/large-report.cjs` as well (isolated synthetic scale
-fixture; never published). Check desktop and vertical iPhone rendering, including the four
-reference lines and a history fetched on demand. Preserve unrelated changes,
-fetch, reconcile remote updates, commit task files and push `main`, then verify
-GitHub Pages and the actual live dataset. The app, tests and manifest support a
-smaller completed prefix if the deadline is reached before 100,000.
+The publisher checked the policy revision, every shard checksum, and all
+100,000 replays before replacing the report. All 28 scoped unit tests passed,
+including another complete replay pass and native/browser hidden-information
+checks. The assembled game/report browser tests passed, as did the focused
+shell sweep at desktop, portrait phone, and landscape phone sizes.
 
-The initial shipping dataset is the newly verified **1,000-game / 4,096-simulation**
-pilot (mean −13.341, median 0, survival 48.1%). Replace it with the main run's
-actual scores; never relabel pilot data as the larger cohort or stronger budget.
+`node scoundrel/tests/large-report.cjs` passed in Chromium and WebKit at widths
+1440, 390, and 320. It checks all histogram counts, four reference lines, text
+clipping, lazy history fetching, and a 100,001-line CSV export. Its isolated
+scale fixture is never published; this completed cohort supplies 100,000 real
+scores. Desktop and vertical iPhone screenshots were inspected. Publication
+must preserve unrelated edits, fetch and reconcile remote updates, push `main`,
+and verify GitHub Pages and the actual live dataset before stopping monitoring.
 
 ## Optimization and checks
 
