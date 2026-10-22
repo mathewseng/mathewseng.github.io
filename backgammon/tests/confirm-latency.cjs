@@ -32,6 +32,8 @@ module.exports=async function confirmLatency(browser,base,out,name){
    // Warm layout and history; measure repeated reviews and the actual tap,
    // not the one-time cold import/validation of a saved match.
    await page.waitForTimeout(300);
+   let profile;
+   if(touch&&name==='chromium'&&process.env.BG_PROFILE){profile=await context.newCDPSession(page);await profile.send('Profiler.enable');await profile.send('Profiler.start');}
    const throttle=touch&&name==='chromium'?6:1;
    if(throttle>1){const cdp=await context.newCDPSession(page);await cdp.send('Emulation.setCPUThrottlingRate',{rate:throttle});}
    await page.evaluate(()=>{
@@ -47,6 +49,7 @@ module.exports=async function confirmLatency(browser,base,out,name){
    await page.waitForTimeout(700);
    await page.locator('#confirm')[touch?'tap':'click']();
    await page.waitForTimeout(3000);
+   if(profile)require('node:fs').writeFileSync(path.join(out,'confirm-mobile.cpuprofile'),JSON.stringify((await profile.send('Profiler.stop')).profile));
    const measured=await page.evaluate(()=>{confirmPerf.active=false;return {...confirmPerf,trace:confirmTrace};});
    const committed=await page.evaluate(async()=>{
     const {get}=await import('/backgammon/core/storage.mjs'),{replay}=await import('/backgammon/core/rules.mjs');

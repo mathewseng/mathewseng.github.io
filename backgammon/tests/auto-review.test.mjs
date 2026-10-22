@@ -73,3 +73,15 @@ test("unfinished first attempts are backfilled separately from the accepted move
   assert.equal(saves, 1);
   reviewer.update(); assert.equal(calls, 2);
 });
+
+test('background jobs snapshot only their immutable action prefix, not the match archive', async()=>{
+  const model=fixture();model.undoLog=[{large:'unrelated archive'}];
+  let finish;
+  const reviewer=new AutoReview({model:()=>model,idle:()=>true,save:async()=>{},
+    engine:{analyze:(s,o)=>new Promise(resolve=>{finish=()=>resolve(result(s,o));})}});
+  reviewer.update();
+  assert.equal(reviewer.job.snapshot.undoLog,undefined);
+  assert.deepEqual(reviewer.job.snapshot.events,[{actor:0,action:model.events[0].action}]);
+  assert.notEqual(reviewer.job.snapshot.events[0].action,model.events[0].action);
+  finish();await tick();reviewer.pause();
+});

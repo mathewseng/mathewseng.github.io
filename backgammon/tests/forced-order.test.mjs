@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   initialState,
   legalPaths,
+  legalTurns,
   matchingPaths,
   boardKey,
   applyStep,
@@ -27,6 +28,16 @@ const mirror = (s) => ({
 const outcomes = (paths) =>
   [...new Set(paths.map((p) => boardKey(p.state)))].sort();
 const at = (s, d) => d.reduce((s, st) => applyStep(s, st), s);
+test('early choice detection agrees with exhaustive outcomes for every roll and either player',()=>{
+  for(const base of [initialState({phase:'move',dice:[3,3]}),fixture('forced-seven'),
+    fixture('forced-six-off'),fixture('forced-four')])
+    for(const side of [base,mirror(base)])for(let hi=1;hi<=6;hi++)for(let lo=1;lo<=hi;lo++){
+      const state={...side,dice:[hi,lo]},before=structuredClone(state),turns=legalTurns(state),forced=forcedTurn(state);
+      assert.equal(!!forced,turns.length===1,`side ${state.turn}, roll ${hi}-${lo}`);
+      if(forced)assert.equal(boardKey(forced.state),turns[0].key);
+      assert.deepEqual(state,before);
+    }
+});
 for (const [name, step] of [
   ["forced-seven", { from: 6, to: 0, die: 6 }],
   ["forced-six-off", { from: 5, to: "off", die: 6 }],

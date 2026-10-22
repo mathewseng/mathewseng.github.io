@@ -6,8 +6,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const http = require("node:http");
-const root = path.resolve("_site"),
-  out = path.resolve("backgammon/test-results");
+const root = path.resolve(process.env.BG_SITE_ROOT || "_site"),
+  out = path.resolve(process.env.BG_TEST_OUT || "backgammon/test-results");
 fs.mkdirSync(out, { recursive: true });
 const MIME = {
   ".html": "text/html",
@@ -764,7 +764,7 @@ const server = http.createServer((req, res) => {
           await run("refresh", browser, out, browserName),
         );
         // The focused Play command is also part of the full regression run.
-        for (const moduleName of ["control-polish", "advanced-ui", "touch-advanced", "adaptive-play", "prethink-ui"]) {
+        for (const moduleName of ["control-polish", "advanced-ui", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
           (report.playControls ||= []).push({module: moduleName, browser: browserName,
             result: await run(moduleName, browser, base, out, browserName)});
         }

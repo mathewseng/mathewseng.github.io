@@ -15,6 +15,7 @@ import {
   nextSteps,
   boardKey,
   applyStep,
+  stepsForDie,
 } from "./rules.mjs";
 
 const forcedCache = new WeakMap(),
@@ -28,9 +29,40 @@ export function blockedBarRoll(state) {
   return state.points.slice(start, start + 6).every(n => n * opponent >= 2);
 }
 // Play state objects are immutable. Equivalent legal paths count as one choice.
+// Two different outcomes that use every die prove a turn is not forced. Stop
+// there instead of generating hundreds of interchangeable double sequences.
+// A bounded probe only proves choices; inconclusive/partial turns still use
+// exhaustive rules, including mandatory dice and early winning bearoffs.
+function provesChoice(state) {
+  const dice = state.dice[0] === state.dice[1] ? Array(4).fill(state.dice[0]) : state.dice;
+  let first = null, budget = 64;
+  function walk(board, remaining) {
+    if (--budget < 0) return false;
+    if (!remaining.length) {
+      const key = boardKey(board);
+      if (first !== null && key !== first) return true;
+      first = key;
+      return false;
+    }
+    for (const die of new Set(remaining)) {
+      const rest = [...remaining];
+      rest.splice(rest.indexOf(die), 1);
+      for (const step of stepsForDie(board, die)) {
+        if (budget < 0) return false;
+        if (walk(applyStep(board, step), rest)) return true;
+      }
+    }
+    return false;
+  }
+  return walk(state, dice);
+}
 export function forcedTurn(state) {
   if (state.phase !== "move") return null;
   if (!forcedCache.has(state)) {
+    if (provesChoice(state)) {
+      forcedCache.set(state, null);
+      return null;
+    }
     const turns = legalTurns(state);
     forcedCache.set(state, turns.length === 1 ? turns[0] : null);
   }

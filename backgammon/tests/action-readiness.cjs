@@ -34,7 +34,10 @@ module.exports=async function actionReadiness(browser,base,out,name){
    await page.locator('#board .last-move-ghost').first().waitFor({state:'attached',timeout:90000});
    await page.waitForFunction(()=>readiness.calls.some(c=>c.state.phase==='move'&&c.state.turn===0&&c.options.priority===-20&&c.result),null,{timeout:90000});
    await page.waitForFunction(()=>document.querySelector('#roll')&&!document.querySelector('#roll').disabled);
-   assert.equal(page.workers().length,1,'equity and preparation share the one live engine');
+   assert.equal(page.workers().filter(w=>new URL(w.url()).pathname.endsWith('/engine/worker.mjs')).length,1,
+    'equity and preparation share the one live engine');
+   assert.equal(page.workers().filter(w=>new URL(w.url()).pathname.endsWith('/core/progress-worker.mjs')).length,1,
+    'progress saves use their own worker, separate from evaluation and input');
    await page.evaluate(async()=>{
     const {database}=await import('/backgammon/core/storage.mjs');
     const db=await database(),tx=db.transaction('work','readwrite'),store=tx.objectStore('work');

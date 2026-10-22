@@ -24,6 +24,13 @@ export function gradeDecision(source, result, action) {
     ? result
     : gradeCube(source, result, action.type);
 }
+// historyStates supplies deeply frozen positions. Reuse their stable keys
+// across background grades instead of reserializing the whole match each time.
+const positionKeys = new WeakMap();
+function sourceKey(source) {
+  if (!positionKeys.has(source)) positionKeys.set(source, positionKey(source));
+  return positionKeys.get(source);
+}
 export function decisionHistory(model) {
   const states = historyStates(model);
   const rows = [];
@@ -47,10 +54,10 @@ export function decisionHistory(model) {
       (source.phase === "double" &&
         ["take", "pass", "beaver", "raccoon"].includes(a.type));
     if (!eligible) return;
-    let result = event.evaluation?.result,
+    let result = event.evaluation?.result || null,
       feedback = null;
     try {
-      if (result?.positionKey !== positionKey(source)) result = null;
+      if (result && result.positionKey !== sourceKey(source)) result = null;
       if (result?.type === "cube")
         result = gradeCube(source, result, a.type);
       if (result) feedback = decisionFeedback(result, source);
@@ -63,7 +70,7 @@ export function decisionHistory(model) {
     if (initialAction) {
       try {
         const first = event.initialDecision.evaluation?.result;
-        if (first?.positionKey === positionKey(source))
+        if (first && first.positionKey === sourceKey(source))
           initialFeedback = decisionFeedback(gradeDecision(source, first, initialAction), source);
         else if (sameDecisionAction(initialAction, a)) initialFeedback = feedback;
         // A cube evaluation contains all options, so a revised cube decision

@@ -21,16 +21,16 @@ export function advancedAction({ point, checker, candidates, returns, checkerRet
     return null;
   }
   const distance = from => from === "bar" ? 25 : turn ? 24 - from : from + 1;
-  // Original draft point space returns its checker, even if it could continue.
+  // Point-space input requests a destination. Prefer the selected die, then
+  // another direct arrival, including when this point is also a draft origin.
+  const step = candidates.filter(step => step.to === point)
+    .sort((a, b) => Number(b.die === die) - Number(a.die === die) || distance(a.from) - distance(b.from))[0];
+  if (step) return { type: "move", step };
+  // Without a direct arrival, original draft point space returns its checker.
   // Disc taps on that point still play forward.
   const returning = returns.filter(route => route.to === point)
     .sort((a, b) => a.die - b.die)[0];
   if (returning) return { type: 'undo', route: returning };
-  // Point-space input requests a destination. Prefer the selected die, then
-  // another direct arrival, before spending several dice on one checker.
-  const step = candidates.filter(step => step.to === point)
-    .sort((a, b) => Number(b.die === die) - Number(a.die === die) || distance(a.from) - distance(b.from))[0];
-  if (step) return { type: "move", step };
   const combined = routes.filter(route => route.to === point && !route.undo && !route.switchDie && route.steps.length > 1);
   const nearest = Math.min(...combined.map(route => distance(route.from)));
   const choices = combined.filter(route => distance(route.from) === nearest);

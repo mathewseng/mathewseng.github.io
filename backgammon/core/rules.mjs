@@ -369,6 +369,24 @@ export function nextSteps(paths, draft) {
 export function commitTurn(s, steps) {
   if (!Array.isArray(steps) || steps.length > 4)
     throw new Error("Invalid turn.");
+  if (s.phase !== "move")
+    throw new Error("Complete the legal turn using all playable dice.");
+  // A legal sequence that consumes every die (or wins) is already maximal.
+  // Validate it in O(number of steps), instead of expanding every alternate
+  // double and copying hundreds of boards during Confirm and presolving.
+  // Partial turns still need the exhaustive maximum-use / higher-die rule.
+  const remaining = s.dice[0] === s.dice[1] ? Array(4).fill(s.dice[0]) : [...s.dice];
+  let current = s;
+  for (const step of steps) {
+    const index = remaining.indexOf(step?.die);
+    if (index < 0 || !stepsForDie(current, step.die).some(legal => stepEqual(legal, step)))
+      throw new Error("Complete the legal turn using all playable dice.");
+    current = applyStep(current, step);
+    remaining.splice(index, 1);
+  }
+  // Even a winning single-die turn must use the higher die when neither
+  // ordering can use both. Doubles have no such tie-break.
+  if (!remaining.length || (s.dice[0] === s.dice[1] && current.off[s.turn] === 15)) return current;
   const path = legalPaths(s).find(
     (x) =>
       x.steps.length === steps.length &&

@@ -53,6 +53,9 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       else await page.mouse.click(box.x + 3, box.y + box.height / 2);
     };
     const loadRoll = async (dice, mode = "advanced") => {
+      // Leave the live game before replacing its fixture: its pagehide save
+      // must not race the new work record (saves normally run in a worker).
+      await page.goto(base + "/backgammon/");
       await page.evaluate(async ({dice, mode}) => {
         const { put, saveSettings } = await import("/backgammon/core/storage.mjs");
         const { initialState } = await import("/backgammon/core/rules.mjs");
@@ -62,7 +65,10 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
         await put("work", { id: "play", game: { id: "dice-motion", state: s, initial: s,
           events: [], started: true, names: ["You", "Friend"], config: localConfig({ mode: "local" }) }, draft: [] });
       }, {dice, mode});
-      await page.reload(); await ready(); await activate("#resume-match");
+      await page.goto(base + "/backgammon/play/"); await ready(); await activate("#resume-match");
+      assert.deepEqual(await page.locator('#board .board-die').evaluateAll(nodes =>
+        nodes.map(n => Number(n.dataset.die))), dice[0] === dice[1] ? Array(4).fill(dice[0]) : dice,
+      "the requested roll is restored before exercising its animations");
     };
     try {
       // Pause only the real dice animations for deterministic frame checks.

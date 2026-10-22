@@ -58,11 +58,13 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
           : random(a);
     });
     await page.goto(base + "/backgammon/play/");
-    assert.equal(
-      await page.evaluate(
-        async () => !!(await import("/backgammon/ui/sound.mjs")).sound.context,
-      ),
-      false,
+    assert.deepEqual(
+      await page.evaluate(async () => {
+        const { sound } = await import("/backgammon/ui/sound.mjs");
+        return { voices: sound.voices.size, cues: sound.last.size };
+      }),
+      { voices: 0, cues: 0 },
+      "idle audio preparation stays silent before the first gesture",
     );
     await page.evaluate(async () => {
       const { sound } = await import("/backgammon/ui/sound.mjs");

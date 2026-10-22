@@ -216,7 +216,7 @@ The [300-position depth study](docs/DEPTH-STUDY.md) compares fixed 2-, 3- and 4-
 
 ## Optional board equity bar
 
-**Equity bar** in the toolbar toggles a player-colored rail beside the shared board; it is on by default and the preference persists across tools. In computer Play it runs real GNUbg Quick analysis for the current checker/cube decision, including a complete legal draft. Partial drafts clear the value until complete. Selecting a checker or changing orientation does not recalculate. Online and same-device Play remain unassisted. Trainer waits until submission/reveal, and Solver uses its existing completed analysis; candidate previews hide the bar to avoid labeling a different board with source equity.
+**Equity bar** in the toolbar toggles a player-colored rail beside the shared board; portrait phones show it horizontally below the full-width board, with the bottom player's color and value on the right. It is on by default and the preference persists across tools. In computer Play it runs real GNUbg Quick analysis for the current checker/cube decision, including a complete legal draft. Partial drafts clear the value until complete. Selecting a checker or changing orientation does not recalculate. Online and same-device Play remain unassisted. Trainer waits until submission/reveal, and Solver uses its existing completed analysis; candidate previews hide the bar to avoid labeling a different board with source equity.
 
 One unsigned number appears beside the player with positive equity (zero appears once at the bottom): current-cube points in money play, normalized match equity in match play. The opposite side has no duplicate negative label. The visual fill uses the symmetric nonlinear scale `(1 + equity / (1 + abs(equity))) / 2`; it is **not a win probability**. The tooltip identifies units, perspective and settings. Empty/loading/error states never invent equity, and failures offer Retry. Live computer evaluation uses one additional lazy worker with bounded caching; changing the decision cancels active work, and turning the bar off terminates its worker. The board reserves a narrow side lane only while enabled.
 
@@ -438,3 +438,49 @@ Validation: **483** repository tests, **28** final deployment/offline/update/CSS
 The [remaining-disagreement diagnostic](docs/ROLLOUT-DIAGNOSTIC.md) independently repeats the 23 disputed replies and opening 2–1 with 4,096 fresh trials per conflicting move, paired confidence intervals and a correction for all 24 comparisons. Its report distinguishes persistent, reversed and unresolved preferences; the two-move diagnostic does not replace the full opening-book candidate rankings.
 
 The independent [4–4 after 4–1 slot study](docs/CUBE-POLICY-STUDY.md) tests corrected cube rules and wider/deeper checker policies in full-game rollouts. The fixed plan and implementation checks are separate from the imported XG reference book.
+
+### Mobile rendering and save performance
+
+The board retains unchanged point stacks, updates dice independently when only
+selection changes, and batches animation style reads before writes. Drag hover
+only changes when its destination changes. Audio-device preparation runs while
+idle; normalized settings are cached without sharing mutable caller objects.
+Play saves run through `core/progress-worker.mjs`, preserving the existing IDB
+format and archive annotations. Saves are ordered, acknowledged after the work
+record commits, and retried through the main-thread fallback if the worker fails.
+Background reviews snapshot only their action prefix; history position keys reuse
+immutable replay states. Engine search depth and animation durations are unchanged.
+
+`docs/mobile-performance-2026-10-22.json` records paired old/new browser measurements,
+including the 1,356-event long-match fixture. These are desktop mobile-layout stress
+tests, not physical-phone measurements. Reproduce after assembling:
+
+```sh
+BG_MODULES=mobile-performance,interaction-latency,confirm-latency,progress-worker BG_BROWSERS=chromium,webkit node backgammon/tests/browser.cjs
+BG_MOBILE_PERF=1 BG_BENCH_TURNS=2 BG_MODULES=play-latency node backgammon/tests/browser.cjs
+```
+
+`BG_PROFILE=1` adds CPU profiles to the mobile/confirmation/Play workloads.
+`BG_SITE_ROOT` and `BG_TEST_OUT` allow an independent baseline site and report folder.
+Timing is reported separately from deterministic regression assertions about node
+reuse, input behavior, saved-state ordering, worker failure and replay correctness.
+
+`tests/mobile-fullgame.cjs` plays a complete computer game using real touch taps,
+Auto analysis, seeded application rolls, full motion and isolated browser storage.
+It records tap-to-frame timing, roll/confirm/bearoff actions, animation stalls and
+engine requests, then independently replays the saved result. History is exported
+only after measurement so automation serialization cannot inflate frame stalls.
+Run it against an assembled site with `BG_MODULES=mobile-fullgame`, or live:
+
+```sh
+BG_BASE_URL=https://mathewseng.github.io BG_BROWSER=webkit node backgammon/tests/mobile-fullgame.cjs
+BG_BROWSER=chromium BG_CPU_RATE=4 BG_PROFILE=1 node backgammon/tests/mobile-fullgame.cjs
+```
+
+Set `BG_EXPECT_RELEASE` to the deployed offline-manifest hash to assert the page
+loaded the intended release. `BG_TEST_OUT` keeps each run's report and screenshot.
+These are desktop browser emulations; CPU throttling is a stress test, not an
+iPhone chipset simulation. Completed-turn validation checks each submitted step
+directly when every die is used; partial turns still use exhaustive maximum-use
+and higher-die validation. Save snapshots are captured once as immutable JSON,
+expanded in the worker, and retained unchanged for ordered crash recovery.

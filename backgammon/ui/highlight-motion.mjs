@@ -33,7 +33,9 @@ export function clearHighlightExits(board) {
 }
 
 export function animateHighlights(board, previous, animations, enabled) {
-  const old = [...previous];
+  const old = [...previous], nodes = [];
+  // Finish DOM writes before reading paint, then start animations together.
+  // Reading after each animate() forces a fresh style/layout pass on mobile.
   for (const point of board.querySelectorAll('.point')) {
     const counts = new Map();
     for (const node of point.querySelectorAll(fragments)) {
@@ -42,14 +44,16 @@ export function animateHighlights(board, previous, animations, enabled) {
       node.dataset.highlight = `${point.dataset.point}:${kind}:${index}`;
       node.setAttribute('aria-hidden', 'true');
       node.style.pointerEvents = 'none';
-      if (!enabled) continue;
-      const current = snapshot(node);
-      if (!current) continue;
-      const found = old.findIndex(item => item.key === current.key && item.signature === current.signature);
-      const from = found < 0 ? 0 : old.splice(found, 1)[0].opacity;
-      if (from !== current.opacity) animations.push(node.animate(
-        [{ opacity: from }, { opacity: current.opacity }], timing));
+      nodes.push(node);
     }
+  }
+  const targets = enabled ? nodes.map(node => ({ node, current: snapshot(node) })) : [];
+  for (const { node, current } of targets) {
+    if (!current) continue;
+    const found = old.findIndex(item => item.key === current.key && item.signature === current.signature);
+    const from = found < 0 ? 0 : old.splice(found, 1)[0].opacity;
+    if (from !== current.opacity) animations.push(node.animate(
+      [{ opacity: from }, { opacity: current.opacity }], timing));
   }
   if (!enabled) return;
   for (const item of old) {

@@ -35,6 +35,7 @@ test('current rule extensions preserve historical book boards, legal turns and X
     const a=rules.legalTurns(s),b=oldRules.legalTurns(s);
     assert.deepEqual(a.map(t=>t.key).sort(),b.map(t=>t.key).sort());
     const chosen=a[(n*17)%a.length];
+    assert.deepEqual(rules.commitTurn(s,chosen.steps),oldRules.commitTurn(s,chosen.steps));
     s=rules.commitTurn(s,chosen.steps);
     if(s.phase==='over') break;
     s={...s,phase:'move',dice:[n%6+1,(n*3+2)%6+1]};
