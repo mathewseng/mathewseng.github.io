@@ -22,7 +22,7 @@ test("every legal action receives an EV; terminal losses are exact without knowi
 });
 
 test("equivalent encounters and return queues share estimates while every action stays available", () => {
-  const state = E.createGame({ deck: ["2s", "3s", "3c", "2c", "4d", "5h", "6s", "7c"], seed: "equivalent" });
+  const state = E.createGame({ deck: ["2s", "3s", "3c", "2c"], seed: "equivalent" });
   const { results } = S.analyze(E.observe(state), { iterations: 512, timeMs: 60000 });
   assert.equal(results.length, E.actions(state).length);
   for (const [first, second] of [["2s", "2c"], ["3s", "3c"]]) {
@@ -45,12 +45,13 @@ test("sampled transitions match the real engine when draws reveal the same cards
         let actual = E.transition(state, action);
         if (actual.phase === "ready") actual = E.transition(actual, { type: "descend" });
         const nextCards = actual.room.filter(Boolean);
-        const draws = action.type === "flee" ? nextCards : action.type === "descend" || nextCards.length > state.room.filter(Boolean).length - 1 ? nextCards.slice(1) : [];
+        const carried = new Set(action.type === "flee" ? [] : state.room.filter(c => c && c.id !== action.id).map(c => c.id));
+        const draws = nextCards.filter(c => !carried.has(c.id));
         const unknown = compact.u.slice(); let cursor = 0;
         const rng = () => { const target = S.encode(draws[cursor++]), index = unknown.indexOf(target), length = unknown.length; assert.ok(index >= 0); unknown.splice(index, 1); return (index + .5) / length; };
         const next = S.step(compact, S.actionMove(observed, action), rng);
         if (next.score != null) assert.equal(next.score, E.score(actual));
-        else { const expected = S.pack(E.observe(actual)); if (!expected.f) { expected.r.sort((a,b)=>a-b); next.state.r.sort((a,b)=>a-b); } assert.deepEqual(next.state, expected); }
+        else assert.deepEqual(next.state, S.pack(E.observe(actual)));
       }
       state = E.transition(state, legal[(turn * 7 + seed) % legal.length]);
     }
@@ -61,7 +62,7 @@ test("all published hidden-deck policy runs replay to their recorded outcomes", 
   const data = require("../reports/outcomes.json"); Stats.validate(data);
   assert.equal(data.policy.revision, "a09ccb03f12ea7614c61a1e8d79537c0285f3167a295bc0a97865784413f6b8b", "published study retains its frozen policy revision; later solver changes do not rewrite historical results");
   for (const row of require("../scripts/study-data.cjs").iterateRows(data, require.resolve("../reports/outcomes.json"))) {
-    let state = E.createGame({ seed: row.seed });
+    let state = E.createGame({ seed: row.seed, keepSlots: data.policy.keepSlots === true });
     for (const action of row.line) state = E.transition(state, action);
     assert.ok(["won", "lost"].includes(state.phase)); assert.equal(E.score(state), row.score);
     assert.equal(row.survived, state.phase === "won"); assert.equal(row.verified, true);

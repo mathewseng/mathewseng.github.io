@@ -8,7 +8,9 @@ inspired by [this tutorial](https://youtu.be/Gt2tYzM93h4).
 ## Play
 
 Open `/scoundrel/`. Select an encounter and choose its action. Resolve three
-encounters, carry one to the next room, and clear the entire final room.
+encounters, carry one to the next room, and clear the entire final room. The
+carried card stays in its original slot; new cards fill empty slots left to right,
+including a partial final room. Current saved games adopt this layout.
 Keyboard: 1–4 select, Enter activates the primary action when focus is outside
 a button, F opens the avoidance choices, Escape deselects. Normal Tab/Enter
 navigation always works. Runs, preferences, and completed-run statistics save
@@ -91,11 +93,13 @@ deck with perfect information and averaging those oracle scores.
 
 - All legal actions appear with their estimated mean final score and sample
   count, including both avoidance orders and both combat methods. Rows sort by
-  descending EV, with pending estimates last. All equivalent best actions are
-  highlighted; shared sample counts describe one pool, not independent samples.
+  descending EV with two decimal places, with pending estimates last. All
+  equivalent best actions are highlighted; shared sample counts describe one pool, not independent samples.
 - Equivalent public successor distributions share search work at every tree
   node, before any hidden draw is sampled. Canonical states preserve health,
-  equipment, chain limit, potion availability, carried cards and return order.
+  equipment, chain limit, potion availability, carried cards, occupied slots and
+  return order. Equal-strength monsters in different slots can differ when
+  their carry positions affect a later return queue.
   Inert used potions in a final room below 20 health can also be canonicalized;
   final-potion bonuses at 20 remain distinct. Equal immediate healing does not
   merge moves that leave different potions to carry forward. Every distinct
@@ -117,7 +121,11 @@ With Best move enabled, the browser automatically runs 100,000 simulations
 for each position without a wall-clock cutoff (unless all root values are
 already exact). EVs and the live counter update at 1,000-simulation intervals
 through 10,000, then at 10,000-simulation intervals through 100,000. The worker
-is canceled and a fresh automatic search starts when the state changes. Only fully determined actions carry an
+is canceled and a fresh automatic search starts when the state changes.
+**Search to 1M** extends that same tree and random stream to 1,000,000 total
+simulations, reporting every 10,000. The button can be used during the automatic
+search; the worker finishes its 100k batch before continuing. Exactly solved
+positions stop immediately. Only fully determined actions carry an
 Exact label. Other EVs are simulation estimates of future play, not guaranteed
 scores or a proof of the best hidden-deck strategy. Their raw standard errors
 are diagnostics; tree search changes its continuation policy while learning.
@@ -149,8 +157,11 @@ Every decision sends **only a public observation** to a persistent native worker
 The native implementation matches the browser policy at the same simulation
 budget. The published 100,000-game study retains its original frozen policy
 revision and results; later solver improvements do not relabel historical runs.
+Its histories and Play links explicitly use the historical carry-to-first-slot
+layout, so their recorded scores remain reproducible. New studies record
+`policy.keepSlots` and use the current layout.
 Fixed-size buffers, exact canonical state keys, cached visible-room
-transitions, precomputed utility arithmetic, and a shared combinadic room cache
+heuristics, precomputed utility arithmetic, and a shared combinadic room cache
 reduce overhead. The shared cache is a sparse ~4 GiB file in the OS temporary
 directory, keyed by the compiled revision; workers share its physical pages.
 If mapping is unavailable, a bounded private cache is used. No actual unseen
@@ -188,8 +199,8 @@ over small dungeons, check compact transitions against the full engine, replay a
 all published policy histories, check invariance to hidden deck permutations, and verify all 44 art hashes differ. The browser test exercises
 all-action analysis, a full winning descent, save/resume, themes, collection,
 responsive layouts, both avoidance directions, a full 100k worker budget, search
-cancellation, equivalent best choices, report filters, recorded move-history
-viewers and CSV export against assembled files.
+cancellation, extension to 1M, decimal formatting, fixed carry slots, equivalent
+best choices, report filters, recorded move-history viewers and CSV export against assembled files.
 The responsive check measures actual text bounds for all 44 names, verifies
 touch targets and both combat actions, and exercises the art viewer, enlarged
 text and phone EV rows across ten desktop/phone viewport sizes.

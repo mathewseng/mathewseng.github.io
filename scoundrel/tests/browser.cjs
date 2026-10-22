@@ -51,7 +51,7 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     await page.locator("#catalog-dialog [data-close]").click();
     await page.locator("#settings-button").click();await page.locator("#atmosphere").selectOption("ember");await page.locator("#settings-dialog [data-close]").click();
     const witness=historyRows.find(r=>r.survived);
-    await page.goto(server.base+"/scoundrel/?seed="+witness.seed);await settle(page);
+    await page.goto(server.base+"/scoundrel/?layout=legacy&seed="+witness.seed);await settle(page);
     for(const [i,a]of witness.line.entries()){
       if(a.id)await page.locator(`[data-card="${a.id}"]`).click();
       if(a.type==="flee"){await page.locator("#flee-button").click();await page.locator(`[data-avoid="${a.direction || "left"}"]`).click();}

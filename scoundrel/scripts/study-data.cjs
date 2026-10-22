@@ -1,11 +1,11 @@
 const fs = require("node:fs"), path = require("node:path"), { createHash } = require("node:crypto");
 const E = require("../engine.js"), H = require("../reports/history-codec.js");
 const seedFor = (prefix, index) => prefix + String(index).padStart(4, "0");
-function verify(row, seedPrefix) {
+function verify(row, seedPrefix, keepSlots = row.keepSlots === true) {
   if (!Number.isInteger(row.index) || row.index < 0 || row.seed !== seedFor(seedPrefix, row.index)) throw Error("Unexpected study seed");
   const line = Array.isArray(row.line) ? row.line : H.decode(row.line);
   if (!line.length) throw Error("Missing history");
-  let state = E.createGame({ seed: row.seed });
+  let state = E.createGame({ seed: row.seed, keepSlots });
   for (const action of line) state = E.transition(state, action);
   if (!["won", "lost"].includes(state.phase) || E.score(state) !== row.score || row.survived !== (state.phase === "won")) throw Error("Report replay failed at deal " + row.index);
   return line;
@@ -21,7 +21,7 @@ function publish({ rows, output, seedPrefix, requestedDeals, policy, startedAt, 
   const chunkSize = 1000, directory = `histories/${policy.revision.slice(0, 16)}-${policy.iterations}`, hashes = [];
   for (let start = 0; start < rows.length; start += chunkSize) {
     const chunk = rows.slice(start, start + chunkSize);
-    const lines = chunk.map(row => { const line = verify(row, seedPrefix); return H.encode(line); });
+    const lines = chunk.map(row => { const line = verify(row, seedPrefix, policy.keepSlots === true); return H.encode(line); });
     const shard = { version: 1, revision: policy.revision, iterations: policy.iterations, start, lines };
     const file = path.join(path.dirname(output), directory, `${String(start).padStart(6, "0")}.json`);
     atomicJSON(file, shard); hashes.push(createHash("sha256").update(fs.readFileSync(file)).digest("hex"));
@@ -44,7 +44,7 @@ function* iterateRows(data, output) {
     if (createHash("sha256").update(bytes).digest("hex") !== data.histories.sha256[start / chunkSize]) throw Error("History checksum mismatch");
     const shard = JSON.parse(bytes);
     if (shard.start !== start || shard.revision !== data.policy.revision || shard.iterations !== data.policy.iterations || shard.lines.length !== Math.min(chunkSize, data.scores.length - start)) throw Error("History shard mismatch");
-    for (const [i, line] of shard.lines.entries()) { const index = start + i; yield { index, seed: seedFor(data.seedPrefix, index), score: data.scores[index], survived: data.scores[index] > 0, verified: true, line: H.decode(line) }; }
+    for (const [i, line] of shard.lines.entries()) { const index = start + i; yield { index, seed: seedFor(data.seedPrefix, index), score: data.scores[index], survived: data.scores[index] > 0, verified: true, ...(data.policy.keepSlots ? { keepSlots: true } : {}), line: H.decode(line) }; }
   }
 }
 function readRows(data, output, limit = Infinity) {

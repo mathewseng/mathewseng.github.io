@@ -10,12 +10,16 @@
   const seed = () => Array.from(crypto.getRandomValues(new Uint32Array(2)), (n) => n.toString(36)).join("");
   const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-${name}" /></svg>`;
   const same = E.sameAction;
+  const ev = value => value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   let prefs = { sound: false, motion: true, atmosphere: "ember", oracle: false, ...read(PREFS, {}) };
   let stats = read(STATS, { played: 0, won: 0, best: null, recorded: [] });
   if (!Array.isArray(stats.recorded)) stats = { played: 0, won: 0, best: null, recorded: [] };
   const requestedSeed = new URLSearchParams(location.search).get("seed");
-  const saved = E.restore(read(RUN, null));
-  let state = requestedSeed && /^[a-zA-Z0-9-]{1,80}$/.test(requestedSeed) && saved?.seed !== requestedSeed ? E.createGame({ seed: requestedSeed }) : saved || E.createGame({ seed: seed() });
+  let saved = E.restore(read(RUN, null));
+  const keepSlots = new URLSearchParams(location.search).get("layout") !== "legacy";
+  if (saved && !keepSlots && saved.keepSlots !== false) saved = null;
+  if (saved) saved.keepSlots = keepSlots;
+  let state = requestedSeed && /^[a-zA-Z0-9-]{1,80}$/.test(requestedSeed) && saved?.seed !== requestedSeed ? E.createGame({ seed: requestedSeed, keepSlots }) : saved || E.createGame({ seed: seed(), keepSlots });
   let selected = null, worker = null, request = 0, analysis = [], audio = null, known = new Set(), resultShown = false, searchStatus = null;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)"), motion = () => prefs.motion && !reduced.matches;
   const roman = (n) => n < 40 ? ["", "X", "XX", "XXX"][Math.floor(n / 10)] + ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"][n % 10] : String(n);
@@ -146,16 +150,18 @@
     const winners = analysis.filter(isBest);
     for (const winner of winners) if (winner.action.id) { const el = document.querySelector(`[data-card="${winner.action.id}"]`); if (el && !el.classList.contains("is-best")) { el.classList.add("is-best"); const ribbon = document.createElement("span"); ribbon.className = "best-ribbon"; ribbon.textContent = winners.length > 1 ? "Equal best EV" : "Best EV"; ribbon.setAttribute("aria-hidden", "true"); el.append(ribbon); } }
     const proven = b && analysis.every(r => r.exact);
-    $("oracle-summary").textContent = !E.actions(state).length ? "Game over. Final score " + E.score(state) + "." : b ? `${proven ? "Exact best" : "Recommended"}: ${winners.map(row => E.describe(state, row.action)).join(" or ")}. ${proven ? "Final score" : "Estimated final score"} ${b.score.toLocaleString("en-US", { maximumFractionDigits: 1 })}.${pending ? " Evaluating alternatives…" : ""}` : "Calculating moves…";
+    $("oracle-summary").textContent = !E.actions(state).length ? "Game over. Final score " + ev(E.score(state)) + "." : b ? `${proven ? "Exact best" : "Recommended"}: ${winners.map(row => E.describe(state, row.action)).join(" or ")}. ${proven ? "Final score" : "Estimated final score"} ${ev(b.score)}.${pending ? " Evaluating alternatives…" : ""}` : "Calculating moves…";
     const progress = $("search-progress");
     progress.textContent = searchStatus ? `${searchStatus.simulations.toLocaleString()}${searchStatus.pending ? " / " + searchStatus.target.toLocaleString() : ""} simulations · ${searchStatus.pending ? "searching" : analysis.every(row => row.exact) ? "solved exactly" : "complete"}` : "";
+    $("extend-button").disabled = !worker || searchStatus?.target === 1000000 || !pending && analysis.length > 0 && analysis.every(row => row.exact);
+    $("extend-button").textContent = searchStatus?.target === 1000000 && searchStatus.pending ? "Searching to 1M…" : "Search to 1M";
     const rows = E.actions(state).map(action => ({ action, row: analysis.find(row => same(row.action, action)) }));
     rows.sort((a, b) => (a.row?.score == null) - (b.row?.score == null) || (b.row?.score ?? -Infinity) - (a.row?.score ?? -Infinity) || Number(b.row?.exact || false) - Number(a.row?.exact || false));
     $("action-values").innerHTML = rows.map(({ action: a, row: r }) => {
       const c = state.room.find((c) => c?.id === a.id);
       const shared = r && analysis.filter(row => row.equivalence === r.equivalence).length > 1;
       const change = a.type === "fight" ? "−" + (a.mode === "weapon" ? Math.max(0, c.value - state.weapon.value) : c.value) + " health" : a.type === "drink" ? "+" + (state.potionUsed ? 0 : Math.min(c.value, 20 - state.health)) + " health" : "—";
-      const val = r?.score == null ? "Searching…" : r.score.toLocaleString("en-US", { maximumFractionDigits: 1 });
+      const val = r?.score == null ? "Searching…" : ev(r.score);
       return `<tr${isBest(r) ? ' class="is-best"' : ""}><td><button class="oracle-action" type="button" data-preview='${esc(JSON.stringify(a))}'>${esc(E.describe(state, a))}</button></td><td data-label="Health">${change}</td><td class="value-cell" data-label="EV · final score">${val}</td><td data-label="Analysis"><span class="proof${r?.exact ? " exact" : ""}">${r?.score == null ? "Pending" : r.exact ? "Exact" : r.samples.toLocaleString() + (shared ? " shared samples" : " samples")}</span></td></tr>`;
     }).join("");
   }
@@ -164,16 +170,22 @@
     if (!prefs.oracle || !E.actions(state).length) { renderAnalysis(); return; }
     if (!window.Worker) { $("oracle-summary").textContent = "This browser does not support the worker required for analysis."; return; }
     try {
-      worker = new Worker("solver-worker.js?v=20261022-auto");
-      worker.onmessage = ({ data }) => { if (data.requestId !== requestId) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; searchStatus = { pending: data.pending, simulations: data.simulations, target: data.target }; renderAnalysis(data.pending); };
+      worker = new Worker("solver-worker.js?v=20261022-slots");
+      worker.onmessage = ({ data }) => { if (data.requestId !== request) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; searchStatus = { pending: data.pending, simulations: data.simulations, target: data.target }; renderAnalysis(data.pending); };
       worker.onerror = () => { $("oracle-summary").textContent = "The analysis worker could not load. Try reloading the page."; };
       searchStatus = { pending: true, simulations: 0, target: 100000 };
       worker.postMessage({ requestId, observation: E.observe(state) }); renderAnalysis(true);
     } catch { $("oracle-summary").textContent = "Analysis needs a browser that supports Web Workers."; }
   }
+  $("extend-button").addEventListener("click", () => {
+    if (!worker || searchStatus?.target === 1000000) return;
+    searchStatus = { ...searchStatus, pending: true, target: 1000000 };
+    worker.postMessage({ requestId: ++request, observation: E.observe(state), target: 1000000 });
+    renderAnalysis(true);
+  });
   function start() {
     for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
-    state = E.createGame({ seed: seed() }); selected = null; resultShown = false; analysis = []; known = new Set(); render(); analyze(); sound("room");
+    state = E.createGame({ seed: seed(), keepSlots }); selected = null; resultShown = false; analysis = []; known = new Set(); render(); analyze(); sound("room");
   }
   function finish() {
     resultShown = true; const won = state.phase === "won", score = E.score(state), runId = state.id;
@@ -186,7 +198,7 @@
     for (const el of document.querySelectorAll("[data-avoid-ev]")) {
       const row = analysis.find(r => same(r.action, { type: "flee", direction: el.dataset.avoidEv }));
       el.hidden = !prefs.oracle;
-      el.textContent = row?.score == null ? "EV: calculating…" : row.exact ? `EV ${row.score} · exact` : `EV ${row.score.toLocaleString("en-US", { maximumFractionDigits: 1 })} · ${row.samples.toLocaleString()} samples`;
+      el.textContent = row?.score == null ? "EV: calculating…" : row.exact ? `EV ${ev(row.score)} · exact` : `EV ${ev(row.score)} · ${row.samples.toLocaleString()} samples`;
     }
   }
   function openAvoid(direction = "left") {
