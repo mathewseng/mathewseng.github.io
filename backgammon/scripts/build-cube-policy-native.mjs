@@ -12,7 +12,7 @@ const out=path.resolve(process.argv[2]||'/tmp/bg-cube-study-v2');
 // keep that platform detail outside the preceding study's frozen build script.
 if(process.platform==='linux'){
  const shim=fs.mkdtempSync(path.join(os.tmpdir(),'bg-clang-'));
- fs.writeFileSync(path.join(shim,'clang'),'#!/bin/sh\nfor arg in "$@"; do\n  if [ "$arg" = "-c" ]; then exec /usr/bin/clang "$@"; fi\ndone\nexec /usr/bin/clang "$@" -lm\n',{mode:0o755});
+ fs.writeFileSync(path.join(shim,'clang'),'#!/bin/sh\nfor arg in "$@"; do\n  if [ "$arg" = "-c" ]; then exec /usr/bin/clang -include stdint.h "$@"; fi\ndone\nexec /usr/bin/clang -include stdint.h "$@" -lm\n',{mode:0o755});
  process.env.PATH=shim+path.delimiter+process.env.PATH;
  process.on('exit',()=>fs.rmSync(shim,{recursive:true,force:true}));
 }
@@ -20,6 +20,7 @@ execFileSync(process.execPath,[path.join(scripts,'build-rollout-native.mjs'),out
 execFileSync('python3',[path.join(scripts,'patch-rollout-cache-context.py'),out],{stdio:'inherit'});
 fs.copyFileSync(path.join(scripts,'cube-policy-native.c'),path.join(out,'src/gnubg-core.c'));
 const manifest=JSON.parse(fs.readFileSync(path.join(out,'build.json')));
+if(process.platform==='linux')manifest.flags+=' -include stdint.h';
 execFileSync('make',['clean'],{cwd:out,stdio:'ignore'});
 const log=fs.openSync(path.join(out,'build.log'),'a');
 try{execFileSync('make',['-j8','CC=clang',`CFLAGS=${manifest.flags}`],{cwd:out,stdio:['ignore',log,log]});}finally{fs.closeSync(log);}
