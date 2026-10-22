@@ -76,7 +76,10 @@ module.exports = async function mobileFlow(browser, base, out, name) {
     await page.waitForFunction(()=>document.querySelector("#analyze")?.textContent==="Analyze" && !document.querySelector(".study-strip").hidden);
     for (const [width,height] of [[667,375],[844,390],[932,430]]) {
       await page.setViewportSize({width,height});
+      // The Solver's narrow control rail scrolls independently of the board.
+      await page.locator("#analyze").scrollIntoViewIfNeeded();
       await reachable("#analyze");
+      await page.locator(".study-current").scrollIntoViewIfNeeded();
       await reachable(".study-current");
       await page.getByRole("button",{name:"Next move preview",exact:true}).tap();
       assert.equal(await page.locator(".study-current").getAttribute("data-preview-index"),"0");

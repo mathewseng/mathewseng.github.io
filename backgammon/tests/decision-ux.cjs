@@ -207,13 +207,14 @@ module.exports = async function decisionUX(
     assert.equal(grade.decision.player, 1);
     assert.ok(Number.isFinite(grade.error));
     await page.locator("#review-feedback").click();
-    await page.getByRole("table").waitFor();
+    const cubeTable = page.getByRole("table", { name: "Cube options", exact: true });
+    await cubeTable.waitFor();
     assert.match(
-      await page.getByRole("table").innerText(),
+      await cubeTable.innerText(),
       /Before[\s\S]*Best choice/,
     );
     assert.equal(
-      (await page.getByRole("table").innerText()).includes("Your choice"),
+      (await cubeTable.innerText()).includes("Your choice"),
       Math.abs(grade.decision.best.equity - grade.decision.actual.equity) > 1e-7,
     );
     await shot("cube-comparison");
