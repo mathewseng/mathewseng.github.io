@@ -1,4 +1,4 @@
-const { seedOpening, openingComplete, roll } = require("./play-helpers.cjs");
+const { seedOpening, openingComplete, roll, waitWork } = require("./play-helpers.cjs");
 const { clickTool } = require("./tool-access.cjs");
 // Local table handoffs, opponent markers and automatic Solver work: real WASM.
 const assert = require("node:assert/strict");
@@ -80,7 +80,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     await page
       .getByLabel("Accessible move selection", { exact: true })
       .selectOption({ index: 1 });
-    const partial = await saved();
+    const partial = await waitWork(page, work => work?.draft?.length > 0);
     await clickTool(page, "#players-control");
     assert.ok(await page.locator("#dialog-switch-sides").isDisabled());
     await page.locator("#dialog-play-both").click();

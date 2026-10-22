@@ -442,8 +442,11 @@ function render() {
   const docked = wideSetup.matches;
   document.querySelector('.app').classList.toggle('setup-docked',docked);
   document.querySelector('.app').classList.toggle('solver-actions-docked',docked);
-  if (docked) $('inspector').prepend(actionArea);
-  else actionsAnchor.after(actionArea);
+  // Reparent only when crossing the layout breakpoint. Even moving an
+  // already-positioned node can interrupt a pointer gesture during analysis.
+  if (docked) {
+    if (actionArea.parentElement !== $('inspector')) $('inspector').prepend(actionArea);
+  } else if (actionsAnchor.nextSibling !== actionArea) actionsAnchor.after(actionArea);
 }
 function panel(problems) {
   const p = $("panel");
