@@ -98,6 +98,7 @@
 .opening-die-face { fill: none; stroke: currentColor; stroke-width: 1; }
 .opening-roll-notation { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 5px; font-size: var(--t-xs); font-weight: 600; line-height: 1.35; }
 .opening-roll-notation > span { min-width: 0; }
+.opening-roll-notation > sup, .opening-alternative-notation > sup { align-self: flex-start; font-size: .65em; line-height: 1; }
 .opening-roll-notation:empty { display: none; }
 .opening-roll-idea { font-size: var(--t-xs); line-height: 1.25; color: var(--opening-secondary); text-wrap: balance; }
 .opening-load-state { display: flex; gap: 12px; align-items: center; }
