@@ -1,117 +1,117 @@
 # Ash & Briar
 
-Selected by the user from [palette concept 02](../palette-concepts/ash-and-briar.png) on 2026-10-22. This set contains all 44 proposed names and sixteen independently generated sample illustrations. It has not been applied to the playable deck.
+The selected Scoundrel direction, revised on 2026-10-22 after reviewing official Runeterra illustrations. This catalog has 44 distinct names and 24 study images for 16 cards. The eight newest paintings revise the latest sample pair from each suit. The playable deck has not been changed.
 
-Spades are **Stonekin** in slate and charcoal. Clubs are **Treefolk** in fern and cream green. Diamonds are blue-steel weapons. Hearts are healing potions with red liquid at every rank. The paintings use broad shapes, simple silhouettes, limited props and quiet backgrounds.
+## Current art direction
 
-## Full naming set
+Keep expressive silhouettes and simple painted shapes. Give every illustration its own setting, lighting, supporting colors and memorable detail. Suit color belongs mainly to the subject or material: slate Stonekin, green Treefolk, blue-steel weapons and red healing liquids. Backgrounds can be warm, cool, light or dark. Avoid treating a suit as a monochromatic tint over an entire image.
 
-Linked names have sample illustrations.
+The reviewed references show varied local colors within a shared visual world: [Greenglade Caretaker](https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01IO019-full.png), [Inspiring Mentor](https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01IO026-full.png), [Cithria of Cloudfield](https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01DE039-full.png), and [Scarthane Steffen](https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01FR045-full.png). These are visual observations, not copied scenes or character designs. The illustrations are provided through [Riot's official Data Dragon](https://developer.riotgames.com/docs/lor#data-dragon).
+
+## All 44 names
+
+Meaningful name words and material roots are distinct across the naming set. Linked names open the preferred available sample. Original generation names remain in the provenance when a study was renamed.
 
 | Rank | Spades · Stonekin | Clubs · Treefolk | Diamonds · Weapons | Hearts · Potions |
 | --- | --- | --- | --- | --- |
-| 2 | [Pebble Sneak](samples/2s.png) | [Sproutling](samples/2c.png) | [Steel Shiv](samples/2d.png) | [Mender's Sip](samples/2h.png) |
-| 3 | Flint Scout | Bramble Scout | Frostfang | [Rosehip Tonic](samples/3h.png) |
-| 4 | [Shale Sentry](samples/4s.png) | [Willow Watcher](samples/4c.png) | [Rime Axe](samples/4d.png) | Hearth Cordial |
-| 5 | Cobble Brawler | Hazel Guard | Warden's Spear | Scarlet Draught |
-| 6 | Slate Warden | Birch Warden | [Cobalt Mace](samples/6d.png) | [Heartroot Brew](samples/6h.png) |
-| 7 | Cairn Keeper | Rootbound Shaman | Moonsteel Saber | Ruby Elixir |
-| 8 | Basalt Brute | [Oak Sentinel](samples/8c.png) | Glacier Maul | Lifeblood Tonic |
-| 9 | Quarry Breaker | Thornback | [Skycleaver](samples/9d.png) | [King's Remedy](samples/9h.png) |
-| T | Obsidian Knight | Ironbark Champion | Winter's Edge | Second Dawn |
-| J | Flint Marshal | Briar Marshal | — | — |
-| Q | [Granite Matriarch](samples/Qs.png) | [Queen of Thorns](samples/Qc.png) | — | — |
-| K | Mountain King | Oakheart King | — | — |
-| A | [The First Mountain](samples/As.png) | The Elderwood | — | — |
+| 2 | [Pebble Sneak](samples-v3/2s.png) | [Sproutling](samples-v3/2c.png) | [Gutter Shiv](samples-v3/2d.png) | [Mender's Sip](samples-v3/2h.png) |
+| 3 | Flint Scout | Bramble Skulker | Hooktooth | [Rosehip Tonic](samples/3h.png) |
+| 4 | [Shale Sentry](samples/4s.png) | [Willow Watcher](samples/4c.png) | [Splitter Axe](samples/4d.png) | Hearth Cordial |
+| 5 | Cobble Brawler | Hazel Guard | Wayfarer's Spear | Scarlet Draught |
+| 6 | Slate Warden | Birch Seer | [Cobalt Mace](samples-v3/6d.png) | [Sanguine Brew](samples-v3/6h.png) |
+| 7 | Cairn Keeper | Rootbound Shaman | Duelist's Saber | Ruby Elixir |
+| 8 | Basalt Brute | [Oak Sentinel](samples-v3/8c.png) | Bellringer | Phoenix Tears |
+| 9 | Quarry Hurler | Thornback | [Headsman's Greatsword](samples/9d.png) | [King's Remedy](samples/9h.png) |
+| T | Obsidian Knight | Ironbark Champion | Oathbreaker | Second Dawn |
+| J | Onyx Marshal | Briar Herald | — | — |
+| Q | [Granite Matriarch](samples/Qs.png) | [Queen of Vines](samples/Qc.png) | — | — |
+| K | Crag Sovereign | Elderbough | — | — |
+| A | [The First Mountain](samples-v3/As.png) | The Verdant Dream | — | — |
 
-## First eight sample illustrations
+## Weapon variety
 
-Each PNG is an independent portrait painting, ready for a card renderer to add the name, suit and value. No lettering or interface is baked into the artwork. These are new illustrations using the chosen board as a style/palette reference, not crops from it.
+| Card | Weapon type |
+| --- | --- |
+| Gutter Shiv | Improvised dagger |
+| Hooktooth | Hooked sickle |
+| Splitter Axe | Bearded axe |
+| Wayfarer's Spear | Travel spear |
+| Cobalt Mace | Flanged mace |
+| Duelist's Saber | Dueling saber |
+| Bellringer | Warhammer |
+| Headsman's Greatsword | Executioner's greatsword |
+| Oathbreaker | Chained flail |
 
-### 4♠ · Shale Sentry
+Blue steel links the weapon suit while silhouettes, handles, material accents and settings vary. The names range across improvised tools, dueling, travel, ceremony and battle rather than repeating winter or sky imagery.
 
-![Shale Sentry](samples/4s.png)
+## Red potion range
 
-### Q♠ · Granite Matriarch
+| Card | Liquid color | Target |
+| --- | --- | --- |
+| Mender's Sip | Fresh scarlet | `#D94A45` |
+| Rosehip Tonic | Rose red | `#C6546A` |
+| Hearth Cordial | Brick red | `#A8443B` |
+| Scarlet Draught | Vermilion red | `#D84B36` |
+| Sanguine Brew | Deep garnet | `#882C44` |
+| Ruby Elixir | Ruby wine | `#AE2E53` |
+| Phoenix Tears | Copper red | `#C9503D` |
+| King's Remedy | Dark cherry | `#982D3F` |
+| Second Dawn | Coral red | `#DC6A60` |
 
-![Granite Matriarch](samples/Qs.png)
+All liquids remain recognizably red. Target hex values guide future paintings rather than specifying every pixel; highlights and transmitted light can vary. Shape, glass tint, closures, wrapping and surroundings also distinguish the bottles.
 
-### 4♣ · Willow Watcher
+## Eight color-story revisions
 
-![Willow Watcher](samples/4c.png)
-
-### Q♣ · Queen of Thorns
-
-![Queen of Thorns](samples/Qc.png)
-
-### 4♦ · Rime Axe
-
-![Rime Axe](samples/4d.png)
-
-### 9♦ · Skycleaver
-
-![Skycleaver](samples/9d.png)
-
-### 3♥ · Rosehip Tonic
-
-![Rosehip Tonic](samples/3h.png)
-
-### 9♥ · King's Remedy
-
-![King's Remedy](samples/9h.png)
-
-## Second batch · more variance
-
-Eight further illustrations broaden the shape, scale, gesture, viewing angle and lighting within the same suit palettes.
+Earlier paintings are preserved in [the original study gallery](earlier-studies.md). The revised images are saved separately in `samples-v3/`.
 
 ### 2♠ · Pebble Sneak
 
-Tiny, round, full-body; high overhead angle and crouching gesture.
+Cool slate body; terracotta ochre steps, muted teal awning, plum sash, brass coin.
 
-![Pebble Sneak](samples/2s.png)
+![Pebble Sneak](samples-v3/2s.png)
 
 ### A♠ · The First Mountain
 
-Colossal scale; face and hand emerge as a landscape, extreme low viewpoint.
+Grey granite and soft moss; turquoise sea, peach sky, lavender shade.
 
-![The First Mountain](samples/As.png)
+![The First Mountain](samples-v3/As.png)
 
 ### 2♣ · Sproutling
 
-Tiny springy creature; full-body airborne side silhouette, very few leaves.
+Fresh green and honey wood; aubergine shell, pale mint garden and cream morning light.
 
-![Sproutling](samples/2c.png)
+![Sproutling](samples-v3/2c.png)
 
 ### 8♣ · Oak Sentinel
 
-Massive, squat and broad; low frontal angle and barricade-like silhouette.
+Deep green canopy, warm ochre wood; russet patches, amber lantern, blue-violet mist.
 
-![Oak Sentinel](samples/8c.png)
+![Oak Sentinel](samples-v3/8c.png)
 
-### 2♦ · Steel Shiv
+### 2♦ · Gutter Shiv
 
-Short horizontal blade; true overhead still life on a light ground.
+Blue steel blade; burgundy leather, cream stitching, warm walnut and olive shadow.
 
-![Steel Shiv](samples/2d.png)
+![Gutter Shiv](samples-v3/2d.png)
 
 ### 6♦ · Cobalt Mace
 
-Heavy blunt spherical head and foreshortened depth, not another blade.
+Cobalt head; ivory grip wrap, brass collar, ochre sunlight and dusty mauve shadows.
 
-![Cobalt Mace](samples/6d.png)
+![Cobalt Mace](samples-v3/6d.png)
 
 ### 2♥ · Mender's Sip
 
-Tiny flat rectangular vial; lying down in an overhead view on light pink.
+Bright fresh scarlet liquid; cream bandage, dusty blue cloth, pale sage morning light.
 
-![Mender's Sip](samples/2h.png)
+![Mender's Sip](samples-v3/2h.png)
 
-### 6♥ · Heartroot Brew
+### 6♥ · Sanguine Brew
 
-Broad two-handled flask; suspended and tilted, dark side-lit composition.
+Deep garnet liquid; smoke-clear glass, copper light, pale turquoise wall, tan rope.
 
-![Heartroot Brew](samples/6h.png)
+![Sanguine Brew](samples-v3/6h.png)
 
 ## Provenance
 
-Generated with the built-in image_gen tool. [catalog-and-prompts.json](catalog-and-prompts.json) contains the complete rank/suit naming set and the exact prompt for each sample. Reference image: [Ash & Briar palette board](../palette-concepts/ash-and-briar.png). Palette targets remain those in the [original palette manifest](../palette-concepts/prompts.json).
+Created with the built-in image_gen tool. [catalog-and-prompts.json](catalog-and-prompts.json) contains current names, weapon types, potion color targets, original generation names, references, preferred-image flags and exact successful prompts. Sproutling uses its earlier illustration as an edit target; the other seven revised scenes use the original palette board as a style reference. Earlier versions are retained for comparison. No downloaded Runeterra artwork is included in the repository.

@@ -1,7 +1,7 @@
 {
   "edition": "Ash & Briar",
   "date": "2026-10-22",
-  "status": "Selected direction; proposed names and sixteen sample illustrations, not yet applied to the live deck.",
+  "status": "Proposed names for all 44 cards; 24 study illustrations for 16 distinct cards, including eight preferred color-story revisions. Not applied to the live deck.",
   "generator": "Built-in image_gen tool",
   "reference": "../palette-concepts/ash-and-briar.png",
   "cards": [
@@ -58,7 +58,7 @@
       "id": "9s",
       "rank": "9",
       "suit": "s",
-      "name": "Quarry Breaker",
+      "name": "Quarry Hurler",
       "race": "Stonekin"
     },
     {
@@ -72,7 +72,7 @@
       "id": "Js",
       "rank": "J",
       "suit": "s",
-      "name": "Flint Marshal",
+      "name": "Onyx Marshal",
       "race": "Stonekin"
     },
     {
@@ -86,7 +86,7 @@
       "id": "Ks",
       "rank": "K",
       "suit": "s",
-      "name": "Mountain King",
+      "name": "Crag Sovereign",
       "race": "Stonekin"
     },
     {
@@ -107,7 +107,7 @@
       "id": "3c",
       "rank": "3",
       "suit": "c",
-      "name": "Bramble Scout",
+      "name": "Bramble Skulker",
       "race": "Treefolk"
     },
     {
@@ -128,7 +128,7 @@
       "id": "6c",
       "rank": "6",
       "suit": "c",
-      "name": "Birch Warden",
+      "name": "Birch Seer",
       "race": "Treefolk"
     },
     {
@@ -163,165 +163,291 @@
       "id": "Jc",
       "rank": "J",
       "suit": "c",
-      "name": "Briar Marshal",
+      "name": "Briar Herald",
       "race": "Treefolk"
     },
     {
       "id": "Qc",
       "rank": "Q",
       "suit": "c",
-      "name": "Queen of Thorns",
+      "name": "Queen of Vines",
       "race": "Treefolk"
     },
     {
       "id": "Kc",
       "rank": "K",
       "suit": "c",
-      "name": "Oakheart King",
+      "name": "Elderbough",
       "race": "Treefolk"
     },
     {
       "id": "Ac",
       "rank": "A",
       "suit": "c",
-      "name": "The Elderwood",
+      "name": "The Verdant Dream",
       "race": "Treefolk"
     },
     {
       "id": "2d",
       "rank": "2",
       "suit": "d",
-      "name": "Steel Shiv",
-      "race": null
+      "name": "Gutter Shiv",
+      "race": null,
+      "weaponType": "Improvised dagger"
     },
     {
       "id": "3d",
       "rank": "3",
       "suit": "d",
-      "name": "Frostfang",
-      "race": null
+      "name": "Hooktooth",
+      "race": null,
+      "weaponType": "Hooked sickle"
     },
     {
       "id": "4d",
       "rank": "4",
       "suit": "d",
-      "name": "Rime Axe",
-      "race": null
+      "name": "Splitter Axe",
+      "race": null,
+      "weaponType": "Bearded axe"
     },
     {
       "id": "5d",
       "rank": "5",
       "suit": "d",
-      "name": "Warden's Spear",
-      "race": null
+      "name": "Wayfarer's Spear",
+      "race": null,
+      "weaponType": "Travel spear"
     },
     {
       "id": "6d",
       "rank": "6",
       "suit": "d",
       "name": "Cobalt Mace",
-      "race": null
+      "race": null,
+      "weaponType": "Flanged mace"
     },
     {
       "id": "7d",
       "rank": "7",
       "suit": "d",
-      "name": "Moonsteel Saber",
-      "race": null
+      "name": "Duelist's Saber",
+      "race": null,
+      "weaponType": "Dueling saber"
     },
     {
       "id": "8d",
       "rank": "8",
       "suit": "d",
-      "name": "Glacier Maul",
-      "race": null
+      "name": "Bellringer",
+      "race": null,
+      "weaponType": "Warhammer"
     },
     {
       "id": "9d",
       "rank": "9",
       "suit": "d",
-      "name": "Skycleaver",
-      "race": null
+      "name": "Headsman's Greatsword",
+      "race": null,
+      "weaponType": "Executioner's greatsword"
     },
     {
       "id": "Td",
       "rank": "T",
       "suit": "d",
-      "name": "Winter's Edge",
-      "race": null
+      "name": "Oathbreaker",
+      "race": null,
+      "weaponType": "Chained flail"
     },
     {
       "id": "2h",
       "rank": "2",
       "suit": "h",
       "name": "Mender's Sip",
-      "race": null
+      "race": null,
+      "potionColor": {
+        "shade": "Fresh scarlet",
+        "target": "#D94A45"
+      }
     },
     {
       "id": "3h",
       "rank": "3",
       "suit": "h",
       "name": "Rosehip Tonic",
-      "race": null
+      "race": null,
+      "potionColor": {
+        "shade": "Rose red",
+        "target": "#C6546A"
+      }
     },
     {
       "id": "4h",
       "rank": "4",
       "suit": "h",
       "name": "Hearth Cordial",
-      "race": null
+      "race": null,
+      "potionColor": {
+        "shade": "Brick red",
+        "target": "#A8443B"
+      }
     },
     {
       "id": "5h",
       "rank": "5",
       "suit": "h",
       "name": "Scarlet Draught",
-      "race": null
+      "race": null,
+      "potionColor": {
+        "shade": "Vermilion red",
+        "target": "#D84B36"
+      }
     },
     {
       "id": "6h",
       "rank": "6",
       "suit": "h",
-      "name": "Heartroot Brew",
-      "race": null
+      "name": "Sanguine Brew",
+      "race": null,
+      "potionColor": {
+        "shade": "Deep garnet",
+        "target": "#882C44"
+      }
     },
     {
       "id": "7h",
       "rank": "7",
       "suit": "h",
       "name": "Ruby Elixir",
-      "race": null
+      "race": null,
+      "potionColor": {
+        "shade": "Ruby wine",
+        "target": "#AE2E53"
+      }
     },
     {
       "id": "8h",
       "rank": "8",
       "suit": "h",
-      "name": "Lifeblood Tonic",
-      "race": null
+      "name": "Phoenix Tears",
+      "race": null,
+      "potionColor": {
+        "shade": "Copper red",
+        "target": "#C9503D"
+      }
     },
     {
       "id": "9h",
       "rank": "9",
       "suit": "h",
       "name": "King's Remedy",
-      "race": null
+      "race": null,
+      "potionColor": {
+        "shade": "Dark cherry",
+        "target": "#982D3F"
+      }
     },
     {
       "id": "Th",
       "rank": "T",
       "suit": "h",
       "name": "Second Dawn",
-      "race": null
+      "race": null,
+      "potionColor": {
+        "shade": "Coral red",
+        "target": "#DC6A60"
+      }
     }
   ],
   "samples": [
+    {
+      "id": "2s",
+      "colorStory": "Cool slate body; terracotta ochre steps, muted teal awning, plum sash, brass coin.",
+      "name": "Pebble Sneak",
+      "path": "samples-v3/2s.png",
+      "prompt": "Use case: stylized-concept.\nAsset type: ONE portrait 4:5 full-bleed card illustration for original Scoundrel, Ash & Briar color-story revision.\nReference image: the supplied Ash & Briar concept board guides ONLY the simple painterly rendering and overall restrained taste. Do NOT inherit its monochrome backgrounds, poses or all-over color washes.\nPrimary request: distinct individual fantasy card art, with the visual storytelling and rich LOCAL COLOR RELATIONSHIPS of Legends of Runeterra, rendered MUCH MORE SIMPLY than realistic collectible-card art. Invent original characters and objects. Each scene has its own moment, environment, accent, material and lighting, even while sharing a deck.\nSTYLE: broad elegant opaque gouache paint shapes, calm areas, selective crisp edges at face/item, a little beautifully chosen detail at the focal point. No uniform tessellated chipping or triangular brush noise across every surface. Simple painted scenery, real spatial depth. Strong silhouette reads at thumbnail size. Modest amount of contextual detail that tells this card's story; allow the subject to touch and interact with its environment.\nCOLOR: suit color belongs mainly to the subject/material, NOT the whole picture. Combine three clearly separate color families with warm/cool contrast, neutrals and localized accents. Do NOT tint the entire painting grey, green, blue or red. Preserve colors of individual materials. Let the environment have colors different from the subject. Use the SPECIFIC color story below.\nCOMPOSITION: portrait 4:5, one main subject, natural asymmetry, directional lighting, central 80% safe for later cropping. Full-bleed painting with no text, numbers, suit symbols, frame, panels, swatches, logo or watermark.\nAvoid: photorealism, 3D plastic, ornate over-detailed equipment, thousands of leaf/crack details, particles everywhere, photographic microtexture, repetitive faceted scuffs, busy collage, generic studio backdrop, uniform matching background, copy of any franchise character.\n\nSubject and scene: Pebble Sneak: tiny round-headed squat living STONEKIN child, slate-grey smooth pebble body with stubby limbs and a cheeky sly squint. Crouched SIDEWAYS on a sunlit terracotta market step, pinching ONE oversized brass coin with two fingers while glancing over shoulder. A short dusty-plum cloth sash is the single distinctive costume detail. High three-quarter full-body view, head slightly off center, one broad muted TEAL cloth awning shape above casts a cool shadow across the ochre step. Palette: neutral slate-grey character, terracotta/ochre environment, teal shadow, small plum and brass accents. Warm late-afternoon sunlight picks out the face and coin. A little story of a theft, one coin only, NO crowd, stone arch or mountain background. Clean quiet uncracked stone planes and expressive eyebrows, not many tiny chips.",
+      "batch": "color-story-03",
+      "preferred": true,
+      "reference": "../palette-concepts/ash-and-briar.png"
+    },
+    {
+      "id": "As",
+      "colorStory": "Grey granite and soft moss; turquoise sea, peach sky, lavender shade.",
+      "name": "The First Mountain",
+      "path": "samples-v3/As.png",
+      "prompt": "Use case: stylized-concept.\nAsset type: ONE portrait 4:5 full-bleed card illustration for original Scoundrel, Ash & Briar color-story revision.\nReference image: the supplied Ash & Briar concept board guides ONLY the simple painterly rendering and overall restrained taste. Do NOT inherit its monochrome backgrounds, poses or all-over color washes.\nPrimary request: distinct individual fantasy card art, with the visual storytelling and rich LOCAL COLOR RELATIONSHIPS of Legends of Runeterra, rendered MUCH MORE SIMPLY than realistic collectible-card art. Invent original characters and objects. Each scene has its own moment, environment, accent, material and lighting, even while sharing a deck.\nSTYLE: broad elegant opaque gouache paint shapes, calm areas, selective crisp edges at face/item, a little beautifully chosen detail at the focal point. No uniform tessellated chipping or triangular brush noise across every surface. Simple painted scenery, real spatial depth. Strong silhouette reads at thumbnail size. Modest amount of contextual detail that tells this card's story; allow the subject to touch and interact with its environment.\nCOLOR: suit color belongs mainly to the subject/material, NOT the whole picture. Combine three clearly separate color families with warm/cool contrast, neutrals and localized accents. Do NOT tint the entire painting grey, green, blue or red. Preserve colors of individual materials. Let the environment have colors different from the subject. Use the SPECIFIC color story below.\nCOMPOSITION: portrait 4:5, one main subject, natural asymmetry, directional lighting, central 80% safe for later cropping. Full-bleed painting with no text, numbers, suit symbols, frame, panels, swatches, logo or watermark.\nAvoid: photorealism, 3D plastic, ornate over-detailed equipment, thousands of leaf/crack details, particles everywhere, photographic microtexture, repetitive faceted scuffs, busy collage, generic studio backdrop, uniform matching background, copy of any franchise character.\n\nSubject and scene: The First Mountain: immense ancient living STONEKIN whose hunched back forms a single angular mountain mass. He slowly raises one huge stone hand out of a calm turquoise coastal inlet at DAWN, pale sea mist hugging wrist. Face bowed toward his own palm, serene ancient half-closed eye; a broad moss-green patch crosses one shoulder. Low viewpoint from a cliff edge, huge hand lower foreground, head upper middle; ONE tiny off-white lighthouse on the distant shore establishes scale, simplified to a shape with a tiny warm light. Granite remains NEUTRAL SLATE with lavender-blue shade; surrounding sea TEAL-TURQUOISE, open sky soft PEACH-APRICOT and pale cream, moss muted green. Restrained fresh complementary colors, broad layered shapes, not a grey monochrome poster. No lava, rubble explosion, detailed buildings or crowd; timeless quiet waking scene.",
+      "batch": "color-story-03",
+      "preferred": true,
+      "reference": "../palette-concepts/ash-and-briar.png"
+    },
+    {
+      "id": "2c",
+      "colorStory": "Fresh green and honey wood; aubergine shell, pale mint garden and cream morning light.",
+      "name": "Sproutling",
+      "path": "samples-v3/2c.png",
+      "prompt": "Edit target: the supplied original Sproutling painting. Preserve the same original little wooden seed creature with two big green leaves, its expressive face and simple gouache rendering. Restage it sitting on a broad pale mossy garden step, leaning forward to admire a single smooth purple seashell full of rainwater. Its small root feet dangle over the ledge. Green leaves, honey-brown wooden body, aubergine-purple shell, pale mint environment, warm cream morning side light. Let each material keep its own local color; avoid a green tint over the whole image. One quiet broad lavender flower silhouette far behind, no tiny flower detail. Portrait 4:5, full-bleed, charming intimate scene, broad opaque painted shapes and simple flat areas, selective expressive face detail. No printed text, border, numbers, suit symbols, decorative patterns, logo or watermark. Keep the original painting's simplicity.",
+      "batch": "color-story-03",
+      "reference": "samples/2c.png",
+      "preferred": true
+    },
+    {
+      "id": "8c",
+      "colorStory": "Deep green canopy, warm ochre wood; russet patches, amber lantern, blue-violet mist.",
+      "name": "Oak Sentinel",
+      "path": "samples-v3/8c.png",
+      "prompt": "Use case: stylized-concept.\nAsset type: ONE portrait 4:5 full-bleed card illustration for original Scoundrel, Ash & Briar color-story revision.\nReference image: the supplied Ash & Briar concept board guides ONLY the simple painterly rendering and overall restrained taste. Do NOT inherit its monochrome backgrounds, poses or all-over color washes.\nPrimary request: distinct individual fantasy card art, with the visual storytelling and rich LOCAL COLOR RELATIONSHIPS of Legends of Runeterra, rendered MUCH MORE SIMPLY than realistic collectible-card art. Invent original characters and objects. Each scene has its own moment, environment, accent, material and lighting, even while sharing a deck.\nSTYLE: broad elegant opaque gouache paint shapes, calm areas, selective crisp edges at face/item, a little beautifully chosen detail at the focal point. No uniform tessellated chipping or triangular brush noise across every surface. Simple painted scenery, real spatial depth. Strong silhouette reads at thumbnail size. Modest amount of contextual detail that tells this card's story; allow the subject to touch and interact with its environment.\nCOLOR: suit color belongs mainly to the subject/material, NOT the whole picture. Combine three clearly separate color families with warm/cool contrast, neutrals and localized accents. Do NOT tint the entire painting grey, green, blue or red. Preserve colors of individual materials. Let the environment have colors different from the subject. Use the SPECIFIC color story below.\nCOMPOSITION: portrait 4:5, one main subject, natural asymmetry, directional lighting, central 80% safe for later cropping. Full-bleed painting with no text, numbers, suit symbols, frame, panels, swatches, logo or watermark.\nAvoid: photorealism, 3D plastic, ornate over-detailed equipment, thousands of leaf/crack details, particles everywhere, photographic microtexture, repetitive faceted scuffs, busy collage, generic studio backdrop, uniform matching background, copy of any franchise character.\n\nSubject and scene: Oak Sentinel: huge squat broad TREEFOLK guard with heavy root arms and low-set grumpy but kind face in a warm wooden trunk. Crouching protectively at the entrance of a simple stone footbridge at TWILIGHT, one enormous root hand curves around a single abandoned AMBER lantern to shelter it from rain. A large deep FERN-GREEN shoulder canopy with just TWO broad RUSSET autumn patches. Low three-quarter angle, lantern near lower center and face above catches its soft golden glow. Background is cool BLUE-VIOLET rain mist and one simplified pale bridge arch; green leaves stay distinct from muted ochre wood and amber lantern. Strong warm-versus-cool light, intimate protective story, broad calm shapes. Rain suggested with only three soft strokes, not particles or droplets everywhere. No leafy microdetail, weapons, ornaments or detailed town.",
+      "batch": "color-story-03",
+      "preferred": true,
+      "reference": "../palette-concepts/ash-and-briar.png"
+    },
+    {
+      "id": "2d",
+      "colorStory": "Blue steel blade; burgundy leather, cream stitching, warm walnut and olive shadow.",
+      "name": "Gutter Shiv",
+      "path": "samples-v3/2d.png",
+      "prompt": "Use case: stylized-concept.\nAsset type: ONE portrait 4:5 full-bleed card illustration for original Scoundrel, Ash & Briar color-story revision.\nReference image: the supplied Ash & Briar concept board guides ONLY the simple painterly rendering and overall restrained taste. Do NOT inherit its monochrome backgrounds, poses or all-over color washes.\nPrimary request: distinct individual fantasy card art, with the visual storytelling and rich LOCAL COLOR RELATIONSHIPS of Legends of Runeterra, rendered MUCH MORE SIMPLY than realistic collectible-card art. Invent original characters and objects. Each scene has its own moment, environment, accent, material and lighting, even while sharing a deck.\nSTYLE: broad elegant opaque gouache paint shapes, calm areas, selective crisp edges at face/item, a little beautifully chosen detail at the focal point. No uniform tessellated chipping or triangular brush noise across every surface. Simple painted scenery, real spatial depth. Strong silhouette reads at thumbnail size. Modest amount of contextual detail that tells this card's story; allow the subject to touch and interact with its environment.\nCOLOR: suit color belongs mainly to the subject/material, NOT the whole picture. Combine three clearly separate color families with warm/cool contrast, neutrals and localized accents. Do NOT tint the entire painting grey, green, blue or red. Preserve colors of individual materials. Let the environment have colors different from the subject. Use the SPECIFIC color story below.\nCOMPOSITION: portrait 4:5, one main subject, natural asymmetry, directional lighting, central 80% safe for later cropping. Full-bleed painting with no text, numbers, suit symbols, frame, panels, swatches, logo or watermark.\nAvoid: photorealism, 3D plastic, ornate over-detailed equipment, thousands of leaf/crack details, particles everywhere, photographic microtexture, repetitive faceted scuffs, busy collage, generic studio backdrop, uniform matching background, copy of any franchise character.\n\nSubject and scene: Gutter Shiv: one SHORT practical blue-steel dagger with a slightly crooked triangular tip and handle wrapped in worn BURGUNDY leather with one chunky cream stitch repair. Overhead close still life: knife lies nearly horizontal across the open flap of a muted OLIVE leather satchel on a warm WALNUT workbench. The blade has just two simple cool-blue planes and one light edge; do not make everything blue. The cut end of ONE loose cream cord beside the knife hints at its use as a pickpocket's tool, no other gear. Strong side light from a small unseen window creates warm gold light on wood and lavender-brown shadows. Clearly BLUE STEEL remains the weapon identity, grounded against warm brown, burgundy and olive. Quiet negative space, minimal large material details, no lettering, scrolls, coins or decorative runes.",
+      "batch": "color-story-03",
+      "preferred": true,
+      "reference": "../palette-concepts/ash-and-briar.png"
+    },
+    {
+      "id": "6d",
+      "colorStory": "Cobalt head; ivory grip wrap, brass collar, ochre sunlight and dusty mauve shadows.",
+      "name": "Cobalt Mace",
+      "path": "samples-v3/6d.png",
+      "prompt": "Use case: stylized-concept.\nAsset type: ONE portrait 4:5 full-bleed card illustration for original Scoundrel, Ash & Briar color-story revision.\nReference image: the supplied Ash & Briar concept board guides ONLY the simple painterly rendering and overall restrained taste. Do NOT inherit its monochrome backgrounds, poses or all-over color washes.\nPrimary request: distinct individual fantasy card art, with the visual storytelling and rich LOCAL COLOR RELATIONSHIPS of Legends of Runeterra, rendered MUCH MORE SIMPLY than realistic collectible-card art. Invent original characters and objects. Each scene has its own moment, environment, accent, material and lighting, even while sharing a deck.\nSTYLE: broad elegant opaque gouache paint shapes, calm areas, selective crisp edges at face/item, a little beautifully chosen detail at the focal point. No uniform tessellated chipping or triangular brush noise across every surface. Simple painted scenery, real spatial depth. Strong silhouette reads at thumbnail size. Modest amount of contextual detail that tells this card's story; allow the subject to touch and interact with its environment.\nCOLOR: suit color belongs mainly to the subject/material, NOT the whole picture. Combine three clearly separate color families with warm/cool contrast, neutrals and localized accents. Do NOT tint the entire painting grey, green, blue or red. Preserve colors of individual materials. Let the environment have colors different from the subject. Use the SPECIFIC color story below.\nCOMPOSITION: portrait 4:5, one main subject, natural asymmetry, directional lighting, central 80% safe for later cropping. Full-bleed painting with no text, numbers, suit symbols, frame, panels, swatches, logo or watermark.\nAvoid: photorealism, 3D plastic, ornate over-detailed equipment, thousands of leaf/crack details, particles everywhere, photographic microtexture, repetitive faceted scuffs, busy collage, generic studio backdrop, uniform matching background, copy of any franchise character.\n\nSubject and scene: Cobalt Mace: one heavy compact blue-steel mace with a rounded SIX-LOBED blunt head, short shaft and an IVORY cloth grip with one broad plain BRASS collar. Entire mace visible, resting almost upright against a low ochre sandstone block at an empty training yard; side three-quarter camera, head upper RIGHT and handle lower middle, one soft warm cast shadow. A single broad faded dusty-MAUVE hanging practice pennant sits far behind to the left, blurred and simple. Warm CREAM sky, ochre sandstone, soft mauve/lilac shade; head remains genuine rich COBALT BLUE with cool white edge light. Sunlit, tactile and grounded, no navy studio backdrop. Metal defined with four or five bold planes, soft fabric grip with one visible overlapping wrap, no particles, gold etching, spikes, flowers or additional weapons.",
+      "batch": "color-story-03",
+      "preferred": true,
+      "reference": "../palette-concepts/ash-and-briar.png"
+    },
+    {
+      "id": "2h",
+      "colorStory": "Bright fresh scarlet liquid; cream bandage, dusty blue cloth, pale sage morning light.",
+      "name": "Mender's Sip",
+      "path": "samples-v3/2h.png",
+      "prompt": "Use case: stylized-concept.\nAsset type: ONE portrait 4:5 full-bleed card illustration for original Scoundrel, Ash & Briar color-story revision.\nReference image: the supplied Ash & Briar concept board guides ONLY the simple painterly rendering and overall restrained taste. Do NOT inherit its monochrome backgrounds, poses or all-over color washes.\nPrimary request: distinct individual fantasy card art, with the visual storytelling and rich LOCAL COLOR RELATIONSHIPS of Legends of Runeterra, rendered MUCH MORE SIMPLY than realistic collectible-card art. Invent original characters and objects. Each scene has its own moment, environment, accent, material and lighting, even while sharing a deck.\nSTYLE: broad elegant opaque gouache paint shapes, calm areas, selective crisp edges at face/item, a little beautifully chosen detail at the focal point. No uniform tessellated chipping or triangular brush noise across every surface. Simple painted scenery, real spatial depth. Strong silhouette reads at thumbnail size. Modest amount of contextual detail that tells this card's story; allow the subject to touch and interact with its environment.\nCOLOR: suit color belongs mainly to the subject/material, NOT the whole picture. Combine three clearly separate color families with warm/cool contrast, neutrals and localized accents. Do NOT tint the entire painting grey, green, blue or red. Preserve colors of individual materials. Let the environment have colors different from the subject. Use the SPECIFIC color story below.\nCOMPOSITION: portrait 4:5, one main subject, natural asymmetry, directional lighting, central 80% safe for later cropping. Full-bleed painting with no text, numbers, suit symbols, frame, panels, swatches, logo or watermark.\nAvoid: photorealism, 3D plastic, ornate over-detailed equipment, thousands of leaf/crack details, particles everywhere, photographic microtexture, repetitive faceted scuffs, busy collage, generic studio backdrop, uniform matching background, copy of any franchise character.\n\nSubject and scene: Mender's Sip: one tiny flat rectangular clear-glass healing vial with a short cork and softly rounded corners, filled with FRESH SCARLET RED liquid, approximate #D94A45. A single CREAM linen strip is wrapped around the lower third as a field repair. Whole vial visible lying at a gentle diagonal on DUSTY BLUE folded cloth beside ONE small roll of cream bandage, on an infirmary's muted pale SAGE wooden sill. Overhead three-quarter close view, airy morning sunlight, warm honey reflection at one glass edge. Scarlet liquid is bright and clear with coral highlights and a deeper carmine center; it stays RED rather than orange. Distinct materials: scarlet potion, dusty blue cloth, cream bandage, sage setting, warm light. Humble travel medicine with a small story, not another bottle on a red background. Broad soft glass highlights and simple cloth planes, no labels, writing or miscellaneous herbs.",
+      "batch": "color-story-03",
+      "preferred": true,
+      "reference": "../palette-concepts/ash-and-briar.png"
+    },
+    {
+      "id": "6h",
+      "colorStory": "Deep garnet liquid; smoke-clear glass, copper light, pale turquoise wall, tan rope.",
+      "name": "Sanguine Brew",
+      "path": "samples-v3/6h.png",
+      "prompt": "Use case: stylized-concept.\nAsset type: ONE portrait 4:5 full-bleed card illustration for original Scoundrel, Ash & Briar color-story revision.\nReference image: the supplied Ash & Briar concept board guides ONLY the simple painterly rendering and overall restrained taste. Do NOT inherit its monochrome backgrounds, poses or all-over color washes.\nPrimary request: distinct individual fantasy card art, with the visual storytelling and rich LOCAL COLOR RELATIONSHIPS of Legends of Runeterra, rendered MUCH MORE SIMPLY than realistic collectible-card art. Invent original characters and objects. Each scene has its own moment, environment, accent, material and lighting, even while sharing a deck.\nSTYLE: broad elegant opaque gouache paint shapes, calm areas, selective crisp edges at face/item, a little beautifully chosen detail at the focal point. No uniform tessellated chipping or triangular brush noise across every surface. Simple painted scenery, real spatial depth. Strong silhouette reads at thumbnail size. Modest amount of contextual detail that tells this card's story; allow the subject to touch and interact with its environment.\nCOLOR: suit color belongs mainly to the subject/material, NOT the whole picture. Combine three clearly separate color families with warm/cool contrast, neutrals and localized accents. Do NOT tint the entire painting grey, green, blue or red. Preserve colors of individual materials. Let the environment have colors different from the subject. Use the SPECIFIC color story below.\nCOMPOSITION: portrait 4:5, one main subject, natural asymmetry, directional lighting, central 80% safe for later cropping. Full-bleed painting with no text, numbers, suit symbols, frame, panels, swatches, logo or watermark.\nAvoid: photorealism, 3D plastic, ornate over-detailed equipment, thousands of leaf/crack details, particles everywhere, photographic microtexture, repetitive faceted scuffs, busy collage, generic studio backdrop, uniform matching background, copy of any franchise character.\n\nSubject and scene: Sanguine Brew: one wide squat smoked-CLEAR glass flask with TWO loop handles, short neck and a chunky dark cork, hanging slightly tilted by a single thick TAN cord. Its liquid is translucent DEEP GARNET RED, approximately #882C44, dark burgundy at center and warm cherry-red where light passes through, clearly red rather than purple. A plain small terra-cotta wax tab hangs blank from the neck, no icon. Three-quarter close side view. Background: quiet pale TURQUOISE apothecary wall and ONE ochre window-light rectangle; a soft dark evergreen leaf silhouette at lower corner suggests the shop. Narrow warm COPPER light from left makes the dark red infusion luminous against cool turquoise. Liquid surface stays level despite tilted flask. Clearly different red shade from a bright scarlet vial; no full-image red wash, pedestal, gold filigree, tiny leaves or floating particles. Rich but simple painted color relationships.",
+      "batch": "color-story-03",
+      "preferred": true,
+      "reference": "../palette-concepts/ash-and-briar.png"
+    },
     {
       "id": "2s",
       "variance": "Tiny, round, full-body; high overhead angle and crouching gesture.",
       "name": "Pebble Sneak",
       "path": "samples/2s.png",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE new original portrait 4:5 full-bleed card illustration for Scoundrel, Ash & Briar edition.\nInput image: Ash & Briar board is a reference for PALETTE and PAINTERLY SIMPLICITY ONLY. Invent a new composition, not a crop, clone or redraw of its character poses or item views.\nStyle: expressive fantasy card painting with Legends of Runeterra appeal, radically simplified into broad opaque gouache shapes. Memorable silhouette, large quiet areas, selective sharp edges, soft lost edges, strong directional light. Materials described by only a few large planes. One main subject, at most one staging prop or broad environmental shape. Make the image readable at small card size. NO tiny texture or all-over brush noise.\nThis is a VARIATION study: preserve the subject's specified unusual camera angle, body proportions, silhouette, scale and layout. The scene specification below takes priority over the reference composition. Strong deliberate positive and negative shapes; the subject should occupy 55–75% of the frame. Keep key face/item away from edges for later card overlays.\nNO frame, suit icon, rank, text, lettering, number, watermark, swatches, UI or multiple panels. One finished painting only.\nAvoid: photorealism, 3D rendering, elaborate ornament, many little leaves or cracks, complex armor, jewelry, particles, sparks, scatter of props, background architecture, busy scenery, hatch marks, realistic surface microtexture, thick black vignette. Maintain the calm simplicity of the chosen board or simpler.\n\nSubject and scene: Pebble Sneak, a tiny round-bodied young STONEKIN thief. Stonekin are original living rock people with expressive angular stone faces; this one is squat and pebble-like, HUGE round head, short stubby limbs, no horns, no clothing or armor. He crouches on all fours, one palm on the floor, the other hugging ONE small smooth dark pebble, looking up sideways with a cheeky squint. HIGH THREE-QUARTER OVERHEAD VIEW showing the entire small character, a compact curled silhouette in the lower center, a long simple shadow diagonally away. One broad pale chalk-stone ground, NO doorway, castle or distant mountains. Palette pale blue-grey #C6CCD0 and slate #687483, charcoal #282D36 shadows. Soft daylight and a slightly warm cream ground for contrast. Broad smooth shapes, not cracked rock texture. Must look radically different from a standing broad-chested stone guard portrait.",
-      "batch": "variation-02"
+      "batch": "variation-02",
+      "preferred": false
     },
     {
       "id": "As",
@@ -329,7 +455,8 @@
       "name": "The First Mountain",
       "path": "samples/As.png",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE new original portrait 4:5 full-bleed card illustration for Scoundrel, Ash & Briar edition.\nInput image: Ash & Briar board is a reference for PALETTE and PAINTERLY SIMPLICITY ONLY. Invent a new composition, not a crop, clone or redraw of its character poses or item views.\nStyle: expressive fantasy card painting with Legends of Runeterra appeal, radically simplified into broad opaque gouache shapes. Memorable silhouette, large quiet areas, selective sharp edges, soft lost edges, strong directional light. Materials described by only a few large planes. One main subject, at most one staging prop or broad environmental shape. Make the image readable at small card size. NO tiny texture or all-over brush noise.\nThis is a VARIATION study: preserve the subject's specified unusual camera angle, body proportions, silhouette, scale and layout. The scene specification below takes priority over the reference composition. Strong deliberate positive and negative shapes; the subject should occupy 55–75% of the frame. Keep key face/item away from edges for later card overlays.\nNO frame, suit icon, rank, text, lettering, number, watermark, swatches, UI or multiple panels. One finished painting only.\nAvoid: photorealism, 3D rendering, elaborate ornament, many little leaves or cracks, complex armor, jewelry, particles, sparks, scatter of props, background architecture, busy scenery, hatch marks, realistic surface microtexture, thick black vignette. Maintain the calm simplicity of the chosen board or simpler.\n\nSubject and scene: The First Mountain. A colossal ANCIENT STONEKIN whose hunched back is a single mountain-shaped rock mass. EXTREME LOW GROUND-LEVEL VIEW looking up at the giant's bowed stone head and one enormous planted hand. The giant is kneeling low rather than standing. One broad forearm crosses the lower foreground and a quiet stone face turns down toward viewer; eye small, ancient, half closed. Head and shoulder dominate upper frame with an asymmetrical peak silhouette; hand establishes immense scale. NO horns, crown, robes, weapons, lava, glowing cracks, buildings or other people. Quiet pale mist ground and ONE broad grey hill silhouette at the base. Palette charcoal #282D36, slate #687483, off-white #C6CCD0; a clean soft rim of dawn light separates giant from sky. Few enormous rock planes, solemn elemental form. Portrait illustration, far less surface detail than normal fantasy art.",
-      "batch": "variation-02"
+      "batch": "variation-02",
+      "preferred": false
     },
     {
       "id": "2c",
@@ -337,7 +464,8 @@
       "name": "Sproutling",
       "path": "samples/2c.png",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE new original portrait 4:5 full-bleed card illustration for Scoundrel, Ash & Briar edition.\nInput image: Ash & Briar board is a reference for PALETTE and PAINTERLY SIMPLICITY ONLY. Invent a new composition, not a crop, clone or redraw of its character poses or item views.\nStyle: expressive fantasy card painting with Legends of Runeterra appeal, radically simplified into broad opaque gouache shapes. Memorable silhouette, large quiet areas, selective sharp edges, soft lost edges, strong directional light. Materials described by only a few large planes. One main subject, at most one staging prop or broad environmental shape. Make the image readable at small card size. NO tiny texture or all-over brush noise.\nThis is a VARIATION study: preserve the subject's specified unusual camera angle, body proportions, silhouette, scale and layout. The scene specification below takes priority over the reference composition. Strong deliberate positive and negative shapes; the subject should occupy 55–75% of the frame. Keep key face/item away from edges for later card overlays.\nNO frame, suit icon, rank, text, lettering, number, watermark, swatches, UI or multiple panels. One finished painting only.\nAvoid: photorealism, 3D rendering, elaborate ornament, many little leaves or cracks, complex armor, jewelry, particles, sparks, scatter of props, background architecture, busy scenery, hatch marks, realistic surface microtexture, thick black vignette. Maintain the calm simplicity of the chosen board or simpler.\n\nSubject and scene: Sproutling. A tiny playful TREEFOLK child formed from ONE smooth rounded seed-shaped torso with a simple expressive wooden face, two very short root legs, two thin twig arms, and exactly TWO oversized bright fern-green leaves sprouting above its head like floppy ears. The whole creature is no taller than a mushroom, but NO mushroom prop. Full-body SIDE VIEW caught mid-hop across one broad dark root curving along the bottom edge; little arms reaching forward, legs tucked, delighted mischievous face, airy asymmetrical pose. Calm pale yellow-green empty background. Main green #6D9058, deep green #304231, pale leaf #D1DDB3 with muted warm wood. Big clean leaf silhouettes, no leaf veins or bark grooves. Subject fills central 65%, so it reads as a small charming seed creature rather than a humanoid tree warrior. Broad painted shapes, not polished 3D.",
-      "batch": "variation-02"
+      "batch": "variation-02",
+      "preferred": false
     },
     {
       "id": "8c",
@@ -345,15 +473,18 @@
       "name": "Oak Sentinel",
       "path": "samples/8c.png",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE new original portrait 4:5 full-bleed card illustration for Scoundrel, Ash & Briar edition.\nInput image: Ash & Briar board is a reference for PALETTE and PAINTERLY SIMPLICITY ONLY. Invent a new composition, not a crop, clone or redraw of its character poses or item views.\nStyle: expressive fantasy card painting with Legends of Runeterra appeal, radically simplified into broad opaque gouache shapes. Memorable silhouette, large quiet areas, selective sharp edges, soft lost edges, strong directional light. Materials described by only a few large planes. One main subject, at most one staging prop or broad environmental shape. Make the image readable at small card size. NO tiny texture or all-over brush noise.\nThis is a VARIATION study: preserve the subject's specified unusual camera angle, body proportions, silhouette, scale and layout. The scene specification below takes priority over the reference composition. Strong deliberate positive and negative shapes; the subject should occupy 55–75% of the frame. Keep key face/item away from edges for later card overlays.\nNO frame, suit icon, rank, text, lettering, number, watermark, swatches, UI or multiple panels. One finished painting only.\nAvoid: photorealism, 3D rendering, elaborate ornament, many little leaves or cracks, complex armor, jewelry, particles, sparks, scatter of props, background architecture, busy scenery, hatch marks, realistic surface microtexture, thick black vignette. Maintain the calm simplicity of the chosen board or simpler.\n\nSubject and scene: Oak Sentinel. One enormous old TREEFOLK guard with a barrel-wide trunk body, very short thick root legs and two enormous root forearms planted on either side like buttresses. Broad face set low into the thick trunk, heavy drooping wooden brow and broad nose, vigilant grumpy expression. ONE huge rounded dark fern-green canopy spreads over its shoulders like a low umbrella, not many small branches or leaf clusters. LOW FRONTAL VIEW, entire squat body fits the frame, leaning toward viewer; silhouette is almost as wide as tall. NO staff, armor, antler crown or robes. Ground is one broad pale moss plane, background is quiet cream-green with a single dark vertical woodland mass on one edge. Green #6D9058, deep #304231, pale leaf #D1DDB3, muted ochre wood. Smooth large trunk planes without bark grooves; one soft shaft of side light. Must contrast with slender Willow Watcher and elegant Queen of Thorns.",
-      "batch": "variation-02"
+      "batch": "variation-02",
+      "preferred": false
     },
     {
       "id": "2d",
       "variance": "Short horizontal blade; true overhead still life on a light ground.",
-      "name": "Steel Shiv",
+      "name": "Gutter Shiv",
       "path": "samples/2d.png",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE new original portrait 4:5 full-bleed card illustration for Scoundrel, Ash & Briar edition.\nInput image: Ash & Briar board is a reference for PALETTE and PAINTERLY SIMPLICITY ONLY. Invent a new composition, not a crop, clone or redraw of its character poses or item views.\nStyle: expressive fantasy card painting with Legends of Runeterra appeal, radically simplified into broad opaque gouache shapes. Memorable silhouette, large quiet areas, selective sharp edges, soft lost edges, strong directional light. Materials described by only a few large planes. One main subject, at most one staging prop or broad environmental shape. Make the image readable at small card size. NO tiny texture or all-over brush noise.\nThis is a VARIATION study: preserve the subject's specified unusual camera angle, body proportions, silhouette, scale and layout. The scene specification below takes priority over the reference composition. Strong deliberate positive and negative shapes; the subject should occupy 55–75% of the frame. Keep key face/item away from edges for later card overlays.\nNO frame, suit icon, rank, text, lettering, number, watermark, swatches, UI or multiple panels. One finished painting only.\nAvoid: photorealism, 3D rendering, elaborate ornament, many little leaves or cracks, complex armor, jewelry, particles, sparks, scatter of props, background architecture, busy scenery, hatch marks, realistic surface microtexture, thick black vignette. Maintain the calm simplicity of the chosen board or simpler.\n\nSubject and scene: Steel Shiv. ONE small practical BLUE-STEEL dagger with a short wide triangular blade, simple straight tang and a dark leather grip, no guard or ornament. TRUE OVERHEAD TOP-DOWN VIEW: entire dagger lies almost HORIZONTALLY across center, tip to left, handle to right, on one broad folded off-white cloth shape. Long clean cast shadow underneath creates a graphic shape. Background quiet pale cool blue, high-key rather than dark navy. Steel #5FA8CF, shadow #263B50, white-blue edge #D1E9F3, leather neutral brown. A small inexpensive tool, smooth blade split into only two broad blue planes, one crisp edge glint. NO axe, long sword, diagonal planted weapon, gems, runes, scratches, extra tools or scenery. Make material read through shape and light, not texture.",
-      "batch": "variation-02"
+      "batch": "variation-02",
+      "generatedName": "Steel Shiv",
+      "preferred": false
     },
     {
       "id": "6d",
@@ -361,7 +492,8 @@
       "name": "Cobalt Mace",
       "path": "samples/6d.png",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE new original portrait 4:5 full-bleed card illustration for Scoundrel, Ash & Briar edition.\nInput image: Ash & Briar board is a reference for PALETTE and PAINTERLY SIMPLICITY ONLY. Invent a new composition, not a crop, clone or redraw of its character poses or item views.\nStyle: expressive fantasy card painting with Legends of Runeterra appeal, radically simplified into broad opaque gouache shapes. Memorable silhouette, large quiet areas, selective sharp edges, soft lost edges, strong directional light. Materials described by only a few large planes. One main subject, at most one staging prop or broad environmental shape. Make the image readable at small card size. NO tiny texture or all-over brush noise.\nThis is a VARIATION study: preserve the subject's specified unusual camera angle, body proportions, silhouette, scale and layout. The scene specification below takes priority over the reference composition. Strong deliberate positive and negative shapes; the subject should occupy 55–75% of the frame. Keep key face/item away from edges for later card overlays.\nNO frame, suit icon, rank, text, lettering, number, watermark, swatches, UI or multiple panels. One finished painting only.\nAvoid: photorealism, 3D rendering, elaborate ornament, many little leaves or cracks, complex armor, jewelry, particles, sparks, scatter of props, background architecture, busy scenery, hatch marks, realistic surface microtexture, thick black vignette. Maintain the calm simplicity of the chosen board or simpler.\n\nSubject and scene: Cobalt Mace. ONE formidable blue-steel FLANGED MACE with a heavy compact near-spherical head formed by exactly SIX broad blunt lobes, a short thick shaft and simple dark wrapped grip. Dramatic CLOSE FORESHORTENED THREE-QUARTER VIEW: huge round head sits near upper center, shaft recedes down and slightly right so the entire weapon stays in frame, end of grip visible at lower right. The dominant silhouette is a big round blue mass, not a sword or axe shape. Floating only visually against a simple broad shadow plane beneath it, no magic, hand or wielder. Quiet muted midnight blue ground with ONE pale cool light patch behind head. Blue #5FA8CF, navy #263B50, icy #D1E9F3. Strong side light, head broken into large clean facets, no spikes, filigree, gold, lightning or little details.",
-      "batch": "variation-02"
+      "batch": "variation-02",
+      "preferred": false
     },
     {
       "id": "2h",
@@ -369,63 +501,100 @@
       "name": "Mender's Sip",
       "path": "samples/2h.png",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE new original portrait 4:5 full-bleed card illustration for Scoundrel, Ash & Briar edition.\nInput image: Ash & Briar board is a reference for PALETTE and PAINTERLY SIMPLICITY ONLY. Invent a new composition, not a crop, clone or redraw of its character poses or item views.\nStyle: expressive fantasy card painting with Legends of Runeterra appeal, radically simplified into broad opaque gouache shapes. Memorable silhouette, large quiet areas, selective sharp edges, soft lost edges, strong directional light. Materials described by only a few large planes. One main subject, at most one staging prop or broad environmental shape. Make the image readable at small card size. NO tiny texture or all-over brush noise.\nThis is a VARIATION study: preserve the subject's specified unusual camera angle, body proportions, silhouette, scale and layout. The scene specification below takes priority over the reference composition. Strong deliberate positive and negative shapes; the subject should occupy 55–75% of the frame. Keep key face/item away from edges for later card overlays.\nNO frame, suit icon, rank, text, lettering, number, watermark, swatches, UI or multiple panels. One finished painting only.\nAvoid: photorealism, 3D rendering, elaborate ornament, many little leaves or cracks, complex armor, jewelry, particles, sparks, scatter of props, background architecture, busy scenery, hatch marks, realistic surface microtexture, thick black vignette. Maintain the calm simplicity of the chosen board or simpler.\n\nSubject and scene: Mender's Sip. ONE tiny flat rectangular CLEAR-GLASS travel vial with softly rounded corners, a short narrow neck and a small plain cork, NO cord or label. TRUE OVERHEAD VIEW of the whole vial LYING ON ITS SIDE at a shallow diagonal, neck toward upper left; compact small silhouette, not an upright round potion bottle. Bottle is nearly full of bright RED healing liquid, with one small clear air pocket. Cast shadow is one crisp maroon shape to lower right, background one calm pale dusty pink stone plane. Red #D65454, deep wine #5E3038, warm pale #F0B8AD and creamy highlights. Big red center, three broad clear glass highlights maximum. Not purple, orange, green or milky potion. No fabric, herbs, berries, flowers, scattered objects, bubbles or particles. Airy high-key lighting, more empty space than previous potion portraits.",
-      "batch": "variation-02"
+      "batch": "variation-02",
+      "preferred": false
     },
     {
       "id": "6h",
       "variance": "Broad two-handled flask; suspended and tilted, dark side-lit composition.",
-      "name": "Heartroot Brew",
+      "name": "Sanguine Brew",
       "path": "samples/6h.png",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE new original portrait 4:5 full-bleed card illustration for Scoundrel, Ash & Briar edition.\nInput image: Ash & Briar board is a reference for PALETTE and PAINTERLY SIMPLICITY ONLY. Invent a new composition, not a crop, clone or redraw of its character poses or item views.\nStyle: expressive fantasy card painting with Legends of Runeterra appeal, radically simplified into broad opaque gouache shapes. Memorable silhouette, large quiet areas, selective sharp edges, soft lost edges, strong directional light. Materials described by only a few large planes. One main subject, at most one staging prop or broad environmental shape. Make the image readable at small card size. NO tiny texture or all-over brush noise.\nThis is a VARIATION study: preserve the subject's specified unusual camera angle, body proportions, silhouette, scale and layout. The scene specification below takes priority over the reference composition. Strong deliberate positive and negative shapes; the subject should occupy 55–75% of the frame. Keep key face/item away from edges for later card overlays.\nNO frame, suit icon, rank, text, lettering, number, watermark, swatches, UI or multiple panels. One finished painting only.\nAvoid: photorealism, 3D rendering, elaborate ornament, many little leaves or cracks, complex armor, jewelry, particles, sparks, scatter of props, background architecture, busy scenery, hatch marks, realistic surface microtexture, thick black vignette. Maintain the calm simplicity of the chosen board or simpler.\n\nSubject and scene: Heartroot Brew. ONE wide squat CLEAR-GLASS pilgrim flask, roughly oblate circular body with TWO large chunky loop handles attached at its shoulders, very short neck and a plain broad dark cork. Shape evokes a little broad two-handled cooking pot made of glass, clearly a bottle, distinct from pear-shaped and hexagonal bottles. A single thick tan cord passes through the two handles; flask hangs SUSPENDED, tilting gently clockwise, but its rich RUBY RED liquid surface stays horizontal due to gravity. Full bottle and upper short cord visible. CLOSE LOW SIDE VIEW; one narrow strong warm light from left makes a broad luminous red mass and one cream edge highlight. Quiet deep wine-red backdrop with ONE broad pale rose ellipse behind the bottle, NO stone pedestal. Red #D65454, burgundy #5E3038, pale #F0B8AD, no green or orange liquid. No etched decoration, hearts, labels, wax seals, floating particles, herbs or extra objects. Bold wide silhouette, calm large paint shapes.",
-      "batch": "variation-02"
+      "batch": "variation-02",
+      "generatedName": "Heartroot Brew",
+      "preferred": false
     },
     {
       "id": "4s",
       "name": "Shale Sentry",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE standalone portrait 4:5 full-bleed card illustration for the original Scoundrel dungeon game, Ash & Briar edition.\nInput image: the supplied Ash & Briar four-card concept board is a STYLE AND PALETTE REFERENCE ONLY. Generate one new illustration, not a board or a crop. Follow the broad brush shapes and striking simple silhouette of its individual panels. Original designs with the expressive painted fantasy character appeal of Legends of Runeterra, pared back to essential shapes.\nArt direction: large confident opaque gouache brush planes, limited color families, soft lost edges, bold thumbnail-readable shape. Make the art as SIMPLE as the reference board or simpler. ONE main subject, at most ONE prop, ONE large background silhouette on a calm softly painted ground. No tiny repeated textures. Keep sharpest edges at the face or the important object edge. Interesting pose and directional lighting, 70% suit color family / 20% neutral / 10% highlight. Clear light-dark separation. Broad quiet empty areas.\nComposition: portrait 4:5, subject centered within central 75% for later card cropping, illustration painted to all four edges. No frame, numbers, suit glyphs, text, labels, logos or watermark; the game will add these separately. No multiview, no montage, no separate swatches.\nAvoid: photorealism, 3D-rendered polish, microdetail, etched ornament, complex armor, tiny gems, individual bark grooves, scattered leaves, particles, dust motes, busy scenery, line hatch, noisy canvas grain, strong black vignette. Do not copy any existing franchise character.\n\nSubject and scene: Shale Sentry. One compact broad-shouldered STONEKIN guard with a square stone jaw, small blunt horns, heavy rectangular hands and slate-grey body built from a few large smooth rock planes. A simple dark brown shoulder wrap; one short plain stone club rests across the shoulder. Waist-up THREE-QUARTER SIDE VIEW, chin raised, alert stern expression, body angled left and eyes looking right. Quiet cool misty pale-grey ground with ONE broad charcoal arch shape. Palette charcoal #282D36, slate #687483, pale stone #C6CCD0; no glowing cracks. Left-side daylight, uncluttered strong square silhouette.",
-      "path": "samples/4s.png"
+      "path": "samples/4s.png",
+      "preferred": true
     },
     {
       "id": "Qs",
       "name": "Granite Matriarch",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE standalone portrait 4:5 full-bleed card illustration for the original Scoundrel dungeon game, Ash & Briar edition.\nInput image: the supplied Ash & Briar four-card concept board is a STYLE AND PALETTE REFERENCE ONLY. Generate one new illustration, not a board or a crop. Follow the broad brush shapes and striking simple silhouette of its individual panels. Original designs with the expressive painted fantasy character appeal of Legends of Runeterra, pared back to essential shapes.\nArt direction: large confident opaque gouache brush planes, limited color families, soft lost edges, bold thumbnail-readable shape. Make the art as SIMPLE as the reference board or simpler. ONE main subject, at most ONE prop, ONE large background silhouette on a calm softly painted ground. No tiny repeated textures. Keep sharpest edges at the face or the important object edge. Interesting pose and directional lighting, 70% suit color family / 20% neutral / 10% highlight. Clear light-dark separation. Broad quiet empty areas.\nComposition: portrait 4:5, subject centered within central 75% for later card cropping, illustration painted to all four edges. No frame, numbers, suit glyphs, text, labels, logos or watermark; the game will add these separately. No multiview, no montage, no separate swatches.\nAvoid: photorealism, 3D-rendered polish, microdetail, etched ornament, complex armor, tiny gems, individual bark grooves, scattered leaves, particles, dust motes, busy scenery, line hatch, noisy canvas grain, strong black vignette. Do not copy any existing franchise character.\n\nSubject and scene: Granite Matriarch. One formidable elder female STONEKIN, tall and heavy with pale granite face, broad sculpted cheek planes and a simple crown-like ridge of THREE blunt stone points grown from her head. No jewelry. One plain charcoal mantle draped into a single triangular shape, massive folded hands in the foreground. LOW ANGLE CLOSE PORTRAIT, head turned in profile toward the light, calm commanding expression. Broad smooth stone anatomy with only a handful of large planes. Quiet pale-grey background with ONE distant sloping rock mass. Palette charcoal #282D36, slate #687483, pale stone #C6CCD0. A strong off-white rim light; read as an original living stone person rather than a detailed carved statue.",
-      "path": "samples/Qs.png"
+      "path": "samples/Qs.png",
+      "preferred": true
     },
     {
       "id": "4c",
       "name": "Willow Watcher",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE standalone portrait 4:5 full-bleed card illustration for the original Scoundrel dungeon game, Ash & Briar edition.\nInput image: the supplied Ash & Briar four-card concept board is a STYLE AND PALETTE REFERENCE ONLY. Generate one new illustration, not a board or a crop. Follow the broad brush shapes and striking simple silhouette of its individual panels. Original designs with the expressive painted fantasy character appeal of Legends of Runeterra, pared back to essential shapes.\nArt direction: large confident opaque gouache brush planes, limited color families, soft lost edges, bold thumbnail-readable shape. Make the art as SIMPLE as the reference board or simpler. ONE main subject, at most ONE prop, ONE large background silhouette on a calm softly painted ground. No tiny repeated textures. Keep sharpest edges at the face or the important object edge. Interesting pose and directional lighting, 70% suit color family / 20% neutral / 10% highlight. Clear light-dark separation. Broad quiet empty areas.\nComposition: portrait 4:5, subject centered within central 75% for later card cropping, illustration painted to all four edges. No frame, numbers, suit glyphs, text, labels, logos or watermark; the game will add these separately. No multiview, no montage, no separate swatches.\nAvoid: photorealism, 3D-rendered polish, microdetail, etched ornament, complex armor, tiny gems, individual bark grooves, scattered leaves, particles, dust motes, busy scenery, line hatch, noisy canvas grain, strong black vignette. Do not copy any existing franchise character.\n\nSubject and scene: Willow Watcher. One slender TREEFOLK lookout, humanoid face formed from a few smooth warm wood planes, long bending arms, an expressive alert face. A drooping willow crown suggested by only THREE large sage-and-fern green hanging leaf masses, not individual leaves. Holds ONE plain slender wooden staff. Full body in a gentle leaning S-curve, three-quarter view, one root foot stepping onto a single low mossy ledge. Calm pale cream-green ground with ONE broad dark forest shape. Fern green #6D9058, deep green #304231, pale leaf #D1DDB3, muted ochre wood. Light from upper right; airy readable silhouette with open space around the limbs. No bark texture.",
-      "path": "samples/4c.png"
+      "path": "samples/4c.png",
+      "preferred": true
     },
     {
       "id": "Qc",
-      "name": "Queen of Thorns",
+      "name": "Queen of Vines",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE standalone portrait 4:5 full-bleed card illustration for the original Scoundrel dungeon game, Ash & Briar edition.\nInput image: the supplied Ash & Briar four-card concept board is a STYLE AND PALETTE REFERENCE ONLY. Generate one new illustration, not a board or a crop. Follow the broad brush shapes and striking simple silhouette of its individual panels. Original designs with the expressive painted fantasy character appeal of Legends of Runeterra, pared back to essential shapes.\nArt direction: large confident opaque gouache brush planes, limited color families, soft lost edges, bold thumbnail-readable shape. Make the art as SIMPLE as the reference board or simpler. ONE main subject, at most ONE prop, ONE large background silhouette on a calm softly painted ground. No tiny repeated textures. Keep sharpest edges at the face or the important object edge. Interesting pose and directional lighting, 70% suit color family / 20% neutral / 10% highlight. Clear light-dark separation. Broad quiet empty areas.\nComposition: portrait 4:5, subject centered within central 75% for later card cropping, illustration painted to all four edges. No frame, numbers, suit glyphs, text, labels, logos or watermark; the game will add these separately. No multiview, no montage, no separate swatches.\nAvoid: photorealism, 3D-rendered polish, microdetail, etched ornament, complex armor, tiny gems, individual bark grooves, scattered leaves, particles, dust motes, busy scenery, line hatch, noisy canvas grain, strong black vignette. Do not copy any existing franchise character.\n\nSubject and scene: Queen of Thorns. One regal female TREEFOLK with a broad strong trunk torso and smooth warm wood face, long neck, fierce thoughtful eyes, a simple crown of FIVE sweeping bare thorn branches; no tiny thorns or filigree. Her shoulders are covered by only TWO large dark fern-green leaf masses forming an elegant mantle. No weapon, hands open low in frame as if calmly giving a command. WAIST-UP FRONTAL THREE-QUARTER portrait with head turned slightly left, proud asymmetrical silhouette. Calm pale cream-sage backdrop with ONE sweeping dark root shape. Fern green #6D9058, deep green #304231, pale leaf #D1DDB3, muted warm wood. Broad directional sunlight catches face. Same living wooden humanoid species as the Willow Watcher, older and more imposing. No tiny leaves or bark grooves.",
-      "path": "samples/Qc.png"
+      "path": "samples/Qc.png",
+      "generatedName": "Queen of Thorns",
+      "preferred": true
     },
     {
       "id": "4d",
-      "name": "Rime Axe",
+      "name": "Splitter Axe",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE standalone portrait 4:5 full-bleed card illustration for the original Scoundrel dungeon game, Ash & Briar edition.\nInput image: the supplied Ash & Briar four-card concept board is a STYLE AND PALETTE REFERENCE ONLY. Generate one new illustration, not a board or a crop. Follow the broad brush shapes and striking simple silhouette of its individual panels. Original designs with the expressive painted fantasy character appeal of Legends of Runeterra, pared back to essential shapes.\nArt direction: large confident opaque gouache brush planes, limited color families, soft lost edges, bold thumbnail-readable shape. Make the art as SIMPLE as the reference board or simpler. ONE main subject, at most ONE prop, ONE large background silhouette on a calm softly painted ground. No tiny repeated textures. Keep sharpest edges at the face or the important object edge. Interesting pose and directional lighting, 70% suit color family / 20% neutral / 10% highlight. Clear light-dark separation. Broad quiet empty areas.\nComposition: portrait 4:5, subject centered within central 75% for later card cropping, illustration painted to all four edges. No frame, numbers, suit glyphs, text, labels, logos or watermark; the game will add these separately. No multiview, no montage, no separate swatches.\nAvoid: photorealism, 3D-rendered polish, microdetail, etched ornament, complex armor, tiny gems, individual bark grooves, scattered leaves, particles, dust motes, busy scenery, line hatch, noisy canvas grain, strong black vignette. Do not copy any existing franchise character.\n\nSubject and scene: Rime Axe. One sturdy single-bladed blue-steel hand axe with a broad crescent cutting edge, compact angular rear head and simple dark leather-wrapped wooden handle. An unmistakable functional axe, unornamented, no magic. Show entire axe diagonally from lower left to upper right, resting on ONE broad cool slate stone plinth; the blade occupies upper third and catches one bold pale-blue edge highlight. Quiet deep navy-blue background with ONE lighter diagonal painted mass. Blue steel #5FA8CF, dark #263B50, icy highlight #D1E9F3; leather neutral brown. Graphic bold silhouette, plenty of empty space, metal defined by just a few large paint planes. No ice crystals, engravings, sparks or props.",
-      "path": "samples/4d.png"
+      "path": "samples/4d.png",
+      "generatedName": "Rime Axe",
+      "preferred": true
     },
     {
       "id": "9d",
-      "name": "Skycleaver",
+      "name": "Headsman's Greatsword",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE standalone portrait 4:5 full-bleed card illustration for the original Scoundrel dungeon game, Ash & Briar edition.\nInput image: the supplied Ash & Briar four-card concept board is a STYLE AND PALETTE REFERENCE ONLY. Generate one new illustration, not a board or a crop. Follow the broad brush shapes and striking simple silhouette of its individual panels. Original designs with the expressive painted fantasy character appeal of Legends of Runeterra, pared back to essential shapes.\nArt direction: large confident opaque gouache brush planes, limited color families, soft lost edges, bold thumbnail-readable shape. Make the art as SIMPLE as the reference board or simpler. ONE main subject, at most ONE prop, ONE large background silhouette on a calm softly painted ground. No tiny repeated textures. Keep sharpest edges at the face or the important object edge. Interesting pose and directional lighting, 70% suit color family / 20% neutral / 10% highlight. Clear light-dark separation. Broad quiet empty areas.\nComposition: portrait 4:5, subject centered within central 75% for later card cropping, illustration painted to all four edges. No frame, numbers, suit glyphs, text, labels, logos or watermark; the game will add these separately. No multiview, no montage, no separate swatches.\nAvoid: photorealism, 3D-rendered polish, microdetail, etched ornament, complex armor, tiny gems, individual bark grooves, scattered leaves, particles, dust motes, busy scenery, line hatch, noisy canvas grain, strong black vignette. Do not copy any existing franchise character.\n\nSubject and scene: Skycleaver. One imposing broad BLUE-STEEL two-handed greatsword, straight double-edged blade with a strong angular tip, simple short unornamented crossguard and dark leather grip. Entire sword visible diagonally from lower right handle to upper left tip, low oblique viewpoint that emphasizes the huge blade. Resting against ONE broad stone slab; calm deep muted navy background. Blue steel #5FA8CF, deep navy #263B50, icy highlight #D1E9F3. The wide blade is divided into only two or three large blue planes with one bright edge. No gold, runes, gem, complex hilt, frost particles, lightning, scenery or additional objects. Powerful calm readable shape, original design.",
-      "path": "samples/9d.png"
+      "path": "samples/9d.png",
+      "generatedName": "Skycleaver",
+      "preferred": true
     },
     {
       "id": "3h",
       "name": "Rosehip Tonic",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE standalone portrait 4:5 full-bleed card illustration for the original Scoundrel dungeon game, Ash & Briar edition.\nInput image: the supplied Ash & Briar four-card concept board is a STYLE AND PALETTE REFERENCE ONLY. Generate one new illustration, not a board or a crop. Follow the broad brush shapes and striking simple silhouette of its individual panels. Original designs with the expressive painted fantasy character appeal of Legends of Runeterra, pared back to essential shapes.\nArt direction: large confident opaque gouache brush planes, limited color families, soft lost edges, bold thumbnail-readable shape. Make the art as SIMPLE as the reference board or simpler. ONE main subject, at most ONE prop, ONE large background silhouette on a calm softly painted ground. No tiny repeated textures. Keep sharpest edges at the face or the important object edge. Interesting pose and directional lighting, 70% suit color family / 20% neutral / 10% highlight. Clear light-dark separation. Broad quiet empty areas.\nComposition: portrait 4:5, subject centered within central 75% for later card cropping, illustration painted to all four edges. No frame, numbers, suit glyphs, text, labels, logos or watermark; the game will add these separately. No multiview, no montage, no separate swatches.\nAvoid: photorealism, 3D-rendered polish, microdetail, etched ornament, complex armor, tiny gems, individual bark grooves, scattered leaves, particles, dust motes, busy scenery, line hatch, noisy canvas grain, strong black vignette. Do not copy any existing franchise character.\n\nSubject and scene: Rosehip Tonic. ONE small pear-shaped CLEAR GLASS healing vial filled three-quarters with rich SCARLET RED liquid. Narrow short neck, chunky plain cork, ONE simple cream cotton cord loop around the neck, no label. Upright close still life, gentle high three-quarter view, entire bottle visible on ONE broad muted burgundy stone ledge. Quiet dusty deep red background with ONE pale soft light shape. Main red #D65454, deep wine #5E3038, pale warm highlight #F0B8AD. Bottle glass described with only TWO or THREE large clean highlights; red liquid is a big solid luminous mass. Not orange, pink, purple or green liquid. No berries, herbs, petals, bubbles, particles or other props. Simple inexpensive apothecary vial, charming modest silhouette.",
-      "path": "samples/3h.png"
+      "path": "samples/3h.png",
+      "preferred": true
     },
     {
       "id": "9h",
       "name": "King's Remedy",
       "prompt": "Use case: stylized-concept.\nAsset type: ONE standalone portrait 4:5 full-bleed card illustration for the original Scoundrel dungeon game, Ash & Briar edition.\nInput image: the supplied Ash & Briar four-card concept board is a STYLE AND PALETTE REFERENCE ONLY. Generate one new illustration, not a board or a crop. Follow the broad brush shapes and striking simple silhouette of its individual panels. Original designs with the expressive painted fantasy character appeal of Legends of Runeterra, pared back to essential shapes.\nArt direction: large confident opaque gouache brush planes, limited color families, soft lost edges, bold thumbnail-readable shape. Make the art as SIMPLE as the reference board or simpler. ONE main subject, at most ONE prop, ONE large background silhouette on a calm softly painted ground. No tiny repeated textures. Keep sharpest edges at the face or the important object edge. Interesting pose and directional lighting, 70% suit color family / 20% neutral / 10% highlight. Clear light-dark separation. Broad quiet empty areas.\nComposition: portrait 4:5, subject centered within central 75% for later card cropping, illustration painted to all four edges. No frame, numbers, suit glyphs, text, labels, logos or watermark; the game will add these separately. No multiview, no montage, no separate swatches.\nAvoid: photorealism, 3D-rendered polish, microdetail, etched ornament, complex armor, tiny gems, individual bark grooves, scattered leaves, particles, dust motes, busy scenery, line hatch, noisy canvas grain, strong black vignette. Do not copy any existing franchise character.\n\nSubject and scene: King's Remedy. ONE substantial clear glass healing flask, broad flattened hexagonal body, short thick neck and a wide simple pale pewter stopper. Filled nearly to its shoulders with deep luminous RUBY RED potion. A single unornamented cream collar at the neck; no jewels or label. Entire bottle visible, low three-quarter angle, upright on ONE broad dark burgundy stone ledge. Quiet wine-red ground with ONE broad warm light mass. Main red #D65454, deep wine #5E3038, warm pale highlight #F0B8AD. Bold angular vessel silhouette distinguishes this potent remedy from a little pear-shaped tonic. Only a handful of broad painted glass facets and two large white reflections. No gold filigree, coat of arms, flowers, floating particles, smoke or bubbles. Liquid MUST be red.",
-      "path": "samples/9h.png"
+      "path": "samples/9h.png",
+      "preferred": true
+    }
+  ],
+  "direction": "Retain simple painterly shapes and suit identity in the subject; vary local colors, environment, lighting, story detail and red potion shades per card. No repeated meaningful name words or material roots.",
+  "referencesReviewed": [
+    {
+      "name": "Greenglade Caretaker",
+      "url": "https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01IO019-full.png",
+      "observation": "Mauve, gold and turquoise accents within a wooded scene; directional light and a specific action."
+    },
+    {
+      "name": "Inspiring Mentor",
+      "url": "https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01IO026-full.png",
+      "observation": "Green environment, blue clothing, warm skin and cream highlights retain distinct local colors."
+    },
+    {
+      "name": "Cithria of Cloudfield",
+      "url": "https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01DE039-full.png",
+      "observation": "Dark foreground framing, bright architecture and sky, small warm subject; scene establishes identity."
+    },
+    {
+      "name": "Scarthane Steffen",
+      "url": "https://dd.b.pvp.net/7_10_0/set1/en_us/img/cards/01FR045-full.png",
+      "observation": "Cold environment contrasts with warm brown fur and burgundy materials."
     }
   ]
 }
