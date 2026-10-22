@@ -28,7 +28,7 @@ struct State {
   array<uint8_t,4> r{};
   int un=0, bn=0, rn=0, h=20, w=0, l=15, p=0, f=0, g=0;
 };
-struct Next { State s; bool terminal=false; int score=0; };
+struct Next { State s; bool terminal=false, drawPending=false; int score=0; };
 struct Action { int move, n=0; double prior=0, sum=0, squares=0; bool exact=false; };
 // Fixed action/path buffers remove allocations from every simulation.
 template<class T,int Capacity> struct SmallList {
@@ -97,9 +97,10 @@ int damageLeft(const State&s) {
   for(int i=0;i<s.rn;i++)if(type(s.r[i])==0)sum+=value(s.r[i]);
   return sum;
 }
-Next step(const State&s,int move,Random&rng,bool deterministic=false) {
+Next step(const State&s,int move,Random&rng,bool deterministic=false,bool deferDraw=false) {
   Next out;out.s=s;auto&n=out.s;
   auto draw=[&](){
+    if(deferDraw){out.drawPending=true;return;}
     while(n.rn<4&&(n.un||n.bn)) {
       if(n.un) {
         int i=deterministic?0:int(rng.next()*n.un); n.r[n.rn++]=n.u[i];
@@ -114,7 +115,7 @@ Next step(const State&s,int move,Random&rng,bool deterministic=false) {
       for(int i=0;i<s.rn;i++)n.b[n.bn++]=s.r[move==129?s.rn-1-i:i];
       n.rn=0;
     }
-    draw();n.p=0;n.g=0;n.f=move==130&&n.rn==4;return out;
+    draw();n.p=0;n.g=0;n.f=move==130&&(deferDraw?min(4,remaining(n)):n.rn)==4;return out;
   }
   int c=move&63,v=value(c),t=type(c),index=0;
   while(n.r[index]!=c)index++;
@@ -124,8 +125,24 @@ Next step(const State&s,int move,Random&rng,bool deterministic=false) {
   else{n.h-=move&64?max(0,v-n.w):v;if(move&64)n.l=v;}
   if(n.h<=0){out.terminal=true;out.score=n.h-damageLeft(n);return out;}
   if(!remaining(n)){out.terminal=true;out.score=n.h+(n.h==20&&t==2?v:0);return out;}
-  if(n.rn==1&&(n.un||n.bn)){draw();n.p=0;n.f=n.rn==4;}
+  if(n.rn==1&&(n.un||n.bn)){draw();n.p=0;n.f=(deferDraw?min(4,remaining(n)):n.rn)==4;}
   return out;
+}
+// Isomorphism compares the public successor distribution before any draw.
+// A potion carried to the next room keeps its value; equal healing is not enough.
+SmallList<int,10> groupedMoves(const State&s) {
+  SmallList<int,10> result;vector<string> signatures;Random unused{1};
+  for(int move:moves(s)) {
+    auto next=step(s,move,unused,true,true);string signature;
+    if(next.terminal)signature="score:"+to_string(next.score);
+    else {
+      auto&n=next.s;
+      if(n.p&&n.h<20&&!n.un&&!n.bn)for(int i=0;i<n.rn;i++)if(type(n.r[i])==2)n.r[i]=32;
+      auto k=key(n);signature=string(1,next.drawPending?'1':'0')+string(reinterpret_cast<const char*>(k.bytes.data()),k.bytes.size());
+    }
+    if(find(signatures.begin(),signatures.end(),signature)==signatures.end()){signatures.push_back(signature);result.push_back(move);}
+  }
+  return result;
 }
 double preference(const State&s,int move) {
   if(move==130)return 0;
@@ -259,7 +276,7 @@ struct Search {
   }
   Node makeNode(const State&s) {
     Node node;
-    for(int m:moves(s)) {
+    for(int m:groupedMoves(s)) {
       Action a;a.move=m;a.prior=preference(s,m);
       auto n=step(s,m,rng,true);
       if(n.terminal||canFinish(s)){double score=n.terminal?n.score:known(n.s);a.n=1;a.sum=score;a.squares=score*score;a.exact=true;}

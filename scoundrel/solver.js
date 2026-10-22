@@ -25,12 +25,13 @@
   }
   const remaining = s => s.u.length + s.b.length + s.r.length;
   const damageLeft = s => [...s.u, ...s.b, ...s.r].reduce((sum, c) => sum + (type(c) === 0 ? value(c) : 0), 0);
-  function step(s, move, rng) {
+  function step(s, move, rng, deferDraw = false) {
     const n = { ...s, u: s.u.slice(), b: s.b.slice(), r: s.r.slice() };
-    const draw = () => { while (n.r.length < 4 && (n.u.length || n.b.length)) n.r.push(n.u.length ? n.u.splice(Math.floor(rng() * n.u.length), 1)[0] : n.b.shift()); };
+    const draw = () => { if (deferDraw) { n.drawPending = 1; return; } while (n.r.length < 4 && (n.u.length || n.b.length)) n.r.push(n.u.length ? n.u.splice(Math.floor(rng() * n.u.length), 1)[0] : n.b.shift()); };
+    const fullRoom = () => (deferDraw ? Math.min(4, remaining(n)) : n.r.length) === 4;
     if (move >= 128) {
       if (move !== 130) { n.b.push(...(move === 129 ? n.r.slice().reverse() : n.r)); n.r = []; }
-      draw(); n.p = 0; n.g = 0; n.f = +(move === 130 && n.r.length === 4);
+      draw(); n.p = 0; n.g = 0; n.f = +(move === 130 && fullRoom());
       return { state: n };
     }
     const c = move & 63, v = value(c), t = type(c);
@@ -40,8 +41,28 @@
     else { n.h -= move & 64 ? Math.max(0, v - n.w) : v; if (move & 64) n.l = v; }
     if (n.h <= 0) return { score: n.h - damageLeft(n) };
     if (!remaining(n)) return { score: n.h + (n.h === 20 && t === 2 ? v : 0) };
-    if (n.r.length === 1 && (n.u.length || n.b.length)) { draw(); n.p = 0; n.f = +(n.r.length === 4); }
+    if (n.r.length === 1 && (n.u.length || n.b.length)) { draw(); n.p = 0; n.f = +fullRoom(); }
     return { state: n };
+  }
+  // Compare complete public successor distributions, before sampling any draw.
+  // Room order matters again when avoidance becomes available; bottom order
+  // always matters. Equal immediate healing/damage alone is insufficient.
+  function outcomeKey(s, move) {
+    const next = step(s, move, null, true);
+    if (next.score != null) return "score:" + next.score;
+    const n = next.state;
+    // Used potions in a final room below 20 can neither heal nor earn a bonus.
+    if (n.p && n.h < 20 && !n.u.length && !n.b.length) n.r = n.r.map(c => type(c) === 2 ? 32 : c);
+    return (n.drawPending || 0) + ":" + key(n);
+  }
+  function actionGroups(s) {
+    const groups = new Map();
+    for (const move of moves(s)) {
+      const signature = outcomeKey(s, move);
+      if (groups.has(signature)) groups.get(signature).moves.push(move);
+      else groups.set(signature, { move, moves: [move] });
+    }
+    return [...groups.values()];
   }
   function preference(s, move) {
     if (move === 130) return 0;
@@ -105,7 +126,7 @@
     }
     const canFinish = s => !s.u.length && remaining(s) <= 8;
     function makeNode(s) {
-      const actions = moves(s).map(move => ({ move, prior: preference(s, move), n: 0, sum: 0, squares: 0, exact: false }));
+      const actions = actionGroups(s).map(group => ({ ...group, prior: preference(s, group.move), n: 0, sum: 0, squares: 0, exact: false }));
       // A fatal hit or final card has a determined score, regardless of shuffle.
       for (const a of actions) {
         const noDraw = () => 0;
@@ -146,9 +167,9 @@
     const rootNode = makeNode(initial); tree.set(key(initial), rootNode);
     const results = () => E.actions(observation).map(action => {
       let m = actionMove(observation, action);
-      if (m === 129 && !rootNode.actions.some(a => a.move === 129)) m = 128;
-      const a = rootNode.actions.find(a => a.move === m);
-      return { action, score: a.n ? mean(a) : null, samples: a.n, standardError: Number.isFinite(uncertainty(a)) ? uncertainty(a) : null, exact: a.exact };
+      if (m === 129 && !rootNode.actions.some(a => a.moves.includes(129))) m = 128;
+      const a = rootNode.actions.find(a => a.moves.includes(m));
+      return { action, equivalence: a.move, score: a.n ? mean(a) : null, samples: a.n, standardError: Number.isFinite(uncertainty(a)) ? uncertainty(a) : null, exact: a.exact };
     });
     if (!rootNode.actions.every(a => a.exact)) for (; simulations < iterations; simulations++) {
       let s = initial, score, path = [];
@@ -173,7 +194,7 @@
     const rows = results(), best = rows.filter(r => r.score != null).sort((a, b) => b.score - a.score)[0];
     return { action: best?.action, score: best?.score, results: rows, simulations, heuristicSkips, elapsed: Date.now() - started, method: "hidden-deck-mcts" };
   }
-  const api = { analyze, pack, key, seedFor, random, moves, step, preference, roomPlan, actionMove, encode };
+  const api = { analyze, pack, key, seedFor, random, moves, step, outcomeKey, actionGroups, preference, roomPlan, actionMove, encode };
   root.ScoundrelSolver = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof self !== "undefined" ? self : globalThis);

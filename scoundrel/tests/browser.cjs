@@ -24,14 +24,22 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     const before=E.restore(await page.evaluate(()=>localStorage.getItem("scoundrel-run-v1")));
     assert.equal(await page.locator("#action-values tr").count(),E.actions(before).length);
     const fleeRows=await page.locator('[data-preview]').evaluateAll(es=>es.map(e=>JSON.parse(e.dataset.preview)).filter(a=>a.type==='flee'));
-    assert.deepEqual(fleeRows.map(a=>a.direction),['left','right']);
+    assert.deepEqual(fleeRows.map(a=>a.direction).sort(),['left','right']);
+    const evs=await page.locator("#action-values .value-cell").allTextContents();
+    const scores=evs.map(value=>Number(value.replace("−","-").replaceAll(",","")));
+    assert.ok(scores.every((score,i)=>!i||scores[i-1]>=score),"highest EV first");
     await page.locator('#flee-button').click();
     assert.equal(await page.locator('[data-avoid]').count(),2);
     assert.equal(await page.locator('[data-avoid-ev]').count(),2);
     assert.deepEqual(await page.locator('[data-avoid="right"] .avoid-card strong').allTextContents(),before.room.map(c=>String(c.value)).reverse());
+    for(const direction of ["left","right"]){
+      assert.deepEqual(await page.locator(`[data-avoid="${direction}"] .avoid-draw-order`).allTextContents(),["1st","2nd","3rd","4th"]);
+      assert.ok((await page.locator(`[data-avoid="${direction}"]`).getAttribute("aria-label")).includes(`After ${before.deck.length} cards`));
+    }
+    assert.ok((await page.locator("#avoid-description").innerText()).includes(`${before.deck.length} cards already in the deck`));
     await page.locator('#avoid-dialog [data-close]').click();
     assert.equal(E.restore(await page.evaluate(()=>localStorage.getItem("scoundrel-run-v1"))).steps,0);
-    const suggested=JSON.parse(await page.locator("#action-values tr.is-best [data-preview]").getAttribute("data-preview"));
+    const suggested=JSON.parse(await page.locator("#action-values tr.is-best [data-preview]").first().getAttribute("data-preview"));
     if(suggested.id)await page.locator(`[data-card="${suggested.id}"]`).click();
     if(suggested.type==="flee"){await page.locator("#flee-button").click();await page.locator(`[data-avoid="${suggested.direction || "left"}"]`).click();}
     else await page.locator("[data-action]").filter({hasText:suggested.mode==="bare"?"barehanded":suggested.mode==="weapon"?"Use weapon":suggested.type==="equip"?"Equip":"Drink"}).click();

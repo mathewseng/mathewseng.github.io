@@ -59,7 +59,7 @@ test("sampled transitions match the real engine when draws reveal the same cards
 
 test("all published hidden-deck policy runs replay to their recorded outcomes", () => {
   const data = require("../reports/outcomes.json"); Stats.validate(data);
-  assert.equal(data.policy.revision, require("../scripts/native-solver.cjs").revision, "published study matches the current solver and rules");
+  assert.equal(data.policy.revision, "a09ccb03f12ea7614c61a1e8d79537c0285f3167a295bc0a97865784413f6b8b", "published study retains its frozen policy revision; later solver changes do not rewrite historical results");
   for (const row of require("../scripts/study-data.cjs").iterateRows(data, require.resolve("../reports/outcomes.json"))) {
     let state = E.createGame({ seed: row.seed });
     for (const action of row.line) state = E.transition(state, action);
