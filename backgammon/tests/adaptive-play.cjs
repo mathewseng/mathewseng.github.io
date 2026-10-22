@@ -6,6 +6,9 @@ module.exports=async function adaptivePlay(browser,base,out,name){
  try{
   await require("./play-helpers.cjs").seedOpening(page,[6,1]);
   await page.goto(base+'/backgammon/play/');await page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
+  // Exercise live adaptive search; money openings can use a published XG
+  // reference with no search ply count. Reference dispatch is tested separately.
+  await page.getByLabel('Match length',{exact:true}).selectOption('7');
   await page.evaluate(async()=>{const {EngineClient}=await import('/backgammon/engine/client.mjs');const original=EngineClient.prototype.analyze;window.engineTrace=[];EngineClient.prototype.analyze=function(state,options={}){return original.call(this,state,options).then(result=>{engineTrace.push({turn:state.turn,phase:state.phase,preset:options.preset||'quick',submitted:!!options.submitted,plies:result.settings?.plies,budget:result.budget?.reason,error:result.error});return result;});};});
   await page.locator('#start-match').click();await require('./play-helpers.cjs').openingComplete(page);
   const started=Date.now();await page.locator('#hint').click();await page.locator('[data-best-move]').waitFor({timeout:120000});
