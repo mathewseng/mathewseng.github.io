@@ -104,6 +104,8 @@ export class OpeningGuideData {
     catch (error) { this.files.delete('index.json'); throw error; }
   }
   async reply(opening, choice, roll, player=1) {
+    if(opening.state.dice[0]===opening.state.dice[1])
+      throw Error('Starting doubles are study-only. Choose a standard opening for replies.');
     if ((!this.index && !this.referenceReady) || !REPLY_ROLLS.includes(roll) || !opening.moves[choice] || ![0,1].includes(player))
       throw Error('Choose an opening and reply roll.');
     const after = commitTurn(opening.state,opening.moves[choice].steps);
@@ -115,11 +117,6 @@ export class OpeningGuideData {
     } : {}), turn:player, phase:'move',dice:[...roll].map(Number)};
     const key = bookBoardKey(state), id = `${key}:${roll}:${player}`;
     if (this.positions.has(id)) return this.positions.get(id);
-    if(opening.state.dice[0]===opening.state.dice[1]){
-      const result=position(state,this.doublesIndex?.replies?.[key]?.rolls?.[roll],this.doublesIndex);
-      if(this.positions.size>=42)this.positions.delete(this.positions.keys().next().value);
-      this.positions.set(id,result);return result;
-    }
     if(this.referenceBook){
       const referenceState={...state,rules:{...state.rules,immediateRedoubles:2}};
       const reference=await this.referenceBook.lookup(referenceState);

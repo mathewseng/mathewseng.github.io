@@ -51,7 +51,7 @@ test('reply colors mirror the legal board and preserve all notation, equity and 
   assert.ok(i>=0);
   assert.equal(openingIdea(together,i),'Make your 18-point.','moving two back checkers together is not a split');
   let anchors=0,hits=0;
-  for(const opening of guide.values())for(let choice=0;choice<opening.moves.length;choice++){
+  for(const opening of guide.values())if(opening.state.dice[0]!==opening.state.dice[1])for(let choice=0;choice<opening.moves.length;choice++){
     const white=await data.replies(opening,choice),black=await data.replies(opening,choice,1);
     assert.equal(white.size,21);assert.equal(black.size,21);
     for(const [roll,w]of white){
@@ -77,7 +77,8 @@ test('every best and close opening has all 21 correctly oriented, cached replies
   const requests=new Map();
   const data=new OpeningGuideData(url=>{requests.set(url.pathname,(requests.get(url.pathname)||0)+1);return fileFetch(url);});
   const guide=await data.openings();let count=0;const visitedBoards=new Set();
-  for(const opening of guide.values()) for(let choice=0;choice<opening.moves.length;choice++){
+  const standard=[...guide.values()].filter(p=>p.state.dice[0]!==p.state.dice[1]);
+  for(const opening of standard) for(let choice=0;choice<opening.moves.length;choice++){
     const saved=JSON.stringify(opening);
     const after=commitTurn(opening.state,opening.moves[choice].steps);
     for(const roll of REPLY_ROLLS){
@@ -97,7 +98,7 @@ test('every best and close opening has all 21 correctly oriented, cached replies
   }
   for(const opening of guide.values())if(opening.state.dice[0]!==opening.state.dice[1])for(const choice of opening.moves)
     visitedBoards.add(bookBoardKey({...commitTurn(opening.state,choice.steps),turn:1}));
-  assert.equal(count,[...guide.values()].reduce((n,p)=>n+p.moves.length,0)*21);
+  assert.equal(count,standard.reduce((n,p)=>n+p.moves.length,0)*21);
   assert.equal(requests.size,2+visitedBoards.size,'standard index, doubles book, and distinct standard reply positions');
   assert.ok([...requests.values()].every(n=>n===1),'all rolls of a reply reuse one shard');
 });
@@ -128,7 +129,7 @@ test('all six starting doubles have four-step legal previews and independently l
   const doubles=JSON.parse(readFileSync(new URL('../engine/opening-book-data/doubles/index.json',import.meta.url)));
   for(const roll of OPENING_ROLLS.filter(r=>r[0]===r[1])){
     const p=guide.get(roll);
-    assert.equal(p.plies,3);assert.equal(p.method,'tree');
+    assert.equal(p.plies,5);assert.equal(p.method,'tree');assert.equal(p.screened,false);
     assert.equal(p.state.rules.immediateRedoubles,0);
     assert.equal(p.moves.length,doubles.openings[roll].rows.filter(r=>doubles.openings[roll].rows[0][1]-r[1]<=.040+1e-8).length);
     for(const [i,m]of p.moves.entries()){
@@ -137,6 +138,9 @@ test('all six starting doubles have four-step legal previews and independently l
       assert.ok(openingSummary(p,i).description);
     }
   }
+  const data=new OpeningGuideData(fileFetch);
+  const openings=await data.openings();
+  await assert.rejects(data.replies(openings.get('11'),0),/study-only/);
 });
 
 test('a missing or invalid doubles book can be retried without restarting standard downloads',async()=>{

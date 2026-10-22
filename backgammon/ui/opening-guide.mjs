@@ -53,7 +53,8 @@ export function openingGuide(root) {
     $('opening-stage').setAttribute('aria-label','Study opening or reply');
     for (const button of $('opening-stage').querySelectorAll('button'))
       button.setAttribute('aria-pressed',String(button.dataset.stage===mode));
-    $('opening-replies').disabled=!openings;
+    $('opening-replies').disabled=!openings||openingRoll[0]===openingRoll[1];
+    $('opening-replies').title=openingRoll[0]===openingRoll[1]?'Choose a standard opening to study replies.':'';
     $('opening-side').hidden=mode!=='reply';
     for(const button of $('opening-side').querySelectorAll('button'))
       button.setAttribute('aria-pressed',String(+button.dataset.side===replySide));
@@ -167,8 +168,8 @@ export function openingGuide(root) {
     }));
     list.scrollTop=0;
     $('opening-solver').href=shareURL(position.state);
-    $('opening-next').hidden=mode==='reply';
-    $('opening-position-note').textContent=(mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.')+(startingDouble?' Starting-position study; actual opening ties reroll. GNUbg · Jacoby on, beavers off. Candidates screened at 2 ply, finalists evaluated at 3 ply.':position.method==='reference'?' XG reference · Jacoby, beavers and raccoons on. Intervals are XG’s published bounds where provided; other entries use XGRoller++ estimates.':position.method==='rollout'?' GNUbg fallback · beavers off. EV intervals show approximate 95% sampling uncertainty; model and screening error are excluded.':' GNUbg fallback · beavers off.');
+    $('opening-next').hidden=mode==='reply'||startingDouble;
+    $('opening-position-note').textContent=(mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.')+(startingDouble?` Starting-position study; actual opening ties reroll. GNUbg · Jacoby on, beavers off. All legal starting moves evaluated at ${position.plies} ply.`:position.method==='reference'?' XG reference · Jacoby, beavers and raccoons on. Intervals are XG’s published bounds where provided; other entries use XGRoller++ estimates.':position.method==='rollout'?' GNUbg fallback · beavers off. EV intervals show approximate 95% sampling uncertainty; model and screening error are excluded.':' GNUbg fallback · beavers off.');
     panel.hidden=false;
     preview();
   }
@@ -200,7 +201,10 @@ export function openingGuide(root) {
       status('Opening moves could not load. Check your connection and retry.',true);
     }
   }
-  function stage(next) {mode=next;before=false;replyChoice=0;refresh();}
+  function stage(next) {
+    if(next==='reply'&&openingRoll[0]===openingRoll[1])return;
+    mode=next;before=false;replyChoice=0;refresh();
+  }
   function setLayout(layout) {
     root.dataset.layout=layout;
     for(const button of $('opening-layout').querySelectorAll('button'))

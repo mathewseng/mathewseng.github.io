@@ -102,9 +102,14 @@ module.exports=async function openingGuide(browser,base,out,name){
         assert.equal(await page.locator('#opening-moves [aria-pressed="true"]').count(),1);
         await alternativesMatch();
         if(roll[0]===roll[1]){
-          assert.equal(await page.locator('#opening-method').textContent(),'GNUbg · 3 ply');
+          assert.equal(await page.locator('#opening-method').textContent(),'GNUbg · 5 ply');
           assert.match(await page.locator('#opening-position-note').textContent(),/actual opening ties reroll/);
+          assert.match(await page.locator('#opening-position-note').textContent(),/All legal starting moves evaluated at 5 ply/);
+          assert.equal(await page.locator('#opening-replies').isDisabled(),true);
+          assert.equal(await page.locator('#opening-next').isVisible(),false);
           assert.ok(await page.locator('#opening-board .last-move-arrows').count(),'doubles preview has move arrows');
+          if(roll==='22'&&['desktop','portrait'].includes(layout))
+            await page.locator('#openings').screenshot({path:path.join(out,`${name}-opening-doubles-${layout}.png`)});
         }
         const rows=page.locator('#opening-moves button');
         if(await rows.count()>1){
@@ -218,15 +223,24 @@ module.exports=async function openingGuide(browser,base,out,name){
       await matrix();
       await activate(page.locator('#opening-openings'));
       assert.equal(await page.locator('#opening-rolls button:disabled').count(),0);
-      // The same diagonal remains interactive in compact mode, including replies.
+      // Starting doubles remain studies; ordinary opening replies still include doubles.
       for(const roll of ['11','22','33','44','55','66']){
         await activate(page.locator(`#opening-rolls [data-roll="${roll}"]`));
         assert.equal(await page.locator('#openings').getAttribute('data-roll'),roll);
-        await activate(page.locator('#opening-next'));
-        await page.waitForFunction(()=>document.querySelector('#openings').dataset.mode==='reply'&&document.querySelector('#openings').dataset.loading==='false');
-        assert.equal(await page.locator('#opening-rolls button:enabled').count(),21);
-        assert.equal(await page.locator('#opening-method').textContent(),'GNUbg · 3 ply');
-        await activate(page.locator('#opening-openings'));
+        assert.equal(await page.locator('#opening-next').isVisible(),false);
+        assert.equal(await page.locator('#opening-replies').isDisabled(),true);
+        assert.equal(await page.locator('#opening-method').textContent(),'GNUbg · 5 ply');
+        if(roll==='22'&&['desktop','portrait'].includes(layout))
+          await page.locator('#openings').screenshot({path:path.join(out,`${name}-opening-doubles-compact-${layout}.png`)});
+      }
+      await activate(page.locator('#opening-rolls [data-roll="13"]'));
+      assert.equal(await page.locator('#opening-replies').isEnabled(),true);
+      await activate(page.locator('#opening-next'));
+      await page.waitForFunction(()=>document.querySelector('#openings').dataset.mode==='reply'&&document.querySelector('#openings').dataset.loading==='false');
+      for(const roll of ['11','22','33','44','55','66']){
+        await activate(page.locator(`#opening-rolls [data-roll="${roll}"]`));
+        assert.equal(await page.locator('#openings').getAttribute('data-roll'),roll);
+        assert.equal(await page.locator('#opening-method').textContent(),'XG · published reference');
       }
       assert.equal(await page.locator('#opening-compact-picker #opening-picker').count(),1);
       await page.reload();

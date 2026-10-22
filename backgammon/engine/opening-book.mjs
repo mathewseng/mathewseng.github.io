@@ -6,8 +6,8 @@ export const BOOK_ID = 'jacoby-3ply-v3';
 export const BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5';
 export const DEEP_BOOK_ID = 'jacoby-native-5ply-v1';
 export const DEEP_BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6-native5';
-export const DOUBLES_BOOK_ID = 'jacoby-starting-doubles-3ply-v1';
-export const DOUBLES_BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6-native';
+export const DOUBLES_BOOK_ID = 'jacoby-starting-doubles-5ply-v2';
+export const DOUBLES_BOOK_ENGINE_VERSION = DEEP_BOOK_ENGINE_VERSION;
 const START_STATE = initialState({ matchLength: 0 });
 const START = boardKey(START_STATE);
 const BASE = new URL('./opening-book-data/', import.meta.url);
@@ -40,7 +40,7 @@ export function validateBookHeader(value) {
 }
 export function bookResult(state, entry, index, requestedPreset, submitted = null) {
   assertState(state); validateBookHeader(index);
-  const deep=index.id===DEEP_BOOK_ID;
+  const deep=index.id===DEEP_BOOK_ID||index.id===DOUBLES_BOOK_ID;
   if (!bookContext(state) || state.phase !== 'move' || index.plies !== (deep?5:3) || index.settings?.plies !== index.plies ||
       !Array.isArray(entry?.rows) || !entry.rows.length || entry.rows.length > 2000 ||
       !Number.isInteger(entry.total) || entry.total < entry.rows.length)
