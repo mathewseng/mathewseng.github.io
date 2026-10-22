@@ -71,7 +71,16 @@ test("all 1,000 hidden-deck policy runs replay to their recorded outcomes", () =
 test("statistics preserve whole-number medians and half points only when needed", () => {
   const s = Stats.summarize([{ score: -10 }, { score: 20 }, { score: 30 }, { score: 10 }]);
   assert.equal(s.sum, 50); assert.equal(s.mean, 12.5); assert.equal(s.median, 15); assert.equal(s.wins, 3);
+  assert.equal(s.q1, 5); assert.equal(s.q3, 22.5);
   assert.equal(Stats.median([29, 30]), 29.5); assert.equal(Stats.median([30, 30]), 30); assert.equal(Stats.median([]), null);
+});
+
+test("quartiles interpolate order statistics and handle empty, singleton, and tied samples", () => {
+  const scores = [40, 0, 30, 10, 20];
+  assert.equal(Stats.quantile(scores, .25), 10); assert.equal(Stats.quantile(scores, .75), 30);
+  assert.deepEqual(scores, [40, 0, 30, 10, 20]);
+  assert.equal(Stats.quantile([], .25), null); assert.equal(Stats.quantile([7], .75), 7);
+  assert.equal(Stats.quantile([2, 2, 2, 2], .25), 2);
 });
 
 test("report rejects hindsight studies, incomplete cohorts, and invalid outcomes", () => {

@@ -23,7 +23,7 @@ async function readable(page, label) {
   const issues = await page.evaluate(()=>{
     const problems=[];
     if(document.documentElement.scrollWidth>innerWidth+1)problems.push("document overflows horizontally");
-    const selector=".encounter-name strong,.encounter-name small,.encounter-top>span:first-child,.selection-copy>strong,.selection-copy p,.game-button span,.game-button small,.catalog-grid figcaption strong,.catalog-grid figcaption>div>span,#artwork-title,#artwork-role,.avoid-choice-title strong,.avoid-choice-title>span,.avoid-value,#avoid-description,.report-metrics strong,.report-metrics small,#study-summary,#deals-caption,.deals-table th,.deals-table td,#solution-title,.solution-line li>div>span,.mobile-score-row strong,.mobile-score-row>span:last-child";
+    const selector=".encounter-name strong,.encounter-name small,.encounter-top>span:first-child,.selection-copy>strong,.selection-copy p,.game-button span,.game-button small,.catalog-grid figcaption strong,.catalog-grid figcaption>div>span,#artwork-title,#artwork-role,.avoid-choice-title strong,.avoid-choice-title>span,.avoid-value,#avoid-description,.report-metrics strong,.report-metrics small,#study-summary,#deals-caption,.deals-table th,.deals-table td,#solution-title,.solution-line li>div>span,.chart-stat>span,.chart-stat strong,#chart-caption";
     for(const el of document.querySelectorAll(selector)){
       if(!el.getClientRects().length || el.closest("dialog:not([open])"))continue;
       const range=document.createRange();range.selectNodeContents(el);
@@ -106,10 +106,12 @@ async function readable(page, label) {
           }
           if([320,375,390,1280].includes(viewport.width)){
             await page.goto(server.base+'/scoundrel/reports/');await page.locator('#report-content').waitFor({state:'visible'});await page.evaluate(()=>document.fonts.ready);
-            await readable(page,'exact report');
+            await readable(page,'outcome report');
             assert.ok(await page.locator('.deals-table-wrap').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'deal table fits phone width');
             assert.equal(await page.locator('#median').innerText(),String(require('../reports/statistics.js').summarize(require('../reports/outcomes.json').rows).median));
-            if(phone){await page.locator('.mobile-score-row').first().click();assert.equal(await page.locator('#clear-filter').isVisible(),true);await page.locator('#clear-filter').click();}
+            assert.ok(await page.locator('#histogram').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'full chart fits viewport');
+            assert.equal(await page.locator('.chart-reference').count(),4);
+            if(phone){await page.locator('#score-picker').selectOption('0');assert.equal(await page.locator('#clear-filter').isVisible(),true);await page.locator('#clear-filter').click();}
             await page.locator('[data-solution]').first().click();await readable(page,'solution dialog');
             if(output && [390,1280].includes(viewport.width))await page.screenshot({path:path.join(output,`${browserName}-solution-${viewport.width}.png`)});
             await page.locator('#close-solution').click();

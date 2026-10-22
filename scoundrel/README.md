@@ -115,8 +115,12 @@ Mean, median, survival, and the graph describe the **actual recorded scores**
 from these 1,000 policy runs. They estimate this policy’s performance, not the
 true optimal population EV. Whole-number medians have no decimal suffix;
 a half point is retained when the two middle scores differ by an odd number.
-The chart groups wide score distributions into explicit ten-point bins.
-Phone charts use vertically scrolling, tappable bars with exact counts.
+The chart shows a thin bar for each integer score, retaining zero-count scores
+on a continuous axis. Mean, median, and first/third quartile lines use the
+selected cohort; a compact legend keeps their exact values readable on phones.
+Quartiles use linear interpolation between adjacent order statistics (R-7).
+The full chart fits the available width, and the Score control provides precise
+touch and keyboard filtering alongside direct bar selection.
 Filters affect the chart and deal list; headline statistics always use all
 1,000 games. Each deal has a verified move history and a seeded play link.
 CSV and raw JSON are available.

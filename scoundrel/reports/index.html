@@ -10,11 +10,11 @@
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../styles.css?v=20261022-5" />
-    <link rel="stylesheet" href="styles.css?v=20261022-5" />
+    <link rel="stylesheet" href="styles.css?v=20261022-6" />
     <script src="../engine.js?v=20261022-5" defer></script>
     <script src="../catalog.js?v=20261022" defer></script>
-    <script src="statistics.js?v=20261022-5" defer></script>
-    <script src="app.js?v=20261022-5" defer></script>
+    <script src="statistics.js?v=20261022-6" defer></script>
+    <script src="app.js?v=20261022-6" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to report</a>
@@ -34,8 +34,9 @@
           <div class="report-controls"><label for="cohort">Outcomes shown<select id="cohort"><option value="all">All deals</option><option value="below">Scores below 30</option><option value="won">Survived</option><option value="lost">Defeated</option></select></label><button class="game-button secondary" id="download" type="button">Download CSV</button><a class="text-button" href="outcomes.json" download>Raw results</a></div>
           <section class="distribution-section" aria-labelledby="distribution-title">
             <div class="section-heading"><div><h2 id="distribution-title">Final score distribution</h2><p id="distribution-subtitle"></p></div></div>
+            <div id="chart-legend" class="chart-legend" aria-label="Distribution statistics"></div>
             <div id="histogram" class="histogram" role="group" aria-label="Final score frequencies"></div>
-            <p class="chart-caption" id="chart-caption" role="status">Select a score to inspect its deals.</p>
+            <div class="chart-inspector"><label for="score-picker">Score<select id="score-picker"><option value="">All scores</option></select></label><p class="chart-caption" id="chart-caption" role="status">Select a bar or choose a score to inspect its deals.</p></div>
             <div class="distribution-detail"><span id="score-detail"></span><span id="dispersion-detail"></span></div>
           </section>
           <section class="report-section" id="method" aria-labelledby="method-title">

@@ -22,11 +22,28 @@
 .distribution-section { margin: 36px 0 0; padding: 26px; border: 1px solid var(--sc-border); border-radius: 8px; background: var(--sc-panel); }
 .section-heading { display: flex; gap: 20px; justify-content: space-between; align-items: flex-start; }
 .section-heading p { color: var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.6; }
-.histogram { overflow-x: auto; padding: 8px 0; }
-.histogram svg { display: block; min-width: 590px; width: 100%; height: auto; overflow: visible; font-family: ScoundrelSans, var(--font-sans); }
-.chart-axis { stroke: var(--line-strong); stroke-width: 1; }.chart-label { fill: var(--muted); font-size: 12px; }.chart-bar-proven { fill: var(--sc-gold); }.chart-bar-bound { fill: var(--sc-border); stroke: var(--sc-gold); stroke-width: .4; }.chart-group { cursor: pointer; outline: none; }.chart-group:hover .chart-bar-proven, .chart-group:focus-visible .chart-bar-proven, .chart-group.is-active .chart-bar-proven { stroke: var(--ink); stroke-width: 2; }.chart-mean { stroke: var(--good); stroke-width: 1.5; }.chart-median { stroke: var(--info); stroke-width: 1.5; stroke-dasharray: 4 4; }.chart-mean-label { fill: var(--good); font-size: 12px; }.chart-median-label { fill: var(--info); font-size: 12px; }
-.chart-caption { font-size: 13px; color: var(--sc-gold-bright); line-height: 1.7; min-height: 24px; margin-top: 6px; }
-.chart-group:focus-visible { outline: 2px solid var(--sc-gold); outline-offset: 4px; }
+.chart-legend { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+.chart-stat { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.chart-stat > span { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.chart-stat strong { display: block; color: var(--ink); font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.chart-swatch { flex: 0 0 22px; border-top: 2px dotted var(--ink); }
+.chart-swatch-mean { border-top-style: solid; border-color: var(--good); }
+.chart-swatch-median { border-top-style: dashed; border-color: var(--info); }
+.histogram { width: 100%; padding: 12px 0 8px; }
+.histogram svg { display: block; width: 100%; height: auto; overflow: visible; font-family: ScoundrelSans, var(--font-sans); }
+.chart-axis { stroke: var(--line-strong); stroke-width: 1; }
+.chart-label { fill: var(--muted); font-size: 12px; }
+.chart-bar { fill: var(--sc-gold); }
+.chart-group { cursor: pointer; }
+.chart-group:hover .chart-bar, .chart-group.is-active .chart-bar { fill: var(--ink); }
+.chart-group.is-active .chart-hit-area { fill: var(--good-soft); }
+.chart-reference { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 4; pointer-events: none; }
+.chart-reference-mean { stroke: var(--good); stroke-dasharray: none; }
+.chart-reference-median { stroke: var(--info); stroke-dasharray: 6 3; }
+.chart-inspector { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.chart-inspector > label { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+.chart-inspector select { min-width: 116px; min-height: 44px; padding: 8px 30px 8px 10px; border: 1px solid var(--control-border); border-radius: 4px; background: var(--surface); color: var(--ink); font: inherit; }
+.chart-caption { flex: 1; min-width: 170px; font-size: 13px; color: var(--sc-gold-bright); line-height: 1.7; }
 .distribution-detail { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--sc-border); padding-top: 16px; margin-top: 18px; }
 .report-section { padding: 32px 0; border-bottom: 1px solid var(--sc-border); }
 .report-section > p { color: var(--muted); font-size: 14px; }
@@ -40,14 +57,11 @@
 .deals-table td:first-child { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
 .deals-table a { color: var(--sc-gold-bright); text-underline-offset: 4px; min-height: 32px; display: inline-flex; align-items: center; }.deals-table .proven { color: var(--good); }.deals-table .bounded { color: var(--muted); }.load-more { margin-top: 20px; }.report-loading { padding: 35px 0; color: var(--muted); }.report-shell .game-footer { border-top: 0; }
 @media (max-width: 900px) { .report-metrics > div { padding-inline: 16px; }.report-metrics strong { font-size: 26px; }.report-intro { padding: 26px 28px; }.section-heading h2 { font-size: 21px; } }
-@media (max-width: 650px) { .report-shell .game-nav { gap: 15px; }.report-shell .return-game { padding-inline: 10px; font-size: 12px; }.report-intro { margin-top: 18px; padding: 22px; background-position: 60% center; }.report-intro h1 { font-size: 28px; }.report-summary { padding: 28px 0 22px; }.report-summary h2, .report-section h2, .distribution-section h2 { font-size: 21px; }.report-summary > p { font-size: 14px; }.report-controls { gap: 10px; flex-wrap: wrap; }.report-controls > label { flex: 1; }.report-controls .game-button { padding-inline: 13px; min-height: 44px; }.report-controls > .text-button { width: 100%; justify-content: flex-start; padding: 0; }.report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px 0; padding-block: 22px; }.report-metrics > div { padding-inline: 15px; }.report-metrics > div:nth-child(odd) { padding-left: 0; }.report-metrics > div:nth-child(even) { border: 0; }.report-metrics strong { font-size: 27px; }.distribution-section { padding: 21px 15px; margin-top: 25px; }.section-heading { flex-direction: column; gap: 16px; }.section-heading > label { width: 100%; }.histogram { margin-inline: -3px; }.chart-legend { gap: 12px; }.method-grid { grid-template-columns: 1fr; gap: 22px; }.report-section { padding: 27px 0; }.deals-table { min-width: 0; font-size: 12px; }.deals-table td, .deals-table th { padding: 10px 6px; }.deal-links { flex-direction: column; align-items: flex-start; gap: 0; }.report-shell .game-footer { padding-top: 20px; } }
+@media (max-width: 650px) { .report-shell .game-nav { gap: 15px; }.report-shell .return-game { padding-inline: 10px; font-size: 12px; }.report-intro { margin-top: 18px; padding: 22px; background-position: 60% center; }.report-intro h1 { font-size: 28px; }.report-summary { padding: 28px 0 22px; }.report-summary h2, .report-section h2, .distribution-section h2 { font-size: 21px; }.report-summary > p { font-size: 14px; }.report-controls { gap: 10px; flex-wrap: wrap; }.report-controls > label { flex: 1; }.report-controls .game-button { padding-inline: 13px; min-height: 44px; }.report-controls > .text-button { width: 100%; justify-content: flex-start; padding: 0; }.report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px 0; padding-block: 22px; }.report-metrics > div { padding-inline: 15px; }.report-metrics > div:nth-child(odd) { padding-left: 0; }.report-metrics > div:nth-child(even) { border: 0; }.report-metrics strong { font-size: 27px; }.distribution-section { padding: 21px 15px; margin-top: 25px; }.section-heading { flex-direction: column; gap: 16px; }.section-heading > label { width: 100%; }.chart-legend { gap: 12px; }.method-grid { grid-template-columns: 1fr; gap: 22px; }.report-section { padding: 27px 0; }.deals-table { min-width: 0; font-size: 12px; }.deals-table td, .deals-table th { padding: 10px 6px; }.deal-links { flex-direction: column; align-items: flex-start; gap: 0; }.report-shell .game-footer { padding-top: 20px; } }
 
 @media (max-width: 650px) { .report-shell .return-game { display: none; } }
 
 .chart-hit-area { fill: transparent; }
-.chart-count { fill: var(--sc-gold-bright); font-size: 12px; }
-.chart-bar-proven { stroke: var(--sc-gold); stroke-width: .5; }
-.histogram { scrollbar-color: var(--sc-gold) var(--sc-panel); }
 .deal-links { display: flex; align-items: center; gap: 12px; }
 .deal-links > a, .deal-links > button { min-height: 44px; min-width: 44px; padding: 4px 0; font-size: 13px; }
 .deals-table .defeated { color: var(--sc-health); }
@@ -61,17 +75,9 @@
 .solution-line li > div > span { color: var(--ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .solution-line li > strong { display: inline-block; width: 60px; text-align: right; font: 600 16px/1.5 ScoundrelDisplay, Georgia, serif; color: var(--sc-health); }
 @media (max-width: 650px) { .deal-links { flex-direction: column; align-items: flex-start; gap: 0; }.deal-links > a, .deal-links > button { font-size: 12px; }.report-metrics strong { white-space: normal; overflow-wrap: anywhere; } }
-.mobile-chart { display: none; }
 @media (max-width: 650px) {
-  .histogram { overflow: visible; }
-  .histogram > svg { display: none; }
-  .mobile-chart { display: block; }
-  .mobile-chart-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; padding: 8px 6px; border-bottom: 1px solid var(--sc-border); }
-  .mobile-chart-bars { max-height: 352px; overflow-y: auto; scrollbar-color: var(--sc-gold) var(--sc-panel); }
-  .mobile-score-row { display: grid; width: 100%; min-height: 44px; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: center; gap: 8px; padding: 4px 6px; background: transparent; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); font: 400 12px/1.4 ScoundrelSans, var(--font-sans); cursor: pointer; text-align: left; font-variant-numeric: tabular-nums; }
-  .mobile-score-row > strong { font-weight: 500; }.mobile-score-row > span:last-child { text-align: right; }
-  .mobile-bar-track { display: block; height: 16px; }
-  .mobile-bar-track > i { display: block; height: 100%; min-width: 1px; background: var(--sc-gold); }
-  .mobile-score-row:hover, .mobile-score-row.is-active { background: var(--good-soft); }
+  .chart-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+  .chart-inspector { align-items: stretch; flex-direction: column; gap: 10px; }
+  .chart-inspector select { flex: 1; }
+  .chart-caption { min-width: 0; }
 }
-@media (max-width: 650px) { .mobile-score-row { grid-template-columns: 85px minmax(0, 1fr) 34px; }.mobile-score-row > strong { font-size: 12px; } }

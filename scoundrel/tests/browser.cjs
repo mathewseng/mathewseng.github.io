@@ -66,10 +66,18 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     assert.equal(await page.locator("#median").innerText(),String(summary.median));
     assert.equal(await page.locator("#deals-body tr").count(),20);
     assert.equal(await page.locator("#proof-rate").innerText(),"1,000");
-    const plotted=await page.locator('.chart-count').allTextContents();
-    assert.equal(plotted.reduce((sum,n)=>sum+Number(n),0),1000,'histogram accounts for the full cohort');
-    const bins=await page.locator('.chart-group').evaluateAll(es=>es.map(e=>[Number(e.dataset.score),Number(e.dataset.high)]));
-    for(let i=1;i<bins.length;i++)assert.equal(bins[i][0],bins[i-1][1]+1,'score axis retains empty bins');
+    const plotted=await page.locator('.chart-group').evaluateAll(es=>es.map(e=>({score:Number(e.dataset.score),count:Number(e.dataset.count),width:Number(e.querySelector('.chart-bar').getAttribute('width'))})));
+    assert.equal(plotted.reduce((sum,bar)=>sum+bar.count,0),1000,'histogram accounts for the full cohort');
+    assert.equal(plotted.length,summary.max-summary.min+1,'one bar per integer score');
+    for(let i=1;i<plotted.length;i++)assert.equal(plotted[i].score,plotted[i-1].score+1,'score axis retains zero counts');
+    assert.ok(plotted.every(bar=>bar.width<=3),'bars stay thin');
+    async function checkMarkers(expected){
+      const markers=await page.locator('.chart-reference').evaluateAll(es=>es.map(e=>({key:e.dataset.stat,value:Number(e.dataset.value),x:Number(e.getAttribute('x1'))})));
+      assert.equal(markers.length,4);
+      const geometry=await page.locator('.chart-group').evaluateAll(es=>{const center=e=>{const r=e.querySelector('.chart-bar');return Number(r.getAttribute('x'))+Number(r.getAttribute('width'))/2;};return {first:Number(es[0].dataset.score),left:center(es[0]),step:center(es[1])-center(es[0])};});
+      for(const marker of markers){assert.equal(marker.value,expected[marker.key]);assert.ok(Math.abs(marker.x-(geometry.left+(marker.value-geometry.first)*geometry.step))<1e-7,'reference lines use the score axis');}
+    }
+    await checkMarkers(summary);
     await page.locator('[data-solution]').first().click();
     assert.equal(await page.locator('#solution-line li').count(),study.rows[0].line.length);
     assert.ok((await page.locator('#solution-title').innerText()).includes(String(study.rows[0].score)));
@@ -77,13 +85,20 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     await page.locator("#cohort").selectOption("below");
     assert.ok((await page.locator('#distribution-subtitle').innerText()).startsWith(String(study.rows.filter(r=>r.score<30).length)));
     assert.equal(await page.locator("#median").innerText(),String(summary.median),"cohort filters do not alter full-study metrics");
+    await checkMarkers(require('../reports/statistics.js').summarize(study.rows.filter(r=>r.score<30)));
     await page.locator("#cohort").selectOption("all");await page.locator(".chart-group").last().click();assert.equal(await page.locator("#clear-filter").isVisible(),true);await page.locator("#clear-filter").click();
     const downloadEvent=page.waitForEvent("download");await page.locator("#download").click();const download=await downloadEvent;assert.ok(download.suggestedFilename().endsWith(".csv"));
     const csv=fs.readFileSync(await download.path(),'utf8');assert.equal(csv.trim().split('\n').length,1001);assert.ok(csv.startsWith('deal,seed,final_score,outcome,simulations_per_decision'));assert.ok(!csv.includes('incomplete'));
     if(shots)await page.screenshot({path:path.join(shots,"scoundrel-report.png"),fullPage:true});
     await page.setViewportSize({width:375,height:812});await settle(page);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
-    assert.ok(await page.locator('.mobile-score-row').first().isVisible());
-    await page.locator('.mobile-score-row').first().click();assert.equal(await page.locator('#clear-filter').isVisible(),true);await page.locator('#clear-filter').click();
+    assert.ok(await page.locator('#histogram svg').isVisible());
+    assert.ok(await page.locator('#histogram').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'full score distribution fits phone width');
+    await checkMarkers(summary);
+    await page.locator('#score-picker').selectOption('0');
+    assert.equal(await page.locator('#clear-filter').isVisible(),true);
+    assert.ok((await page.locator('#deals-caption').innerText()).startsWith(String(study.rows.filter(r=>r.score===0).length)));
+    assert.ok((await page.locator('#deals-body tr td:nth-child(2)').allTextContents()).every(score=>score==='0'));
+    await page.locator('#clear-filter').click();
     if(shots){await page.screenshot({path:path.join(shots,"scoundrel-report-phone.png"),fullPage:true});await page.locator('.distribution-section').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(shots,"scoundrel-report-phone-chart.png")});}
     assert.deepEqual(errors,[]);console.log("Scoundrel browser checks passed: all-action hidden-deck analysis, winning replay, save/resume, gallery, themes, reports, export, four viewports.");
   } finally {await browser.close();await server.close();}
