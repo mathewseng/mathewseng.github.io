@@ -1,0 +1,30 @@
+name: Prepare Backgammon policy experiment
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Build the research engine
+        run: node backgammon/scripts/build-cube-policy-native.mjs /tmp/bg-cube-study-v2
+      - name: Check all five policies against excluded deterministic cases
+        run: python3 backgammon/scripts/validate-cube-policy-platform.py /tmp/bg-cube-study-v2 --output /tmp/bg-cube-study-v2/platform-validation.json
+      - name: Reproduce and repair the cache-context error
+        run: |
+          python3 backgammon/scripts/validate-cube-cache-context.py /tmp/bg-cube-study-v2
+          cp backgammon/docs/cube-cache-context-validation.json /tmp/bg-cube-study-v2/cache-validation.json
+      - name: Package the exact validated executable and assets
+        run: tar -C /tmp/bg-cube-study-v2 -czf /tmp/cube-policy-native-linux-arm64.tar.gz gnubg-core data LICENSE build.json platform-validation.json cache-validation.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cube-policy-native-linux-arm64
+          path: /tmp/cube-policy-native-linux-arm64.tar.gz
+          retention-days: 30
+          if-no-files-found: error

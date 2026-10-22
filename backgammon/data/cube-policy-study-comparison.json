@@ -2,5 +2,7 @@
   "schema": 1,
   "signature": "0294775ccc5713adcddbe80e50b70319cf315bb3c3f5fd358e22e0002be15a72",
   "complete": false,
-  "plannedTrials": 163840
+  "plannedTrials": 163840,
+  "status": "correcting",
+  "statusMessage": "Collection stopped after a deterministic regression exposed a wrong-policy cache hit. The partial run is archived without outcome-based analysis. A fresh experiment adds a cache-only control before comparing XG cube rules and stronger checker policies."
 }

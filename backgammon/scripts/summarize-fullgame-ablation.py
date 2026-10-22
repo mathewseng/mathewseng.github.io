@@ -124,6 +124,21 @@ def summarize(inputs, records):
             'trialsPerMovePolicy': inputs['trials'], 'effectComparisons': inputs.get('effectComparisons',45), 'gapComparisons': inputs.get('gapComparisons',60), 'records': len(records), 'totalTrials': sum(r['value']['samples'] for r in records),
             'method': inputs['method'], 'policies': inputs['policies'], 'summaries': summaries, 'effectSummary': effects_summary, 'rows': rows}
 
+def verify_historical_source(relative, digest):
+    """Validate the recorded bytes, even after the current builder evolves."""
+    current = FAMILY / relative
+    if current.exists() and hashlib.sha256(current.read_bytes()).hexdigest() == digest:
+        return
+    snapshot = FAMILY / 'engine/source/fullgame-native-v1-inputs.tar.gz'
+    with tarfile.open(snapshot) as archive:
+        try:
+            data = archive.extractfile(relative).read()
+        except KeyError:
+            raise ValueError('Missing historical build input: ' + relative) from None
+    if hashlib.sha256(data).hexdigest() != digest:
+        raise ValueError('Historical build source mismatch: ' + relative)
+
+
 def validate_provenance(input_bytes, inputs):
     node = os.getenv('NODE', 'node')
     script = "const fs=require('fs'),c=require('crypto'),{signature,...v}=JSON.parse(fs.readFileSync(0));process.stdout.write(c.createHash('sha256').update(JSON.stringify(v)).digest('hex'));"
@@ -158,13 +173,10 @@ def validate_provenance(input_bytes, inputs):
     if not runtime['allAssetsMatchArchive'] or runtime['assets'] != expected_assets or runtime['archiveSHA256'] != build['archiveSHA256'] or runtime['binarySHA256'] != build['binarySHA256'] or runtime['hosts'] != ['local', 'mattgpt']:
         raise ValueError('Runtime weights/database provenance mismatch')
     for f, field in [('rollout-ablation.patch', 'ablationPatchSHA256')]:
-        if build[field] != hashlib.sha256((FAMILY / 'scripts' / f).read_bytes()).hexdigest():
-            raise ValueError('Ablation source mismatch')
+        verify_historical_source('scripts/' + f, build[field])
     for f, digest in build['inputs'].items():
-        if hashlib.sha256((FAMILY / 'scripts' / f).read_bytes()).hexdigest() != digest:
-            raise ValueError('Native build source mismatch')
-    if hashlib.sha256((FAMILY / 'engine/source/bridge.c').read_bytes()).hexdigest() != build['bridgeSHA256']:
-        raise ValueError('Bridge source mismatch')
+        verify_historical_source('scripts/' + f, digest)
+    verify_historical_source('engine/source/bridge.c', build['bridgeSHA256'])
     previous = json.loads((FAMILY / 'docs/rollout-policy-inputs.json').read_bytes())
     pairs = json.loads((FAMILY / 'docs/rollout-diagnostic-inputs.json').read_bytes())
     used = set()
