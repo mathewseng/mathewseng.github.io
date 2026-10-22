@@ -47,6 +47,13 @@ test('a checker uses the other die when the selected die cannot move it, before 
   assert.equal(selectedDie(candidates.slice(1),4,[4,1]),1);
   assert.equal(advancedAction({point:5,checker:true,candidates:[],returns,checkerReturns:returns,preferred:4,dice:[4,1],turn:0}).type,'undo');
 });
+test('a new roll starts with the higher playable die while explicit choices and recorded order survive', () => {
+  const dice = [1,6], candidates = [{from:12,to:11,die:1},{from:12,to:6,die:6}];
+  assert.equal(selectedDie(candidates,null,dice),6);
+  assert.equal(selectedDie(candidates,1,dice),1);
+  assert.equal(selectedDie(candidates.slice(0,1),null,dice),1);
+  assert.deepEqual(dice,[1,6]);
+});
 test('new tables default to adaptive bot and reviews, visible feedback, warnings and advanced input; explicit preferences survive', () => {
   assert.equal(localConfig().strength,'auto'); assert.equal(localConfig().reviewStrength,'auto');
   assert.equal(localConfig().warning,true); assert.equal(localConfig().tutor,true);

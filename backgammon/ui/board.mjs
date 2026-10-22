@@ -631,11 +631,14 @@ export class Board {
       editor = false, historical = false, forcedDice = [], lockedDice = 0, playableDice = null, advanced = false, shortcuts = null,
     },
   ) {
+    // Display rolls high die first without changing the committed dice or the
+    // editor's indexed inputs. Draft undo stays matched by value and step index.
+    const roll = editor ? s.dice : [...s.dice].sort((a, b) => b - a);
     const group = svg("g", {
       class: `board-dice${historical ? " last-roll" : ""}`,
       "data-player": s.turn,
       "aria-label": historical
-        ? `${playerName(s.turn)} last roll: ${s.dice.join(" and ")}`
+        ? `${playerName(s.turn)} last roll: ${roll.join(" and ")}`
         : "Rolled dice",
       ...(this.container.id === "board" ? { id: "dice" } : {}),
     });
@@ -646,7 +649,7 @@ export class Board {
     const values =
       !historical && !editor && s.dice[0] === s.dice[1]
         ? Array(4).fill(s.dice[0])
-        : s.dice;
+        : roll;
     const used = usedDice.map((value, index) => ({ value, index })), forced = [...forcedDice],
       center = s.turn === orientation ? 610 : 204;
     const undoAction = usedDice.length > lockedDice;
