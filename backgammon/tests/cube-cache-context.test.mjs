@@ -46,3 +46,19 @@ for file in ['scripts/build-rollout-native.mjs','scripts/nonexistent-input.c']:
  else:raise AssertionError('invalid provenance accepted')
 `],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
 });
+test('bg8 ships exactly the cache patch with unchanged weights and separately versioned live results',()=>{
+ const r=read('../docs/bg8-release.json');
+ assert.equal(r.emscripten,'4.0.15');assert.equal(r.dataUnchanged,true);assert.ok(r.engine.endsWith('+bg8'));
+ for(const [file,digest] of Object.entries(r.assets))assert.equal(hash(fs.readFileSync(new URL('../engine/'+file,import.meta.url))),digest);
+ assert.ok(fs.readFileSync(new URL('../engine/metadata.mjs',import.meta.url),'utf8').includes(r.engine));
+ execFileSync('python3',['-c',`import tarfile,pathlib,tempfile,subprocess
+f=pathlib.Path('backgammon/engine/source');versions=[]
+for v in [7,8]:
+ with tarfile.open(f/f'gnubg-core-955555c-bg{v}.tar.gz') as a:versions.append({m.name:a.extractfile(m).read() for m in a.getmembers() if m.isfile()})
+assert [n for n in sorted(versions[0].keys()|versions[1].keys()) if versions[0].get(n)!=versions[1].get(n)]==['src/eval.c']
+with tempfile.TemporaryDirectory() as d:
+ root=pathlib.Path(d);(root/'src').mkdir();(root/'src/eval.c').write_bytes(versions[0]['src/eval.c'])
+ subprocess.run(['patch','-p1','-i',str((f/'checker-context-bg8.patch').resolve())],cwd=root,check=True,capture_output=True)
+ assert (root/'src/eval.c').read_bytes()==versions[1]['src/eval.c']
+`],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
+});

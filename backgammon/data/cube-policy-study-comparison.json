@@ -4,6 +4,7 @@
   "signature": "c33006467f38e023b0971a1cabae19d1fba6eed3896e7cd8820868470a7e5c2a",
   "complete": false,
   "plannedTrials": 163840,
-  "status": "prepared",
-  "statusMessage": "The replacement 163,840-game experiment has passed worker validation. Its five policies isolate the cache fix, XG cube rules, wider checker selection and deeper checker play. The full fixed sample is required before any outcome analysis."
+  "status": "running",
+  "statusMessage": "The fixed 163,840-game experiment is collecting full-game trials across 20 validated shards. Results will appear only after all 5,120 batches finish and validate. The five arms separate the cache fix, XG cube rules, wider checker selection and deeper checker play.",
+  "executionUrl": "https://github.com/mathewseng/mathewseng.github.io/actions/runs/39801091859"
 }

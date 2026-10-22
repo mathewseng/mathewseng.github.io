@@ -10,6 +10,8 @@ SIGNATURE='c33006467f38e023b0971a1cabae19d1fba6eed3896e7cd8820868470a7e5c2a'
 spec=importlib.util.spec_from_file_location('ablation',Path(__file__).with_name('summarize-fullgame-ablation.py'))
 ablation=importlib.util.module_from_spec(spec);spec.loader.exec_module(ablation)
 stats=ablation.stats
+execution_spec=importlib.util.spec_from_file_location('execution',Path(__file__).with_name('merge-cube-policy-shards.py'))
+execution=importlib.util.module_from_spec(execution_spec);execution_spec.loader.exec_module(execution)
 FIELDS=['checkerPlies','cubePlies','truncationPlies','lateAfterPlies','lateCheckerPlies','lateCubePlies','rulesMode','filter','vrPlies','cacheContext']
 HASH=lambda b:hashlib.sha256(b).hexdigest()
 def validate_plan(data):
@@ -72,7 +74,7 @@ def summarize(p,records):
         if type(r['batch']) is not int or not 0<=r['batch']<n or r['seed']!=(d['seedBase']+r['batch']*65536)%2**32 or v['samples']!=p['batchSize']:raise ValueError('Wrong seed/sample')
         if any(v[k]!=policy[k] for k in FIELDS):raise ValueError('Policy changed')
         if len(v['probabilities'])!=5 or not all(math.isfinite(x) for x in [v['equity'],v['cubeless'],v['standardError'],*v['probabilities']]) or v['standardError']<0:raise ValueError('Invalid statistics')
-        if len(v['cubeActions'])!=10 or any(type(x) is not int or x<0 for x in v['cubeActions']) or type(v['maxCube']) is not int or v['maxCube']<1 or (policy['rulesMode'] and v['maxCube']>1024):raise ValueError('Invalid cube telemetry')
+        if len(v['cubeActions'])!=10 or any(type(x) is not int or x<0 for x in v['cubeActions']) or type(v['maxCube']) is not int or v['maxCube']<1 or v['maxCube']&(v['maxCube']-1) or (policy['rulesMode'] and v['maxCube']>1024):raise ValueError('Invalid cube telemetry')
         lookup[key]=r
     if len(lookup)!=n*len(policies)*len(candidates):raise ValueError('Incomplete fixed experiment')
     lists={};gaps={};rows=[]
@@ -108,10 +110,17 @@ def main():
     if json.loads((args.out/'inputs.json').read_bytes())!=p:raise ValueError('Run inputs differ')
     raw=(args.out/'batches.jsonl').read_bytes()
     if not raw.endswith(b'\n'):raise ValueError('Partial raw line')
-    r=summarize(p,[json.loads(line) for line in raw.splitlines()]);r['inputsSHA256']=HASH(input_bytes);r['rawSHA256']=HASH(raw);r['nativeBinarySHA256']=p['build']['binarySHA256']
+    records=[json.loads(line) for line in raw.splitlines()]
+    execution.validate_execution(complete,p,raw,records)
+    execution_bytes=(json.dumps(complete,indent=2)+'\n').encode()
+    r=summarize(p,records);r['inputsSHA256']=HASH(input_bytes);r['rawSHA256']=HASH(raw);r['nativeBinarySHA256']=p['build']['binarySHA256']
+    r['executionSHA256']=HASH(execution_bytes)
+    r['executionUrl']='https://github.com/mathewseng/mathewseng.github.io/actions/runs/'+complete['runId']
+    r['methodClarification']='The frozen plan says identical 1-ply control-variate evaluations. This means identical control depth; control values reflect each arm\'s rules and cache context. The Deep contrast changes both checker depth and filter, while the matched cube contrast includes corrected offer handling and the cube ceiling.'
     encoded=(json.dumps(r,indent=2)+'\n').encode()
     (FAMILY/f'docs/{PREFIX}-comparison.json').write_bytes(encoded)
     (FAMILY/'data/cube-policy-study-comparison.json').write_bytes(encoded)
     (FAMILY/f'docs/{PREFIX}-batches.jsonl.gz').write_bytes(gzip.compress(raw,mtime=0))
+    (FAMILY/f'docs/{PREFIX}-execution.json').write_bytes(execution_bytes)
     print(json.dumps({'totalTrials':r['totalTrials'],'policies':[{'id':x['id'],'gap':x['gap'],'EVs':[c['equity'] for c in x['candidates']]} for x in r['policies']],'effects':r['effects']},indent=2))
 if __name__=='__main__':main()
