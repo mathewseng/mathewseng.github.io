@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { initialState, commitTurn } from '../core/rules.mjs';
 import { presentMove } from '../core/move-presentation.mjs';
-import { bookResult, bookBoardKey, BOOK_ID, DEEP_BOOK_ID, validateBookHeader } from '../engine/opening-book.mjs';
+import { bookResult, bookBoardKey, BOOK_ID, DEEP_BOOK_ID, DOUBLES_BOOK_ID, validateBookHeader } from '../engine/opening-book.mjs';
 
 export const OPENING_ROLLS = Array.from({length:6}, (_, i) => i + 1)
-  .flatMap(a => Array.from({length:a - 1}, (_, i) => `${a}${i + 1}`));
-export const REPLY_ROLLS = Array.from({length:6}, (_, i) => i + 1)
   .flatMap(a => Array.from({length:a}, (_, i) => `${a}${i + 1}`));
+export const REPLY_ROLLS = [...OPENING_ROLLS];
+const STANDARD_OPENING_ROLLS = OPENING_ROLLS.filter(r=>r[0]!==r[1]);
+const DOUBLES = OPENING_ROLLS.filter(r=>r[0]===r[1]);
 
 // This guide uses exactly the book's rules and scores, independently of the
 // user's live table settings. It never starts an engine or changes a match.
 export function openingState(roll) {
-  if (!OPENING_ROLLS.includes(roll)) throw Error('Choose two different opening dice.');
+  if (!OPENING_ROLLS.includes(roll)) throw Error('Choose an opening-study roll.');
   return initialState({phase:'move', dice:[...roll].map(Number), matchLength:0,
     rules:{cube:true,jacoby:true,immediateRedoubles:0}});
 }
@@ -28,10 +29,10 @@ function resultPosition(state,result,threshold){
     total:result.candidates.length, screened:!!result.screening};
 }
 
-export function buildOpenings(index) {
+export function buildOpenings(index, rolls=STANDARD_OPENING_ROLLS) {
   if (!Number.isFinite(index?.threshold) || index.threshold <= 0 || index.threshold > .1)
     throw Error('Invalid opening-book comparison window.');
-  return new Map(OPENING_ROLLS.map(roll => [roll,
+  return new Map(rolls.map(roll => [roll,
     position(openingState(roll),index.openings?.[roll],index)]));
 }
 
@@ -42,6 +43,7 @@ export class OpeningGuideData {
     this.referenceBook=referenceBook;
     this.base = new URL(`../engine/opening-book-data/${deep?'deep/':''}`,import.meta.url);
     this.bookId = deep?DEEP_BOOK_ID:BOOK_ID;
+    this.doublesFile = deep?'../doubles/index.json':'doubles/index.json';
     this.files = new Map();
     this.positions = new Map();
   }
@@ -56,7 +58,7 @@ export class OpeningGuideData {
         const text = await response.text();
         if (text.length > 2_000_000) throw Error('Invalid opening-book file.');
         const data = validateBookHeader(JSON.parse(text));
-        if (data.id !== this.bookId)
+        if (data.id !== (file===this.doublesFile?DOUBLES_BOOK_ID:this.bookId))
           throw Error('Opening book version mismatch.');
         return data;
       } finally { clearTimeout(timer); }
@@ -65,12 +67,20 @@ export class OpeningGuideData {
     pending.catch(() => {
       if (this.files.get(file)===pending) this.files.delete(file);
     }); // Retry must make a fresh request; an old failure cannot evict a newer fetch.
-    while (this.files.size > 10) this.files.delete([...this.files.keys()].find(k => k !== 'index.json' && k !== file));
+    while (this.files.size > 10) this.files.delete([...this.files.keys()].find(k => k !== 'index.json' && k !== this.doublesFile && k !== file));
     return pending;
   }
   async openings() {
+    const openings=await this.standardOpenings();
+    try {
+      this.doublesIndex=await this.read(this.doublesFile);
+      const doubles=buildOpenings(this.doublesIndex,DOUBLES);
+      return new Map(OPENING_ROLLS.map(r=>[r,openings.get(r)||doubles.get(r)]));
+    } catch(error) {this.files.delete(this.doublesFile);throw error;}
+  }
+  async standardOpenings() {
     if(this.referenceBook){
-      const positions=await Promise.all(OPENING_ROLLS.map(async roll=>{
+      const positions=await Promise.all(STANDARD_OPENING_ROLLS.map(async roll=>{
         const state=openingState(roll);state.rules.immediateRedoubles=2;
         const result=await this.referenceBook.lookup(state);
         return result?[roll,resultPosition(state,result,.040)]:null;
@@ -105,6 +115,11 @@ export class OpeningGuideData {
     } : {}), turn:player, phase:'move',dice:[...roll].map(Number)};
     const key = bookBoardKey(state), id = `${key}:${roll}:${player}`;
     if (this.positions.has(id)) return this.positions.get(id);
+    if(opening.state.dice[0]===opening.state.dice[1]){
+      const result=position(state,this.doublesIndex?.replies?.[key]?.rolls?.[roll],this.doublesIndex);
+      if(this.positions.size>=42)this.positions.delete(this.positions.keys().next().value);
+      this.positions.set(id,result);return result;
+    }
     if(this.referenceBook){
       const referenceState={...state,rules:{...state.rules,immediateRedoubles:2}};
       const reference=await this.referenceBook.lookup(referenceState);

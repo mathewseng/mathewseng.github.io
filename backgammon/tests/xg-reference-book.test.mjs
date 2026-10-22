@@ -57,6 +57,11 @@ test('all close XG openings have 21 replies and failed reference loading falls b
  const data=new OpeningGuideData(fetcher,{referenceBook:new XGReferenceBook({fetcher})});
  const openings=await data.openings();let branches=0;
  for(const opening of openings.values()){
+  if(opening.state.dice[0]===opening.state.dice[1]){
+   assert.equal(opening.method,'tree');assert.equal(opening.plies,3);
+   assert.equal(opening.state.rules.immediateRedoubles,0,'starting doubles retain their own GNUbg rule context');
+   continue;
+  }
   assert.equal(opening.method,'reference');assert.equal(opening.state.rules.immediateRedoubles,2);
   for(let choice=0;choice<opening.moves.length;choice++){
    const replies=await data.replies(opening,choice);assert.equal(replies.size,21);

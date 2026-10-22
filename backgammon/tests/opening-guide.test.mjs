@@ -9,7 +9,7 @@ const fileFetch=url=>Promise.resolve(new Response(readFileSync(url)));
 
 test('opening guide covers every opening and precisely the book’s close window with compact legal notation',()=>{
   const guide=buildOpenings(index);
-  assert.equal(guide.size,15);assert.equal(OPENING_ROLLS.length,15);
+  assert.equal(guide.size,15);assert.equal(OPENING_ROLLS.length,21);
   assert.equal(REPLY_ROLLS.length,21);assert.equal(REPLY_ROLLS.filter(r=>r[0]===r[1]).length,6);
   for(const [roll,p] of guide){
     assertState(p.state);assert.equal(p.state.rules.immediateRedoubles,0);
@@ -36,7 +36,8 @@ test('opening guide covers every opening and precisely the book’s close window
   assert.deepEqual(guide.get('21').moves.map((_,i)=>openingSummary(guide.get('21'),i).kind),
     ['split','slot','split','build'],'best and alternatives retain their own main idea');
   assert.match(openingSummary(guide.get('21'),0).description,/Split.*builder/);
-  assert.throws(()=>openingState('11'));
+  assert.deepEqual(openingState('11').dice,[1,1]);
+  assert.throws(()=>openingState('77'));
   assert.throws(()=>buildOpenings({...index,threshold:NaN}));
   assert.throws(()=>buildOpenings({...index,openings:{}}));
 });
@@ -94,10 +95,10 @@ test('every best and close opening has all 21 correctly oriented, cached replies
     }
     assert.equal(JSON.stringify(opening),saved);
   }
-  for(const opening of guide.values())for(const choice of opening.moves)
+  for(const opening of guide.values())if(opening.state.dice[0]!==opening.state.dice[1])for(const choice of opening.moves)
     visitedBoards.add(bookBoardKey({...commitTurn(opening.state,choice.steps),turn:1}));
   assert.equal(count,[...guide.values()].reduce((n,p)=>n+p.moves.length,0)*21);
-  assert.equal(requests.size,1+visitedBoards.size,'only the index and the distinct reply positions; equivalent openings share a shard');
+  assert.equal(requests.size,2+visitedBoards.size,'standard index, doubles book, and distinct standard reply positions');
   assert.ok([...requests.values()].every(n=>n===1),'all rolls of a reply reuse one shard');
 });
 
@@ -105,7 +106,7 @@ test('failed book downloads retry; incompatible data and wrong reply boards are 
   let failures=1;
   const data=new OpeningGuideData(url=>failures-- >0?Promise.resolve(new Response('',{status:503})):fileFetch(url));
   await assert.rejects(data.openings());
-  const guide=await data.openings();assert.equal(guide.size,15);
+  const guide=await data.openings();assert.equal(guide.size,21);
   failures=1;
   await assert.rejects(data.reply(guide.get('31'),0,'11'));
   assert.equal((await data.reply(guide.get('31'),0,'11')).state.turn,1);
@@ -120,4 +121,33 @@ test('failed book downloads retry; incompatible data and wrong reply boards are 
   });
   const openings=await wrong.openings();
   await assert.rejects(wrong.reply(openings.get('31'),0,'31'),/mismatch/);
+});
+
+test('all six starting doubles have four-step legal previews and independently labeled estimates',async()=>{
+  const guide=await new OpeningGuideData(fileFetch).openings();
+  const doubles=JSON.parse(readFileSync(new URL('../engine/opening-book-data/doubles/index.json',import.meta.url)));
+  for(const roll of OPENING_ROLLS.filter(r=>r[0]===r[1])){
+    const p=guide.get(roll);
+    assert.equal(p.plies,3);assert.equal(p.method,'tree');
+    assert.equal(p.state.rules.immediateRedoubles,0);
+    assert.equal(p.moves.length,doubles.openings[roll].rows.filter(r=>doubles.openings[roll].rows[0][1]-r[1]<=.040+1e-8).length);
+    for(const [i,m]of p.moves.entries()){
+      assert.equal(m.steps.length,4);assert.ok(m.steps.every(s=>s.die===Number(roll[0])));
+      assertState(previewPosition(p,i));assert.equal(boardKey(previewPosition(p,i)),m.key);
+      assert.ok(openingSummary(p,i).description);
+    }
+  }
+});
+
+test('a missing or invalid doubles book can be retried without restarting standard downloads',async()=>{
+  let attempts=0,standard=0;
+  const data=new OpeningGuideData(url=>{
+    if(url.pathname.endsWith('/doubles/index.json')&&attempts++===0)return Promise.resolve(new Response('',{status:503}));
+    if(url.pathname.endsWith('/deep/index.json'))standard++;
+    return fileFetch(url);
+  });
+  await assert.rejects(data.openings());
+  assert.equal((await data.openings()).size,21);assert.equal(standard,1);assert.equal(attempts,2);
+  const wrong=new OpeningGuideData(url=>url.pathname.endsWith('/doubles/index.json')?Promise.resolve(Response.json(index)):fileFetch(url));
+  await assert.rejects(wrong.openings(),/version/);
 });

@@ -7,13 +7,13 @@
     <meta name="description" content="Explore backgammon opening moves, close alternatives, and all reply rolls with move previews and recorded equity estimates." />
     <title>Backgammon · Openings</title>
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=e88abc5af210ac08" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=e88abc5af210ac08" />
-    <link rel="stylesheet" href="../styles.css?bgv=e88abc5af210ac08" />
-    <link rel="stylesheet" href="../docs.css?bgv=e88abc5af210ac08" />
-    <link rel="stylesheet" href="../opening-guide.css?bgv=e88abc5af210ac08" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=ef312131779474ca" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=ef312131779474ca" />
+    <link rel="stylesheet" href="../styles.css?bgv=ef312131779474ca" />
+    <link rel="stylesheet" href="../docs.css?bgv=ef312131779474ca" />
+    <link rel="stylesheet" href="../opening-guide.css?bgv=ef312131779474ca" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="./app.js?bgv=e88abc5af210ac08"></script>
+    <script type="module" src="./app.js?bgv=ef312131779474ca"></script>
   </head>
   <body class="docs-page opening-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -116,7 +116,8 @@
             <summary>About the rankings</summary>
             <p>Rankings use eXtreme Gammon’s published opening book 3.70 (2013) wherever available. These are imported XG values, not results computed by this site. Close alternatives are within <span id="opening-threshold">0.040</span> equity of best. Equity is in current-cube points from the moving player’s perspective; loss is the gap to the highest listed value.</p>
             <p>The XG reference covers 15 openings and 714 replies, with Jacoby, beavers and raccoons on. It mixes finite rollouts and XGRoller++ evaluations. Published confidence bounds appear where available; neither the rankings nor EVs are exact. Only source-listed alternatives are compared. <a href="https://www.extremegammon.com/GetOb.aspx">XG data-use terms.</a></p>
-            <p>If the reference is unavailable or a position is unlisted, the guide uses clearly labeled GNUbg estimates with beavers off. Solver uses XG references only with matching rules; other positions and unlisted submitted moves receive a complete GNUbg comparison. The <a href="/backgammon/reports/#fullgame-precision">independent GNUbg accuracy experiments</a> remain separate from this reference book. Opening doubles are excluded because tied opening dice are rerolled.</p>
+            <p>All six doubles are included as starting-position studies, with replies to every move within the close-alternative window. These use precomputed GNUbg 3-ply estimates with Jacoby on and beavers off: 2-ply screening keeps at least ten candidates and all moves within 0.080 before deeper analysis. In actual games, tied opening dice still reroll.</p>
+            <p>If the reference is unavailable or a position is unlisted, the guide uses clearly labeled GNUbg estimates with beavers off. Solver uses XG references only with matching rules; other positions and unlisted submitted moves receive a complete GNUbg comparison. The <a href="/backgammon/reports/#fullgame-precision">independent GNUbg accuracy experiments</a> remain separate from this reference book.</p>
             <a href="/backgammon/reports/">How the engine evaluates moves</a>
           </details>
           <noscript><p>Enable JavaScript to explore the opening book and animated move previews.</p></noscript>

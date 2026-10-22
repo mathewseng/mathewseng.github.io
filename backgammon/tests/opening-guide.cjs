@@ -85,7 +85,7 @@ module.exports=async function openingGuide(browser,base,out,name){
         if(labels.length)assert.match(await button.getAttribute('aria-label'),/Close alternatives:/);
       };
       await matrix();
-      assert.equal(await page.locator('#opening-rolls button:disabled').count(),6);
+      assert.equal(await page.locator('#opening-rolls button:disabled').count(),0);
       assert.equal(await page.locator('#opening-side').isVisible(),false);
       assert.equal(await page.locator('#opening-rolls [aria-pressed="true"]').getAttribute('data-roll'),'13');
       assert.equal(await page.locator('#opening-moves button').count(),1);
@@ -95,12 +95,17 @@ module.exports=async function openingGuide(browser,base,out,name){
         await st.put('work',{id:'opening-guide-test',sentinel:'unchanged'});
       });
       const rolls=await page.locator('#opening-rolls button:enabled').evaluateAll(ns=>ns.map(n=>n.dataset.roll));
-      assert.equal(rolls.length,15);
+      assert.equal(rolls.length,21);
       for(const roll of rolls){
         await activate(page.locator(`#opening-rolls [data-roll="${roll}"]`));
         assert.equal(await page.locator('#openings').getAttribute('data-roll'),[...roll].reverse().join(''));
         assert.equal(await page.locator('#opening-moves [aria-pressed="true"]').count(),1);
         await alternativesMatch();
+        if(roll[0]===roll[1]){
+          assert.equal(await page.locator('#opening-method').textContent(),'GNUbg · 3 ply');
+          assert.match(await page.locator('#opening-position-note').textContent(),/actual opening ties reroll/);
+          assert.ok(await page.locator('#opening-board .last-move-arrows').count(),'doubles preview has move arrows');
+        }
         const rows=page.locator('#opening-moves button');
         if(await rows.count()>1){
           await activate(rows.last());
@@ -160,7 +165,7 @@ module.exports=async function openingGuide(browser,base,out,name){
       await page.locator('#opening-rolls [data-roll="16"]').focus();
       // Safari's Option-Tab includes buttons when full keyboard access is off.
       await page.keyboard.press(name==='webkit'?'Alt+Tab':'Tab');
-      assert.equal(await page.evaluate(()=>document.activeElement.dataset.roll),'23','keyboard skips the empty triangle and disabled opening ties');
+      assert.equal(await page.evaluate(()=>document.activeElement.dataset.roll),'22','keyboard reaches doubles and skips the empty triangle');
       await page.locator('#opening-rolls [data-roll="13"]').focus();
       await page.keyboard.press('Enter');
       assert.equal(await page.locator('#openings').getAttribute('data-roll'),'31','keyboard can change roll');
@@ -212,7 +217,17 @@ module.exports=async function openingGuide(browser,base,out,name){
       assert.equal(await page.locator('#openings').getAttribute('data-layout'),'compact');
       await matrix();
       await activate(page.locator('#opening-openings'));
-      assert.equal(await page.locator('#opening-rolls button:disabled').count(),6);
+      assert.equal(await page.locator('#opening-rolls button:disabled').count(),0);
+      // The same diagonal remains interactive in compact mode, including replies.
+      for(const roll of ['11','22','33','44','55','66']){
+        await activate(page.locator(`#opening-rolls [data-roll="${roll}"]`));
+        assert.equal(await page.locator('#openings').getAttribute('data-roll'),roll);
+        await activate(page.locator('#opening-next'));
+        await page.waitForFunction(()=>document.querySelector('#openings').dataset.mode==='reply'&&document.querySelector('#openings').dataset.loading==='false');
+        assert.equal(await page.locator('#opening-rolls button:enabled').count(),21);
+        assert.equal(await page.locator('#opening-method').textContent(),'GNUbg · 3 ply');
+        await activate(page.locator('#opening-openings'));
+      }
       assert.equal(await page.locator('#opening-compact-picker #opening-picker').count(),1);
       await page.reload();
       await page.locator('#opening-panel').waitFor({state:'visible'});
@@ -220,7 +235,7 @@ module.exports=async function openingGuide(browser,base,out,name){
       assert.equal(requests.filter(u=>/\/engine\/vendor\/|engine\/worker/.test(u)).length,0,'guide never starts live search');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
       assert.deepEqual(errors,[]);
-      results.push({layout,openings:15,replies:21});
+      results.push({layout,openings:21,replies:21});
     }catch(error){
       await page.screenshot({path:path.join(out,`${name}-opening-guide-${layout}-failure.png`),fullPage:true});
       console.error(await page.evaluate(()=>({scrollY,roll:document.querySelector('#openings').dataset.roll,

@@ -6,6 +6,8 @@ export const BOOK_ID = 'jacoby-3ply-v3';
 export const BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg5';
 export const DEEP_BOOK_ID = 'jacoby-native-5ply-v1';
 export const DEEP_BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6-native5';
+export const DOUBLES_BOOK_ID = 'jacoby-starting-doubles-3ply-v1';
+export const DOUBLES_BOOK_ENGINE_VERSION = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg6-native';
 const START_STATE = initialState({ matchLength: 0 });
 const START = boardKey(START_STATE);
 const BASE = new URL('./opening-book-data/', import.meta.url);
@@ -31,7 +33,8 @@ export function bookEligible(state, { preset, kind, rollout, useBook = true } = 
 export function validateBookHeader(value) {
   const historical=value?.id===BOOK_ID&&value.engine===BOOK_ENGINE_VERSION;
   const deep=value?.id===DEEP_BOOK_ID&&value.engine===DEEP_BOOK_ENGINE_VERSION;
-  if (value?.schema !== 1 || (!historical&&!deep))
+  const doubles=value?.id===DOUBLES_BOOK_ID&&value.engine===DOUBLES_BOOK_ENGINE_VERSION;
+  if (value?.schema !== 1 || (!historical&&!deep&&!doubles))
     throw new Error('Opening book version mismatch.');
   return value;
 }

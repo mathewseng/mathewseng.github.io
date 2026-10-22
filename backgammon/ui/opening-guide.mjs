@@ -59,24 +59,23 @@ export function openingGuide(root) {
       button.setAttribute('aria-pressed',String(+button.dataset.side===replySide));
     $('opening-context').textContent=mode==='reply'
       ? `After ${replySide?'White':'Black'}’s ${diceLabel(openingRoll)} · ${openings.get(openingRoll).moves[openingChoice].notation}`
-      : 'White opens. Choose a roll, then a move.';
-    $('opening-roll-label').textContent=mode==='opening' ? 'Opening roll · ties reroll' : `${replySide?'Black':'White'}’s reply roll`;
+      : openingRoll[0]===openingRoll[1] ? 'White plays doubles from the starting position.' : 'White opens. Choose a roll, then a move.';
+    $('opening-roll-label').textContent=mode==='opening' ? 'Opening roll · including doubles' : `${replySide?'Black':'White'}’s reply roll`;
     const key=mode==='opening'?'opening':`${openingRoll}:${openingChoice}:${replySide}`;
     if (pickerKey!==key) {
       pickerKey=key;replyPositions=null;
       picker.replaceChildren(...rollGrid.map(cell => {
-        const roll=canonicalRoll(cell),tie=mode==='opening'&&cell[0]===cell[1];
+        const roll=canonicalRoll(cell);
         const button=node('button',{type:'button',class:'opening-roll-choice','data-roll':cell,'data-canonical':roll,
-          'aria-label':`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(roll)}${tie?', tie: reroll':''}`,
+          'aria-label':`${mode==='opening'?'Opening':'Reply'} roll ${diceLabel(roll)}`,
           'aria-pressed':'false'},
           node('span',{class:'opening-roll-content'},
             node('span',{class:'opening-dice'},...[...roll].map(die)),
-            node('span',{class:'opening-roll-notation'}),node('span',{class:'opening-roll-idea'},tie?'Reroll':'…'),
+            node('span',{class:'opening-roll-notation'}),node('span',{class:'opening-roll-idea'},'…'),
             node('span',{class:'opening-roll-alternatives',hidden:''})),
           node('span',{class:'opening-alternative-colors','aria-hidden':'true',hidden:''}));
         // Keep each unique roll in the upper-right half of the six-by-six grid.
         button.style.gridArea=`${cell[0]} / ${cell[1]}`;
-        button.disabled=tie;
         button.addEventListener('click',() => {
           if (mode==='opening') {openingRoll=roll;openingChoice=0;}
           else {replyRoll=roll;replyChoice=0;}
@@ -145,7 +144,8 @@ export function openingGuide(root) {
   function showPosition() {
     const roll=mode==='opening'?openingRoll:replyRoll;
     root.dataset.mode=mode;root.dataset.roll=roll;
-    $('opening-heading').textContent=`${mode==='opening'?'White opens':`${replySide?'Black':'White'} replies`} ${diceLabel(roll)}`;
+    const startingDouble=openingRoll[0]===openingRoll[1];
+    $('opening-heading').textContent=`${mode==='opening'?(startingDouble?'White plays':'White opens'):`${replySide?'Black':'White'} replies`} ${diceLabel(roll)}`;
     $('opening-method').textContent=position.method==='reference'?'XG · published reference':position.method==='rollout'?`GNUbg rollout · ${position.trials} trials`:`GNUbg · ${position.plies} ply`;
     const source=$('opening-source');
     source.hidden=!position.reference;
@@ -168,7 +168,7 @@ export function openingGuide(root) {
     list.scrollTop=0;
     $('opening-solver').href=shareURL(position.state);
     $('opening-next').hidden=mode==='reply';
-    $('opening-position-note').textContent=(mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.')+(position.method==='reference'?' XG reference · Jacoby, beavers and raccoons on. Intervals are XG’s published bounds where provided; other entries use XGRoller++ estimates.':position.method==='rollout'?' GNUbg fallback · beavers off. EV intervals show approximate 95% sampling uncertainty; model and screening error are excluded.':' GNUbg fallback · beavers off.');
+    $('opening-position-note').textContent=(mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.')+(startingDouble?' Starting-position study; actual opening ties reroll. GNUbg · Jacoby on, beavers off. Candidates screened at 2 ply, finalists evaluated at 3 ply.':position.method==='reference'?' XG reference · Jacoby, beavers and raccoons on. Intervals are XG’s published bounds where provided; other entries use XGRoller++ estimates.':position.method==='rollout'?' GNUbg fallback · beavers off. EV intervals show approximate 95% sampling uncertainty; model and screening error are excluded.':' GNUbg fallback · beavers off.');
     panel.hidden=false;
     preview();
   }
