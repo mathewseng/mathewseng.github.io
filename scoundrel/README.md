@@ -17,7 +17,9 @@ Reduced motion pauses the particle renderer and removes movement.
 
 Avoidance explicitly offers two orders: **left** returns the four displayed
 cards in order (1 → 2 → 3 → 4), and **right** reverses them (4 → 3 → 2 → 1).
-Both queues go to the bottom. Buttons and horizontal touch swipes open a
+Both queues go to the bottom. Previews label draw positions 1st–4th and the
+first/last endpoints, with the remaining-deck count ahead of these cards.
+Buttons and horizontal touch swipes open a
 preview before committing the direction. Only untouched four-card rooms may
 be avoided; consecutive avoidance is prohibited. The original rules describe
 scooping the room but do not specify its return order. Existing saved runs and
@@ -88,9 +90,16 @@ sampled deck. This avoids the hindsight error of solving each sampled complete
 deck with perfect information and averaging those oracle scores.
 
 - All legal actions appear with their estimated mean final score and sample
-  count, including both avoidance orders and both combat methods.
-- Equal-strength monsters and mechanically identical avoidance queues share
-  search work. Every distinct root action gets an initial allocation before
+  count, including both avoidance orders and both combat methods. Rows sort by
+  descending EV, with pending estimates last. All equivalent best actions are
+  highlighted; shared sample counts describe one pool, not independent samples.
+- Equivalent public successor distributions share search work at every tree
+  node, before any hidden draw is sampled. Canonical states preserve health,
+  equipment, chain limit, potion availability, carried cards and return order.
+  Inert used potions in a final room below 20 health can also be canonicalized;
+  final-potion bonuses at 20 remain distinct. Equal immediate healing does not
+  merge moves that leave different potions to carry forward. Every distinct
+  root action gets an initial allocation before
   extra simulations focus on promising moves.
 - UCB selection, empirical-variance racing, and move-ordering heuristics reduce
   work on unlikely contenders. These are approximations, not dominance proofs;
@@ -105,8 +114,10 @@ deck with perfect information and averaging those oracle scores.
   and total monster value are known.
 
 The browser normally searches for up to 1.8 seconds / 12,000 simulations;
-Search deeper allows six seconds / 60,000. The worker reports intermediate EVs
-and is canceled when the state changes. Only fully determined actions carry an
+**Search 100k** runs the full 100,000 simulations without a wall-clock cutoff
+(unless all root values are already exact). A live counter reports progress.
+The worker reports intermediate EVs at most every 120ms and is canceled when
+the state changes. Only fully determined actions carry an
 Exact label. Other EVs are simulation estimates of future play, not guaranteed
 scores or a proof of the best hidden-deck strategy. Their raw standard errors
 are diagnostics; tree search changes its continuation policy while learning.
@@ -136,7 +147,9 @@ node scoundrel/scripts/publish-study.cjs /path/study/outcomes.json
 
 Every decision sends **only a public observation** to a persistent native worker.
 The native implementation matches the browser policy at the same simulation
-budget. Fixed-size buffers, exact canonical state keys, cached visible-room
+budget. The published 100,000-game study retains its original frozen policy
+revision and results; later solver improvements do not relabel historical runs.
+Fixed-size buffers, exact canonical state keys, cached visible-room
 transitions, precomputed utility arithmetic, and a shared combinadic room cache
 reduce overhead. The shared cache is a sparse ~4 GiB file in the OS temporary
 directory, keyed by the compiled revision; workers share its physical pages.
@@ -162,6 +175,7 @@ benchmark, frozen run, deadline, and monitoring/publication instructions.
 node --test scoundrel/tests/*.test.cjs
 sh scripts/assemble-site.sh _site
 node scoundrel/tests/browser.cjs
+node scoundrel/tests/analysis.cjs
 node scoundrel/tests/responsive.cjs
 node scoundrel/tests/gallery.cjs
 # With local WebKit installed, also check mobile Safari's rendering engine:
@@ -173,7 +187,8 @@ Tests compare both solvers against an independent exhaustive search
 over small dungeons, check compact transitions against the full engine, replay all
 all published policy histories, check invariance to hidden deck permutations, and verify all 44 art hashes differ. The browser test exercises
 all-action analysis, a full winning descent, save/resume, themes, collection,
-responsive layouts, both avoidance directions, report filters, recorded move-history
+responsive layouts, both avoidance directions, a full 100k worker budget, search
+cancellation, equivalent best choices, report filters, recorded move-history
 viewers and CSV export against assembled files.
 The responsive check measures actual text bounds for all 44 names, verifies
 touch targets and both combat actions, and exercises the art viewer, enlarged

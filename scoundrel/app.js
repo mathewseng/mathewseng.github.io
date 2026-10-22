@@ -16,7 +16,7 @@
   const requestedSeed = new URLSearchParams(location.search).get("seed");
   const saved = E.restore(read(RUN, null));
   let state = requestedSeed && /^[a-zA-Z0-9-]{1,80}$/.test(requestedSeed) && saved?.seed !== requestedSeed ? E.createGame({ seed: requestedSeed }) : saved || E.createGame({ seed: seed() });
-  let selected = null, worker = null, request = 0, analysis = [], audio = null, known = new Set(), resultShown = false;
+  let selected = null, worker = null, request = 0, analysis = [], audio = null, known = new Set(), resultShown = false, searchStatus = null;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)"), motion = () => prefs.motion && !reduced.matches;
   const roman = (n) => n < 40 ? ["", "X", "XX", "XXX"][Math.floor(n / 10)] + ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"][n % 10] : String(n);
   const names = { monster: "Monster", weapon: "Weapon", potion: "Potion" };
@@ -142,24 +142,34 @@
     if (!prefs.oracle) return;
     updateAvoidValues();
     const b = best();
-    if (b?.action.id) { const el = document.querySelector(`[data-card="${b.action.id}"]`); if (el) { el.classList.add("is-best"); const ribbon = document.createElement("span"); ribbon.className = "best-ribbon"; ribbon.textContent = "Best EV"; ribbon.setAttribute("aria-hidden", "true"); el.append(ribbon); } }
+    const isBest = row => row?.score != null && b && row.score === b.score && (row.equivalence === b.equivalence || row.exact && b.exact);
+    const winners = analysis.filter(isBest);
+    for (const winner of winners) if (winner.action.id) { const el = document.querySelector(`[data-card="${winner.action.id}"]`); if (el && !el.classList.contains("is-best")) { el.classList.add("is-best"); const ribbon = document.createElement("span"); ribbon.className = "best-ribbon"; ribbon.textContent = winners.length > 1 ? "Equal best EV" : "Best EV"; ribbon.setAttribute("aria-hidden", "true"); el.append(ribbon); } }
     const proven = b && analysis.every(r => r.exact);
-    $("oracle-summary").textContent = !E.actions(state).length ? "Game over. Final score " + E.score(state) + "." : b ? `${proven ? "Exact best" : "Recommended"}: ${E.describe(state, b.action)}. ${proven ? "Final score" : "Estimated final score"} ${b.score.toLocaleString("en-US", { maximumFractionDigits: 1 })}.${pending ? " Evaluating alternatives…" : ""}` : "Calculating moves…";
-    $("action-values").innerHTML = E.actions(state).map((a) => {
-      const r = analysis.find((r) => same(r.action, a)), c = state.room.find((c) => c?.id === a.id);
+    $("oracle-summary").textContent = !E.actions(state).length ? "Game over. Final score " + E.score(state) + "." : b ? `${proven ? "Exact best" : "Recommended"}: ${winners.map(row => E.describe(state, row.action)).join(" or ")}. ${proven ? "Final score" : "Estimated final score"} ${b.score.toLocaleString("en-US", { maximumFractionDigits: 1 })}.${pending ? " Evaluating alternatives…" : ""}` : "Calculating moves…";
+    const progress = $("search-progress");
+    progress.textContent = searchStatus ? `${searchStatus.simulations.toLocaleString()}${searchStatus.pending ? " / " + searchStatus.target.toLocaleString() : ""} simulations · ${searchStatus.pending ? "searching" : analysis.every(row => row.exact) ? "solved exactly" : "complete"}` : "";
+    $("deepen-button").disabled = !!searchStatus && (searchStatus.deep && searchStatus.pending || !searchStatus.pending && (searchStatus.simulations >= 100000 || analysis.every(row => row.exact)));
+    $("deepen-button").textContent = searchStatus?.deep && searchStatus.pending ? "Searching 100k…" : "Search 100k";
+    const rows = E.actions(state).map(action => ({ action, row: analysis.find(row => same(row.action, action)) }));
+    rows.sort((a, b) => (a.row?.score == null) - (b.row?.score == null) || (b.row?.score ?? -Infinity) - (a.row?.score ?? -Infinity) || Number(b.row?.exact || false) - Number(a.row?.exact || false));
+    $("action-values").innerHTML = rows.map(({ action: a, row: r }) => {
+      const c = state.room.find((c) => c?.id === a.id);
+      const shared = r && analysis.filter(row => row.equivalence === r.equivalence).length > 1;
       const change = a.type === "fight" ? "−" + (a.mode === "weapon" ? Math.max(0, c.value - state.weapon.value) : c.value) + " health" : a.type === "drink" ? "+" + (state.potionUsed ? 0 : Math.min(c.value, 20 - state.health)) + " health" : "—";
       const val = r?.score == null ? "Searching…" : r.score.toLocaleString("en-US", { maximumFractionDigits: 1 });
-      return `<tr${same(b?.action, a) ? ' class="is-best"' : ""}><td><button class="oracle-action" type="button" data-preview='${esc(JSON.stringify(a))}'>${esc(E.describe(state, a))}</button></td><td data-label="Health">${change}</td><td class="value-cell" data-label="EV · final score">${val}</td><td data-label="Analysis"><span class="proof${r?.exact ? " exact" : ""}">${r?.score == null ? "Pending" : r.exact ? "Exact" : r.samples.toLocaleString() + " samples"}</span></td></tr>`;
+      return `<tr${isBest(r) ? ' class="is-best"' : ""}><td><button class="oracle-action" type="button" data-preview='${esc(JSON.stringify(a))}'>${esc(E.describe(state, a))}</button></td><td data-label="Health">${change}</td><td class="value-cell" data-label="EV · final score">${val}</td><td data-label="Analysis"><span class="proof${r?.exact ? " exact" : ""}">${r?.score == null ? "Pending" : r.exact ? "Exact" : r.samples.toLocaleString() + (shared ? " shared samples" : " samples")}</span></td></tr>`;
     }).join("");
   }
   function analyze(deep = false) {
-    worker?.terminate(); worker = null; const requestId = ++request;
+    worker?.terminate(); worker = null; searchStatus = null; const requestId = ++request;
     if (!prefs.oracle || !E.actions(state).length) { renderAnalysis(); return; }
     if (!window.Worker) { $("oracle-summary").textContent = "This browser does not support the worker required for analysis."; return; }
     try {
-      worker = new Worker("solver-worker.js?v=20261022-5");
-      worker.onmessage = ({ data }) => { if (data.requestId !== requestId) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; renderAnalysis(data.pending); };
+      worker = new Worker("solver-worker.js?v=20261022-ev");
+      worker.onmessage = ({ data }) => { if (data.requestId !== requestId) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; searchStatus = { deep, pending: data.pending, simulations: data.simulations, target: data.target }; renderAnalysis(data.pending); };
       worker.onerror = () => { $("oracle-summary").textContent = "The analysis worker could not load. Try reloading the page."; };
+      searchStatus = { deep, pending: true, simulations: 0, target: deep ? 100000 : 12000 };
       worker.postMessage({ requestId, observation: E.observe(state), deep }); renderAnalysis(true);
     } catch { $("oracle-summary").textContent = "Analysis needs a browser that supports Web Workers."; }
   }
@@ -183,9 +193,10 @@
   }
   function openAvoid(direction = "left") {
     if (!E.canFlee(state)) return;
+    $("avoid-description").textContent = state.deck.length ? `These cards go after the ${state.deck.length} cards already in the deck. Then you’ll draw them in this order:` : "The deck is empty. These cards will be drawn again immediately, in this order:";
     $("avoid-choices").innerHTML = ["left", "right"].map(dir => {
       const cards = E.fleeOrder(state, dir);
-      return `<button class="avoid-choice" type="button" data-avoid="${dir}" aria-label="Avoid ${dir}. Return ${cards.map(c => esc(name(c)) + ', value ' + c.value).join('; ')}"><span class="avoid-choice-title"><strong>${dir === "left" ? "←" : "→"} Avoid ${dir}</strong><span>${dir === "left" ? "Keep order" : "Reverse order"}</span></span><span class="avoid-preview" aria-hidden="true">${cards.map((c, i) => `<span class="avoid-card" data-suit="${c.suit}"><img src="${catalog[c.id].image.replace('/cards/', '/cards/thumbs/')}" alt="" /><span>${state.room.findIndex(current => current?.id === c.id) + 1}</span><strong>${c.value}</strong></span>`).join('<i>→</i>')}</span><span class="avoid-value" data-avoid-ev="${dir}"></span></button>`;
+      return `<button class="avoid-choice" type="button" data-avoid="${dir}" aria-label="Avoid ${dir}. After ${state.deck.length} cards already in the deck, draw ${cards.map((c, i) => `${i + 1}: ${esc(name(c))}, value ${c.value}`).join('; ')}. Last card is at the bottom of the deck."><span class="avoid-choice-title"><strong>${dir === "left" ? "←" : "→"} Avoid ${dir}</strong><span>${dir === "left" ? "Keep room order" : "Reverse room order"}</span></span><span class="avoid-order" aria-hidden="true"><span>Drawn first</span><span>Last · deck bottom</span></span><span class="avoid-preview" aria-hidden="true">${cards.map((c, i) => `<span class="avoid-position"><span class="avoid-card" data-suit="${c.suit}"><img src="${catalog[c.id].image.replace('/cards/', '/cards/thumbs/')}" alt="" /><strong>${c.value}</strong></span><span class="avoid-draw-order">${["1st", "2nd", "3rd", "4th"][i]}</span></span>`).join('<i>→</i>')}</span><span class="avoid-value" data-avoid-ev="${dir}"></span></button>`;
     }).join("");
     updateAvoidValues();
     $("avoid-dialog").showModal();

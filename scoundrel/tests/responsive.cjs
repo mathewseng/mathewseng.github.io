@@ -23,7 +23,7 @@ async function readable(page, label) {
   const issues = await page.evaluate(()=>{
     const problems=[];
     if(document.documentElement.scrollWidth>innerWidth+1)problems.push("document overflows horizontally");
-    const selector=".encounter-name strong,.encounter-name small,.encounter-top>span:first-child,.selection-copy>strong,.selection-copy p,.game-button span,.game-button small,.catalog-grid figcaption strong,.catalog-grid figcaption>div>span,#artwork-title,#artwork-role,.avoid-choice-title strong,.avoid-choice-title>span,.avoid-value,#avoid-description,.report-metrics strong,.report-metrics small,#study-summary,#deals-caption,.deals-table th,.deals-table td,#solution-title,.solution-line li>div>span,.chart-stat>span,.chart-stat strong,#chart-caption";
+    const selector=".encounter-name strong,.encounter-name small,.encounter-top>span:first-child,.selection-copy>strong,.selection-copy p,.game-button span,.game-button small,.catalog-grid figcaption strong,.catalog-grid figcaption>div>span,#artwork-title,#artwork-role,.avoid-choice-title strong,.avoid-choice-title>span,.avoid-value,.avoid-order>span,.avoid-draw-order,#avoid-description,#search-progress,.report-metrics strong,.report-metrics small,#study-summary,#deals-caption,.deals-table th,.deals-table td,#solution-title,.solution-line li>div>span,.chart-stat>span,.chart-stat strong,#chart-caption";
     for(const el of document.querySelectorAll(selector)){
       if(!el.getClientRects().length || el.closest("dialog:not([open])"))continue;
       const range=document.createRange();range.selectNodeContents(el);

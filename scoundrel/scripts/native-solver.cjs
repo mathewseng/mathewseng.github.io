@@ -20,12 +20,14 @@ function createSolver(binary = compile(), { sharedCache = true } = {}) {
     const job = pending; pending = null; if (!job) return;
     try {
       const result = JSON.parse(text);
+      const groups = S.actionGroups(S.pack(job.observation));
       const results = E.actions(job.observation).map(action => {
         let move = S.actionMove(job.observation, action);
-        if (move === 129 && !result.actions.some(a => a.move === 129)) move = 128;
+        if (move === 129 && !groups.some(group => group.moves.includes(129))) move = 128;
+        move = groups.find(group => group.moves.includes(move)).move;
         const row = result.actions.find(a => a.move === move);
         if (!row || !Number.isFinite(row.score)) throw Error("Missing action estimate");
-        return { action, score: row.score, samples: row.samples, exact: row.exact, standardError: row.standardError };
+        return { action, equivalence: move, score: row.score, samples: row.samples, exact: row.exact, standardError: row.standardError };
       });
       const best = results.slice().sort((a, b) => b.score - a.score)[0];
       job.resolve({ action: best.action, score: best.score, results, elapsed: result.elapsed, heuristicSkips: result.heuristicSkips });
