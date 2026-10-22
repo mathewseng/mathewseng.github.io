@@ -1,0 +1,153 @@
+
+            .navBar {
+                background: #84cadd;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100vw;
+                height: 20vh;
+                z-index: 11;
+                text-align: center;
+            }
+            .navBar2 {
+                background: #bee0e9;
+                position: absolute;
+                left: 0;
+                top: 12vh;
+                width: 100vw;
+                z-index: 12;
+                height: 8vh;
+                text-align: center;
+            }
+            #jukeboxTab {
+                background: #e9faff;
+                position: absolute;
+                left: 0;
+                top: 15vh;
+                width: 100vw;
+                height: 85vh;
+            }
+            #jukebox {
+              position: absolute;
+              z-index: 1000;
+              text-align: center;
+              margin-top: 5vh;
+              margin-left: 36vw;
+              height: 42vw;
+              width: 28vw;
+            }
+            .blurbs {
+                text-align: center;
+                top: 12vh;
+                height: 75vh;
+                position: absolute;
+                width: 100vw;
+                vertical-align: center;
+                font-family: Staatliches;
+                font-size: 20px;
+            }
+            .info {
+              text-align: center;
+              top: 90vh;
+              height: 75vh;
+              position: absolute;
+              width: 100vw;
+              vertical-align: center;
+              font-family: Staatliches;
+              font-size: 20px;
+            }
+            .title {
+                font-size: 80px;
+            }
+            .subtitle {
+                font-size: 60px;
+            }
+            .text {
+                font-size: 30px;
+                text-align: left;
+                margin-left: 10vw;
+                margin-right: 10vw;
+            }
+            .jukeboxButton {
+                background: #e8faff;
+                margin-left: 0;
+                margin-top: 0;
+                width: 50vw;
+                height: 42.5vh;
+                font-size: 50px;
+            }
+            .jukeboxButton:hover {
+                background: #0e495b;
+                color: white;
+                font-size: 55px;
+            }
+            button {
+                height: 8vh;
+                margin-right: -2px;
+                font-family: Staatliches;
+                background: #bee0e9;
+                border: none;
+                font-size: 20px;
+                transition: background 0.4s, font-size 0.4s;
+            }
+            button:hover {
+                background: #ebfbff;
+            }
+            .navBar2 button {
+                z-index: 1001;
+            }
+            .stopButton {
+                width: 40vh;
+                height: 20vh;
+                background: #f44b42;
+                font-size: 55px;
+            }
+            .stopButton:hover {
+                background: #e50d0d;
+            }
+            h1 {
+                font-family: Staatliches;
+                margin-bottom: -15px;
+            }
+            h2 {
+                font-family: Staatliches;
+            }
+            audio {
+                position: fixed;
+                z-index: 10;
+                width: 30vw;
+                left: 35vw;
+                height: 10vh;
+                top: 50%;
+            }
+            #scroll {
+                margin-top: 5px;
+                color: #c00000;
+            }
+
+body.legacy-project { overflow: auto; height: auto; }
+body.legacy-project .navBar, body.legacy-project .navBar2, body.legacy-project #jukeboxTab, body.legacy-project .blurbs, body.legacy-project .info { position: relative; top: auto; left: auto; width: 100%; height: auto; }
+body.legacy-project .navBar { padding: 22px 18px; }
+body.legacy-project .navBar h1 { margin: 0; font-size: clamp(24px, 4vw, 42px); color: var(--ink); }
+body.legacy-project .navBar2 { padding: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+body.legacy-project .navBar2 button { padding: 8px 16px; height: auto; font-size: 18px; }
+body.legacy-project .blurbs, body.legacy-project .info { padding: 24px 0; color: var(--ink); }
+body.legacy-project .title { font-size: clamp(32px, 6vw, 72px); line-height: 1.1; margin: 30px 6vw; }
+body.legacy-project .subtitle { font-size: clamp(28px, 5vw, 48px) !important; }
+body.legacy-project .text { font-size: clamp(18px, 2.3vw, 26px); margin: 24px auto; max-width: 920px; padding: 0 24px; }
+body.legacy-project #jukeboxTab { padding: 18px; text-align: center; }
+body.legacy-project #jukebox { display: block; position: relative; margin: 20px auto; width: min(260px, 50vw); height: auto; }
+body.legacy-project .jukeboxButton { width: calc(50% - 12px); min-height: 120px; height: auto; margin: 4px; font-size: clamp(22px, 3vw, 42px); }
+body.legacy-project .jukeboxButton:hover { font-size: clamp(22px, 3vw, 42px); }
+body.legacy-project audio { position: relative; top: auto; left: auto; width: min(600px, 90%); height: 54px; margin: 16px auto; }
+body.legacy-project img { max-width: calc(100% - 32px); object-fit: contain; }
+body.legacy-project [hidden] { display: none !important; }
+
+
+body.legacy-project .navBar { background: var(--surface-2); }
+body.legacy-project .navBar2 { background: var(--surface); }
+body.legacy-project .navBar2 button { background: transparent; color: var(--ink); }
+body.legacy-project .navBar2 button:hover { background: var(--surface-3); }
+body.legacy-project #jukeboxTab { background: var(--page); }
+body.legacy-project .jukeboxButton { background: var(--surface-2); color: var(--ink); }
+body.legacy-project .jukeboxButton:hover { background: var(--surface-3); }

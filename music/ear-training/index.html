@@ -1,0 +1,122 @@
+<!--
+    TO-DO:
+    3. Implement interval training
+        3a. Move interval buttons into the shape of piano keys
+        3b. Make pressing "SPACE" play an interval
+        3c. Make guessing an intervals show correct or incorrect
+    4. Implement melody training
+        4a. Make piano svg
+        4b. Make pressing "SPACE" play a melody
+        4c. Make a slider for length of melody 3-12 notes long
+        4d. Allow user to guess melody and show correct or incorrect
+            4d1. Colors of correct notes should be a gradient from green to purple
+    5. Implement score out of 10
+        5a. Implement high score for each training exercise
+    6. Implement timed trials
+        6a. How many you can do in 15 seconds, 30 seconds, and 60 seconds
+    Bugs:
+    - Rhythm Training tab does not slide first time.
+-->
+
+<!DOCTYPE html>
+<html id="html" lang="en" data-family="music">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261022">
+    <link rel="stylesheet" href="../../shared/app.css?v=20261022">
+    <title>Ear Training</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="../../shared/vendor/jquery-3.7.1.min.js"></script>
+    <script src="../../shared/vendor/jquery-ui-1.13.3.min.js"></script>
+    <script src="../../shared/vendor/tone-14.8.49.min.js"></script>
+    <script src="../../shared/vendor/d3-7.9.0.min.js"></script>
+    <link rel="stylesheet" href="../../shared/legacy.css?v=20261022">
+</head>
+
+<body id="body" scroll="no" class="legacy-project">
+    <header class="legacy-header" data-project-path="/music/ear-training/"><nav aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/music/">Music</a><span aria-hidden="true">/</span><strong>Ear Training</strong></nav>
+<div class="project-dates"><!-- project-dates --><span>Created <time datetime="2021-11-26">Nov 26, 2021</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span><!-- /project-dates --></div></header>
+
+    <p id="keyLegend">
+        <b>Space</b>: Play<br>
+        <b>P</b>: Replay Notes<br>
+        <b>O</b>: Restart<br>
+        <b>Shift</b>: Toggle Key Display<br>
+        <b>Left/Right</b>: Navigate Tabs
+    </p>
+    <p id="scoreText">
+        <b>Score</b>: 0<br>
+        <b>High Score</b>: 0
+    </p>
+    <div class="exercise-controls" aria-label="Exercise controls"><button onclick="selectTab('left')" aria-label="Previous exercise">←</button><button onclick="playExercise()">Play / next</button><button onclick="selectTab('right')" aria-label="Next exercise">→</button></div>
+    <div id="tabs">
+        <div id="singleNoteTraining" class="tab">
+            <h1>Single Note Training</h1>
+            <p id="noteText"></p>
+            <br>
+            <br>
+        </div>
+        <div id="intervalTraining" class="tab">
+            <h1>Interval Training</h1>
+            <br>
+            <p id="intervalText"></p>
+            <br>
+            <div id="intervalSelector">
+                <div id="firstTopIntervals">
+                    <button id="i1" onclick="selectInterval(1)">b2</button>
+                    <button id="i3" onclick="selectInterval(3)">b3</button>
+                    <button id="i6" onclick="selectInterval(6)">b5</button>
+                    <button id="i8" onclick="selectInterval(8)">b6</button>
+                    <button id="i10" onclick="selectInterval(10)">b7</button>
+                </div>
+                <div id="firstBottomIntervals">
+                    <button id="i0" onclick="selectInterval(0)">1</button>
+                    <button id="i2" onclick="selectInterval(2)">2</button>
+                    <button id="i4" onclick="selectInterval(4)">3</button>
+                    <button id="i5" onclick="selectInterval(5)">4</button>
+                    <button id="i7" onclick="selectInterval(7)">5</button>
+                    <button id="i9" onclick="selectInterval(9)">6</button>
+                    <button id="i11" onclick="selectInterval(11)">7</button>
+                    <button id="i12" onclick="selectInterval(12)">8</button>
+                </div>
+                <br>
+                <div id="secondIntervals">
+                    <div id="secondTopIntervals">
+                        <button id="i13" onclick="selectInterval(13)">b9</button>
+                        <button id="i15" onclick="selectInterval(15)">b10</button>
+                        <button id="i18" onclick="selectInterval(18)">b12</button>
+                        <button id="i20" onclick="selectInterval(20)">b13</button>
+                        <button id="i22" onclick="selectInterval(22)">b14</button>
+                    </div>
+                    <div id="secondBottomIntervals">
+                        <button id="i12-2" onclick="selectInterval(12)">8</button>
+                        <button id="i14" onclick="selectInterval(14)">9</button>
+                        <button id="i16" onclick="selectInterval(16)">10</button>
+                        <button id="i17" onclick="selectInterval(17)">11</button>
+                        <button id="i19" onclick="selectInterval(19)">12</button>
+                        <button id="i21" onclick="selectInterval(21)">13</button>
+                        <button id="i23" onclick="selectInterval(23)">14</button>
+                        <button id="i24" onclick="selectInterval(24)">15</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="melodyTraining" class="tab">
+            <h1>Melody Training</h1><p class="prototype-note">This exercise was planned but never completed in the original project. Choose another tab to practice notes, intervals, or rhythm.</p>
+        </div>
+        <div id="rhythmTraining" class="tab">
+            <h1>Rhythm Training</h1>
+            <p id="rhythmTrainingBeatOffsetText"></p>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script src="single-note-training.js"></script>
+    <script src="interval-training.js"></script>
+    <script src="melody-training.js"></script>
+    <script src="rhythm-training.js"></script>
+
+</body>
+
+</html>

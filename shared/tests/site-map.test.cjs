@@ -125,31 +125,15 @@ for (const { family, file } of HUB_PAGES) {
   });
 }
 
-test("index.html lists every family, app and source project in site-map order", () => {
+test("index.html links every catalog project with visible history dates", () => {
   const html = read(LANDING);
-  const [hubs, apps, source] = groups(html);
-  assert.deepEqual(hubs.tiles.map((tile) => tile.href), map.families.map((family) => family.path), "hub tiles");
-  assert.deepEqual(apps.tiles.map((tile) => tile.href), map.apps.map((app) => app.path), "app tiles");
-  assert.deepEqual(apps.tiles.map((tile) => tile.name), map.apps.map((app) => app.name), "app names");
-  assert.deepEqual(source.links, map.source.map((item) => ({ href: item.href, name: item.name })), "source-only projects are a link list");
-  assert.equal(source.tiles.length, 0, "an external GitHub link looks like a link, not an app tile");
-  assert.equal(hubs.count, `${map.families.length} hubs`);
-  assert.equal(apps.count, `${map.apps.length} apps`);
-  assert.equal(source.count, `${map.source.length} project${map.source.length === 1 ? "" : "s"}`);
-  hubs.tags.forEach((tags, index) => {
-    const family = map.families[index];
-    for (const tag of tags) {
-      const count = tag.match(/^(\d+) tools?$/);
-      if (count) assert.equal(Number(count[1]), toolCount(family), `${family.name} tile says ${tag}`);
-    }
-  });
-  for (const group of [hubs, apps, source]) for (const tile of group.tiles) copyFits(tile);
-  const stagger = Array.from(html.matchAll(/class="tile[^"]*"[^>]*style="--i: (\d+)/g), (m) => Number(m[1]));
-  assert.deepEqual(stagger, stagger.map((_, i) => i), "tile stagger indices run 0..n without repeats");
-  assert.ok(!/class="go"[^>]*>→/.test(html), "one arrow glyph: the SVG arrow, never a text arrow");
-  assert.ok(!/class="go"[^>]*>\s*<svg[^>]*>\s*<line x1="7" y1="17"/.test(html), "one arrow glyph: no diagonal external arrow on a tile");
-  assert.ok(!/<a class="tile[^"]*"[^>]*target="_blank"/.test(html), "no tile opens an external site");
-  assert.ok(!/<img[^>]*style=/.test(html), "tile art images carry no inline style");
+  assert.ok(map.projects.length > 34, "combined project catalog");
+  for (const project of map.projects) {
+    assert.ok(html.includes(`href="${project.path.replace(/&/g, "&amp;")}"`), `${project.name} is directly linked`);
+    assert.ok(html.includes(`datetime="${project.created}"`), `${project.name} creation date`);
+    assert.ok(html.includes(`datetime="${project.updated}"`), `${project.name} update date`);
+  }
+  for (const category of map.categories) assert.ok(html.includes(`id="${category.id}"`), category.name);
 });
 
 test("hub.css never ellipsises tile copy that fits the budget", () => {
@@ -189,9 +173,9 @@ test("every hub has one footer, one switcher order, a skip link and main#main", 
     const html = read(file);
     assert.match(html, /<a class="skip-link" href="#main">Skip to content<\/a>/, `${file} skip link`);
     assert.match(html, /<main id="main" tabindex="-1">/, `${file} main#main`);
-    assert.match(html, /<footer class="foot">\s*<nav class="foot-links" aria-label="Site">/, `${file} footer`);
+    assert.match(html, /<footer class="(?:foot|directory-footer)">/, `${file} footer`);
     assert.match(html, /<meta name="theme-color" content="#08090d" \/>/, `${file} theme-color`);
     assert.doesNotMatch(html, /user-scalable=no/, `${file} allows zoom`);
-    for (const shared of ["tokens.css", "app.css", "hub.css", "hub-art.css"]) assert.match(html, new RegExp(`shared/${shared}\\?v=20261016`), `${file} links ${shared} with the shared cache-bust`);
+    for (const shared of ["tokens.css", "app.css", "hub.css", "hub-art.css"]) assert.match(html, new RegExp(`shared/${shared}\\?v=\\d{8}`), `${file} links ${shared} with the shared cache-bust`);
   }
 });

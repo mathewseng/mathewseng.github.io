@@ -1,0 +1,121 @@
+body {
+    margin: 0px !important;
+}
+
+html {
+    background-color: black;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+body, h1, button, p, svg {
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+h1, p {
+    color: white;
+}
+
+p {
+    display: inline;
+}
+
+button {
+    width: 2em;
+    height: 2em;
+    font-size: 2em;
+}
+
+.correctlySelected {
+    background-color: green;
+}
+
+.correct {
+    background-color: greenyellow;
+}
+
+.incorrect {
+    background-color: red;
+}
+
+.tab {
+    min-width: 100%;
+}
+
+#tabs {
+    display: flex;
+}
+
+#keyLegend {
+    float: left;
+    text-align: left;
+    position: absolute;
+    bottom: -0.5em;
+    left: 1vw;
+}
+
+#scoreText {
+    float: right;
+    text-align: right;
+    position: absolute;
+    bottom: -0.5em;
+    right: 1vw;
+}
+
+#noteText {
+    font-size: 2em;
+}
+
+#firstTopIntervals, #secondTopIntervals {
+    margin-bottom: 0.2em;
+}
+
+#i3, #i15 {
+    margin-right: 2.2em;
+}
+
+#i10, #i22 {
+    margin-right: 2.2em;
+}
+
+#rhythmTrainingBeatOffsetText {
+    position: absolute;
+    width: 100%;
+    left: 0px;
+    font-weight: bold;
+}
+body.legacy-project { background: black; color: white; min-height: 100svh; height: auto; overflow-x: hidden; overflow-y: auto; }
+body.legacy-project #tabs { width: 100%; overflow: hidden; padding: 20px 12px 180px; box-sizing: border-box; }
+body.legacy-project #keyLegend, body.legacy-project #scoreText { position: fixed; bottom: 12px; font-size: 12px; line-height: 1.5; z-index: 2; background: rgb(0 0 0 / 80%); padding: 8px; margin: 0; }
+body.legacy-project .tab { box-sizing: border-box; flex-shrink: 0; width: 100%; }
+body.legacy-project #tabs h1 { font-size: clamp(24px, 4vw, 40px); }
+body.legacy-project #tabs h2 { font-size: clamp(16px, 2vw, 22px); line-height: 1.5; max-width: 780px; margin: 20px auto; }
+body.legacy-project #tabs svg { max-width: 100%; height: auto; }
+@media (max-width: 600px) {
+ body.legacy-project #tabs button { min-width: 38px; min-height: 44px; width: auto; padding: 4px !important; font-size: 20px; }
+ body.legacy-project #i3, body.legacy-project #i15, body.legacy-project #i10, body.legacy-project #i22 { margin-right: 1em; }
+ body.legacy-project #tabs button span { font-size: 24px; }
+}
+
+body.legacy-project .exercise-controls { display: flex; justify-content: center; gap: 10px; padding: 10px 16px 0; }
+body.legacy-project .exercise-controls button { width: auto; height: auto; min-width: 44px; min-height: 44px; margin: 0; font-size: 16px; padding: 8px 16px !important; border: 1px solid var(--control-border); border-radius: 8px !important; background: var(--surface-2); color: var(--ink); }
+body.legacy-project #tabs .prototype-note { display: block; font-size: 16px; line-height: 1.6; }
+@media (max-width: 600px) {
+ body.legacy-project #tabs { padding-inline: 8px; }
+ body.legacy-project #tabs button { min-width: 44px; }
+ body.legacy-project #firstBottomIntervals, body.legacy-project #secondBottomIntervals { display: flex; justify-content: center; }
+ body.legacy-project #firstBottomIntervals button, body.legacy-project #secondBottomIntervals button { margin: 0; }
+}

@@ -19,10 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
+
+      - name: Refresh project directory and history dates
+        run: node scripts/build-project-directory.mjs
 
       - name: Version Backgammon offline assets
         run: node backgammon/scripts/offline-manifest.mjs
@@ -40,6 +45,9 @@ jobs:
 
       - name: Sweep every assembled page for shell regressions
         run: node scripts/shell-browser.cjs
+
+      - name: Test project directory search and navigation
+        run: node scripts/project-directory-browser.cjs
 
       - name: Test assembled Dice reports
         run: node dice/reports/tests/browser.cjs

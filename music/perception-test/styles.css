@@ -1,0 +1,109 @@
+body {
+    margin: 0px !important;
+}
+
+html {
+    background-color: black;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+body, h1, h2, button, p {
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+h1, h2, p, span {
+    color: white !important;
+}
+
+h2 {
+    font-size: 1.3em;
+}
+
+p {
+    display: inline;
+}
+
+button {
+    width: 14vh;
+    height: 14vh;
+    font-size: 0;
+    text-align: center;
+    padding: 0px 0px !important;
+    border-radius: 10% !important;
+    background-color: #777;
+}
+
+button span {
+    font-size: 4vh;
+}
+
+.correctlySelected {
+    background-color: green !important;
+    border-radius: 10% !important;
+}
+
+.correct {
+    background-color: greenyellow !important;
+    border-radius: 10% !important;
+}
+
+.incorrect {
+    background-color: red !important;
+    border-radius: 10% !important;
+}
+
+.tab {
+    min-width: 100%;
+}
+
+#tabs {
+    display: flex;
+}
+
+#keyLegend {
+    float: left;
+    text-align: left;
+    vertical-align: text-bottom;
+    position: absolute;
+    bottom: -0.5em;
+    left: 1vw;
+}
+
+#scoreText {
+    float: right;
+    text-align: right;
+    vertical-align: text-bottom;
+    position: absolute;
+    bottom: -0.5em;
+    right: 1vw;
+}
+body.legacy-project { background: black; color: white; min-height: 100svh; height: auto; overflow-x: hidden; overflow-y: auto; }
+body.legacy-project #tabs { width: 100%; overflow: hidden; padding: 20px 12px 180px; box-sizing: border-box; }
+body.legacy-project #keyLegend, body.legacy-project #scoreText { position: fixed; bottom: 12px; font-size: 12px; line-height: 1.5; z-index: 2; background: rgb(0 0 0 / 80%); padding: 8px; margin: 0; }
+body.legacy-project .tab { box-sizing: border-box; flex-shrink: 0; width: 100%; }
+body.legacy-project #tabs h1 { font-size: clamp(24px, 4vw, 40px); }
+body.legacy-project #tabs h2 { font-size: clamp(16px, 2vw, 22px); line-height: 1.5; max-width: 780px; margin: 20px auto; }
+body.legacy-project #tabs svg { max-width: 100%; height: auto; }
+@media (max-width: 600px) {
+ body.legacy-project #tabs button { min-width: 38px; min-height: 44px; width: auto; padding: 4px !important; font-size: 20px; }
+ body.legacy-project #i3, body.legacy-project #i15, body.legacy-project #i10, body.legacy-project #i22 { margin-right: 1em; }
+ body.legacy-project #tabs button span { font-size: 24px; }
+}
+
+body.legacy-project .exercise-controls { display: flex; justify-content: center; gap: 10px; padding: 10px 16px 0; }
+body.legacy-project .exercise-controls button { width: auto; height: auto; min-width: 44px; min-height: 44px; margin: 0; font-size: 16px; padding: 8px 16px !important; border: 1px solid var(--control-border); border-radius: 8px !important; background: var(--surface-2); color: var(--ink); }
+body.legacy-project #tabs .prototype-note { display: block; font-size: 16px; line-height: 1.6; }

@@ -1,0 +1,5 @@
+
+
+
+body.legacy-project > :not(.legacy-header) { margin: 20px max(24px, calc((100vw - 900px) / 2)); } body.legacy-project > input { width: min(500px, calc(100% - 48px)); } body.legacy-project > label { display: block; margin-bottom: 8px; } #output { white-space: pre-wrap; line-height: 1.7; }
+body.legacy-project #find { min-width: 88px; }

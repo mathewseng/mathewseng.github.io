@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html id="html" lang="en" data-family="poker">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261022">
+    <link rel="stylesheet" href="../../shared/app.css?v=20261022">
+
+    <title>Preflop Classic · Poker</title>
+    <link rel="icon" type="image/x-icon" href="poker-chip.png">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../../shared/legacy.css?v=20261022">
+</head>
+
+<body class="legacy-project">
+<header class="legacy-header" data-project-path="poker/preflop-classic/"><nav aria-label="Breadcrumb"><a href="../../">Home</a><span aria-hidden="true">/</span><a href="../">Poker</a><span aria-hidden="true">/</span><a href="./" aria-current="page">Preflop Classic</a></nav>
+<div class="project-dates"><!-- project-dates --><span>Created <time datetime="2021-11-24">Nov 24, 2021</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span><!-- /project-dates --></div></header>
+<main class="legacy-stage" id="legacy-stage" onclick="roll()">
+    <h1 class="text">Poker Preflop</h1>
+
+    <button id="info" onclick="info()">Show Info</button>
+
+    <p class="text info">Select action and enter your hand</p>
+    <p class="text info">Press Enter or click anywhere to roll</p>
+
+    <br class="text info"><br class="text info">
+
+    <label class="text info" for="darkMode"><input class="text info" type="checkbox" id="darkMode" onclick="darkMode()" checked>Dark Mode</label>
+    <a class="text info">&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;</a>
+    <a class="text info" target="_blank" rel="noopener noreferrer" href="https://poker-coaching.s3.amazonaws.com/tools/preflop-charts/100bb-hunl-cash-game-charts.pdf">Link to Heads Up Ranges</a>
+
+    <br class="text info"><br class="text info">
+
+    <br class="text"><br class="text">
+
+    <fieldset id="mainSelection">
+        <label for="rfi" class="text selectedAction" id="rfiText"><input type="radio" name="mainSelection" id="rfi" onclick="selectAction('rfi')" checked>Raise First In</label><br class="text">
+        <label for="bb" class="text" id="bbText"><input type="radio" name="mainSelection" id="bb" onclick="selectAction('bb')">Big Blind</label><br class="text">
+        <label for="sb" class="text" id="sbText"><input type="radio" name="mainSelection" id="sb" onclick="selectAction('sb')">Small Blind</label><br class="text">
+        <label for="btn" class="text" id="btnText"><input type="radio" name="mainSelection" id="btn" onclick="selectAction('btn')">Button</label><br class="text">
+        <label for="co" class="text" id="coText"><input type="radio" name="mainSelection" id="co" onclick="selectAction('co')">Cutoff</label><br class="text">
+        <label for="hj" class="text" id="hjText"><input type="radio" name="mainSelection" id="hj" onclick="selectAction('hj')">Hijack</label><br class="text">
+        <label for="lj" class="text" id="ljText"><input type="radio" name="mainSelection" id="lj" onclick="selectAction('lj')">Lojack</label><br class="text">
+        <label for="cold4bet" class="text" id="cold4betText"><input type="radio" name="mainSelection" id="cold4bet" onclick="selectAction('cold4bet')">Cold 4-Bet</label><br class="text">
+        <label for="headsUp" class="text" id="headsUpText"><input type="radio" name="mainSelection" id="headsUp" onclick="selectAction('headsUp')">Heads Up</label><br class="text">
+    </fieldset>
+
+    <fieldset id="rfiSelection" class="subSelection">
+        <label for="rfi_sb" class="text selectedAction" id="rfi_sbText"><input type="radio" name="rfiSelection" id="rfi_sb" onclick="selectAction('rfi_sb')" checked>Small Blind</label><br class="text">
+        <label for="rfi_btn" class="text" id="rfi_btnText"><input type="radio" name="rfiSelection" id="rfi_btn" onclick="selectAction('rfi_btn')">Button</label><br class="text">
+        <label for="rfi_co" class="text" id="rfi_coText"><input type="radio" name="rfiSelection" id="rfi_co" onclick="selectAction('rfi_co')">Cutoff</label><br class="text">
+        <label for="rfi_hj" class="text" id="rfi_hjText"><input type="radio" name="rfiSelection" id="rfi_hj" onclick="selectAction('rfi_hj')">Hijack</label><br class="text">
+        <label for="rfi_lj" class="text" id="rfi_ljText"><input type="radio" name="rfiSelection" id="rfi_lj" onclick="selectAction('rfi_lj')">Lojack</label><br class="text">
+    </fieldset>
+
+    <fieldset id="bbSelection" class="subSelection">
+        <label for="bb_sb_open" class="text selectedAction" id="bb_sb_openText"><input type="radio" name="bbSelection" id="bb_sb_open" onclick="selectAction('bb_sb_open')" checked>Small Blind Open</label><br class="text">
+        <label for="bb_btn_open" class="text" id="bb_btn_openText"><input type="radio" name="bbSelection" id="bb_btn_open" onclick="selectAction('bb_btn_open')">Button Open</label><br class="text">
+        <label for="bb_co_open" class="text" id="bb_co_openText"><input type="radio" name="bbSelection" id="bb_co_open" onclick="selectAction('bb_co_open')">Cutoff Open</label><br class="text">
+        <label for="bb_hj_open" class="text" id="bb_hj_openText"><input type="radio" name="bbSelection" id="bb_hj_open" onclick="selectAction('bb_hj_open')">Hijack Open</label><br class="text">
+        <label for="bb_lj_open" class="text" id="bb_lj_openText"><input type="radio" name="bbSelection" id="bb_lj_open" onclick="selectAction('bb_lj_open')">Lojack Open</label><br class="text">
+        <label for="bb_btn_4bet" class="text" id="bb_btn_4betText"><input type="radio" name="bbSelection" id="bb_btn_4bet" onclick="selectAction('bb_btn_4bet')">Button 4-Bet</label><br class="text">
+        <label for="bb_co_4bet" class="text" id="bb_co_4betText"><input type="radio" name="bbSelection" id="bb_co_4bet" onclick="selectAction('bb_co_4bet')">Cutoff 4-Bet</label><br class="text">
+        <label for="bb_hj_4bet" class="text" id="bb_hj_4betText"><input type="radio" name="bbSelection" id="bb_hj_4bet" onclick="selectAction('bb_hj_4bet')">Hijack 4-Bet</label><br class="text">
+        <label for="bb_lj_4bet" class="text" id="bb_lj_4betText"><input type="radio" name="bbSelection" id="bb_lj_4bet" onclick="selectAction('bb_lj_4bet')">Lojack 4-Bet</label><br class="text">
+    </fieldset>
+
+    <fieldset id="sbSelection" class="subSelection">
+        <label for="sb_btn_open" class="text selectedAction" id="sb_btn_openText"><input type="radio" name="sbSelection" id="sb_btn_open" onclick="selectAction('sb_btn_open')" checked>Button Open</label><br class="text">
+        <label for="sb_co_open" class="text" id="sb_co_openText"><input type="radio" name="sbSelection" id="sb_co_open" onclick="selectAction('sb_co_open')">Cutoff Open</label><br class="text">
+        <label for="sb_hj_open" class="text" id="sb_hj_openText"><input type="radio" name="sbSelection" id="sb_hj_open" onclick="selectAction('sb_hj_open')">Hijack Open</label><br class="text">
+        <label for="sb_lj_open" class="text" id="sb_lj_openText"><input type="radio" name="sbSelection" id="sb_lj_open" onclick="selectAction('sb_lj_open')">Lojack Open</label><br class="text">
+        <label for="sb_btn_4bet" class="text" id="sb_btn_4betText"><input type="radio" name="sbSelection" id="sb_btn_4bet" onclick="selectAction('sb_btn_4bet')">Button 4-Bet</label><br class="text">
+        <label for="sb_co_4bet" class="text" id="sb_co_4betText"><input type="radio" name="sbSelection" id="sb_co_4bet" onclick="selectAction('sb_co_4bet')">Cutoff 4-Bet</label><br class="text">
+        <label for="sb_hj_4bet" class="text" id="sb_hj_4betText"><input type="radio" name="sbSelection" id="sb_hj_4bet" onclick="selectAction('sb_hj_4bet')">Hijack 4-Bet</label><br class="text">
+        <label for="sb_lj_4bet" class="text" id="sb_lj_4betText"><input type="radio" name="sbSelection" id="sb_lj_4bet" onclick="selectAction('sb_lj_4bet')">Lojack 4-Bet</label><br class="text">
+    </fieldset>
+
+    <fieldset id="btnSelection" class="subSelection">
+        <label for="btn_co_open" class="text selectedAction" id="btn_co_openText"><input type="radio" name="btnSelection" id="btn_co_open" onclick="selectAction('btn_co_open')" checked>Cutoff Open</label><br class="text">
+        <label for="btn_hj_open" class="text" id="btn_hj_openText"><input type="radio" name="btnSelection" id="btn_hj_open" onclick="selectAction('btn_hj_open')">Hijack Open</label><br class="text">
+        <label for="btn_lj_open" class="text" id="btn_lj_openText"><input type="radio" name="btnSelection" id="btn_lj_open" onclick="selectAction('btn_lj_open')">Lojack Open</label><br class="text">
+        <label for="btn_sb_bb_3bet" class="text" id="btn_sb_bb_3betText"><input type="radio" name="btnSelection" id="btn_sb_bb_3bet" onclick="selectAction('btn_sb_bb_3bet')">Small/Big Blind 3-Bet</label><br class="text">
+        <label for="btn_co_4bet" class="text" id="btn_co_4betText"><input type="radio" name="btnSelection" id="btn_co_4bet" onclick="selectAction('btn_co_4bet')">Cutoff 4-Bet</label><br class="text">
+        <label for="btn_hj_4bet" class="text" id="btn_hj_4betText"><input type="radio" name="btnSelection" id="btn_hj_4bet" onclick="selectAction('btn_hj_4bet')">Hijack 4-Bet</label><br class="text">
+        <label for="btn_lj_4bet" class="text" id="btn_lj_4betText"><input type="radio" name="btnSelection" id="btn_lj_4bet" onclick="selectAction('btn_lj_4bet')">Lojack 4-Bet</label><br class="text">
+    </fieldset>
+
+    <fieldset id="coSelection" class="subSelection">
+        <label for="co_hj_open" class="text selectedAction" id="co_hj_openText"><input type="radio" name="coSelection" id="co_hj_open" onclick="selectAction('co_hj_open')" checked>Hijack Open</label><br class="text">
+        <label for="co_lj_open" class="text" id="co_lj_openText"><input type="radio" name="coSelection" id="co_lj_open" onclick="selectAction('co_lj_open')">Lojack Open</label><br class="text">
+        <label for="co_sb_bb_3bet" class="text" id="co_sb_bb_3betText"><input type="radio" name="coSelection" id="co_sb_bb_3bet" onclick="selectAction('co_sb_bb_3bet')">Small/Big Blind 3-Bet</label><br class="text">
+        <label for="co_btn_3bet" class="text" id="co_btn_3betText"><input type="radio" name="coSelection" id="co_btn_3bet" onclick="selectAction('co_btn_3bet')">Button 3-Bet</label><br class="text">
+        <label for="co_hj_4bet" class="text" id="co_hj_4betText"><input type="radio" name="coSelection" id="co_hj_4bet" onclick="selectAction('co_hj_4bet')">Hijack 4-Bet</label><br class="text">
+        <label for="co_lj_4bet" class="text" id="co_lj_4betText"><input type="radio" name="coSelection" id="co_lj_4bet" onclick="selectAction('co_lj_4bet')">Lojack 4-Bet</label><br class="text">
+    </fieldset>
+
+    <fieldset id="hjSelection" class="subSelection">
+        <label for="hj_lj_open" class="text selectedAction" id="hj_lj_openText"><input type="radio" name="hjSelection" id="hj_lj_open" onclick="selectAction('hj_lj_open')" checked>Lojack Open</label><br class="text">
+        <label for="hj_sb_bb_3bet" class="text" id="hj_sb_bb_3betText"><input type="radio" name="hjSelection" id="hj_sb_bb_3bet" onclick="selectAction('hj_sb_bb_3bet')">Small/Big Blind 3-Bet</label><br class="text">
+        <label for="hj_btn_3bet" class="text" id="hj_btn_3betText"><input type="radio" name="hjSelection" id="hj_btn_3bet" onclick="selectAction('hj_btn_3bet')">Button 3-Bet</label><br class="text">
+        <label for="hj_co_3bet" class="text" id="hj_co_3betText"><input type="radio" name="hjSelection" id="hj_co_3bet" onclick="selectAction('hj_co_3bet')">Cutoff 3-Bet</label><br class="text">
+        <label for="hj_lj_4bet" class="text" id="hj_lj_4betText"><input type="radio" name="hjSelection" id="hj_lj_4bet" onclick="selectAction('hj_lj_4bet')">Lojack 4-Bet</label><br class="text">
+    </fieldset>
+
+    <fieldset id="ljSelection" class="subSelection">
+        <label for="lj_sb_bb_3bet" class="text selectedAction" id="lj_sb_bb_3betText"><input type="radio" name="ljSelection" id="lj_sb_bb_3bet" onclick="selectAction('lj_sb_bb_3bet')" checked>Small/Big Blind 3-Bet</label><br class="text">
+        <label for="lj_btn_3bet" class="text" id="lj_btn_3betText"><input type="radio" name="ljSelection" id="lj_btn_3bet" onclick="selectAction('lj_btn_3bet')">Button 3-Bet</label><br class="text">
+        <label for="lj_co_3bet" class="text" id="lj_co_3betText"><input type="radio" name="ljSelection" id="lj_co_3bet" onclick="selectAction('lj_co_3bet')">Cutoff 3-Bet</label><br class="text">
+        <label for="lj_hj_3bet" class="text" id="lj_hj_3betText"><input type="radio" name="ljSelection" id="lj_hj_3bet" onclick="selectAction('lj_hj_3bet')">Hijack 3-Bet</label><br class="text">
+    </fieldset>
+
+    <fieldset id="cold4betSelection" class="subSelection">
+        <label for="cold_4bet_30" class="text selectedAction" id="cold_4bet_30Text"><input type="radio" name="cold4betSelection" id="cold_4bet_30" onclick="selectAction('cold_4bet_30')" checked>3.0% 4-Bet</label><br class="text">
+        <label for="cold_4bet_35" class="text" id="cold_4bet_35Text"><input type="radio" name="cold4betSelection" id="cold_4bet_35" onclick="selectAction('cold_4bet_35')">3.5% 4-Bet</label><br class="text">
+        <label for="cold_4bet_40" class="text" id="cold_4bet_40Text"><input type="radio" name="cold4betSelection" id="cold_4bet_40" onclick="selectAction('cold_4bet_40')">4.0% 4-Bet</label><br class="text">
+        <label for="cold_4bet_45" class="text" id="cold_4bet_45Text"><input type="radio" name="cold4betSelection" id="cold_4bet_45" onclick="selectAction('cold_4bet_45')">4.5% 4-Bet</label><br class="text">
+        <label for="cold_4bet_55" class="text" id="cold_4bet_55Text"><input type="radio" name="cold4betSelection" id="cold_4bet_55" onclick="selectAction('cold_4bet_55')">5.5% 4-Bet</label><br class="text">
+        <label for="cold_4bet_70" class="text" id="cold_4bet_70Text"><input type="radio" name="cold4betSelection" id="cold_4bet_70" onclick="selectAction('cold_4bet_70')">7.0% 4-Bet</label><br class="text">
+    </fieldset>
+
+    <fieldset id="headsUpSelection" class="subSelection">
+        <label for="hu_rfi" class="text" id="hu_rfiText"><input type="radio" name="headsUpSelection" id="hu_rfi" onclick="selectAction('hu_rfi')">Button Raise First In</label><br class="text">
+        <label for="hu_open" class="text selectedAction" id="hu_openText"><input type="radio" name="headsUpSelection" id="hu_open" onclick="selectAction('hu_open')" checked>BB Facing Open</label><br class="text">
+        <label for="hu_3bet" class="text" id="hu_3betText"><input type="radio" name="headsUpSelection" id="hu_3bet" onclick="selectAction('hu_3bet')">Button Facing 3-Bet</label><br class="text">
+        <label for="hu_4bet" class="text" id="hu_4betText"><input type="radio" name="headsUpSelection" id="hu_4bet" onclick="selectAction('hu_4bet')">BB Facing 4-Bet</label><br class="text">
+    </fieldset>
+
+    <div id="bottomDiv">
+        <br class="text"><br class="text"><br class="text"><br class="text"><br class="text"><br class="text"><br class="text"><br class="text"><br class="text"><br class="text"><br class="text"><br class="text">
+
+        <input aria-label="Starting hand" id="input" type="text" value="JKo"></input>
+        <button id="roll" onclick="roll()">Roll</button>
+        <h2 id="rolledAction" class="text"></h2>
+
+        <br class="text"><br class="text">
+
+        <div id="hands"></div>
+
+        <p id="rollOutput" class="text"></p>
+        <p id="output" class="text"></p>
+    </div>
+
+    <script src="../../shared/vendor/jquery-3.7.1.min.js"></script>
+    <script src="app.js"></script>
+</main>
+</body>
+
+</html>

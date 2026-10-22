@@ -1,0 +1,72 @@
+body {
+  background-color: black;
+  margin: 0;
+}
+
+h1 {
+    color: white;
+    font-family: Verdana;
+}
+
+.gridLine {
+  fill: #444;
+}
+
+.hexLine {
+  fill: none;
+  stroke: #444;
+}
+
+.hat {
+  fill-opacity: 50%;
+  stroke: #bbb;
+}
+
+.color0 {
+  fill: #f00;
+}
+
+.color1 {
+  fill: #f80;
+}
+
+.color2 {
+  fill: #ff0;
+}
+
+.color3 {
+  fill: #0f0;
+}
+
+.color4 {
+  fill: #00f;
+}
+
+.color5 {
+  fill: #80f;
+}
+
+.color0f {
+  fill: #800;
+}
+
+.color1f {
+  fill: #840;
+}
+
+.color2f {
+  fill: #880;
+}
+
+.color3f {
+  fill: #080;
+}
+
+.color4f {
+  fill: #008;
+}
+
+.color5f {
+  fill: #408;
+}
+body.legacy-project > svg { position: relative !important; display: block; width: min(100%, 1300px); height: auto; margin: 24px auto; }

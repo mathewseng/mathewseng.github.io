@@ -1,0 +1,83 @@
+body {
+            margin: 1.35em !important;
+        }
+
+        html {
+            background-color: #33cc78;
+        }
+
+        h1 {
+            font-size: 1.875em;
+        }
+
+        .black {
+            background-color: black;
+        }
+
+        .whiteText {
+            color: white;
+        }
+
+        .text {
+            font-family: Verdana;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .hand {
+            width: 2.5em;
+            padding: 1px 1px;
+            margin: 0.325px 0.325px;
+            color: black !important;
+        }
+
+        .pocketPair {
+            background-color: #b8deb9;
+        }
+
+        .suited {
+            background-color: #faeab9;
+        }
+
+        .offsuit {
+            background-color: #dbecff;
+        }
+
+        .selected {
+            background-color: #2b9ef0 !important;
+        }
+
+        .selectedAction {
+            font-weight: bold;
+        }
+
+        .fold {
+            background-color: #777777;
+        }
+
+        .raise {
+            background-color: yellow;
+        }
+
+/* Responsive archive shell. The 13-column range grid scrolls in its own panel. */
+html { background: var(--page); }
+body.legacy-project { margin: 0 !important; background: var(--page); color: var(--ink); }
+.legacy-stage { max-width: 1000px; padding: 1.5rem; margin: auto; overflow: hidden; }
+.legacy-stage h1 { margin: 0 0 1rem; font-size: clamp(1.7rem, 4vw, 2.6rem); }
+.legacy-stage .text { font-family: var(--font-sans); }
+.legacy-stage label { display: inline-flex; align-items: center; min-height: 44px; gap: .5rem; }
+.legacy-stage input[type="radio"], .legacy-stage input[type="checkbox"] { width: 20px; height: 20px; min-height: 20px; padding: 0; }
+.legacy-stage button { min-height: 44px; }
+.legacy-stage fieldset { padding: .75rem; margin: 0 .75rem .75rem 0; background: var(--surface); border: 1px solid var(--line) !important; border-radius: var(--radius-md); }
+#bottomDiv { clear: both; }
+#bottomDiv > br { display: none; }
+#input { width: 10rem; min-height: 44px; margin: .5rem .5rem 1rem 0; }
+#hands { margin: 1rem 0; max-width: 100%; overflow-x: auto; white-space: nowrap; padding-bottom: .5rem; }
+#hands .hand { min-width: 44px; width: 44px; min-height: 44px; padding: 1px; font-size: 12px; border-radius: 3px; }
+#rolledAction { font-size: 2rem; margin: .5rem; }
+#rollOutput { font-size: 2.5rem; margin: 1rem 0; }
+#output { line-height: 1.6; overflow-wrap: anywhere; }

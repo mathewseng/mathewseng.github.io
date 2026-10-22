@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" data-family="tools">
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261022">
+    <link rel="stylesheet" href="../../shared/app.css?v=20261022">
+		<title>Sbeve</title>
+		<link rel="stylesheet" href="styles.css">
+	    <link rel="stylesheet" href="../../shared/legacy.css?v=20261022">
+</head>
+	<body class="legacy-project">
+    <header class="legacy-header" data-project-path="/tools/sbeve/"><nav aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/tools/">Tools</a><span aria-hidden="true">/</span><strong>Sbeve</strong></nav>
+<div class="project-dates"><!-- project-dates --><span>Created <time datetime="2019-04-01">Apr 1, 2019</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span><!-- /project-dates --></div></header>
+
+		<h1>S[he] Be[lie]ve[d]</h1>
+		<p>Enter the phrase you want in brackets and this will find the shortest passage from "Harry Potter and the Sorcerer's Stone" with that phrase in it</p>
+		<label for="input">Hidden phrase</label>
+<input id="input" type="text" autocomplete="off"></input>
+		<button disabled id="find" onclick="find()">Find</button>
+		<p id="output" aria-live="polite">Loading the source text…</p>
+		<script src="../../shared/vendor/jquery-3.7.1.min.js"></script>
+		<script src="app.js"></script>
+	</body>
+</html>

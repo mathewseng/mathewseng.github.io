@@ -1,0 +1,34 @@
+
+		body {
+			margin: 0;
+			overflow: hidden;
+		}
+		.text {
+			position: fixed;
+			font-family: Verdana;
+			font-size: 20px;
+		}
+		.color1 {
+			stop-color: #add8e6;  /* Light Blue */
+    }
+
+    .color2 {
+			stop-color: #f0fff0;  /* Very Light Green */
+    }
+
+    .filled {
+			fill: url(#mainGradient);
+    }
+
+    .outlined {
+			fill: none;
+			stroke: url(#mainGradient);
+			stroke-width: 4;
+    }
+
+body.legacy-project { min-height: 100svh; height: auto; overflow: auto; background: var(--page); color: var(--ink); }
+.archive-intro { max-width: 750px; margin: clamp(36px, 8vw, 110px) auto; padding: 24px; text-align: left; }
+.archive-intro h1 { color: var(--ink) !important; font-size: clamp(36px, 7vw, 68px); margin: 12px 0 24px; text-align: left; }
+.archive-intro p { display: block; color: var(--muted) !important; font-size: 18px; line-height: 1.7; text-align: left; }
+.archive-intro .archive-label { color: var(--accent) !important; text-transform: uppercase; font-size: 12px; letter-spacing: .15em; }
+.archive-source { display: inline-flex; align-items: center; min-height: 44px; margin-top: 20px; color: var(--accent); }

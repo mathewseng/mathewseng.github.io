@@ -1,0 +1,100 @@
+body {
+    margin: 0px !important;
+}
+
+html {
+    background-color: black;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+body, h1, h2, button, p {
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+h1, h2, p, span {
+    color: white !important;
+}
+
+h2 {
+    font-size: 1.3em;
+}
+
+p {
+    display: inline;
+}
+
+button {
+    width: 14vh;
+    height: 14vh;
+    font-size: 0;
+    text-align: center;
+    padding: 0px 0px !important;
+    border-radius: 10% !important;
+    outline: 0 !important;
+    background-color: #777;
+}
+
+button span {
+    font-size: 4vh;
+}
+
+.correctlySelected {
+    background-color: green !important;
+    border-radius: 10% !important;
+}
+
+.correct {
+    background-color: greenyellow !important;
+    border-radius: 10% !important;
+}
+
+.incorrect {
+    background-color: red !important;
+    border-radius: 10% !important;
+}
+
+.tab {
+    min-width: 100%;
+}
+
+#tabs {
+    display: flex;
+}
+
+#keyLegend {
+    float: left;
+    text-align: left;
+    vertical-align: text-bottom;
+    position: absolute;
+    bottom: -0.5em;
+    left: 1vw;
+}
+
+#scoreText {
+    float: right;
+    text-align: right;
+    vertical-align: text-bottom;
+    position: absolute;
+    bottom: -0.5em;
+    right: 1vw;
+}
+body.legacy-project { min-height: 100svh; height: auto; overflow: auto; background: var(--page); color: var(--ink); }
+.archive-intro { max-width: 750px; margin: clamp(36px, 8vw, 110px) auto; padding: 24px; text-align: left; }
+.archive-intro h1 { color: var(--ink) !important; font-size: clamp(36px, 7vw, 68px); margin: 12px 0 24px; text-align: left; }
+.archive-intro p { display: block; color: var(--muted) !important; font-size: 18px; line-height: 1.7; text-align: left; }
+.archive-intro .archive-label { color: var(--accent) !important; text-transform: uppercase; font-size: 12px; letter-spacing: .15em; }
+.archive-source { display: inline-flex; align-items: center; min-height: 44px; margin-top: 20px; color: var(--accent); }

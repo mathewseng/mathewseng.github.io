@@ -1,0 +1,31 @@
+
+		body {
+			margin: 0;
+			overflow: hidden;
+		}
+		.text {
+			position: fixed;
+			font-family: Verdana;
+			font-size: 20px;
+		}
+		.color1 {
+			stop-color: #add8e6;  /* Light Blue */
+    }
+
+    .color2 {
+			stop-color: #f0fff0;  /* Very Light Green */
+    }
+
+    .filled {
+			fill: url(#mainGradient);
+    }
+
+    .outlined {
+			fill: none;
+			stroke: url(#mainGradient);
+			stroke-width: 4;
+    }
+
+body.legacy-project > svg { display: block; max-width: 100%; height: auto; } .legacy-notice select { width: auto; min-width: 130px; }
+
+body.legacy-project { overflow: auto; height: auto; }

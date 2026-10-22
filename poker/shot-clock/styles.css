@@ -1,0 +1,51 @@
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: black;
+}
+
+.text {
+    font-family: Helvetica;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    fill: white;
+    text-shadow: 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000, -1px 0 0 #000;
+    text-anchor: middle;
+}
+
+.button {
+    fill: #333;
+}
+
+#PreflopButton {
+    fill: #666;
+}
+
+.input {
+    border: 0px;
+    padding: 0px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+#TimeBank {
+    transform: translateY(-5px)
+}
+
+#unmute {
+    width: 100%;
+    height: 25%;
+    font-size: 100px;
+}
+/* Imported app shell: retain canvas geometry without clipping navigation. */
+html, body { height: auto; min-height: 100%; overflow: auto; }
+body.legacy-project { margin: 0 !important; }
+.legacy-stage { overflow: auto; max-width: 100%; }
+.legacy-stage > svg { display: block; }
+.prototype-note { max-width: 65rem; margin: 1rem auto; padding: 0 1rem; color: var(--ink); }
+.prototype-note p { color: var(--muted); }

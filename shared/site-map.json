@@ -1,5 +1,5 @@
 {
-  "$comment": "The one list behind the landing page and the hubs. The HTML stays static; shared/tests/site-map.test.cjs fails when a hub's tiles, group counts, fact chips, landing tags or favicons disagree with this file. Add a tool here first, then to its hub. Tools are listed in README order, which is also the order of each family's tool nav.",
+  "$comment": "Canonical project catalog and family navigation. projects powers the static homepage and category directories. Run node scripts/build-project-directory.mjs after editing; Git history supplies created and updated dates.",
   "families": [
     {
       "id": "ofc",
@@ -7,12 +7,26 @@
       "path": "/ofc/",
       "glyph": "♣",
       "groups": [
-        { "title": "Play", "tools": [{ "name": "Play OFC", "path": "/ofc/play/" }] },
+        {
+          "title": "Play",
+          "tools": [
+            {
+              "name": "Play OFC",
+              "path": "/ofc/play/"
+            }
+          ]
+        },
         {
           "title": "Fantasyland",
           "tools": [
-            { "name": "Fantasyland Trainer", "path": "/ofc/fantasyland-trainer/" },
-            { "name": "Fantasyland EV", "path": "/ofc/fantasyland-ev/" }
+            {
+              "name": "Fantasyland Trainer",
+              "path": "/ofc/fantasyland-trainer/"
+            },
+            {
+              "name": "Fantasyland EV",
+              "path": "/ofc/fantasyland-ev/"
+            }
           ]
         }
       ]
@@ -26,20 +40,88 @@
         {
           "title": "Play",
           "tools": [
-            { "name": "Mixed Poker", "path": "/poker/play/" },
-            { "name": "Poker Rush", "path": "/poker/rush/" },
-            { "name": "Ultimate Omaha", "path": "/poker/ultimate-omaha/" },
-            { "name": "Edge the Dealer", "path": "/poker/edge-the-dealer/" },
-            { "name": "222", "path": "/poker/222/" },
-            { "name": "Video Poker", "path": "/poker/video-poker/" }
+            {
+              "name": "Mixed Poker",
+              "path": "/poker/play/"
+            },
+            {
+              "name": "Poker Rush",
+              "path": "/poker/rush/"
+            },
+            {
+              "name": "Ultimate Omaha",
+              "path": "/poker/ultimate-omaha/"
+            },
+            {
+              "name": "Edge the Dealer",
+              "path": "/poker/edge-the-dealer/"
+            },
+            {
+              "name": "222",
+              "path": "/poker/222/"
+            },
+            {
+              "name": "Video Poker",
+              "path": "/poker/video-poker/"
+            }
           ]
         },
         {
           "title": "Research",
           "tools": [
-            { "name": "Dodge Reports", "path": "/poker/dodge/" },
-            { "name": "Dodge Simulator", "path": "/poker/dodge/simulator/" },
-            { "name": "Poker Calculations", "path": "/poker/calculations/" }
+            {
+              "name": "Dodge Reports",
+              "path": "/poker/dodge/"
+            },
+            {
+              "name": "Dodge Simulator",
+              "path": "/poker/dodge/simulator/"
+            },
+            {
+              "name": "Poker Calculations",
+              "path": "/poker/calculations/"
+            }
+          ]
+        },
+        {
+          "title": "From the archive",
+          "tools": [
+            {
+              "name": "3 Pick 2",
+              "path": "/poker/three-pick-two/"
+            },
+            {
+              "name": "Pokerdle",
+              "path": "/poker/pokerdle/"
+            },
+            {
+              "name": "Poker Shot Clock",
+              "path": "/poker/shot-clock/"
+            },
+            {
+              "name": "Preflop Ranges",
+              "path": "/poker/preflop-ranges/"
+            },
+            {
+              "name": "Preflop Classic",
+              "path": "/poker/preflop-classic/"
+            },
+            {
+              "name": "Preflop Grid Prototype",
+              "path": "/poker/preflop-classic-v2/"
+            },
+            {
+              "name": "Heads-up Preflop",
+              "path": "/poker/heads-up-preflop/"
+            },
+            {
+              "name": "Range Converter",
+              "path": "/poker/range-converter/"
+            },
+            {
+              "name": "Poker Source Tools",
+              "path": "/poker/source-tools/"
+            }
           ]
         }
       ]
@@ -49,13 +131,32 @@
       "name": "Blackjack",
       "path": "/blackjack/",
       "glyph": "♠",
-      "groups": [{ "title": "Tools", "tools": [{ "name": "Strategy Lab", "path": "/blackjack/strategy/" }] }],
+      "groups": [
+        {
+          "title": "Tools",
+          "tools": [
+            {
+              "name": "Strategy Lab",
+              "path": "/blackjack/strategy/"
+            }
+          ]
+        }
+      ],
       "links": {
         "title": "Reference",
         "items": [
-          { "name": "Solver report", "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md" },
-          { "name": "Metrics notes", "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/METRICS.md" },
-          { "name": "Rust solver source", "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/solver/src/lib.rs" }
+          {
+            "name": "Solver report",
+            "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/SOLVER_REPORT.md"
+          },
+          {
+            "name": "Metrics notes",
+            "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/docs/METRICS.md"
+          },
+          {
+            "name": "Rust solver source",
+            "href": "https://github.com/mathewseng/mathewseng.github.io/blob/main/blackjack/strategy/solver/src/lib.rs"
+          }
         ]
       }
     },
@@ -69,10 +170,22 @@
         {
           "title": "Tools",
           "tools": [
-            { "name": "Play", "path": "/backgammon/play/" },
-            { "name": "Trainer", "path": "/backgammon/trainer/" },
-            { "name": "Solver", "path": "/backgammon/solver/" },
-            { "name": "Library", "path": "/backgammon/library/" }
+            {
+              "name": "Play",
+              "path": "/backgammon/play/"
+            },
+            {
+              "name": "Trainer",
+              "path": "/backgammon/trainer/"
+            },
+            {
+              "name": "Solver",
+              "path": "/backgammon/solver/"
+            },
+            {
+              "name": "Library",
+              "path": "/backgammon/library/"
+            }
           ]
         }
       ]
@@ -87,23 +200,1226 @@
           "title": "Fair Dice Payout Explorer",
           "unit": "workspaces",
           "tools": [
-            { "name": "Explore payouts", "path": "/dice/reports/#explore" },
-            { "name": "Matchups", "path": "/dice/reports/#matchups" },
-            { "name": "Play", "path": "/dice/reports/#play" }
+            {
+              "name": "Explore payouts",
+              "path": "/dice/reports/#explore"
+            },
+            {
+              "name": "Matchups",
+              "path": "/dice/reports/#matchups"
+            },
+            {
+              "name": "Play",
+              "path": "/dice/reports/#play"
+            }
           ]
         }
       ],
       "links": {
         "title": "Also on the report",
-        "items": [{ "name": "Custom payout checker", "href": "/dice/reports/#explore" }]
+        "items": [
+          {
+            "name": "Custom payout checker",
+            "href": "/dice/reports/#explore"
+          }
+        ]
       }
     }
   ],
   "apps": [
-    { "name": "Card Table Workshop", "path": "/cards/" },
-    { "name": "Gym Tracker", "path": "/gym/" },
-    { "name": "Microtonal Lab", "path": "/microtonal-lab/" },
-    { "name": "Scoundrel", "path": "/scoundrel/" }
+    {
+      "name": "Card Table Workshop",
+      "path": "/cards/"
+    },
+    {
+      "name": "Gym Tracker",
+      "path": "/gym/"
+    },
+    {
+      "name": "Microtonal Lab",
+      "path": "/microtonal-lab/"
+    },
+    {
+      "name": "Scoundrel",
+      "path": "/scoundrel/"
+    }
   ],
-  "source": [{ "name": "Jazz Piano ML", "href": "https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml" }]
+  "source": [
+    {
+      "name": "Jazz Piano ML",
+      "href": "https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml"
+    }
+  ],
+  "categories": [
+    {
+      "id": "poker",
+      "name": "Poker",
+      "path": "/poker/",
+      "description": "Tables, ranges, and the decisions in between.",
+      "glyph": "01"
+    },
+    {
+      "id": "backgammon",
+      "name": "Backgammon",
+      "path": "/backgammon/",
+      "description": "Play, practice, and study the board.",
+      "glyph": "02"
+    },
+    {
+      "id": "games",
+      "name": "Games",
+      "path": "/games/",
+      "description": "Card games, puzzles, and playable experiments.",
+      "glyph": "03"
+    },
+    {
+      "id": "music",
+      "name": "Music",
+      "path": "/music/",
+      "description": "Training your ears. Exploring sound.",
+      "glyph": "04"
+    },
+    {
+      "id": "tools",
+      "name": "Tools & experiments",
+      "path": "/tools/",
+      "description": "Useful little things and curious diversions.",
+      "glyph": "05"
+    }
+  ],
+  "projects": [
+    {
+      "name": "Poker",
+      "path": "/poker/",
+      "category": "poker",
+      "description": "Peer-to-peer cash tables in 30 mixed games, two table-game prototypes, and poker research.",
+      "historyPath": "poker/index.html",
+      "sourcePaths": [
+        "poker/"
+      ],
+      "kind": "hub",
+      "updated": "2026-10-22",
+      "created": "2026-09-07"
+    },
+    {
+      "name": "Mixed Poker",
+      "path": "/poker/play/",
+      "category": "poker",
+      "description": "Share a link and play peer-to-peer cash games: 30 hold'em, Omaha, stud, draw, and Badugi variants.",
+      "historyPath": "poker/play/index.html",
+      "sourcePaths": [
+        "poker/play/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-09-26"
+    },
+    {
+      "name": "Poker Rush",
+      "path": "/poker/rush/",
+      "category": "poker",
+      "description": "Seeded poker sprint with daily, random, and multiplayer modes.",
+      "historyPath": "poker/rush/index.html",
+      "sourcePaths": [
+        "poker/rush/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-06-26"
+    },
+    {
+      "name": "Ultimate Omaha",
+      "path": "/poker/ultimate-omaha/",
+      "category": "poker",
+      "description": "Two-board Omaha against multiplier payouts, with check-or-double betting for up to 10 players.",
+      "historyPath": "poker/ultimate-omaha/index.html",
+      "sourcePaths": [
+        "poker/ultimate-omaha/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2025-12-16"
+    },
+    {
+      "name": "Edge the Dealer",
+      "path": "/poker/edge-the-dealer/",
+      "category": "poker",
+      "description": "Five-card draw against a shared seven-card dealer hand: the lowest hand that still beats the dealer wins.",
+      "historyPath": "poker/edge-the-dealer/index.html",
+      "sourcePaths": [
+        "poker/edge-the-dealer/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-02-11"
+    },
+    {
+      "name": "222",
+      "path": "/poker/222/",
+      "category": "poker",
+      "description": "Six-card Omaha flips split into three forced hands: simulate tables, solve any spot, and train the cube.",
+      "historyPath": "poker/222/index.html",
+      "sourcePaths": [
+        "poker/222/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-10-03"
+    },
+    {
+      "name": "Video Poker",
+      "path": "/poker/video-poker/",
+      "category": "poker",
+      "description": "35 variants, perfect holds, and a payout lab. Play Cribbage, 2–7 Low and Badeucey with custom payouts.",
+      "historyPath": "poker/video-poker/index.html",
+      "sourcePaths": [
+        "poker/video-poker/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-10-20"
+    },
+    {
+      "name": "Dodge Reports",
+      "path": "/poker/dodge/",
+      "category": "poker",
+      "description": "Draw until a straight or better busts your hand. All 16,432 starting hands, survival curves, and bust outs.",
+      "historyPath": "poker/dodge/index.html",
+      "sourcePaths": [
+        "poker/dodge/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-09-19"
+    },
+    {
+      "name": "Dodge Simulator",
+      "path": "/poker/dodge/simulator/",
+      "category": "poker",
+      "description": "Deal two to four players, step through every draw with live equity, and train doubling-cube decisions.",
+      "historyPath": "poker/dodge/simulator/index.html",
+      "sourcePaths": [
+        "poker/dodge/simulator/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-10-03"
+    },
+    {
+      "name": "Poker Calculations",
+      "path": "/poker/calculations/",
+      "category": "poker",
+      "description": "Hand-ranking probability table generated by an exhaustive Rust solver with Monte Carlo fallback.",
+      "historyPath": "poker/calculations/index.html",
+      "sourcePaths": [
+        "poker/calculations/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-07-07"
+    },
+    {
+      "name": "3 Pick 2",
+      "path": "/poker/three-pick-two/",
+      "category": "poker",
+      "description": "An unfinished poker equity research prototype, preserved with an optional sampling experiment.",
+      "created": "2022-01-31",
+      "updated": "2026-10-22",
+      "historyPath": "poker/three-pick-two/index.html",
+      "sourcePaths": [
+        "poker/three-pick-two/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/3Pick2/"
+        ],
+        "created": "2022-01-31",
+        "updated": "2023-07-01"
+      },
+      "legacyPaths": [
+        "/Poker/3Pick2/3Pick2.html"
+      ],
+      "status": "prototype"
+    },
+    {
+      "name": "Pokerdle",
+      "path": "/poker/pokerdle/",
+      "category": "poker",
+      "description": "Guess a five-letter poker word, with suits adding another layer to the puzzle.",
+      "created": "2022-03-10",
+      "updated": "2026-10-22",
+      "historyPath": "poker/pokerdle/index.html",
+      "sourcePaths": [
+        "poker/pokerdle/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/Pokerdle/"
+        ],
+        "created": "2022-03-10",
+        "updated": "2023-07-01"
+      },
+      "legacyPaths": [
+        "/Poker/Pokerdle/Pokerdle.html"
+      ]
+    },
+    {
+      "name": "Poker Shot Clock",
+      "path": "/poker/shot-clock/",
+      "category": "poker",
+      "description": "A configurable poker timer with street presets, time banks, and sound alerts.",
+      "created": "2022-01-12",
+      "updated": "2026-10-22",
+      "historyPath": "poker/shot-clock/index.html",
+      "sourcePaths": [
+        "poker/shot-clock/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/ShotClock/"
+        ],
+        "created": "2022-01-12",
+        "updated": "2022-04-23"
+      },
+      "legacyPaths": [
+        "/Poker/ShotClock/ShotClock.html"
+      ]
+    },
+    {
+      "name": "Preflop Ranges",
+      "path": "/poker/preflop-ranges/",
+      "category": "poker",
+      "description": "Archived heads-up and tournament ranges, with unavailable branches clearly marked.",
+      "created": "2022-03-25",
+      "updated": "2026-10-22",
+      "historyPath": "poker/preflop-ranges/index.html",
+      "sourcePaths": [
+        "poker/preflop-ranges/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/Preflop/"
+        ],
+        "created": "2022-03-25",
+        "updated": "2023-03-04"
+      },
+      "legacyPaths": [
+        "/Poker/Preflop/Preflop.html"
+      ]
+    },
+    {
+      "name": "Preflop Classic",
+      "path": "/poker/preflop-classic/",
+      "category": "poker",
+      "description": "The original position-based preflop charts with mixed-action randomization.",
+      "created": "2021-11-24",
+      "updated": "2026-10-22",
+      "historyPath": "poker/preflop-classic/index.html",
+      "sourcePaths": [
+        "poker/preflop-classic/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/PokerPreflop/PokerPreflop.html"
+        ],
+        "created": "2021-11-24",
+        "updated": "2022-01-11"
+      },
+      "legacyPaths": [
+        "/Poker/PokerPreflop/PokerPreflop.html",
+        "/PokerPreflop.html"
+      ]
+    },
+    {
+      "name": "Preflop Grid Prototype",
+      "path": "/poker/preflop-classic-v2/",
+      "category": "poker",
+      "description": "An early 169-hand grid experiment with a random roll display.",
+      "created": "2022-01-11",
+      "updated": "2026-10-22",
+      "historyPath": "poker/preflop-classic-v2/index.html",
+      "sourcePaths": [
+        "poker/preflop-classic-v2/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/PokerPreflop/PokerPreflop2.html"
+        ],
+        "created": "2022-01-11",
+        "updated": "2022-01-11"
+      },
+      "legacyPaths": [
+        "/Poker/PokerPreflop/PokerPreflop2.html"
+      ],
+      "status": "prototype"
+    },
+    {
+      "name": "Heads-up Preflop",
+      "path": "/poker/heads-up-preflop/",
+      "category": "poker",
+      "description": "Heads-up no-limit ranges and mixed-action practice at 100 big blinds.",
+      "created": "2021-04-16",
+      "updated": "2026-10-22",
+      "historyPath": "poker/heads-up-preflop/index.html",
+      "sourcePaths": [
+        "poker/heads-up-preflop/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/Other/HUNL.html"
+        ],
+        "created": "2021-04-16",
+        "updated": "2022-03-10"
+      },
+      "legacyPaths": [
+        "/Poker/Other/HUNL.html"
+      ]
+    },
+    {
+      "name": "Range Converter",
+      "path": "/poker/range-converter/",
+      "category": "poker",
+      "description": "Convert compact spreadsheet range codes to weighted poker range notation.",
+      "created": "2023-08-05",
+      "updated": "2026-10-22",
+      "historyPath": "poker/range-converter/index.html",
+      "sourcePaths": [
+        "poker/range-converter/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/GTOWizardScripts/SimpToGTO.html"
+        ],
+        "created": "2023-08-05",
+        "updated": "2023-08-05"
+      },
+      "legacyPaths": [
+        "/Poker/GTOWizardScripts/SimpToGTO.html"
+      ]
+    },
+    {
+      "name": "Flop Reports Parser",
+      "path": "/poker/source-tools/#flop-reports-parser",
+      "category": "poker",
+      "description": "Parse solver flop reports.",
+      "created": "2023-07-01",
+      "updated": "2026-10-22",
+      "historyPath": "poker/source-tools/flop-reports-parser.js",
+      "sourcePaths": [
+        "poker/source-tools/flop-reports-parser.js"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/GTOWizardScripts/FlopReportsParser.js"
+        ],
+        "created": "2023-07-01",
+        "updated": "2023-08-05"
+      },
+      "legacyPaths": [],
+      "status": "source",
+      "kind": "source"
+    },
+    {
+      "name": "Range Parser",
+      "path": "/poker/source-tools/#range-parser",
+      "category": "poker",
+      "description": "Extract and format poker ranges.",
+      "created": "2022-03-25",
+      "updated": "2026-10-22",
+      "historyPath": "poker/source-tools/range-parser.js",
+      "sourcePaths": [
+        "poker/source-tools/range-parser.js"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/GTOWizardScripts/RangeParser.js"
+        ],
+        "created": "2022-03-25",
+        "updated": "2023-08-05"
+      },
+      "legacyPaths": [],
+      "status": "source",
+      "kind": "source"
+    },
+    {
+      "name": "Flop EV Parser",
+      "path": "/poker/source-tools/#flop-ev-parser",
+      "category": "poker",
+      "description": "Extract flop expected-value reports.",
+      "created": "2022-03-25",
+      "updated": "2026-10-22",
+      "historyPath": "poker/source-tools/flop-ev-parser.js",
+      "sourcePaths": [
+        "poker/source-tools/flop-ev-parser.js"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/GTOWizardScripts/FlopEVParser.js"
+        ],
+        "created": "2022-03-25",
+        "updated": "2023-07-01"
+      },
+      "legacyPaths": [],
+      "status": "source",
+      "kind": "source"
+    },
+    {
+      "name": "Skip-straight Probability",
+      "path": "/poker/source-tools/#skip-straight-probability",
+      "category": "poker",
+      "description": "A Python probability experiment.",
+      "created": "2022-01-11",
+      "updated": "2026-10-22",
+      "historyPath": "poker/source-tools/skip-straight-probability.py",
+      "sourcePaths": [
+        "poker/source-tools/skip-straight-probability.py"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/Other/SkipStraightProbability.py"
+        ],
+        "created": "2022-01-11",
+        "updated": "2022-03-10"
+      },
+      "legacyPaths": [],
+      "status": "source",
+      "kind": "source"
+    },
+    {
+      "name": "Range Approximator",
+      "path": "/poker/source-tools/#range-approximator",
+      "category": "poker",
+      "description": "An experimental Python range-analysis script.",
+      "created": "2022-01-11",
+      "updated": "2026-10-22",
+      "historyPath": "poker/source-tools/range-approximator.py",
+      "sourcePaths": [
+        "poker/source-tools/range-approximator.py"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/Other/RangeApproximator.py"
+        ],
+        "created": "2022-01-11",
+        "updated": "2022-03-10"
+      },
+      "legacyPaths": [],
+      "status": "source",
+      "kind": "source"
+    },
+    {
+      "name": "100NL Range Notes",
+      "path": "/poker/source-tools/#100nl-complete-text",
+      "category": "poker",
+      "description": "The original 100NL range reference data.",
+      "created": "2021-05-28",
+      "updated": "2026-10-22",
+      "historyPath": "poker/source-tools/100nl-complete-text.txt",
+      "sourcePaths": [
+        "poker/source-tools/100nl-complete-text.txt"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/Other/100NL_Complete_Text.txt"
+        ],
+        "created": "2021-05-28",
+        "updated": "2022-03-10"
+      },
+      "legacyPaths": [],
+      "status": "source",
+      "kind": "source"
+    },
+    {
+      "name": "Poker Source Tools",
+      "path": "/poker/source-tools/",
+      "category": "poker",
+      "description": "Research scripts, solver-report parsers, and archived range data.",
+      "created": "2023-07-01",
+      "updated": "2026-10-22",
+      "historyPath": "poker/source-tools/index.html",
+      "sourcePaths": [
+        "poker/source-tools/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Poker/GTOWizardScripts/",
+          "Poker/Other/"
+        ],
+        "created": "2023-07-01",
+        "updated": "2023-08-05"
+      },
+      "legacyPaths": [],
+      "status": "source",
+      "kind": "source"
+    },
+    {
+      "name": "OFC",
+      "path": "/ofc/",
+      "category": "poker",
+      "description": "Pineapple tables with friends, plus a Fantasyland trainer and EV, repeat and royalty charts for every setup.",
+      "historyPath": "ofc/index.html",
+      "sourcePaths": [
+        "ofc/"
+      ],
+      "kind": "hub",
+      "updated": "2026-10-21",
+      "created": "2026-06-29"
+    },
+    {
+      "name": "Play OFC",
+      "path": "/ofc/play/",
+      "category": "poker",
+      "description": "Create a heads-up or 3-way Pineapple OFC table with peer-to-peer multiplayer and a local ledger.",
+      "historyPath": "ofc/play/index.html",
+      "sourcePaths": [
+        "ofc/play/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-09-07"
+    },
+    {
+      "name": "Fantasyland Trainer",
+      "path": "/ofc/fantasyland-trainer/",
+      "category": "poker",
+      "description": "Daily and random Fantasyland puzzles for 14, 15, 16, and 17 cards with 0, 1, or 2 jokers.",
+      "historyPath": "ofc/fantasyland-trainer/index.html",
+      "sourcePaths": [
+        "ofc/fantasyland-trainer/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-06-29"
+    },
+    {
+      "name": "Fantasyland EV",
+      "path": "/ofc/fantasyland-ev/",
+      "category": "poker",
+      "description": "Royalty EV, repeat and foul rates, joker odds and the full matrix for every setup, from 10,000 samples each.",
+      "historyPath": "ofc/fantasyland-ev/index.html",
+      "sourcePaths": [
+        "ofc/fantasyland-ev/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-06-29"
+    },
+    {
+      "name": "Backgammon",
+      "path": "/backgammon/",
+      "category": "backgammon",
+      "description": "Play GNUbg or a friend, practice decisions, analyze positions, and keep a personal study library.",
+      "historyPath": "backgammon/index.html",
+      "sourcePaths": [
+        "backgammon/"
+      ],
+      "kind": "hub",
+      "updated": "2026-10-22",
+      "created": "2026-10-04"
+    },
+    {
+      "name": "Play Backgammon",
+      "path": "/backgammon/play/",
+      "category": "backgammon",
+      "description": "Play against GNUbg or invite a friend to a shared board.",
+      "historyPath": "backgammon/play/index.html",
+      "sourcePaths": [
+        "backgammon/play/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-04"
+    },
+    {
+      "name": "Backgammon Trainer",
+      "path": "/backgammon/trainer/",
+      "category": "backgammon",
+      "description": "Make the decision first, then compare your move with GNUbg.",
+      "historyPath": "backgammon/trainer/index.html",
+      "sourcePaths": [
+        "backgammon/trainer/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-04"
+    },
+    {
+      "name": "Backgammon Solver",
+      "path": "/backgammon/solver/",
+      "category": "backgammon",
+      "description": "Set up a position, explore alternatives, or review a saved match with GNUbg.",
+      "historyPath": "backgammon/solver/index.html",
+      "sourcePaths": [
+        "backgammon/solver/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-04"
+    },
+    {
+      "name": "Backgammon Library",
+      "path": "/backgammon/library/",
+      "category": "backgammon",
+      "description": "Your positions, matches, and notes. Saved locally, ready to study.",
+      "historyPath": "backgammon/library/index.html",
+      "sourcePaths": [
+        "backgammon/library/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-04"
+    },
+    {
+      "name": "Backgammon Opening Book",
+      "path": "/backgammon/openings/",
+      "category": "backgammon",
+      "description": "Study opening rolls, replies, and rollout comparisons.",
+      "historyPath": "backgammon/openings/index.html",
+      "sourcePaths": [
+        "backgammon/openings/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-22"
+    },
+    {
+      "name": "Backgammon Controls",
+      "path": "/backgammon/controls/",
+      "category": "backgammon",
+      "description": "Board controls, move entry, and keyboard shortcuts.",
+      "historyPath": "backgammon/controls/index.html",
+      "sourcePaths": [
+        "backgammon/controls/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-06"
+    },
+    {
+      "name": "Backgammon Reports",
+      "path": "/backgammon/reports/",
+      "category": "backgammon",
+      "description": "Engine validation, benchmarks, and analysis notes.",
+      "historyPath": "backgammon/reports/index.html",
+      "sourcePaths": [
+        "backgammon/reports/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-06"
+    },
+    {
+      "name": "Backgammon Updates",
+      "path": "/backgammon/refresh/",
+      "category": "backgammon",
+      "description": "Refresh offline files and troubleshoot app updates.",
+      "historyPath": "backgammon/refresh/index.html",
+      "sourcePaths": [
+        "backgammon/refresh/"
+      ],
+      "updated": "2026-10-17",
+      "created": "2026-10-05"
+    },
+    {
+      "name": "Blackjack",
+      "path": "/blackjack/",
+      "category": "games",
+      "description": "Rules-aware basic strategy and Hi-Lo count indices, solved in your browser by a Rust engine.",
+      "historyPath": "blackjack/index.html",
+      "sourcePaths": [
+        "blackjack/"
+      ],
+      "kind": "hub",
+      "updated": "2026-10-21",
+      "created": "2026-09-26"
+    },
+    {
+      "name": "Blackjack Strategy Lab",
+      "path": "/blackjack/strategy/",
+      "category": "games",
+      "description": "Pick the table rules and get the full basic strategy chart, EV views, and Hi-Lo count indices.",
+      "historyPath": "blackjack/strategy/index.html",
+      "sourcePaths": [
+        "blackjack/strategy/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-04-25"
+    },
+    {
+      "name": "Dice",
+      "path": "/dice/",
+      "category": "games",
+      "description": "Exact fair payout schedules, every two-dice matchup, and a custom payout checker.",
+      "historyPath": "dice/index.html",
+      "sourcePaths": [
+        "dice/"
+      ],
+      "kind": "hub",
+      "updated": "2026-10-21",
+      "created": "2026-10-07"
+    },
+    {
+      "name": "Dice Payout Explorer",
+      "path": "/dice/reports/",
+      "category": "games",
+      "description": "Compare fair payouts, dice matchups, and custom rules.",
+      "historyPath": "dice/reports/index.html",
+      "sourcePaths": [
+        "dice/reports/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-10-07"
+    },
+    {
+      "name": "Card Table Workshop",
+      "path": "/cards/",
+      "category": "games",
+      "description": "A card game design workbench: 31 playable games, rules and triggers, bluffing bots, and online rooms.",
+      "historyPath": "cards/index.html",
+      "sourcePaths": [
+        "cards/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-09-26"
+    },
+    {
+      "name": "Scoundrel",
+      "path": "/scoundrel/",
+      "category": "games",
+      "description": "A solo dungeon crawl with 44 illustrated encounters, an oracle solver, and outcome reports.",
+      "historyPath": "scoundrel/index.html",
+      "sourcePaths": [
+        "scoundrel/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-22"
+    },
+    {
+      "name": "Scoundrel Card Gallery",
+      "path": "/scoundrel/gallery/",
+      "category": "games",
+      "description": "Browse the illustrated Ash & Briar card collection.",
+      "historyPath": "scoundrel/gallery/index.html",
+      "sourcePaths": [
+        "scoundrel/gallery/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-22"
+    },
+    {
+      "name": "Scoundrel Reports",
+      "path": "/scoundrel/reports/",
+      "category": "games",
+      "description": "Explore solver outcomes and replay recorded runs.",
+      "historyPath": "scoundrel/reports/index.html",
+      "sourcePaths": [
+        "scoundrel/reports/"
+      ],
+      "updated": "2026-10-22",
+      "created": "2026-10-22"
+    },
+    {
+      "name": "Aperiodic Minesweeper",
+      "path": "/games/aperiodic-minesweeper/",
+      "category": "games",
+      "description": "An early experiment drawing aperiodic hat tiles on a triangular grid.",
+      "created": "2023-05-11",
+      "updated": "2026-10-22",
+      "historyPath": "games/aperiodic-minesweeper/index.html",
+      "sourcePaths": [
+        "games/aperiodic-minesweeper/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Games/AperiodicMinesweeper"
+        ],
+        "created": "2023-05-11",
+        "updated": "2023-05-11"
+      },
+      "legacyPaths": [
+        "/Games/AperiodicMinesweeper/index.html",
+        "/Games/AperiodicMinesweeper/"
+      ],
+      "status": "prototype"
+    },
+    {
+      "name": "Cardsweeper",
+      "path": "/games/cardsweeper/",
+      "category": "games",
+      "description": "A console-based push-your-luck card game prototype.",
+      "created": "2023-05-11",
+      "updated": "2026-10-22",
+      "historyPath": "games/cardsweeper/index.html",
+      "sourcePaths": [
+        "games/cardsweeper/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Games/Cardsweeper"
+        ],
+        "created": "2023-05-11",
+        "updated": "2023-05-11"
+      },
+      "legacyPaths": [
+        "/Games/Cardsweeper/index.html",
+        "/Games/Cardsweeper/"
+      ],
+      "status": "prototype"
+    },
+    {
+      "name": "GuessJack",
+      "path": "/games/guessjack/",
+      "category": "games",
+      "description": "An archived, unfinished card game experiment.",
+      "created": "2023-05-11",
+      "updated": "2026-10-22",
+      "historyPath": "games/guessjack/index.html",
+      "sourcePaths": [
+        "games/guessjack/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Games/GuessJack"
+        ],
+        "created": "2023-05-11",
+        "updated": "2023-05-11"
+      },
+      "legacyPaths": [
+        "/Games/GuessJack/index.html",
+        "/Games/GuessJack/"
+      ],
+      "status": "prototype"
+    },
+    {
+      "name": "Word Hunt",
+      "path": "/games/word-hunt/",
+      "category": "games",
+      "description": "An unfinished word game created around a Valentine message.",
+      "created": "2023-02-13",
+      "updated": "2026-10-22",
+      "historyPath": "games/word-hunt/index.html",
+      "sourcePaths": [
+        "games/word-hunt/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Lori/WordHunt"
+        ],
+        "created": "2023-02-13",
+        "updated": "2023-02-13"
+      },
+      "legacyPaths": [
+        "/Lori/WordHunt/index.html",
+        "/Lori/WordHunt/"
+      ],
+      "status": "prototype"
+    },
+    {
+      "name": "Blu’s Adventure",
+      "path": "/games/blus-adventure/",
+      "category": "games",
+      "description": "A physics platformer starring a little blue character.",
+      "created": "2021-12-22",
+      "updated": "2026-10-22",
+      "historyPath": "games/blus-adventure/index.html",
+      "sourcePaths": [
+        "games/blus-adventure/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Lori/BlusAdventure"
+        ],
+        "created": "2021-12-22",
+        "updated": "2023-07-01"
+      },
+      "legacyPaths": [
+        "/Lori/BlusAdventure/BlusAdventure.html"
+      ]
+    },
+    {
+      "name": "TFT Experiment",
+      "path": "/games/tft/",
+      "category": "games",
+      "description": "An archived Teamfight Tactics starter file; no playable game was completed.",
+      "created": "2019-06-30",
+      "updated": "2026-10-22",
+      "historyPath": "games/tft/index.html",
+      "sourcePaths": [
+        "games/tft/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Random/TFT.html"
+        ],
+        "created": "2019-06-30",
+        "updated": "2021-11-24"
+      },
+      "legacyPaths": [
+        "/Random/TFT.html"
+      ],
+      "status": "prototype"
+    },
+    {
+      "name": "Microtonal Lab",
+      "path": "/microtonal-lab/",
+      "category": "music",
+      "description": "Interactive tuning explorer and browser instrument for equal, just, and world scales.",
+      "historyPath": "microtonal-lab/index.html",
+      "sourcePaths": [
+        "microtonal-lab/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-06-29"
+    },
+    {
+      "name": "Jazz Piano ML",
+      "path": "https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml",
+      "category": "music",
+      "description": "Python tools for MIDI preparation and a symbolic jazz piano transformer.",
+      "kind": "source",
+      "historyPath": "jazz-piano-ml/pyproject.toml",
+      "sourcePaths": [
+        "jazz-piano-ml/"
+      ],
+      "updated": "2026-09-26",
+      "created": "2026-09-26"
+    },
+    {
+      "name": "Ear Training",
+      "path": "/music/ear-training/",
+      "category": "music",
+      "description": "Practice recognizing notes and intervals, or keeping time with a rhythm exercise.",
+      "created": "2021-11-26",
+      "updated": "2026-10-22",
+      "historyPath": "music/ear-training/index.html",
+      "sourcePaths": [
+        "music/ear-training/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Music/EarTraining"
+        ],
+        "created": "2021-11-26",
+        "updated": "2023-07-01"
+      },
+      "legacyPaths": [
+        "/Music/EarTraining/EarTraining.html"
+      ]
+    },
+    {
+      "name": "Perception Test",
+      "path": "/music/perception-test/",
+      "category": "music",
+      "description": "Test pitch and timing perception with adjustable listening challenges.",
+      "created": "2022-02-25",
+      "updated": "2026-10-22",
+      "historyPath": "music/perception-test/index.html",
+      "sourcePaths": [
+        "music/perception-test/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Music/PerceptionTest"
+        ],
+        "created": "2022-02-25",
+        "updated": "2022-02-26"
+      },
+      "legacyPaths": [
+        "/Music/PerceptionTest/PerceptionTest.html"
+      ]
+    },
+    {
+      "name": "ChordNet",
+      "path": "/music/chord-net/",
+      "category": "music",
+      "description": "An archived sketch for evaluating and generating chords.",
+      "created": "2022-03-10",
+      "updated": "2026-10-22",
+      "historyPath": "music/chord-net/index.html",
+      "sourcePaths": [
+        "music/chord-net/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Music/ChordNet"
+        ],
+        "created": "2022-03-10",
+        "updated": "2022-03-10"
+      },
+      "legacyPaths": [
+        "/Music/ChordNet/ChordNet.html"
+      ],
+      "status": "prototype"
+    },
+    {
+      "name": "EWI Fingerings",
+      "path": "/music/ewi-fingerings/",
+      "category": "music",
+      "description": "A visual reference for electronic wind instrument fingerings.",
+      "created": "2019-06-19",
+      "updated": "2026-10-22",
+      "historyPath": "music/ewi-fingerings/index.html",
+      "sourcePaths": [
+        "music/ewi-fingerings/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "EWI"
+        ],
+        "created": "2019-06-19",
+        "updated": "2021-11-24"
+      },
+      "legacyPaths": [
+        "/EWI/EWI-Fingerings.html"
+      ]
+    },
+    {
+      "name": "Musical Masterpieces",
+      "path": "/music/musical-masterpieces/",
+      "category": "music",
+      "description": "A high school project exploring American music from 1914 to 1945.",
+      "created": "2019-02-12",
+      "updated": "2026-10-22",
+      "historyPath": "music/musical-masterpieces/index.html",
+      "sourcePaths": [
+        "music/musical-masterpieces/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Random/musicalMasterpieces.html",
+          "Random/Music Programs.png",
+          "Random/James P Johnson The Charleston 1925.mp3",
+          "Random/Judy Garland - Over The Rainbow (Subtitiles).mp3",
+          "Random/Guys Bros Minstrels.png",
+          "Random/Tiger Rag - The Original Dixieland Jazz Band (1917).mp3",
+          "Random/jukebox.png",
+          "Random/Bing Crosby - White Christmas (1942) Original Version.mp3"
+        ],
+        "created": "2019-02-12",
+        "updated": "2021-11-24"
+      },
+      "legacyPaths": [
+        "/Random/musicalMasterpieces.html"
+      ]
+    },
+    {
+      "name": "Gym Tracker",
+      "path": "/gym/",
+      "category": "tools",
+      "description": "Recovery-aware training calendar with workout history, progress charts, goals, and nutrition.",
+      "historyPath": "gym/index.html",
+      "sourcePaths": [
+        "gym/"
+      ],
+      "updated": "2026-10-21",
+      "created": "2026-07-28"
+    },
+    {
+      "name": "Mandelbrot Explorer",
+      "path": "/tools/mandelbrot/",
+      "category": "tools",
+      "description": "Explore the Mandelbrot set with keyboard controls for zoom and movement.",
+      "created": "2019-01-08",
+      "updated": "2026-10-22",
+      "historyPath": "tools/mandelbrot/index.html",
+      "sourcePaths": [
+        "tools/mandelbrot/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Random/mandelbrotSet.html"
+        ],
+        "created": "2019-01-08",
+        "updated": "2021-11-24"
+      },
+      "legacyPaths": [
+        "/Random/mandelbrotSet.html"
+      ]
+    },
+    {
+      "name": "Sbeve",
+      "path": "/tools/sbeve/",
+      "category": "tools",
+      "description": "Find a phrase hidden inside the shortest passage of a longer text.",
+      "created": "2019-04-01",
+      "updated": "2026-10-22",
+      "historyPath": "tools/sbeve/index.html",
+      "sourcePaths": [
+        "tools/sbeve/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "Random/sbeve.html",
+          "Random/Harry Potter and the Philosopher's Stone.txt"
+        ],
+        "created": "2019-04-01",
+        "updated": "2021-11-24"
+      },
+      "legacyPaths": [
+        "/Random/sbeve.html"
+      ]
+    },
+    {
+      "name": "Bank Discrepancy Allocator",
+      "path": "/tools/bank-discrepancy/",
+      "category": "tools",
+      "description": "Split a bank discrepancy across participants with adjustable weights.",
+      "created": "2026-02-09",
+      "updated": "2026-10-22",
+      "historyPath": "tools/bank-discrepancy/index.html",
+      "sourcePaths": [
+        "tools/bank-discrepancy/"
+      ],
+      "origin": {
+        "repository": "https://github.com/matheweon/matheweon.github.io",
+        "commit": "ee1121afdbaee8dea082694989fbbae5339340fb",
+        "paths": [
+          "bank-discrepancy"
+        ],
+        "created": "2026-02-09",
+        "updated": "2026-02-09"
+      },
+      "legacyPaths": [
+        "/bank-discrepancy/index.html",
+        "/bank-discrepancy/"
+      ]
+    }
+  ]
 }

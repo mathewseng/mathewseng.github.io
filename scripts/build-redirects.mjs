@@ -2,8 +2,8 @@
 // GitHub Pages has no server-side redirects, so each old URL gets an index.html
 // that forwards the query string and hash (room codes and share links live there).
 // Usage: node scripts/build-redirects.mjs <site-dir>
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { join, dirname, extname } from "node:path";
 
 const siteDir = process.argv[2];
 if (!siteDir) {
@@ -12,6 +12,7 @@ if (!siteDir) {
 }
 
 const redirects = JSON.parse(readFileSync(new URL("../redirects.json", import.meta.url), "utf8"));
+const written = new Map();
 
 for (const [from, to] of Object.entries(redirects)) {
   // Fragments never reach the server. The surviving page handles these links
@@ -24,12 +25,26 @@ for (const [from, to] of Object.entries(redirects)) {
     console.log(`${from} -> ${to} (fragment)`);
     continue;
   }
-  const page = join(siteDir, from, "index.html");
+  // Legacy projects also used filenames (including uppercase paths). Preserve
+  // those exact URLs rather than creating a directory named Something.html.
+  const page = extname(from) ? join(siteDir, from) : join(siteDir, from, "index.html");
+  if (written.get(page) === to) continue;
   if (existsSync(page)) {
+    // macOS commonly uses a case-insensitive disk: /Games/Cardsweeper/ already
+    // resolves to /games/cardsweeper/. Leave that real page intact locally.
+    // Linux deployment creates the exact uppercase redirect as usual.
+    const normalizedFrom = from.replace(/index\.html$/, "");
+    const targetPage = join(siteDir, to, "index.html");
+    if (normalizedFrom !== to && normalizedFrom.toLowerCase() === to.toLowerCase() &&
+        existsSync(targetPage) && statSync(page).dev === statSync(targetPage).dev &&
+        statSync(page).ino === statSync(targetPage).ino) {
+      console.log(`${from} -> ${to} (case-insensitive filesystem alias)`);
+      continue;
+    }
     console.error(`Refusing to overwrite a real page at ${from} with a redirect to ${to}`);
     process.exit(1);
   }
-  mkdirSync(join(siteDir, from), { recursive: true });
+  mkdirSync(dirname(page), { recursive: true });
   writeFileSync(
     page,
     `<!doctype html>
@@ -48,5 +63,6 @@ for (const [from, to] of Object.entries(redirects)) {
 </html>
 `,
   );
+  written.set(page, to);
   console.log(`${from} -> ${to}`);
 }

@@ -1,205 +1,419 @@
 <!doctype html>
 <html lang="en" data-family="home">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#08090d" />
-    <meta
-      name="description"
-      content="Project directory for Mathew Seng: browser tools, card games, music experiments, and small utility projects."
-    />
-    <title>Mathew Seng Projects</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='15' fill='%238ab4ff'/%3E%3Ctext x='32' y='41' font-family='Inter, system-ui, sans-serif' font-size='26' font-weight='800' text-anchor='middle' fill='%230b0d12'%3EMS%3C/text%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="shared/tokens.css?v=20261016" />
-    <link rel="stylesheet" href="shared/app.css?v=20261016" />
-    <link rel="stylesheet" href="shared/cards.css?v=20261016" />
-    <link rel="stylesheet" href="shared/hub.css?v=20261016" />
-    <link rel="stylesheet" href="shared/hub-art.css?v=20261016" />
-    <script>document.documentElement.classList.add("is-ready");</script>
-    <script src="shared/hub.js?v=20261016" defer></script>
-  </head>
-  <body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <div class="shell">
-      <header class="topbar">
-        <nav class="crumbs" aria-label="Breadcrumb">
-          <span class="mark" aria-hidden="true">MS</span>
-          <span class="crumb-current" aria-current="page">Projects</span>
-        </nav>
-        <nav class="switcher" aria-label="Game families">
-          <a href="/ofc/" data-to="ofc">OFC</a>
-          <a href="/poker/" data-to="poker">Poker</a>
-          <a href="/blackjack/" data-to="blackjack">Blackjack</a>
-          <a href="/backgammon/" data-to="backgammon">Backgammon</a>
-          <a href="/dice/" data-to="dice">Dice</a>
-        </nav>
-      </header>
-
-      <main id="main" tabindex="-1">
-        <section class="hero hero--home" aria-labelledby="home-title">
-          <div>
-            <h1 id="home-title">Browser tools, <em>card games</em>, and small experiments.</h1>
-          </div>
-          <div class="fan" aria-hidden="true">
-            <div class="fan-inner">
-              <span class="playing-card suit-s" aria-label="Ace of spades" style="--k: -1.5; --y: 12px; --n: 0"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">A</span></span>
-              <span class="playing-card suit-h" aria-label="Ace of hearts" style="--k: -0.5; --y: 2px; --n: 1"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span>
-              <span class="playing-card suit-c" aria-label="Ace of clubs" style="--k: 0.5; --y: 2px; --n: 2"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">A</span></span>
-              <span class="playing-card suit-d" aria-label="Ace of diamonds" style="--k: 1.5; --y: 12px; --n: 3"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">A</span></span>
-              <div class="fan-chip" style="--accent: var(--family-ofc)"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="group" aria-labelledby="group-hubs">
-          <div class="group-head">
-            <h2 id="group-hubs">Game hubs</h2>
-            <span>5 hubs</span>
-          </div>
-          <ul class="tiles tiles--hubs" role="list">
-            <li>
-              <a class="tile" href="/ofc/" style="--i: 0; --accent: var(--family-ofc); --accent-2: var(--family-ofc-2)">
-                <div class="tile-art" aria-hidden="true"><div class="art-ofc"><div><span class="playing-card suit-h" aria-label="Queen of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span><span class="playing-card suit-s" aria-label="Queen of spades"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">Q</span></span><span class="empty-slot"></span></div><div><span class="playing-card suit-c" aria-label="Nine of clubs"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">9</span></span><span class="playing-card suit-d" aria-label="Nine of diamonds"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">9</span></span><span class="playing-card suit-s" aria-label="Jack of spades"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">J</span></span><span class="playing-card suit-c" aria-label="Jack of clubs"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">J</span></span><span class="playing-card suit-d" aria-label="Four of diamonds"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">4</span></span></div><div><span class="playing-card suit-h" aria-label="Ace of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span><span class="playing-card suit-h" aria-label="King of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-h" aria-label="Eight of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">8</span></span><span class="playing-card suit-h" aria-label="Five of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">5</span></span><span class="playing-card suit-h" aria-label="Three of hearts"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">3</span></span></div></div></div>
-                <div>
-                  <h3>OFC</h3>
-                  <p>Pineapple tables with friends, plus a Fantasyland trainer and EV, repeat and royalty charts for every setup.</p>
-                </div>
-                <div class="tile-foot">
-                  <div class="tags"><span>Hub</span><span>3 tools</span></div>
-                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a class="tile" href="/poker/" style="--i: 1; --accent: var(--family-poker); --accent-2: var(--family-poker-2)">
-                <div class="tile-art" aria-hidden="true"><div class="art-fan"><span class="playing-card suit-h" aria-label="Ten of hearts" style="--k: -2; --y: 6px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">T</span></span><span class="playing-card suit-h" aria-label="Jack of hearts" style="--k: -1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">J</span></span><span class="playing-card suit-h" aria-label="Queen of hearts" style="--k: 0; --y: 0px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">Q</span></span><span class="playing-card suit-h" aria-label="King of hearts" style="--k: 1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">K</span></span><span class="playing-card suit-h" aria-label="Ace of hearts" style="--k: 2; --y: 6px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">A</span></span></div></div>
-                <div>
-                  <h3>Poker</h3>
-                  <p>Peer-to-peer cash tables in 30 mixed games, two table-game prototypes, and poker research.</p>
-                </div>
-                <div class="tile-foot">
-                  <div class="tags"><span>Hub</span><span>9 tools</span></div>
-                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a class="tile" href="/blackjack/" style="--i: 2; --accent: var(--family-blackjack); --accent-2: var(--family-blackjack-2)">
-                <div class="tile-art" aria-hidden="true"><div class="art-chart"><span class="H"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="S"></span><span class="H"></span><span class="H"></span><span class="H"></span><span class="H hit-me"></span><span class="H"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="D"></span><span class="H"></span></div></div>
-                <div>
-                  <h3>Blackjack</h3>
-                  <p>Rules-aware basic strategy and Hi-Lo count indices, solved in your browser by a Rust engine.</p>
-                </div>
-                <div class="tile-foot">
-                  <div class="tags"><span>Hub</span><span>Strategy Lab</span></div>
-                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a class="tile" href="/backgammon/" style="--i: 3; --accent: var(--family-backgammon); --accent-2: var(--family-backgammon-2)">
-                <div class="tile-art" aria-hidden="true"><img class="art-image" src="/backgammon/icon.svg" width="108" height="108" alt="" /></div>
-                <div>
-                  <h3>Backgammon</h3>
-                  <p>Play GNUbg or a friend, practice decisions, analyze positions, and keep a personal study library.</p>
-                </div>
-                <div class="tile-foot">
-                  <div class="tags"><span>Hub</span><span>4 tools</span></div>
-                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-                </div>
-              </a>
-            </li>
-            <li class="wide">
-              <a class="tile tile--row" href="/dice/" style="--i: 4; --accent: var(--family-dice); --accent-2: var(--family-dice-2)">
-                <div class="tile-art" aria-hidden="true"><div class="art-dice"><svg class="hub-die" viewBox="0 0 64 64" style="--k: -1"><rect x="2" y="2" width="60" height="60" rx="15"/><circle cx="20" cy="20" r="5.5"/><circle cx="44" cy="20" r="5.5"/><circle cx="32" cy="32" r="5.5"/><circle cx="20" cy="44" r="5.5"/><circle cx="44" cy="44" r="5.5"/></svg><svg class="hub-die" viewBox="0 0 64 64" style="--k: 1"><rect x="2" y="2" width="60" height="60" rx="15"/><circle cx="20" cy="20" r="5.5"/><circle cx="44" cy="44" r="5.5"/></svg></div></div>
-                <div>
-                  <h3>Dice</h3>
-                  <p>Exact fair payout schedules, every two-dice matchup, and a custom payout checker.</p>
-                </div>
-                <div class="tile-foot">
-                  <div class="tags"><span>Hub</span><span>3 workspaces</span></div>
-                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-                </div>
-              </a>
-            </li>
-          </ul>
-        </section>
-
-        <section class="group" aria-labelledby="group-apps">
-          <div class="group-head">
-            <h2 id="group-apps">Apps &amp; experiments</h2>
-            <span>4 apps</span>
-          </div>
-          <ul class="tiles" role="list">
-            <li>
-              <a class="tile" href="/cards/" style="--i: 5; --accent: var(--family-cards); --accent-2: var(--family-cards-2)">
-                <div class="tile-art" aria-hidden="true"><div class="art-fan"><span class="playing-card suit-c" aria-label="Five of clubs" style="--k: -2; --y: 6px"><span class="card-suit" aria-hidden="true">♣</span><span class="card-rank">5</span></span><span class="playing-card suit-h" aria-label="Five of hearts" style="--k: -1; --y: 3px"><span class="card-suit" aria-hidden="true">♥</span><span class="card-rank">5</span></span><span class="playing-card suit-d" aria-label="Jack of diamonds" style="--k: 0; --y: 0px"><span class="card-suit" aria-hidden="true">♦</span><span class="card-rank">J</span></span><span class="playing-card suit-s" aria-label="Ace of spades" style="--k: 1; --y: 3px"><span class="card-suit" aria-hidden="true">♠</span><span class="card-rank">A</span></span><span class="playing-card joker" aria-label="Joker" style="--k: 2; --y: 6px"><span class="card-suit" aria-hidden="true">★</span><span class="card-rank">JK</span></span></div></div>
-                <div>
-                  <h3>Card Table Workshop</h3>
-                  <p>A card game design workbench: 31 playable games, rules and triggers, bluffing bots, and online rooms.</p>
-                </div>
-                <div class="tile-foot">
-                  <div class="tags"><span>Game design</span><span>Multiplayer</span></div>
-                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a class="tile" href="/gym/" style="--i: 6; --accent: var(--family-gym); --accent-2: var(--family-gym-2)">
-                <div class="tile-art" aria-hidden="true"><div class="art-bars"><span style="--h: 32%; --c: 0"></span><span style="--h: 48%; --c: 1"></span><span style="--h: 42%; --c: 2"></span><span style="--h: 68%; --c: 3"></span><span style="--h: 58%; --c: 4"></span><span style="--h: 82%; --c: 5"></span><span style="--h: 72%; --c: 6"></span><span style="--h: 94%; --c: 7"></span></div></div>
-                <div>
-                  <h3>Gym Tracker</h3>
-                  <p>Recovery-aware training calendar with workout history, progress charts, goals, and nutrition.</p>
-                </div>
-                <div class="tile-foot">
-                  <div class="tags"><span>Fitness</span><span>React</span></div>
-                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a class="tile" href="/microtonal-lab/" style="--i: 7; --accent: var(--family-microtonal); --accent-2: var(--family-microtonal-2)">
-                <div class="tile-art" aria-hidden="true"><div class="art-wave"><span style="--h: 17%; --c: 0"></span><span style="--h: 29%; --c: 1"></span><span style="--h: 34%; --c: 2"></span><span style="--h: 28%; --c: 3"></span><span style="--h: 32%; --c: 4"></span><span style="--h: 56%; --c: 5"></span><span style="--h: 71%; --c: 6"></span><span style="--h: 57%; --c: 7"></span><span style="--h: 40%; --c: 8"></span><span style="--h: 55%; --c: 9"></span><span style="--h: 87%; --c: 10"></span><span style="--h: 88%; --c: 11"></span><span style="--h: 57%; --c: 12"></span><span style="--h: 44%; --c: 13"></span><span style="--h: 70%; --c: 14"></span><span style="--h: 92%; --c: 15"></span><span style="--h: 74%; --c: 16"></span><span style="--h: 43%; --c: 17"></span><span style="--h: 43%; --c: 18"></span><span style="--h: 63%; --c: 19"></span><span style="--h: 64%; --c: 20"></span><span style="--h: 42%; --c: 21"></span><span style="--h: 26%; --c: 22"></span><span style="--h: 28%; --c: 23"></span><span style="--h: 28%; --c: 24"></span><span style="--h: 19%; --c: 25"></span></div></div>
-                <div>
-                  <h3>Microtonal Lab</h3>
-                  <p>Interactive tuning explorer and browser instrument for equal, just, and world scales.</p>
-                </div>
-                <div class="tile-foot">
-                  <div class="tags"><span>Audio</span><span>Tuning</span></div>
-                  <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a class="tile" href="/scoundrel/" style="--i: 8; --accent: var(--family-blackjack); --accent-2: var(--family-blackjack-2)">
-                <div class="tile-art" aria-hidden="true" style="background: url('scoundrel/assets/dungeon.webp') center 45% / cover"></div>
-                <div><h3>Scoundrel</h3><p>A solo dungeon crawl with 44 illustrated encounters, an oracle solver, and outcome reports.</p></div>
-                <div class="tile-foot"><div class="tags"><span>Solo game</span><span>Solver</span></div><span class="go" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span></div>
-              </a>
-            </li>
-          </ul>
-        </section>
-
-        <section class="group" aria-labelledby="group-source">
-          <div class="group-head">
-            <h2 id="group-source">Source only</h2>
-            <span>1 project</span>
-          </div>
-          <ul class="hub-links">
-            <li>
-              <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml" target="_blank" rel="noopener">Jazz Piano ML<span class="visually-hidden"> (opens GitHub)</span><svg class="icon" aria-hidden="true"><use href="shared/icons.svg#i-external" /></svg></a>
-              <span>Python pipeline for jazz piano MIDI normalization, tokenization, and a small symbolic transformer.</span>
-            </li>
-          </ul>
-        </section>
-      </main>
-
-      <footer class="foot">
-        <nav class="foot-links" aria-label="Site">
-          <a href="https://github.com/mathewseng/mathewseng.github.io" target="_blank" rel="noopener">Source on GitHub<span class="visually-hidden"> (opens GitHub)</span><svg class="icon" aria-hidden="true"><use href="shared/icons.svg#i-external" /></svg></a>
-        </nav>
-        <span>Static pages on GitHub Pages. Everything runs in your browser.</span>
-      </footer>
-    </div>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Games to play, ideas to explore, and tools I wanted to exist. Browse 63 projects with creation and update dates." />
+  <title>Mathew Seng — Projects</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='15' fill='%238ab4ff'/%3E%3Ctext x='32' y='41' font-family='Inter, system-ui, sans-serif' font-size='26' font-weight='800' text-anchor='middle' fill='%230b0d12'%3EMS%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/shared/tokens.css?v=20261022" />
+  <link rel="stylesheet" href="/shared/app.css?v=20261022" />
+  <link rel="stylesheet" href="/shared/hub.css?v=20261022" />
+  <link rel="stylesheet" href="/shared/hub-art.css?v=20261022" />
+  <link rel="stylesheet" href="/shared/directory.css?v=20261022" />
+  <script src="/shared/directory.js?v=20261022" defer></script>
+</head>
+<body class="directory">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="directory-shell">
+    <header class="directory-top"><a class="directory-brand" href="/"><span class="mark" aria-hidden="true">MS</span>Mathew Seng</a><a href="https://github.com/mathewseng/mathewseng.github.io">GitHub ↗</a></header>
+    <main id="main" tabindex="-1">
+      <section class="directory-hero" aria-labelledby="directory-title"><div><p class="directory-eyebrow">A personal collection</p><h1 id="directory-title">A collection of <em>curiosities.</em></h1><p>Games to play, ideas to explore, and tools I wanted to exist.</p></div><div class="archive-stamp"><strong>63</strong>projects &amp; experiments<br>Built out of curiosity.</div></section>
+      <form class="directory-controls" role="search" onsubmit="return false">
+        <label class="directory-search" for="project-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span class="visually-hidden">Search projects</span><input id="project-search" type="search" placeholder="Search projects, games, and tools…" autocomplete="off" /></label>
+        <span class="directory-count" id="project-count" role="status" aria-live="polite">63 projects</span><button class="directory-clear" id="clear-search" type="button" hidden>Clear</button>
+      </form>
+      <div class="catalog-workspace">
+        <nav class="category-nav" aria-label="Project categories"><a href="#poker">Poker<span>29</span></a>
+<a href="#backgammon">Backgammon<span>9</span></a>
+<a href="#games">Games<span>14</span></a>
+<a href="#music">Music<span>7</span></a>
+<a href="#tools">Tools &amp; experiments<span>4</span></a><p>Made over the years.<br>Collected in one place.</p></nav>
+        <div class="project-directory" tabindex="0" role="region" aria-label="Project directory">
+          <section class="project-section" id="poker" aria-labelledby="heading-poker"><div class="project-section-head"><div><h2 id="heading-poker">Poker</h2><p>Tables, ranges, and the decisions in between.</p></div><a href="/poker/">Open hub ↗</a></div><ul class="project-list"><li data-project="/poker/" data-search="poker peer-to-peer cash tables in 30 mixed games, two table-game prototypes, and poker research. poker hub">
+    <a class="project-row" href="/poker/">
+      <div><h3>Poker</h3><span class="project-kind">Hub</span><p>Peer-to-peer cash tables in 30 mixed games, two table-game prototypes, and poker research.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-09-07">Sep 7, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/play/" data-search="mixed poker share a link and play peer-to-peer cash games: 30 hold&#39;em, omaha, stud, draw, and badugi variants. poker ">
+    <a class="project-row" href="/poker/play/">
+      <div><h3>Mixed Poker</h3><p>Share a link and play peer-to-peer cash games: 30 hold&#39;em, Omaha, stud, draw, and Badugi variants.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-09-26">Sep 26, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/rush/" data-search="poker rush seeded poker sprint with daily, random, and multiplayer modes. poker ">
+    <a class="project-row" href="/poker/rush/">
+      <div><h3>Poker Rush</h3><p>Seeded poker sprint with daily, random, and multiplayer modes.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-06-26">Jun 26, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/ultimate-omaha/" data-search="ultimate omaha two-board omaha against multiplier payouts, with check-or-double betting for up to 10 players. poker ">
+    <a class="project-row" href="/poker/ultimate-omaha/">
+      <div><h3>Ultimate Omaha</h3><p>Two-board Omaha against multiplier payouts, with check-or-double betting for up to 10 players.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2025-12-16">Dec 16, 2025</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/edge-the-dealer/" data-search="edge the dealer five-card draw against a shared seven-card dealer hand: the lowest hand that still beats the dealer wins. poker ">
+    <a class="project-row" href="/poker/edge-the-dealer/">
+      <div><h3>Edge the Dealer</h3><p>Five-card draw against a shared seven-card dealer hand: the lowest hand that still beats the dealer wins.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-02-11">Feb 11, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/222/" data-search="222 six-card omaha flips split into three forced hands: simulate tables, solve any spot, and train the cube. poker ">
+    <a class="project-row" href="/poker/222/">
+      <div><h3>222</h3><p>Six-card Omaha flips split into three forced hands: simulate tables, solve any spot, and train the cube.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-03">Oct 3, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/video-poker/" data-search="video poker 35 variants, perfect holds, and a payout lab. play cribbage, 2–7 low and badeucey with custom payouts. poker ">
+    <a class="project-row" href="/poker/video-poker/">
+      <div><h3>Video Poker</h3><p>35 variants, perfect holds, and a payout lab. Play Cribbage, 2–7 Low and Badeucey with custom payouts.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-20">Oct 20, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/dodge/" data-search="dodge reports draw until a straight or better busts your hand. all 16,432 starting hands, survival curves, and bust outs. poker ">
+    <a class="project-row" href="/poker/dodge/">
+      <div><h3>Dodge Reports</h3><p>Draw until a straight or better busts your hand. All 16,432 starting hands, survival curves, and bust outs.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-09-19">Sep 19, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/dodge/simulator/" data-search="dodge simulator deal two to four players, step through every draw with live equity, and train doubling-cube decisions. poker ">
+    <a class="project-row" href="/poker/dodge/simulator/">
+      <div><h3>Dodge Simulator</h3><p>Deal two to four players, step through every draw with live equity, and train doubling-cube decisions.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-03">Oct 3, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/calculations/" data-search="poker calculations hand-ranking probability table generated by an exhaustive rust solver with monte carlo fallback. poker ">
+    <a class="project-row" href="/poker/calculations/">
+      <div><h3>Poker Calculations</h3><p>Hand-ranking probability table generated by an exhaustive Rust solver with Monte Carlo fallback.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-07-07">Jul 7, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/three-pick-two/" data-search="3 pick 2 an unfinished poker equity research prototype, preserved with an optional sampling experiment. poker prototype">
+    <a class="project-row" href="/poker/three-pick-two/">
+      <div><h3>3 Pick 2</h3><span class="project-kind">Prototype</span><p>An unfinished poker equity research prototype, preserved with an optional sampling experiment.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-01-31">Jan 31, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/pokerdle/" data-search="pokerdle guess a five-letter poker word, with suits adding another layer to the puzzle. poker ">
+    <a class="project-row" href="/poker/pokerdle/">
+      <div><h3>Pokerdle</h3><p>Guess a five-letter poker word, with suits adding another layer to the puzzle.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-03-10">Mar 10, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/shot-clock/" data-search="poker shot clock a configurable poker timer with street presets, time banks, and sound alerts. poker ">
+    <a class="project-row" href="/poker/shot-clock/">
+      <div><h3>Poker Shot Clock</h3><p>A configurable poker timer with street presets, time banks, and sound alerts.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-01-12">Jan 12, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/preflop-ranges/" data-search="preflop ranges archived heads-up and tournament ranges, with unavailable branches clearly marked. poker ">
+    <a class="project-row" href="/poker/preflop-ranges/">
+      <div><h3>Preflop Ranges</h3><p>Archived heads-up and tournament ranges, with unavailable branches clearly marked.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-03-25">Mar 25, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/preflop-classic/" data-search="preflop classic the original position-based preflop charts with mixed-action randomization. poker ">
+    <a class="project-row" href="/poker/preflop-classic/">
+      <div><h3>Preflop Classic</h3><p>The original position-based preflop charts with mixed-action randomization.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2021-11-24">Nov 24, 2021</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/preflop-classic-v2/" data-search="preflop grid prototype an early 169-hand grid experiment with a random roll display. poker prototype">
+    <a class="project-row" href="/poker/preflop-classic-v2/">
+      <div><h3>Preflop Grid Prototype</h3><span class="project-kind">Prototype</span><p>An early 169-hand grid experiment with a random roll display.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-01-11">Jan 11, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/heads-up-preflop/" data-search="heads-up preflop heads-up no-limit ranges and mixed-action practice at 100 big blinds. poker ">
+    <a class="project-row" href="/poker/heads-up-preflop/">
+      <div><h3>Heads-up Preflop</h3><p>Heads-up no-limit ranges and mixed-action practice at 100 big blinds.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2021-04-16">Apr 16, 2021</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/range-converter/" data-search="range converter convert compact spreadsheet range codes to weighted poker range notation. poker ">
+    <a class="project-row" href="/poker/range-converter/">
+      <div><h3>Range Converter</h3><p>Convert compact spreadsheet range codes to weighted poker range notation.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2023-08-05">Aug 5, 2023</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/source-tools/#flop-reports-parser" data-search="flop reports parser parse solver flop reports. poker source">
+    <a class="project-row" href="/poker/source-tools/#flop-reports-parser">
+      <div><h3>Flop Reports Parser</h3><span class="project-kind">Source</span><p>Parse solver flop reports.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2023-07-01">Jul 1, 2023</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/source-tools/#range-parser" data-search="range parser extract and format poker ranges. poker source">
+    <a class="project-row" href="/poker/source-tools/#range-parser">
+      <div><h3>Range Parser</h3><span class="project-kind">Source</span><p>Extract and format poker ranges.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-03-25">Mar 25, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/source-tools/#flop-ev-parser" data-search="flop ev parser extract flop expected-value reports. poker source">
+    <a class="project-row" href="/poker/source-tools/#flop-ev-parser">
+      <div><h3>Flop EV Parser</h3><span class="project-kind">Source</span><p>Extract flop expected-value reports.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-03-25">Mar 25, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/source-tools/#skip-straight-probability" data-search="skip-straight probability a python probability experiment. poker source">
+    <a class="project-row" href="/poker/source-tools/#skip-straight-probability">
+      <div><h3>Skip-straight Probability</h3><span class="project-kind">Source</span><p>A Python probability experiment.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-01-11">Jan 11, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/source-tools/#range-approximator" data-search="range approximator an experimental python range-analysis script. poker source">
+    <a class="project-row" href="/poker/source-tools/#range-approximator">
+      <div><h3>Range Approximator</h3><span class="project-kind">Source</span><p>An experimental Python range-analysis script.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-01-11">Jan 11, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/source-tools/#100nl-complete-text" data-search="100nl range notes the original 100nl range reference data. poker source">
+    <a class="project-row" href="/poker/source-tools/#100nl-complete-text">
+      <div><h3>100NL Range Notes</h3><span class="project-kind">Source</span><p>The original 100NL range reference data.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2021-05-28">May 28, 2021</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/poker/source-tools/" data-search="poker source tools research scripts, solver-report parsers, and archived range data. poker source">
+    <a class="project-row" href="/poker/source-tools/">
+      <div><h3>Poker Source Tools</h3><span class="project-kind">Source</span><p>Research scripts, solver-report parsers, and archived range data.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2023-07-01">Jul 1, 2023</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/ofc/" data-search="ofc pineapple tables with friends, plus a fantasyland trainer and ev, repeat and royalty charts for every setup. poker hub">
+    <a class="project-row" href="/ofc/">
+      <div><h3>OFC</h3><span class="project-kind">Hub</span><p>Pineapple tables with friends, plus a Fantasyland trainer and EV, repeat and royalty charts for every setup.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-06-29">Jun 29, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/ofc/play/" data-search="play ofc create a heads-up or 3-way pineapple ofc table with peer-to-peer multiplayer and a local ledger. poker ">
+    <a class="project-row" href="/ofc/play/">
+      <div><h3>Play OFC</h3><p>Create a heads-up or 3-way Pineapple OFC table with peer-to-peer multiplayer and a local ledger.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-09-07">Sep 7, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/ofc/fantasyland-trainer/" data-search="fantasyland trainer daily and random fantasyland puzzles for 14, 15, 16, and 17 cards with 0, 1, or 2 jokers. poker ">
+    <a class="project-row" href="/ofc/fantasyland-trainer/">
+      <div><h3>Fantasyland Trainer</h3><p>Daily and random Fantasyland puzzles for 14, 15, 16, and 17 cards with 0, 1, or 2 jokers.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-06-29">Jun 29, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/ofc/fantasyland-ev/" data-search="fantasyland ev royalty ev, repeat and foul rates, joker odds and the full matrix for every setup, from 10,000 samples each. poker ">
+    <a class="project-row" href="/ofc/fantasyland-ev/">
+      <div><h3>Fantasyland EV</h3><p>Royalty EV, repeat and foul rates, joker odds and the full matrix for every setup, from 10,000 samples each.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-06-29">Jun 29, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li></ul></section>
+<section class="project-section" id="backgammon" aria-labelledby="heading-backgammon"><div class="project-section-head"><div><h2 id="heading-backgammon">Backgammon</h2><p>Play, practice, and study the board.</p></div><a href="/backgammon/">Open hub ↗</a></div><ul class="project-list"><li data-project="/backgammon/" data-search="backgammon play gnubg or a friend, practice decisions, analyze positions, and keep a personal study library. backgammon hub">
+    <a class="project-row" href="/backgammon/">
+      <div><h3>Backgammon</h3><span class="project-kind">Hub</span><p>Play GNUbg or a friend, practice decisions, analyze positions, and keep a personal study library.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-04">Oct 4, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/backgammon/play/" data-search="play backgammon play against gnubg or invite a friend to a shared board. backgammon ">
+    <a class="project-row" href="/backgammon/play/">
+      <div><h3>Play Backgammon</h3><p>Play against GNUbg or invite a friend to a shared board.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-04">Oct 4, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/backgammon/trainer/" data-search="backgammon trainer make the decision first, then compare your move with gnubg. backgammon ">
+    <a class="project-row" href="/backgammon/trainer/">
+      <div><h3>Backgammon Trainer</h3><p>Make the decision first, then compare your move with GNUbg.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-04">Oct 4, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/backgammon/solver/" data-search="backgammon solver set up a position, explore alternatives, or review a saved match with gnubg. backgammon ">
+    <a class="project-row" href="/backgammon/solver/">
+      <div><h3>Backgammon Solver</h3><p>Set up a position, explore alternatives, or review a saved match with GNUbg.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-04">Oct 4, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/backgammon/library/" data-search="backgammon library your positions, matches, and notes. saved locally, ready to study. backgammon ">
+    <a class="project-row" href="/backgammon/library/">
+      <div><h3>Backgammon Library</h3><p>Your positions, matches, and notes. Saved locally, ready to study.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-04">Oct 4, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/backgammon/openings/" data-search="backgammon opening book study opening rolls, replies, and rollout comparisons. backgammon ">
+    <a class="project-row" href="/backgammon/openings/">
+      <div><h3>Backgammon Opening Book</h3><p>Study opening rolls, replies, and rollout comparisons.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-22">Oct 22, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/backgammon/controls/" data-search="backgammon controls board controls, move entry, and keyboard shortcuts. backgammon ">
+    <a class="project-row" href="/backgammon/controls/">
+      <div><h3>Backgammon Controls</h3><p>Board controls, move entry, and keyboard shortcuts.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-06">Oct 6, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/backgammon/reports/" data-search="backgammon reports engine validation, benchmarks, and analysis notes. backgammon ">
+    <a class="project-row" href="/backgammon/reports/">
+      <div><h3>Backgammon Reports</h3><p>Engine validation, benchmarks, and analysis notes.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-06">Oct 6, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/backgammon/refresh/" data-search="backgammon updates refresh offline files and troubleshoot app updates. backgammon ">
+    <a class="project-row" href="/backgammon/refresh/">
+      <div><h3>Backgammon Updates</h3><p>Refresh offline files and troubleshoot app updates.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-05">Oct 5, 2026</time></span><span>Updated <time datetime="2026-10-17">Oct 17, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li></ul></section>
+<section class="project-section" id="games" aria-labelledby="heading-games"><div class="project-section-head"><div><h2 id="heading-games">Games</h2><p>Card games, puzzles, and playable experiments.</p></div><a href="/games/">Open hub ↗</a></div><ul class="project-list"><li data-project="/blackjack/" data-search="blackjack rules-aware basic strategy and hi-lo count indices, solved in your browser by a rust engine. games hub">
+    <a class="project-row" href="/blackjack/">
+      <div><h3>Blackjack</h3><span class="project-kind">Hub</span><p>Rules-aware basic strategy and Hi-Lo count indices, solved in your browser by a Rust engine.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-09-26">Sep 26, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/blackjack/strategy/" data-search="blackjack strategy lab pick the table rules and get the full basic strategy chart, ev views, and hi-lo count indices. games ">
+    <a class="project-row" href="/blackjack/strategy/">
+      <div><h3>Blackjack Strategy Lab</h3><p>Pick the table rules and get the full basic strategy chart, EV views, and Hi-Lo count indices.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-04-25">Apr 25, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/dice/" data-search="dice exact fair payout schedules, every two-dice matchup, and a custom payout checker. games hub">
+    <a class="project-row" href="/dice/">
+      <div><h3>Dice</h3><span class="project-kind">Hub</span><p>Exact fair payout schedules, every two-dice matchup, and a custom payout checker.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-07">Oct 7, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/dice/reports/" data-search="dice payout explorer compare fair payouts, dice matchups, and custom rules. games ">
+    <a class="project-row" href="/dice/reports/">
+      <div><h3>Dice Payout Explorer</h3><p>Compare fair payouts, dice matchups, and custom rules.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-07">Oct 7, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/cards/" data-search="card table workshop a card game design workbench: 31 playable games, rules and triggers, bluffing bots, and online rooms. games ">
+    <a class="project-row" href="/cards/">
+      <div><h3>Card Table Workshop</h3><p>A card game design workbench: 31 playable games, rules and triggers, bluffing bots, and online rooms.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-09-26">Sep 26, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/scoundrel/" data-search="scoundrel a solo dungeon crawl with 44 illustrated encounters, an oracle solver, and outcome reports. games ">
+    <a class="project-row" href="/scoundrel/">
+      <div><h3>Scoundrel</h3><p>A solo dungeon crawl with 44 illustrated encounters, an oracle solver, and outcome reports.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-22">Oct 22, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/scoundrel/gallery/" data-search="scoundrel card gallery browse the illustrated ash &amp; briar card collection. games ">
+    <a class="project-row" href="/scoundrel/gallery/">
+      <div><h3>Scoundrel Card Gallery</h3><p>Browse the illustrated Ash &amp; Briar card collection.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-22">Oct 22, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/scoundrel/reports/" data-search="scoundrel reports explore solver outcomes and replay recorded runs. games ">
+    <a class="project-row" href="/scoundrel/reports/">
+      <div><h3>Scoundrel Reports</h3><p>Explore solver outcomes and replay recorded runs.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-10-22">Oct 22, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/games/aperiodic-minesweeper/" data-search="aperiodic minesweeper an early experiment drawing aperiodic hat tiles on a triangular grid. games prototype">
+    <a class="project-row" href="/games/aperiodic-minesweeper/">
+      <div><h3>Aperiodic Minesweeper</h3><span class="project-kind">Prototype</span><p>An early experiment drawing aperiodic hat tiles on a triangular grid.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2023-05-11">May 11, 2023</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/games/cardsweeper/" data-search="cardsweeper a console-based push-your-luck card game prototype. games prototype">
+    <a class="project-row" href="/games/cardsweeper/">
+      <div><h3>Cardsweeper</h3><span class="project-kind">Prototype</span><p>A console-based push-your-luck card game prototype.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2023-05-11">May 11, 2023</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/games/guessjack/" data-search="guessjack an archived, unfinished card game experiment. games prototype">
+    <a class="project-row" href="/games/guessjack/">
+      <div><h3>GuessJack</h3><span class="project-kind">Prototype</span><p>An archived, unfinished card game experiment.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2023-05-11">May 11, 2023</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/games/word-hunt/" data-search="word hunt an unfinished word game created around a valentine message. games prototype">
+    <a class="project-row" href="/games/word-hunt/">
+      <div><h3>Word Hunt</h3><span class="project-kind">Prototype</span><p>An unfinished word game created around a Valentine message.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2023-02-13">Feb 13, 2023</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/games/blus-adventure/" data-search="blu’s adventure a physics platformer starring a little blue character. games ">
+    <a class="project-row" href="/games/blus-adventure/">
+      <div><h3>Blu’s Adventure</h3><p>A physics platformer starring a little blue character.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2021-12-22">Dec 22, 2021</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/games/tft/" data-search="tft experiment an archived teamfight tactics starter file; no playable game was completed. games prototype">
+    <a class="project-row" href="/games/tft/">
+      <div><h3>TFT Experiment</h3><span class="project-kind">Prototype</span><p>An archived Teamfight Tactics starter file; no playable game was completed.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2019-06-30">Jun 30, 2019</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li></ul></section>
+<section class="project-section" id="music" aria-labelledby="heading-music"><div class="project-section-head"><div><h2 id="heading-music">Music</h2><p>Training your ears. Exploring sound.</p></div><a href="/music/">Open hub ↗</a></div><ul class="project-list"><li data-project="/microtonal-lab/" data-search="microtonal lab interactive tuning explorer and browser instrument for equal, just, and world scales. music ">
+    <a class="project-row" href="/microtonal-lab/">
+      <div><h3>Microtonal Lab</h3><p>Interactive tuning explorer and browser instrument for equal, just, and world scales.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-06-29">Jun 29, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml" data-search="jazz piano ml python tools for midi preparation and a symbolic jazz piano transformer. music source">
+    <a class="project-row" href="https://github.com/mathewseng/mathewseng.github.io/tree/main/jazz-piano-ml">
+      <div><h3>Jazz Piano ML</h3><span class="project-kind">Source</span><p>Python tools for MIDI preparation and a symbolic jazz piano transformer.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-09-26">Sep 26, 2026</time></span><span>Updated <time datetime="2026-09-26">Sep 26, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/music/ear-training/" data-search="ear training practice recognizing notes and intervals, or keeping time with a rhythm exercise. music ">
+    <a class="project-row" href="/music/ear-training/">
+      <div><h3>Ear Training</h3><p>Practice recognizing notes and intervals, or keeping time with a rhythm exercise.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2021-11-26">Nov 26, 2021</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/music/perception-test/" data-search="perception test test pitch and timing perception with adjustable listening challenges. music ">
+    <a class="project-row" href="/music/perception-test/">
+      <div><h3>Perception Test</h3><p>Test pitch and timing perception with adjustable listening challenges.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-02-25">Feb 25, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/music/chord-net/" data-search="chordnet an archived sketch for evaluating and generating chords. music prototype">
+    <a class="project-row" href="/music/chord-net/">
+      <div><h3>ChordNet</h3><span class="project-kind">Prototype</span><p>An archived sketch for evaluating and generating chords.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2022-03-10">Mar 10, 2022</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/music/ewi-fingerings/" data-search="ewi fingerings a visual reference for electronic wind instrument fingerings. music ">
+    <a class="project-row" href="/music/ewi-fingerings/">
+      <div><h3>EWI Fingerings</h3><p>A visual reference for electronic wind instrument fingerings.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2019-06-19">Jun 19, 2019</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/music/musical-masterpieces/" data-search="musical masterpieces a high school project exploring american music from 1914 to 1945. music ">
+    <a class="project-row" href="/music/musical-masterpieces/">
+      <div><h3>Musical Masterpieces</h3><p>A high school project exploring American music from 1914 to 1945.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2019-02-12">Feb 12, 2019</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li></ul></section>
+<section class="project-section" id="tools" aria-labelledby="heading-tools"><div class="project-section-head"><div><h2 id="heading-tools">Tools &amp; experiments</h2><p>Useful little things and curious diversions.</p></div><a href="/tools/">Open hub ↗</a></div><ul class="project-list"><li data-project="/gym/" data-search="gym tracker recovery-aware training calendar with workout history, progress charts, goals, and nutrition. tools ">
+    <a class="project-row" href="/gym/">
+      <div><h3>Gym Tracker</h3><p>Recovery-aware training calendar with workout history, progress charts, goals, and nutrition.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-07-28">Jul 28, 2026</time></span><span>Updated <time datetime="2026-10-21">Oct 21, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/tools/mandelbrot/" data-search="mandelbrot explorer explore the mandelbrot set with keyboard controls for zoom and movement. tools ">
+    <a class="project-row" href="/tools/mandelbrot/">
+      <div><h3>Mandelbrot Explorer</h3><p>Explore the Mandelbrot set with keyboard controls for zoom and movement.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2019-01-08">Jan 8, 2019</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/tools/sbeve/" data-search="sbeve find a phrase hidden inside the shortest passage of a longer text. tools ">
+    <a class="project-row" href="/tools/sbeve/">
+      <div><h3>Sbeve</h3><p>Find a phrase hidden inside the shortest passage of a longer text.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2019-04-01">Apr 1, 2019</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li>
+<li data-project="/tools/bank-discrepancy/" data-search="bank discrepancy allocator split a bank discrepancy across participants with adjustable weights. tools ">
+    <a class="project-row" href="/tools/bank-discrepancy/">
+      <div><h3>Bank Discrepancy Allocator</h3><p>Split a bank discrepancy across participants with adjustable weights.</p></div>
+      <div class="project-dates"><span>Created <time datetime="2026-02-09">Feb 9, 2026</time></span><span>Updated <time datetime="2026-10-22">Oct 22, 2026</time></span></div><span class="project-arrow" aria-hidden="true">↗</span>
+    </a>
+  </li></ul></section>
+          <p class="directory-empty" id="directory-empty" hidden>No projects match your search. Try a name or a category.</p>
+        </div>
+      </div>
+    </main>
+    <footer class="directory-footer"><span>Created dates follow the first recorded commit. Updated dates follow project changes.</span><span>Older projects from matheweon.github.io</span></footer>
+  </div>
+</body>
 </html>

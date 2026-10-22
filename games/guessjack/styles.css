@@ -1,0 +1,14 @@
+body {
+  background-color: black;
+}
+
+h1 {
+    color: white;
+    font-family: Verdana;
+}
+body.legacy-project { min-height: 100svh; height: auto; overflow: auto; background: var(--page); color: var(--ink); }
+.archive-intro { max-width: 750px; margin: clamp(36px, 8vw, 110px) auto; padding: 24px; text-align: left; }
+.archive-intro h1 { color: var(--ink) !important; font-size: clamp(36px, 7vw, 68px); margin: 12px 0 24px; text-align: left; }
+.archive-intro p { display: block; color: var(--muted) !important; font-size: 18px; line-height: 1.7; text-align: left; }
+.archive-intro .archive-label { color: var(--accent) !important; text-transform: uppercase; font-size: 12px; letter-spacing: .15em; }
+.archive-source { display: inline-flex; align-items: center; min-height: 44px; margin-top: 20px; color: var(--accent); }

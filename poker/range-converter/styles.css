@@ -1,0 +1,11 @@
+.legacy-stage { max-width: 980px; margin: 2.5rem auto; padding: 0 1.5rem 3rem; }
+.legacy-stage h1 { font-size: clamp(2rem, 5vw, 3.4rem); margin: .5rem 0 1rem; letter-spacing: -.04em; }
+.legacy-stage p { color: var(--muted); line-height: 1.7; }
+.legacy-stage label { display: block; font-weight: 650; margin: 1.8rem 0 .75rem; }
+#input { width: 100%; min-height: 150px; padding: 1rem; resize: vertical; font: 15px/1.6 var(--font-mono); }
+.range-output { padding: 1.2rem 0; border-top: 1px solid var(--line); }
+.copy-container { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.copy-container h2 { font-size: 1.1rem; margin: 0; }
+.range-value { overflow-wrap: anywhere; font: 14px/1.8 var(--font-mono); color: var(--ink); min-height: 30px; padding-top: .8rem; }
+.range-value:empty::before { content: '—'; color: var(--soft); }
+.eyebrow { font-size: .8rem; letter-spacing: .15em; }

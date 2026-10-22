@@ -1,0 +1,123 @@
+body {
+    margin: 0px !important;
+}
+
+html {
+    background-color: black;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+svg {
+    margin-left: var(--svgMargin);
+}
+
+text {
+    fill: white;
+    font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+    font-size: var(--textSize);
+    font-weight: 500;
+    text-anchor: middle;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.gridText {
+    font-size: var(--gridTextSize);
+}
+
+.key {
+    fill: #888;
+}
+
+.key.hover:not(.spade):not(.heart):not(.diamond):not(.club) {
+    fill: #555;
+}
+
+.key.hover, text.hover, .suitG.hover {
+    cursor: pointer;
+}
+
+.spade:not(.hover), .suitShape.spade.hover {
+    fill: #4f4f4f;
+}
+
+.key.spade.hover, .suitShape.spade, .spade.dark{
+    fill: #2f2f2f;
+}
+
+.heart:not(.hover), .suitShape.heart.hover {
+    fill: #8b0901;
+}
+
+.key.heart.hover, .suitShape.heart, .heart.dark {
+    fill: #54130a;
+}
+
+.diamond:not(.hover), .suitShape.diamond.hover {
+    fill: #283ac4;
+}
+
+.key.diamond.hover, .suitShape.diamond, .diamond.dark {
+    fill: #182376;
+}
+
+.club:not(.hover), .suitShape.club.hover {
+    fill: #52ac2a;
+}
+
+.key.club.hover, .suitShape.club, .club.dark {
+    fill: #2f6818;
+}
+
+.invalid {
+    fill: red;
+}
+
+.boxDark {
+    stroke: #131313;
+}
+
+.boxMed {
+    stroke: #191919;
+}
+
+.boxLight {
+    stroke: #242424;
+}
+
+.auxButton {
+    stroke: #444;
+}
+
+.auxButton.hover {
+    stroke: #fff;
+    cursor: pointer;
+}
+
+text.auxButton, .eye.auxButton {
+    fill: #444;
+}
+
+text.auxButton.hover, .eye.auxButton.hover {
+    fill: #fff;
+}
+
+.bigBox {
+    stroke: #212121;
+}
+/* Imported app shell: retain canvas geometry without clipping navigation. */
+html, body { height: auto; min-height: 100%; overflow: auto; }
+body.legacy-project { margin: 0 !important; }
+.legacy-stage { overflow: auto; max-width: 100%; }
+.legacy-stage > svg { display: block; }
+.prototype-note { max-width: 65rem; margin: 1rem auto; padding: 0 1rem; color: var(--ink); }
+.prototype-note p { color: var(--muted); }
