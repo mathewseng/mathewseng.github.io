@@ -3,7 +3,7 @@
 // plausible single step directly from point arithmetic: dice-use rules matter.
 export function selectedDie(candidates, preferred, dice = []) {
   const available = new Set(candidates.map(step => step.die));
-  return [preferred, ...dice].find(die => available.has(die)) ?? null;
+  return [preferred, ...[...dice].sort((a, b) => b - a)].find(die => available.has(die)) ?? null;
 }
 
 export function advancedAction({ point, checker, candidates, returns, checkerReturns = [], routes = [], preferred, dice, turn }) {
