@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "signature": "0294775ccc5713adcddbe80e50b70319cf315bb3c3f5fd358e22e0002be15a72",
+  "status": "aborted-for-implementation-correctness",
+  "completedBatches": 269,
+  "completedTrials": 8608,
+  "plannedBatches": 5120,
+  "plannedTrials": 163840,
+  "rawSHA256": "852caef4d73a6cb589ab10b71674629f43344b1b4aa0bfc1b726c71b077fc070",
+  "rawBytes": 166891,
+  "outcomesInspectedBeforeAbort": false,
+  "reason": "Deterministic cache regression reproduced incompatible checker-policy contexts sharing a cubeful cache entry. Collection stopped before any interim EV inspection. These partial results are retained for audit only and excluded from inference. Replacement experiment will use fresh seeds and a separate cache-only control.",
+  "replacementExcludesEntirePlannedSeedSet": true
+}

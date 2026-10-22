@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "binarySHA256": "492649aac0d81ee61c7ca82ab7e56f1aecc93f9d8140d02f6033a3b9855d0919",
+  "validationScriptSHA256": "1b4c559550504561babbbcd310e351ec72aa34860b44081d44c24cbe2a1f0e82",
+  "kind": "deterministic search-node cache regression; no study samples",
+  "tolerance": 1e-05,
+  "keyValidation": {
+    "distinctPolicyKeys": 744,
+    "matchGuardsPass": true
+  },
+  "cases": [
+    {
+      "cacheContext": 0,
+      "capturedNodes": 45,
+      "actualQueryHits": 45,
+      "incorrectActualHits": 27,
+      "maxActualError": 0.00228506327,
+      "incorrectReplayQueries": 27,
+      "maxReplayError": 0.00228506327,
+      "role": "previous-choice"
+    },
+    {
+      "cacheContext": 1,
+      "capturedNodes": 45,
+      "actualQueryHits": 0,
+      "incorrectActualHits": 0,
+      "maxActualError": 0,
+      "incorrectReplayQueries": 0,
+      "maxReplayError": 0,
+      "role": "previous-choice"
+    },
+    {
+      "cacheContext": 0,
+      "capturedNodes": 63,
+      "actualQueryHits": 63,
+      "incorrectActualHits": 33,
+      "maxActualError": 0.00173449516,
+      "incorrectReplayQueries": 33,
+      "maxReplayError": 0.00173449516,
+      "role": "xg-choice"
+    },
+    {
+      "cacheContext": 1,
+      "capturedNodes": 63,
+      "actualQueryHits": 0,
+      "incorrectActualHits": 0,
+      "maxActualError": 0,
+      "incorrectReplayQueries": 0,
+      "maxReplayError": 0,
+      "role": "xg-choice"
+    }
+  ]
+}

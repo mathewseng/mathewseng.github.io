@@ -1,0 +1,419 @@
+{
+  "schema": 1,
+  "binarySHA256": "492649aac0d81ee61c7ca82ab7e56f1aecc93f9d8140d02f6033a3b9855d0919",
+  "seed": 31811004,
+  "trialsPerCase": 2,
+  "excludedFromStudy": true,
+  "cases": [
+    {
+      "name": "previous-choice|legacy",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.75336504,
+        "cubeless": 0.50171679,
+        "probabilities": [
+          0.66004473,
+          0.22443126,
+          0.02337042,
+          0.06243293,
+          0.00374231
+        ],
+        "mwc": null,
+        "standardError": 0.37440729,
+        "mwcStandardError": 0.0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          63,
+          120,
+          0
+        ],
+        "cacheContext": 0
+      }
+    },
+    {
+      "name": "previous-choice|cache",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.75336504,
+        "cubeless": 0.50171679,
+        "probabilities": [
+          0.66004473,
+          0.22443126,
+          0.02337042,
+          0.06243293,
+          0.00374231
+        ],
+        "mwc": null,
+        "standardError": 0.37440729,
+        "mwcStandardError": 0.0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          63,
+          120,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "previous-choice|matched",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.75336504,
+        "cubeless": 0.50171679,
+        "probabilities": [
+          0.66004473,
+          0.22443126,
+          0.02337042,
+          0.06243292,
+          0.00374231
+        ],
+        "mwc": null,
+        "standardError": 0.37440729,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          60,
+          2,
+          1,
+          0,
+          0,
+          0,
+          0,
+          63,
+          120,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "previous-choice|wide",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.84080815,
+        "cubeless": 0.53149259,
+        "probabilities": [
+          0.65868753,
+          0.22745317,
+          0.05283911,
+          0.06243291,
+          0.00374231
+        ],
+        "mwc": null,
+        "standardError": 0.28696418,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 1,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          51,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          53,
+          102,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "previous-choice|deep",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 3,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 3,
+        "lateCubePlies": 2,
+        "equity": 0.77537608,
+        "cubeless": 0.51983774,
+        "probabilities": [
+          0.65907711,
+          0.24700791,
+          0.01115455,
+          0.05397233,
+          0.00250696
+        ],
+        "mwc": null,
+        "standardError": 0.01963305,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 2,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          24,
+          2,
+          2,
+          0,
+          0,
+          0,
+          0,
+          28,
+          48,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "xg-choice|legacy",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.2014218,
+        "cubeless": 0.2634497,
+        "probabilities": [
+          0.56589812,
+          0.23544505,
+          0.00730644,
+          0.10653371,
+          0.00456486
+        ],
+        "mwc": null,
+        "standardError": 0.01325506,
+        "mwcStandardError": 0.0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          71,
+          138,
+          0
+        ],
+        "cacheContext": 0
+      }
+    },
+    {
+      "name": "xg-choice|cache",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.2014218,
+        "cubeless": 0.2634497,
+        "probabilities": [
+          0.56589812,
+          0.23544505,
+          0.00730644,
+          0.10653371,
+          0.00456486
+        ],
+        "mwc": null,
+        "standardError": 0.01325506,
+        "mwcStandardError": 0.0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          71,
+          138,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "xg-choice|matched",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.20142192,
+        "cubeless": 0.2634497,
+        "probabilities": [
+          0.56589812,
+          0.23544505,
+          0.00730643,
+          0.10653371,
+          0.00456486
+        ],
+        "mwc": null,
+        "standardError": 0.01325494,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          69,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          71,
+          138,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "xg-choice|wide",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.20142168,
+        "cubeless": 0.26344952,
+        "probabilities": [
+          0.56589818,
+          0.23544508,
+          0.00730641,
+          0.10653371,
+          0.00456486
+        ],
+        "mwc": null,
+        "standardError": 0.0132547,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 1,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          69,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          71,
+          138,
+          0
+        ],
+        "cacheContext": 1
+      }
+    },
+    {
+      "name": "xg-choice|deep",
+      "value": {
+        "samples": 2,
+        "checkerPlies": 3,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 3,
+        "lateCubePlies": 2,
+        "equity": 0.49836206,
+        "cubeless": 0.46291572,
+        "probabilities": [
+          0.62477756,
+          0.25807393,
+          0.05561299,
+          0.09847721,
+          0.00184882
+        ],
+        "mwc": null,
+        "standardError": 0.20689631,
+        "mwcStandardError": 0.0,
+        "rulesMode": 3,
+        "filter": 2,
+        "vrPlies": 1,
+        "maxCube": 4,
+        "cubeActions": [
+          64,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          68,
+          129,
+          0
+        ],
+        "cacheContext": 1
+      }
+    }
+  ]
+}
