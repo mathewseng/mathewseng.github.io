@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { XGReferenceBook } from "../engine/xg-reference-book.mjs";
 import { RolloutOpeningBook } from "../engine/rollout-book.mjs";
 import { Board } from './board.mjs';
 import { OpeningGuideData, openingSummary, openingIdea, previewPosition } from './opening-guide-data.mjs';
@@ -33,7 +34,7 @@ function die(value) {
 
 export function openingGuide(root) {
   const $ = id => root.querySelector(`#${id}`);
-  const data = new OpeningGuideData(undefined, { rolloutBook: new RolloutOpeningBook() }), board = new Board($('opening-board'));
+  const data = new OpeningGuideData(undefined, { rolloutBook: new RolloutOpeningBook(), referenceBook: new XGReferenceBook() }), board = new Board($('opening-board'));
   const picker = $('opening-rolls'), list = $('opening-moves'), panel = $('opening-panel');
   let openings, position, mode='opening', openingRoll='31', replyRoll='31';
   let openingChoice=0, replyChoice=0, replySide=0, before=false, generation=0, pickerKey=null;
@@ -141,15 +142,18 @@ export function openingGuide(root) {
     const roll=mode==='opening'?openingRoll:replyRoll;
     root.dataset.mode=mode;root.dataset.roll=roll;
     $('opening-heading').textContent=`${mode==='opening'?'White opens':`${replySide?'Black':'White'} replies`} ${diceLabel(roll)}`;
-    $('opening-method').textContent=position.method==='rollout'?`Rollout · ${position.trials} trials`:`GNUbg · ${position.plies} ply`;
+    $('opening-method').textContent=position.method==='reference'?'XG · published reference':position.method==='rollout'?`GNUbg rollout · ${position.trials} trials`:`GNUbg · ${position.plies} ply`;
+    const source=$('opening-source');
+    source.hidden=!position.reference;
+    if(position.reference){source.href=position.reference.url;source.textContent='View this position in XG’s published book ↗';}
     $('opening-window').textContent=`Close = within ${position.threshold.toFixed(3)} of best`;
     $('opening-empty').hidden=position.moves.length>1;
     list.replaceChildren(...position.moves.map((move,i) => {
       const row=node('button',{type:'button',class:'opening-move','data-choice':i,'aria-pressed':String(i===choice()),
-        'aria-label':`${move.notation}. ${openingIdea(position,i)} Equity ${format(move.equity)}${Number.isFinite(move.standardError)?`, approximate 95 percent sampling interval plus or minus ${(1.96*move.standardError).toFixed(3)}`:''}, ${move.loss===0?'best estimate':`estimated loss ${lossLabel(move.loss)}`}`},
+        'aria-label':`${move.notation}. ${openingIdea(position,i)} Equity ${format(move.equity)}${Number.isFinite(move.referenceHalfWidth)?`, XG published bound plus or minus ${move.referenceHalfWidth.toFixed(3)}`:Number.isFinite(move.standardError)?`, approximate 95 percent sampling interval plus or minus ${(1.96*move.standardError).toFixed(3)}`:''}, ${move.loss===0?'best estimate':`estimated loss ${lossLabel(move.loss)}`}`},
         node('span',{class:'opening-notation'},node('span',{class:'opening-rank'},String(i+1)),
           node('span',{},node('strong',{},move.notation),node('span',{class:'opening-move-idea'},openingIdea(position,i)))),
-        node('span',{class:'opening-equity'},format(move.equity),...(Number.isFinite(move.standardError)?[node('span',{class:'opening-interval'},`±${(1.96*move.standardError).toFixed(3)}`)]:[])),
+        node('span',{class:'opening-equity'},format(move.equity),...(Number.isFinite(move.referenceHalfWidth)?[node('span',{class:'opening-interval'},`±${move.referenceHalfWidth.toFixed(3)}`)]:Number.isFinite(move.standardError)?[node('span',{class:'opening-interval'},`±${(1.96*move.standardError).toFixed(3)}`)]:[])),
         node('span',{class:move.loss===0?'opening-best':'opening-loss'},lossLabel(move.loss)));
       row.addEventListener('click',() => {
         if (mode==='opening') openingChoice=i; else replyChoice=i;
@@ -160,7 +164,7 @@ export function openingGuide(root) {
     list.scrollTop=0;
     $('opening-solver').href=shareURL(position.state);
     $('opening-next').hidden=mode==='reply';
-    $('opening-position-note').textContent=(mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.')+(position.method==='rollout'?' EV intervals show approximate 95% sampling uncertainty; model and screening error are excluded.':'');
+    $('opening-position-note').textContent=(mode==='reply' ? `The board faces ${replySide?'Black':'White'}, moving toward point 1.` : 'Arrows show the move; dotted checkers show where it began.')+(position.method==='reference'?' XG reference · Jacoby and beavers on. Intervals are XG’s published bounds where provided; other entries use XGRoller++ estimates.':position.method==='rollout'?' GNUbg fallback · beavers off. EV intervals show approximate 95% sampling uncertainty; model and screening error are excluded.':' GNUbg fallback · beavers off.');
     panel.hidden=false;
     preview();
   }

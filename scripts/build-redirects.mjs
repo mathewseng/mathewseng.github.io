@@ -14,6 +14,16 @@ if (!siteDir) {
 const redirects = JSON.parse(readFileSync(new URL("../redirects.json", import.meta.url), "utf8"));
 
 for (const [from, to] of Object.entries(redirects)) {
+  // Fragments never reach the server. The surviving page handles these links
+  // in its own versioned source, so assembly must not overwrite that page.
+  if (from.includes("#")) {
+    const page = join(siteDir, from.split("#")[0], "index.html");
+    const source = existsSync(page) ? readFileSync(page, "utf8") : "";
+    if (!source.includes(`data-fragment-redirect="${from}"`) || !source.includes(JSON.stringify(to)))
+      throw new Error(`Missing source-managed fragment redirect: ${from} -> ${to}`);
+    console.log(`${from} -> ${to} (fragment)`);
+    continue;
+  }
   const page = join(siteDir, from, "index.html");
   if (existsSync(page)) {
     console.error(`Refusing to overwrite a real page at ${from} with a redirect to ${to}`);

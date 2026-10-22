@@ -1,0 +1,13 @@
+# Published XG reference book
+
+The user selected XG reference values as the study-book source, with explicit attribution and GNUbg fallback. `build-xg-reference-book.mjs` packages the collected book 3.70 (2013) from [XG’s opening-book page](https://www.extremegammon.com/Openingbook.aspx), which permits free use even without an XG purchase. This is data reuse, not XG code or a reimplementation of its proprietary evaluator.
+
+The source contains 729 decisions (15 openings and 714 replies) and 2,584 candidate values. Exact published equities, marginal confidence bounds, probabilities, method, trial counts and source links are retained. Its finite rollouts and XGRoller++ evaluations are estimates. Every candidate is matched to a legal resulting board rather than compared by notation string. The source’s inconsistent opening 6–5 XGID is normalized to the standard opening position; the original and correction remain in the collected source. The packaged file records the source SHA-256 and retrieval timestamp.
+
+The Openings page uses source-listed moves within 0.040 equity of the highest listed value. XG’s rankings win ties by published rank. It does not fill unlisted alternatives with another engine’s values. Published marginal bounds are shown directly; they are not converted into paired move-gap confidence intervals. Numerical agreement with imported data is a fidelity check, not an accuracy experiment.
+
+Reference rules are money play, Jacoby and beavers on, raccoons off, centered cube 1. Study previews and Solver exports retain these rules. Live book lookup enforces them; ordinary-cube and match contexts remain on GNUbg. A submitted move not listed by XG falls back as a complete GNUbg comparison under the live position’s rules, without a mixed-source grade. Missing XG assets also leave live GNUbg available.
+
+The study guide’s GNUbg fallback uses the existing beavers-off book and says so. A separate five-ply supplement covers all 21 replies after 5–1 24/18, a close XG opening absent from both reply books. Its reproducible native search evaluates every legal move at three plies, the top ten plus the 0.080 window at four plies, then the union of three/four-ply top two and 0.040-window moves at five plies. It preserves the original deep-book entries and provenance. This fallback has no XG reference to compare against.
+
+`xg-reference-book.test.mjs` checks all published values and legal moves in both orientations, source hash, rule rejection, consistent grading and coverage. The independent 32,768-trial six-reply study still uses the unchanged GNUbg policy and its predeclared seeds/sample. Its result cannot be inferred from this import. Independent GNUbg agreement and the 0.005 EV audit remain visible in the report.

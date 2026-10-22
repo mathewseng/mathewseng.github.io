@@ -1,4 +1,5 @@
 {
+  "/backgammon/#openings": "/backgammon/openings/",
   "/blackjack-strategy/": "/blackjack/strategy/",
   "/edge-the-dealer/": "/poker/edge-the-dealer/",
   "/ofc-solver/": "/ofc/fantasyland-trainer/",

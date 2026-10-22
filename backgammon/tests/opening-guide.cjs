@@ -10,7 +10,7 @@ module.exports=async function openingGuide(browser,base,out,name){
     page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
     const activate=locator=>touch?locator.tap():locator.click();
     try{
-      await page.goto(base+'/backgammon/#openings');
+      await page.goto(base+'/backgammon/openings/');
       await page.locator('#opening-panel').waitFor({state:'visible'});
       const matrix=async()=>{
         const cells=await page.locator('#opening-rolls button').evaluateAll(ns=>ns.map(n=>({
@@ -143,7 +143,7 @@ module.exports=async function openingGuide(browser,base,out,name){
       assert.ok((await page.locator('#opening-caption').textContent()).includes(selected));
       const state=JSON.parse(new URLSearchParams(new URL(await page.locator('#opening-solver').getAttribute('href')).hash.slice(1)).get('state'));
       assert.equal(state.turn,0);assert.deepEqual(state.dice,[6,4]);
-      assert.equal(state.rules.immediateRedoubles,0);
+      assert.equal(state.rules.immediateRedoubles,1);
       await page.locator('#openings').screenshot({path:path.join(out,`${name}-opening-replies-${layout}.png`)});
       const whiteNotation=await page.locator('#opening-moves button').first().locator('strong').textContent();
       await activate(page.locator('#opening-side [data-side="1"]'));
@@ -165,8 +165,8 @@ module.exports=async function openingGuide(browser,base,out,name){
       await page.keyboard.press('Enter');
       assert.equal(await page.locator('#openings').getAttribute('data-roll'),'31','keyboard can change roll');
       assert.equal(await page.evaluate(async()=> (await (await import('/backgammon/core/storage.mjs')).get('work','opening-guide-test')).sentinel),'unchanged');
-      assert.equal(requests.filter(u=>u.includes('/opening-book-data/deep/index.json')).length,1);
-      assert.equal(requests.filter(u=>/\/opening-book-data\/deep\/reply-/.test(u)).length,1,'all 21 replies share a single position file');
+      assert.equal(requests.filter(u=>u.includes('/opening-book-data/deep/index.json')).length,0,'reference coverage does not depend on GNUbg assets');
+      assert.equal(requests.filter(u=>u.includes('/opening-book-data/xg/index.json')).length,1,'all reference replies share one cached source book');
       // This reply has many close alternatives. Keep all of them readable at 320px,
       // and keep the color band proportional even when its row grows taller.
       await activate(page.locator('#opening-rolls [data-roll="36"]'));
@@ -232,15 +232,16 @@ module.exports=async function openingGuide(browser,base,out,name){
   // slow reply cannot overwrite a newer roll or a return to the opening view.
   const context=await browser.newContext({serviceWorkers:'block',reducedMotion:'reduce'}),page=await context.newPage();
   try{
+    await page.route('**/opening-book-data/xg/index.json',route=>route.abort());
     let failIndex=true,failReply=true;
     await page.route('**/opening-book-data/deep/index.json',route=>failIndex?(failIndex=false,route.fulfill({status:503,body:''})):route.continue());
     await page.route('**/opening-book-data/deep/reply-*.json',async route=>{
       if(failReply){failReply=false;return route.fulfill({status:503,body:''});}
       await new Promise(r=>setTimeout(r,250));return route.continue();
     });
-    await page.goto(base+'/backgammon/#openings');
+    await page.goto(base+'/backgammon/openings/');
     await page.locator('#opening-retry').waitFor({state:'visible'});
-    assert.ok(await page.locator('#hub-play').isEnabled());
+    assert.ok(await page.getByRole('link',{name:'Play',exact:true}).isEnabled());
     await page.locator('#opening-retry').click();
     await page.locator('#opening-panel').waitFor({state:'visible'});
     await page.locator('#opening-replies').click();

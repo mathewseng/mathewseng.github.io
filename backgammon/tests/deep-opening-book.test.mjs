@@ -39,7 +39,7 @@ test('five-ply book has exhaustive openings and all replies after every close op
       assert.equal(reverse.perspective,1);count++;
     }
   }
-  assert.equal(count,index.provenance.coverage.replyRolls);
+  assert.equal(count,index.provenance.coverage.replyRolls+(index.provenance.xgCoverageSupplement?.replyRolls||0));
 });
 test('runtime prefers deep book without WASM, grades listed moves consistently, and preserves historical fallbacks',async()=>{
   const book=new OpeningBook({fetcher,preferDeep:true});

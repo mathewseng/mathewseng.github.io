@@ -5,7 +5,6 @@ import { initialState } from "./core/rules.mjs";
 import { get, all, settings } from "./core/storage.mjs";
 import { applyBoardTheme } from "./core/appearance.mjs";
 import { startUpdates } from "./ui/updates.mjs";
-import { openingGuide } from "./ui/opening-guide.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
@@ -26,7 +25,6 @@ addEventListener("storage", (e) => {
 });
 const board = new Board(document.getElementById("hub-board"));
 board.render(initialState(), { ...settings(), interactive: false });
-openingGuide(document.getElementById("openings"));
 try {
   const recent = document.getElementById("recent"),
     saved = await get("work", "play"),

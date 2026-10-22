@@ -34,7 +34,7 @@ module.exports=async function(browser,base,out,name){
    if(width<600)await page.locator('#panel-toggle').click();
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.screenshot({path:path.join(out,`${name}-rollout-book-solver-${width}.png`),fullPage:true});
-   await page.goto(base+'/backgammon/#openings');await page.locator('#opening-method').filter({hasText:'Rollout'}).waitFor();
+   await page.goto(base+'/backgammon/openings/');await page.locator('#opening-method').filter({hasText:'XG'}).waitFor();
    assert.ok(await page.locator('.opening-interval').count()>0);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.locator('#openings').screenshot({path:path.join(out,`${name}-rollout-book-guide-${width}.png`)});

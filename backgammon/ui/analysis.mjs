@@ -60,6 +60,10 @@ export function resultView(
         `${insight.changed === true ? "Best move changed since " + insight.previousName + ". " : insight.changed === false ? "Best move unchanged since " + insight.previousName + ". " : ""}${insight.close ? (result.method === "rollout" ? "Leaders overlap within sampling uncertainty." : "Close decision · under 0.020 equity apart.") : ""}`.trim(),
       ),
     );
+  if (result.method === "reference")
+    node.append(el("p", {class:"notice small"}, "Imported XG reference · ",
+      el("a", {href:result.reference.url,target:"_blank",rel:"noopener"}, "Published source"),
+      `. ${result.reference.rules}. ${result.reference.listed} source-listed alternatives; finite rollouts and XGRoller++ estimates. This is not a new engine evaluation.`));
   if (result.method === "rollout")
     node.append(
       el(
@@ -148,6 +152,8 @@ export function resultView(
             `Δ ${equity(c.equity - result.candidates[0].equity)} · win ${percentage(c.probabilities[0])}`,
           ),
         );
+        if (result.method === "reference")
+          b.append(el("div", {class:"small"}, `${c.referenceMethod}${c.referenceTrials ? ` · ${c.referenceTrials.toLocaleString()} trials` : ''}${Number.isFinite(c.referenceHalfWidth) ? ` · published ±${c.referenceHalfWidth.toFixed(4)} equity` : ''}`));
         if (result.method === "rollout")
           b.append(
             el(
@@ -252,7 +258,7 @@ export function resultView(
     el(
       "p",
       { class: "muted small" },
-      `${result.settings.name} · ${result.method === "rollout" ? `${result.settings.trials} trials` : `${result.settings.plies} ply`} · ${(result.elapsedMs / 1000).toFixed(2)} s${result.book ? ` · precomputed opening book${result.book.stage === "third-turn" ? " (turn 3)" : result.book.stage === "fourth-turn" ? " (turn 4)" : ""}` : result.cached ? " · cached" : ""}. ${result.units === "current-cube-points" ? "Equity is in current-cube points." : "Main value is match-winning chance; Δ is normalized match equity."} Values use ${playerName(result.perspective)}’s player-on-roll perspective. Cubeless equity and engine metadata are included in saved results.`,
+      `${result.settings.name} · ${result.method === "reference" ? "published book 3.70 (2013)" : result.method === "rollout" ? `${result.settings.trials} trials` : `${result.settings.plies} ply`} · ${(result.elapsedMs / 1000).toFixed(2)} s${result.book ? ` · precomputed opening book${result.book.stage === "third-turn" ? " (turn 3)" : result.book.stage === "fourth-turn" ? " (turn 4)" : ""}` : result.cached ? " · cached" : ""}. ${result.units === "current-cube-points" ? "Equity is in current-cube points." : "Main value is match-winning chance; Δ is normalized match equity."} Values use ${playerName(result.perspective)}’s player-on-roll perspective. Cubeless equity and engine metadata are included in saved results.`,
     ),
   );
   return node;

@@ -328,7 +328,7 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            `${result.settings.name} · ${result.settings.plies} ply · ${playerName(f.perspective)}`,
+            `${result.settings.name} · ${result.method === "reference" ? "published XG book" : `${result.settings.plies} ply`} · ${playerName(f.perspective)}`,
           ),
           lossSummary(f),
           decisionValues(f, false, {
@@ -389,7 +389,7 @@ export function decisionReview(
         el(
           "p",
           { class: "muted small" },
-          `${freshReview ? "Fresh · " : ""}${result.settings.name} · ${result.settings.plies} ply · ${playerName(source.turn)}’s perspective`,
+          `${freshReview ? "Fresh · " : ""}${result.settings.name} · ${result.method === "reference" ? "published XG book" : `${result.settings.plies} ply`} · ${playerName(source.turn)}’s perspective`,
         ),
       );
       if (result.actual) {
@@ -458,7 +458,7 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s computation${result.cached ? " · cached" : ""}. ${result.evaluatedCount ?? result.candidates.length} legal resulting positions evaluated; small differences are estimates.`,
+            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s computation${result.cached ? " · cached" : ""}. ${result.evaluatedCount ?? result.candidates.length} ${result.method === "reference" ? "source-listed positions; imported XG values, Jacoby and beavers on" : "legal resulting positions evaluated"}; small differences are estimates.`,
           ),
         ),
       );

@@ -15,6 +15,7 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
       "play/",
       "trainer/",
       "solver/",
+      "openings/",
       "library/",
       "reports/",
       "controls/",
@@ -73,6 +74,14 @@ test("assembled site publishes the exact Backgammon solver exception and all eng
     ])
       assert.equal(existsSync(join(site, path)), false, path);
     assert.ok(existsSync(join(site, "shared/peer-room.js")));
+    const hub = readFileSync(join(site, "backgammon/index.html"), "utf8");
+    const redirect = hub.match(/<script data-fragment-redirect="\/backgammon\/#openings">([^<]+)<\/script>/)[1];
+    let redirected;
+    const location = {hash:"#openings",search:"?from=bookmark",replace:url=>{redirected=url;}};
+    runInNewContext(redirect, {location});
+    assert.equal(redirected,"/backgammon/openings/?from=bookmark#openings");
+    redirected=null;location.hash="#other";runInNewContext(redirect,{location});
+    assert.equal(redirected,null,"The hub survives unrelated fragments");
     const manifest = { self: {} };
     runInNewContext(
       readFileSync(join(site, "backgammon/offline-manifest.js"), "utf8"),

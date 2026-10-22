@@ -10,12 +10,12 @@
       content="Recorded GNUbg speed and accuracy measurements for the Backgammon analysis settings, and an on-device measurement."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=fd0ceff09c134978" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=fd0ceff09c134978" />
-    <link rel="stylesheet" href="../styles.css?bgv=fd0ceff09c134978" />
-    <link rel="stylesheet" href="../docs.css?bgv=fd0ceff09c134978" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=4a9afa3f2c538510" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=4a9afa3f2c538510" />
+    <link rel="stylesheet" href="../styles.css?bgv=4a9afa3f2c538510" />
+    <link rel="stylesheet" href="../docs.css?bgv=4a9afa3f2c538510" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="./app.js?bgv=fd0ceff09c134978"></script>
+    <script type="module" src="./app.js?bgv=4a9afa3f2c538510"></script>
   </head>
   <body class="docs-page docs-page--report">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -32,6 +32,7 @@
           <a href="/backgammon/play/">Play</a>
           <a href="/backgammon/trainer/">Trainer</a>
           <a href="/backgammon/solver/">Solver</a>
+          <a href="/backgammon/openings/">Openings</a>
           <a href="/backgammon/library/">Library</a>
           <a href="/backgammon/controls/" aria-current="true">Docs</a>
         </nav>
@@ -111,7 +112,7 @@
             </section>
             <section class="docs-section" id="opening-accuracy" aria-labelledby="opening-accuracy-heading">
               <h2 id="opening-accuracy-heading">Five-ply openings and replies vs XG</h2>
-              <p>Offline GNUbg analysis gives the opening guide a deeper reference than the browser's live search. This comparison checks whether the extra depth actually brings equity estimates closer to published XG results.</p>
+              <p>The Openings tab now uses explicitly attributed XG reference values for 729 published positions, with GNUbg fallback. The experiments below measure our independent GNUbg estimates; direct reference imports are excluded from accuracy claims. <a href="https://www.extremegammon.com/Openingbook.aspx">XG book and source terms</a>.</p>
               <div id="opening-accuracy-content"></div>
             </section>
             <section class="docs-section" id="rollout-accuracy" aria-labelledby="rollout-accuracy-heading">

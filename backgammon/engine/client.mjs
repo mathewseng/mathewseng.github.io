@@ -3,14 +3,14 @@ import { positionKey, boardKey, commitTurn } from "../core/rules.mjs";
 import { ENGINE_VERSION, PRESETS } from "./metadata.mjs";
 import { ADAPTIVE_SEARCH } from "./adaptive.mjs";
 import { bookEligible } from "./opening-book.mjs";
-import { RolloutOpeningBook } from "./rollout-book.mjs";
+import { PreferredOpeningBook } from "./xg-reference-book.mjs";
 // One worker, bounded LRU, priority queue. Termination is intentional: WASM calls are synchronous.
 export class EngineClient {
   constructor({
     workerFactory = () =>
       new Worker(new URL("./worker.mjs", import.meta.url), { type: "module" }),
     onStatus = () => {},
-    openingBook = new RolloutOpeningBook(),
+    openingBook = new PreferredOpeningBook(),
   } = {}) {
     this.factory = workerFactory;
     this.book = openingBook;
@@ -143,7 +143,7 @@ export class EngineClient {
     // Grading a move is a projection of that same result, not another WASM job.
     // Screened searches/rollouts still depend on the submitted move because
     // they must explicitly add it to their finalist set.
-    const tryBook = !!this.book && bookEligible(state, { preset, kind, rollout, useBook }) &&
+    const tryBook = !!this.book && (this.book.eligible?.(state, { preset, kind, rollout, useBook }) ?? bookEligible(state, { preset, kind, rollout, useBook })) &&
       (this.book.mayHave?.(state) ?? true);
     const sharedChecker =
       !tryBook && kind === "checker" && !rollout && PRESETS[preset]?.plies <= 2;
@@ -265,7 +265,7 @@ export class EngineClient {
     this.readings.delete(job.key);
     const value = candidate => candidate && ({key:candidate.key,equity:candidate.equity});
     // The rail needs numbers, not thousands of legal-step/probability arrays.
-    const reading = {status:result.status,type:result.type,settings:result.settings,
+    const reading = {status:result.status,type:result.type,settings:result.settings,method:result.method,engine:result.engine,reference:result.reference,
       perspective:result.perspective,units:result.units,available:result.available,
       outcomes:result.outcomes,decisionOptions:result.decisionOptions,decision:result.decision,
       candidates:result.candidates?.map(value),actual:value(result.actual)};
@@ -328,7 +328,7 @@ export class EngineClient {
           this.rememberReading(pending, result);
           while (this.cache.size > 64) this.cache.delete(this.cache.keys().next().value);
           pending.resolve(result);
-          this.onStatus("ready", `Opening book · ${result.method === "rollout" ? `${result.settings.trials} rollout trials` : `${result.settings.plies} ply`} · ready`);
+          this.onStatus("ready", `Opening book · ${result.method === "reference" ? "XG published reference" : result.method === "rollout" ? `${result.settings.trials} rollout trials` : `${result.settings.plies} ply`} · ready`);
           return;
         }
         this.active = null; this.queue.unshift(pending);

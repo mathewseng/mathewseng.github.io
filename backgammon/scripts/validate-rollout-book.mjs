@@ -19,6 +19,8 @@ for(const r of reference.rows){
  const sampled=result.book.id===ROLLOUT_BOOK_ID,best=result.candidates[0],xg=result.candidates.find(c=>c.key===r.referenceBest.board),chosen=r.commonMoves.find(c=>c.board===best.key);
  rows.push({id:r.id,kind:r.kind,book:result.book.id,method:result.method||'tree',policyId:sampled?result.settings.policyId:null,samples:sampled?result.settings.trials:null,
   agrees:best.key===r.referenceBest.board,move:best.notation,referenceMove:r.referenceBest.move,referenceSource:r.source,
+  referenceBestEquity:r.referenceBest.equity,referenceBestEstimate:xg?.equity??null,
+  commonCandidateEV:result.candidates.flatMap(c=>{const ref=r.commonMoves.find(m=>m.board===c.key);return ref?[{board:c.key,move:c.notation,equity:c.equity,referenceEquity:ref.xgEquity,difference:c.equity-ref.xgEquity,withinTolerance:Math.abs(c.equity-ref.xgEquity)<=.005}]:[];}),
   referenceBestDifference:xg?xg.equity-r.referenceBest.equity:null,selectedMoveReferenceLoss:chosen?r.referenceBest.equity-chosen.xgEquity:null});
  if(sampled){
   if(result.method!=='rollout'||result.settings.trials<512||result.candidates.some(c=>!Number.isFinite(c.standardError)||c.samples!==result.settings.trials))throw Error('Lost uncertainty/source');
@@ -33,7 +35,8 @@ for(const r of reference.rows){
 }
 const mean=xs=>xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null;
 const summaries=Object.fromEntries(['opening','reply'].map(kind=>{const subset=rows.filter(r=>r.kind===kind);return [kind,{positions:subset.length,bestMoveAgreement:subset.filter(r=>r.agrees).length,
- referenceBestEV:{n:subset.filter(r=>r.referenceBestDifference!==null).length,meanAbsoluteDifference:mean(subset.filter(r=>r.referenceBestDifference!==null).map(r=>Math.abs(r.referenceBestDifference)))},
+ referenceBestEV:{n:subset.filter(r=>r.referenceBestDifference!==null).length,tolerance:.005,withinTolerance:subset.filter(r=>r.referenceBestDifference!==null&&Math.abs(r.referenceBestDifference)<=.005).length,maximumAbsoluteDifference:Math.max(...subset.filter(r=>r.referenceBestDifference!==null).map(r=>Math.abs(r.referenceBestDifference))),meanAbsoluteDifference:mean(subset.filter(r=>r.referenceBestDifference!==null).map(r=>Math.abs(r.referenceBestDifference)))},
+ commonCandidateEV:{n:subset.flatMap(r=>r.commonCandidateEV).length,tolerance:.005,withinTolerance:subset.flatMap(r=>r.commonCandidateEV).filter(c=>c.withinTolerance).length,meanAbsoluteDifference:mean(subset.flatMap(r=>r.commonCandidateEV).map(c=>Math.abs(c.difference)))},
  meanSelectedMoveReferenceLoss:mean(subset.filter(r=>r.selectedMoveReferenceLoss!==null).map(r=>r.selectedMoveReferenceLoss)),fivePlyBaseline:reference.summaries[kind].depths['5']}];}));
 const indexFile=path.join(family,'engine/opening-book-data/rollout/index.json'),index=JSON.parse(fs.readFileSync(indexFile));
 const storedPolicies={};

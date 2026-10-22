@@ -33,7 +33,7 @@ const MIGRATED = new Set([
   "/ofc/play/", "/ofc/fantasyland-trainer/", "/ofc/fantasyland-ev/",
   "/blackjack/strategy/", "/dice/reports/", "/microtonal-lab/", "/cards/",
   "/backgammon/play/", "/backgammon/trainer/", "/backgammon/solver/", "/backgammon/library/",
-  "/backgammon/controls/", "/backgammon/reports/", "/backgammon/refresh/",
+  "/backgammon/openings/", "/backgammon/controls/", "/backgammon/reports/", "/backgammon/refresh/",
   "/gym/",
 ]);
 

@@ -24,7 +24,7 @@ function resultPosition(state,result,threshold){
   const moves = result.candidates.filter(c => best - c.equity <= threshold + 1e-8)
     .map(c => ({...c, ...presentMove(state,c.steps), loss:Math.max(0,best-c.equity)}));
   return {state, moves, threshold, plies:result.settings.plies, method:result.method||'tree',trials:result.settings.trials||null,
-    engine:result.engine,sourceName:result.settings.name,
+    engine:result.engine,sourceName:result.settings.name,reference:result.reference,
     total:result.candidates.length, screened:!!result.screening};
 }
 
@@ -36,9 +36,10 @@ export function buildOpenings(index) {
 }
 
 export class OpeningGuideData {
-  constructor(fetcher = (...args) => fetch(...args), {deep=true,rolloutBook=null}={}) {
+  constructor(fetcher = (...args) => fetch(...args), {deep=true,rolloutBook=null,referenceBook=null}={}) {
     this.fetcher = fetcher;
     this.rolloutBook=rolloutBook;
+    this.referenceBook=referenceBook;
     this.base = new URL(`../engine/opening-book-data/${deep?'deep/':''}`,import.meta.url);
     this.bookId = deep?DEEP_BOOK_ID:BOOK_ID;
     this.files = new Map();
@@ -68,6 +69,14 @@ export class OpeningGuideData {
     return pending;
   }
   async openings() {
+    if(this.referenceBook){
+      const positions=await Promise.all(OPENING_ROLLS.map(async roll=>{
+        const state=openingState(roll);state.rules.immediateRedoubles=1;
+        const result=await this.referenceBook.lookup(state);
+        return result?[roll,resultPosition(state,result,.040)]:null;
+      }));
+      if(positions.every(Boolean)){this.referenceReady=true;return new Map(positions);}
+    }
     this.index = await this.read('index.json');
     try {
       const openings=buildOpenings(this.index);
@@ -75,22 +84,38 @@ export class OpeningGuideData {
         const result=await this.rolloutBook.lookupRollout(position.state).catch(()=>null);
         if(result)openings.set(roll,resultPosition(position.state,result,result.book.openingWindow));
       }));
+      if(this.referenceBook)await Promise.all([...openings].map(async([roll,position])=>{
+        const state={...position.state,rules:{...position.state.rules,immediateRedoubles:1}};
+        const result=await this.referenceBook.lookup(state);
+        if(result)openings.set(roll,resultPosition(state,result,.040));
+      }));
       return openings;
     }
     catch (error) { this.files.delete('index.json'); throw error; }
   }
   async reply(opening, choice, roll, player=1) {
-    if (!this.index || !REPLY_ROLLS.includes(roll) || !opening.moves[choice] || ![0,1].includes(player))
+    if ((!this.index && !this.referenceReady) || !REPLY_ROLLS.includes(roll) || !opening.moves[choice] || ![0,1].includes(player))
       throw Error('Choose an opening and reply roll.');
     const after = commitTurn(opening.state,opening.moves[choice].steps);
     // The book is color-symmetric. Mirror the actual position (not just the
     // view) so previews and Solver exports agree with the chosen replying side.
-    const state = {...after, ...(player===0 ? {
+    let state = {...after, ...(player===0 ? {
       points:after.points.toReversed().map(n=>-n),bar:after.bar.toReversed(),
       off:after.off.toReversed(),scores:after.scores.toReversed(),
     } : {}), turn:player, phase:'move',dice:[...roll].map(Number)};
     const key = bookBoardKey(state), id = `${key}:${roll}:${player}`;
     if (this.positions.has(id)) return this.positions.get(id);
+    if(this.referenceBook){
+      const referenceState={...state,rules:{...state.rules,immediateRedoubles:1}};
+      const reference=await this.referenceBook.lookup(referenceState);
+      if(reference){
+        const result=resultPosition(referenceState,reference,.040);
+        if(this.positions.size>=42)this.positions.delete(this.positions.keys().next().value);
+        this.positions.set(id,result);return result;
+      }
+    }
+    // The study fallback explicitly displays GNUbg's beavers-off context.
+    state={...state,rules:{...state.rules,immediateRedoubles:0}};
     if(this.rolloutBook){
       const rolled=await this.rolloutBook.lookupRollout(state).catch(()=>null);
       if(rolled){
@@ -99,6 +124,7 @@ export class OpeningGuideData {
         this.positions.set(id,result);return result;
       }
     }
+    this.index ??= await this.read('index.json');
     const ref = this.index.replies?.[key];
     if (!ref || !/^reply-[a-f0-9]{16}\.json$/.test(ref.file))
       throw Error('This opening has no reply book.');

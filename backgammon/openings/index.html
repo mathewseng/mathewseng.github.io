@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en" data-family="backgammon">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="description" content="Explore backgammon opening moves, close alternatives, and all reply rolls with move previews and recorded equity estimates." />
+    <title>Backgammon · Openings</title>
+    <link rel="icon" href="../icon.svg" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=4a9afa3f2c538510" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=4a9afa3f2c538510" />
+    <link rel="stylesheet" href="../styles.css?bgv=4a9afa3f2c538510" />
+    <link rel="stylesheet" href="../docs.css?bgv=4a9afa3f2c538510" />
+    <link rel="stylesheet" href="../opening-guide.css?bgv=4a9afa3f2c538510" />
+    <script>document.documentElement.classList.add("is-ready");</script>
+    <script type="module" src="./app.js?bgv=4a9afa3f2c538510"></script>
+  </head>
+  <body class="docs-page opening-page">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell docs-shell">
+      <header class="topbar docs-topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a class="site-link" href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">All projects</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <a class="brand" href="/backgammon/">Backgammon</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Openings</span>
+        </nav>
+        <nav class="nav tool-nav" aria-label="Backgammon tools">
+          <a href="/backgammon/play/">Play</a>
+          <a href="/backgammon/trainer/">Trainer</a>
+          <a href="/backgammon/solver/">Solver</a>
+          <a href="/backgammon/openings/" aria-current="page">Openings</a>
+          <a href="/backgammon/library/">Library</a>
+          <a href="/backgammon/controls/">Docs</a>
+        </nav>
+      </header>
+      <main id="main" class="opening-main" tabindex="-1">
+<section class="group opening-guide" id="openings" data-layout="expanded" aria-labelledby="opening-title">
+          <div class="group-head">
+            <h1 id="opening-title">Opening moves &amp; replies</h1>
+            <span id="opening-method">GNUbg · 5 ply</span>
+          </div>
+          <p class="opening-intro">Every opening roll. The best moves, the close calls, and what comes next.</p>
+          <div id="opening-controls" hidden>
+            <div class="opening-toolbar">
+              <div class="segmented" id="opening-stage" role="group" aria-label="Study opening or reply">
+                <button type="button" id="opening-openings" data-stage="opening" aria-pressed="true">Openings</button>
+                <button type="button" id="opening-replies" data-stage="reply" aria-pressed="false" disabled>Replies</button>
+              </div>
+              <div id="opening-side" class="opening-side" hidden>
+                <span>To act</span>
+                <div class="segmented" role="group" aria-label="Replying player">
+                  <button type="button" data-side="0" aria-pressed="true">White</button>
+                  <button type="button" data-side="1" aria-pressed="false">Black</button>
+                </div>
+              </div>
+              <div class="segmented opening-layout" id="opening-layout" role="group" aria-label="Opening guide layout">
+                <button type="button" data-layout="expanded" aria-pressed="true">Expanded</button>
+                <button type="button" data-layout="compact" aria-pressed="false">Compact</button>
+              </div>
+              <p id="opening-context"></p>
+            </div>
+            <div class="opening-color-key" aria-label="Move type colors">
+              <span data-opening-kind="point"><i aria-hidden="true"></i>Make a point</span>
+              <span data-opening-kind="anchor"><i aria-hidden="true"></i>Anchor</span>
+              <span data-opening-kind="hit"><i aria-hidden="true"></i>Hit</span>
+              <span data-opening-kind="split"><i aria-hidden="true"></i>Split</span>
+              <span data-opening-kind="run"><i aria-hidden="true"></i>Run</span>
+              <span data-opening-kind="slot"><i aria-hidden="true"></i>Slot</span>
+              <span data-opening-kind="build"><i aria-hidden="true"></i>Build</span>
+              <span data-opening-kind="develop"><i aria-hidden="true"></i>Develop</span>
+            </div>
+            <p class="opening-color-note">Color shows the main idea; the lower third shows close alternatives. Tap a roll for the full list.</p>
+            <fieldset class="opening-picker" id="opening-picker">
+              <legend id="opening-roll-label">Opening roll</legend>
+              <div id="opening-rolls" class="opening-rolls"></div>
+            </fieldset>
+          </div>
+          <div class="opening-load-state">
+            <p id="opening-status" role="status">Loading opening moves…</p>
+            <button type="button" class="btn" id="opening-retry" hidden>Retry</button>
+          </div>
+          <div class="opening-panel" id="opening-panel" hidden>
+            <figure class="opening-preview">
+              <div id="opening-board"></div>
+              <div class="opening-preview-controls">
+                <div class="segmented" role="group" aria-label="Preview position">
+                  <button type="button" id="opening-before" aria-pressed="false">Before</button>
+                  <button type="button" id="opening-after" aria-pressed="true">After</button>
+                </div>
+                <figcaption id="opening-caption"></figcaption>
+              </div>
+              <p id="opening-position-note"></p>
+            </figure>
+            <div class="opening-study">
+              <div id="opening-compact-picker"></div>
+              <div class="opening-comparison">
+              <div class="opening-position-heading">
+                <h3 id="opening-heading"></h3>
+                <p id="opening-idea"></p>
+              </div>
+              <div class="opening-columns" aria-hidden="true"><span>Move</span><span>Equity</span><span>Loss</span></div>
+              <div id="opening-moves" role="group" aria-label="Best move and close alternatives"></div>
+              <p id="opening-empty" hidden>No close alternatives for this roll.</p>
+              <p id="opening-window"></p>
+              <a id="opening-source" href="https://www.extremegammon.com/Openingbook.aspx" hidden target="_blank" rel="noopener">XG source</a>
+              <div class="opening-actions">
+                <button type="button" class="btn btn--primary" id="opening-next">Explore replies <span aria-hidden="true">→</span></button>
+                <a class="btn btn--ghost" id="opening-solver" href="/backgammon/solver/">Open in Solver <span aria-hidden="true">↗</span></a>
+              </div>
+              </div>
+            </div>
+          </div>
+          <p id="opening-selection" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+          <details class="opening-method">
+            <summary>About the rankings</summary>
+            <p>Rankings use eXtreme Gammon’s published opening book 3.70 (2013) wherever available. These are imported XG values, not results computed by this site. Close alternatives are within <span id="opening-threshold">0.040</span> equity of best. Equity is in current-cube points from the moving player’s perspective; loss is the gap to the highest listed value.</p>
+            <p>The XG reference covers 15 openings and 714 replies, with Jacoby and beavers on, raccoons off. It mixes finite rollouts and XGRoller++ evaluations. Published confidence bounds appear where available; neither the rankings nor EVs are exact. Only source-listed alternatives are compared. <a href="https://www.extremegammon.com/Openingbook.aspx">XG source and free-use statement.</a></p>
+            <p>If the reference is unavailable or a position is unlisted, the guide uses clearly labeled GNUbg estimates with beavers off. Solver uses XG references only with matching rules; other positions and unlisted submitted moves receive a complete GNUbg comparison. The <a href="/backgammon/reports/#fullgame-precision">independent GNUbg accuracy experiments</a> remain separate from this reference book. Opening doubles are excluded because tied opening dice are rerolled.</p>
+            <a href="/backgammon/reports/">How the engine evaluates moves</a>
+          </details>
+          <noscript><p>Enable JavaScript to explore the opening book and animated move previews.</p></noscript>
+        </section>
+      </main>
+      <footer class="foot">
+        <p id="app-update-status" role="status">Checking app version…</p>
+        <a href="/backgammon/reports/">Engine report</a>
+      </footer>
+    </div>
+  </body>
+</html>
