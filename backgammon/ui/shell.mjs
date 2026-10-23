@@ -505,6 +505,13 @@ export async function preferences() {
     el("p", { class: "muted small" }, "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
+    el("label", { class: "check" }, el("input", {
+      type: "checkbox", checked: s.cubeOneAsOne,
+      onChange: e => {
+        saveSettings({ cubeOneAsOne: e.target.checked });
+        dispatchEvent(new Event("bg-settings"));
+      },
+    }), "Show unturned cube as 1 instead of 64"),
     el("label", { class: "check" }, moveHints, "Show legal-move hints in beginner mode"),
     el("p", { class: "muted small" },
       "Turn off checker rings and destination highlights. Your selected checker stays marked; taps, dragging and keyboard moves still work."),

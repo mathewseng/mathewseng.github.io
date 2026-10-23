@@ -710,6 +710,9 @@ const server = http.createServer((req, res) => {
         (report.cubeHistory ||= []).push(
           await run("cube-history", browser, base, out, browserName),
         );
+        (report.cubeDisplay ||= []).push(
+          await run("cube-display", browser, base, out, browserName),
+        );
         (report.mobileSettings ||= []).push(
           await run("mobile-settings", browser, base, out, browserName),
         );

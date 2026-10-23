@@ -1506,6 +1506,7 @@ export class Board {
     {
       orientation = 0,
       numbers = true,
+      cubeOneAsOne = false,
       moveHints = true,
       selected = null,
       destinations = [],
@@ -1529,7 +1530,7 @@ export class Board {
       lastMove = null,
     } = {},
   ) {
-    const nextOptions = { orientation, numbers, moveHints, selected, destinations,
+    const nextOptions = { orientation, numbers, cubeOneAsOne, moveHints, selected, destinations,
       reachable, reverseTargets, undoSources, revisionTargets, sources, moves,
       dropPreview, interactive, preview, editor, diceState, usedDice, forcedDice,
       lockedDice, playableDice, advanced, boardShortcuts: shortcuts, chooseDie,
@@ -2002,6 +2003,7 @@ export class Board {
       children.push(off);
     }
     if (s.rules.cube) {
+      const cubeLabel = s.cube.value === 1 && !cubeOneAsOne ? 64 : s.cube.value;
       const cy =
         s.cube.owner === null
           ? 330
@@ -2032,11 +2034,11 @@ export class Board {
             y: cy + 1,
             "text-anchor": "middle",
             "dominant-baseline": "middle",
-            "font-size": Math.min(36, 44 / (String(s.cube.value === 1 ? 64 : s.cube.value).length * .62)),
+            "font-size": Math.min(36, 44 / (String(cubeLabel).length * .62)),
             fill: boardColor("cubeText"),
             "font-weight": 700,
           },
-          s.cube.value === 1 ? "64" : s.cube.value,
+          cubeLabel,
         ),
       );
       cube.insertBefore(
