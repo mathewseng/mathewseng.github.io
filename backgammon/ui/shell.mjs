@@ -2,6 +2,7 @@
 import { installInputBehavior } from "./input-behavior.mjs";
 import { advancedAction, selectedDie } from "../core/advanced-input.mjs";
 import { EquityBar } from "./equity-bar.mjs";
+import { installDisplayControls } from "./display-controls.mjs";
 import {
   settings,
   saveSettings,
@@ -319,9 +320,11 @@ function changeSound(value) {
       "Sound setting applies to this tab. Browser storage is unavailable.",
     );
 }
-let activeBoard, activeEquity;
+let activeBoard, activeEquity, stopDisplayControls;
 export function shell(page, title, subtitle = "") {
   installInputBehavior();
+  stopDisplayControls?.();
+  stopDisplayControls = null;
   activeEquity?.destroy();
   activeEquity = null;
   activeBoard?.destroy();
@@ -360,10 +363,28 @@ export function shell(page, title, subtitle = "") {
   updateMute();
   addEventListener("bg-sound", updateMute);
   $("preferences").before(mute);
+  if (page === "play") {
+    const screen = el("button", {id:"screen-toggle", type:"button", class:"btn btn--ghost btn--icon"});
+    screen.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>';
+    mute.after(screen);
+    stopDisplayControls = installDisplayControls(document.querySelector('.app'), screen, () => {
+      if (document.querySelector('.fullscreen-help')) return;
+      const content = el('div', {class:'stack'},
+        el('p', {}, 'Your browser controls its toolbar. On iPhone Safari, rotation alone cannot hide it.'),
+        el('p', {}, el('strong', {}, 'Hide it now'), el('br'),
+          'Safari’s address field menu → Hide Toolbar (under More on some versions).'),
+        el('p', {}, el('strong', {}, 'Play without browser bars'), el('br'),
+          'Share → Add to Home Screen → Open as Web App. Then launch from your Home Screen.'),
+        el('a', {href:'https://support.apple.com/guide/iphone/iphb3100d149/ios', target:'_blank', rel:'noopener'}, 'Safari display help'));
+      dialog('More room for the board', content).classList.add('fullscreen-help');
+    });
+  }
   applyBoardTheme(settings().boardTheme);
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
   $("preferences").onclick = () => preferences().catch(showError);
+  $("preferences").setAttribute("aria-label", "Settings");
+  $("preferences").title = "Settings";
   installMobileTools(page);
   activeBoard = new Board($("board"));
   if (["play", "trainer", "solver"].includes(page)) {

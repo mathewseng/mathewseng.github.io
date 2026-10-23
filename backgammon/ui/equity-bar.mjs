@@ -71,6 +71,9 @@ export class EquityBar {
     addEventListener("pageshow", () => this.refresh(), options);
     this.observer = new ResizeObserver(() => this.schedulePosition());
     this.observer.observe(board.container);
+    this.observer.observe(board.svg);
+    addEventListener("resize", () => this.schedulePosition(), options);
+    window.visualViewport?.addEventListener("resize", () => this.schedulePosition(), options);
     this.refresh();
   }
   set(context) {

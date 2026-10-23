@@ -975,6 +975,22 @@ button kbd.keycap,
   cursor: pointer;
 }
 
+/* Keep the vertical track flush with the board. The value sits beside the
+   positive end, with no empty label slot or label covering either color. */
+@media (min-width: 701px), (orientation: landscape) {
+  .equity-reading { position: relative; }
+  .equity-meter { align-self: flex-end; width: 10px; }
+  .equity-number {
+    position: absolute;
+    left: 0;
+    width: calc(100% - 12px);
+    text-align: right;
+  }
+  .equity-number:empty { display: none; }
+  .equity-top-number { top: 0; }
+  .equity-bottom-number { bottom: 0; }
+}
+
 /* Portrait phones keep the full board width, with equity below the frame.
    Content-box sizing reserves the strip without shrinking the board's ratio. */
 @media (max-width: 700px) and (orientation: portrait) {
@@ -4434,6 +4450,15 @@ button.library-item {
   flex-basis: auto;
 }
 
+.fullscreen-help {
+  width: min(640px, calc(100vw - 24px));
+  max-height: calc(100dvh - 16px);
+}
+
+.fullscreen-help .dialog-body { flex-basis: auto; font-size: var(--t-sm); }
+.fullscreen-help .stack { gap: 12px; }
+.fullscreen-help p { margin: 0; }
+
 /* Dialog controls are 44px at every width: Settings opens from the keyboard
    on desktops too, and mobile-settings.cjs measures its tabs and selects
    with a touch context at 1366×768. */
@@ -6287,9 +6312,10 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   /* The live table: the topbar collapses into the dock, player strips sit
      beside the board, confirmation and controls stack in the dock. */
   .play-page.live-table {
+    --bg-equity-width: 44px;
     grid-template-rows: 0 0 minmax(0, 1fr);
-    height: 100dvh;
-    min-height: 340px;
+    height: var(--play-visible-height, 100dvh);
+    min-height: 0;
     padding-block: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-bottom));
   }
 
@@ -6322,9 +6348,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.live-table > .topbar .topbar-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: none;
   }
 
   .play-page.live-table .tool-head {
@@ -6450,6 +6474,67 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     justify-self: end;
     color: var(--accent);
   }
+
+  /* Two short rows of actions fit even with both Safari toolbar rows open.
+     The dock grows sideways, using the space left by the height-limited board. */
+  .play-page.live-table .workspace { grid-template-columns: minmax(0, 1fr) 208px; }
+  .play-page.live-table > .topbar,
+  .play-page.live-table .tool-head,
+  .play-page.live-table .board-actions,
+  .play-page.live-table .action-area { width: 208px; }
+  .play-page.live-table .player-strip { width: 72px; top: 82px; }
+  .play-page.live-table #opponent { top: 82px; }
+  .play-page.live-table #player { top: 82px; left: calc(100% + 84px); width: 132px; }
+  .play-page.live-table .stage:has(#opponent.active) #opponent { width: 132px; }
+  .play-page.live-table .stage:has(#opponent.active) #player { width: 72px; left: calc(100% + 144px); }
+  .play-page.live-table .player-name { min-width: 0; gap: 4px; }
+  .play-page.live-table .board-actions { top: 108px; height: 44px; }
+  .play-page.live-table .board-actions #confirm { min-height: 44px; height: 44px; }
+  .play-page.live-table .action-area {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    height: calc(100% - 156px);
+    max-height: calc(100% - 156px);
+    padding: 0;
+  }
+  .play-page.live-table .action-area .action-main,
+  .play-page.live-table .help-cluster,
+  .play-page.live-table .help-cluster .action-help { display: contents; }
+  .play-page.live-table .action-area .btn { width: 100%; min-width: 0; min-height: 44px; padding: 6px; }
+  .play-page.live-table #undo-turn { grid-column: 1; grid-row: 1; }
+  .play-page.live-table #hint { grid-column: 2; grid-row: 1; }
+  .play-page.live-table #all-controls { grid-column: 1; grid-row: 2; }
+  .play-page.live-table #analysis-jump { grid-column: 2; grid-row: 2; }
+  .play-page.live-table .undo-turn-label-wide { display: none; }
+  .play-page.live-table .undo-turn-label-phone { display: inline; }
+  .play-page.live-table .action-area #actions:empty { display: none; }
+  .play-page.live-table .action-area #actions,
+  .play-page.live-table .action-area .touch-moves,
+  .play-page.live-table .action-area .touch-destinations { grid-column: 1 / -1; }
+  /* Cube responses and next-game actions use the otherwise empty confirm
+     row; keep the primary decision above the secondary controls. */
+  .play-page.live-table .action-area:has(#actions:not(:empty)) {
+    height: calc(100% - 108px);
+    max-height: calc(100% - 108px);
+  }
+  .play-page.live-table .action-area #actions:not(:empty) {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-row: 1;
+    width: 100%;
+    margin: 0;
+    gap: 4px;
+  }
+  .play-page.live-table .action-area #actions > .btn {
+    height: 44px;
+    font-size: var(--t-xs);
+    line-height: 1.2;
+    white-space: normal;
+  }
+  .play-page.live-table .action-area:has(#actions:not(:empty)) :is(#undo-turn, #hint) { grid-row: 2; }
+  .play-page.live-table .action-area:has(#actions:not(:empty)) :is(#all-controls, #analysis-jump) { grid-row: 3; }
 
   .touch-moves:not([hidden]) {
     display: grid;
