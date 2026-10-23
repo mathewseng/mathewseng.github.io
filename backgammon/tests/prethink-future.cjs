@@ -30,8 +30,7 @@ async function runCase(browser,base,matchLength){
     // Optional fourth ply may still be running (or hit the background deadline).
     // A completed three-ply checkpoint is already playable and must be reused.
     await page.waitForFunction(()=>futureCalls.some(r=>r.options.priority===-20&&r.state.phase==='move'&&r.state.turn===1&&r.state.dice.join()==='2,1'&&r.ready),null,{timeout:180000});
-    await page.locator('#hint').click();await page.locator('#use-hint').click();
-    await page.keyboard.press('c');
+    await page.locator('#hint').click();await page.locator('#undo-play-best').click();
     await page.waitForFunction(()=>futureCalls.some(r=>r.state.phase==='move'&&r.state.turn===1&&r.options.priority===undefined&&r.result),null,{timeout:60000});
     const report=await page.evaluate(()=>{
       const played=futureCalls.find(r=>r.state.phase==='move'&&r.state.turn===1&&r.options.priority===undefined&&r.result);

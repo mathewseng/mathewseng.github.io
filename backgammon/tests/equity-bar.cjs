@@ -1,3 +1,4 @@
+const {assertVerticalEquity} = require('./equity-geometry.cjs');
 const { clickTool } = require("./tool-access.cjs");
 const assert = require("node:assert/strict"),
   path = require("node:path");
@@ -128,6 +129,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       [1024, 768],
       [1366, 768],
       [1440, 900],
+      [2048, 1150],
     ]) {
       await page.setViewportSize({ width, height });
       await page.waitForTimeout(80);
@@ -178,8 +180,9 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       } else {
         assert.ok(geometry.right <= geometry.boardLeft + 1);
         assert.ok(Math.abs(geometry.height - geometry.expected) < 2);
+        await assertVerticalEquity(page);
       }
-      if ([320, 375, 390, 430, 844, 1440].includes(width))
+      if ([320, 375, 390, 430, 844, 1440, 2048].includes(width))
         await page.screenshot({
           path: path.join(out, `${name}-equity-bar-${width}x${height}.png`),
         });
@@ -218,6 +221,11 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       -initialValue,
     );
     await assertPortraitBar();
+    await page.setViewportSize({width:1440,height:900});
+    await page.waitForTimeout(80);
+    await assertVerticalEquity(page);
+    await page.screenshot({path:path.join(out,`${name}-equity-bar-reversed.png`)});
+    await page.setViewportSize({width:390,height:844});
     await page.evaluate(async () => {
       const st = await import("/backgammon/core/storage.mjs");
       st.saveSettings({ orientation: 0 });
@@ -426,7 +434,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       browser: name,
       cases: [
         "direct click/touch/keyboard hide and reveal; stable board geometry; saved preference and game preserved",
-        "toolbar toggle; real GNUbg equity; ten sizes; portrait bottom bar; landscape/desktop left rail; orientation reversal",
+        "toolbar toggle; real GNUbg equity; eleven sizes; portrait bottom bar; landscape/desktop left rail; orientation reversal",
         "draft grading, cube offer/response, stale clearing, loading cancellation, off releases worker, error/retry, reload",
         "trainer spoiler protection; best choice hides duplicate equity; Solver source/preview/edit states",
       ],

@@ -1371,7 +1371,7 @@ export class DraftBoard {
       preview: !!this.preview,
       usedDice: this.draft.map((st) => st.die),
       lockedDice: this.minDraft,
-      forcedDice: this.draft.filter((st, index) => index < this.minDraft || nextSteps(this.paths, this.draft.slice(0, index)).length === 1).map(st => st.die),
+      forcedDice: this.draft.slice(0, this.minDraft).map(st => st.die),
       playableDice: this.enabled && !this.preview ? this.candidates().map(st => st.die) : null,
       boardShortcuts: this.shortcutsEnabled && display.keyboardEnabled ? display.shortcuts : null,
       advanced: this.advanced,

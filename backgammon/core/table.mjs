@@ -66,8 +66,8 @@ export function forcedTurn(state) {
 }
 
 // Follow forced steps without choosing between genuinely different outcomes.
-// A completed user draft is left for Confirm; only an unfinished forced suffix
-// is auto-completed. Dice-order equivalents count as the same final outcome.
+// This detects compulsory continuations; draftAutomation limits execution to
+// the initial roll. Dice-order equivalents count as the same final outcome.
 export function forcedContinuation(
   state,
   draft = [],
@@ -107,9 +107,10 @@ export function forcedContinuation(
 }
 
 // Preview automation never authorizes a commit. Only forcedTurn() can advance
-// without Confirm. A fresh forward choice may fill its unavoidable suffix;
-// undo/reset/recovery only restore the globally mandatory initial prefix.
-export function draftAutomation(state, draft, paths, advance = false) {
+// without Confirm. Only the globally mandatory initial prefix is automatic;
+// a player's choice must never trigger an automatic remaining die. Reviewing
+// a fully forced roll can restore its initial steps without committing it.
+export function draftAutomation(state, draft, paths, restoreForcedRoll = false) {
   const initial = forcedContinuation(state, [], paths);
   const mandatory = initial.complete ? [] : initial.steps;
   const same = (a, b) =>
@@ -117,24 +118,8 @@ export function draftAutomation(state, draft, paths, advance = false) {
   const starts = (steps) => mandatory.every((s, i) => same(s, steps[i]));
   let normalized = draft;
   if (draft.length && mandatory.length && !starts(draft)) {
-    // Recover drafts saved by an older policy without locking a chosen die.
-    // Reorder the same steps (or add only missing compulsory steps), keeping
-    // the exact set of choices the user had before recovery.
-    const counts = (steps) => {
-      const m = new Map();
-      for (const step of steps) {
-        const k = `${step.from}/${step.to}/${step.die}`;
-        m.set(k, (m.get(k) || 0) + 1);
-      }
-      return m;
-    };
-    const required = counts(draft);
-    for (const [k, n] of counts(mandatory))
-      required.set(k, Math.max(n, required.get(k) || 0));
-    const length = [...required.values()].reduce((a, b) => a + b, 0);
-    const outcomes = new Set(
-      matchingPaths(paths, draft).map((p) => boardKey(p.state)),
-    );
+    // Recover the ordering of older drafts without moving another checker.
+    // A missing compulsory die stays manual once any choice has been made.
     const current = boardKey(draft.reduce((s, st) => applyStep(s, st), state));
     const dice = (steps) =>
       steps
@@ -152,24 +137,6 @@ export function draftAutomation(state, draft, paths, advance = false) {
         normalized = equivalent;
         break;
       }
-      const candidate = path.steps.slice(0, length),
-        actual = counts(candidate);
-      if (
-        candidate.length !== length ||
-        actual.size !== required.size ||
-        [...required].some(([k, n]) => actual.get(k) !== n)
-      )
-        continue;
-      const remaining = new Set(
-        matchingPaths(paths, candidate).map((p) => boardKey(p.state)),
-      );
-      if (
-        remaining.size === outcomes.size &&
-        [...outcomes].every((k) => remaining.has(k))
-      ) {
-        normalized = candidate;
-        break;
-      }
     }
   }
   // Noncanonical legacy paths that cannot safely be reordered must never have
@@ -183,7 +150,7 @@ export function draftAutomation(state, draft, paths, advance = false) {
     )
       minDraft++;
   const plan =
-    normalized.length >= minDraft && !advance
+    normalized.length >= minDraft && !(restoreForcedRoll && !normalized.length)
       ? { steps: [], complete: false, minDraft }
       : { ...forcedContinuation(state, normalized, paths), minDraft };
   return normalized === draft ? plan : { ...plan, replacement: normalized };

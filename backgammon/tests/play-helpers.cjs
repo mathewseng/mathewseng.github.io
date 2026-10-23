@@ -55,3 +55,29 @@ exports.roll = async page => {
   await page.locator('#board.roll-ready').waitFor();
   await page.keyboard.press('c');
 };
+
+// Play a known legal turn through Details, without a removed hint-to-draft
+// shortcut. This keeps draft preparation/confirmation tests on real controls.
+exports.stageSteps = async (page, steps) => {
+  // Native dialog close events release the assistance lock on a later task.
+  await page.waitForFunction(() => !document.querySelector('dialog[open]') && !document.querySelector('#hint')?.disabled);
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press('x');
+  await exports.waitWork(page, w => w?.draft.length === 0);
+  const picker = page.getByLabel('Accessible move selection', {exact:true});
+  const opened = !await picker.isVisible();
+  if (opened) await page.locator('#panel-toggle').click();
+  for (const [index, step] of steps.entries()) {
+    const value = await page.evaluate(async step => {
+      const {get} = await import('/backgammon/core/storage.mjs');
+      const {legalPaths,nextSteps} = await import('/backgammon/core/rules.mjs');
+      const work = await get('work','play');
+      return nextSteps(legalPaths(work.game.state),work.draft).findIndex(s =>
+        s.from===step.from && s.to===step.to && s.die===step.die);
+    },step);
+    assert.ok(value >= 0, 'known hint step remains legal');
+    await picker.selectOption(String(value));
+    await exports.waitWork(page, w => w?.draft.length === index+1);
+  }
+  if (opened) await page.locator('#details-dialog').getByRole('button',{name:'Close',exact:true}).click();
+};

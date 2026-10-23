@@ -1,4 +1,4 @@
-const { roll, openingComplete, seedOpening } = require("./play-helpers.cjs");
+const { roll, openingComplete, seedOpening, waitWork } = require("./play-helpers.cjs");
 const { clickTool } = require("./tool-access.cjs");
 // Hints and turn feedback against real GNUbg, served from the assembled site.
 const assert = require("node:assert/strict");
@@ -36,7 +36,8 @@ module.exports = async function assistanceUX(
       if (predicate(value)) return value;
       await page.waitForTimeout(50);
     }
-    throw new Error("Timed out waiting for saved game");
+    const last = await saved();
+    throw new Error('Timed out waiting for saved game: '+JSON.stringify({state:last?.game.state,feedback:!!last?.feedback,events:last?.game.events.map(e=>({actor:e.actor,action:e.action}))}));
   };
   // play/app.js persists the draft after a paint (saveDraftAfterPaint), so a
   // read straight after a move can see the previous draft. Wait for a frame
@@ -104,7 +105,7 @@ module.exports = async function assistanceUX(
     await shot("hint-desktop");
     await page.setViewportSize({ width: 375, height: 667 });
     await shot("hint-phone");
-    assert.ok((await page.locator("#use-hint").boundingBox()).y < 667);
+    assert.ok((await page.locator("#undo-play-best").boundingBox()).y < 667);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page
       .getByRole("button", { name: "Position", exact: true })
@@ -129,12 +130,15 @@ module.exports = async function assistanceUX(
       "real engine hint; whole original roll; previews preserve live draft; Escape releases modal",
     );
 
-    // Use hint changes only the draft. Undo/Reset and confirmation still work.
+    // Preview is non-mutating; manually playing the hinted steps remains reversible.
     begin = Date.now();
     await page.locator("#hint").click();
     await bestReady();
     timings.warmHintMs = Date.now() - begin;
-    await page.locator("#use-hint").click();
+    assert.equal(await page.locator("#use-hint").count(), 0);
+    assert.equal(await page.locator("#undo-play-best").innerText(), "Play best");
+    await page.keyboard.press("Escape");
+    await require("./play-helpers.cjs").stageSteps(page,[{from:12,to:6,die:6},{from:7,to:6,die:1}]);
     await waitSaved((s) => s?.draft.length === 2);
     assert.deepEqual((await saved()).game, partial.game);
     assert.ok(await page.locator("#confirm").isEnabled());
@@ -145,7 +149,7 @@ module.exports = async function assistanceUX(
     await page.keyboard.press("x");
     await waitSaved((s) => s?.draft.length === 0);
     cases.push(
-      "use best move is reversible draft, never an automatic submission",
+      "manually playing the hinted steps stays reversible until confirmation",
     );
 
     await page.getByLabel("Show move feedback", { exact: true }).uncheck();
@@ -169,13 +173,13 @@ module.exports = async function assistanceUX(
     timings.feedbackMs = Date.now() - begin;
     const graded = await waitSaved(
       (s) =>
-        s?.feedback &&
+        s?.game.events.find(e => e.actor === 0 && e.action.type === 'move')?.evaluation?.result &&
         s.game.state.turn === 0 &&
         s.game.state.phase === "roll",
     );
-    assert.deepEqual(graded.feedback.source, submitted.game.state);
+    const r = graded.game.events.find(e => e.actor === 0 && e.action.type === 'move').evaluation.result;
     assert.equal(
-      graded.feedback.result.positionKey,
+      r.positionKey,
       await page.evaluate(
         async (s) =>
           (await import("/backgammon/core/rules.mjs")).positionKey(s),
@@ -188,7 +192,6 @@ module.exports = async function assistanceUX(
       ).length,
       1,
     );
-    const r = graded.feedback.result;
     assert.equal(r.status, "complete");
     assert.ok(r.actual && r.error > 0);
     assert.ok(
@@ -482,6 +485,14 @@ module.exports = async function assistanceUX(
       await assign("play-both");
       await assign("bot-teal");
       await page.setViewportSize({ width: 1366, height: 768 });
+      // Only warnings hold confirmation for grading; ordinary confirmation
+      // now advances immediately and saves its evaluation in the background.
+      const warning = page.getByLabel('Warn before confirming a costly move');
+      const openedDetails = !await warning.isVisible();
+      if (openedDetails) await page.locator('#panel-toggle').click();
+      await warning.check();
+      if (openedDetails) await close();
+      await waitSaved(s => s?.game.config.warning === true);
       // A hint now supplies the complete grading cache too. Reload to test a
       // genuinely cold feedback request, not a completed cached evaluation.
       // Preparation starts on resume, so hold before navigation and disable
@@ -496,26 +507,19 @@ module.exports = async function assistanceUX(
       assetMode = "hold";
       await page.locator("#confirm").click();
       await waitHeld();
-      await page.locator("#cancel-feedback").click();
-      assert.ok(await page.locator("#confirm").isEnabled());
+      const pendingReview = page.getByRole('dialog', {name:'Review before confirming?',exact:true});
+      assert.match(await pendingReview.innerText(), /Still calculating EV/);
+      await pendingReview.getByRole('button',{name:'Revise',exact:true}).click();
+      await page.waitForFunction(() => !document.querySelector('#confirm')?.disabled);
       assert.deepEqual((await saved()).draft, pending.draft);
       assert.deepEqual((await saved()).game.state, pending.game.state);
       await releaseHeld();
       assetMode = "fail";
       await page.locator("#confirm").click();
-      await page
-        .getByRole("dialog", {
-          name: "Move feedback unavailable",
-          exact: true,
-        })
-        .waitFor();
+      await page.waitForFunction(() => document.querySelector('#pending-move-loss')?.textContent.includes('EV unavailable'));
+      assert.deepEqual((await saved()).game.state, pending.game.state);
       await shot("feedback-error");
-      await page
-        .getByRole("button", {
-          name: "Confirm without feedback",
-          exact: true,
-        })
-        .click();
+      await pendingReview.getByRole('button',{name:'Confirm anyway',exact:true}).click();
       await waitSaved(
         (s) => s?.game.events.length === pending.game.events.length + 1,
       );
@@ -575,9 +579,9 @@ module.exports = async function assistanceUX(
         }, scenario);
         await edge.goto(base + "/backgammon/play/#resume=" + id);
         await edge.locator("#hint").click();
-        await edge.locator("#use-hint").waitFor({ timeout: 60000 });
-        await edge.locator("#use-hint").click();
+        await edge.locator("#undo-play-best").waitFor({ timeout: 60000 });
         if (scenario === "warning") {
+          await edge.keyboard.press("Escape");
           await edge.evaluate(() => document.activeElement?.blur());
           await edge.keyboard.press("x");
           await edge.locator("#panel-toggle").click();
@@ -610,7 +614,8 @@ module.exports = async function assistanceUX(
             0,
           );
         }
-        await edge.locator("#confirm").click();
+        if (scenario === "warning") await edge.locator("#confirm").click();
+        else await edge.locator("#undo-play-best").click();
         if (scenario === "warning")
           await edge
             .getByRole("button", { name: "Confirm anyway", exact: true })
@@ -619,14 +624,10 @@ module.exports = async function assistanceUX(
         // Inspect the rendered review after scrolling, including WebKit on phones.
         await edge.locator("#review-feedback").scrollIntoViewIfNeeded();
         await edge.waitForFunction(() => document.querySelector("#review-feedback")?.innerText.includes("lost"));
-        const result = await edge.evaluate(
-          async () =>
-            (
-              await (
-                await import("/backgammon/core/storage.mjs")
-              ).get("work", "play")
-            ).feedback.result,
-        );
+        const latestHumanMove = work => work?.game.events.filter(e =>
+          e.actor === work.game.config.humanSide && e.action.type === 'move').at(-1);
+        const result = latestHumanMove(await waitWork(edge, work =>
+          latestHumanMove(work)?.evaluation?.result)).evaluation.result;
         if (scenario === "warning") assert.ok(result.error > 0.04);
         else assert.equal(result.error, 0);
         assert.equal(result.perspective, scenario === "match-teal" ? 1 : 0);

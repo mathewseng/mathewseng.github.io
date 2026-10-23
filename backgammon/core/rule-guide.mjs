@@ -31,6 +31,6 @@ export function ruleGuide(s) {
     ["Crawford", money ? "Not used in unlimited points sessions."
       : `The first game after a player reaches one point from winning is played without doubling. Doubling returns in subsequent games (post-Crawford). ${s.crawford ? "This is the Crawford game." : s.crawfordPlayed ? "This match is now post-Crawford." : "The Crawford game has not yet been played."}`],
     ["Resignation", "Offer a single, gammon or backgammon loss at the current cube value when allowed by the position and Jacoby rule. The opponent must accept; declining resumes play. Gammons or backgammons cannot be offered after bearing a checker off."],
-    ["Drafts, forced play and undo", "Chosen moves stay editable until Confirm turn. Undo reverses a draft step; Reset clears chosen steps while keeping forced ones. Entirely forced turns and passes advance automatically. A forced continuation after a choice stays in the draft for confirmation. Undoing a committed human decision requires the opponent’s agreement; forced actions cannot be taken back."],
+    ["Drafts, forced play and undo", "Chosen moves stay editable until Confirm turn. Undo reverses a draft step; Reset clears chosen steps while keeping forced ones. Entirely forced turns and passes advance automatically. Only compulsory steps at the start of a roll play automatically. After you choose a move, play each remaining die yourself, even if only one continuation is legal. Undoing a committed human decision requires the opponent’s agreement; forced actions cannot be taken back."],
   ];
 }

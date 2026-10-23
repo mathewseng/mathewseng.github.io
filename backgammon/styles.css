@@ -919,6 +919,7 @@ button kbd.keycap,
 }
 
 .equity-number {
+  flex-shrink: 0;
   width: 100%;
   min-height: 1.2em;
   font-size: var(--t-xs);
@@ -941,6 +942,7 @@ button kbd.keycap,
 
 .equity-fill {
   position: absolute;
+  left: 0;
   bottom: 0;
   width: 100%;
   height: var(--equity-fraction);
@@ -951,6 +953,7 @@ button kbd.keycap,
   content: "";
   position: absolute;
   top: 50%;
+  left: 0;
   width: 100%;
   border-top: 1px solid var(--line);
 }
@@ -976,21 +979,8 @@ button kbd.keycap,
   cursor: pointer;
 }
 
-/* Keep the vertical track flush with the board. The value sits beside the
-   positive end, with no empty label slot or label covering either color. */
-@media (min-width: 701px), (orientation: landscape) {
-  .equity-reading { position: relative; }
-  .equity-meter { align-self: flex-end; width: 10px; }
-  .equity-number {
-    position: absolute;
-    left: 0;
-    width: calc(100% - 12px);
-    text-align: right;
-  }
-  .equity-number:empty { display: none; }
-  .equity-top-number { top: 0; }
-  .equity-bottom-number { bottom: 0; }
-}
+/* The vertical rail includes a value slot at each end. Keep both slots so
+   changing the leading player never shifts or clips the centered meter. */
 
 /* Portrait phones keep the full board width, with equity below the frame.
    Content-box sizing reserves the strip without shrinking the board's ratio. */
@@ -1051,6 +1041,7 @@ button kbd.keycap,
   }
 
   .equity-fill {
+    left: auto;
     right: 0;
     width: var(--equity-fraction);
     height: 100%;
@@ -1163,6 +1154,31 @@ button.die.preferred {
 .bg-board,
 .bg-board * {
   transition-property: none;
+}
+
+/* A quiet, legible action prompt in the board's open center lane. */
+.board-caption {
+  font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+.board-caption[role="button"] { cursor: pointer; outline: none; }
+.board-caption[role="button"] .board-caption-main {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -.025em;
+  transition: fill 180ms ease;
+}
+.board-caption-detail {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: .005em;
+  opacity: .75;
+}
+.board-caption[data-auto="true"] .board-caption-main { fill: var(--board-selection); }
+.board-caption-hit { stroke: var(--board-selection); stroke-width: 1.5; stroke-opacity: 0; }
+html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-caption-hit { stroke-opacity: 1; }
+@media (hover: hover) {
+  .board-caption[role="button"]:hover .board-caption-main { fill: var(--board-selection); }
 }
 
 /* Background taps can focus the SVG itself; only its controls draw focus. */
@@ -5529,10 +5545,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     .play-page.live-table .board-slot.has-equity-bar > .bg-board {
       width: calc(100% - var(--bg-equity-width));
       margin-left: var(--bg-equity-width);
-    }
-
-    .play-page.live-table .equity-meter {
-      width: 10px;
     }
 
     .play-page.live-table .equity-number {

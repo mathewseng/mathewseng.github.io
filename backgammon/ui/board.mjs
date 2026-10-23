@@ -1215,6 +1215,7 @@ export class Board {
   animateRestore(before, after, cue = "reset") {
     sound.play(cue);
     if (this.reducedMotion() || document.hidden) return;
+    const firstAnimation = this.animations.length;
     for (const player of [0, 1]) {
       const origins = [],
         destinations = [];
@@ -1262,6 +1263,7 @@ export class Board {
         }
       }
     }
+    return Promise.allSettled(this.animations.slice(firstAnimation).map(animation => animation.finished));
   }
   returnDragged(point) {
     if (!this.dropOrigin || this.reducedMotion() || document.hidden) return;
@@ -2195,20 +2197,20 @@ export class Board {
     const main = preview ? 'Move preview' : editor ? 'Position editor' :
       active ? 'Auto roll on' : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
     const detail = active ? `${touch ? 'Tap' : 'Click'} to stop` :
-      ready && prompt.onBar ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
+      ready && prompt.canAutoRoll ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
     const key = JSON.stringify([main,detail,active,ready,node.dataset.x]);
     if (node.dataset.caption === key) return;
     node.dataset.caption = key;
     node.replaceChildren();
+    node.dataset.auto = String(!!active);
     node.setAttribute('role', active || ready ? 'button' : 'img');
     node.setAttribute('tabindex', active || ready ? '0' : '-1');
     node.setAttribute('aria-label', [main,detail].filter(Boolean).join('. '));
     if (!main) return;
     const x = +node.dataset.x;
-    if (active || ready) node.append(svg('rect', {x:x-170,y:300,width:340,height:60,fill:'transparent'}));
-    node.append(svg('text', {x,y:detail ? 321 : 337,'text-anchor':'middle',fill:boardColor('caption'),
+    if (active || ready) node.append(svg('rect', {class:'board-caption-hit',x:x-174,y:291,width:348,height:80,rx:12,fill:'transparent'}));
+    node.append(svg('text', {class:'board-caption-main',x,y:detail ? 318 : 337,'text-anchor':'middle',fill:boardColor('caption'),
       'font-size':active || ready ? 26 : 14}, main));
-    if (detail) node.append(svg('text', {x,y:347,'text-anchor':'middle',fill:boardColor('caption'),
-      'font-size':20,opacity:.8}, detail));
+    if (detail) node.append(svg('text', {class:'board-caption-detail',x,y:351,'text-anchor':'middle',fill:boardColor('caption')}, detail));
   }
 }

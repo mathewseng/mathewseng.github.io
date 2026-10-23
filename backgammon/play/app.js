@@ -79,7 +79,7 @@ import { historyExplorer } from "../ui/history-tree.mjs";
 import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
-import { BarAutoRoll } from "../core/bar-auto-roll.mjs";
+import { BarAutoRoll, canAutoRollFromBar } from "../core/bar-auto-roll.mjs";
 import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
@@ -336,11 +336,11 @@ const allControls = button("All controls", () => {
 const helpCluster = el("div", { class: "help-cluster" }, helpActions, allControls);
 document.querySelector(".action-main").prepend(helpCluster);
 helpCluster.insertBefore(draftKeys, allControls);
-const draft = new DraftBoard(ui.board, (change) => {
+const draft = new DraftBoard(ui.board, () => {
   actions();
   detailDraft();
   saveDraftAfterPaint();
-  autoDraft(change?.kind === "move");
+  autoDraft();
   prethink.update();
 });
 draft.shortcutsEnabled = true;
@@ -883,7 +883,7 @@ function advanceOpening() {
     else if (myTurn(state())) commit({ type: "opening" }).catch(showError);
   }, reducedMotion() ? 80 : opening.dice ? 700 : 300);
 }
-function autoDraft(advance = false) {
+function autoDraft() {
   if (!ui.board.container.isConnected) return;
   if (
     !draft.enabled ||
@@ -897,7 +897,7 @@ function autoDraft(advance = false) {
     return;
   const source = state();
   const forced = draftAutomation(source, draft.draft, draft.paths,
-    advance || (!!model()?.reviewingTurn && !draft.draft.length));
+    !!model()?.reviewingTurn && !draft.draft.length);
   draft.minDraft = model()?.reviewingTurn && forcedTurn(source)
     ? draft.paths[0].steps.length : forced.minDraft;
   if (!forced.steps.length && !forced.replacement) return;
@@ -1288,7 +1288,7 @@ function actions() {
     const s = state(), rollReady = !!$("roll") && !$("roll").disabled && s.phase === "roll" && !opening.active;
     const current = draft.state === s && !draft.preview ? draft.current() : s;
     const active = barAutoRoll.sync(model(), current);
-    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),onBar:s.bar[s.turn] > 0 && !model().reviewingTurn,auto:!!active});
+    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,auto:!!active});
     ui.board.container.classList.toggle("roll-ready", rollReady);
     scheduleBarAutoRoll();
   }
@@ -2504,9 +2504,24 @@ async function replayBest(row, id, steps, result = row.result) {
     source: row.source,
     result: { ...result, actual: result.candidates[0], error: 0 },
   };
-  draft.draft = [];
+  await presentBestSource(row.source);
   boardKey = "";
   await commit({ type: "move", steps }, feedback);
+}
+
+// Restore the live board before commit/render starts the best-move playback.
+// Keep all actions locked while the drafted checkers travel home.
+async function presentBestSource(source) {
+  committing = true;
+  const before = ui.board.state;
+  try {
+    draft.set(source, legalPaths(source), false);
+    actions();
+    if (before && checkerKey(before) !== checkerKey(source))
+      await ui.board.animateRestore(before, source, "undo");
+  } finally {
+    committing = false;
+  }
 }
 
 function activeAssistance(job) {
@@ -2564,6 +2579,7 @@ function showHint() {
     return;
   const job = assistance("hint");
   const review = decisionReview(job.source, {
+    replayLabel: "Play best",
     onClose: () => {
       if (assistanceJob !== job) return;
       releaseAssistance();
@@ -2572,28 +2588,18 @@ function showHint() {
       $("hint")?.focus();
     },
     replayDescription:
-      "Clears your draft and immediately plays the best move using this roll.",
+      "Returns your checkers, then plays the best move using this roll.",
     onReplay: async (steps, result) => {
       if (!activeAssistance(job))
         throw new Error("This hint is no longer current.");
+      committing = true;
       releaseAssistance();
-      draft.draft = [];
+      await presentBestSource(job.source);
       feedback = {
         source: job.source,
         result: { ...result, actual: result.candidates[0], error: 0 },
       };
       await commit({ type: "move", steps }, feedback);
-    },
-    onUse: (steps) => {
-      if (!activeAssistance(job)) return;
-      releaseAssistance();
-      draft.draft = clone(steps);
-      draft.selected = null;
-      draft.hint = "Hint added to your draft. Review it, then confirm.";
-      unlockDraft();
-      panel();
-      persist();
-      $("confirm").focus();
     },
   });
   job.dialog = review.dialog;

@@ -1,4 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// A single opposing checker can be hit, so only made points block entry.
+export function canAutoRollFromBar(state, player = state?.turn) {
+  if (!state?.bar[player]) return false;
+  const start = player === 0 ? 18 : 0, opponent = player === 0 ? -1 : 1;
+  return state.points.slice(start, start + 6).some(count => count * opponent >= 2);
+}
+
 // Session-only intent: never consumes dice, chooses an entry, or survives reload.
 export class BarAutoRoll {
   active = null;
@@ -7,7 +14,7 @@ export class BarAutoRoll {
   valid(record, model, current = model?.state) {
     return record && model?.started && record.id === model.id &&
       record.game === current.gameNumber && current.phase !== 'over' &&
-      !model.reviewingTurn && !model.undoRequest &&
+      !model.reviewingTurn && !model.undoRequest && canAutoRollFromBar(current, record.player) &&
       current.sequence >= record.sequence && current.bar[record.player] >= record.bar;
   }
   sync(model, current = model?.state) {
@@ -23,7 +30,7 @@ export class BarAutoRoll {
   }
   noteRoll(model, {x = 0, y = 0, at = performance.now()} = {}) {
     const s = model?.state;
-    this.gesture = s?.phase === 'roll' && s.bar[s.turn] > 0 ? {
+    this.gesture = s?.phase === 'roll' && canAutoRollFromBar(s) ? {
       id:model.id, game:s.gameNumber, sequence:s.sequence, player:s.turn,
       bar:s.bar[s.turn], x, y, at,
     } : null;

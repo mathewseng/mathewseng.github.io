@@ -14,8 +14,7 @@ module.exports=async function adaptivePlay(browser,base,out,name){
   const started=Date.now();await page.locator('#hint').click();await page.locator('[data-best-move]').waitFor({timeout:120000});
   const hintMs=Date.now()-started;
   assert.ok((await page.evaluate(()=>engineTrace)).some(r=>r.preset==='auto'&&r.plies>=3));
-  await page.locator('#use-hint').click();await page.locator('#confirm').waitFor();
-  await page.keyboard.press('c');
+  await page.locator('#undo-play-best').click();
   // Wait for bot checker choice and persisted evaluations, including cube choice.
   let game; const deadline=Date.now()+180000;
   while(Date.now()<deadline) {
@@ -54,7 +53,7 @@ module.exports=async function adaptivePlay(browser,base,out,name){
   await page.locator('#hint').waitFor();await page.locator('#hint').click();
   await page.locator('[data-best-move]').waitFor({timeout:120000});
   assert.ok((await page.evaluate(()=>engineTrace)).some(r=>r.preset==='standard'&&r.plies===1),'fixed hint stays at exactly 1 ply');
-  await page.locator('#use-hint').click();await page.keyboard.press('c');
+  await page.locator('#undo-play-best').click();
   const fixedDeadline=Date.now()+30000;
   while(Date.now()<fixedDeadline && !(await page.evaluate(()=>engineTrace.some(r=>r.turn===1&&r.phase==='move'&&r.preset==='quick'&&r.plies===0)))) await page.waitForTimeout(100);
   assert.ok(await page.evaluate(()=>engineTrace.some(r=>r.turn===1&&r.phase==='move'&&r.preset==='quick'&&r.plies===0)),'fixed bot stays at exactly 0 ply');

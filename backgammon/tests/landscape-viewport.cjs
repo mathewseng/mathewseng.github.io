@@ -1,3 +1,4 @@
+const {assertVerticalEquity} = require('./equity-geometry.cjs');
 const assert = require('node:assert/strict'), path = require('node:path');
 module.exports = async function landscapeViewport(browser, base, out, name) {
   const context = await browser.newContext({ viewport: {width:390, height:844}, hasTouch:true,
@@ -36,8 +37,9 @@ module.exports = async function landscapeViewport(browser, base, out, name) {
         assert.ok(metrics.app.bottom <= height+1, 'landscape fits below Safari chrome: '+JSON.stringify({width,height,metrics}));
         assert.ok(metrics.board.top >= 0 && metrics.board.bottom <= height+1, 'whole board stays visible');
         assert.ok(metrics.rail.right <= metrics.board.left+1, 'equity cannot overlap the board');
-        assert.ok(Math.abs(metrics.meter.top-metrics.board.top)<2 && Math.abs(metrics.meter.bottom-metrics.board.bottom)<2,
-          'equity track aligns with the full board height: '+JSON.stringify(metrics));
+        assert.ok(Math.abs(metrics.rail.top-metrics.board.top)<2 && Math.abs(metrics.rail.bottom-metrics.board.bottom)<2,
+          'equity rail including end labels fits the full board height: '+JSON.stringify(metrics));
+        await assertVerticalEquity(page);
         for (const selector of ['#confirm','#preferences','#sound-toggle','#screen-toggle','#panel-toggle','#mobile-tools','#undo-turn','#hint','#all-controls','#analysis-jump']) {
           const box=await page.locator(selector).boundingBox();
           assert.ok(box && box.y >= -1 && box.y+box.height <= height+1 && box.x>=0 && box.x+box.width<=width+1,

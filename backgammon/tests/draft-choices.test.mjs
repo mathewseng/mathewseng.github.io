@@ -76,6 +76,8 @@ test("all legal prefixes, both players, doubles and ordinary rolls preserve choi
           const draft = path.steps.slice(0, n),
             plan = draftAutomation(s, draft, paths, true);
           assert.ok(matchingPaths(paths, [...draft, ...plan.steps]).length);
+          if (draft.length)
+            assert.deepEqual(plan.steps, [], "a played checker never auto-completes the remaining dice");
           assert.deepEqual(
             draftAutomation(s, draft, paths).steps,
             [],
@@ -103,6 +105,29 @@ test("all legal prefixes, both players, doubles and ordinary rolls preserve choi
         }
       assert.equal(JSON.stringify(s), before);
     }
+});
+
+test("a manual choice leaves a unique remaining die to the player", () => {
+  const race = initialState({ phase: "move", dice: [1, 2] });
+  race.points.fill(0);
+  race.points[5] = race.points[4] = 1;
+  race.points[23] = -15;
+  race.off = [13, 0];
+  for (const s of [race, mirror(race)]) {
+    const paths = legalPaths(s);
+    assert.deepEqual(draftAutomation(s, [], paths).steps, []);
+    const p = n => s.turn ? 23 - n : n;
+    const chosen = [{ from: p(5), to: p(4), die: 1 }];
+    const remaining = matchingPaths(paths, chosen);
+    assert.ok(remaining.length);
+    assert.ok(remaining.every(path => path.steps[1].from === p(4) && path.steps[1].to === p(2)));
+    for (const restoring of [false, true]) {
+      const plan = draftAutomation(s, chosen, paths, restoring);
+      assert.deepEqual(plan.steps, []);
+      assert.equal(plan.minDraft, 0);
+      assert.equal(plan.complete, false);
+    }
+  }
 });
 
 test("true forced passes and bearoffs remain automatic table actions", () => {

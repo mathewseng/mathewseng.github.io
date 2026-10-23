@@ -36,9 +36,10 @@ module.exports=async function prethinkUI(browser,base,out,name){
   assert.ok(root.result.settings.plies>=2);
   await page.waitForFunction(()=>thinking.some(t=>t.opts.priority===-20&&t.result),{},{timeout:90000});
   assert.equal(await page.locator('#board .preview-arrow').count(),0,'no strategic preview leaks while thinking');
-  await page.locator('#hint').click();await page.locator('#use-hint').waitFor({timeout:30000});
+  await page.locator('#hint').click();await page.locator('#undo-play-best').waitFor({timeout:30000});
   assert.ok(await page.evaluate(()=>thinking.some(t=>t.opts.priority===20&&!t.opts.submitted&&t.result?.cached)),'hint reuses preparation');
-  await page.locator('#use-hint').click();
+  await page.keyboard.press('Escape');
+  await require('./play-helpers.cjs').stageSteps(page,root.result.candidates[0].steps);
   // A complete draft is prepared before confirmation too.
   await page.waitForFunction(()=>thinking.some(t=>t.opts.priority===-4&&t.result?.actual),{},{timeout:180000});
   const grade=await page.evaluate(()=>thinking.find(t=>t.opts.priority===-4&&t.result));
