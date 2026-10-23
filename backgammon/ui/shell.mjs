@@ -18,6 +18,7 @@ import {
   clone,
   boardKey,
   decisionPlayer,
+  blockedBarRoll,
 } from "../core/rules.mjs";
 import { Board } from "./board.mjs";
 import {
@@ -693,7 +694,7 @@ export function players(s, names = ["White", "Black"]) {
         }),
         el("strong", { title: names[p] }, names[p]),
         active ? el("span", { class: "player-status badge badge--accent badge--plain" },
-          s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply") : null,
+          blockedBarRoll(s) ? "Closed out" : s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply") : null,
       ),
       el(
         "span",

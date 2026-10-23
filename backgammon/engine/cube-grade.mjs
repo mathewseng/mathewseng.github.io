@@ -2,6 +2,7 @@
 import { decisionPlayer } from "../core/rules.mjs";
 export const CUBE_LABELS = {
   roll: "No double",
+  'skip-roll': 'No double · pass',
   double: "Double",
   take: "Take",
   pass: "Pass",
@@ -53,6 +54,7 @@ export function cubeChoices(state, result) {
     .sort((a, b) => b.equity - a.equity);
 }
 export function gradeCube(state, result, decision) {
+  if (decision === 'skip-roll') decision = 'roll';
   const choices = cubeChoices(state, result),
     actual = choices.find((c) => c.action === decision);
   if (!actual)

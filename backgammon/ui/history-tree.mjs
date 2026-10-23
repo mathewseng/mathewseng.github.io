@@ -24,6 +24,7 @@ function eventLabel(event) {
       accept: "Accept resignation",
       reject: "Decline resignation",
       "finish-race": "Certain result",
+      "skip-roll": "Closed out · pass without rolling",
     }[a.type] || a.type
   );
 }

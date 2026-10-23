@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { positionKey, transition, decisionPlayer, canDouble, boardKey, commitTurn } from './rules.mjs';
+import { positionKey, transition, decisionPlayer, canDouble, boardKey, commitTurn, blockedBarRoll } from './rules.mjs';
 import { forcedTurn } from './table.mjs';
 import { futureLocalRoll } from './local-rolls.mjs';
 
@@ -17,7 +17,10 @@ export const chanceRolls = () => Array.from({length:6}, (_, i) =>
 export function continuations(node, result, rolls = chanceRolls()) {
   const s = node.state;
   if (node.turns >= PRETHINK.turns || s.phase === 'over') return [];
+  const pass = weight => ({state:transition(s,{type:'skip-roll'}), turns:node.turns+1,
+    weight, rolls:node.rolls || 0});
   if (s.phase === 'roll' && !canDouble(s)) {
+    if (blockedBarRoll(s)) return [pass(node.weight)];
     return rolls.map(({dice,weight}) => ({
       state:transition(s,{type:'roll',dice}), turns:node.turns, weight:node.weight*weight,
       rolls:(node.rolls || 0)+1,
@@ -37,6 +40,7 @@ export function continuations(node, result, rolls = chanceRolls()) {
   const close = sorted.filter(c => sorted[0].equity-c.equity <= PRETHINK.margin + 1e-10).slice(0,PRETHINK.branches);
   return close.flatMap((choice,i) => {
     // No-double has dice as its children. Other cube actions preserve context.
+    if (choice.action === 'roll' && blockedBarRoll(s)) return [pass(node.weight/(i+1))];
     if (choice.action === 'roll') return rolls.map(({dice,weight}) => ({
       state:transition(s,{type:'roll',dice}), turns:node.turns, weight:node.weight*weight/(i+1),
       rolls:(node.rolls || 0)+1,
@@ -77,7 +81,8 @@ export class Prethink {
       const skip = node.state.phase === 'move' ? forcedTurn(node.state) : node.state.phase === 'roll' && !canDouble(node.state);
       const result=skip ? null : await this.engine.analyze(node.state,{preset,priority:-20});
       if (this.plan !== plan) return;
-      const dice=node.state.phase === 'roll' ? await futureLocalRoll(model,node.rolls || 0,node.state.turn) : null;
+      const dice=node.state.phase === 'roll' && !blockedBarRoll(node.state)
+        ? await futureLocalRoll(model,node.rolls || 0,node.state.turn) : null;
       const children=continuations(node,result,dice ? [{dice,weight:1}] : chanceRolls());
       // One principal continuation here; the idle scheduler covers alternatives.
       if (children[0]) await prepare(children[0],remaining-1);
@@ -154,7 +159,7 @@ export class Prethink {
       {
         const actual = priority === -4 && result?.actual;
         const plan = actual ? {...result,candidates:[actual]} : result;
-        const dice = node.state.phase === 'roll'
+        const dice = node.state.phase === 'roll' && !blockedBarRoll(node.state)
           ? await futureLocalRoll(model, node.rolls || 0, node.state.turn) : null;
         if (this.scope !== scope || this.job !== job) return;
         for (const next of continuations(actual ? {...node,weight:4} : node,plan,

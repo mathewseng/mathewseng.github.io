@@ -41,14 +41,15 @@ export function decisionHistory(model) {
     if (index && source.gameNumber !== states[index - 1].gameNumber) {
       turn = 1;
       turnStart = index;
-    } else if (index && model.events[index - 1].action.type === "move") {
+    } else if (index && ['move', 'skip-roll'].includes(model.events[index - 1].action.type)) {
       turn++;
       turnStart = index;
     }
     const eligible =
       a.type === "move" ||
       (source.phase === "roll" &&
-        ["roll", "double"].includes(a.type) &&
+        ["roll", "skip-roll", "double"].includes(a.type) &&
+        !(a.type === 'skip-roll' && event.automatic) &&
         !(a.type === "roll" && blockedBarRoll(source)) &&
         canDouble(source)) ||
       (source.phase === "double" &&

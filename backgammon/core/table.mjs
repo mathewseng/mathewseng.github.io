@@ -4,6 +4,7 @@ import { historyStateKey } from "./history-tree.mjs";
 import { historyStates } from "./history-states.mjs";
 import { certainBearoff } from "./certain-bearoff.mjs";
 import { acceptedAttempt, beginDecisionAttempt } from "./decision-attempt.mjs";
+import { canAutoPassClosedOut } from './closed-out.mjs';
 import {
   clone,
   transition,
@@ -16,18 +17,13 @@ import {
   boardKey,
   applyStep,
   stepsForDie,
+  blockedBarRoll,
+  canDouble,
 } from "./rules.mjs";
+export { blockedBarRoll } from './rules.mjs';
 
 const forcedCache = new WeakMap(),
   undoCache = new WeakMap();
-// Table convenience: when every entry is closed, roll and pass without a
-// prompt. Still commit real dice for replay/recovery. This intentionally also
-// skips the optional pre-roll double; pending cube/resignation replies never skip.
-export function blockedBarRoll(state) {
-  if (state.phase !== "roll" || state.pending || !state.bar[state.turn]) return false;
-  const start = state.turn ? 0 : 18, opponent = state.turn ? 1 : -1;
-  return state.points.slice(start, start + 6).every(n => n * opponent >= 2);
-}
 // Play state objects are immutable. Equivalent legal paths count as one choice.
 // Two different outcomes that use every die prove a turn is not forced. Stop
 // there instead of generating hundreds of interchangeable double sequences.
@@ -195,7 +191,8 @@ export function draftAutomation(state, draft, paths, advance = false) {
 
 function append(table, action, actor, automatic = false) {
   const next = transition(table.state, action, actor);
-  const initialDecision = ["move", "roll", "double", "take", "pass", "beaver", "raccoon"].includes(action.type)
+  const initialDecision = ["move", "roll", "skip-roll", "double", "take", "pass", "beaver", "raccoon"].includes(action.type) &&
+    !(action.type === 'skip-roll' && automatic)
     ? acceptedAttempt(table, action) : null;
   table.state = next;
   delete table.initialDecision;
@@ -233,7 +230,10 @@ export function playAction(
   source,
   action,
   actor = decisionPlayer(source.state),
+  { autoPass = false, cubeEvaluation = null } = {},
 ) {
+  if (autoPass && (action.type !== 'skip-roll' || !canAutoPassClosedOut(source.state, cubeEvaluation)))
+    throw new Error('This cube decision cannot be skipped automatically.');
   const table = clone(source);
   delete table.reviewingTurn;
   if (action.type === "roll" && table.replayDice?.length) {
@@ -245,11 +245,17 @@ export function playAction(
       throw new Error("A takeback must reuse the committed dice.");
   }
   if (action.type === "next") table.replayDice = [];
+  // Older takeback queues may contain a previously revealed closed-out roll.
+  // Retire that entry without drawing dice; the opponent keeps their own roll.
+  if (action.type === 'skip-roll' && table.replayDice?.[0]?.actor === actor)
+    table.replayDice.shift();
   append(
     table,
     action,
     actor,
     action.type === "finish-race" || (action.type === "move" && !!forcedTurn(source.state)) ||
+      (action.type === 'skip-roll' && (autoPass || !canDouble(source.state))) ||
+      // Preserve the interpretation of legacy saved roll/pass pairs.
       (action.type === "roll" && blockedBarRoll(source.state)),
   );
   table.undoReply = null;

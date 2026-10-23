@@ -71,7 +71,7 @@ function blockedPosition(turn) {
   const s = passPosition();
   return turn ? {...s, turn, points:s.points.toReversed().map(n=>-n), bar:s.bar.toReversed()} : s;
 }
-test("closed-board automatic rolls record every dice combination and pass for either side", () => {
+test("legacy closed-board roll/pass histories still replay every dice combination for either side", () => {
   for (const turn of [0,1]) for (let a=1;a<=6;a++) for (let b=1;b<=6;b++) {
     const source = blockedPosition(turn);
     assert.equal(blockedBarRoll(source),true);
@@ -104,35 +104,46 @@ test("automatic pre-roll passes require a bar checker and all six blocked entrie
     assert.equal(blockedBarRoll({...s,pending:{by:1-turn}}),false);
   }
 });
-test("only the connected host can auto-roll a closed board; retries and recovery keep committed dice", () => {
+test("only the connected host can auto-pass a closed board with no cube choice; no dice on retries or recovery", () => {
   let t = session(players,{},"blocked-room");
-  t.started = true; t.initial = t.state = blockedPosition(1);
-  let rolls = 0;
-  const opts = {...options,dice:()=>{rolls++;return [4,6];}};
-  const command = envelope(t,"host",{type:"auto"},"blocked-roll");
+  const initial = blockedPosition(1); initial.cube={value:2,owner:0};
+  t.started = true; t.initial = t.state = initial;
+  const opts = {...options,dice:()=>{throw new Error("closed-out turns must not draw dice");}};
+  const command = envelope(t,"host",{type:"auto"},"blocked-pass");
   assert.throws(()=>accept(t,"guest",command,opts));
   assert.throws(()=>accept(t,"host",command,{...opts,connected:["host"]}));
-  assert.equal(rolls,0);
   const passed = accept(t,"host",command,opts);
-  assert.equal(rolls,1);
   assert.equal(passed.state.turn,0);
-  assert.deepEqual(passed.events.map(e=>e.actor),[1,1]);
-  const differentRoll = accept(t,"host",command,{...opts,dice:()=>[1,2]});
-  assert.notEqual(passed.hash,differentRoll.hash,'recovery distinguishes different rolls even with identical resulting boards');
+  assert.deepEqual(passed.events.map(e=>[e.actor,e.action.type,e.automatic]),[[1,'skip-roll',true]]);
+  assert.equal(passed.events[0].action.dice,undefined);
+  const differentRng = accept(t,"host",command,{...opts,dice:()=>[1,2]});
+  assert.equal(passed.hash,differentRng.hash,'the pass has no random outcome');
   assert.deepEqual(accept(passed,"host",command,opts),passed,'duplicate delivery is idempotent');
   assert.throws(()=>accept(passed,"host",{...command,actionId:"stale"},opts));
-  assert.equal(rolls,1);
   assert.ok(verifyHistory(passed));
   const beforeRecovery = checkpoint(t);
   t = recover(t,"guest");
   t.replayDice = [{actor:1,dice:[5,2]}];
-  const newHost = {...opts,hostId:"guest",dice:()=>{throw new Error("must reuse known roll");}};
+  const newHost = {...opts,hostId:"guest"};
   assert.throws(()=>accept(t,"guest",envelope(t,"guest",{type:"auto"},"premature"),newHost));
   t = accept(t,"host",envelope(t,"host",{type:"recover",checkpoint:beforeRecovery},"agree"),newHost);
-  t = accept(t,"guest",envelope(t,"guest",{type:"auto"},"recovered-roll"),newHost);
-  assert.deepEqual(t.events[0].action.dice,[5,2]);
+  t = accept(t,"guest",envelope(t,"guest",{type:"auto"},"recovered-pass"),newHost);
+  assert.deepEqual(t.events[0].action,{type:'skip-roll'});
   assert.deepEqual(t.replayDice,[]);
   assert.ok(verifyHistory(t));
+});
+test("an online closed-out player keeps a legal cube choice, then explicitly passes without rolling", () => {
+  const t=session(players,{},'cube-choice'); t.started=true;t.initial=t.state=blockedPosition(1);
+  const opts={...options,dice:()=>{throw new Error('must not draw dice');}};
+  assert.throws(()=>accept(t,'host',envelope(t,'host',{type:'auto'},'auto'),opts),/choice/);
+  assert.throws(()=>accept(t,'host',envelope(t,'host',{type:'skip-roll'},'wrong-player'),opts),/not your turn/);
+  for(const type of ['roll','skip-roll']) {
+    const passed=accept(t,'guest',envelope(t,'guest',{type},'manual-'+type),opts);
+    assert.deepEqual(passed.events[0].action,{type:'skip-roll'});
+    assert.equal(passed.events[0].automatic,undefined);
+    assert.equal(decisionHistory(passed)[0].action.type,'skip-roll');
+    assert.ok(verifyHistory(passed));
+  }
 });
 test("new local and online money tables default to Jacoby; match and explicit preferences preserved", () => {
   assert.equal(defaultPlayRules(0).jacoby, true);

@@ -77,6 +77,7 @@ import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
 import { certainBearoff } from "../core/certain-bearoff.mjs";
+import { canAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback, needsRevisionWarning } from "../core/decision-feedback.mjs";
@@ -182,6 +183,7 @@ function renderResultCard(s) {
 }
 let openingTimer = null, openingSchedule = "", forcedSchedule = "";
 let acceptedCubeTimer = null, acceptedCubeKey = "";
+let closedOutCheck = null;
 let draftSaveFrame = null, draftSaveTimer = null;
 const analysis = new AnalysisPanel();
 const autoReview = new AutoReview({
@@ -517,7 +519,7 @@ addEventListener("visibilitychange", () => {
     autoReview.pause();
     prethink.pause();
     analysis.engine.cancelWhere(job => job.priority < 0);
-  } else { advanceOpening(); advanceAcceptedCube(); prethink.update(); autoReview.update(); }
+  } else { advanceOpening(); if (!advanceAcceptedCube()) autoPlay(); prethink.update(); autoReview.update(); }
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -788,6 +790,7 @@ function render() {
 function advanceAcceptedCube() {
   const m = model(), s = state();
   if (!m?.started || m.reviewingTurn || s.phase !== "roll" || m.events.at(-1)?.action.type !== "take" ||
+      (blockedBarRoll(s) && canDouble(s)) ||
       !myTurn(s) || committing || assistanceJob || botBusy || document.hidden) return false;
   const key = `${m.id}:${m.events.length}:${positionKey(s)}`;
   if (acceptedCubeKey === key) return true;
@@ -861,11 +864,43 @@ function autoDraft(advance = false) {
     persist();
   });
 }
+function closedOutKey(s) {
+  return `${model()?.id}:${epoch}:${s.sequence}:${positionKey(s)}:${config.mode}:${config.humanSide}`;
+}
+function closedOutEvaluation(s) {
+  return config.mode === 'computer' && myTurn(s) && closedOutCheck?.key === closedOutKey(s)
+    ? closedOutCheck.result : null;
+}
+function checkClosedOutCube(s) {
+  if (!blockedBarRoll(s) || !canDouble(s) || config.mode !== 'computer' || !myTurn(s)) return;
+  const key = closedOutKey(s);
+  if (closedOutCheck?.key === key) return;
+  // Reuse completed analysis in the exact score/cube/rule context, including
+  // work prepared during the opponent's turn. Quick/1-ply cannot auto-decline.
+  const cached = ['auto','research','expert','deep'].map(preset => analysis.engine.peek(s,{preset}))
+    .filter(result => closedOutCubeMargin(s,result) !== null)
+    .sort((a,b) => b.settings.plies-a.settings.plies)[0];
+  const check = closedOutCheck = {key,result:cached || null,pending:!cached};
+  if (cached) return;
+  actions();
+  analysis.engine.analyze(s,{preset:'deep',priority:10}).then(result => {
+    check.result = result;
+  }).catch(() => {
+    // Failure leaves the legal cube controls available, without a retry loop.
+  }).finally(() => {
+    check.pending = false;
+    if (closedOutCheck === check && closedOutKey(state()) === key && !leaving) render();
+  });
+}
 function autoPlay() {
   const m = model(),
-    s = state(),
+    s = state();
+  if (!m?.started || m.reviewingTurn || document.hidden || committing || assistanceJob ||
+      m.undoRequest || opening.busy || opening.active || botBusy) return false;
+  checkClosedOutCube(s);
+  const
     certain = m?.started && certainBearoff(s),
-    blocked = m?.started && blockedBarRoll(s),
+    blocked = canAutoPassClosedOut(s, closedOutEvaluation(s)),
     forced = m?.started && forcedTurn(s);
   if ((!certain && !forced && !blocked) || committing || assistanceJob || m.undoRequest || m.reviewingTurn || opening.busy)
     return false;
@@ -892,11 +927,15 @@ function autoPlay() {
       if (
         game?.id === id &&
         positionKey(state()) === key &&
-        !committing &&
+        !committing && !assistanceJob && !document.hidden &&
         !game.undoRequest && !game.reviewingTurn
-      )
-        commit(certain ? {type:"finish-race"} : blocked ? { type: "roll" } : { type: "move", steps: forced.steps }).catch(showError);
-    }, certain || reducedMotion() ? 0 : 650);
+      ) {
+        const result = closedOutEvaluation(state());
+        if (blocked && !canAutoPassClosedOut(state(),result)) return;
+        commit(certain ? {type:"finish-race"} : blocked ? { type: "skip-roll" } : { type: "move", steps: forced.steps },
+          null, blocked ? {autoPass:true,cubeEvaluation:result} : {}).catch(showError);
+      }
+    }, certain || blocked || reducedMotion() ? 0 : 650);
   }
   return true;
 }
@@ -1183,6 +1222,8 @@ function arrangeActions() {
   helpActions.replaceChildren();
   for (const id of ["undo-turn", "hint", "roll", "double-cube"]) {
     const b = $(id);
+    // With no roll to make, expose the remaining cube choice directly.
+    if (blockedBarRoll(state()) && ['roll','double-cube'].includes(id)) continue;
     if (b) helpActions.append(b);
   }
   const prefs = settings();
@@ -1506,10 +1547,10 @@ function renderActions() {
       : opening.tie ? "Opening tie · rolling again…" : opening.dice ? "Beginning the first turn…" : "Rolling opening dice…";
     return;
   }
-  if (!m.reviewingTurn && (certainBearoff(s) || blockedBarRoll(s) || forcedTurn(s))) {
+  if (!m.reviewingTurn && (certainBearoff(s) || canAutoPassClosedOut(s,closedOutEvaluation(s)) || forcedTurn(s))) {
     $("message").textContent = certainBearoff(s) ? "Game decided"
       : blockedBarRoll(s)
-      ? "All six entries blocked · passing automatically"
+      ? "All six entries blocked · passing without rolling"
       : "Forced turn · playing automatically";
     return;
   }
@@ -1554,11 +1595,14 @@ function renderActions() {
     );
   } else if (s.phase === "roll") {
     const previous = m.events.at(-1);
+    const closed = blockedBarRoll(s);
     const prefs = settings();
     const keycap = action => prefs.keyboardEnabled && prefs.shortcuts[action]?.length
       ? shortcutBadge(prefs.shortcuts[action][0]) : "";
     $("message").replaceChildren(
-      `${previous?.automatic ? (previous.action.steps.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · Tap board to roll`, keycap("roll"),
+      closed ? `All six entries blocked · ${closedOutCheck?.key === closedOutKey(s) && closedOutCheck.pending ? 'checking cube…' : 'Double or pass without rolling'}`
+        : `${previous?.automatic ? (previous.action.steps?.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · Tap board to roll`,
+      ...(closed ? [] : [keycap("roll")]),
       ...(canDouble(s) ? [" · Cube to double", keycap("double")] : []),
     );
     a.append(
@@ -1566,7 +1610,7 @@ function renderActions() {
         id: "double-cube",
         disabled: !mine || !canDouble(s),
       }),
-      button("Roll dice", () => submitCube({ type: "roll" }), "primary", {
+      button(closed ? "No double · pass" : "Roll dice", () => submitCube({ type: closed ? 'skip-roll' : "roll" }), "primary", {
         disabled: !mine,
         id: "roll",
       }),
@@ -1921,7 +1965,7 @@ function panel() {
 }
 function eventText(e) {
   const a = e.action;
-  return `${names()[e.actor] || playerName(e.actor)} · ${a.type === "move" ? notation(a.steps, e.actor) : (a.type === "finish-race" ? "certain result" : a.type === "practice-roll" ? "practice roll" : a.type) + (a.dice ? " " + a.dice.join("–") : "")}${e.automatic ? " · automatic" : ""}`;
+  return `${names()[e.actor] || playerName(e.actor)} · ${a.type === "move" ? notation(a.steps, e.actor) : (a.type === 'skip-roll' ? 'closed out · pass without rolling' : a.type === "finish-race" ? "certain result" : a.type === "practice-roll" ? "practice roll" : a.type) + (a.dice ? " " + a.dice.join("–") : "")}${e.automatic ? " · automatic" : ""}`;
 }
 function detailDraft() {
   const p = $("draft-controls");
@@ -1975,8 +2019,9 @@ async function persist(history = true) {
     }
   }
 }
-async function commit(action, evaluation = null) {
+async function commit(action, evaluation = null, options = {}) {
   if (committing) return;
+  if (action.type === 'roll' && blockedBarRoll(state())) action = {type:'skip-roll'};
   if (config.mode === "online") {
     online.send(action);
     return;
@@ -1986,7 +2031,7 @@ async function commit(action, evaluation = null) {
   draft.enabled = false;
   try {
     const eventIndex = game.events.length;
-    game = await localPlayAction(game, action);
+    game = await localPlayAction(game, action, options);
     if (evaluation) {
       game.events[eventIndex].evaluation = compactEvaluation(
         evaluation.source,
@@ -2493,10 +2538,11 @@ async function submit() {
 }
 async function submitCube(action) {
   if (committing || assistanceJob || botBusy || !myTurn(state())) return;
+  if (action.type === 'roll' && blockedBarRoll(state())) action = {type:'skip-roll'};
   if (
     config.mode !== "computer" ||
     !config.tutor ||
-    (action.type === "roll" && !canDouble(state()))
+    (["roll", 'skip-roll'].includes(action.type) && !canDouble(state()))
   )
     return commit(action);
   return evaluateDecision(action);
@@ -2529,7 +2575,7 @@ async function evaluateDecision(action) {
               ? "Checker decision to review"
               : "Cube decision to review",
             state: job.source,
-            submitted: checker ? steps : action.type,
+            submitted: checker ? steps : action.type === 'skip-roll' ? 'roll' : action.type,
             analysis: result,
             tags: [checker ? "checker" : "cube", "mistake"],
           }),
@@ -2647,6 +2693,12 @@ async function computerTurn() {
     const token = epoch;
     await ui.board.waitForPresentation();
     if (token !== epoch || s !== state()) return;
+    if (blockedBarRoll(s)) {
+      prethink.prepareAfter(s,{type:'skip-roll'});
+      botBusy = false;
+      await commit({type:'skip-roll'},null,{autoPass:true});
+      return;
+    }
     const dice = await futureLocalRoll(game) || cryptoDice();
     if (token !== epoch || s !== state()) return;
     prethink.prepareAfter(s, {type:'roll', dice});
@@ -2691,6 +2743,7 @@ async function computerTurn() {
         action = {
           type: result.action === "double" && canDouble(s) ? "double" : "roll",
         };
+      if (action.type === 'roll' && blockedBarRoll(s)) action = {type:'skip-roll'};
       if (result.type === "checker")
         evaluation = {
           source: clone(s),

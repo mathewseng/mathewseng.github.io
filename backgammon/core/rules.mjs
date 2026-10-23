@@ -411,6 +411,13 @@ export function commitTurn(s, steps) {
     throw new Error("Complete the legal turn using all playable dice.");
   return path.state;
 }
+// Every possible roll is unplayable. This proves a checker pass, not a cube
+// decision: the player may still double before choosing to skip the roll.
+export function blockedBarRoll(s) {
+  if (s.phase !== "roll" || s.pending || !s.bar[s.turn]) return false;
+  const start = s.turn ? 0 : 18, opponent = s.turn ? 1 : -1;
+  return s.points.slice(start, start + 6).every(n => n * opponent >= 2);
+}
 export function canDouble(s) {
   return (
     s.phase === "roll" &&
@@ -480,6 +487,12 @@ export function transition(source, action, actor = source.turn) {
       }
       break;
     }
+    case "skip-roll":
+      if (!blockedBarRoll(s) || action.dice !== undefined)
+        throw new Error("Only a fully closed-out player may pass without rolling.");
+      s.turn = 1 - s.turn;
+      s.dice = [];
+      break;
     case "roll":
       if (s.phase !== "roll") throw new Error("Dice cannot be rolled now.");
       checkDice(action.dice);
