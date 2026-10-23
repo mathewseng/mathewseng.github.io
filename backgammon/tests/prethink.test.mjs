@@ -168,6 +168,8 @@ test('chosen bot continuation prepares the seeded checker roll while foreground 
     assert.ok(checker,'next checker search starts before playback finishes');
     assert.deepEqual(checker.state.dice,expected);
     assert.equal(checker.state.turn,1);
+    assert.equal(checker.readyOnly,false,'chosen next checker position may deepen during animation');
+    assert.ok(h.calls.filter(c=>c.state.phase!=='move').every(c=>c.readyOnly),'cube preparation stops at its minimum');
     assert.deepEqual(h.view.game,original,'preparation consumes no real roll');
     // Committing the chosen action must not kill its already-running next-roll work.
     h.view.game={...original,state:transition(original.state,action)};
@@ -177,7 +179,7 @@ test('chosen bot continuation prepares the seeded checker roll while foreground 
   }finally{h.p.pause();}
 });
 
-test('future Auto searches use the mandatory minimum and keep the hard speculative deadline',async()=>{
+test('future cube preparation keeps the mandatory minimum and hard speculative deadline',async()=>{
   const h=harness({limits:{...PRETHINK,nodes:8,milliseconds:20}});
   let rejectFuture, pendingJob;
   try{
@@ -185,7 +187,8 @@ test('future Auto searches use the mandatory minimum and keep the hard speculati
     assert.equal(h.calls[0].readyOnly,false,'current-position analysis may deepen while idle');
     h.p.engine.analyze=(state,options)=>{
       pendingJob={state,...options};
-      assert.equal(options.readyOnly,true,'future work never waits for optional deeper Auto stages');
+      assert.equal(state.phase,'roll');
+      assert.equal(options.readyOnly,true,'future cube work stops at its minimum');
       return new Promise((resolve,reject)=>{rejectFuture=reject;});
     };
     h.p.engine.cancelWhere=predicate=>{
@@ -198,4 +201,46 @@ test('future Auto searches use the mandatory minimum and keep the hard speculati
     h.p.engine.analyze=()=>{restarted=true;return Promise.resolve(evaluate(source()));};
     await h.p.run();clearTimeout(h.p.timer);assert.equal(restarted,false,'deadline never creates a retry loop');
   }finally{h.p.engine.cancelWhere=()=>{};h.p.pause();}
+});
+
+test('only the highest-priority future Auto checker position can deepen per idle scope',async()=>{
+  const h=harness({limits:{...PRETHINK,nodes:24}});
+  try {
+    h.view.game.localRolls={version:1,seed:'b7'.repeat(32),cursor:5};
+    await h.tick();
+    h.view.submitted=legalTurns(h.view.game.state).at(-1).steps;
+    await h.tick();
+    assert.equal(h.calls[1].readyOnly,true,'actual-move grading stays responsive');
+    for(let i=0;i<18;i++)await h.tick();
+    const checkers=h.calls.filter(c=>c.priority===-20&&c.state.phase==='move');
+    assert.ok(checkers.length>=2,'exercise both the preferred branch and alternatives');
+    assert.equal(checkers[0].readyOnly,false);
+    assert.deepEqual(checkers[0].state.points,transition(h.view.game.state,{type:'move',steps:h.view.submitted}).points);
+    assert.ok(checkers.slice(1).every(c=>c.readyOnly),'alternatives cannot all launch optional fourth ply');
+    assert.ok(h.calls.filter(c=>c.priority===-20&&c.state.phase!=='move').every(c=>c.readyOnly));
+  } finally {h.p.pause();}
+});
+
+test('optional future checker deepening cannot exceed the hard budget or restart itself',async()=>{
+  const h=harness({limits:{...PRETHINK,nodes:8,milliseconds:20}});
+  let pendingJob,rejectFuture;
+  try {
+    await h.tick();
+    // Isolate a future checker node so the deadline expires in optional checker work.
+    h.p.scope.queue=[{state:{...source(),dice:[3,1]},turns:1,weight:1}];
+    h.p.engine.analyze=(state,options)=>{
+      pendingJob={state,...options};
+      assert.equal(options.readyOnly,false);
+      return new Promise((resolve,reject)=>{rejectFuture=reject;});
+    };
+    h.p.engine.cancelWhere=predicate=>{
+      assert.equal(predicate({...pendingJob,priority:20}),false);
+      if(predicate(pendingJob))rejectFuture(new DOMException('Budget exhausted','AbortError'));
+    };
+    await h.p.run();clearTimeout(h.p.timer);
+    assert.ok(h.p.scope.spent>=20);
+    assert.equal(h.p.scope.deepened,true);
+    h.p.engine.analyze=()=>{assert.fail('budget expiry must not launch a retry');};
+    await h.p.run();clearTimeout(h.p.timer);
+  } finally {h.p.engine.cancelWhere=()=>{};h.p.pause();}
 });

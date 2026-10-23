@@ -34,10 +34,10 @@ test('runtime estimates scale with observed device speed instead of assuming des
 test('optional four-ply admission accounts for capped-model uncertainty and measured tree growth',()=>{
   const s=initialState({phase:'move',dice:[4,1],matchLength:0,rules:{cube:true,immediateRedoubles:2}});
   const rows=n=>Array.from({length:n},(_,i)=>({key:String(i),equity:-i*.004}));
-  const evaluations=[{...level(2,'0',.004,102),candidates:rows(16)},
-    {...level(3,'0',.004,822),candidates:rows(8)}];
+  const evaluations=[{...level(2,'0',.004,204),candidates:rows(16)},
+    {...level(3,'0',.004,1644),candidates:rows(8)}];
   const forecast=forecastNext(s,evaluations);
-  assert.ok(forecast.estimateMs>5000);
+  assert.ok(forecast.estimateMs>10000);
   assert.ok(forecast.estimateMs>=forecast.observedGrowthMs);
   assert.equal(chooseSearchDecision(s,evaluations).reason,'predicted-cost');
   const affordable=evaluations.map(r=>({...r,stageMs:r.stageMs/100}));
@@ -66,6 +66,30 @@ test('neither a clear lead nor an expensive forecast can end Auto at two ply',()
   }
 });
 
+test('moderate leads now deepen; only a large, stable lead skips optional fourth ply',()=>{
+  for (const [cube, moderate, large] of [[false,.05,.09],[true,.10,.17]]) {
+    const s={...state(),rules:{cube}};
+    const levels=(previous,current)=>[level(2,'a',previous,40),level(3,'a',current,200)];
+    assert.equal(chooseSearchDecision(s,levels(.05,moderate)).reason,'searching');
+    assert.equal(chooseSearchDecision(s,levels(.03,large)).reason,'searching','preceding depth must also be decisive');
+    assert.equal(chooseSearchDecision(s,levels(.05,large)).reason,'clear-lead');
+    const cheap=levels(.05,large).map(r=>({...r,stageMs:r.stageMs/1000}));
+    assert.equal(chooseSearchDecision(s,cheap).reason,'searching','very cheap deeper work remains worthwhile');
+  }
+});
+
+test('Auto completes fourth ply for a moderate lead that previously stopped at three',()=>{
+  const updates=[];let clock=0;
+  const result=runAdaptive({analyze(s,preset){
+    const depth=PRESETS[preset].plies;
+    clock += [10,20,40,200,1000][depth];
+    return {...level(depth,'a',.05),status:'complete'};
+  }},state(),'checker',null,r=>updates.push(r.settings.plies),()=>clock);
+  assert.deepEqual(updates,[0,1,2,3,4]);
+  assert.equal(result.settings.plies,4);
+  assert.equal(result.budget.reason,'maximum-depth');
+});
+
 test('adaptive search publishes its stopping reason and passes each winner to the next stage',()=>{
   const updates=[], calls=[]; let clock=0;
   const result=runAdaptive({analyze(s,preset,kind,submitted,options){
@@ -77,7 +101,7 @@ test('adaptive search publishes its stopping reason and passes each winner to th
   assert.deepEqual(updates.map(r=>r.settings.plies),[0,1,2,3]);
   assert.deepEqual(calls.map(c=>c.retainKeys),[[],['a'],['a'],['a']]);
   assert.equal(result.budget.reason,'clear-lead');
-  assert.equal(result.settings.searchPolicy,'minimum-three-v1');
+  assert.equal(result.settings.searchPolicy,'minimum-three-v2');
   assert.equal(result.budget.forecast.nextPlies,4);
   assert.equal(result.stageMs,800);
 });
@@ -102,10 +126,10 @@ test('automatic 4-ply search evaluates the 3-ply winner even when its 2-ply rank
   assert.equal(engine.analyze(s,'research').candidates[0].key,wanted,'Fixed Research must preserve the leader too');
 });
 
-test('optional fourth-ply cost gate uses the five-second next-stage threshold',()=>{
+test('optional fourth-ply cost gate uses the ten-second next-stage threshold',()=>{
   const s=state(), base=[level(2,'a',.001,30),level(3,'a',.001,100)];
   const prediction=forecastNext(s,base).estimateMs;
-  for(const [estimate,reason] of [[4999,'searching'],[5001,'predicted-cost']]) {
+  for(const [estimate,reason] of [[4999,'searching'],[7500,'searching'],[9999,'searching'],[10001,'predicted-cost']]) {
     const scaled=base.map(l=>({...l,stageMs:l.stageMs*estimate/prediction}));
     assert.equal(chooseSearchDecision(s,scaled).reason,reason);
   }

@@ -37,8 +37,18 @@ module.exports = async function adaptive(browser,base,out,name="browser") {
         if(retry.positionKey!==positionKey(next))throw Error("Stale result after restart");
         const cube=await e.analyze(initialState({phase:"roll"}),{preset:"auto"});
         if(cube.type!=="cube"||cube.settings.plies<3||!Number.isFinite(cube.equity))throw Error("Cube Auto did not complete its minimum depth");
+        const {resultView}=await import("/backgammon/ui/analysis.mjs");
+        for(const seconds of [5,10]) {
+          const displayed=resultView({...a,budget:{...a.budget,reason:"predicted-cost",maxNextStageMs:seconds*1000}});
+          if(!displayed.querySelector("#analysis-budget").textContent.includes(`above ${seconds} s`))throw Error("Saved cost limit mislabeled");
+        }
+        // Small match bearoff: exercise affordable deepening with real WASM,
+        // without relying on the money opening book or the clear-lead shortcut.
+        const points=Array(24).fill(0);points[5]=2;points[3]=2;points[1]=1;points[18]=-4;points[20]=-5;points[23]=-6;
+        const bearoff=await e.analyze(initialState({phase:"move",dice:[6,1],matchLength:7,points,off:[10,0]}),{preset:"auto"});
+        if(bearoff.settings.plies<3||bearoff.budget.maxNextStageMs!==10000)throw Error("Incorrect deeper Auto policy");
         return {elapsedMs,completedPlies:a.settings.plies,cubePlies:cube.settings.plies,cubeReason:cube.budget.reason,
-          actual:a.actual.notation,levels:updates.map(r=>r.settings.plies)};
+          actual:a.actual.notation,levels:updates.map(r=>r.settings.plies),bearoff:{plies:bearoff.settings.plies,reason:bearoff.budget.reason,levels:bearoff.budget.levels}};
       } finally {e.destroy();}
     });
     assert.ok(report.completedPlies>=3&&report.completedPlies<=4);

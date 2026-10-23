@@ -129,3 +129,35 @@ test('a failed live search cannot fall back to a completed two-ply checkpoint',a
     assert.equal(h.client.cache.size,0);
   } finally {h.client.destroy();}
 });
+
+test('background deadline preserves completed three ply for immediate live reuse',async()=>{
+  const h=harness(),s=source();
+  try {
+    const pending=h.client.analyze(s,{preset:'auto',priority:-20});
+    const rejected=assert.rejects(pending,{name:'AbortError'});
+    const id=await h.start(),w=h.workers[0];
+    w.reply({id,type:'evaluation',result:result(s,3)});
+    h.client.cancelWhere(job=>job.priority===-20);
+    await rejected;
+    assert.equal(w.terminated,true);
+    const ready=await h.client.analyze(s,{preset:'auto',readyOnly:true});
+    assert.equal(ready.settings.plies,3);
+    assert.equal(ready.cached,true);
+    assert.equal(h.workers.length,1,'live reuse starts no replacement search');
+  } finally {h.client.destroy();}
+});
+
+test('completed optional four ply is used by the next live action without another search',async()=>{
+  const h=harness(),s=source();
+  try {
+    const pending=h.client.analyze(s,{preset:'auto',priority:-20});
+    const id=await h.start(),w=h.workers[0];
+    w.reply({id,type:'evaluation',result:result(s,3)});
+    w.reply({id,type:'result',result:{...result(s,4),budget:{reason:'maximum-depth'}}});
+    await pending;
+    const ready=await h.client.analyze(s,{preset:'auto',readyOnly:true});
+    assert.equal(ready.settings.plies,4);
+    assert.equal(ready.cached,true);
+    assert.equal(w.messages.filter(m=>m.type==='analyze').length,1);
+  } finally {h.client.destroy();}
+});

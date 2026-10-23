@@ -2,8 +2,11 @@
 import { SEARCH_MODEL } from './search-model.mjs';
 import { PRESETS } from './metadata.mjs';
 
-export const SEARCH_POLICY_VERSION = 'minimum-three-v1';
-export const SEARCH_LIMITS = Object.freeze({ minimumPlies: 3, maxNextStageMs: 5000, maximumCubePlies: 3 });
+export const SEARCH_POLICY_VERSION = 'minimum-three-v2';
+export const SEARCH_LIMITS = Object.freeze({ minimumPlies: 3, maxNextStageMs: 10000, maximumCubePlies: 3 });
+// Policy preferences, separate from the historical timing model's fitted data.
+// A larger, stable lead is required before giving up optional fourth-ply work.
+export const SEARCH_GAPS = Object.freeze({ cubeless: .080, money: .160, previous: .040 });
 
 export function leadInfo(current, previous) {
   const a = current?.candidates, b = previous?.candidates;
@@ -96,11 +99,11 @@ export function chooseSearchDecision(state, evaluations, submitted = null) {
   const lead = leadInfo(current, previous), forecast = forecastNext(state, evaluations);
   // Match equity and actual-move grading need more than a stable top ranking.
   // Cubeful money gets a larger margin than the historical cubeless sample.
-  const margin = state.rules?.cube ? SEARCH_MODEL.policy.moneyGap : SEARCH_MODEL.policy.cubelessGap;
+  const margin = state.rules?.cube ? SEARCH_GAPS.money : SEARCH_GAPS.cubeless;
   if (!submitted && !state.matchLength && lead?.stable && lead.gap >= margin &&
-      lead.previousGap >= .02 && forecast?.estimateMs >= 50)
+      lead.previousGap >= SEARCH_GAPS.previous && forecast?.estimateMs >= 50)
     return { reason: 'clear-lead', lead, forecast };
-  // Five seconds is an estimate for the NEXT stage, not a total-time deadline.
+  // Ten seconds is an estimate for the NEXT stage, not a total-time deadline.
   // Completing the minimum depth never consumes the allowance for trying 4 ply.
   if (forecast && forecast.estimateMs > SEARCH_LIMITS.maxNextStageMs)
     return { reason: 'predicted-cost', lead, forecast };

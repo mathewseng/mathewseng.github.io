@@ -33,7 +33,7 @@ test("even expensive 0/1/2-ply stages cannot bypass the mandatory 3-ply floor", 
   assert.equal(r.elapsedMs,30000);
   assert.equal(r.budget.reason,"cube-depth-limit");
   assert.equal(r.budget.minimumPlies,3);
-  assert.equal(r.budget.maxNextStageMs,5000);
+  assert.equal(r.budget.maxNextStageMs,10000);
 });
 
 class WorkerMock {
@@ -46,7 +46,7 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 0));
 const completed = (plies = 3) => ({
   status: "complete", settings: { plies }, candidates: [{ key: "best", equity: .25 }],
   actual: { key: "actual", equity: .2 }, error: .05,
-  budget: { minimumPlies: 3, maxNextStageMs: 5000, levels: [{ plies }], reason: "searching" },
+  budget: { minimumPlies: 3, maxNextStageMs: 10000, levels: [{ plies }], reason: "searching" },
 });
 
 test("Auto never resolves with a shallow update, even after five seconds", async () => {

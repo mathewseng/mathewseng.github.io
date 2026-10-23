@@ -62,7 +62,7 @@ export class Prethink {
     const view=this.view();
     if (!view?.enabled || view.game?.config.mode !== 'computer') return;
     const next=transition(state,action,decisionPlayer(state)), model=view.game;
-    const plan = { gameId:model.id, keys:new Set(), began:this.now() };
+    const plan = { gameId:model.id, keys:new Set(), began:this.now(), deepened:false };
     clearTimeout(this.planTimer);
     this.plan = plan;
     this.planTimer = setTimeout(() => {
@@ -81,7 +81,9 @@ export class Prethink {
       const preset=decisionPlayer(node.state)===model.config.humanSide
         ? model.config.reviewStrength||'auto' : model.config.strength||'auto';
       const skip = node.state.phase === 'move' ? forcedTurn(node.state) : node.state.phase === 'roll' && !canDouble(node.state);
-      const result=skip ? null : await this.engine.analyze(node.state,{preset,priority:-20,readyOnly:true});
+      const deepen = !skip && preset === 'auto' && node.state.phase === 'move' && !plan.deepened;
+      if (deepen) plan.deepened = true;
+      const result=skip ? null : await this.engine.analyze(node.state,{preset,priority:-20,readyOnly:!deepen});
       if (this.plan !== plan) return;
       const dice=node.state.phase === 'roll' ? await futureLocalRoll(model,node.rolls || 0,node.state.turn) : null;
       const children=continuations(node,result,dice ? [{dice,weight:1}] : chanceRolls());
@@ -112,7 +114,7 @@ export class Prethink {
       const position = analysisKey(model.state);
       this.engine.cancelWhere(job => [-20,-5,-4].includes(job.priority) && analysisKey(job.state) !== position &&
         !(this.plan?.gameId === model.id && this.plan.keys.has(analysisKey(job.state))));
-      this.scope = {key, state:structuredClone(model.state), root:null, done:new Set(), queue:[], seen:new Set(), nodes:0, spent:0};
+      this.scope = {key, state:structuredClone(model.state), root:null, done:new Set(), queue:[], seen:new Set(), nodes:0, spent:0, deepened:false};
       this.job = null;
     }
     // A completed real draft takes precedence immediately. Do not wait for a
@@ -155,9 +157,14 @@ export class Prethink {
     try {
       const forced = node.state.phase === 'move' && forcedTurn(node.state);
       const cubeUnavailable = node.state.phase === 'roll' && !canDouble(node.state);
+      // Give the first (highest-priority) future checker position one chance
+      // to deepen. The existing hard background deadline still applies, and
+      // the client retains completed 3-ply work if that deadline interrupts 4.
+      const deepenFuture = priority === -20 && preset === 'auto' && node.state.phase === 'move' && !forced && !scope.deepened;
+      if (deepenFuture) scope.deepened = true;
       const result = forced || cubeUnavailable ? {skipped:true} : await this.engine.analyze(node.state, {
         preset, priority, submitted:priority === -4 ? submitted : null,
-        readyOnly: priority !== -5,
+        readyOnly: priority !== -5 && !deepenFuture,
       });
       if (this.scope !== scope || this.job !== job) return;
       if (jobKey === 'root') scope.root=result;

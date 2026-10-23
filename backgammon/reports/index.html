@@ -10,12 +10,12 @@
       content="Recorded GNUbg speed and accuracy measurements for the Backgammon analysis settings, and an on-device measurement."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=347130f207b44290" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=347130f207b44290" />
-    <link rel="stylesheet" href="../styles.css?bgv=347130f207b44290" />
-    <link rel="stylesheet" href="../docs.css?bgv=347130f207b44290" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=18d7002637cdb822" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=18d7002637cdb822" />
+    <link rel="stylesheet" href="../styles.css?bgv=18d7002637cdb822" />
+    <link rel="stylesheet" href="../docs.css?bgv=18d7002637cdb822" />
     <script>document.documentElement.classList.add("is-ready");</script>
-    <script type="module" src="./app.js?bgv=347130f207b44290"></script>
+    <script type="module" src="./app.js?bgv=18d7002637cdb822"></script>
   </head>
   <body class="docs-page docs-page--report">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -69,7 +69,7 @@
           <div class="docs-body">
             <section class="docs-section" id="automatic" aria-labelledby="automatic-heading">
               <h2 id="automatic-heading">Automatic search · 3 ply minimum</h2>
-              <p>Auto always completes at least 3 ply. Checker searches can reach 4; cube searches stop at 3. A deeper stage is skipped if estimated above 5 seconds or the best move has a substantial, stable lead. This is an estimate for the next depth, not a total-time deadline; actual time can be longer.</p>
+              <p>Auto always completes at least 3 ply. Checker searches can reach 4; cube searches stop at 3. A deeper stage is skipped if estimated above 10 seconds or the best move has a substantial, stable lead. This is an estimate for the next depth, not a total-time deadline; actual time can be longer.</p>
               <p>The earlier one-second gap/cost policy averaged 374 ms versus 687 ms for deadline-only search across 68 paired test cases on an M4 Pro, choosing the same move in all 68. This measures move agreement, not perfect play or equal equity accuracy. These timings describe the previous policy; no physical iPhone was measured. <a href="https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/SEARCH-POLICY.md">Method, thresholds and limitations</a> · <a href="../docs/search-policy-live.json">Paired measurements</a></p>
               <h3>Earlier deadline-only measurements</h3>
               <div id="automatic-content"></div>

@@ -26,7 +26,7 @@ const server=http.createServer((req,res)=>{
      const hint=await client.analyze(state,{preset:'auto'});
      if(hint.settings.plies<3)throw Error('Auto ended below the minimum depth');
      if(hint.budget.reason==='clear-lead'&&(!hint.budget.lead.stable||hint.settings.plies<3))throw Error('Premature gap stop');
-     if(!hint.budget.forecast||hint.budget.policy!=='minimum-three-v1')throw Error('Missing cost/model metadata');
+     if(!hint.budget.forecast||hint.budget.policy!=='minimum-three-v2')throw Error('Missing cost/model metadata');
      const submitted=hint.candidates.at(-1).steps;
      const actual=await client.analyze(state,{preset:'auto',submitted});
      if(actual.settings.plies<3||actual.budget.reason==='clear-lead'||!actual.actual)throw Error('Actual grading used the hint shortcut');
