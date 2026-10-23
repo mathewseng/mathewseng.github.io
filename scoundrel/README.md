@@ -80,7 +80,9 @@ current-room cards have a dot. The toggle switches the highlighted set. Landscap
 uses suits as rows; portrait phones use suits as columns with a sticky header.
 Every tile opens its full artwork. Cards left includes the current room, so the
 left and resolved counts always sum to 44. The inventory receives only the
-public observation and cannot expose the unseen deck order.
+public observation and cannot expose the unseen deck order. Cards left also shows
+the known bottom queue in draw order, after the unseen cards. Avoidance recommendations
+highlight both the Avoid room button and the matching order in its preview.
 
 ## Hidden-deck action values
 
@@ -153,8 +155,8 @@ the actual cohort size and fixed simulation budget; these are measured policy
 outcomes, not perfect-information solutions or proven optimal population EVs.
 
 The chart has one thin bar per integer score, including zero-count positions,
-with mean, median, and first/third quartile lines. Quartiles use R-7 linear
-interpolation. Whole-number medians have no decimal suffix. The full plot fits
+with lines at every fifth percentile from 5% through 95%. Mean, median, and
+first/third quartile lines stand out. Percentiles use R-7 linear interpolation. Whole-number medians have no decimal suffix. The full plot fits
 phones; a Score control supports precise touch/keyboard filtering. Cohort filters
 affect the plot and deal list; headline statistics always describe the full study.
 Every deal has a verified history and seeded play link. CSV export includes the

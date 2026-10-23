@@ -26,7 +26,11 @@ const summary = S.summarize(S.studyRows(fixture));
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
           const clipped = await page.locator(".chart-label,.chart-stat strong,.report-metrics strong,.report-metrics small").evaluateAll(es => es.filter(e => { const r = e.getBoundingClientRect(); return r.left < 0 || r.right > innerWidth + 1; }).map(e => e.textContent));
           assert.deepEqual(clipped, []);
-          assert.equal(await page.locator(".chart-reference").count(), 4);
+          assert.equal(await page.locator(".chart-reference").count(), 20);
+          assert.deepEqual(await page.locator(".chart-reference[data-percentile]").evaluateAll(es => es.map(e => ({ percentile: Number(e.dataset.percentile), value: Number(e.dataset.value) })).sort((a, b) => a.percentile - b.percentile)), summary.percentiles);
+          await page.locator("#histogram").focus(); await page.keyboard.press("Home"); await page.keyboard.press("ArrowRight");
+          assert.equal(await page.locator("#score-picker").inputValue(), String(summary.min + 1));
+          await page.keyboard.press("Escape");
           if (process.env.SCOUNDREL_SCREENSHOTS) {
             const folder = process.env.SCOUNDREL_SCREENSHOTS;fs.mkdirSync(folder, { recursive: true });
             await page.locator(".distribution-section").screenshot({ path: path.join(folder, `${name}-100000-chart-${viewport.width}.png`) });

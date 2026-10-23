@@ -46,6 +46,7 @@ html[data-focus-mode="pointer"] :focus { outline: none; }
 .chart-group:hover .chart-bar, .chart-group.is-active .chart-bar { fill: var(--ink); }
 .chart-group.is-active .chart-hit-area { fill: var(--good-soft); }
 .chart-reference { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 4; pointer-events: none; }
+.chart-reference-percentile { stroke: var(--muted); stroke-opacity: .55; stroke-dasharray: 1 4; }
 .chart-reference-mean { stroke: var(--good); stroke-dasharray: none; }
 .chart-reference-median { stroke: var(--info); stroke-dasharray: 6 3; }
 .chart-inspector { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }

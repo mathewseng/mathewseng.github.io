@@ -437,3 +437,10 @@ button:disabled { cursor: not-allowed; }
   .game-topbar > .topbar-actions, .game-topbar > .return-game { grid-column: 2; grid-row: 1; justify-self: end; margin: 0; }
   .game-topbar > .game-nav { grid-column: 1 / -1; grid-row: 2; justify-content: center; gap: 24px; margin: 0; }
 }
+
+/* Recommendations use the same accent on cards and avoidance choices. */
+.flee-button.is-best, .avoid-choice.is-best { border-color: var(--good); box-shadow: 0 0 0 1px var(--good), 0 0 20px var(--good-soft); }
+.flee-button.is-best { color: var(--good); background: var(--good-soft); }
+.avoid-choice.is-best { background: color-mix(in srgb, var(--good-soft) 45%, var(--page)); }
+.avoid-recommendation { display: inline-block; margin-left: 10px; color: var(--good); font: 500 12px/1.5 ScoundrelSans, var(--font-sans); }
+.avoid-recommendation[hidden] { display: none; }

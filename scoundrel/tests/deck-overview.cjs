@@ -77,6 +77,13 @@ const E = require("../engine.js");
         async function inventory(state) {
           await page.evaluate(state => localStorage.setItem("scoundrel-run-v1", JSON.stringify(state)), state); await page.reload();
           await page.locator("#cards-left-button").click();
+          assert.deepEqual(await page.locator("[data-bottom-card]").evaluateAll(es => es.map(e => e.dataset.bottomCard)), state.knownBottom, "bottom queue retains the remembered draw order");
+          assert.ok((await page.locator(".deck-bottom p").innerText()).startsWith(String(state.deck.length - state.knownBottom.length)), "unseen cards precede the known queue");
+          for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }, { width: 1440, height: 900 }]) {
+            await page.setViewportSize(viewport);
+            assert.equal(await page.locator(".deck-bottom").evaluate(e => e.scrollWidth > e.clientWidth + 1), false);
+            if (process.env.SCOUNDREL_SCREENSHOTS) await page.locator("#deck-dialog").screenshot({ path: path.join(process.env.SCOUNDREL_SCREENSHOTS, `${name}-bottom-${viewport.width}.png`) });
+          }
           const snapshot = await page.locator(".deck-card").evaluateAll(es => es.map(e => ({ id: e.dataset.inventoryCard, state: e.dataset.state, dimmed: e.classList.contains("is-dimmed") })));
           await page.locator("#deck-dialog [data-close]").click(); return snapshot;
         }

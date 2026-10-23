@@ -148,8 +148,8 @@
   const best = () => analysis.filter((r) => r.score != null).sort((a, b) => b.score - a.score || Number(b.exact) - Number(a.exact))[0];
   function renderAnalysis(pending = false) {
     for (const el of document.querySelectorAll(".encounter.is-best")) { el.classList.remove("is-best"); el.querySelector(".best-ribbon")?.remove(); }
-    if (!prefs.oracle) return;
     updateAvoidValues();
+    if (!prefs.oracle) return;
     if (analysisError) { $("oracle-summary").textContent = analysisError; $("search-progress").textContent = ""; $("action-values").innerHTML = ""; $("extend-button").disabled = true; return; }
     const b = best();
     const isBest = row => row?.score != null && b && row.score === b.score && (row.equivalence === b.equivalence || row.exact && b.exact);
@@ -201,18 +201,28 @@
     setTimeout(() => { if (state.id === runId && !$("result-dialog").open) $("result-dialog").showModal(); }, motion() ? 650 : 0);
   }
   function updateAvoidValues() {
+    const b = prefs.oracle && !analysisError && best();
+    const recommended = row => !!(b && row?.score != null && row.score === b.score && (row.equivalence === b.equivalence || row.exact && b.exact));
+    const avoidBest = E.canFlee(state) && analysis.some(row => row.action.type === "flee" && recommended(row));
+    $("flee-button").classList.toggle("is-best", avoidBest);
+    $("flee-button").setAttribute("aria-description", avoidBest ? "Recommended: best EV" : "");
     for (const el of document.querySelectorAll("[data-avoid-ev]")) {
       const row = analysis.find(r => same(r.action, { type: "flee", direction: el.dataset.avoidEv }));
+      const choice = el.closest("[data-avoid]");
+      choice.classList.toggle("is-best", recommended(row));
+      choice.setAttribute("aria-description", recommended(row) ? "Recommended: best EV" : "");
+      choice.querySelector(".avoid-recommendation").hidden = !recommended(row);
       el.hidden = !prefs.oracle;
       el.textContent = row?.score == null ? "EV: calculating…" : row.exact ? `EV ${ev(row.score)} · exact` : `EV ${ev(row.score)} · ${row.samples.toLocaleString()} samples`;
     }
   }
-  function openAvoid(direction = "left") {
+  function openAvoid(direction) {
     if (!E.canFlee(state)) return;
+    if (!direction) direction = prefs.oracle && best()?.action.type === "flee" ? best().action.direction : "left";
     $("avoid-description").textContent = state.deck.length ? `These cards go after the ${state.deck.length} cards already in the deck. Then you’ll draw them in this order:` : "The deck is empty. These cards will be drawn again immediately, in this order:";
     $("avoid-choices").innerHTML = ["left", "right"].map(dir => {
       const cards = E.fleeOrder(state, dir);
-      return `<button class="avoid-choice" type="button" data-avoid="${dir}" aria-label="Avoid ${dir}. After ${state.deck.length} cards already in the deck, draw ${cards.map((c, i) => `${i + 1}: ${esc(name(c))}, value ${c.value}`).join('; ')}. Last card is at the bottom of the deck."><span class="avoid-choice-title"><strong>${dir === "left" ? "←" : "→"} Avoid ${dir}</strong><span>${dir === "left" ? "Keep room order" : "Reverse room order"}</span></span><span class="avoid-order" aria-hidden="true"><span>Drawn first</span><span>Last · deck bottom</span></span><span class="avoid-preview" aria-hidden="true">${cards.map((c, i) => `<span class="avoid-position"><span class="avoid-card" data-suit="${c.suit}"><img src="${catalog[c.id].image.replace('/cards/', '/cards/thumbs/')}" alt="" /><strong>${c.value}</strong></span><span class="avoid-draw-order">${["1st", "2nd", "3rd", "4th"][i]}</span></span>`).join('<i>→</i>')}</span><span class="avoid-value" data-avoid-ev="${dir}"></span></button>`;
+      return `<button class="avoid-choice" type="button" data-avoid="${dir}" aria-label="Avoid ${dir}. After ${state.deck.length} cards already in the deck, draw ${cards.map((c, i) => `${i + 1}: ${esc(name(c))}, value ${c.value}`).join('; ')}. Last card is at the bottom of the deck."><span class="avoid-choice-title"><strong>${dir === "left" ? "←" : "→"} Avoid ${dir}<small class="avoid-recommendation" hidden>Best EV</small></strong><span>${dir === "left" ? "Keep room order" : "Reverse room order"}</span></span><span class="avoid-order" aria-hidden="true"><span>Drawn first</span><span>Last · deck bottom</span></span><span class="avoid-preview" aria-hidden="true">${cards.map((c, i) => `<span class="avoid-position"><span class="avoid-card" data-suit="${c.suit}"><img src="${catalog[c.id].image.replace('/cards/', '/cards/thumbs/')}" alt="" /><strong>${c.value}</strong></span><span class="avoid-draw-order">${["1st", "2nd", "3rd", "4th"][i]}</span></span>`).join('<i>→</i>')}</span><span class="avoid-value" data-avoid-ev="${dir}"></span></button>`;
     }).join("");
     updateAvoidValues();
     $("avoid-dialog").showModal();
