@@ -838,7 +838,8 @@ button kbd.keycap,
   margin-left: calc(var(--bg-equity-width) + 6px);
 }
 
-.equity-bar {
+.equity-bar,
+.equity-reveal {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -846,6 +847,74 @@ button kbd.keycap,
   gap: 5px;
   width: var(--bg-equity-width);
   font-variant-numeric: tabular-nums;
+}
+
+.equity-reading,
+.equity-reveal {
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.equity-reading {
+  display: flex;
+  flex: 1;
+  flex-direction: inherit;
+  align-items: center;
+  gap: inherit;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.equity-reveal {
+  justify-content: center;
+  color: var(--muted);
+}
+
+.equity-reveal::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  border-left: 1px dashed var(--line-strong);
+}
+
+.equity-reveal-label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.equity-reveal-label > span {
+  writing-mode: vertical-rl;
+}
+
+@media (hover: hover) {
+  .equity-reading:hover,
+  .equity-reveal:hover {
+    background: var(--surface-2);
+    color: var(--accent);
+  }
+}
+
+.equity-reading:active,
+.equity-reveal:active {
+  background: var(--surface-2);
 }
 
 .equity-number {
@@ -914,7 +983,7 @@ button kbd.keycap,
     /* Solver reserves this rail while hidden so toggling equity does not
        shift its board, editor or preview controls. */
     box-sizing: content-box;
-    padding-bottom: 28px;
+    padding-bottom: 48px;
   }
 
   .board-slot.has-equity-bar > .bg-board {
@@ -922,13 +991,36 @@ button kbd.keycap,
     margin-left: 0;
   }
 
-  .equity-bar {
+  .equity-bar,
+  .equity-reveal {
     flex-direction: row;
     /* The rail is positioned after ResizeObserver; constrain its previous
        inline width while a narrower portrait board is being laid out. */
     max-width: 100%;
-    height: 24px;
+    height: 44px;
     gap: 8px;
+  }
+
+  .equity-reading {
+    height: 100%;
+  }
+
+  .equity-reveal::before {
+    top: auto;
+    bottom: auto;
+    left: 16px;
+    right: 16px;
+    border-left: 0;
+    border-top: 1px dashed var(--line-strong);
+  }
+
+  .equity-reveal-label {
+    flex-direction: row;
+    padding: 6px 10px;
+  }
+
+  .equity-reveal-label > span {
+    writing-mode: horizontal-tb;
   }
 
   .equity-number {
@@ -954,14 +1046,6 @@ button kbd.keycap,
     height: 100%;
     border-top: 0;
     border-left: 1px solid var(--line);
-  }
-
-  .board-slot.has-equity-bar:has(.equity-bar[data-state="error"]) {
-    padding-bottom: 48px;
-  }
-
-  .equity-bar[data-state="error"] {
-    height: 44px;
   }
 
   .equity-retry {
