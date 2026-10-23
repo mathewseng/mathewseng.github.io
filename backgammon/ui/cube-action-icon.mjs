@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 const paths = {
-  hold: "M4 10h12",
   double: "M5 15 15 5M5 5h10v10",
   redouble: "M3 12 10 5l7 7M3 17l7-7 7 7",
   take: "m4 10 4 4 8-8",

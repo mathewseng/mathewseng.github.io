@@ -2218,10 +2218,12 @@ function renderFeedback() {
       const currentRow = () => entry.group.decisions.find(item => item.index === row.index);
       const kind = row.action.type === "move" ? "Move" : "Cube";
       const cube = kind === "Cube" ? presentCubeAction(row.source, row.action.type) : null;
-      const played = () => cube
-        ? el("span", { class: "history-played history-cube-action", title: cube.description },
-          cubeActionIcon(cube.icon), el("span", {}, cube.label))
-        : el("span", { class: "history-played" }, row.label);
+      const played = () => {
+        if (!cube) return el("span", { class: "history-played" }, row.label);
+        if (!cube.displayLabel) return null;
+        return el("span", { class: "history-played history-cube-action", title: cube.description },
+          cubeActionIcon(cube.icon), el("span", {}, cube.displayLabel));
+      };
       const detail = () => el("span", { class: "history-kind muted" },
         el("span", { class: "history-kind-label" },
           ...(cube ? [el("span", { class: "history-cube-icon", role: "img",

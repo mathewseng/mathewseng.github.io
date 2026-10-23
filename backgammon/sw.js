@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later. Scope is /backgammon/ only. */
 // Release URL is generated with the manifest; keep the registration URL stable.
-importScripts("./offline-manifest.js?v=01ae290de21fd0d2");
+importScripts("./offline-manifest.js?v=3563d0a3ffa280bf");
 const PREFIX = "backgammon-assets-",
   CACHE = PREFIX + self.BG_CACHE_VERSION;
 async function cacheShell() {

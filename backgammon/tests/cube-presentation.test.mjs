@@ -18,8 +18,9 @@ test("normal cube actions show real values and distinct icons", () => {
   for (const value of [1, 2, 8, 64, MAX_CUBE / 2]) {
     const source = initialState({ phase: "roll", matchLength: 0 });
     source.cube.value = value;
-    check(source, "roll", { cubeValue: value, icon: "hold", label: "No double" });
-    const pending = check(source, "double", { cubeValue: value, icon: "double", label: `Double ${value} → ${value * 2}` });
+    check(source, "roll", { cubeValue: value, icon: null, label: "No double", displayLabel: "" });
+    const pending = check(source, "double", { cubeValue: value, icon: "double",
+      label: `Double ${value} → ${value * 2}`, displayLabel: `${value} → ${value * 2}` });
     check(pending, "take", { cubeValue: value * 2, icon: "take", label: `Take ${value * 2}` });
     const dropped = check(pending, "pass", { cubeValue: value, icon: "drop", label: `Drop ${value * 2} · concede ${value}` });
     assert.equal(dropped.scores[0], value, "drop label shows the actual points paid");

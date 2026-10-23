@@ -6,8 +6,8 @@ export function presentCubeAction(source, action) {
   const accepts = ["take", "beaver", "raccoon"].includes(action);
   const cubeValue = accepts ? offered : current;
   const choices = {
-    roll: { icon: "hold", label: "No double", description: `Keep the cube at ${current}.` },
-    double: { icon: "double", label: `Double ${current} → ${offered}`,
+    roll: { icon: null, label: "No double", displayLabel: "", description: `Keep the cube at ${current}.` },
+    double: { icon: "double", label: `Double ${current} → ${offered}`, displayLabel: `${current} → ${offered}`,
       description: `Offer ${offered}; the cube stays at ${current} until accepted.` },
     take: { icon: "take", label: `Take ${offered}`,
       description: `Accept the cube at ${offered}.` },
@@ -19,5 +19,5 @@ export function presentCubeAction(source, action) {
       description: `Accept ${offered} and immediately offer ${offered * 2}.` },
   };
   if (!choices[action]) throw new Error(`Unknown cube action: ${action}`);
-  return { cubeValue, ...choices[action] };
+  return { cubeValue, ...choices[action], displayLabel: choices[action].displayLabel ?? choices[action].label };
 }

@@ -7,19 +7,19 @@ module.exports = async function cubeHistory(browser, base, out, name) {
   const page = await context.newPage(), errors = [];
   page.on("pageerror", e => errors.push(e.message));
   const expected = [
-    ["No double", "2", "hold"],
-    ["Double 2 → 4", "2", "double"],
+    ["", "2", null],
+    ["2 → 4", "2", "double"],
     ["Beaver 4 → 8", "4", "redouble"],
     ["Raccoon 8 → 16", "8", "redouble"],
     ["Take 16", "16", "take"],
-    ["Double 16 → 32", "16", "double"],
+    ["16 → 32", "16", "double"],
     ["Drop 32 · concede 16", "16", "drop"],
   ].sort();
   const read = () => page.locator('#move-feedback [data-decision-type="cube"]').evaluateAll(rows =>
     rows.map(row => [
-      row.querySelector(".history-played").textContent,
+      row.querySelector(".history-played")?.textContent ?? "",
       row.querySelector(".history-cube-icon").textContent,
-      row.querySelector("[data-cube-icon]").dataset.cubeIcon,
+      row.querySelector("[data-cube-icon]")?.dataset.cubeIcon ?? null,
     ]).sort());
   try {
     await page.goto(base + "/backgammon/");
