@@ -42,14 +42,17 @@ function directory(category) {
   <meta name="description" content="${esc(intro)} Browse ${projects.length} projects with creation and update dates." />
   <title>${esc(title)} — Projects</title>
   <link rel="icon" href="${favicon}" />
-  <link rel="stylesheet" href="/shared/tokens.css?v=20261022" />
-  <link rel="stylesheet" href="/shared/app.css?v=20261022" />
-  <link rel="stylesheet" href="/shared/hub.css?v=20261022" />
-  <link rel="stylesheet" href="/shared/hub-art.css?v=20261022" />
-  <link rel="stylesheet" href="/shared/directory.css?v=20261022" />
-  <script src="/shared/directory.js?v=20261022" defer></script>
+  <link rel="stylesheet" href="/shared/tokens.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/app.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/hub.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/hub-art.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/directory.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/dither.css?v=20261023" />
+  <script type="module" src="/shared/dither.js?v=20261023"></script>
+  <script src="/shared/directory.js?v=20261023" defer></script>
 </head>
-<body class="directory">
+<body class="directory dither-theme">
+  <div class="dither-background" aria-hidden="true"><canvas></canvas></div>
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="directory-shell">
     <header class="directory-top"><a class="directory-brand" href="/"><span class="mark" aria-hidden="true">MS</span>Mathew Seng</a><a href="https://github.com/mathewseng/mathewseng.github.io">GitHub ↗</a></header>
@@ -67,7 +70,7 @@ function directory(category) {
         </div>
       </div>
     </main>
-    <footer class="directory-footer"><span>Created dates follow the first recorded commit. Updated dates follow project changes.</span><span>Older projects from matheweon.github.io</span></footer>
+    <footer class="directory-footer"><button class="dither-toggle" type="button" aria-pressed="false" hidden>Pause background</button><span>Created dates follow the first recorded commit. Updated dates follow project changes.</span><span>Older projects from matheweon.github.io</span></footer>
   </div>
 </body>
 </html>\n`;

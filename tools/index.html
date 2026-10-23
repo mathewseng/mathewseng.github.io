@@ -7,14 +7,17 @@
   <meta name="description" content="Useful little things and curious diversions. Browse 4 projects with creation and update dates." />
   <title>Tools &amp; experiments — Projects</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='15' fill='%238ab4ff'/%3E%3Ctext x='32' y='41' font-family='Inter, system-ui, sans-serif' font-size='26' font-weight='800' text-anchor='middle' fill='%230b0d12'%3EMS%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/shared/tokens.css?v=20261022" />
-  <link rel="stylesheet" href="/shared/app.css?v=20261022" />
-  <link rel="stylesheet" href="/shared/hub.css?v=20261022" />
-  <link rel="stylesheet" href="/shared/hub-art.css?v=20261022" />
-  <link rel="stylesheet" href="/shared/directory.css?v=20261022" />
-  <script src="/shared/directory.js?v=20261022" defer></script>
+  <link rel="stylesheet" href="/shared/tokens.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/app.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/hub.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/hub-art.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/directory.css?v=20261023" />
+  <link rel="stylesheet" href="/shared/dither.css?v=20261023" />
+  <script type="module" src="/shared/dither.js?v=20261023"></script>
+  <script src="/shared/directory.js?v=20261023" defer></script>
 </head>
-<body class="directory">
+<body class="directory dither-theme">
+  <div class="dither-background" aria-hidden="true"><canvas></canvas></div>
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="directory-shell">
     <header class="directory-top"><a class="directory-brand" href="/"><span class="mark" aria-hidden="true">MS</span>Mathew Seng</a><a href="https://github.com/mathewseng/mathewseng.github.io">GitHub ↗</a></header>
@@ -59,7 +62,7 @@
         </div>
       </div>
     </main>
-    <footer class="directory-footer"><span>Created dates follow the first recorded commit. Updated dates follow project changes.</span><span>Older projects from matheweon.github.io</span></footer>
+    <footer class="directory-footer"><button class="dither-toggle" type="button" aria-pressed="false" hidden>Pause background</button><span>Created dates follow the first recorded commit. Updated dates follow project changes.</span><span>Older projects from matheweon.github.io</span></footer>
   </div>
 </body>
 </html>
