@@ -2216,7 +2216,10 @@ function renderFeedback() {
       const currentRow = () => entry.group.decisions.find(item => item.index === row.index);
       const kind = row.action.type === "move" ? "Move" : "Cube";
       const detail = () => el("span", { class: "history-kind muted" },
-        el("span", { class: "history-kind-label" }, kind),
+        el("span", { class: "history-kind-label" },
+          ...(kind === "Cube" ? [el("span", { class: "history-cube-icon", "aria-hidden": true }, "2")] : []),
+          kind,
+        ),
         ...(row.result ? [el("span", {}, ` · ${row.result.settings.name}`)] : []),
       );
       if (!row.feedback) {
@@ -2227,6 +2230,7 @@ function renderFeedback() {
               class: "feedback-pending",
               "data-history-side": side,
               "data-history-player": row.player,
+              "data-decision-type": row.action.type === "move" ? "checker" : "cube",
             },
             el("span", { class: "history-move" }, detail(), el("span", { class: "history-played" }, row.label)),
             ...(canReturnToDecision(row, m.id)

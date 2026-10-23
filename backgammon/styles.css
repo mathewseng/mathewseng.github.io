@@ -2497,6 +2497,36 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: color-mix(in srgb, var(--history-color) 8%, transparent);
 }
 
+/* Decision type is separate from the player stripe and EV-loss severity.
+   Keep the cube treatment visible while its analysis is still pending. */
+.play-feedback .history-turn [data-decision-type="cube"] {
+  background: color-mix(in srgb, var(--cat-5) 12%, transparent);
+}
+
+.play-feedback .history-turn .feedback-review[data-decision-type="cube"]:hover {
+  background: color-mix(in srgb, var(--cat-5) 20%, transparent);
+}
+
+.play-feedback [data-decision-type="cube"] .history-kind-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--cat-5);
+}
+
+.history-cube-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  box-sizing: border-box;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+
 .history-move {
   display: grid;
   grid-area: move;
