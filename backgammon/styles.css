@@ -49,7 +49,8 @@
   --tone-medium: color-mix(in oklab, var(--warn) 45%, var(--bad));
   --tone-large: var(--bad);
   --bg-shadow: color-mix(in oklab, var(--page) 45%, transparent);
-  --bg-equity-width: 44px;
+  /* Leave 36px for a three-decimal value beside the 10px track and gap. */
+  --bg-equity-width: 48px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -6312,7 +6313,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   /* The live table: the topbar collapses into the dock, player strips sit
      beside the board, confirmation and controls stack in the dock. */
   .play-page.live-table {
-    --bg-equity-width: 44px;
+    --bg-equity-width: 48px;
     grid-template-rows: 0 0 minmax(0, 1fr);
     height: var(--play-visible-height, 100dvh);
     min-height: 0;
