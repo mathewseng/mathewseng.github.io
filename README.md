@@ -101,6 +101,8 @@ independently on pushes and pull requests. Validation failures stay visible in A
 not block publication. Check both workflows when diagnosing a release.
 The browser-test job is pinned to Ubuntu 24.04, which is supported by the locked
 Playwright version. Review that runner image together with Playwright upgrades.
+It uses Ubuntu's primary package mirror for browser dependencies to avoid slow
+downloads from the runner's Azure mirror.
 
 The two Backgammon study workflows share the `backgammon-research` concurrency
 group and run at most 16 of their 20 shards at once. This leaves four standard
