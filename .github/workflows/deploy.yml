@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      runner_label:
+        description: Runner label for manual publishing when hosted runners are busy
+        type: string
+        required: false
+        default: ubuntu-latest
 
 permissions:
   contents: read
@@ -17,7 +23,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.runner_label || 'ubuntu-latest' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -61,7 +67,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.runner_label || 'ubuntu-latest' }}
     needs: build
     steps:
       - name: Deploy to GitHub Pages

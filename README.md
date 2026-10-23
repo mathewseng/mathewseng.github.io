@@ -107,6 +107,12 @@ on an account with a 20-job limit. Further study runs queue without interrupting
 the active study. Workflow changes affect newly dispatched runs only; a study
 already using all 20 slots must release a runner before a queued publish can start.
 
+For an urgent publish while hosted runners are full, the Publish GitHub Pages
+manual dispatch accepts a `runner_label`. A temporary self-hosted runner with
+that unique label can run the same build and deployment. Register it without
+default labels, use a separate checkout, and remove it after publishing. Pushes
+and manual runs with the default input continue to use `ubuntu-latest`.
+
 ## Backgammon validation
 
 See [backgammon/README.md](backgammon/README.md) for controls, architecture, engine licensing/builds, multiplayer, backups, offline behavior, and precise format/capability limits. `scripts/assemble-site.sh _site` is the shared deployment assembly. After assembly, `node backgammon/tests/browser.cjs` checks the actual published files with Playwright and real WASM; the independent validation workflow runs this in Chromium. Root npm dependencies are test tooling only. Backgammon includes 24 readable board palettes, per-element color/pattern controls, on-board dice, combined tap/drag moves, draft reversal/reset, configurable money-session rules (Jacoby, automatic opening doubles, beavers and raccoons), local side/bot controls, last-move outlines, automatic Solver analysis with resumable Play context, opponent-approved committed undo, automatic forced turns/passes, and automatically saved/exportable game history.
