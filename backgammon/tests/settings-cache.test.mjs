@@ -7,6 +7,11 @@ test('cached settings stay independent and notice external writes, removal and m
   const values=new Map();
   globalThis.localStorage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)};
   try {
+    assert.equal(settings().closedOutPassing, 'off', 'closed-out passing is opt-in for new and existing users');
+    for (const mode of ['forced', 'bad-double', 'off']) {
+      saveSettings({closedOutPassing:mode});
+      assert.equal(settings().closedOutPassing, mode);
+    }
     assert.equal(settings().cubeOneAsOne, false, 'existing cube convention is the default');
     saveSettings({cubeOneAsOne:true});
     assert.equal(settings().cubeOneAsOne, true);
@@ -21,6 +26,11 @@ test('cached settings stay independent and notice external writes, removal and m
     values.delete(PREFIX+'settings');
     assert.equal(settings().motion,'system');
     assert.equal(settings().cubeOneAsOne,false);
+    assert.equal(settings().closedOutPassing,'off');
+    for (const invalid of [true, 'on', 'always', null, 1]) {
+      values.set(PREFIX+'settings',JSON.stringify({closedOutPassing:invalid}));
+      assert.equal(settings().closedOutPassing,'off','unknown preferences cannot enable automatic decisions');
+    }
     values.set(PREFIX+'settings',JSON.stringify({cubeOneAsOne:'true'}));
     assert.equal(settings().cubeOneAsOne,false,'only a boolean enables cube display');
     values.set(PREFIX+'settings','broken');

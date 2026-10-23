@@ -336,6 +336,7 @@ export function shell(page, title, subtitle = "") {
       applyBoardTheme(settings().boardTheme);
       document.documentElement.dataset.motion = settings().motion;
       dispatchEvent(new Event("bg-motion"));
+      dispatchEvent(new Event("bg-settings"));
     }
   });
   const label = page[0].toUpperCase() + page.slice(1);
@@ -537,6 +538,16 @@ export async function preferences() {
     el("label", { class: "check" }, moveHints, "Show legal-move hints in beginner mode"),
     el("p", { class: "muted small" },
       "Turn off checker rings and destination highlights. Your selected checker stays marked; taps, dragging and keyboard moves still work."),
+    field("Closed-out passing", select([
+      ["off", "Off"],
+      ["forced", "Forced passes only"],
+      ["bad-double", "Skip clearly bad doubles"],
+    ], s.closedOutPassing, value => {
+      saveSettings({closedOutPassing:value});
+      dispatchEvent(new Event("bg-settings"));
+    })),
+    el("p", {class:"muted small"},
+      "Off waits for your input. Forced passes only skips when all six bar entries are blocked and doubling is unavailable. Skip clearly bad doubles also skips a double at least 0.25 equity worse in computer games. Any open entry keeps normal rolling. Online, this applies only to your own turns."),
     el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.equityBar,
       onChange: e => { saveSettings({equityBar:e.target.checked}); dispatchEvent(new Event("bg-settings")); }}), "Show equity bar against the computer"),
     el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.moveFeedback,

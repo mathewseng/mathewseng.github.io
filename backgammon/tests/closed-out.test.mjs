@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { initialState, transition, replay, positionKey, canDouble } from '../core/rules.mjs';
-import { canAutoPassClosedOut, closedOutCubeMargin, CLOSED_OUT_MARGIN } from '../core/closed-out.mjs';
+import { canAutoPassClosedOut, shouldAutoPassClosedOut, closedOutCubeMargin, CLOSED_OUT_MARGIN } from '../core/closed-out.mjs';
 import { playAction, takebackTarget } from '../core/table.mjs';
 import { localPlayAction, futureLocalRoll } from '../core/local-rolls.mjs';
 import { continuations } from '../core/prethink.mjs';
@@ -22,6 +22,25 @@ function result(s, margin = .25) {
     units:s.matchLength ? 'normalized-match-equity' : 'current-cube-points', outcomes:[0,-margin,1]};
 }
 const table = s => ({id:'closed', started:true, initial:s, state:s, events:[]});
+
+test('closed-out passing defaults off; forced mode preserves every legal cube decision', () => {
+  for (const turn of [0, 1]) {
+    const choice = closed(turn), unavailable = {...choice,cube:{value:2,owner:1-turn}};
+    for (const mode of [undefined, 'off', 'unknown', true]) {
+      assert.equal(shouldAutoPassClosedOut(unavailable,mode),false);
+      assert.equal(shouldAutoPassClosedOut(choice,mode,result(choice,1)),false);
+    }
+    for (const mode of ['forced','bad-double']) {
+      assert.equal(shouldAutoPassClosedOut(unavailable,mode),true);
+      const open = structuredClone(unavailable);open.points[turn ? 0 : 18] = 0;
+      assert.equal(shouldAutoPassClosedOut(open,mode),false);
+    }
+    assert.equal(shouldAutoPassClosedOut(choice,'forced',result(choice,1)),false);
+    assert.equal(shouldAutoPassClosedOut(choice,'bad-double'),false);
+    assert.equal(shouldAutoPassClosedOut(choice,'bad-double',result(choice,.249)),false);
+    assert.equal(shouldAutoPassClosedOut(choice,'bad-double',result(choice,.25)),true);
+  }
+});
 
 test('only a fully blocked bar turn with an unavailable or clearly inferior cube can auto-pass', () => {
   assert.equal(CLOSED_OUT_MARGIN,.25);

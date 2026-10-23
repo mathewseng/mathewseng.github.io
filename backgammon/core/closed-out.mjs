@@ -27,3 +27,10 @@ export function canAutoPassClosedOut(state, result = null) {
   const margin = closedOutCubeMargin(state, result);
   return margin !== null && margin >= CLOSED_OUT_MARGIN;
 }
+
+// A device preference chooses whether to use the legal/EV shortcut. Keep the
+// proof above independent so recorded actions and network validation can reuse it.
+export function shouldAutoPassClosedOut(state, mode = 'off', result = null) {
+  if (mode === 'forced') return blockedBarRoll(state) && !canDouble(state);
+  return mode === 'bad-double' && canAutoPassClosedOut(state, result);
+}

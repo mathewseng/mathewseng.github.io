@@ -109,6 +109,9 @@ test("only the connected host can auto-pass a closed board with no cube choice; 
   const initial = blockedPosition(1); initial.cube={value:2,owner:0};
   t.started = true; t.initial = t.state = initial;
   const opts = {...options,dice:()=>{throw new Error("closed-out turns must not draw dice");}};
+  const optedIn = accept(t,"guest",envelope(t,"guest",{type:"skip-roll"},"own-pass"),opts);
+  assert.deepEqual(optedIn.events.map(e=>[e.actor,e.action.type,e.automatic]),[[1,'skip-roll',true]],
+    'a guest can opt in on their own device without the host advancing their turn');
   const command = envelope(t,"host",{type:"auto"},"blocked-pass");
   assert.throws(()=>accept(t,"guest",command,opts));
   assert.throws(()=>accept(t,"host",command,{...opts,connected:["host"]}));

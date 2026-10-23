@@ -12,10 +12,10 @@ module.exports = async function blockedPass(browser, base, out, name) {
     const ready = () => page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
     const read = () => page.evaluate(async()=>(await import('/backgammon/core/storage.mjs')).get('work','play'));
     const activate = locator => touch ? locator.tap() : locator.click();
-    const load = async ({turn=0,mode='local',kind='closed',human=false}={}) => {
+    const load = async ({turn=0,mode='local',kind='closed',human=false,passing='bad-double'}={}) => {
       scenario=JSON.stringify({turn,mode,kind,human,step:'loading'});
       await page.goto(base+'/backgammon/');await ready();
-      await page.evaluate(async({turn,mode,kind,human})=>{
+      await page.evaluate(async({turn,mode,kind,human,passing})=>{
         const {put,saveSettings}=await import('/backgammon/core/storage.mjs');
         const {initialState,transition}=await import('/backgammon/core/rules.mjs');
         const {localConfig}=await import('/backgammon/core/play-session.mjs');
@@ -31,11 +31,11 @@ module.exports = async function blockedPass(browser, base, out, name) {
           cube:kind==='closed'?{value:2,owner:1-turn}:{value:1,owner:null},
           points:turn?points.toReversed().map(n=>-n):points,bar:turn?[0,1]:[1,0],off:turn?off.toReversed():off});
         if(kind==='cube')s=transition(s,{type:'double'},turn);
-        saveSettings({motion:'reduce',orientation:turn,moveFeedback:false,analysisAhead:false,equityBar:false});
+        saveSettings({motion:'reduce',orientation:turn,moveFeedback:false,analysisAhead:false,equityBar:false,closedOutPassing:passing});
         await put('work',{id:'play',game:{id:'blocked-bar',initial:s,state:s,events:[],started:true,names:['You','Friend'],
           ...(mode==='computer'?{localRolls:{version:1,seed:'39'.padStart(64,'0'),cursor:0}}:{}),
           config:localConfig({mode,humanSide:human?turn:1-turn,strength:'quick',reviewStrength:human?'deep':'quick',tutor:false,warning:false})},draft:[]});
-      },{turn,mode,kind,human});
+      },{turn,mode,kind,human,passing});
       await page.goto(base+'/backgammon/play/');await ready();await activate(page.locator('#resume-match'));
       scenario=JSON.stringify({turn,mode,kind,human,step:'playing'});
     };
@@ -53,6 +53,42 @@ module.exports = async function blockedPass(browser, base, out, name) {
         };
       });
       await page.goto(base+'/backgammon/play/');await ready();
+      await activate(page.locator('#preferences'));
+      const preference = page.getByLabel('Closed-out passing', {exact:true});
+      assert.equal(await preference.inputValue(),'off','new users default to no automatic closed-out pass');
+      assert.deepEqual(await preference.locator('option').allTextContents(),['Off','Forced passes only','Skip clearly bad doubles']);
+      await activate(page.locator('.settings-dialog .close'));
+      for(const mode of ['local','computer']) {
+        await load({mode,human:true,passing:'off'});await page.waitForTimeout(150);
+        assert.equal((await read()).game.events.length,0,'Off waits for input even without a legal cube');
+        assert.match(await page.locator('#roll').innerText(),/^Pass without rolling/);
+        await page.reload();await ready();await activate(page.locator('#resume-match'));
+        assert.equal((await read()).game.events.length,0,'Off persists across reload');
+        await activate(page.locator('#preferences'));
+        assert.equal(await preference.inputValue(),'off');
+        await preference.selectOption('forced');
+        await page.screenshot({path:path.join(out,`${name}-closed-out-settings-${touch?'phone':'desktop'}-${mode}.png`)});
+        await activate(page.locator('.settings-dialog .close'));
+        await waitEvents(1);
+        assert.deepEqual((await read()).game.events[0].action,{type:'skip-roll'},'enabling Forced passes only applies to the current turn');
+        report.push({touch,mode,defaultOffAndLivePreference:true});
+      }
+      await load({kind:'choice',mode:'computer',human:true,passing:'forced'});
+      await page.waitForTimeout(150);
+      assert.equal((await read()).game.events.length,0,'Forced passes only retains even a clearly bad legal double');
+      assert.equal(await page.locator('#double-cube').isEnabled(),true);
+      assert.doesNotMatch(await page.locator('#message').innerText(),/checking cube/);
+      await activate(page.locator('#preferences'));
+      await preference.selectOption('bad-double');
+      await activate(page.locator('.settings-dialog .close'));
+      await waitEvents(1);
+      assert.equal((await read()).game.events[0].automatic,true,'Bad-double mode adds the evaluated skip');
+      await load({kind:'choice',passing:'off'});
+      await activate(page.locator('#double-cube'));await page.locator('#take-cube').waitFor();
+      await activate(page.locator('#take-cube'));await waitEvents(2);await page.waitForTimeout(200);
+      assert.equal((await read()).game.events.length,2,'Off also waits after an accepted cube');
+      await activate(page.locator('#roll'));await waitEvents(3);
+      assert.deepEqual((await read()).game.events.map(e=>e.action.type),['double','take','skip-roll']);
       for(const mode of ['local','computer'])for(const turn of [0,1]){
         await load({turn,mode});await waitEvents(1);
         const game=(await read()).game;

@@ -80,7 +80,7 @@ import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
 import { certainBearoff } from "../core/certain-bearoff.mjs";
-import { canAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
+import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback, needsRevisionWarning } from "../core/decision-feedback.mjs";
@@ -349,7 +349,13 @@ const prethink = new Prethink({
     submitted: draft.state === game?.state && draft.complete() && draft.draft.length ? clone(draft.draft) : null,
   }),
 });
-addEventListener("bg-settings", () => prethink.update());
+addEventListener("bg-settings", () => {
+  prethink.update();
+  if (model()?.started && blockedBarRoll(state())) {
+    actions();
+    autoPlay();
+  }
+});
 const opening = new OpeningRoll(ui.board.container, () => {
   boardKey = "";
   render();
@@ -793,7 +799,7 @@ function render() {
 function advanceAcceptedCube() {
   const m = model(), s = state();
   if (!m?.started || m.reviewingTurn || s.phase !== "roll" || m.events.at(-1)?.action.type !== "take" ||
-      (blockedBarRoll(s) && canDouble(s)) ||
+      (blockedBarRoll(s) && !automaticClosedOutPass(s)) ||
       !myTurn(s) || committing || assistanceJob || botBusy || document.hidden) return false;
   const key = `${m.id}:${m.events.length}:${positionKey(s)}`;
   if (acceptedCubeKey === key) return true;
@@ -802,6 +808,7 @@ function advanceAcceptedCube() {
   acceptedCubeTimer = setTimeout(() => {
     acceptedCubeKey = "";
     if (model()?.id !== m.id || model().events.length !== m.events.length || state().phase !== "roll" ||
+        (blockedBarRoll(state()) && !automaticClosedOutPass(state())) ||
         !myTurn(state()) || committing || assistanceJob || document.hidden) return;
     commit({ type: "roll" }).catch(showError);
   }, reducedMotion() ? 80 : 420);
@@ -874,8 +881,11 @@ function closedOutEvaluation(s) {
   return config.mode === 'computer' && myTurn(s) && closedOutCheck?.key === closedOutKey(s)
     ? closedOutCheck.result : null;
 }
+function automaticClosedOutPass(s) {
+  return myTurn(s) && shouldAutoPassClosedOut(s, settings().closedOutPassing, closedOutEvaluation(s));
+}
 function checkClosedOutCube(s) {
-  if (!blockedBarRoll(s) || !canDouble(s) || config.mode !== 'computer' || !myTurn(s)) return;
+  if (settings().closedOutPassing !== 'bad-double' || !blockedBarRoll(s) || !canDouble(s) || config.mode !== 'computer' || !myTurn(s)) return;
   const key = closedOutKey(s);
   if (closedOutCheck?.key === key) return;
   // Reuse completed analysis in the exact score/cube/rule context, including
@@ -903,7 +913,7 @@ function autoPlay() {
   checkClosedOutCube(s);
   const
     certain = m?.started && certainBearoff(s),
-    blocked = canAutoPassClosedOut(s, closedOutEvaluation(s)),
+    blocked = automaticClosedOutPass(s),
     forced = m?.started && forcedTurn(s);
   if ((!certain && !forced && !blocked) || committing || assistanceJob || m.undoRequest || m.reviewingTurn || opening.busy)
     return false;
@@ -911,16 +921,19 @@ function autoPlay() {
   const key = positionKey(s),
     id = m.id;
   if (config.mode === "online") {
-    if (online.room?.isHost && online.ready && !online.pending)
+    if ((blocked ? myTurn(s) : online.room?.isHost) && online.ready && !online.pending)
       queueMicrotask(() => {
         if (
           model()?.id === id &&
           positionKey(state()) === key &&
           online.ready &&
           !online.pending &&
-          !model().undoRequest && !model().reviewingTurn
+          !model().undoRequest && !model().reviewingTurn &&
+          (!blocked || automaticClosedOutPass(state()))
         )
-          online.send({ type: "auto" });
+          // Each player opts in on their own device; the host must not skip
+          // another player's closed-out turn based on the host's preference.
+          online.send({ type: blocked ? "skip-roll" : "auto" });
       });
   } else if (forcedSchedule !== `${id}:${key}`) {
     forcedSchedule = `${id}:${key}`;
@@ -934,7 +947,7 @@ function autoPlay() {
         !game.undoRequest && !game.reviewingTurn
       ) {
         const result = closedOutEvaluation(state());
-        if (blocked && !canAutoPassClosedOut(state(),result)) return;
+        if (blocked && !automaticClosedOutPass(state())) return;
         commit(certain ? {type:"finish-race"} : blocked ? { type: "skip-roll" } : { type: "move", steps: forced.steps },
           null, blocked ? {autoPass:true,cubeEvaluation:result} : {}).catch(showError);
       }
@@ -1550,7 +1563,7 @@ function renderActions() {
       : opening.tie ? "Opening tie · rolling again…" : opening.dice ? "Beginning the first turn…" : "Rolling opening dice…";
     return;
   }
-  if (!m.reviewingTurn && (certainBearoff(s) || canAutoPassClosedOut(s,closedOutEvaluation(s)) || forcedTurn(s))) {
+  if (!m.reviewingTurn && (certainBearoff(s) || automaticClosedOutPass(s) || forcedTurn(s))) {
     $("message").textContent = certainBearoff(s) ? "Game decided"
       : blockedBarRoll(s)
       ? "All six entries blocked · passing without rolling"
@@ -1603,7 +1616,7 @@ function renderActions() {
     const keycap = action => prefs.keyboardEnabled && prefs.shortcuts[action]?.length
       ? shortcutBadge(prefs.shortcuts[action][0]) : "";
     $("message").replaceChildren(
-      closed ? `All six entries blocked · ${closedOutCheck?.key === closedOutKey(s) && closedOutCheck.pending ? 'checking cube…' : 'Double or pass without rolling'}`
+      closed ? `All six entries blocked · ${prefs.closedOutPassing === 'bad-double' && closedOutCheck?.key === closedOutKey(s) && closedOutCheck.pending ? 'checking cube…' : canDouble(s) ? 'Double or pass without rolling' : 'Pass without rolling'}`
         : `${previous?.automatic ? (previous.action.steps?.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · Tap board to roll`,
       ...(closed ? [] : [keycap("roll")]),
       ...(canDouble(s) ? [" · Cube to double", keycap("double")] : []),
@@ -1613,7 +1626,7 @@ function renderActions() {
         id: "double-cube",
         disabled: !mine || !canDouble(s),
       }),
-      button(closed ? "No double · pass" : "Roll dice", () => submitCube({ type: closed ? 'skip-roll' : "roll" }), "primary", {
+      button(closed ? canDouble(s) ? "No double · pass" : "Pass without rolling" : "Roll dice", () => submitCube({ type: closed ? 'skip-roll' : "roll" }), "primary", {
         disabled: !mine,
         id: "roll",
       }),
