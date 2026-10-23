@@ -112,6 +112,8 @@ manual dispatch accepts a `runner_label`. A temporary self-hosted runner with
 that unique label can run the same build and deployment. Register it without
 default labels, use a separate checkout, and remove it after publishing. Pushes
 and manual runs with the default input continue to use `ubuntu-latest`.
+Dependency caching is disabled on self-hosted runs so a local machine's npm cache
+is never uploaded by the publishing workflow.
 
 ## Backgammon validation
 
