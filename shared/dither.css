@@ -1,4 +1,4 @@
-/* A full-page ordered-dither field; content stays above the decorative canvas. */
+/* Pre-rendered dither artwork: one cached texture, no live GPU shader. */
 body.dither-theme { isolation: isolate; background: var(--page); }
 body.dither-theme::before, body.dither-theme::after { display: none; }
 .dither-background {
@@ -12,9 +12,24 @@ body.dither-theme::before, body.dither-theme::after { display: none; }
     radial-gradient(ellipse at 85% 15%, color-mix(in srgb, var(--family-backgammon) 17%, var(--page)), transparent 70%),
     radial-gradient(ellipse at 15% 80%, color-mix(in srgb, var(--accent) 14%, var(--page)), var(--page) 75%);
 }
-.dither-background canvas { display: block; width: 100%; height: 100%; opacity: 0; }
-.dither-background.is-active canvas { opacity: 1; }
+.dither-field {
+  position: absolute;
+  inset: -3%;
+  background: url('./dither-field.webp?v=20261023b') center / cover no-repeat;
+}
+@media (max-width: 800px) {
+  .dither-field { background-image: url('./dither-field-mobile.webp?v=20261023b'); }
+}
+@media (min-width: 801px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .dither-field { animation: dither-drift 45s ease-in-out infinite alternate paused; }
+  .is-drifting .dither-field { animation-play-state: running; will-change: transform; }
+  @keyframes dither-drift {
+    from { transform: translate3d(-1%, 1%, 0); }
+    to { transform: translate3d(1%, -1%, 0); }
+  }
+}
 .dither-theme .mark { border-radius: 3px; box-shadow: 3px 3px 0 var(--accent-soft); }
+.dither-theme .switcher { background: var(--surface); backdrop-filter: none; }
 .dither-theme .tile {
   border-radius: 6px;
   background: color-mix(in srgb, var(--page) 82%, transparent);

@@ -35,11 +35,13 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
   and stamps the imported page headers. The homepage preserves the original card fan
   and illustrated tiles, with additional projects in matching groups; `home.css` only
   styles its date labels and added tiles. Search is available in the category hubs.
-  The homepage and category directories share `shared/dither.css`, `dither.js`, and
-  `dither-shader.js`: a full-page sea-glass/blue ordered-dither field adapted from
-  @pennadenoiz's OpenShaders example. Rendering is capped at 600,000 pixels and
-  24 fps, pauses in hidden tabs, and becomes still for reduced motion or data saver.
-  A footer control pauses it manually; a CSS dither field covers unavailable WebGL.
+  The homepage and category directories share `shared/dither.css` and `dither.js`:
+  cached sea-glass/blue dither artwork with a gentle CSS transform on desktop.
+  Phones, reduced motion and data saver use a still background; the desktop footer
+  control pauses the drift, and hidden tabs pause it automatically. Visitors never
+  load a shader or create a WebGL context. To regenerate the two WebP textures from
+  @pennadenoiz's OpenShaders source in `scripts/art/dither-shader.mjs`, run
+  `node scripts/render-dither-field.cjs` with Playwright installed.
   Creation follows the earliest recorded primary-file commit, following renames but
   stopping at copied templates; updates
   follow changes under each project's source paths. Imported creation dates are preserved;
