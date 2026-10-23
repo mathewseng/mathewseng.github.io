@@ -310,9 +310,9 @@ Regression coverage: `advanced-input.test.mjs` checks selected-die actions for e
 
 ### Analysis ahead and destination shortcuts
 
-Computer games now start analysis while the player is deciding. The existing single worker first prepares the current checker/cube decision, then grades a complete draft. Completed results and matching in-flight requests are reused by hints, confirmation and the bot. Auto still completes at least 2 ply and retains its timing/accuracy gates; a clear-lead result can grade that same best move immediately. Other submissions to a clear-lead result still run a full adaptive search. Completed cost-limited or maximum-depth searches grade already-scored finalists immediately, and an unlisted move adds one native score at the prepared depth, retaining the same-depth alternatives and full original decision context. Confirmation does not restart Auto and escalate depth merely because its caches are now warm. Reversed dice orders share computation with per-caller position metadata.
+Computer games start analysis while the player is deciding. The shared worker first prepares the current checker/cube decision, then grades a complete draft. Completed results and matching in-flight requests are reused by hints, confirmation and the bot. Live Auto decisions use the deepest completed result with at least 2 ply; full reviews retain the adaptive timing/accuracy gates. Already-scored finalists are graded immediately, and an unlisted move adds one native score at the prepared depth, retaining the same-depth alternatives and full original decision context. Confirmation does not restart Auto and escalate depth merely because its caches are now warm. Reversed dice orders share computation with per-caller position metadata.
 
-When idle, `core/prethink.mjs` explores up to three legal near-best continuations (within 0.020 equity), uses the private indexed roll sequence to prepare the actual upcoming rolls, and prioritizes near-best branches, including legal cube responses. Completing a draft interrupts speculative work so its actual move is graded first; the next decision after that actual draft takes priority over hypothetical best lines. Once the bot chooses its move, the next position starts evaluating during its animation hold. The moving horizon includes the current checker turn and the next two. Each current position permits at most 24 speculative evaluations and a 20-second scheduling budget; an already-running synchronous evaluation may exceed that budget, and foreground requests can cancel it. Candidate/roll weights only prioritize work, not assess winning probability. Committed-history analysis takes priority over speculation. The shared cache remains capped at 64 results, the plan at 96 pending positions, and only one speculative request is queued. Disable **Analyze ahead in computer games** in Settings to save battery. Hidden tabs stop background work. Online and same-device games never speculate. A 256-bit Web Crypto seed defines computer-table dice independently of moves or engine results. Each roll is HMAC-SHA-256(seed, versioned roll index); bytes 252–255 are rejected before mapping to 1–6. Preparation only peeks: the cursor advances atomically with a committed opening/normal roll, never with analysis. Takebacks replay their recorded dice before consuming the next index. GNUbg receives only the position being analyzed, never a seed or future dice, so its current decision still evaluates normal dice probabilities. Online sessions reject private dice plans and keep host-generated cryptographic rolls. This is bounded preparation, not exhaustive solving of the entire game tree or a guarantee of zero latency. See [real Play latency measurements](docs/PLAY-LATENCY.md) for the before/after trace, preparation coverage and remaining limits.
+When idle, `core/prethink.mjs` explores up to three legal near-best continuations (within 0.020 equity), uses the private indexed roll sequence to prepare the actual upcoming rolls, and prioritizes near-best branches, including legal cube responses. Completing a draft interrupts speculative work so its actual move is graded first; the next decision after that actual draft takes priority over hypothetical best lines. Once the bot chooses its move, the next position starts evaluating during its animation hold. The moving horizon includes the current checker turn and the next one. Each current position permits at most eight speculative evaluations and a four-second hard background budget. Future Auto work stops at two plies; live requests can promote it and are exempt from the background deadline. Candidate/roll weights only prioritize work, not assess winning probability. Committed-history analysis takes priority over speculation. The shared completed cache is capped at 64 results and 4,096 candidate rows, playable checkpoints at 16 results and 2,048 finalist rows, and the plan at 96 pending positions. All work shares one engine worker. Disable **Analyze ahead in computer games** in Settings to save battery. Hidden tabs stop background work. Online and same-device games never speculate. A 256-bit Web Crypto seed defines computer-table dice independently of moves or engine results. Each roll is HMAC-SHA-256(seed, versioned roll index); bytes 252–255 are rejected before mapping to 1–6. Preparation only peeks: the cursor advances atomically with a committed opening/normal roll, never with analysis. Takebacks replay their recorded dice before consuming the next index. GNUbg receives only the position being analyzed, never a seed or future dice, so its current decision still evaluates normal dice probabilities. Online sessions reject private dice plans and keep host-generated cryptographic rolls. This is bounded preparation, not exhaustive solving of the entire game tree or a guarantee of zero latency. See [real Play latency measurements](docs/PLAY-LATENCY.md) for the before/after trace, preparation coverage and remaining limits.
 
 Cube speed uses an exact rule gate: when doubling is unavailable, the bot rolls without searching for a nonexistent cube decision. Real decisions, including Jacoby/beaver/raccoon continuations and match context, continue through GNUbg. Pip-count/win-percentage rules of thumb do not replace that evaluation.
 
@@ -416,7 +416,7 @@ Visible Turn, Dice, Cube and Match controls provide direct access to decision co
 
 ### Action readiness and automatic playback (October 17, 2026)
 
-With Analyze ahead enabled, Play's equity rail shares the decision worker and its exact-context cache. It can display a completed shallow stage while Auto continues; accepting a decision still requires the configured search (Auto completes at least two plies). Prepared checker equity appears with the next roll, and completed draft grades are reused. Turning Analyze ahead off retains the independent Quick rail. The positive-side number has three decimals and no plus sign.
+With Analyze ahead enabled, Play's equity rail shares the decision worker and its exact-context cache. It can display a completed shallow stage while Auto continues; live Auto decisions reuse the deepest completed result with at least two plies, or finish two plies before acting. Prepared checker equity appears with the next roll, and completed draft grades are reused. Turning Analyze ahead off retains the independent Quick rail. The positive-side number has three decimals and no plus sign.
 
 After choosing an action, the computer prepares the following cube decision and seeded checker roll during its animation pause/playback. Advancing to that position preserves this work rather than cancelling it. This reads the private dice sequence without consuming it or exposing it to GNUbg. The ordinary bounded scheduler still explores near-best alternatives; unprepared branches can require fresh analysis.
 
@@ -497,3 +497,45 @@ iPhone chipset simulation. Completed-turn validation checks each submitted step
 directly when every die is used; partial turns still use exhaustive maximum-use
 and higher-die validation. Save snapshots are captured once as immutable JSON,
 expanded in the worker, and retained unchanged for ordered crash recovery.
+
+### Responsive live decisions and bounded preparation
+
+Auto bot play and confirmation use the deepest completed evaluation for the exact
+position, dice, cube, rules and scores, with a 2-ply minimum for tree analysis.
+Published opening references retain their own method labels. When no result is
+ready, live Auto completes 2 ply without waiting for optional 3/4-ply stages.
+Explicit fixed depths and full hint/Solver searches retain their requested search.
+Workers yield between adaptive stages so live requests can finish without
+reloading WASM; an already-running deeper synchronous call can be terminated
+using its last completed result. An action deadline is never cached as a full
+adaptive review. Rankings and submitted-move losses always use one method/depth.
+
+Confirm immediately shows a revision warning for a known mistake, or a usable
+checking dialog when the grade is not ready. The player can revise or continue
+while EV is pending; a generic check advances automatically when it finds no
+warning. Explicit unlisted-move reviews remain open. With warnings disabled,
+actions commit immediately and the history is analyzed afterward. Stale or failed
+checks cannot silently commit an edited turn.
+
+Speculative future Auto searches stop at 2 ply. The idle scheduler permits eight
+future nodes, a four-second work window and two turns of lookahead; preparation
+during bot playback has its own four-second window. The actual current position
+can still deepen while idle. A hard speculative deadline cancels only background
+jobs, never a promoted live decision. Completed caches have both entry and
+candidate-row limits; playable checkpoints drop excluded shallow routes. Book
+lookups validate listed paths directly instead of enumerating all possible dice
+orders on the UI thread.
+
+`live-decision.test.mjs`, `prethink.test.mjs` and `confirm-readiness.cjs` cover
+slow/failed checks, revision, immediate continuation, the 2-ply floor, deeper
+completed-result reuse, stale packets, bounded caches, warm-worker reuse and real
+GNUbg results. The browser test uses isolated storage, WebKit and Chromium at 4×
+CPU slowdown; it is not a physical-iPhone benchmark.
+
+[Measured results](docs/live-decision-responsiveness-2026-10-23.json) include two
+complete games with real GNUbg, full animations and independent saved-history
+replay. On Chromium at 4× slowdown, Confirm's first response was at most 81 ms
+and accepting a warning at most 63 ms. The 1,356-event fixture responded in
+19 ms at 6× slowdown. WebKit completed without errors, though one first-turn
+checker tap had a 404 ms frame outlier. Neither run proves physical-iPhone
+crash immunity; cold searches still need to complete at least 2 ply.

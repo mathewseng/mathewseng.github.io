@@ -176,3 +176,26 @@ test('chosen bot continuation prepares the seeded checker roll while foreground 
     h.p.pause();assert.equal(h.p.plan,null);
   }finally{h.p.pause();}
 });
+
+test('future Auto searches stop at two and a slow speculative job hits its hard deadline',async()=>{
+  const h=harness({limits:{...PRETHINK,nodes:8,milliseconds:20}});
+  let rejectFuture, pendingJob;
+  try{
+    await h.tick();
+    assert.equal(h.calls[0].readyOnly,false,'current-position analysis may deepen while idle');
+    h.p.engine.analyze=(state,options)=>{
+      pendingJob={state,...options};
+      assert.equal(options.readyOnly,true,'future work never waits for optional deeper Auto stages');
+      return new Promise((resolve,reject)=>{rejectFuture=reject;});
+    };
+    h.p.engine.cancelWhere=predicate=>{
+      assert.equal(predicate({...pendingJob,priority:20}),false,'deadline cannot cancel a live promoted job');
+      if(predicate(pendingJob))rejectFuture(new DOMException('Budget exhausted','AbortError'));
+    };
+    await h.p.run();clearTimeout(h.p.timer);
+    assert.ok(h.p.scope.spent>=20);
+    let restarted=false;
+    h.p.engine.analyze=()=>{restarted=true;return Promise.resolve(evaluate(source()));};
+    await h.p.run();clearTimeout(h.p.timer);assert.equal(restarted,false,'deadline never creates a retry loop');
+  }finally{h.p.engine.cancelWhere=()=>{};h.p.pause();}
+});

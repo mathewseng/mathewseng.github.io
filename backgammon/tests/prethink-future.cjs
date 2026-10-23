@@ -39,7 +39,9 @@ async function runCase(browser,base,matchLength){
     assert.ok(report.sameAnswer&&report.preparedBeforePlay,JSON.stringify(report));
     if(matchLength===0){assert.equal(report.method,'reference');assert.equal(report.plies,null);assert.equal(report.bookSource,'published-xg-reference');assert.match(report.referenceURL,/^https:\/\/www\.extremegammon\.com\/OB\//);}
     else assert.ok(report.plies>=2&&report.method!=='reference',JSON.stringify(report));
-    const saved=await page.evaluate(async()=>(await(await import('/backgammon/core/storage.mjs')).get('work','play')).game);
+    // Cached bot decisions can now finish before the asynchronous work save.
+    // Wait for the committed roll's acknowledgement, not the prior draft.
+    const saved=(await require('./play-helpers.cjs').waitWork(page,w=>w?.game.localRolls.cursor===1)).game;
     assert.equal(saved.localRolls.cursor,1,'only the committed roll consumes the seed');
     assert.equal(saved.localRolls.seed,'1b'.padStart(64,'0'));
     return report;

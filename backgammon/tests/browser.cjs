@@ -481,6 +481,7 @@ const server = http.createServer((req, res) => {
           await run("highlight-rendering", browser, base, out, browserName),
         );
         (report.actionReadiness ||= []).push(
+          await run("confirm-readiness", browser, base, out, browserName),
           await run("action-readiness", browser, base, out, browserName),
           await run("confirm-latency", browser, base, out, browserName),
           await run("automatic-motion", browser, base, out, browserName),

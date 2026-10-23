@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { assertState, initialState, boardKey, positionKey, commitTurn, legalPaths, notation } from '../core/rules.mjs';
+import { assertState, initialState, boardKey, positionKey, commitTurn, notation } from '../core/rules.mjs';
 export const BOOK_ID = 'jacoby-3ply-v3';
 // Keep historical evaluations labeled with the engine that computed them.
 // bg6 is an implementation optimization, verified against this same bg5 core.
@@ -46,8 +46,6 @@ export function bookResult(state, entry, index, requestedPreset, submitted = nul
       !Number.isInteger(entry.total) || entry.total < entry.rows.length)
     throw new Error('Invalid opening book position or entry.');
   const started = performance.now(), seen = new Set();
-  const pathKey = steps => JSON.stringify(steps.map(({from, to, die}) => [from, to, die]));
-  const paths = new Map(legalPaths(state).map(path => [pathKey(path.steps), path.state]));
   const candidates = entry.rows.map(row => {
     if (!Array.isArray(row) || row.length !== 8 ||
         !row.slice(1).every(Number.isFinite) ||
@@ -58,8 +56,12 @@ export function bookResult(state, entry, index, requestedPreset, submitted = nul
       from: state.turn ? mirrorPoint(from) : from,
       to: state.turn ? mirrorPoint(to) : to, die,
     }));
-    const after = paths.get(pathKey(steps));
-    if (!after) throw new Error('Illegal opening book move.');
+    // Validate the handful of stored routes directly. Enumerating all paths
+    // for every speculative double can block the UI and allocate thousands of
+    // board copies, despite the answer already being in the opening book.
+    let after;
+    try { after = commitTurn(state, steps); }
+    catch { throw new Error('Illegal opening book move.'); }
     const key = boardKey(after);
     if (seen.has(key)) throw new Error('Duplicate opening book result.');
     seen.add(key);
