@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const path = require("node:path");
+const { waitWork } = require("./play-helpers.cjs");
 module.exports = async function directPlay(browser, base, out, name) {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -375,24 +376,22 @@ module.exports = async function directPlay(browser, base, out, name) {
         await page.waitForFunction(
           () => !document.querySelector("#confirm")?.disabled,
         );
-        const pending = await page.evaluate(
-          async () =>
-            await (
-              await import("/backgammon/core/storage.mjs")
-            ).get("work", "play"),
+        // Draft autosave runs after paint; an enabled Confirm button can precede
+        // its IndexedDB commit. Assert the persisted preview once it is saved.
+        const pending = await waitWork(
+          page,
+          (work) => work?.game.id === id && work.draft.length === 2,
         );
         assert.equal(pending.game.events.length, 0);
         assert.equal(pending.draft.length, 2);
         await page.locator("#confirm").click();
         await page.locator(".roll-ready").waitFor();
-        const game = await page.evaluate(
-          async () =>
-            (
-              await (
-                await import("/backgammon/core/storage.mjs")
-              ).get("work", "play")
-            ).game,
-        );
+        const game = (
+          await waitWork(
+            page,
+            (work) => work?.game.id === id && work.game.state.turn === 1,
+          )
+        ).game;
         assert.equal(game.state.turn, 1);
         assert.deepEqual(game.events.at(-1).action.steps, [
           { from: 5, to: 4, die: 1 },
