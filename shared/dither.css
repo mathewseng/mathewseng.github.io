@@ -1,0 +1,48 @@
+/* A full-page ordered-dither field; content stays above the decorative canvas. */
+body.dither-theme { isolation: isolate; background: var(--page); }
+body.dither-theme::before, body.dither-theme::after { display: none; }
+.dither-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    repeating-conic-gradient(from 90deg, transparent 0 25%, color-mix(in srgb, var(--accent) 5%, transparent) 0 50%) 0 0 / 6px 6px,
+    radial-gradient(ellipse at 85% 15%, color-mix(in srgb, var(--family-backgammon) 17%, var(--page)), transparent 70%),
+    radial-gradient(ellipse at 15% 80%, color-mix(in srgb, var(--accent) 14%, var(--page)), var(--page) 75%);
+}
+.dither-background canvas { display: block; width: 100%; height: 100%; opacity: 0; }
+.dither-background.is-active canvas { opacity: 1; }
+.dither-theme .mark { border-radius: 3px; box-shadow: 3px 3px 0 var(--accent-soft); }
+.dither-theme .tile {
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--page) 82%, transparent);
+  backdrop-filter: none;
+}
+.dither-theme .tile:hover { background: color-mix(in srgb, var(--surface) 90%, transparent); }
+.dither-theme .group-head { border-bottom-style: dashed; }
+.dither-theme .group-head h2 { font-family: var(--font-mono); letter-spacing: .04em; }
+.dither-theme .category-nav a { border-radius: 3px; }
+.dither-theme .category-nav a:hover, .dither-theme .category-nav a[aria-current] { background: var(--accent-soft); }
+.dither-theme .project-row:hover { background: color-mix(in srgb, var(--surface) 85%, transparent); }
+.dither-toggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 3px;
+  background: var(--page);
+  color: var(--muted);
+  font: 12px var(--font-mono);
+  cursor: pointer;
+}
+.dither-toggle:hover { color: var(--ink); border-color: var(--accent); }
+.dither-toggle[hidden] { display: none; }
+.directory-footer:has(.dither-toggle:not([hidden])) { align-items: center; }
+@media (prefers-reduced-motion: reduce) { .dither-toggle { display: none; } }
+@media print { .dither-background, .dither-toggle { display: none; } }
