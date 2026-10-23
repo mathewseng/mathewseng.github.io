@@ -5,14 +5,14 @@
   transition: transform .5s var(--spring), box-shadow .3s, border-color .2s;
 }
 .room-cards .encounter.is-new { animation-fill-mode: backwards; }
-.room-cards .encounter.is-selected { --motion-lift: -3px; }
-.room-cards .encounter.is-tilting, .catalog-art-button.is-tilting, .deck-card.is-tilting { --motion-lift: -5px; transition: transform .12s ease-out, box-shadow .2s, border-color .2s; will-change: transform; }
+.room-cards .encounter.is-selected { --motion-lift: -2px; }
+.room-cards .encounter.is-tilting, .catalog-art-button.is-tilting, .deck-card.is-tilting { --motion-lift: -2px; transition: transform .12s ease-out, box-shadow .2s, border-color .2s; will-change: transform; }
 .room-cards .encounter .encounter-art, .catalog-art-button img { transform: none; }
 .room-cards .encounter.is-tilting { box-shadow: var(--shadow-x, 0px) var(--shadow-y, 20px) 34px color-mix(in srgb, var(--page) 85%, transparent), 0 0 18px color-mix(in srgb, var(--sc-card-accent) 12%, transparent); }
 .room-cards .encounter::after { background: radial-gradient(ellipse at var(--shine-x, 50%) var(--shine-y, 20%), color-mix(in srgb, var(--ink) 15%, transparent), transparent 58%); opacity: .3; transition: opacity .25s; }
 .room-cards .encounter.is-tilting::after { opacity: 1; }
 .collection-card .card-plane { transform: translate3d(0, var(--motion-lift, 0px), 0) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) rotateZ(var(--tilt-z, 0deg)); transition: transform .5s var(--spring), box-shadow .35s; }
-.collection-card.is-tilting { --motion-lift: -6px; }
+.collection-card.is-tilting { --motion-lift: -3px; }
 .collection-card.is-tilting .card-plane { transition: transform .12s ease-out, box-shadow .25s; box-shadow: var(--shadow-x, 0px) var(--shadow-y, 20px) 42px color-mix(in srgb, var(--page) 80%, transparent); }
 .collection-card .card-plane::after { background: radial-gradient(ellipse at var(--shine-x, 50%) var(--shine-y, 25%), color-mix(in srgb, var(--ink) 24%, transparent), transparent 60%); }
 html[data-motion="off"] .room-cards .encounter:not(:disabled), html[data-motion="off"] .catalog-art-button, html[data-motion="off"] .deck-card { transform: none; }

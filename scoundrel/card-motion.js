@@ -23,9 +23,9 @@
       frame = requestAnimationFrame(() => {
         frame = 0; if (!active?.isConnected || !point) { reset(); return; }
         const x = Math.max(0, Math.min(1, (point.x - bounds.left) / bounds.width)), y = Math.max(0, Math.min(1, (point.y - bounds.top) / bounds.height));
-        active.style.setProperty("--tilt-x", ((.5 - y) * 24).toFixed(2) + "deg");
-        active.style.setProperty("--tilt-y", ((x - .5) * 28).toFixed(2) + "deg");
-        active.style.setProperty("--tilt-z", ((x - .5) * 3).toFixed(2) + "deg");
+        active.style.setProperty("--tilt-x", ((.5 - y) * 8).toFixed(2) + "deg");
+        active.style.setProperty("--tilt-y", ((x - .5) * 10).toFixed(2) + "deg");
+        active.style.setProperty("--tilt-z", ((x - .5) * 1).toFixed(2) + "deg");
         active.style.setProperty("--shine-x", (x * 100).toFixed(1) + "%");
         active.style.setProperty("--shine-y", (y * 100).toFixed(1) + "%");
         active.style.setProperty("--shadow-x", ((.5 - x) * 24).toFixed(1) + "px");
