@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { ProgressWriter } from "../core/progress-writer.mjs";
 import { presentMove } from "../core/move-presentation.mjs";
+import { presentCubeAction } from "../core/cube-presentation.mjs";
+import { cubeActionIcon } from "../ui/cube-action-icon.mjs";
 import { keycap as shortcutBadge } from "../ui/keycap.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
 import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
@@ -2215,9 +2217,15 @@ function renderFeedback() {
     for (const row of group.decisions) {
       const currentRow = () => entry.group.decisions.find(item => item.index === row.index);
       const kind = row.action.type === "move" ? "Move" : "Cube";
+      const cube = kind === "Cube" ? presentCubeAction(row.source, row.action.type) : null;
+      const played = () => cube
+        ? el("span", { class: "history-played history-cube-action", title: cube.description },
+          cubeActionIcon(cube.icon), el("span", {}, cube.label))
+        : el("span", { class: "history-played" }, row.label);
       const detail = () => el("span", { class: "history-kind muted" },
         el("span", { class: "history-kind-label" },
-          ...(kind === "Cube" ? [el("span", { class: "history-cube-icon", "aria-hidden": true }, "2")] : []),
+          ...(cube ? [el("span", { class: "history-cube-icon", role: "img",
+            "aria-label": `Current cube ${cube.cubeValue}`, title: `Current cube: ${cube.cubeValue}` }, cube.cubeValue)] : []),
           kind,
         ),
         ...(row.result ? [el("span", {}, ` · ${row.result.settings.name}`)] : []),
@@ -2232,7 +2240,7 @@ function renderFeedback() {
               "data-history-player": row.player,
               "data-decision-type": row.action.type === "move" ? "checker" : "cube",
             },
-            el("span", { class: "history-move" }, detail(), el("span", { class: "history-played" }, row.label)),
+            el("span", { class: "history-move" }, detail(), played()),
             ...(canReturnToDecision(row, m.id)
               ? [
                   button(
@@ -2282,17 +2290,17 @@ function renderFeedback() {
           "data-history-side": side,
           "data-history-player": row.player,
           "data-decision-type": row.result.type,
-          title: `${playerLabel} · ${kind}: ${row.label}. ${f.quality}. ${f.units}. Open equity and EV comparison.`,
+          title: `${playerLabel} · ${kind}: ${cube?.label || row.label}. ${f.quality}. ${f.units}. Open equity and EV comparison.`,
         },
       );
       const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
       review.append(
         el("span", { class: "history-move" },
           detail(),
-          el("span", { class: "history-played" }, row.label),
+          played(),
           ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
             el("span", { class: "history-best-label" }, "Best "),
-            row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : f.best.notation,
+            row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : presentCubeAction(row.source, f.best.action).label,
           )] : []),
         ),
         decisionValues(f, true, { opponent: side === "opponent" }),

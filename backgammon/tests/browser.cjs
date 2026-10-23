@@ -707,6 +707,9 @@ const server = http.createServer((req, res) => {
         (report.mobileHistory ||= []).push(
           await run("mobile-history", browser, base, out, browserName),
         );
+        (report.cubeHistory ||= []).push(
+          await run("cube-history", browser, base, out, browserName),
+        );
         (report.mobileSettings ||= []).push(
           await run("mobile-settings", browser, base, out, browserName),
         );

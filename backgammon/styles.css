@@ -2517,14 +2517,27 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .history-cube-icon {
   display: inline-grid;
   place-items: center;
-  width: 15px;
-  height: 15px;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: 2px;
   box-sizing: border-box;
   border: 1px solid currentColor;
   border-radius: 3px;
   font-size: var(--t-xs);
   font-weight: 700;
   line-height: 1;
+}
+
+.history-cube-action {
+  display: flex;
+  align-items: start;
+  gap: 5px;
+}
+
+.history-action-icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--cat-5);
 }
 
 .history-move {
