@@ -45,15 +45,25 @@ test('optional four-ply admission accounts for capped-model uncertainty and meas
 });
 
 test('clear-lead shortcut is unavailable to unstable, close, match or submitted-move decisions',()=>{
-  const levels=[level(1,'a',.1,40),level(2,'a',.1,200)];
+  const levels=[level(2,'a',.1,40),level(3,'a',.1,200)];
   const broad=chooseSearchDecision(state(),levels);
   assert.equal(broad.reason,'clear-lead');
   for(const [s,ls,submitted] of [
-    [state(),[level(1,'b',.1,40),level(2,'a',.1,200)],null],
-    [state(),[level(1,'a',.001,40),level(2,'a',.001,200)],null],
+    [state(),[level(2,'b',.1,40),level(3,'a',.1,200)],null],
+    [state(),[level(2,'a',.001,40),level(3,'a',.001,200)],null],
     [{...state(),matchLength:7,scores:[2,4]},levels,null],
     [state(),levels,[{from:24,to:21,die:3}]],
   ]) assert.notEqual(chooseSearchDecision(s,ls,submitted).reason,'clear-lead');
+});
+
+test('neither a clear lead nor an expensive forecast can end Auto at two ply',()=>{
+  for (const type of ['checker','cube']) {
+    for (const gap of [.001,.5]) {
+      const levels=[level(1,'a',gap,1000),level(2,'a',gap,10000)].map(r=>({...r,type}));
+      assert.ok(forecastNext(state(),levels).estimateMs>5000);
+      assert.equal(chooseSearchDecision(state(),levels).reason,'searching');
+    }
+  }
 });
 
 test('adaptive search publishes its stopping reason and passes each winner to the next stage',()=>{
@@ -61,15 +71,15 @@ test('adaptive search publishes its stopping reason and passes each winner to th
   const result=runAdaptive({analyze(s,preset,kind,submitted,options){
     const depth=PRESETS[preset].plies;
     calls.push(options);
-    clock += [10,40,200][depth];
+    clock += [10,40,200,800][depth];
     return {...level(depth),status:'complete'};
   }},state(),'checker',null,r=>updates.push(r),()=>clock);
-  assert.deepEqual(updates.map(r=>r.settings.plies),[0,1,2]);
-  assert.deepEqual(calls.map(c=>c.retainKeys),[[],['a'],['a']]);
+  assert.deepEqual(updates.map(r=>r.settings.plies),[0,1,2,3]);
+  assert.deepEqual(calls.map(c=>c.retainKeys),[[],['a'],['a'],['a']]);
   assert.equal(result.budget.reason,'clear-lead');
-  assert.equal(result.settings.searchPolicy,'minimum-two-v3');
-  assert.equal(result.budget.forecast.nextPlies,3);
-  assert.equal(result.stageMs,200);
+  assert.equal(result.settings.searchPolicy,'minimum-three-v1');
+  assert.equal(result.budget.forecast.nextPlies,4);
+  assert.equal(result.stageMs,800);
 });
 
 test('automatic 4-ply search evaluates the 3-ply winner even when its 2-ply rank is outside Research',()=>{
@@ -92,22 +102,19 @@ test('automatic 4-ply search evaluates the 3-ply winner even when its 2-ply rank
   assert.equal(engine.analyze(s,'research').candidates[0].key,wanted,'Fixed Research must preserve the leader too');
 });
 
-test('next-stage cost gate accepts five seconds and skips only estimates strictly above it',()=>{
-  for(const type of ['checker','cube']) {
-    const s=state(), base=[level(1,'a',.001,30),level(2,'a',.001,100)].map(l=>({...l,type}));
-    const prediction=forecastNext(s,base).estimateMs;
-    for(const [estimate,reason] of [[4999,'searching'],[5001,'predicted-cost']]) {
-      const scaled=base.map(l=>({...l,stageMs:l.stageMs*estimate/prediction}));
-      assert.equal(chooseSearchDecision(s,scaled).reason,reason,type);
-    }
+test('optional fourth-ply cost gate uses the five-second next-stage threshold',()=>{
+  const s=state(), base=[level(2,'a',.001,30),level(3,'a',.001,100)];
+  const prediction=forecastNext(s,base).estimateMs;
+  for(const [estimate,reason] of [[4999,'searching'],[5001,'predicted-cost']]) {
+    const scaled=base.map(l=>({...l,stageMs:l.stageMs*estimate/prediction}));
+    assert.equal(chooseSearchDecision(s,scaled).reason,reason);
   }
-  const exactlyFive=[level(1,'a',.001,5000),level(2,'a',.001,5000)].map(l=>({...l,type:'cube'}));
-  assert.equal(forecastNext(state(),exactlyFive).estimateMs,5000);
-  assert.equal(chooseSearchDecision(state(),exactlyFive).reason,'searching');
+  const cube=[level(2),level(3)].map(l=>({...l,type:'cube'}));
+  assert.equal(chooseSearchDecision(state(),cube).reason,'cube-depth-limit');
 });
 
 test('a slow start does not prevent an affordable next depth',()=>{
-  const evals=[level(0,'a',.001,8000),level(1,'a',.001,2000),level(2,'a',.001,1000)].map(l=>({...l,type:'cube'}));
-  assert.equal(forecastNext(state(),evals).estimateMs,1000);
+  const evals=[level(0,'a',.001,8000),level(1,'a',.001,2000),level(2,'a',.001,10),level(3,'a',.001,10)];
+  assert.ok(forecastNext(state(),evals).estimateMs<5000);
   assert.equal(chooseSearchDecision(state(),evals).reason,'searching');
 });

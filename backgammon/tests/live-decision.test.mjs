@@ -19,16 +19,16 @@ const result=(state,plies)=>({status:'complete',type:'checker',engine:ENGINE_VER
 const harness=()=>{const workers=[];const client=new EngineClient({openingBook:null,workerFactory:()=>{const w=new Worker();workers.push(w);return w;}});
   return {client,workers,start:async()=>{workers.at(-1).reply({id:0,type:'ready',elapsedMs:1});await tick();return client.active.id;}};};
 
-test('live Auto asks for a complete 2-ply result and never accepts 0/1 ply',async()=>{
+test('live Auto asks for a complete 3-ply result and never accepts 0/1/2 ply',async()=>{
   const h=harness(),s=source();let resolved=false;
   try{
     const pending=h.client.analyze(s,{preset:'auto',readyOnly:true}).then(r=>{resolved=true;return r;});
     const id=await h.start(),w=h.workers[0];
     assert.equal(w.messages.at(-1).readyOnly,true);
-    for(const depth of [0,1]){w.reply({id,type:'evaluation',result:result(s,depth)});await tick();assert.equal(resolved,false);}
-    const two={...result(s,2),budget:{reason:'ready-to-play'}};
-    w.reply({id,type:'evaluation',result:two});w.reply({id,type:'result',result:two});
-    assert.equal((await pending).settings.plies,2);
+    for(const depth of [0,1,2]){w.reply({id,type:'evaluation',result:result(s,depth)});await tick();assert.equal(resolved,false);assert.equal(h.client.readyResult(s),null);assert.equal(h.client.decisions.size,0);}
+    const three={...result(s,3),budget:{reason:'ready-to-play'}};
+    w.reply({id,type:'evaluation',result:three});w.reply({id,type:'result',result:three});
+    assert.equal((await pending).settings.plies,3);
     assert.equal(w.terminated,undefined,'normal live completion keeps warm worker');
     assert.equal(h.client.cache.size,0,'live stop cannot masquerade as a full adaptive result');
     assert.equal((await h.client.analyze(s,{preset:'auto',readyOnly:true})).cached,true);
@@ -53,6 +53,10 @@ test('bot consumes deepest completed stage immediately while optional deeper WAS
     assert.equal(h.client.readyResult(s).settings.plies,3,'terminated late packet cannot replace live result');
     h.client.rememberDecision({key:h.client.decisions.keys().next().value,state:s,preset:'auto'},result(s,2));
     assert.equal(h.client.readyResult(s).settings.plies,3,'revisiting a position never downgrades its completed checkpoint');
+    const job={key:h.client.decisions.keys().next().value,state:s,preset:'auto'};
+    h.client.rememberDecision(job,result(s,4));
+    h.client.rememberDecision(job,result(s,3));
+    assert.equal(h.client.readyResult(s).settings.plies,4,'a newer minimum-depth stage cannot overwrite a deeper answer');
     played.candidates[0].equity=999;
     assert.equal(h.client.readyResult(s).candidates[0].equity,.3);
     for(const other of [{...s,dice:[2,3]},{...s,turn:1},{...s,scores:[1,0]}, {...s,cube:{value:2,owner:0}}])
@@ -73,8 +77,8 @@ test('promotion requests a cooperative stop; worker failures are retryable',asyn
     assert.deepEqual(w.messages.at(-1),{id,type:'finish-ready'});
     w.onerror({message:'worker failed'});await rejected;await liveRejected;
     const retry=h.client.analyze(s,{preset:'auto',readyOnly:true});const next=await h.start();
-    h.workers[1].reply({id:next,type:'result',result:result(s,2)});
-    assert.equal((await retry).settings.plies,2);
+    h.workers[1].reply({id:next,type:'result',result:result(s,3)});
+    assert.equal((await retry).settings.plies,3);
   }finally{h.client.destroy();}
 });
 
@@ -82,7 +86,7 @@ test('retained speculation is bounded by candidate rows, including screening pay
   const h=harness(),s=source();
   try{
     for(let i=0;i<100;i++){
-      const r={...result(s,2),screening:{excluded:Array(600).fill({equity:0})}};
+      const r={...result(s,3),screening:{excluded:Array(600).fill({equity:0})}};
       const job={key:String(i),state:s,preset:'auto'};
       h.client.rememberDecision(job,r);h.client.cache.set(job.key,r);h.client.trimCache();
     }
@@ -92,22 +96,36 @@ test('retained speculation is bounded by candidate rows, including screening pay
   }finally{h.client.destroy();}
 });
 
-test('adaptive worker yields between depths and stops after 2 when play needs its answer',async()=>{
+test('adaptive worker yields between depths and stops after 3 when play needs its answer',async()=>{
   const depths=[];let ready=false;
-  const r=await runAdaptiveAsync({analyze(s,preset){depths.push(PRESETS[preset].plies);return {status:'complete',type:'cube',settings:PRESETS[preset]};}},
-    initialState({phase:'roll'}),'cube',null,()=>{},()=>ready,async()=>{ready=true;});
-  assert.deepEqual(depths,[0,1,2]);assert.equal(r.budget.reason,'ready-to-play');
+  const r=await runAdaptiveAsync({analyze(s,preset){depths.push(PRESETS[preset].plies);return {status:'complete',type:'checker',settings:PRESETS[preset],candidates:[{key:'a',equity:.2},{key:'b',equity:.199}]};}},
+    source(),'checker',null,()=>{},()=>ready,async()=>{ready=true;});
+  assert.deepEqual(depths,[0,1,2,3]);assert.equal(r.budget.reason,'ready-to-play');
 });
 
-test('a failure during optional work preserves a live completed two-ply answer',async()=>{
+test('a failure during optional work preserves a live completed three-ply answer',async()=>{
   const h=harness(),s=source();
   try{
     const pending=h.client.analyze(s,{preset:'auto',readyOnly:true});
     const id=await h.start(),w=h.workers[0];
-    w.reply({id,type:'evaluation',result:result(s,2)});
+    w.reply({id,type:'evaluation',result:result(s,3)});
     w.onerror({message:'worker failed after checkpoint'});
-    assert.equal((await pending).settings.plies,2);
+    assert.equal((await pending).settings.plies,3);
     assert.equal(h.client.worker,null);
-    assert.equal(h.client.readyResult(s).settings.plies,2);
+    assert.equal(h.client.readyResult(s).settings.plies,3);
   }finally{h.client.destroy();}
+});
+
+test('a failed live search cannot fall back to a completed two-ply checkpoint',async()=>{
+  const h=harness(),s=source();
+  try {
+    const pending=h.client.analyze(s,{preset:'auto',readyOnly:true});
+    const rejected=assert.rejects(pending,/worker failed/);
+    const id=await h.start(),w=h.workers[0];
+    w.reply({id,type:'evaluation',result:result(s,2)});
+    w.onerror({message:'worker failed before three ply'});
+    await rejected;
+    assert.equal(h.client.readyResult(s),null);
+    assert.equal(h.client.cache.size,0);
+  } finally {h.client.destroy();}
 });

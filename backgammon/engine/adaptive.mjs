@@ -10,7 +10,7 @@ export const ADAPTIVE_SEARCH = Object.freeze({
 // Fixed Quick/Standard/Deep remain exhaustive over legal resulting boards.
 export const ADAPTIVE_ROOT = Object.freeze({ plies: 0, minimum: 16, maximum: 24, threshold: 0.16 });
 
-// Publish whole evaluations, always completing at least two plies. Deeper
+// Publish whole evaluations, always completing at least three plies. Deeper
 // stages are gated by estimated cost/stability, not an elapsed-time cutoff.
 export function* adaptiveStages(evaluator, state, kind, submitted, now = () => performance.now()) {
   const start = now(), levels = [], evaluations = [];
@@ -51,7 +51,7 @@ export function runAdaptive(evaluator, state, kind, submitted, publish, now) {
 }
 
 // Yield to worker messages between complete depths. A live decision can stop
-// at 2 ply without destroying/reloading the WASM instance and its warm cache.
+// at the minimum depth without reloading the WASM instance and its warm cache.
 export async function runAdaptiveAsync(evaluator, state, kind, submitted, publish,
   readyOnly = () => false, yieldStage = () => new Promise(resolve => setTimeout(resolve, 0))) {
   let result;

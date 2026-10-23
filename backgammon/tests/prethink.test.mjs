@@ -177,7 +177,7 @@ test('chosen bot continuation prepares the seeded checker roll while foreground 
   }finally{h.p.pause();}
 });
 
-test('future Auto searches stop at two and a slow speculative job hits its hard deadline',async()=>{
+test('future Auto searches use the mandatory minimum and keep the hard speculative deadline',async()=>{
   const h=harness({limits:{...PRETHINK,nodes:8,milliseconds:20}});
   let rejectFuture, pendingJob;
   try{

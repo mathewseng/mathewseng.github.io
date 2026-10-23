@@ -75,9 +75,9 @@ export const CAPABILITIES = {
 
 // Shared labels keep Play, hints and Solver explicit about fixed vs adaptive work.
 export const SEARCH_OPTIONS = Object.freeze([
-  ["auto", "Auto · adaptive, 2–4 ply"],
+  ["auto", "Auto · adaptive, 3–4 ply"],
   ...Object.entries(PRESETS).map(([key, value]) => [key,
     `Fixed ${value.plies} ply · ${value.name}`]),
 ]);
 export const searchName = key => key === "auto" ? "Auto · adaptive" : PRESETS[key]?.name || "Auto";
-export const SEARCH_DESCRIPTION = "Auto completes at least 2 ply, usually 3. Checker searches may reach 4 when a conservative cost estimate allows it; cube decisions stop at 3 because warm-cache timings cannot reliably predict their 4-ply cost. Deeper work stops above a 5-second estimate or for a substantial, stable lead. Fixed depths do not adapt. Verify independently rescans Research's 4-ply checker finalists without internal pruning; it is slower and does not establish XG accuracy. Its cube analysis uses Research's normal pruning. Matching money/Jacoby/beaver-on positions can use explicitly attributed published XG references. Other compatible book positions use stored 5-ply openings/replies or historical 3-ply later turns (except Fixed 4 and Verify). Historical filtered rollout-book estimates are retired following a checker-selection correction. The result identifies its method and sampling uncertainty.";
+export const SEARCH_DESCRIPTION = "Auto completes at least 3 ply. Checker searches may reach 4 when a conservative cost estimate allows it; cube decisions stop at 3 because warm-cache timings cannot reliably predict their 4-ply cost. Deeper work stops above a 5-second estimate or for a substantial, stable lead. Fixed depths do not adapt. Verify independently rescans Research's 4-ply checker finalists without internal pruning; it is slower and does not establish XG accuracy. Its cube analysis uses Research's normal pruning. Matching money/Jacoby/beaver-on positions can use explicitly attributed published XG references. Other compatible book positions use stored 5-ply openings/replies or historical 3-ply later turns (except Fixed 4 and Verify). Historical filtered rollout-book estimates are retired following a checker-selection correction. The result identifies its method and sampling uncertainty.";

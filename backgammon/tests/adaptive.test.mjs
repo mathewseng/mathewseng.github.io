@@ -21,18 +21,18 @@ test("Auto cube completes three plies but does not extrapolate warm-cache timing
   assert.equal(result.status, "complete");
 });
 
-test("even slow 0/1-ply searches must finish 2 ply before a cost stop", () => {
+test("even expensive 0/1/2-ply stages cannot bypass the mandatory 3-ply floor", () => {
   let clock = 0; const depths=[];
   const r = runAdaptive({ analyze(s, preset) {
     depths.push(PRESETS[preset].plies);
-    clock += [6000, 7000, 8000][PRESETS[preset].plies];
+    clock += [6000, 7000, 8000, 9000][PRESETS[preset].plies];
     return {type:"cube", settings:PRESETS[preset],status:"complete"};
   } }, initialState({phase:"roll"}), "cube", null, () => {}, () => clock);
-  assert.deepEqual(depths,[0,1,2]);
-  assert.equal(r.settings.plies,2);
-  assert.equal(r.elapsedMs,21000);
-  assert.equal(r.budget.reason,"predicted-cost");
-  assert.equal(r.budget.minimumPlies,2);
+  assert.deepEqual(depths,[0,1,2,3]);
+  assert.equal(r.settings.plies,3);
+  assert.equal(r.elapsedMs,30000);
+  assert.equal(r.budget.reason,"cube-depth-limit");
+  assert.equal(r.budget.minimumPlies,3);
   assert.equal(r.budget.maxNextStageMs,5000);
 });
 
@@ -43,10 +43,10 @@ class WorkerMock {
   terminate() { this.terminated = true; }
 }
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
-const completed = (plies = 2) => ({
+const completed = (plies = 3) => ({
   status: "complete", settings: { plies }, candidates: [{ key: "best", equity: .25 }],
   actual: { key: "actual", equity: .2 }, error: .05,
-  budget: { minimumPlies: 2, maxNextStageMs: 5000, levels: [{ plies }], reason: "searching" },
+  budget: { minimumPlies: 3, maxNextStageMs: 5000, levels: [{ plies }], reason: "searching" },
 });
 
 test("Auto never resolves with a shallow update, even after five seconds", async () => {
@@ -68,11 +68,11 @@ test("Auto never resolves with a shallow update, even after five seconds", async
 });
 
 test("an erroneous shallow final result fails instead of being cached as completed Auto", async () => {
-  for(const depth of [0,1]) {
+  for(const depth of [0,1,2]) {
     const w=new WorkerMock(),client=new EngineClient({workerFactory:()=>w});
     try {
       const pending=client.analyze(initialState({phase:"roll"}),{preset:"auto"});
-      const rejected=assert.rejects(pending,/required 2 ply/);
+      const rejected=assert.rejects(pending,/required 3 ply/);
       w.reply({id:0,type:"ready",elapsedMs:1});await tick();
       w.reply({id:client.active.id,type:"result",result:completed(depth)});
       await rejected;assert.equal(client.cache.size,0);
@@ -158,7 +158,7 @@ test("equivalent submitted paths share automatic analysis; callbacks cannot alte
     const b=client.analyze(state,{preset:"auto",submitted:second.steps});
     w.reply({id:0,type:"ready",elapsedMs:1});await tick();
     assert.equal(w.messages.filter(m=>m.type==="analyze").length,1);
-    const job=client.active,key=boardKey(first.state),result=completed(2);
+    const job=client.active,key=boardKey(first.state),result=completed(3);
     result.candidates=[{key,equity:.25}];result.actual=result.candidates[0];result.error=0;
     w.reply({id:job.id,type:"evaluation",result});
     w.reply({id:job.id,type:"result",result});

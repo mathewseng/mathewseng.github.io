@@ -418,7 +418,7 @@ $("method-content").append(
     ...[
       [
         "Auto",
-        "Complete at least two plies, normally try three, and potentially reach four. The next-stage cost estimate and stable-lead policy can stop further search. Only completed same-depth comparisons replace the current result. A broad zero-ply screen retains at least sixteen candidates, up to twenty-four within 0.160, plus the submitted move; higher depths narrow that list further. The completed depth and screening limits are shown.",
+        "Complete at least three plies, and potentially reach four for checker decisions. Cube decisions complete three plies. The next-stage cost estimate and stable-lead policy can stop further search. Only completed same-depth comparisons replace the current result. A broad zero-ply screen retains at least sixteen candidates, up to twenty-four within 0.160, plus the submitted move; higher depths narrow that list further. The completed depth and screening limits are shown.",
       ],
       [
         "Quick / Standard / Deep",

@@ -36,12 +36,12 @@ module.exports = async function adaptive(browser,base,out,name="browser") {
         const retry=await e.analyze(next,{preset:"quick"});
         if(retry.positionKey!==positionKey(next))throw Error("Stale result after restart");
         const cube=await e.analyze(initialState({phase:"roll"}),{preset:"auto"});
-        if(cube.type!=="cube"||cube.settings.plies<2||!Number.isFinite(cube.equity))throw Error("Cube Auto did not complete its minimum depth");
+        if(cube.type!=="cube"||cube.settings.plies<3||!Number.isFinite(cube.equity))throw Error("Cube Auto did not complete its minimum depth");
         return {elapsedMs,completedPlies:a.settings.plies,cubePlies:cube.settings.plies,cubeReason:cube.budget.reason,
           actual:a.actual.notation,levels:updates.map(r=>r.settings.plies)};
       } finally {e.destroy();}
     });
-    assert.ok(report.completedPlies>=2&&report.completedPlies<=4);
+    assert.ok(report.completedPlies>=3&&report.completedPlies<=4);
     // A deeper screen may discard the move being previewed. Preserve the
     // board but never label it Original or display the new leader's equity.
     assert.deepEqual(await page.evaluate(async()=>{
@@ -69,6 +69,7 @@ module.exports = async function adaptive(browser,base,out,name="browser") {
       await page.waitForFunction(()=>document.querySelector("#analyze")?.textContent==="Analyze"&&
         document.querySelector("#analysis-budget")?.textContent.includes("completed")&&
         !document.querySelector("#analysis-budget")?.textContent.includes("searching deeper"));
+      assert.match(await page.locator("#analysis-budget").textContent(), /Minimum 3 ply/);
       assert.equal(await page.getByLabel("Analysis strength").locator('[aria-pressed="true"]').getAttribute("data-choice"),"auto");
       // On phones study controls open the same complete analysis panel.
       if(viewport.width<600) {

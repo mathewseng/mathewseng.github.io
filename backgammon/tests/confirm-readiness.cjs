@@ -32,7 +32,7 @@ module.exports=async function confirmReadiness(browser,base,out,name){
       const r=await import('/backgammon/core/rules.mjs');
       const actual={steps:options.submitted,key:r.boardKey(r.commitTurn(state,options.submitted)),equity:.1-loss,probabilities:[.5,.1,.01,.1,.01]};
       resolve({status:'complete',type:'checker',positionKey:r.positionKey(state),engine:'test',perspective:state.turn,units:'normalized-match-equity',
-        settings:{plies:2,name:'Test 2 ply'},candidates:[{...actual,equity:.1}],actual,error:loss});
+        settings:{plies:3,name:'Test 3 ply'},candidates:[{...actual,equity:.1}],actual,error:loss});
      };});
     };
     const p=window.confirmTiming={};
@@ -88,7 +88,7 @@ module.exports=async function confirmReadiness(browser,base,out,name){
       gradeLoss:grade.error,starts};
    }finally{engine.destroy();}
   });
-  assert.equal(native.firstPlies,2);assert.equal(native.reason,'ready-to-play');assert.equal(native.starts,1);
+  assert.equal(native.firstPlies,3);assert.equal(native.reason,'ready-to-play');assert.equal(native.starts,1);
   assert.equal(native.deeperPlies,3);assert.equal(native.sameAnswer,true);assert.equal(native.gradeLoss,0);
   assert.ok(native.readyMs<100,JSON.stringify(native));assert.deepEqual(errors,[]);
   return {browser:name,cpuSlowdown:name==='chromium'?4:1,cases,native};

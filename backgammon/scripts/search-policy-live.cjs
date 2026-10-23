@@ -11,7 +11,7 @@ const cases=traces.cases.filter(c=>replay.rows.find(r=>r.id===c.id)?.split==='te
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const adaptive=fs.readFileSync(path.join(site,'backgammon/engine/adaptive.mjs'),'utf8');
 const stopCall='chooseSearchDecision(state, evaluations, elapsedMs, ADAPTIVE_SEARCH.targetMs, submitted)';
-if(!adaptive.includes(stopCall))throw Error('Historical one-second benchmark: run this script from revision f344694. Current Auto uses minimum-two-v2.');
+if(!adaptive.includes(stopCall))throw Error('Historical one-second benchmark: run this script from revision f344694. Current Auto uses minimum-three-v1.');
 const baseline=adaptive.replace(stopCall,"({reason:'searching',lead:null,forecast:null})");
 const worker=fs.readFileSync(path.join(site,'backgammon/engine/worker.mjs'),'utf8')
  .replace('from "./adaptive.mjs"','from "./baseline-adaptive.mjs"');

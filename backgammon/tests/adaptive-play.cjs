@@ -13,7 +13,7 @@ module.exports=async function adaptivePlay(browser,base,out,name){
   await page.locator('#start-match').click();await require('./play-helpers.cjs').openingComplete(page);
   const started=Date.now();await page.locator('#hint').click();await page.locator('[data-best-move]').waitFor({timeout:120000});
   const hintMs=Date.now()-started;
-  assert.ok((await page.evaluate(()=>engineTrace)).some(r=>r.preset==='auto'&&r.plies>=2));
+  assert.ok((await page.evaluate(()=>engineTrace)).some(r=>r.preset==='auto'&&r.plies>=3));
   await page.locator('#use-hint').click();await page.locator('#confirm').waitFor();
   await page.keyboard.press('c');
   // Wait for bot checker choice and persisted evaluations, including cube choice.
@@ -24,8 +24,8 @@ module.exports=async function adaptivePlay(browser,base,out,name){
     await page.waitForTimeout(100);
   }
   const evaluations=game.events.filter(e=>e.evaluation).map(e=>({actor:e.actor,action:e.action.type,plies:e.evaluation.result.settings.plies,policy:e.evaluation.result.settings.searchPolicy}));
-  assert.ok(evaluations.some(e=>e.actor===0&&e.action==='move'&&e.plies>=2));
-  assert.ok(evaluations.some(e=>e.actor===1&&e.action==='move'&&e.plies>=2));
+  assert.ok(evaluations.some(e=>e.actor===0&&e.action==='move'&&e.plies>=3));
+  assert.ok(evaluations.some(e=>e.actor===1&&e.action==='move'&&e.plies>=3));
   await page.locator('#review-heading').scrollIntoViewIfNeeded();assert.ok(await page.locator('.history-turn').count());
   await page.locator('[data-history-filter="opponent"]').click();
   const botDepth = evaluations.find(e=>e.actor===1&&e.action==='move').plies;

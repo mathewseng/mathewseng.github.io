@@ -79,8 +79,8 @@ export class EngineClient {
               this.fail(e);
               return;
             }
-            // Intermediate 0/1-ply updates do not resolve Auto. The worker must
-            // complete at least 2 ply, regardless of how long earlier stages took.
+            // Intermediate updates do not resolve Auto. The worker must reach
+            // the required minimum, regardless of how long earlier stages took.
             return;
           }
           if (data.type === "progress") {
@@ -96,8 +96,8 @@ export class EngineClient {
           clearTimeout(this.jobTimeout);
           if (data.type !== "error" && job.preset === "auto" && !job.rollout &&
               !(data.result?.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies)) {
-            job.reject(new Error("Automatic analysis ended before the required 2 ply. Retry the analysis."));
-            this.onStatus("error", "Automatic analysis did not complete 2 ply.");
+            job.reject(new Error(`Automatic analysis ended before the required ${ADAPTIVE_SEARCH.minimumPlies} ply. Retry the analysis.`));
+            this.onStatus("error", `Automatic analysis did not complete ${ADAPTIVE_SEARCH.minimumPlies} ply.`);
             this.pump();
             return;
           }
@@ -453,7 +453,7 @@ export class EngineClient {
       const job = this.queue.shift();
       this.active = job;
       job.started = performance.now();
-      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Analyzing · at least 2 ply…" : `Evaluating ${this.presetNames[job.preset] || job.preset}…`);
+      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? `Analyzing · at least ${ADAPTIVE_SEARCH.minimumPlies} ply…` : `Evaluating ${this.presetNames[job.preset] || job.preset}…`);
       this.worker.postMessage({
         id: job.id,
         type: "analyze",
