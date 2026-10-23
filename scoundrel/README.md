@@ -53,7 +53,9 @@ The [art direction](docs/art-direction.md) records the shared visual language.
 The dedicated **Collection** page has all 44 cards, suit filters, name/role search,
 shareable card links, a full-art viewer and navigation within the filtered set.
 Arrow keys, previous/next buttons and touch swipes browse the viewer; Escape closes
-it and returns focus. Pointer movement tilts cards gently and moves a soft light.
+it and returns focus. Dungeon and collection cards follow pointer position with
+3D pitch, yaw, a slight roll, moving light, and directional shadows. Hovering
+rotates the whole card rather than zooming its illustration.
 Entrance and viewer transitions, tilt and light effects respect reduced motion.
 Images load lazily, with neighboring viewer artwork prefetched. The game retains
 its compact in-game collection and links to the full page.
@@ -72,7 +74,22 @@ are in document flow and wrap without ellipsis. Action buttons are at least
 table becomes stacked action rows, preserving all values without horizontal
 scrolling. Dialogs respect dynamic viewport height and device safe areas.
 
+Click **Cards left** or **Cards resolved** to open the deck overview. All 44
+cards stay in canonical suit/value order; the opposite state is dimmed, and
+current-room cards have a dot. The toggle switches the highlighted set. Landscape
+uses suits as rows; portrait phones use suits as columns with a sticky header.
+Every tile opens its full artwork. Cards left includes the current room, so the
+left and resolved counts always sum to 44. The inventory receives only the
+public observation and cannot expose the unseen deck order. Cards left also shows
+the known bottom queue in draw order, after the unseen cards. Avoidance recommendations
+highlight both the Avoid room button and the matching order in its preview.
+
 ## Hidden-deck action values
+
+A 100,000-simulation search starts automatically on load and after every action,
+even with the analysis panel closed. Opening or hiding the panel reuses that
+search and its current results. A new position cancels the old worker; the
+existing Search to 1M control extends the current tree.
 
 Move analysis is a **hidden-information policy**, not an oracle. The analysis
 worker receives only `engine.observe(state)`: visible cards, health, equipment,
@@ -138,8 +155,8 @@ the actual cohort size and fixed simulation budget; these are measured policy
 outcomes, not perfect-information solutions or proven optimal population EVs.
 
 The chart has one thin bar per integer score, including zero-count positions,
-with mean, median, and first/third quartile lines. Quartiles use R-7 linear
-interpolation. Whole-number medians have no decimal suffix. The full plot fits
+with lines at every fifth percentile from 5% through 95%. Mean, median, and
+first/third quartile lines stand out. Percentiles use R-7 linear interpolation. Whole-number medians have no decimal suffix. The full plot fits
 phones; a Score control supports precise touch/keyboard filtering. Cohort filters
 affect the plot and deal list; headline statistics always describe the full study.
 Every deal has a verified history and seeded play link. CSV export includes the
@@ -186,11 +203,14 @@ benchmark, frozen run, deadline, and monitoring/publication instructions.
 node --test scoundrel/tests/*.test.cjs
 sh scripts/assemble-site.sh _site
 node scoundrel/tests/browser.cjs
+node scoundrel/tests/deck-overview.cjs
 node scoundrel/tests/analysis.cjs
 node scoundrel/tests/responsive.cjs
 node scoundrel/tests/gallery.cjs
 # With local WebKit installed, also check mobile Safari's rendering engine:
 SCOUNDREL_BROWSERS=chromium,webkit node scoundrel/tests/responsive.cjs
+# Also prove a full background search finishes before the panel is opened:
+SCOUNDREL_COMPLETE_SEARCH=1 node scoundrel/tests/deck-overview.cjs
 SHELL_PAGES=/,/scoundrel/,/scoundrel/gallery/,/scoundrel/reports/ node scripts/shell-browser.cjs
 ```
 

@@ -1,4 +1,4 @@
-const { waitForAsync } = require("./play-helpers.cjs");
+const { waitForAsync, waitWork } = require("./play-helpers.cjs");
 // Native Play regression for compulsory moves independent of dice order.
 const assert = require("node:assert/strict"),
   fs = require("node:fs"),
@@ -163,7 +163,12 @@ module.exports = async function draftChoices(browser, base, out, name) {
                 const {x,y}=target;
                 if (touch) await page.touchscreen.tap(Math.round(x), Math.round(y));
                 else await page.mouse.click(x, y);
-                await page.waitForTimeout(50);
+                // Paint and autosave can take more than 50 ms on busy runners.
+                // Wait for this move to be saved before reading the next step.
+                await waitWork(
+                  page,
+                  current => current?.game.id === data.id && current.draft.length > w.draft.length,
+                );
               }
               w = await read();
               assert.equal(w.game.events.length, 0);

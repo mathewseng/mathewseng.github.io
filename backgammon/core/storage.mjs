@@ -13,6 +13,7 @@ export const settingsDefaults = {
   keyboardEnabled: true,
   shortcuts: DEFAULT_SHORTCUTS,
   numbers: true,
+  cubeOneAsOne: false,
   moveHints: true,
   interactionMode: "advanced",
   motion: "system",
@@ -43,6 +44,7 @@ export function settings() {
       moveFeedback: saved?.moveFeedback !== false,
       interactionMode: saved?.interactionMode === "beginner" ? "beginner" : "advanced",
       moveHints: saved?.moveHints !== false,
+      cubeOneAsOne: saved?.cubeOneAsOne === true,
       sound: normalizeSound(saved?.sound),
     };
     settingsText = text;

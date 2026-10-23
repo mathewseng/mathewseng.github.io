@@ -1,0 +1,63 @@
+.deck-overview-button { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; width: 100%; padding: 4px 0; border: 0; border-radius: 5px; background: transparent; color: var(--sc-muted); cursor: pointer; }
+.deck-overview-button strong { font: 600 25px/1.2 ScoundrelDisplay, Georgia, serif; color: var(--sc-gold-bright); margin-bottom: 4px; }
+.deck-overview-button:hover { background: color-mix(in srgb, var(--sc-gold) 7%, transparent); }
+.deck-overview-button .rail-label { line-height: 1.4; }
+.deck-dialog { width: min(1400px, calc(100vw - 32px)); max-width: none; padding: 22px; overflow: hidden; }
+.deck-dialog[open] { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 14px; }
+.deck-dialog .dialog-top { margin: 0; }
+.deck-dialog .dialog-top h2 { font-size: 24px; }
+.deck-summary { margin-top: 5px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.deck-view-toggle { display: inline-flex; justify-self: start; gap: 4px; padding: 4px; border: 1px solid var(--sc-border); border-radius: 7px; background: var(--page); }
+.deck-view-toggle button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 44px; padding: 8px 16px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; }
+.deck-view-toggle button[aria-pressed="true"] { background: var(--sc-panel); color: var(--sc-gold-bright); box-shadow: inset 0 -2px var(--sc-gold); }
+.deck-view-toggle strong { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.deck-matrix-scroll { overflow: auto; max-height: calc(100dvh - 230px); overscroll-behavior: contain; scrollbar-width: thin; }
+.deck-matrix { width: 100%; min-width: 760px; table-layout: fixed; border-collapse: separate; border-spacing: 7px; }
+.deck-matrix th { padding: 5px 0; color: var(--muted); text-align: center; font-size: 12px; line-height: 1.4; font-weight: 400; }
+.deck-matrix th:first-child { width: 76px; }
+.deck-matrix thead th { position: sticky; top: 0; z-index: 3; background: var(--page); }
+.deck-matrix th[data-suit] { color: var(--sc-card-accent); }
+.deck-matrix th[data-suit] > span { display: block; }
+.deck-matrix th[data-suit] > span:first-child { font-size: 20px; }
+.deck-matrix td { padding: 0; vertical-align: top; }
+.deck-card, .deck-bottom-card { position: relative; display: block; width: 100%; min-height: 56px; aspect-ratio: .8; padding: 0; border: 1px solid color-mix(in srgb, var(--sc-card-accent) 55%, var(--page)); border-radius: 5px; background: var(--page); overflow: hidden; cursor: zoom-in; transition: opacity .2s, filter .2s; }
+.deck-card img, .deck-bottom-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.deck-card-value { position: absolute; inset: auto 0 0; padding: 3px; color: var(--sc-card-accent); background: var(--page); text-align: center; font: 600 clamp(16px, 1.6vw, 22px)/1.1 ScoundrelDisplay, Georgia, serif; }
+.deck-card.is-dimmed { opacity: .2; filter: grayscale(.7); }
+.deck-card.is-dimmed:hover, .deck-card.is-dimmed:focus-visible { opacity: .65; }
+.deck-room-marker { position: absolute; right: 5px; top: 5px; width: 8px; height: 8px; border: 1px solid var(--page); border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 2px color-mix(in srgb, var(--page) 60%, transparent); }
+.deck-empty { text-align: center; color: var(--line-strong); font-size: 12px; vertical-align: middle !important; }
+.deck-legend { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.deck-legend > span:first-child { display: inline-flex; align-items: center; gap: 7px; }
+.deck-legend i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink); }
+.deck-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 800px) {
+  .dungeon { grid-template-rows: auto auto auto auto auto; }
+  .dungeon-rail { display: flex; grid-column: 1; grid-row: 4; flex-direction: row; gap: 8px; align-items: center; justify-content: space-between; width: 100%; padding: 5px 0; border-top: 1px solid var(--sc-border); }
+  .dungeon-rail .deck-stack, .dungeon-rail .deck-divider, .dungeon-rail .progress-track { display: none; }
+  .deck-overview-button { flex: 1; flex-direction: row; gap: 7px; width: auto; min-width: 0; justify-content: flex-start; text-align: left; }
+  .deck-overview-button strong { font-size: 22px; margin: 0; }
+  .deck-overview-button .rail-label { max-width: 60px; }
+  .dungeon-rail #journal-button { flex: 0 0 auto; padding-inline: 3px; }
+  .action-stage { grid-row: 5; }
+}
+@media (max-width: 900px) and (orientation: portrait) {
+  .deck-dialog { padding: 14px; width: calc(100vw - 20px); }
+  .deck-dialog[open] { gap: 12px; }
+  .deck-dialog .dialog-top h2 { font-size: 21px; }
+  .deck-view-toggle { display: flex; width: 100%; }
+  .deck-view-toggle button { flex: 1; gap: 9px; padding-inline: 8px; }
+  .deck-matrix { min-width: 0; border-spacing: 5px; }
+  .deck-matrix th:first-child { width: 30px; }
+  .deck-matrix th[data-suit] { font-size: 12px; }
+  .deck-matrix th[data-suit] > span:first-child { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .deck-card, .deck-bottom-card { transition: none; } }
+
+.deck-bottom { padding: 4px 7px 18px; margin-bottom: 12px; border-bottom: 1px solid var(--sc-border); }
+.deck-bottom h3 { color: var(--sc-gold-bright); font: 600 17px/1.5 ScoundrelDisplay, Georgia, serif; }
+.deck-bottom h3 span { margin-left: 8px; color: var(--muted); font-size: 14px; }
+.deck-bottom p { margin: 4px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.deck-bottom-order { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 60px)); gap: 10px 8px; list-style: none; padding: 0; margin: 0; }
+.deck-bottom-order li { min-width: 0; }
+.deck-bottom-position { display: block; margin-top: 5px; color: var(--muted); text-align: center; font-size: 10px; line-height: 1.4; }

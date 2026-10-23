@@ -8,7 +8,7 @@
   function summarize(rows) {
     const scores = rows.map(r => r.score).sort((a, b) => a - b), average = mean(scores), n = rows.length;
     const variance = n > 1 ? scores.reduce((sum, x) => sum + (x - average) ** 2, 0) / (n - 1) : 0;
-    return { n, sum: scores.reduce((a, b) => a + b, 0), mean: average, median: percentile(scores, .5), q1: percentile(scores, .25), q3: percentile(scores, .75), wins: scores.filter(x => x > 0).length, verified: rows.filter(r => r.verified).length, min: n ? scores[0] : null, max: n ? scores[n - 1] : null, sd: Math.sqrt(variance) };
+    return { n, sum: scores.reduce((a, b) => a + b, 0), mean: average, median: percentile(scores, .5), q1: percentile(scores, .25), q3: percentile(scores, .75), percentiles: Array.from({ length: 19 }, (_, i) => ({ percentile: (i + 1) * 5, value: percentile(scores, (i + 1) / 20) })), wins: scores.filter(x => x > 0).length, verified: rows.filter(r => r.verified).length, min: n ? scores[0] : null, max: n ? scores[n - 1] : null, sd: Math.sqrt(variance) };
   }
   function studyRows(study) {
     return study.version === 3 ? study.rows : study.scores.map((score, index) => ({ index, seed: study.seedPrefix + String(index).padStart(4, "0"), score, survived: score > 0, verified: true }));

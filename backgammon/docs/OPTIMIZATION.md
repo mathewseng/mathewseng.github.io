@@ -75,7 +75,7 @@ The faster executable preserves the existing decisions; it does not introduce st
 
 ## Historical one-second automatic search
 
-This section records the older deadline-based policy. Current Auto requires at least 2 ply and gates deeper stages by a five-second estimate; see [SEARCH-POLICY.md](SEARCH-POLICY.md).
+This section records the older deadline-based policy. Current Auto requires at least 3 ply and gates deeper stages by a ten-second estimate; see [SEARCH-POLICY.md](SEARCH-POLICY.md).
 
 At this release, Solver defaulted to a measured time budget rather than always stopping at two plies. It publishes complete 0/1/2/3/4-ply comparisons and retains the deepest finished result when the parent terminates the worker at about 1,000 ms. Initialization is excluded from that search budget. An unusually slow first evaluation is allowed to finish; no partial ranking or mixed-depth loss is returned. Fixed depths remain available when completeness or more time matters.
 

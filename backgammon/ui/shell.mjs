@@ -2,6 +2,7 @@
 import { installInputBehavior } from "./input-behavior.mjs";
 import { advancedAction, selectedDie } from "../core/advanced-input.mjs";
 import { EquityBar } from "./equity-bar.mjs";
+import { installDisplayControls } from "./display-controls.mjs";
 import {
   settings,
   saveSettings,
@@ -320,9 +321,11 @@ function changeSound(value) {
       "Sound setting applies to this tab. Browser storage is unavailable.",
     );
 }
-let activeBoard, activeEquity;
+let activeBoard, activeEquity, stopDisplayControls;
 export function shell(page, title, subtitle = "") {
   installInputBehavior();
+  stopDisplayControls?.();
+  stopDisplayControls = null;
   activeEquity?.destroy();
   activeEquity = null;
   activeBoard?.destroy();
@@ -361,10 +364,28 @@ export function shell(page, title, subtitle = "") {
   updateMute();
   addEventListener("bg-sound", updateMute);
   $("preferences").before(mute);
+  if (page === "play") {
+    const screen = el("button", {id:"screen-toggle", type:"button", class:"btn btn--ghost btn--icon"});
+    screen.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>';
+    mute.after(screen);
+    stopDisplayControls = installDisplayControls(document.querySelector('.app'), screen, () => {
+      if (document.querySelector('.fullscreen-help')) return;
+      const content = el('div', {class:'stack'},
+        el('p', {}, 'Your browser controls its toolbar. On iPhone Safari, rotation alone cannot hide it.'),
+        el('p', {}, el('strong', {}, 'Hide it now'), el('br'),
+          'Safari’s address field menu → Hide Toolbar (under More on some versions).'),
+        el('p', {}, el('strong', {}, 'Play without browser bars'), el('br'),
+          'Share → Add to Home Screen → Open as Web App. Then launch from your Home Screen.'),
+        el('a', {href:'https://support.apple.com/guide/iphone/iphb3100d149/ios', target:'_blank', rel:'noopener'}, 'Safari display help'));
+      dialog('More room for the board', content).classList.add('fullscreen-help');
+    });
+  }
   applyBoardTheme(settings().boardTheme);
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
   $("preferences").onclick = () => preferences().catch(showError);
+  $("preferences").setAttribute("aria-label", "Settings");
+  $("preferences").title = "Settings";
   installMobileTools(page);
   activeBoard = new Board($("board"));
   if (["play", "trainer", "solver"].includes(page)) {
@@ -506,6 +527,13 @@ export async function preferences() {
     el("p", { class: "muted small" }, "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
+    el("label", { class: "check" }, el("input", {
+      type: "checkbox", checked: s.cubeOneAsOne,
+      onChange: e => {
+        saveSettings({ cubeOneAsOne: e.target.checked });
+        dispatchEvent(new Event("bg-settings"));
+      },
+    }), "Show unturned cube as 1 instead of 64"),
     el("label", { class: "check" }, moveHints, "Show legal-move hints in beginner mode"),
     el("p", { class: "muted small" },
       "Turn off checker rings and destination highlights. Your selected checker stays marked; taps, dragging and keyboard moves still work."),
@@ -629,7 +657,7 @@ export function about() {
       el(
         "p",
         {},
-        "Auto (the default for computer play, hints and reviews) completes at least 2 ply and normally continues to 3, up to 4, unless the next stage is estimated above 5 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts offer Basic (0/0), Balanced (1/1, default), Strong (2/2) and Short/deep checker/cube policies with ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
+        "Auto (the default for computer play, hints and reviews) completes at least 3 ply and may continue to 4, unless that next stage is estimated above 10 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts offer Basic (0/0), Balanced (1/1, default), Strong (2/2) and Short/deep checker/cube policies with ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
       ),
       el(
         "p",

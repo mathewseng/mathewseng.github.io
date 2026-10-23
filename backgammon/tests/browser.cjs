@@ -481,6 +481,7 @@ const server = http.createServer((req, res) => {
           await run("highlight-rendering", browser, base, out, browserName),
         );
         (report.actionReadiness ||= []).push(
+          await run("confirm-readiness", browser, base, out, browserName),
           await run("action-readiness", browser, base, out, browserName),
           await run("confirm-latency", browser, base, out, browserName),
           await run("automatic-motion", browser, base, out, browserName),
@@ -707,6 +708,12 @@ const server = http.createServer((req, res) => {
         (report.mobileHistory ||= []).push(
           await run("mobile-history", browser, base, out, browserName),
         );
+        (report.cubeHistory ||= []).push(
+          await run("cube-history", browser, base, out, browserName),
+        );
+        (report.cubeDisplay ||= []).push(
+          await run("cube-display", browser, base, out, browserName),
+        );
         (report.mobileSettings ||= []).push(
           await run("mobile-settings", browser, base, out, browserName),
         );
@@ -733,6 +740,9 @@ const server = http.createServer((req, res) => {
         );
         (report.equityBar ||= []).push(
           await run("equity-bar", browser, base, out, browserName),
+        );
+        (report.landscapeViewport ||= []).push(
+          await run("landscape-viewport", browser, base, out, browserName),
         );
         (report.historyTree ||= []).push(
           await run("history-tree", browser, base, out, browserName),

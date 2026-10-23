@@ -80,6 +80,10 @@ test("quartiles interpolate order statistics and handle empty, singleton, and ti
   const scores = [40, 0, 30, 10, 20];
   assert.equal(Stats.quantile(scores, .25), 10); assert.equal(Stats.quantile(scores, .75), 30);
   assert.deepEqual(scores, [40, 0, 30, 10, 20]);
+  const percentiles = Stats.summarize(scores.map(score => ({ score }))).percentiles;
+  assert.deepEqual(percentiles, Array.from({ length: 19 }, (_, i) => ({ percentile: (i + 1) * 5, value: (i + 1) * 2 })));
+  assert.ok(Stats.summarize([]).percentiles.every(p => p.value === null));
+  assert.ok(Stats.summarize([{ score: 7 }]).percentiles.every(p => p.value === 7));
   assert.equal(Stats.quantile([], .25), null); assert.equal(Stats.quantile([7], .75), 7);
   assert.equal(Stats.quantile([2, 2, 2, 2], .25), 2);
 });

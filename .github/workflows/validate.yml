@@ -16,7 +16,8 @@ concurrency:
 
 jobs:
   site:
-    runs-on: ubuntu-latest
+    # Playwright 1.58.2 supports 24.04; keep browser dependencies off OS rollovers.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
         with:
@@ -38,6 +39,13 @@ jobs:
       - name: Assemble site for browser tests
         run: sh scripts/assemble-site.sh _site
 
+      - name: Use Ubuntu primary package mirror
+        # The runner's Azure mirror can throttle browser dependency downloads.
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          fi
+
       - name: Install browser test tools
         run: |
           npm ci
@@ -55,6 +63,7 @@ jobs:
       - name: Test assembled Scoundrel game and reports
         run: |
           node scoundrel/tests/browser.cjs
+          node scoundrel/tests/deck-overview.cjs
           node scoundrel/tests/responsive.cjs
 
       - name: Test assembled Backgammon application

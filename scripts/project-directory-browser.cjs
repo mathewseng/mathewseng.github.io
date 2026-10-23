@@ -34,8 +34,11 @@ async function assertHomepage(page) {
 }
 
 async function assertCategoryInView(page, id) {
+  await page.waitForLoadState("load");
   await page.waitForFunction((category) => {
-    const heading = document.querySelector(`#heading-${category}`).getBoundingClientRect();
+    const element = document.querySelector(`#heading-${category}`);
+    if (!element) return false; // A new URL can precede the destination DOM.
+    const heading = element.getBoundingClientRect();
     return heading.top >= -1 && heading.bottom <= innerHeight + 1;
   }, id, { timeout: 5000 });
 }

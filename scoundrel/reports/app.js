@@ -22,7 +22,7 @@
     $("win-detail").textContent = `${f(overall.wins)} survived · ${f(overall.n - overall.wins)} defeated`;
     $("proof-rate").textContent = f(overall.n);
     $("proof-detail").textContent = `All ${f(overall.n)} histories verified`;
-    $("distribution-subtitle").textContent = `${f(rows.length)} deals · one thin bar per score`;
+    $("distribution-subtitle").textContent = `${f(rows.length)} deals · one bar per score · lines every 5th percentile`;
     $("score-detail").textContent = rows.length ? `Lowest ${selected.min} · Highest ${selected.max}` : "No matching deals";
     $("dispersion-detail").textContent = rows.length ? `Selection mean ${f(selected.mean)} · Median ${f(selected.median, 1)}` : "";
     $("proof-copy").textContent = `Search budget: ${f(data.policy.iterations)} tree simulations per decision, with both avoidance directions considered. Recommendations maximize estimated final score. The policy is approximate; stronger search may improve these results.`;
@@ -31,9 +31,9 @@
     draw(); renderDeals();
   }
   const references = summary => [
-    { key: "q1", label: "Q1 · 25%", value: summary.q1 },
-    { key: "median", label: "Median · 50%", value: summary.median },
-    { key: "q3", label: "Q3 · 75%", value: summary.q3 },
+    { key: "q1", percentile: 25, label: "Q1 · 25%", value: summary.q1 },
+    { key: "median", percentile: 50, label: "Median · 50%", value: summary.median },
+    { key: "q3", percentile: 75, label: "Q3 · 75%", value: summary.q3 },
     { key: "mean", label: "Mean", value: summary.mean },
   ];
   function tickStep(span) {
@@ -44,12 +44,13 @@
     const container = $("histogram");
     chartWidth = Math.floor(container.getBoundingClientRect().width);
     if (!rows.length) { container.textContent = "No deals to display."; $("chart-legend").innerHTML = ""; return; }
-    const counts = new Map(), summary = S.summarize(rows), markers = references(summary);
+    const counts = new Map(), summary = S.summarize(rows), majorMarkers = references(summary);
+    const markers = [...summary.percentiles.filter(p => p.percentile % 25 !== 0).map(p => ({ key: "p" + p.percentile, label: p.percentile + "th percentile", ...p, minor: true })), ...majorMarkers];
     for (const row of rows) counts.set(row.score, (counts.get(row.score) || 0) + 1);
     const first = summary.min, last = summary.max;
     const scores = Array.from({ length: last - first + 1 }, (_, i) => first + i);
-    $("distribution-subtitle").textContent = `${f(rows.length)} deals · one thin bar per score`;
-    $("chart-legend").innerHTML = markers.map(marker => `<div class="chart-stat" data-stat="${marker.key}"><i class="chart-swatch chart-swatch-${marker.key}" aria-hidden="true"></i><span>${marker.label}<strong>${f(marker.value, marker.key === "mean" ? 3 : 2)}</strong></span></div>`).join("");
+    $("distribution-subtitle").textContent = `${f(rows.length)} deals · one bar per score · lines every 5th percentile`;
+    $("chart-legend").innerHTML = majorMarkers.map(marker => `<div class="chart-stat" data-stat="${marker.key}"><i class="chart-swatch chart-swatch-${marker.key}" aria-hidden="true"></i><span>${marker.label}<strong>${f(marker.value, marker.key === "mean" ? 3 : 2)}</strong></span></div>`).join("");
     const w = Math.max(240, chartWidth), h = w < 600 ? 300 : 340, left = 38, right = 12, top = 30, bottom = 50;
     const plotH = h - top - bottom, plotW = w - left - right, band = plotW / scores.length, barW = Math.min(3, band * .7);
     const yStep = tickStep(Math.max(...counts.values()) / 4), maximum = Math.ceil(Math.max(...counts.values()) / yStep) * yStep;
@@ -63,7 +64,7 @@
       const count = counts.get(score) || 0, height = count / maximum * plotH, y = h - bottom - height;
       html += `<g class="chart-group${activeScore === score ? " is-active" : ""}" data-score="${score}" data-count="${count}"><title>Score ${score}: ${count} deals (${f(count / rows.length * 100, 2)}%)</title><rect class="chart-hit-area" x="${x(score) - band / 2}" y="${top}" width="${band}" height="${plotH}"/><rect class="chart-bar" x="${x(score) - barW / 2}" y="${y}" width="${barW}" height="${height}"/></g>`;
     }
-    for (const marker of markers) html += `<line class="chart-reference chart-reference-${marker.key}" data-stat="${marker.key}" data-value="${marker.value}" x1="${x(marker.value)}" x2="${x(marker.value)}" y1="${top}" y2="${h - bottom}"/>`;
+    for (const marker of markers) html += `<line class="chart-reference chart-reference-${marker.minor ? "percentile" : marker.key}" data-stat="${marker.key}"${marker.percentile ? ` data-percentile="${marker.percentile}"` : ""} data-value="${marker.value}" x1="${x(marker.value)}" x2="${x(marker.value)}" y1="${top}" y2="${h - bottom}"/>`;
     const step = tickStep((last - first) / Math.max(2, Math.floor(plotW / 65)));
     const ticks = [first];
     for (let score = Math.ceil(first / step) * step; score < last; score += step) {

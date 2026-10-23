@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import {assertState,legalPaths,boardKey,commitTurn,notation,positionKey,initialState} from '../core/rules.mjs';
+import {assertState,boardKey,commitTurn,notation,positionKey,initialState} from '../core/rules.mjs';
 import {bookBoardKey,bookContext,bookEligible} from './opening-book.mjs';
 import {RolloutOpeningBook} from './rollout-book.mjs';
 export const XG_BOOK_ID='xg-public-opening-3.70-v1';
@@ -12,13 +12,14 @@ export const referenceEligible=(state,options)=>referenceContext(state)&&bookEli
 export function referenceResult(state,entry,index,preset='auto',submitted=null){
  assertState(state);
  if(!referenceContext(state)||state.phase!=='move'||!validHeader(index)||!Array.isArray(entry?.moves)||!entry.moves.length||entry.moves.length>2000||!Number.isInteger(entry.total)||entry.total<entry.moves.length||!/^https:\/\/www\.extremegammon\.com\/OB\/[A-Za-z0-9_$.-]+\.html$/.test(entry.source))throw Error('Invalid XG reference entry');
- const paths=new Map(legalPaths(state).map(p=>[JSON.stringify(p.steps),p.state])),seen=new Set();
+ const seen=new Set();
  const candidates=entry.moves.map(m=>{
   if(!m.credit||typeof m.credit.author!=='string'||!m.credit.author.trim()||m.credit.author.length>120||typeof m.credit.date!=='string'||typeof m.credit.engine!=='string')throw Error('Missing reference contributor');
   if(!['rollout','XGRoller++'].includes(m.method)||!Number.isInteger(m.rank)||m.rank<1||!(m.trials===null||Number.isInteger(m.trials)&&m.trials>0)||!Number.isFinite(m.equity)||!Array.isArray(m.probabilities)||m.probabilities.length!==5||m.probabilities.some(p=>!Number.isFinite(p)||p<0||p>1)||!(m.confidenceHalfWidth===null||Number.isFinite(m.confidenceHalfWidth)&&m.confidenceHalfWidth>=0))throw Error('Invalid reference values');
   const mirror=p=>typeof p==='number'&&state.turn?23-p:p;
-  const steps=m.steps.map(([from,to,die])=>({from:mirror(from),to:mirror(to),die})),after=paths.get(JSON.stringify(steps));
-  if(!after)throw Error('Illegal reference move');const key=boardKey(after);if(seen.has(key))throw Error('Duplicate reference move');seen.add(key);
+  const steps=m.steps.map(([from,to,die])=>({from:mirror(from),to:mirror(to),die}));
+  let after;try{after=commitTurn(state,steps);}catch{throw Error('Illegal reference move');}
+  const key=boardKey(after);if(seen.has(key))throw Error('Duplicate reference move');seen.add(key);
   const [w,g,b,lg,lb]=m.probabilities;
   return {steps,key,notation:notation(steps,state.turn),equity:m.equity,probabilities:[...m.probabilities],cubeless:2*w-1+g+b-lg-lb,cubelessSource:'derived-from-rounded-reference-probabilities',mwc:null,
    referenceHalfWidth:m.confidenceHalfWidth,referenceMethod:m.method,referenceTrials:m.trials,referencePolicy:m.policy,referenceRank:m.rank,referenceCredit:{...m.credit}};

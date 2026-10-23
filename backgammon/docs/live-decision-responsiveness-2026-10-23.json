@@ -1,0 +1,333 @@
+{
+  "recordedAt": "2026-10-23T16:58:03.167Z",
+  "environment": {
+    "chip": "Apple M4 Pro",
+    "sourceBase": "4e22c2f51957423f2fb17958a19d5cf0eff12c7c",
+    "target": "locally assembled release, isolated browser storage",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "limits": "Desktop browser emulation, not a physical iPhone benchmark. CPU throttle is applied only to Chromium. Tap-to-frame measures initial acknowledgement, not completion of animations or an uncached search."
+  },
+  "checks": {
+    "engineAndPreparationTests": 63,
+    "releaseAndSavedHistoryTests": 28,
+    "focusedBrowserGroupsPerEngine": 5,
+    "independentSavedReplay": true
+  },
+  "browsers": [
+    {
+      "browser": "chromium 145.0.7632.6",
+      "cpuSlowdown": 4,
+      "completed": true,
+      "sequence": 149,
+      "errors": [],
+      "actions": {
+        "start": {
+          "count": 1,
+          "median": 7.199999928474426,
+          "p95": 7.199999928474426,
+          "max": 7.199999928474426
+        },
+        "checker": {
+          "count": 66,
+          "median": 52.89999997615814,
+          "p95": 99.79999995231628,
+          "max": 117.40000009536743
+        },
+        "confirm": {
+          "count": 33,
+          "median": 53.800000071525574,
+          "p95": 79.70000004768372,
+          "max": 80.5
+        },
+        "roll": {
+          "count": 36,
+          "median": 27.700000047683716,
+          "p95": 45,
+          "max": 67.60000002384186
+        },
+        "accept-warning": {
+          "count": 17,
+          "median": 45.89999997615814,
+          "p95": 62.699999928474426,
+          "max": 62.699999928474426
+        },
+        "bearoff": {
+          "count": 2,
+          "median": 53.39999997615814,
+          "p95": 53.39999997615814,
+          "max": 53.39999997615814
+        }
+      },
+      "actionToPosition": {
+        "start": {
+          "count": 1,
+          "median": 61.299999952316284,
+          "p95": 61.299999952316284,
+          "max": 61.299999952316284
+        },
+        "checker": {
+          "count": 66,
+          "median": 34.699999928474426,
+          "p95": 55,
+          "max": 68.30000007152557
+        },
+        "confirm": {
+          "count": 30,
+          "median": 126.10000002384186,
+          "p95": 167.69999992847443,
+          "max": 168.39999997615814
+        },
+        "roll": {
+          "count": 22,
+          "median": 117,
+          "p95": 195.5,
+          "max": 197.60000002384186
+        },
+        "accept-warning": {
+          "count": 17,
+          "median": 108,
+          "p95": 181.29999995231628,
+          "max": 181.29999995231628
+        },
+        "bearoff": {
+          "count": 2,
+          "median": 35.799999952316284,
+          "p95": 35.799999952316284,
+          "max": 35.799999952316284
+        }
+      },
+      "frameStalls": {
+        "count": 271,
+        "median": 67.40000000000146,
+        "p95": 150.09999999999854,
+        "max": 275.1000000000058
+      },
+      "longTasks": {
+        "count": 186,
+        "median": 66,
+        "p95": 159,
+        "max": 250
+      },
+      "slowOrFailedSearch": {
+        "browser": "chromium",
+        "cpuSlowdown": 4,
+        "cases": [
+          {
+            "mode": "pending-revise",
+            "responseMs": 66.5
+          },
+          {
+            "mode": "pending-good",
+            "responseMs": 57.200000047683716
+          },
+          {
+            "mode": "pending-bad",
+            "responseMs": 69.40000009536743
+          },
+          {
+            "mode": "failed",
+            "responseMs": 82.79999995231628
+          },
+          {
+            "mode": "warnings-off",
+            "responseMs": 73.79999995231628
+          }
+        ],
+        "native": {
+          "coldMs": 309.3000000715256,
+          "readyMs": 0.7999999523162842,
+          "firstPlies": 2,
+          "reason": "ready-to-play",
+          "deeperPlies": 3,
+          "sameAnswer": true,
+          "gradeLoss": 0,
+          "starts": 1
+        }
+      },
+      "longHistory": [
+        {
+          "touch": false,
+          "throttle": 1,
+          "historyEvents": 1356,
+          "firstPaintMs": 5.399999976158142,
+          "longestTaskMs": 0,
+          "longestFrameMs": 41,
+          "preparedGrade": true,
+          "foregroundGrades": 0,
+          "replayed": true
+        },
+        {
+          "touch": true,
+          "throttle": 6,
+          "historyEvents": 1356,
+          "firstPaintMs": 18.699999928474426,
+          "longestTaskMs": 172,
+          "longestFrameMs": 207.60000000000014,
+          "preparedGrade": true,
+          "foregroundGrades": 0,
+          "replayed": true
+        }
+      ]
+    },
+    {
+      "browser": "webkit 26.0",
+      "cpuSlowdown": 1,
+      "completed": true,
+      "sequence": 149,
+      "errors": [],
+      "actions": {
+        "start": {
+          "count": 1,
+          "median": 57,
+          "p95": 57,
+          "max": 57
+        },
+        "checker": {
+          "count": 66,
+          "median": 22,
+          "p95": 32,
+          "max": 404.00000000000045
+        },
+        "confirm": {
+          "count": 33,
+          "median": 27,
+          "p95": 34,
+          "max": 40
+        },
+        "roll": {
+          "count": 36,
+          "median": 15,
+          "p95": 39,
+          "max": 44
+        },
+        "accept-warning": {
+          "count": 17,
+          "median": 26.000000000014552,
+          "p95": 77,
+          "max": 77
+        },
+        "bearoff": {
+          "count": 2,
+          "median": 22,
+          "p95": 22,
+          "max": 22
+        }
+      },
+      "actionToPosition": {
+        "start": {
+          "count": 1,
+          "median": 38,
+          "p95": 38,
+          "max": 38
+        },
+        "checker": {
+          "count": 66,
+          "median": 15,
+          "p95": 19,
+          "max": 20.999999999985448
+        },
+        "confirm": {
+          "count": 30,
+          "median": 76,
+          "p95": 89,
+          "max": 108
+        },
+        "roll": {
+          "count": 22,
+          "median": 54,
+          "p95": 83,
+          "max": 85
+        },
+        "accept-warning": {
+          "count": 17,
+          "median": 48,
+          "p95": 107.99999999998545,
+          "max": 107.99999999998545
+        },
+        "bearoff": {
+          "count": 2,
+          "median": 15,
+          "p95": 15,
+          "max": 15
+        }
+      },
+      "frameStalls": {
+        "count": 200,
+        "median": 41,
+        "p95": 77,
+        "max": 448
+      },
+      "longTasks": {
+        "count": 0
+      },
+      "slowOrFailedSearch": {
+        "browser": "webkit",
+        "cpuSlowdown": 1,
+        "cases": [
+          {
+            "mode": "pending-revise",
+            "responseMs": 28.999999999999943
+          },
+          {
+            "mode": "pending-good",
+            "responseMs": 27
+          },
+          {
+            "mode": "pending-bad",
+            "responseMs": 25
+          },
+          {
+            "mode": "failed",
+            "responseMs": 24
+          },
+          {
+            "mode": "warnings-off",
+            "responseMs": 37.99999999999994
+          }
+        ],
+        "native": {
+          "coldMs": 370,
+          "readyMs": 0,
+          "firstPlies": 2,
+          "reason": "ready-to-play",
+          "deeperPlies": 3,
+          "sameAnswer": true,
+          "gradeLoss": 0,
+          "starts": 1
+        }
+      },
+      "longHistory": [
+        {
+          "touch": false,
+          "throttle": 1,
+          "historyEvents": 1356,
+          "firstPaintMs": 13,
+          "longestTaskMs": 0,
+          "longestFrameMs": 91,
+          "preparedGrade": true,
+          "foregroundGrades": 0,
+          "replayed": true
+        },
+        {
+          "touch": true,
+          "throttle": 1,
+          "historyEvents": 1356,
+          "firstPaintMs": 11,
+          "longestTaskMs": 0,
+          "longestFrameMs": 79,
+          "preparedGrade": true,
+          "foregroundGrades": 0,
+          "replayed": true
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "No browser crash or uncaught error occurred in either complete game. This does not establish that every physical-device crash is eliminated.",
+    "WebKit had one 404 ms first-turn checker tap outlier; its position updated in 16 ms, but the next animation frame was late. Later confirm/roll/bearoff responses had no multi-second stalls.",
+    "The long-history fixture contains 1,356 events. The full games use real GNUbg and full animations; the slow/failing-search interaction tests deliberately hold or fail the evaluation promise."
+  ]
+}

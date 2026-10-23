@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { ProgressWriter } from "../core/progress-writer.mjs";
 import { presentMove } from "../core/move-presentation.mjs";
+import { presentCubeAction } from "../core/cube-presentation.mjs";
+import { analysisDepthLabel } from "../core/analysis-insight.mjs";
+import { cubeActionIcon } from "../ui/cube-action-icon.mjs";
 import { keycap as shortcutBadge } from "../ui/keycap.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
 import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
@@ -2030,6 +2033,11 @@ async function commit(action, evaluation = null, options = {}) {
   committing = true;
   draft.enabled = false;
   try {
+    // Acknowledge the tap before replaying/serializing a long session. This is
+    // also needed when warnings are off and there is no assistance paint.
+    actions();
+    if (!document.hidden) await new Promise(resolve =>
+      requestAnimationFrame(() => setTimeout(resolve, 0)));
     const eventIndex = game.events.length;
     game = await localPlayAction(game, action, options);
     if (evaluation) {
@@ -2229,7 +2237,8 @@ function renderFeedback() {
     if (!entry) feedbackView.turns.set(group.key, entry = {});
     entry.group = group;
     const signature = JSON.stringify([group.turn, group.response, group.decisions.map(row => [
-      row.index, row.label, row.forced, row.result?.type, row.result?.positionKey, row.result?.settings.name,
+      row.index, row.label, row.forced, row.result?.type, row.result?.positionKey,
+      row.result?.settings?.name, analysisDepthLabel(row.result),
       row.feedback, row.index === reviewIndex, canReturnToDecision(row, m.id),
       !row.feedback && (autoReview.job?.row.index === row.index ? "active" : autoReview.error ? "error" : "queued"),
     ])]);
@@ -2260,9 +2269,22 @@ function renderFeedback() {
     for (const row of group.decisions) {
       const currentRow = () => entry.group.decisions.find(item => item.index === row.index);
       const kind = row.action.type === "move" ? "Move" : "Cube";
+      const cube = kind === "Cube" ? presentCubeAction(row.source, row.action.type) : null;
+      const played = () => {
+        if (!cube) return el("span", { class: "history-played" }, row.label);
+        if (!cube.displayLabel) return null;
+        return el("span", { class: "history-played history-cube-action", title: cube.description },
+          ...(cube.icon ? [cubeActionIcon(cube.icon)] : []), el("span", {}, cube.displayLabel));
+      };
       const detail = () => el("span", { class: "history-kind muted" },
-        el("span", { class: "history-kind-label" }, kind),
-        ...(row.result ? [el("span", {}, ` · ${row.result.settings.name}`)] : []),
+        el("span", { class: "history-kind-label" },
+          ...(cube ? [el("span", { class: "history-cube-icon", role: "img",
+            "aria-label": `Current cube ${cube.cubeValue}`, title: `Current cube: ${cube.cubeValue}` }, cube.cubeValue)] : []),
+          kind,
+        ),
+        ...(row.result ? [" · ", el("span", {
+          class: "history-depth", title: `Completed analysis · ${analysisDepthLabel(row.result)}`,
+        }, analysisDepthLabel(row.result))] : []),
       );
       if (!row.feedback) {
         decisions.append(
@@ -2272,8 +2294,9 @@ function renderFeedback() {
               class: "feedback-pending",
               "data-history-side": side,
               "data-history-player": row.player,
+              "data-decision-type": row.action.type === "move" ? "checker" : "cube",
             },
-            el("span", { class: "history-move" }, detail(), el("span", { class: "history-played" }, row.label)),
+            el("span", { class: "history-move" }, detail(), played()),
             ...(canReturnToDecision(row, m.id)
               ? [
                   button(
@@ -2323,17 +2346,17 @@ function renderFeedback() {
           "data-history-side": side,
           "data-history-player": row.player,
           "data-decision-type": row.result.type,
-          title: `${playerLabel} · ${kind}: ${row.label}. ${f.quality}. ${f.units}. Open equity and EV comparison.`,
+          title: `${playerLabel} · ${kind}: ${cube?.label || row.label}. ${f.quality}. ${f.units}. Open equity and EV comparison.`,
         },
       );
       const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
       review.append(
         el("span", { class: "history-move" },
           detail(),
-          el("span", { class: "history-played" }, row.label),
+          played(),
           ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
             el("span", { class: "history-best-label" }, "Best "),
-            row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : f.best.notation,
+            row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : presentCubeAction(row.source, f.best.action).label,
           )] : []),
         ),
         decisionValues(f, true, { opponent: side === "opponent" }),
@@ -2554,11 +2577,17 @@ async function evaluateDecision(action) {
     await commit(action);
     return;
   }
+  // Feedback is recorded by AutoReview after commit when warnings are off.
+  // Never hold a legal action behind a solver whose result cannot stop it.
+  if (!config.warning) {
+    beginDecisionAttempt(game, action);
+    await commit(action);
+    return;
+  }
   const job = assistance("submit");
   beginDecisionAttempt(game, action);
   // Persist the first submission even if the warning is revised or reloaded.
   // This is metadata only; the legal game history remains uncommitted.
-  persist(false);
   const finish = async (result = null) => {
     if (!activeAssistance(job)) return;
     releaseAssistance();
@@ -2591,11 +2620,13 @@ async function evaluateDecision(action) {
     unlockDraft();
     ($("confirm") || $("roll"))?.focus();
   };
-  let warningCopy = null, completedResult = null;
-  const showPendingWarning = () => {
-    if (!checker || !config.warning || !activeAssistance(job) || job.dialog) return;
+  let warningCopy = null, completedResult = null, unlisted = false;
+  const showPendingWarning = (outside = false) => {
+    if (!config.warning || !activeAssistance(job)) return;
+    unlisted ||= outside;
+    if (job.dialog) return;
     warningCopy = el("p", { role: "status", id: "pending-move-loss" },
-      "Still calculating EV. This move is outside the evaluated alternatives; its loss is not known yet.");
+      "Still calculating EV. You can revise or confirm now; the loss is not known yet.");
     job.dialog = dialog("Review before confirming?", warningCopy, [
       button("Revise", () => job.dialog.close()),
       button("Confirm anyway", () => finish(completedResult), "primary"),
@@ -2603,6 +2634,12 @@ async function evaluateDecision(action) {
     job.dialog.addEventListener("close", onClose, { once: true });
   };
   try {
+    const preset = config.reviewStrength || 'auto';
+    const ready = analysis.engine.readyResult(job.source, {preset,submitted:steps});
+    // A cache miss must have a visible, usable response on this very tap.
+    // No blank locked board while WASM calculates an unprepared decision.
+    if (!ready) showPendingWarning();
+    persist(false);
     // A cached grade can resolve in the same microtask as the tap. Give the
     // locked controls one paint before committing/rendering the next turn.
     // Keep the worker running while the browser acknowledges the interaction.
@@ -2610,9 +2647,10 @@ async function evaluateDecision(action) {
       requestAnimationFrame(() => setTimeout(resolve, 0)));
     const evaluation = analysis.run(job.source, {
       submitted: steps,
-      preset: config.reviewStrength || "auto",
+      preset,
       priority: 20,
-      onUnlisted: showPendingWarning,
+      readyOnly: true,
+      onUnlisted: () => showPendingWarning(true),
     });
     let [result] = await Promise.all([evaluation, painted]);
     if (!activeAssistance(job)) return;
@@ -2622,6 +2660,12 @@ async function evaluateDecision(action) {
     job.done = true;
     completedResult = result;
     if (warningCopy) {
+      // A generic pending check can continue automatically once known good.
+      // An unlisted-move warning stays open as an explicit review choice.
+      if (!unlisted && !needsRevisionWarning(result.error)) {
+        await finish(result);
+        return;
+      }
       const f = decisionFeedback(result, job.source);
       warningCopy.textContent = `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate.`;
       return; // Keep the player's review open; never confirm behind the dialog.
@@ -2718,6 +2762,7 @@ async function computerTurn() {
       const evalState = { ...s, phase: "roll", dice: [], pending: null };
       const result = await analysis.run(evalState, {
         preset: config.strength,
+        readyOnly: true,
       });
       action = {
         type: (
@@ -2730,7 +2775,7 @@ async function computerTurn() {
           : "reject",
       };
     } else {
-      const result = await analysis.run(s, { preset: config.strength });
+      const result = await analysis.run(s, { preset: config.strength, readyOnly: true });
       if (s.phase === "move")
         action = { type: "move", steps: result.candidates[0].steps };
       else if (s.phase === "double")

@@ -1,5 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { applyStep, pipCount } from "./rules.mjs";
+// Describe the saved result, never the requested preset or a projected depth.
+// Published references and rollouts are not fixed-ply searches.
+export function analysisDepthLabel(result) {
+  if (!result) return null;
+  if (result.method === "reference") return "Published book";
+  if (result.method === "rollout") return "Rollout";
+  const plies = result.settings?.plies;
+  if (Number.isInteger(plies) && plies >= 0)
+    return `${plies} ply${result.book ? " · Book" : ""}`;
+  return result.settings?.name || "Analyzed";
+}
+
 export function moveFeatures(source, steps) {
   const after = steps.reduce((s, step) => applyStep(s, step), source),
     player = source.turn,

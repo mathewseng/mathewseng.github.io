@@ -8,9 +8,8 @@
   const suits = { s: { symbol: "♠", name: "Spades", category: "Stonekin" }, c: { symbol: "♣", name: "Clubs", category: "Treefolk" }, d: { symbol: "♦", name: "Diamonds", category: "Weapons" }, h: { symbol: "♥", name: "Hearts", category: "Potions" } };
   const params = new URLSearchParams(location.search);
   let filter = Object.hasOwn(suits, params.get("suit")) ? params.get("suit") : "all";
-  let query = params.get("q") || "", visible = [], selected = null, opener = null, frame = 0, pointer = null;
+  let query = params.get("q") || "", visible = [], selected = null, opener = null;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  const fine = matchMedia("(hover: hover) and (pointer: fine)");
   const grid = $("collection-grid"), viewer = $("card-viewer");
   const escape = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
   const normalize = value => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
@@ -25,7 +24,9 @@
   }
   grid.innerHTML = cards.map((card, index) => `<button type="button" class="collection-card" data-card="${card.id}" data-suit="${card.suit}" aria-label="Explore ${escape(card.name)}, ${suits[card.suit].category}, ${card.rank}${suits[card.suit].symbol}, value ${card.value}"><span class="card-plane"><img src="${art(card)}" srcset="${imageSet(card)}" sizes="(min-width: 1500px) 260px, (min-width: 1051px) 23vw, (min-width: 651px) 30vw, 45vw" width="960" height="1200" alt="" loading="${index < 4 ? "eager" : "lazy"}" decoding="async" draggable="false" /><span class="card-seal" aria-hidden="true"><strong>${card.rank}</strong><b>${suits[card.suit].symbol}</b></span></span><span class="card-caption"><strong>${escape(card.name)}</strong><small>${suits[card.suit].category}</small></span></button>`).join("");
   const buttons = new Map([...grid.querySelectorAll("[data-card]")].map(button => [button.dataset.card, button]));
+  const cardMotion = ScoundrelCardMotion.attach(grid, { selector: ".collection-card" });
   function renderFilter(animate = true, writeURL = true) {
+    cardMotion.reset();
     const needle = normalize(query.trim());
     visible = cards.filter(card => (filter === "all" || card.suit === filter) && normalize([card.name, card.role, card.race || "", suits[card.suit].name, suits[card.suit].category, card.rank, card.value].join(" ")).includes(needle));
     const ids = new Set(visible.map(card => card.id));
@@ -78,16 +79,6 @@
   $("card-search").value = query;
   $("card-search").addEventListener("input", event => { query = event.target.value; renderFilter(); });
   $("reset-filters").addEventListener("click", () => { filter = "all"; query = ""; $("card-search").value = ""; renderFilter(); $("card-search").focus(); });
-  function resetTilt(button) { if (!button) return; for (const property of ["--tilt-x", "--tilt-y", "--shine-x", "--shine-y"]) button.style.removeProperty(property); }
-  grid.addEventListener("pointermove", event => {
-    if (reduced.matches || !fine.matches || event.pointerType === "touch") return;
-    const button = event.target.closest("[data-card]"); if (!button) return;
-    pointer = { button, x: event.clientX, y: event.clientY };
-    if (frame) return;
-    frame = requestAnimationFrame(() => { frame = 0; if (!pointer || pointer.button.hidden) return; const { button, x, y } = pointer, box = button.querySelector(".card-plane").getBoundingClientRect(), px = Math.max(0, Math.min(1, (x - box.left) / box.width)), py = Math.max(0, Math.min(1, (y - box.top) / box.height)); button.style.setProperty("--tilt-x", ((.5 - py) * 8).toFixed(2) + "deg"); button.style.setProperty("--tilt-y", ((px - .5) * 10).toFixed(2) + "deg"); button.style.setProperty("--shine-x", px * 100 + "%"); button.style.setProperty("--shine-y", py * 100 + "%"); });
-  });
-  grid.addEventListener("pointerout", event => { const button = event.target.closest("[data-card]"); if (button && !button.contains(event.relatedTarget)) { if (pointer?.button === button) pointer = null; resetTilt(button); } });
-  reduced.addEventListener("change", () => { pointer = null; buttons.forEach(resetTilt); });
   window.addEventListener("popstate", () => { const p = new URLSearchParams(location.search); filter = Object.hasOwn(suits, p.get("suit")) ? p.get("suit") : "all"; query = p.get("q") || ""; $("card-search").value = query; const id = location.hash.slice(1); selected = null; renderFilter(false, false); if (cards.some(c => c.id === id)) showCard(id, true); else closeViewer(); });
   const initialCard = location.hash.slice(1); renderFilter(true, false); if (cards.some(card => card.id === initialCard)) showCard(initialCard, true);
 })();

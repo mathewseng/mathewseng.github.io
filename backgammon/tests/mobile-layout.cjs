@@ -44,12 +44,17 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       await page.waitForTimeout(70);
       const metrics = await page.evaluate(() => {
         const box = s => { const r = document.querySelector(s).getBoundingClientRect(); return {top:r.top,bottom:r.bottom,width:r.width,height:r.height}; };
-        return {board:box("#board"),opponent:box("#opponent"),player:box("#player"),confirm:box("#confirm"),overflow:document.documentElement.scrollWidth > innerWidth + 1};
+        const svg=document.querySelector('.bg-board'), matrix=svg.getScreenCTM(), vb=svg.viewBox.baseVal;
+        const a=new DOMPoint(vb.x,vb.y).matrixTransform(matrix), b=new DOMPoint(vb.width,vb.height).matrixTransform(matrix);
+        return {board:box("#board"), renderedBoard:{top:a.y,bottom:b.y,width:b.x-a.x,height:b.y-a.y},opponent:box("#opponent"),player:box("#player"),confirm:box("#confirm"),overflow:document.documentElement.scrollWidth > innerWidth + 1};
       });
       assert.ok(!metrics.overflow, `horizontal overflow ${width}`);
       if (width >= 375) assert.ok(metrics.confirm.bottom <= height + 1, `confirm offscreen ${width}: ${JSON.stringify(metrics)}`);
       if (width <= 700 && height > 500) {
-        assert.ok(Math.abs(metrics.board.height / metrics.board.width - 660/876) < .01, `board keeps its aspect ratio at ${width}x${height}: ${JSON.stringify(metrics)}`);
+        // The slot now reserves the tappable equity handle even when hidden.
+        // Check the actual SVG frame, not the slot that includes that rail.
+        assert.ok(Math.abs(metrics.renderedBoard.height / metrics.renderedBoard.width - 660/876) < .01, `board keeps its aspect ratio at ${width}x${height}: ${JSON.stringify(metrics)}`);
+        assert.ok(metrics.renderedBoard.top >= metrics.board.top-1 && metrics.renderedBoard.bottom <= metrics.board.bottom+1);
         for (const gap of [metrics.board.top - metrics.opponent.bottom, metrics.player.top - metrics.board.bottom])
           assert.ok(gap >= -1 && gap < 3, "player strips hug the board without overlap");
         assert.ok(metrics.confirm.height >= 48, "large primary touch target");

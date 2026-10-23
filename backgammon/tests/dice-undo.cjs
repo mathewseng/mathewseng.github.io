@@ -28,7 +28,7 @@ module.exports = async function diceUndo(browser, base, out, name) {
     };
     const count = async n => waitForAsync(page,async n => (await (await import('/backgammon/core/storage.mjs')).get('work','play')).draft.length === n && document.querySelectorAll('#board .board-die.consumed').length === n, n);
     const tapBoard = async (x,y) => {
-      const p = await page.locator('#board svg').evaluate((svg,{x,y}) => {
+      const p = await page.locator('#board svg.bg-board').evaluate((svg,{x,y}) => {
         const p = new DOMPoint(x,y).matrixTransform(svg.getScreenCTM()); return {x:p.x,y:p.y,hit:document.elementFromPoint(p.x,p.y)?.outerHTML.slice(0,300)};
       }, {x,y});
       // WebKit truncates fractional touch coordinates; round to the intended pixel.
@@ -117,7 +117,7 @@ module.exports = async function diceUndo(browser, base, out, name) {
         const committed = (await read()).game;
         await tapBoard(edge,330); await count(0);
         assert.deepEqual((await read()).game,committed,'empty-lane undo preserves committed dice, events and game');
-        const boundaries = await page.locator('#board svg').evaluate((svg,xs) => xs.flatMap(x => [290,370].map(y => {
+        const boundaries = await page.locator('#board svg.bg-board').evaluate((svg,xs) => xs.flatMap(x => [290,370].map(y => {
           const p = new DOMPoint(x,y).matrixTransform(svg.getScreenCTM());
           const hit = document.elementFromPoint(p.x,p.y);
           return {point:!!hit?.closest('[data-point]'),x,y,hit:hit?.outerHTML.slice(0,300)};

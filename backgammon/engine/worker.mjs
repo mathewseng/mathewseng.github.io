@@ -2,8 +2,8 @@
 import { supportsSIMD, backendPath } from "./backend.mjs";
 import { createEvaluator } from "./evaluate.mjs";
 import { runRollout } from "./rollout.mjs";
-import { runAdaptive } from "./adaptive.mjs";
-let evaluator, activeBackend;
+import { runAdaptiveAsync } from "./adaptive.mjs";
+let evaluator, activeBackend, current;
 async function init() {
   const start = performance.now();
   const asset = async (name) => {
@@ -82,6 +82,10 @@ async function init() {
 }
 self.onmessage = async ({ data }) => {
   const { id, type, ...request } = data;
+  if (type === 'finish-ready') {
+    if (current?.id === id) current.readyOnly = true;
+    return;
+  }
   try {
     if (type === "init") {
       const timing = await init();
@@ -94,6 +98,7 @@ self.onmessage = async ({ data }) => {
       return;
     }
     if (!evaluator) throw new Error("Engine is not initialized.");
+    current = {id, readyOnly:request.readyOnly};
     const result = request.rollout
       ? await runRollout(
           evaluator,
@@ -105,8 +110,9 @@ self.onmessage = async ({ data }) => {
       : request.prepared
         ? evaluator.gradePrepared(request.state, request.prepared, request.submitted)
       : request.preset === "auto"
-        ? runAdaptive(evaluator, request.state, request.kind, request.submitted,
-            result => postMessage({ id, type: "evaluation", result: { ...result, backend: activeBackend, requestId: id } }))
+        ? await runAdaptiveAsync(evaluator, request.state, request.kind, request.submitted,
+            result => postMessage({ id, type: "evaluation", result: { ...result, backend: activeBackend, requestId: id } }),
+            () => current?.id === id && current.readyOnly)
         : evaluator.analyze(
           request.state,
           request.preset,
@@ -116,5 +122,7 @@ self.onmessage = async ({ data }) => {
     postMessage({ id, type: "result", result: { ...result, backend: activeBackend, requestId: id } });
   } catch (e) {
     postMessage({ id, type: "error", message: e.message });
+  } finally {
+    if (current?.id === id) current = null;
   }
 };

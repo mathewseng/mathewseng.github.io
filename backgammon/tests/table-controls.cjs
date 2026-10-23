@@ -270,7 +270,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     // Hold a real worker's load to exercise cancellation during initialization.
     await assign("play-both");
     await roll(page);
-    const untouched = await saved();
+    const untouched = await waitWork(page, work => work?.game.state.phase === "move");
     let release, started;
     const gate = new Promise((r) => {
         release = r;

@@ -44,6 +44,9 @@ export class AutoReview {
         preset: snapshot.config.reviewStrength || "auto",
         submitted: action.type === "move" ? action.steps : null,
         priority: -10,
+        // Recorded feedback can reuse the same completed 2+ ply decision as
+        // live play. Do not repeatedly deepen old turns while preparing new ones.
+        readyOnly: true,
       });
       const current = this.model();
       if (current?.id !== snapshot.id || current.config?.mode !== "computer" ||

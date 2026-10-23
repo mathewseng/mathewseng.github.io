@@ -83,9 +83,10 @@ const root=path.resolve(process.env.SCOUNDREL_SITE || "_site");
     assert.ok(plotted.every(bar=>bar.width<=3),'bars stay thin');
     async function checkMarkers(expected){
       const markers=await page.locator('.chart-reference').evaluateAll(es=>es.map(e=>({key:e.dataset.stat,value:Number(e.dataset.value),x:Number(e.getAttribute('x1'))})));
-      assert.equal(markers.length,4);
+      assert.equal(markers.length,20);
+      const values = { ...expected, ...Object.fromEntries(expected.percentiles.map(p => ["p" + p.percentile, p.value])) };
       const geometry=await page.locator('.chart-group').evaluateAll(es=>{const center=e=>{const r=e.querySelector('.chart-bar');return Number(r.getAttribute('x'))+Number(r.getAttribute('width'))/2;};return {first:Number(es[0].dataset.score),left:center(es[0]),step:center(es[1])-center(es[0])};});
-      for(const marker of markers){assert.equal(marker.value,expected[marker.key]);assert.ok(Math.abs(marker.x-(geometry.left+(marker.value-geometry.first)*geometry.step))<1e-7,'reference lines use the score axis');}
+      for(const marker of markers){assert.equal(marker.value,values[marker.key]);assert.ok(Math.abs(marker.x-(geometry.left+(marker.value-geometry.first)*geometry.step))<1e-7,'reference lines use the score axis');}
     }
     await checkMarkers(summary);
     await page.locator('[data-solution]').first().click();

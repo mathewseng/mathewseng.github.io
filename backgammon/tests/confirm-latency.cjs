@@ -58,9 +58,11 @@ module.exports=async function confirmLatency(browser,base,out,name){
    });
    const report={touch,throttle,historyEvents:fixture.events.length,firstPaintMs:measured.firstPaintMs,
     longestTaskMs:Math.max(0,...measured.tasks.map(t=>t.ms)),longestFrameMs:Math.max(...measured.frames),
-    cachedGrade:measured.trace.some(r=>r.sequence===fixture.state.sequence&&r.priority===20&&r.submitted&&r.result?.cached),
+    preparedGrade:measured.trace.some(r=>r.sequence===fixture.state.sequence&&r.submitted&&r.result?.actual),
+    foregroundGrades:measured.trace.filter(r=>r.sequence===fixture.state.sequence&&r.priority===20&&r.submitted).length,
     replayed:committed.replayed};
-   assert.equal(report.cachedGrade,true,'Confirm reuses an actual prepared GNUbg grade');
+   assert.equal(report.preparedGrade,true,'benchmark has a real prepared GNUbg grade');
+   assert.equal(report.foregroundGrades,0,'warnings-off Confirm never waits for a foreground grade');
    assert.ok(report.firstPaintMs!==null&&report.firstPaintMs<250,JSON.stringify(report));
    assert.ok(report.longestTaskMs<600,'No repeated whole-match stall: '+JSON.stringify(report));
    assert.ok(committed.sequence>fixture.state.sequence);

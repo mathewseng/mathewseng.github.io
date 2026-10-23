@@ -4,6 +4,7 @@ const assert = require("node:assert/strict"),
 module.exports = async function equityBarUX(browser, base, out, name) {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
+    hasTouch: true,
     serviceWorkers: "block",
     reducedMotion: "reduce",
   });
@@ -11,6 +12,12 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     errors = [];
   const engineWorkers = () => page.workers().filter(w =>
     new URL(w.url()).pathname.endsWith('/engine/worker.mjs'));
+  const savedGame = () => page.evaluate(async () => {
+    const saved = await (await import('/backgammon/core/storage.mjs')).get('work', 'play');
+    return { game: saved.game, draft: saved.draft };
+  });
+  const reveal = page.getByRole('button', { name: 'Show equity bar', exact: true });
+  const hide = page.getByRole('button', { name: 'Hide equity bar', exact: true });
   const readEquity = () => page.locator('#equity-bar').evaluate(n => {
     const bottom=n.querySelector('.equity-bottom-number').textContent;
     const top=n.querySelector('.equity-top-number').textContent;
@@ -28,7 +35,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       return {
         below: bar.top >= board.top + (board.height + Math.min(board.height, board.width * 660 / 876)) / 2 - 1,
         contained: bar.bottom <= slot.bottom + 1,
-        horizontal: bar.width > bar.height * 5,
+        horizontal: bar.width > bar.height * 3,
         // The bottom player's share fills from the right in portrait.
         fraction: filled.width / (meter.width - 2),
         expected: parseFloat(fill.style.getPropertyValue('--equity-fraction')) / 100,
@@ -87,6 +94,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       "false",
     );
     assert.equal(await page.locator("#equity-bar").isVisible(), false);
+    assert.equal(await reveal.isVisible(), true, 'hidden equity has an on-board reveal handle');
     assert.equal(assets, 0);
     await clickTool(page, "#equity-toggle");
     await page
@@ -97,6 +105,18 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       await page.locator("#equity-bar").getAttribute("title"),
       /Quick.*not win probability/,
     );
+    const gameBefore = await savedGame();
+    await hide.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await reveal.evaluate(n => document.activeElement === n), true);
+    await page.reload();
+    await reveal.waitFor();
+    assert.equal(await page.locator('#equity-bar').isVisible(), false, 'hidden preference survives reload');
+    await reveal.focus();
+    await page.keyboard.press('Space');
+    assert.equal(await hide.evaluate(n => document.activeElement === n), true);
+    await page.locator('#equity-bar[data-state="ready"]').waitFor({ timeout: 60000 });
+    assert.deepEqual(await savedGame(), gameBefore, 'toggling and reloading preserve the game');
     for (const [width, height] of [
       [320, 568],
       [375, 667],
@@ -149,11 +169,12 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       if (width <= 700 && height > width) {
         assert.ok(Math.abs(geometry.left - geometry.boardLeft) < 2);
         assert.ok(Math.abs(geometry.right - geometry.boardRight) < 2);
-        assert.ok(geometry.barWidth > geometry.height * 5);
+        assert.ok(geometry.barWidth > geometry.height * 3, JSON.stringify({ width, height, geometry }));
         assert.ok(Math.abs(geometry.top - geometry.boardBottom - 4) < 2);
         assert.ok(geometry.bottom <= geometry.nextTop + 1, 'equity stays clear of the player strip');
-        assert.equal(geometry.height, 24);
-        assert.ok(geometry.boardRight - geometry.boardLeft >= width - 20, 'portrait board uses the full phone width');
+        assert.equal(geometry.height, 44);
+        if (height > 740) assert.ok(geometry.boardRight - geometry.boardLeft >= width - 20, 'tall portrait board uses the full phone width');
+        else assert.ok(geometry.expected >= 140, 'short portrait board fits above its controls without distortion');
       } else {
         assert.ok(geometry.right <= geometry.boardLeft + 1);
         assert.ok(Math.abs(geometry.height - geometry.expected) < 2);
@@ -162,7 +183,27 @@ module.exports = async function equityBarUX(browser, base, out, name) {
         await page.screenshot({
           path: path.join(out, `${name}-equity-bar-${width}x${height}.png`),
         });
+      if ([390, 844, 1440].includes(width)) {
+        const before = await page.locator('.bg-board').boundingBox();
+        if (width === 1440) await page.locator('.equity-meter').click();
+        else await page.locator('.equity-meter').tap();
+        await reveal.waitFor();
+        await page.waitForTimeout(80);
+        assert.equal(await page.locator('#equity-toggle').getAttribute('aria-pressed'), 'false');
+        const handle = await reveal.boundingBox();
+        assert.ok(Math.abs(handle.x - geometry.left) < 2 && Math.abs(handle.y - geometry.top) < 2,
+          'reveal handle occupies the same rail');
+        assert.deepEqual(await page.locator('.bg-board').boundingBox(), before, 'board stays still when hiding equity');
+        if (width === 390) assert.ok(handle.height >= 44, 'portrait touch target is at least 44px');
+        await page.screenshot({path: path.join(out, `${name}-equity-hidden-${width}x${height}.png`)});
+        if (width === 1440) await reveal.click();
+        else await reveal.tap();
+        await page.locator('#equity-bar[data-state="ready"]').waitFor({ timeout: 60000 });
+        assert.equal(await page.locator('#equity-toggle').getAttribute('aria-pressed'), 'true');
+        assert.deepEqual(await page.locator('.bg-board').boundingBox(), before, 'board stays still when showing equity');
+      }
     }
+    assert.deepEqual(await savedGame(), gameBefore, 'touching the rail never rolls or moves a checker');
     await page.setViewportSize({width:390, height:844});
     await page.waitForTimeout(80);
     await assertPortraitBar();
@@ -384,11 +425,15 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     return {
       browser: name,
       cases: [
-        "toggle off; real GNUbg equity; ten sizes; portrait bottom bar; landscape/desktop left rail; orientation reversal",
+        "direct click/touch/keyboard hide and reveal; stable board geometry; saved preference and game preserved",
+        "toolbar toggle; real GNUbg equity; ten sizes; portrait bottom bar; landscape/desktop left rail; orientation reversal",
         "draft grading, cube offer/response, stale clearing, loading cancellation, off releases worker, error/retry, reload",
         "trainer spoiler protection; best choice hides duplicate equity; Solver source/preview/edit states",
       ],
     };
+  } catch (error) {
+    await page.screenshot({path: path.join(out, `${name}-equity-failure.png`)});
+    throw error;
   } finally {
     await context.close();
   }

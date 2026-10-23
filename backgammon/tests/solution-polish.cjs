@@ -106,7 +106,7 @@ module.exports=async(browser,base,out,name)=>{
     const board=window.polishBoard.svg,cube=board.querySelector('.cube-hit').getBoundingClientRect(),off=board.querySelector('[data-point="off0"] .point-hit').getBoundingClientRect();
     return {separated:cube.bottom<off.top,numbers:[...window.polishBar.node.querySelectorAll('.equity-number')].every(n=>n.scrollWidth<=n.clientWidth+1),overflow:document.documentElement.scrollWidth<=innerWidth+1};
    });
-   assert.deepEqual(bounds,{separated:true,numbers:true,overflow:true});
+   assert.deepEqual(bounds,{separated:true,numbers:true,overflow:true},`${width}x${height} equity rail`);
    await page.screenshot({path:path.join(out,`${name}-board-polish-${width}.png`)});
   }
   assert.deepEqual(errors,[]);

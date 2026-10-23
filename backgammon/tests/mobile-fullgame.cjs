@@ -25,7 +25,7 @@ async function fullGame(browser, base, out, name) {
         release:p.release,version:p.version};
     }).catch(()=>null);
     const report={recordedAt:new Date().toISOString(),base,browser:`${name} ${browser.version()}`,
-      viewport:{width:390,height:844},cpuSlowdown:Number(process.env.BG_CPU_RATE||1),
+      viewport:{width:390,height:844},cpuSlowdown:name==='chromium'?Number(process.env.BG_CPU_RATE||1):1,
       completed,turns,game:latest,errors,timing};
     if(timing)report.summary={
       tapToFrame:stats(timing.actions.map(a=>a.frameMs)),

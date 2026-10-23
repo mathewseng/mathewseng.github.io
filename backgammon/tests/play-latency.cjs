@@ -86,7 +86,7 @@ module.exports = async function playLatency(browser, base, out, name) {
     assert.ok(verified); assert.deepEqual(errors,[]);
     await page.screenshot({path:path.join(out,`${name}-play-latency.png`)});
     const trace=await page.evaluate(()=>latency);
-    assert.ok(trace.calls.filter(c=>c.plies!==undefined).every(c=>c.method==='reference'?c.plies===null&&c.bookSource==='published-xg-reference':c.plies>=2),'every completed Auto result uses an attributed reference or reaches at least two plies');
+    assert.ok(trace.calls.filter(c=>c.plies!==undefined).every(c=>c.method==='reference'?c.plies===null&&c.bookSource==='published-xg-reference':c.plies>=3),'every completed Auto result uses an attributed reference or reaches at least three plies');
     if(windowProfile) require('node:fs').writeFileSync(path.join(out,'mobile-play.cpuprofile'),JSON.stringify((await windowProfile.send('Profiler.stop')).profile));
     const engine=await page.evaluate(async()=>({version:(await import('/backgammon/engine/metadata.mjs')).ENGINE_VERSION,policy:(await import('/backgammon/engine/search-policy.mjs')).SEARCH_POLICY_VERSION}));
     return {recordedAt:new Date().toISOString(),environment:{cpu:os.cpus()[0].model,os:`${os.platform()} ${os.release()} ${os.arch()}`,browser:`${name} ${browser.version()}`},

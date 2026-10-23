@@ -558,7 +558,7 @@ function panel(problems) {
         "Analysis strength",
         choiceButtons(
           [
-            ["auto", "Auto · adaptive, 2–4 ply"],
+            ["auto", "Auto · adaptive, 3–4 ply"],
             ...Object.entries(PRESETS).map(([key, value]) => [
               key,
               `Fixed ${value.plies} ply · ${value.name}`,

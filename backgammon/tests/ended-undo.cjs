@@ -1,4 +1,5 @@
 const assert=require('node:assert/strict'),path=require('node:path');
+const { waitWork }=require('./play-helpers.cjs');
 module.exports=async function endedUndo(browser,base,out,name){
   const report=[];
   for(const touch of [false,true]){
@@ -28,7 +29,8 @@ module.exports=async function endedUndo(browser,base,out,name){
           await tap(page.getByRole('button',{name:'Accept undo',exact:true}));
         }
         await page.waitForFunction(()=>document.querySelector('#confirm') && !document.querySelector('#confirm').disabled);
-        let restored=await read();assert.deepEqual(restored.game.state,won.initial);assert.equal(restored.game.reviewingTurn,true);
+        const restored=await waitWork(page,w=>w?.game.id===won.id&&w.game.reviewingTurn&&w.game.state.phase==='move');
+        assert.deepEqual(restored.game.state,won.initial);assert.equal(restored.game.reviewingTurn,true);
         await page.waitForTimeout(220);assert.equal((await read()).game.state.phase,'move','forced winning turn stays open for review');
         await page.screenshot({path:path.join(out,`${name}-ended-undo-${mode}-${touch?'phone':'desktop'}.png`)});
         await page.reload();await ready();await tap(page.locator('#resume-match'));
@@ -37,7 +39,8 @@ module.exports=async function endedUndo(browser,base,out,name){
         assert.equal(await page.locator('.confirm-status').count(),0,'no routine subtitle under Confirm');
         await tap(page.locator('#confirm'));
         await page.locator('#next-game').waitFor();
-        assert.deepEqual((await read()).game.state,won.state,'replaying awards points once');
+        const replayed=await waitWork(page,w=>w?.game.id===won.id&&w.game.state.phase==='over');
+        assert.deepEqual(replayed.game.state,won.state,'replaying awards points once');
         report.push({mode,touch,forcedGameEndUndo:true,refresh:true,scoreRestored:true});
       }
       assert.deepEqual(errors,[]);
