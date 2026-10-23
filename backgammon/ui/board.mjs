@@ -370,6 +370,8 @@ export class Board {
     this.feedbackTimers = [];
     this.lifecycle = new AbortController();
     const listen = { signal: this.lifecycle.signal };
+    this.touchInput = matchMedia('(pointer: coarse)');
+    this.touchInput.addEventListener('change', () => this.updateCaption(), listen);
     const settle = () => {
       if (this.playbackTimer && this.playbackFinal) {
         const { state, options } = this.playbackFinal;
@@ -411,9 +413,12 @@ export class Board {
       const pointer = e.detail && this.touchTap ? this.touchTap : e;
       const target = pointer === e ? e.target : document.elementFromPoint(pointer.clientX, pointer.clientY);
       this.touchTap = null;
-      if (performance.now() < (this.suppressClickUntil || 0) || this.playbackTimer) return;
+      if (performance.now() < (this.suppressClickUntil || 0)) return;
+      // A second roll tap may arrive during the first roll's animation.
+      // Let Play recognize that intent before locking ordinary board actions.
+      if (!target?.closest('.board-cube') && this.onRoll?.({target, clientX:pointer.clientX, clientY:pointer.clientY})) return;
+      if (this.playbackTimer) return;
       if (target?.closest(".board-cube")) { this.onCube?.(); return; }
-      if (this.onRoll?.()) return;
       if (!this.options?.interactive) return;
       if (target?.closest(".dice-switch, .dice-switch-hit")) { this.onSwitchDice?.(); return; }
       const die = target?.closest("[data-die]");
@@ -438,6 +443,11 @@ export class Board {
         this.onPoint(raw, { quick: !checkerTap, checkerTap });
       } else this.onBackground?.();
     });
+    this.svg.addEventListener('keydown', e => {
+      if (e.target.closest?.('.board-caption') && ['Enter',' '].includes(e.key)) {
+        e.preventDefault(); e.stopImmediatePropagation(); this.onRoll?.(e);
+      }
+    }, true);
     this.svg.addEventListener("pointerdown", (e) => {
       this.suppressClickUntil = 0;
       this.touchTap = e.isPrimary && e.pointerType === "touch"
@@ -2062,29 +2072,17 @@ export class Board {
       !s.dice.length && lastMove?.dice?.length === 2;
     children.push(
       svg(
-        "text",
+        "g",
         {
-          x: historicalDice
+          class: 'board-caption',
+          'data-x': historicalDice
             ? lastMove.player !== orientation
               ? 610
               : 196
             : s.dice.length && s.turn !== orientation
               ? 610
               : 196,
-          y: 337,
-          "text-anchor": "middle",
-          fill: boardColor("caption"),
-          "font-size": 14,
         },
-        historicalDice
-          ? "Last roll"
-          : preview
-            ? "Move preview"
-            : editor
-              ? "Position editor"
-              : interactive
-                ? ""
-                : "Backgammon",
       ),
     );
     children.push(
@@ -2121,6 +2119,7 @@ export class Board {
     const newArrows = this.arrowKey !== arrowKey;
     this.arrowKey = arrowKey;
     this.updateChildren(children);
+    this.updateCaption();
     animateLastMoveExit(this.svg, lastMoveExit, this.animations);
     this.animateDiceLayout(dicePoses);
     this.animateDiceSelection(dicePoses);
@@ -2181,5 +2180,35 @@ export class Board {
       this.svg
         .querySelector(`[data-die="${focusedDie}"][role="button"]`)
         ?.focus({ preventScroll: true });
+  }
+  setRollPrompt(prompt) {
+    this.rollPrompt = prompt;
+    this.updateCaption();
+  }
+  updateCaption() {
+    const node = this.svg.querySelector('.board-caption');
+    if (!node) return;
+    const {preview,editor,hideDice} = this.renderOptions || {};
+    const prompt = this.rollPrompt || {}, touch = this.touchInput.matches;
+    const active = !preview && !editor && !hideDice && prompt.auto;
+    const ready = !preview && !editor && !hideDice && prompt.ready && this.state?.phase === 'roll';
+    const main = preview ? 'Move preview' : editor ? 'Position editor' :
+      active ? 'Auto roll on' : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
+    const detail = active ? `${touch ? 'Tap' : 'Click'} to stop` :
+      ready && prompt.onBar ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
+    const key = JSON.stringify([main,detail,active,ready,node.dataset.x]);
+    if (node.dataset.caption === key) return;
+    node.dataset.caption = key;
+    node.replaceChildren();
+    node.setAttribute('role', active || ready ? 'button' : 'img');
+    node.setAttribute('tabindex', active || ready ? '0' : '-1');
+    node.setAttribute('aria-label', [main,detail].filter(Boolean).join('. '));
+    if (!main) return;
+    const x = +node.dataset.x;
+    if (active || ready) node.append(svg('rect', {x:x-170,y:300,width:340,height:60,fill:'transparent'}));
+    node.append(svg('text', {x,y:detail ? 321 : 337,'text-anchor':'middle',fill:boardColor('caption'),
+      'font-size':active || ready ? 26 : 14}, main));
+    if (detail) node.append(svg('text', {x,y:347,'text-anchor':'middle',fill:boardColor('caption'),
+      'font-size':20,opacity:.8}, detail));
   }
 }

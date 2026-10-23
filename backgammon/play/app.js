@@ -79,6 +79,7 @@ import { historyExplorer } from "../ui/history-tree.mjs";
 import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
+import { BarAutoRoll } from "../core/bar-auto-roll.mjs";
 import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
@@ -139,6 +140,8 @@ let config = {
   assistanceJob = null,
   lastUndoNotice = null,
   epoch = 0;
+const barAutoRoll = new BarAutoRoll();
+let barRollTimer = null, barRollSchedule = '', barRollAttempt = '';
 const boardWorkspace = el("div", { class: "board-workspace" });
 const draftKeys = el("div", { class: "draft-shortcuts", "aria-label": "Draft keyboard shortcuts" });
 // The confirm stage: a full-width row under the board on stacked layouts and
@@ -360,9 +363,18 @@ const opening = new OpeningRoll(ui.board.container, () => {
   boardKey = "";
   render();
 });
-ui.board.onRoll = () => {
+ui.board.onRoll = (event = {}) => {
+  const point = {x:event.clientX || 0,y:event.clientY || 0};
+  if (barAutoRoll.active && (event.target?.closest('.board-caption') ||
+      (state().phase === 'roll' && state().turn === barAutoRoll.active.player))) {
+    barAutoRoll.reset(); actions(); return true;
+  }
+  if (barAutoRoll.repeat(model(), point)) {
+    barRollAttempt = ''; actions(); return true;
+  }
   const control = $("roll");
   if (state().phase !== "roll" || opening.active || !control || control.disabled || ui.board.playbackTimer) return false;
+  barAutoRoll.noteRoll(model(), point);
   control.click(); return true;
 };
 ui.board.onCube = () => {
@@ -370,8 +382,28 @@ ui.board.onCube = () => {
   if (control && !control.disabled && !opening.active && !ui.board.playbackTimer) control.click();
 };
 ui.board.container.addEventListener("click", e => {
-  if (e.target === ui.board.container) ui.board.onRoll();
+  if (e.target === ui.board.container) ui.board.onRoll(e);
 });
+// The first tap rolls immediately. Recognize its second physical tap even if
+// the dice redraw or a pending cube-warning dialog has replaced the target.
+// Consume that one click so it cannot also activate a newly exposed control.
+addEventListener('pointerdown', event => {
+  if (event.button !== 0 || !event.isPrimary || !barAutoRoll.repeat(model(), {x:event.clientX,y:event.clientY})) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  const consume = new AbortController();
+  const cleanup = setTimeout(() => consume.abort(), 600);
+  addEventListener('pointerdown', next => {
+    if (next === event) return;
+    clearTimeout(cleanup); consume.abort();
+  }, {capture:true,signal:consume.signal});
+  addEventListener('click', click => {
+    if (Math.hypot(click.clientX-event.clientX,click.clientY-event.clientY) > 44) return;
+    click.preventDefault(); click.stopImmediatePropagation();
+    clearTimeout(cleanup); consume.abort();
+  }, {capture:true,signal:consume.signal});
+  barRollAttempt = ''; actions();
+}, true);
+document.addEventListener('close', () => scheduleBarAutoRoll(), true);
 const online = new Online({
   onChange: () => {
     if (config.mode === "online") {
@@ -517,6 +549,7 @@ addEventListener("beforeunload", (e) => {
   }
 });
 addEventListener("pagehide", () => {
+  barAutoRoll.reset(); clearTimeout(barRollTimer);
   autoReview.pause();
   prethink.pause();
   stopComputer();
@@ -524,11 +557,12 @@ addEventListener("pagehide", () => {
 });
 addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    clearTimeout(barRollTimer); barRollSchedule = '';
     if (draftSaveFrame !== null || draftSaveTimer !== null) persist(false);
     autoReview.pause();
     prethink.pause();
     analysis.engine.cancelWhere(job => job.priority < 0);
-  } else { advanceOpening(); if (!advanceAcceptedCube()) autoPlay(); prethink.update(); autoReview.update(); }
+  } else { advanceOpening(); if (!advanceAcceptedCube()) autoPlay(); scheduleBarAutoRoll(); prethink.update(); autoReview.update(); }
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -693,6 +727,27 @@ function myTurn(s) {
   if (config.mode === "online")
     return online.ready && !online.pending && online.seat === decisionPlayer(s);
   return humanControls(config, s);
+}
+function scheduleBarAutoRoll() {
+  const m = model(), s = state();
+  const ready = () => barAutoRoll.canRoll(model()) && myTurn(state()) &&
+    !document.hidden && !leaving && !committing && !botBusy && !assistanceJob &&
+    !opening.active && !document.querySelector('dialog[open]') &&
+    !!$('roll') && !$('roll').disabled;
+  if (!ready()) { clearTimeout(barRollTimer); barRollSchedule = ''; return; }
+  const key = `${m.id}:${s.gameNumber}:${s.sequence}:${epoch}`;
+  if (barRollSchedule === key || barRollAttempt === key) return;
+  clearTimeout(barRollTimer); barRollSchedule = key;
+  // Give the opponent's last move time to land and remain readable.
+  barRollTimer = setTimeout(async () => {
+    await ui.board.waitForPresentation();
+    if (barRollSchedule !== key) return;
+    barRollSchedule = '';
+    if (state() !== s || !ready()) return;
+    barRollAttempt = key;
+    try { await submitCube({type:'roll'}); }
+    catch (error) { barAutoRoll.reset(); actions(); showError(error); }
+  }, reducedMotion() ? 120 : 900);
 }
 function render() {
   if (game && config.mode !== "online") ensureLocalRolls(game);
@@ -1230,7 +1285,12 @@ function actions() {
       cube.setAttribute("tabindex", ui.board.cubeEnabled ? "0" : "-1");
       cube.setAttribute("aria-label", `Cube ${state().cube.value}${ui.board.cubeEnabled ? ". Offer double" : ""}`);
     }
-    ui.board.container.classList.toggle("roll-ready", !!$("roll") && !$("roll").disabled && state().phase === "roll");
+    const s = state(), rollReady = !!$("roll") && !$("roll").disabled && s.phase === "roll" && !opening.active;
+    const current = draft.state === s && !draft.preview ? draft.current() : s;
+    const active = barAutoRoll.sync(model(), current);
+    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),onBar:s.bar[s.turn] > 0 && !model().reviewingTurn,auto:!!active});
+    ui.board.container.classList.toggle("roll-ready", rollReady);
+    scheduleBarAutoRoll();
   }
 }
 function arrangeActions() {
