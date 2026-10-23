@@ -99,6 +99,8 @@ a compilation or publishing failure is reported in that workflow.
 `.github/workflows/validate.yml` runs site tests, assembled-site browser tests, and Gym checks
 independently on pushes and pull requests. Validation failures stay visible in Actions but do
 not block publication. Check both workflows when diagnosing a release.
+The browser-test job is pinned to Ubuntu 24.04, which is supported by the locked
+Playwright version. Review that runner image together with Playwright upgrades.
 
 The two Backgammon study workflows share the `backgammon-research` concurrency
 group and run at most 16 of their 20 shards at once. This leaves four standard
