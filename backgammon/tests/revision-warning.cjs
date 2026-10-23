@@ -1,5 +1,6 @@
 // Scripted analysis tests the warning/commit boundary, not GNUbg accuracy.
 const assert=require('node:assert/strict');
+const { waitWork }=require('./play-helpers.cjs');
 module.exports=async function revisionWarning(browser,base){
   const ctx=await browser.newContext({reducedMotion:'reduce',serviceWorkers:'block'}),page=await ctx.newPage();
   const ready=()=>page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
@@ -34,6 +35,9 @@ module.exports=async function revisionWarning(browser,base){
       await page.locator('#confirm').click();
       if(loss>.002){
         await page.getByRole('dialog').getByRole('heading',{name:'Review before confirming?'}).waitFor();
+        // The pending warning opens before grading. This case tests revising a
+        // completed grade; the unlisted cases below cover revision while pending.
+        await waitWork(page,w=>w?.game.initialDecision?.evaluation?.result?.error===loss);
         assert.equal((await read()).game.events.length,0,'warning leaves turn uncommitted');
         await page.getByRole('button',{name:'Revise',exact:true}).click();
         assert.equal((await read()).game.events.length,0);
@@ -44,7 +48,7 @@ module.exports=async function revisionWarning(browser,base){
         await page.locator('#confirm').click();
         await page.getByRole('button',{name:'Confirm anyway',exact:true}).click();
       }
-      const deadline=Date.now()+5000;while((await read()).game.events.length===0&&Date.now()<deadline)await page.waitForTimeout(25);
+      await waitWork(page,w=>w?.game.id==='warning-boundary'&&w.game.events.length>0);
       assert.equal((await read()).game.events[0]?.action.type,'move');
       assert.equal((await read()).game.events[0].initialDecision.evaluation.result.error,loss);
       assert.equal(await page.locator('dialog[open]').count(),0);
@@ -90,7 +94,7 @@ module.exports=async function revisionWarning(browser,base){
           assert.match(await page.locator('#pending-move-loss').textContent(),response==='fail'?/EV unavailable/:/0.020/);
         }
         await page.getByRole('button',{name:'Confirm anyway',exact:true}).click();
-        await page.waitForTimeout(150);
+        await waitWork(page,w=>w?.game.id==='pending-warning'&&w.game.events.length>0);
         assert.equal((await read()).game.events[0]?.action.type,'move');
       }
       cases.push({unlisted:response});
