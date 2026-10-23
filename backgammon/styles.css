@@ -2653,6 +2653,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   font-size: var(--t-xs);
 }
 
+.history-depth {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
 .history-kind-label {
   color: var(--ink);
   font-weight: 600;

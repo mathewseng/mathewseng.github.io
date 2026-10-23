@@ -2,6 +2,7 @@
 import { ProgressWriter } from "../core/progress-writer.mjs";
 import { presentMove } from "../core/move-presentation.mjs";
 import { presentCubeAction } from "../core/cube-presentation.mjs";
+import { analysisDepthLabel } from "../core/analysis-insight.mjs";
 import { cubeActionIcon } from "../ui/cube-action-icon.mjs";
 import { keycap as shortcutBadge } from "../ui/keycap.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
@@ -2191,7 +2192,8 @@ function renderFeedback() {
     if (!entry) feedbackView.turns.set(group.key, entry = {});
     entry.group = group;
     const signature = JSON.stringify([group.turn, group.response, group.decisions.map(row => [
-      row.index, row.label, row.forced, row.result?.type, row.result?.positionKey, row.result?.settings.name,
+      row.index, row.label, row.forced, row.result?.type, row.result?.positionKey,
+      row.result?.settings?.name, analysisDepthLabel(row.result),
       row.feedback, row.index === reviewIndex, canReturnToDecision(row, m.id),
       !row.feedback && (autoReview.job?.row.index === row.index ? "active" : autoReview.error ? "error" : "queued"),
     ])]);
@@ -2235,7 +2237,9 @@ function renderFeedback() {
             "aria-label": `Current cube ${cube.cubeValue}`, title: `Current cube: ${cube.cubeValue}` }, cube.cubeValue)] : []),
           kind,
         ),
-        ...(row.result ? [el("span", {}, ` · ${row.result.settings.name}`)] : []),
+        ...(row.result ? [" · ", el("span", {
+          class: "history-depth", title: `Completed analysis · ${analysisDepthLabel(row.result)}`,
+        }, analysisDepthLabel(row.result))] : []),
       );
       if (!row.feedback) {
         decisions.append(
