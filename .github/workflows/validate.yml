@@ -63,6 +63,7 @@ jobs:
       - name: Test assembled Scoundrel game and reports
         run: |
           node scoundrel/tests/browser.cjs
+          node scoundrel/tests/deck-overview.cjs
           node scoundrel/tests/responsive.cjs
 
       - name: Test assembled Backgammon application
