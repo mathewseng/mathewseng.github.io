@@ -1,49 +1,24 @@
-import { createShader } from './dither-shader.js?v=20261023';
-
+// The artwork is a cached image. CSS transforms supply optional desktop motion;
+// no canvas, animation-frame callbacks, shader compilation or per-frame drawing.
 const background = document.querySelector('.dither-background');
-const canvas = background?.querySelector('canvas');
 const toggle = document.querySelector('.dither-toggle');
-let shader;
-let paused = navigator.connection?.saveData === true;
+const motion = matchMedia('(min-width: 801px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
+const connection = navigator.connection;
+let paused = connection?.saveData === true;
 
-function start() {
-  if (!canvas || shader) return;
-  try {
-    shader = createShader(canvas, {
-      background: { dark: getComputedStyle(document.documentElement).getPropertyValue('--page').trim() },
-      paused,
-      onRender: () => background.classList.add('is-active'),
-      onError: stop,
-    });
-    if (toggle) {
-      toggle.hidden = false;
-      updateToggle();
-    }
-  } catch {
-    // The CSS dither field also works without JavaScript or GPU support.
-    stop();
-  }
-}
-
-function stop() {
-  shader?.destroy();
-  shader = undefined;
-  background?.classList.remove('is-active');
-  if (toggle) toggle.hidden = true;
-}
-
-function updateToggle() {
+function update() {
+  const canAnimate = motion.matches && !connection?.saveData;
+  background?.classList.toggle('is-drifting', canAnimate && !paused && !document.hidden);
+  if (!toggle) return;
+  toggle.hidden = !canAnimate;
   toggle.setAttribute('aria-pressed', String(paused));
   toggle.textContent = paused ? 'Resume background' : 'Pause background';
 }
 
-toggle?.addEventListener('click', () => {
-  paused = !paused;
-  shader?.setPaused(paused);
-  updateToggle();
-});
-canvas?.addEventListener('webglcontextlost', event => { event.preventDefault(); stop(); });
-canvas?.addEventListener('webglcontextrestored', start);
-window.addEventListener('pagehide', stop);
-window.addEventListener('pageshow', start);
-start();
+toggle?.addEventListener('click', () => { paused = !paused; update(); });
+motion.addEventListener('change', update);
+connection?.addEventListener('change', update);
+document.addEventListener('visibilitychange', update);
+window.addEventListener('pagehide', () => background?.classList.remove('is-drifting'));
+window.addEventListener('pageshow', update);
+update();
