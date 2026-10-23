@@ -20,7 +20,7 @@ module.exports = async function lastMoveMotion(browser, base, out, name) {
     })));
     const roll = async () => {
       if (!touch) return page.keyboard.press('c');
-      const p = await page.locator('#board svg').evaluate(svg => {
+      const p = await page.locator('#board svg.bg-board').evaluate(svg => {
         const p = new DOMPoint(240, 330).matrixTransform(svg.getScreenCTM());
         return { x: p.x, y: p.y };
       });
