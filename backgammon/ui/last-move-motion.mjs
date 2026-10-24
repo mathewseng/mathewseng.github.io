@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Coordinate decorative previous-move ink. Legal targets and checker faces
 // always describe the current board, independently of these transitions.
+import { motionDuration, motionTiming } from "./motion.mjs";
 import { animate, resumeAnimation } from "./animation-batch.mjs";
 const NS = 'http://www.w3.org/2000/svg';
 export const LAST_MOVE_ENTRY_TIMING = { duration: 760, easing: 'cubic-bezier(.4,0,.2,1)' };
@@ -13,7 +14,7 @@ const markers = board => [...board.querySelectorAll('.last-move-ghost,.last-move
 export function captureLastMoveEntry(board) {
   return markers(board).map(node => {
     const a = node.getAnimations().find(a => a.id === 'last-move-entry' && a.playState !== 'finished');
-    return a ? { time: a.currentTime, frames: a.effect.getKeyframes() } : null;
+    return a ? { time: a.currentTime, frames: a.effect.getKeyframes(), timing: a.effect.getTiming() } : null;
   });
 }
 
@@ -28,7 +29,7 @@ export function animateLastMoveEntry(board, previous, animations, fresh) {
     // Off-tray strips are real checkers, so fade only their outline. Ghosts
     // and separate checker rings can fade as a whole, retaining their opacity.
     const animation = animate(node, pose?.frames || [{ [property]: 0 }, { [property]: target }],
-      { ...LAST_MOVE_ENTRY_TIMING, id: 'last-move-entry' }, animations);
+      { ...(pose?.timing || motionTiming(LAST_MOVE_ENTRY_TIMING)), id: 'last-move-entry' }, animations);
     if (pose) resumeAnimation(animation, pose.time, animations);
     animations.push(animation);
   });
@@ -41,7 +42,7 @@ export function clearLastMoveExits(board) {
 export function captureLastMoveExit(board, starting) {
   if (!starting) return [...board.querySelectorAll('[data-last-move-exit]')].map(node => ({
     node: node.cloneNode(true),
-    elapsed: Number(node.getAnimations().find(a => a.id === timing.id)?.currentTime ?? timing.duration),
+    elapsed: Number(node.getAnimations().find(a => a.id === timing.id)?.currentTime ?? motionDuration(timing.duration)),
   }));
   return [...board.querySelectorAll('.last-move-ghost,.last-move-arrows,.last-move-ring,.off-checker.last-moved-checker')].map(source => {
     const ink = source.cloneNode(true), node = document.createElementNS(NS, 'g');
@@ -66,7 +67,7 @@ export function captureLastMoveExit(board, starting) {
 
 export function animateLastMoveExit(board, previous, animations) {
   for (const { node, elapsed } of previous) {
-    if (elapsed >= timing.duration) continue;
+    if (elapsed >= motionDuration(timing.duration)) continue;
     if (node.dataset.lastMoveExit === 'arrows') {
       // New dice are drawn above the old paths. Also mask any checker that the
       // player has already moved during the fade, without changing the path.
@@ -87,7 +88,7 @@ export function animateLastMoveExit(board, previous, animations) {
       if (!point) continue;
       point.insertBefore(node, node.dataset.lastMoveExit === 'ghost' ? point.querySelector('.checker') : null);
     }
-    const animation = animate(node, [{ opacity: 1 }, { opacity: 0 }], timing, animations);
+    const animation = animate(node, [{ opacity: 1 }, { opacity: 0 }], motionTiming(timing), animations);
     // Continue the same curve across selection/undo rerenders, rather than
     // restarting (and potentially prolonging) a fade on every interaction.
     resumeAnimation(animation, elapsed, animations);

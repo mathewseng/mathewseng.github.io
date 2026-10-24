@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Presentation-only transitions between study positions. Snapshot the visible
 // frame before rebuilding the shared SVG; never replay from a different state.
-import { checkerFlight } from './motion.mjs';
+import { checkerFlight, motionTiming } from './motion.mjs';
 const NS = 'http://www.w3.org/2000/svg';
 const duration = 560, easing = 'cubic-bezier(.4,0,.2,1)';
 let serial = 0;
@@ -80,7 +80,7 @@ export function animatePreview(svg, snapshot, animations) {
   let pending = 0;
   const animate = (node, frames, done = () => {}, options = {}) => {
     pending++;
-    const a = node.animate(frames, { duration, easing, fill: 'both', id: 'preview-transition', ...options });
+    const a = node.animate(frames, motionTiming({ duration, easing, fill: 'both', id: 'preview-transition', ...options }));
     animations.push(a);
     a.finished.then(() => { done(); a.cancel(); if (!--pending) layer.remove(); }).catch(() => {});
   };

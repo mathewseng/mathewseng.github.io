@@ -245,7 +245,7 @@ summary::before {
   content: "›";
   margin-right: 9px;
   font-size: 20px;
-  transition: rotate var(--d-fast) var(--ease);
+  transition: rotate calc(var(--d-fast) * var(--bg-motion-scale, 1)) var(--ease);
 }
 
 details[open] > summary::before {
@@ -271,7 +271,7 @@ details .stack {
   margin-right: 7px;
   border-radius: 50%;
   background: var(--accent);
-  animation: breathe 1s ease-in-out infinite alternate;
+  animation: breathe calc(1s * var(--bg-motion-scale, 1)) ease-in-out infinite alternate;
 }
 
 @keyframes breathe {
@@ -858,7 +858,7 @@ button kbd.keycap,
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: background-color calc(160ms * var(--bg-motion-scale, 1)) ease, color calc(160ms * var(--bg-motion-scale, 1)) ease;
 }
 
 .equity-reading {
@@ -1117,8 +1117,8 @@ button.die {
   padding: 7px;
   cursor: pointer;
   transition:
-    transform 220ms var(--ease),
-    box-shadow 220ms ease;
+    transform calc(220ms * var(--bg-motion-scale, 1)) var(--ease),
+    box-shadow calc(220ms * var(--bg-motion-scale, 1)) ease;
 }
 
 button.die:hover {
@@ -1165,7 +1165,7 @@ button.die.preferred {
   font-size: 28px;
   font-weight: 600;
   letter-spacing: -.025em;
-  transition: fill 180ms ease;
+  transition: fill calc(180ms * var(--bg-motion-scale, 1)) ease;
 }
 .board-caption-detail {
   font-size: 20px;
@@ -1245,8 +1245,8 @@ html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-ca
    carry the state. */
 .point .point-hit {
   transition:
-    fill 0.12s,
-    stroke 0.12s;
+    fill calc(0.12s * var(--bg-motion-scale, 1)),
+    stroke calc(0.12s * var(--bg-motion-scale, 1));
 }
 
 .point:not([aria-disabled="true"]):is(.movable, .reachable, .destination, .return-destination, .selected):hover .point-hit,
@@ -1510,7 +1510,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .board-cube[role="button"] {
-  transition: filter 180ms ease;
+  transition: filter calc(180ms * var(--bg-motion-scale, 1)) ease;
 }
 
 .board-cube[role="button"]:active {
@@ -1522,8 +1522,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   transform-box: view-box;
   transform-origin: 0 0;
   transition:
-    transform 220ms var(--ease),
-    filter 220ms ease;
+    transform calc(220ms * var(--bg-motion-scale, 1)) var(--ease),
+    filter calc(220ms * var(--bg-motion-scale, 1)) ease;
 }
 
 .board-die.preferred .board-die-face {
@@ -1547,8 +1547,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .dice-switch-surface {
   transition:
-    fill 160ms ease,
-    stroke 160ms ease;
+    fill calc(160ms * var(--bg-motion-scale, 1)) ease,
+    stroke calc(160ms * var(--bg-motion-scale, 1)) ease;
 }
 
 .dice-switch:active .dice-switch-surface {
@@ -1713,7 +1713,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: var(--surface);
   box-shadow: var(--shadow-raised);
   text-align: center;
-  animation: roll-panel-in 240ms ease-out;
+  animation: roll-panel-in calc(240ms * var(--bg-motion-scale, 1)) ease-out;
 }
 
 .bg-result-card[hidden] {
@@ -1890,7 +1890,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .turn-ready {
-  animation: turn-ready 320ms ease-out;
+  animation: turn-ready calc(320ms * var(--bg-motion-scale, 1)) ease-out;
 }
 
 @keyframes turn-ready {
@@ -1905,15 +1905,15 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 :is(.board-actions, .action-help, #actions) .btn {
   transition:
-    background-color 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+    background-color calc(160ms * var(--bg-motion-scale, 1)) ease,
+    border-color calc(160ms * var(--bg-motion-scale, 1)) ease,
+    box-shadow calc(160ms * var(--bg-motion-scale, 1)) ease;
 }
 
 :is(.board-actions, .action-help) .btn kbd.keycap {
   transition:
-    transform 140ms var(--ease),
-    opacity 140ms ease;
+    transform calc(140ms * var(--bg-motion-scale, 1)) var(--ease),
+    opacity calc(140ms * var(--bg-motion-scale, 1)) ease;
 }
 
 :is(.board-actions, .action-help) .btn:active:not(:disabled) {
@@ -2062,7 +2062,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: var(--surface);
   box-shadow: var(--shadow-raised);
   text-align: center;
-  animation: roll-panel-in 240ms ease-out;
+  animation: roll-panel-in calc(240ms * var(--bg-motion-scale, 1)) ease-out;
 }
 
 .opening-roll h2 {
@@ -2118,8 +2118,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   opacity: 0;
   transform: translateY(-10px) rotate(-12deg);
   transition:
-    opacity 150ms,
-    transform 220ms var(--ease);
+    opacity calc(150ms * var(--bg-motion-scale, 1)),
+    transform calc(220ms * var(--bg-motion-scale, 1)) var(--ease);
 }
 
 .opening-die .die i {
@@ -2141,7 +2141,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .opening-player.revealed .die {
   opacity: 1;
   transform: none;
-  animation: opening-land 420ms var(--ease);
+  animation: opening-land calc(420ms * var(--bg-motion-scale, 1)) var(--ease);
 }
 
 .opening-winner .die {
@@ -2628,7 +2628,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   border-right: 2px solid var(--muted);
   border-bottom: 2px solid var(--muted);
   transform: rotate(45deg);
-  transition: transform var(--d-fast) var(--ease);
+  transition: transform calc(var(--d-fast) * var(--bg-motion-scale, 1)) var(--ease);
 }
 
 .history-game-toggle[aria-expanded="true"] .history-game-chevron {
@@ -3500,6 +3500,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .settings-dialog {
   width: min(980px, calc(100vw - 28px));
   max-width: calc(100vw - 20px);
+  /* A definite height keeps WebKit's flex body from collapsing on rotation. */
+  height: min(900px, 90dvh);
   max-height: 90dvh;
   overflow: hidden;
 }
@@ -3557,7 +3559,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   border-top: 1px solid var(--line);
 }
 
-.sound-settings input[type="range"] {
+.sound-settings input[type="range"],
+.motion-settings input[type="range"] {
   min-height: 44px;
   accent-color: var(--accent);
 }
@@ -4770,16 +4773,15 @@ html.bg-dialog-open {
   stroke-linecap: round;
 }
 
-/* Motion opt-out from Settings (data-motion), beside the system preference
-   that tokens.css honours. Animation durations collapse; nothing is removed,
-   so scripts waiting on animationend still finish (no script in this family
-   waits on transitionend). */
-html[data-motion="reduce"] :is(.board-die-face, button.die, .dice-switch-surface, .board-cube, .opening-die .die, .opening-player.revealed .die, .opening-roll, .turn-ready, .engine-status.busy, .player-strip, .dialog, .toast, summary, .point .point-hit, .bg-dialog),
-html[data-motion="reduce"] :is(.engine-status.busy, .dialog)::before,
-html[data-motion="reduce"] .dialog::backdrop {
-  animation-duration: 0.01ms;
-  animation-iteration-count: 1;
+/* Family motion scales include the shared kit's controls and dialogs. */
+.app .btn, .bg-dialog .btn, .bg-dialog input, .bg-dialog select {
+  transition-duration: calc(var(--d-fast) * var(--bg-motion-scale, 1));
 }
+.bg-dialog, .bg-dialog::backdrop, .toast {
+  transition-duration: calc(var(--d-base) * var(--bg-motion-scale, 1));
+}
+.motion-settings { display: grid; gap: 0; }
+.motion-settings output { color: var(--ink); font-weight: 600; }
 
 /* With motion reduced there are no transitions at all. tokens.css shortens
    them to 0.01ms rather than removing them, so a property that changes (a
@@ -4793,6 +4795,7 @@ html[data-motion="reduce"] .dialog::backdrop {
   body:not(#bg-motion) *::before,
   body:not(#bg-motion) *::after {
     transition-property: none;
+    animation: none !important;
   }
 }
 
@@ -4801,7 +4804,10 @@ html[data-motion="reduce"] body:not(#bg-motion) *,
 html[data-motion="reduce"] body:not(#bg-motion) *::before,
 html[data-motion="reduce"] body:not(#bg-motion) *::after {
   transition-property: none;
+  animation: none !important;
 }
+
+html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: none; }
 
 /* ======================================================================
    7. Hub
@@ -5514,6 +5520,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .settings-dialog {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
     max-height: calc(100dvh - 16px);
   }
 

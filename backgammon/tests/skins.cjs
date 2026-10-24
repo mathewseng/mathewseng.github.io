@@ -48,7 +48,9 @@ module.exports = async function skinsUX(browser, base, out, browserName) {
   };
   const setMotion = async (value) => {
     await page.getByRole("tab", { name: "Display & controls", exact: true }).click();
-    await page.getByLabel("Motion", { exact: true }).selectOption(value);
+    const speed = page.getByLabel("Animation speed", { exact: true });
+    await speed.press("Home");
+    if (value !== "reduce") for (let i=0;i<4;i++) await speed.press("ArrowRight");
     await page.getByRole("tab", { name: "Board colors", exact: true }).click();
   };
   const frames = () => page.evaluate(() => window.__bgShader?.frames ?? 0);

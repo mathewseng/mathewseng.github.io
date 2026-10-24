@@ -103,7 +103,7 @@ import {
   returnToDecision,
 } from "../core/practice.mjs";
 import { installPlayShortcuts, decorateShortcuts } from "../ui/shortcuts.mjs";
-import { reducedMotion } from "../ui/motion.mjs";
+import { reducedMotion, motionDuration } from "../ui/motion.mjs";
 import { preferences } from "../ui/shell.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
@@ -815,7 +815,7 @@ function scheduleBarAutoRoll() {
     barRollAttempt = key;
     try { await submitCube({type:'roll'}); }
     catch (error) { barAutoRoll.reset(); actions(); showError(error); }
-  }, reducedMotion() ? 120 : 900);
+  }, motionDuration(900));
 }
 function render() {
   if (game && config.mode !== "online") ensureLocalRolls(game);
@@ -933,7 +933,7 @@ function advanceAcceptedCube() {
         (blockedBarRoll(state()) && !automaticClosedOutPass(state())) ||
         !myTurn(state()) || committing || assistanceJob || document.hidden) return;
     commit({ type: "roll" }).catch(showError);
-  }, reducedMotion() ? 80 : 420);
+  }, motionDuration(420));
   return true;
 }
 function advanceOpening() {
@@ -948,7 +948,7 @@ function advanceOpening() {
     if (model()?.id !== m.id || model().events.length !== m.events.length || !opening.active || committing || document.hidden) return;
     if (opening.dice && !opening.tie) opening.dismiss();
     else if (myTurn(state())) commit({ type: "opening" }).catch(showError);
-  }, reducedMotion() ? 80 : opening.dice ? 700 : 300);
+  }, motionDuration(opening.dice ? 700 : 300));
 }
 function autoDraft() {
   if (!ui.board.container.isConnected) return;
@@ -1089,7 +1089,7 @@ function autoPlay() {
         commit(certain ? {type:"finish-race"} : blocked ? { type: "skip-roll" } : { type: "move", steps: forced.steps },
           null, blocked ? {autoPass:true,cubeEvaluation:result} : {}).catch(showError);
       }
-    }, certain || blocked || reducedMotion() ? 0 : 650);
+    }, certain || blocked ? 0 : motionDuration(650));
   }
   return true;
 }
@@ -3020,7 +3020,7 @@ async function computerTurn() {
     prethink.prepareAfter(s,action.type === 'roll'
       ? {...action,dice:await futureLocalRoll(game) || cryptoDice()} : action);
     if (!reducedMotion()) {
-      await new Promise(resolve => setTimeout(resolve, s.phase === "move" ? 650 : 300));
+      await new Promise(resolve => setTimeout(resolve, motionDuration(s.phase === "move" ? 650 : 300)));
       await ui.board.waitForPresentation();
     }
     if (token !== epoch || key !== positionKey(state())) return;

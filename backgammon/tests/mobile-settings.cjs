@@ -70,7 +70,7 @@ module.exports = async function mobileSettings(browser, base, out, name) {
     await reachable(tab("Display & controls")); // tabs remain pinned at the end of the skin picker and every preset
     await tab("Display & controls").tap();
     await page.getByLabel("Show legal-move hints in beginner mode", {exact:true}).uncheck();
-    await page.getByLabel("Motion", {exact:true}).selectOption("reduce");
+    await page.getByLabel("Animation speed", {exact:true}).press("Home");
     await page.locator(".settings-updates summary").tap();
     await page.getByRole("button",{name:"Check for updates",exact:true}).waitFor();
     assert.ok(await page.locator(".release-status").isVisible());

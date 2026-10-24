@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { keycapGraphic } from "./keycap.mjs";
 import { playerName, distance, applyStep, boardKey } from "../core/rules.mjs";
-import { reducedMotion, checkerFlight, checkerDrop } from "./motion.mjs";
+import { reducedMotion, motionDuration, motionTiming, checkerFlight, checkerDrop } from "./motion.mjs";
 import { sound } from "./sound.mjs";
 import { boardColor } from "../core/appearance.mjs";
 import { routeArrow } from "./move-arrow-route.mjs";
@@ -841,7 +841,7 @@ export class Board {
     this.dragLandingMove = motion ? node.animate([
       { transform: fresh ? transform : from, opacity: fresh ? 0 : opacity },
       { transform, opacity: 1 },
-    ], { duration: fresh ? 140 : 180, easing: "cubic-bezier(.2,.75,.3,1)" }) : null;
+    ], { duration: motionDuration(fresh ? 140 : 180), easing: "cubic-bezier(.2,.75,.3,1)" }) : null;
   }
   clearDragLanding() {
     this.dragLandingMove?.cancel();
@@ -909,7 +909,7 @@ export class Board {
       this.dragLift = this.dragFace.animate([
         { transform: `translate(${x - down.x}px, ${y - down.y}px) scale(1)` },
         { transform: `translateY(${p.touch ? -24 / Math.abs(this.svg.getScreenCTM().a) : 0}px) scale(1.1)` },
-      ], { duration:160, easing:"cubic-bezier(.2,.75,.3,1)", fill:"forwards" });
+      ], { duration:motionDuration(160), easing:"cubic-bezier(.2,.75,.3,1)", fill:"forwards" });
     } else this.dragFace.style.transform = `translateY(${p.touch && !this.reducedMotion() ? -24 / Math.abs(this.svg.getScreenCTM().a) : 0}px) scale(${this.reducedMotion() ? 1 : 1.1})`;
   }
   followDrag(clientX, clientY) {
@@ -1049,7 +1049,7 @@ export class Board {
       });
       const duration = this.animateMove(current, after, step);
       current = after;
-      this.playbackTimer = setTimeout(advance, duration + 200);
+      this.playbackTimer = setTimeout(advance, duration + motionDuration(200));
     };
     if (rolled) {
       this.render(before, {...options, playback:true, interactive:false, lastMove:null,
@@ -1127,7 +1127,7 @@ export class Board {
           animateHit(
             checkerPosition(current, st.to, 1 - p, this.options.orientation),
             checkerPosition(next, "bar", 1 - p, this.options.orientation),
-            "bar", Math.max(0, (flight.landings[index] ?? flight.duration) - 35),
+            "bar", Math.max(0, (flight.landings[index] ?? flight.duration) - motionDuration(35)),
           );
         current = next;
       }
@@ -1137,7 +1137,7 @@ export class Board {
       animateHit(
         checkerPosition(before, source, 1 - p, this.options.orientation),
         checkerPosition(after, dest, 1 - p, this.options.orientation),
-        dest, reverse ? 0 : Math.max(0, flight.landings[0] - 35),
+        dest, reverse ? 0 : Math.max(0, flight.landings[0] - motionDuration(35)),
       );
     }
     // Opponent playback waits for every hit checker to reach the bar as well.
@@ -1225,7 +1225,7 @@ export class Board {
     });
     this.svg.append(ring);
     const animation = ring.animate([{ opacity: 0.65 }, { opacity: 0 }], {
-      duration: 220,
+      duration: motionDuration(220),
       easing: "ease-out",
     });
     this.animations.push(animation);
@@ -1302,7 +1302,7 @@ export class Board {
   animateDice() {
     sound.play("roll");
     if (this.reducedMotion() || document.hidden) return;
-    this.diceSettledAt = performance.now() + 740;
+    this.diceSettledAt = performance.now() + motionDuration(740);
     const faces = [...this.svg.querySelectorAll(".board-die")].map(die => {
       const face = die.querySelector(".board-die-face");
       return {face, restingTransform:getComputedStyle(face).transform};
@@ -1326,8 +1326,8 @@ export class Board {
           { transform: restingTransform, opacity: 1 },
         ],
         {
-          duration: 560,
-          delay: i * 30,
+          duration: motionDuration(560),
+          delay: motionDuration(i * 30),
           easing: "cubic-bezier(.2,.75,.3,1)",
           fill: "backwards",
           id: "dice-roll",
@@ -1375,7 +1375,7 @@ export class Board {
     const old = poses?.dice || [], samePlayer = old[0]?.player === group.dataset.player;
     const expanding = dice.length === 4 && old.length !== 4;
     const collapsing = dice.length === 2 && old.length === 4 && samePlayer;
-    const timing = {duration: 420, easing: 'cubic-bezier(.22,.7,.25,1)', id: 'dice-layout'};
+    const timing = {duration: motionDuration(420), easing: 'cubic-bezier(.22,.7,.25,1)', id: 'dice-layout'};
     const animate = (node, from, to, opts = timing) => {
       if (from.transform === to.transform && from.opacity === to.opacity) return;
       this.animations.push(animateBatched(node, [from, to], opts, this.animations));
@@ -1425,7 +1425,7 @@ export class Board {
     // invalidates style; alternating reads/writes used to relayout once per pip.
     const pending = [];
     const animate = (node, frames, options) => pending.push({node, frames, options});
-    const timing = { duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)' };
+    const timing = { duration: motionDuration(280), easing: 'cubic-bezier(.2,.75,.3,1)' };
     this.svg.querySelectorAll('.board-die').forEach((die, index) => {
       const before = poses.dice[index];
       const group = die.closest('.board-dice');
@@ -1500,7 +1500,7 @@ export class Board {
         },
         { transform: "translateY(0) scale(1)", opacity: 1 },
       ],
-      { duration: 360, easing: "cubic-bezier(.2,.7,.25,1)" },
+      { duration: motionDuration(360), easing: "cubic-bezier(.2,.7,.25,1)" },
     );
     this.animations.push(animation);
   }
@@ -2186,7 +2186,7 @@ export class Board {
         const frames = pose?.frames || (tip ? [{ opacity: 0 }, { opacity: 1 }]
           : [{ strokeDasharray: '1000', strokeDashoffset: 1000, opacity: 0 },
             { strokeDasharray: '1000', strokeDashoffset: 0, opacity: getComputedStyle(path).opacity }]);
-        const timing = pose?.timing || (tip ? { duration: 240, delay: 520, fill: 'backwards' }
+        const timing = pose?.timing || motionTiming(tip ? { duration: 240, delay: 520, fill: 'backwards' }
           : LAST_MOVE_ENTRY_TIMING);
         const animation = animateBatched(path, frames, { ...timing, id: 'move-arrow-entry' }, this.animations);
         // Disabling controls while committing the roll also redraws the board.

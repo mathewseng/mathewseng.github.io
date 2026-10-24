@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Decorative SVG fragments only. The live point classes/hit regions always
 // describe the current legal actions, even while an old highlight fades away.
+import { motionTiming } from "./motion.mjs";
 import { animate } from "./animation-batch.mjs";
 const fragments = '.draft-undo-tint,.draft-undo-mark,.point-glow,.point-accent,.point-wash,.source-ring,.landing-ring,.ring-halo,.destination-badge,.destination-die';
 const paint = ['display', 'fill', 'fill-opacity', 'stroke', 'stroke-width',
@@ -62,7 +63,7 @@ export function animateHighlights(board, previous, animations, enabled) {
     const found = old.findIndex(item => item.key === current.key && item.signature === current.signature);
     const from = found < 0 ? 0 : old.splice(found, 1)[0].opacity;
     if (from !== current.opacity) animations.push(animate(node,
-      [{ opacity: from }, { opacity: current.opacity }], timing, animations));
+      [{ opacity: from }, { opacity: current.opacity }], motionTiming(timing), animations));
   }
   if (!enabled) return;
   for (const item of old) {
@@ -74,7 +75,7 @@ export function animateHighlights(board, previous, animations, enabled) {
     // Washes/glows stay behind the checkers. Rings and labels stay above them.
     const beneath = node.matches('.point-glow,.point-accent,.point-wash');
     point.insertBefore(node, beneath ? point.querySelector('.checker') : null);
-    const animation = animate(node, [{ opacity: item.opacity }, { opacity: 0 }], { ...timing, fill: 'forwards' }, animations);
+    const animation = animate(node, [{ opacity: item.opacity }, { opacity: 0 }], { ...motionTiming(timing), fill: 'forwards' }, animations);
     animation.onfinish = () => node.remove();
     animations.push(animation);
   }

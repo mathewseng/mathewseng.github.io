@@ -40,7 +40,7 @@ import {
   soundPreferences,
   setSoundPreferences,
 } from "./sound.mjs";
-import { reducedMotion } from "./motion.mjs";
+import { reducedMotion, motionDuration, applyMotionSettings } from "./motion.mjs";
 
 import { releaseStatus } from "./release-status.mjs";
 import { TouchMoves } from "./touch-moves.mjs";
@@ -331,14 +331,13 @@ export function shell(page, title, subtitle = "") {
   activeEquity?.destroy();
   activeEquity = null;
   activeBoard?.destroy();
-  document.documentElement.dataset.motion = settings().motion;
+  applyMotionSettings(settings());
   installSound();
   addEventListener("storage", (e) => {
     if (e.key === "backgammon.v1.settings" || e.key === null) {
       applySkin(settings().skin);
       applyBoardTheme(settings().boardTheme);
-      document.documentElement.dataset.motion = settings().motion;
-      dispatchEvent(new Event("bg-motion"));
+      applyMotionSettings(settings());
       dispatchEvent(new Event("bg-settings"));
     }
   });
@@ -487,18 +486,23 @@ export async function preferences() {
       dispatchEvent(new Event("bg-settings"));
     },
   });
-  const motion = select(
-    [
-      ["system", "Follow device"],
-      ["reduce", "Reduce motion"],
-    ],
-    s.motion,
-    (v) => {
-      saveSettings({ motion: v });
-      document.documentElement.dataset.motion = v;
-      dispatchEvent(new Event("bg-motion"));
-    },
-  );
+  const motionValue = el("output", {for:"animation-speed"});
+  const motion = el("input", {id:"animation-speed", type:"range", min:0, max:3, step:.25,
+    value:s.motionScale, onInput:e => {
+      const motionScale = Number(e.target.value);
+      saveSettings({motionScale, motion:motionScale === 0 ? "reduce" : "system"});
+      applyMotionSettings(settings());
+      updateMotion();
+    }});
+  const updateMotion = () => {
+    const value = settings().motionScale;
+    motion.value = value;
+    const label = value === 0 ? "Instant" : value === 1 ? "Normal"
+      : value < 1 ? `${+(1/value).toFixed(2)}× faster` : `${value}× slower`;
+    motionValue.textContent = label;
+    motion.setAttribute("aria-valuetext", label);
+  };
+  updateMotion();
   const sounds = el("input", {
     type: "checkbox",
     checked: s.sound.enabled,
@@ -530,6 +534,8 @@ export async function preferences() {
   const display = el(
     "div",
     { class: "stack settings-display" },
+    el("div", {class:"motion-settings"}, field("Animation speed", motion),
+      el("div", {class:"row spread small muted"}, el("span", {}, "Instant"), motionValue, el("span", {}, "Slower"))),
     field("Playing style", interaction),
     el("p", { class: "muted small" }, "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
@@ -561,7 +567,6 @@ export async function preferences() {
     el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.analysisAhead,
       onChange: e => { saveSettings({analysisAhead:e.target.checked}); dispatchEvent(new Event("bg-settings")); }}), "Analyze ahead in computer games"),
     el("p", {class:"muted small"}, "Prepare feedback while you choose, then explore likely replies using spare engine time. Future work is limited to 24 positions or 20 seconds between decisions and pauses when this tab is hidden. Uses more battery; never predicts or changes your actual dice."),
-    field("Motion", motion),
     el(
       "div",
       { class: "sound-settings stack" },
@@ -726,7 +731,7 @@ export function players(s, names = ["White", "Black"]) {
           { backgroundColor: "color-mix(in oklab, var(--accent) 18%, transparent)" },
           { backgroundColor: "transparent" },
         ],
-        { duration: 420, easing: "ease-out" },
+        { duration: motionDuration(420), easing: "ease-out" },
       );
     row.classList.toggle("active", active);
     row.replaceChildren(

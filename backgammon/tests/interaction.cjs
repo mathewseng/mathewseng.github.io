@@ -65,7 +65,7 @@ const { seedOpening, openingComplete } = require("./play-helpers.cjs");
     await p
       .getByRole("tab", { name: "Display & controls", exact: true })
       .tap();
-    await p.getByLabel("Motion", { exact: true }).selectOption("reduce");
+    await p.getByLabel("Animation speed", { exact: true }).press("Home");
     await p
       .getByRole("dialog")
       .getByRole("button", { name: "Close", exact: true })

@@ -7,6 +7,7 @@ import { skinById, DEFAULT_SKIN } from "../skins/index.mjs";
 import { settings, saveSettings } from "../core/storage.mjs";
 import { applyBoardTheme } from "../core/appearance.mjs";
 import { startShader, stopShader } from "./shader-layer.mjs";
+import { applyMotionSettings } from "./motion.mjs";
 
 export const BOOT_KEY = "backgammon.v1.skin-boot";
 // Token keys whose CSS custom property is not simply --<key>.
@@ -66,6 +67,11 @@ function defsNode() {
 export function applySkin(id) {
   const skin = skinById(id) || skinById(DEFAULT_SKIN);
   const html = document.documentElement;
+  // The hub, opening guide and docs also use the saved presentation speed.
+  const motion = settings();
+  if (html.dataset.motionScale !== String(motion.motionScale) ||
+      html.dataset.motion !== (motion.motionScale === 0 ? "reduce" : motion.motion))
+    applyMotionSettings(motion);
   html.dataset.skin = skin.id;
   const next = new Set();
   for (const [key, value] of Object.entries(skin.tokens || {})) {
