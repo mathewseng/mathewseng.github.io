@@ -18,7 +18,19 @@ BG_BASE_URL=http://127.0.0.1:8765 node backgammon/tests/live-network.cjs
 BG_BASE_URL=http://127.0.0.1:8765 BG_MONEY_RULES=1 node backgammon/tests/live-network.cjs
 BG_BASE_URL=http://127.0.0.1:8765 BG_MONEY_RULES=1 node backgammon/tests/computer-game.cjs
 node backgammon/scripts/benchmark.cjs
+# Complete live game with real touch input, GNUbg, full motion and timing:
+BG_CPU_RATE=4 node backgammon/tests/mobile-fullgame.cjs
+BG_BROWSER=webkit BG_GAME_ORIENTATION=landscape node backgammon/tests/mobile-fullgame.cjs
 ```
+
+The full-game check uses isolated storage and independently replays the saved result.
+`BG_GAME_SCREENSHOTS=1` captures play and bearing-off layouts; capture pauses are
+excluded from frame-stall measurements. Reports separate first-frame response,
+position updates, and confirmation-to-decision time (including revision warnings).
+Chromium's optional CPU slowdown is a stress test, not a physical-phone benchmark.
+Initial compulsory checker playback waits for the rolled dice to settle; taps during
+that presentation cannot consume a different die. Equity updates reuse the rail's
+geometry until a resize or settings change instead of forcing SVG layout on each tap.
 
 Tests explicitly choose Beginner mode when exercising select-then-move controls; other fixtures retain the Advanced default. `tests/play-helpers.cjs` seeds both computer HMAC dice and same-device dice. Opening tests advance the browser clock through each reveal, automatic ties and first-turn start, and check refresh preserves committed rolls. `BG_MODULES=checker-ux,opening-hints` selects focused modules; add `BG_KEEP_GOING=1` to collect independent failures (the command still exits nonzero). Full runs print each module's start and pass status, and include the focused Play controls.
 

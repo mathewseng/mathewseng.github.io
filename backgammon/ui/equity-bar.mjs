@@ -57,6 +57,7 @@ export class EquityBar {
     const changed = () => {
       this.enabled = settings().equityBar === true;
       this.refresh();
+      this.schedulePosition();
     };
     addEventListener("bg-settings", changed, options);
     addEventListener("storage", changed, options);
@@ -102,25 +103,31 @@ export class EquityBar {
       c = this.board.container.getBoundingClientRect();
     const width = Math.min(r.width, (r.height * 876) / 660),
       height = (width * 660) / 876;
+    let geometry;
     if (this.portrait.matches) {
-      Object.assign(rail.style, {
+      geometry = {
         left: `${r.left - c.left + (r.width - width) / 2}px`,
         top: `${r.top - c.top + (r.height + height) / 2 + 4}px`,
         width: `${width}px`,
         height: "",
-      });
-      return;
+      };
+    } else {
+      rail.style.width = "";
+      geometry = {
+        width: "",
+        left: `${r.left - c.left + (r.width - width) / 2 - rail.offsetWidth - 4}px`,
+        top: `${r.top - c.top + (r.height - height) / 2}px`,
+        height: `${height}px`,
+      };
     }
-    rail.style.width = "";
-    Object.assign(rail.style, {
-      left: `${r.left - c.left + (r.width - width) / 2 - rail.offsetWidth - 4}px`,
-      top: `${r.top - c.top + (r.height - height) / 2}px`,
-      height: `${height}px`,
-    });
+    // Both controls occupy the same reserved strip. Keep their geometry ready
+    // so toggling visibility does not need another synchronous layout read.
+    for (const node of [this.node, this.reveal]) Object.assign(node.style, geometry);
+    this.positioned = true;
   }
   schedulePosition() {
-    // State, actions, and history all update in the same task. Read geometry
-    // once after those writes, not repeatedly in the middle of rebuilding DOM.
+    // Resize/settings changes invalidate geometry; equity and checker changes
+    // do not. Avoid forcing the freshly rebuilt SVG to lay out on every tap.
     if (this.positionFrame !== undefined) return;
     this.positionFrame = requestAnimationFrame(() => {
       this.positionFrame = undefined;
@@ -152,7 +159,6 @@ export class EquityBar {
       this.node.title = reason;
     }
     this.node.setAttribute("aria-label", this.node.title);
-    this.schedulePosition();
   }
   refresh() {
     this.toggle.setAttribute("aria-pressed", String(this.enabled));
@@ -160,7 +166,7 @@ export class EquityBar {
     this.reveal.hidden = this.enabled;
     // Reserve the same strip for the reveal handle so taps never shift the board.
     this.board.container.classList.add("has-equity-bar");
-    this.schedulePosition();
+    if (!this.positioned) this.schedulePosition();
     if (!this.enabled) {
       if (this.key || this.engine.worker) this.stop();
       return;
@@ -205,7 +211,6 @@ export class EquityBar {
     }
     const key = positionKey(state) + JSON.stringify([preset, submitted]);
     if (this.key === key) {
-      this.schedulePosition();
       if (ready || this.reading) this.paint("ready", ready || this.reading);
       return;
     }

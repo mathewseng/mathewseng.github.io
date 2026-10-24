@@ -12,7 +12,8 @@ const stats = values => {
 
 async function fullGame(browser, base, out, name) {
   fs.mkdirSync(out,{recursive:true});
-  const context = await browser.newContext({viewport:{width:390,height:844},hasTouch:true,
+  const viewport=process.env.BG_GAME_ORIENTATION==='landscape'?{width:844,height:390}:{width:390,height:844};
+  const context = await browser.newContext({viewport,hasTouch:true,
     isMobile:name!=='firefox',deviceScaleFactor:2,reducedMotion:'no-preference'});
   const page=await context.newPage(), errors=[], turns=[];
   page.on('pageerror',error=>errors.push(error.message));
@@ -25,7 +26,7 @@ async function fullGame(browser, base, out, name) {
         release:p.release,version:p.version};
     }).catch(()=>null);
     const report={recordedAt:new Date().toISOString(),base,browser:`${name} ${browser.version()}`,
-      viewport:{width:390,height:844},cpuSlowdown:name==='chromium'?Number(process.env.BG_CPU_RATE||1):1,
+      viewport,cpuSlowdown:name==='chromium'?Number(process.env.BG_CPU_RATE||1):1,
       completed,turns,game:latest,errors,timing};
     if(timing)report.summary={
       tapToFrame:stats(timing.actions.map(a=>a.frameMs)),
@@ -33,6 +34,7 @@ async function fullGame(browser, base, out, name) {
         [kind,stats(timing.actions.filter(a=>a.kind===kind).map(a=>a.frameMs))])),
       actionToPosition: Object.fromEntries([...new Set(timing.actions.map(a=>a.kind))].map(kind=>
         [kind,stats(timing.actions.filter(a=>a.kind===kind).map(a=>a.positionMs))])),
+      confirmToDecision:stats(timing.actions.filter(a=>a.kind==='confirm').map(a=>a.feedbackMs)),
       stalls:stats(timing.frames.map(f=>f.ms)),longTasks:stats(timing.tasks.map(t=>t.ms)),
       renders:stats(timing.renders.map(r=>r.ms)),
       slowestFrames:[...timing.frames].sort((a,b)=>b.ms-a.ms).slice(0,20)};
@@ -67,7 +69,7 @@ async function fullGame(browser, base, out, name) {
         const action=p.actions.at(-1);
         if(this===p.d&&action&&action.positionMs===undefined&&
           (this.state.sequence!==action.sequence||this.draft.length!==action.draft))
-          action.positionMs=performance.now()-action.at;
+          {action.positionMs=performance.now()-action.at;action.feedbackMs??=action.positionMs;}
         return result;
       };
       const boardRender=Board.prototype.render;
@@ -78,7 +80,11 @@ async function fullGame(browser, base, out, name) {
       const analyze=EngineClient.prototype.analyze;
       EngineClient.prototype.analyze=function(state,options={}){
         const row={at:performance.now(),sequence:state.sequence,phase:state.phase,player:state.turn,priority:options.priority};p.calls.push(row);
-        return analyze.call(this,state,options).then(result=>{
+        const onEvaluation=options.onEvaluation;
+        return analyze.call(this,state,{...options,onEvaluation:result=>{
+          if(result.type==='checker')p.results.set(result.positionKey,result);
+          onEvaluation?.(result);
+        }}).then(result=>{
           row.ms=performance.now()-row.at;row.cached=!!result.cached;row.plies=result.settings?.plies;
           if(result.type==='checker')p.results.set(result.positionKey,result);
           return result;
@@ -89,15 +95,20 @@ async function fullGame(browser, base, out, name) {
         const a={kind:p.nextAction,at:performance.now(),...context()};p.actions.push(a);p.nextAction=null;
         requestAnimationFrame(()=>a.frameMs=performance.now()-a.at);
       },true);
-      let last=performance.now();
+      new MutationObserver(()=>{
+        const action=p.actions.at(-1);
+        if(action?.kind==='confirm'&&action.feedbackMs===undefined&&document.querySelector('dialog[open]'))
+          action.feedbackMs=performance.now()-action.at;
+      }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
+      let last=performance.now();p.pauseUntil=0;
       function frame(now){
         if(p.endAt)return;
-        if(now-last>34)p.frames.push({at:now,ms:now-last,...context()});
+        if(!p.capture&&now>p.pauseUntil&&now-last>34)p.frames.push({at:now,ms:now-last,...context()});
         last=now;requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
       if(PerformanceObserver.supportedEntryTypes.includes('longtask'))new PerformanceObserver(list=>{
-        for(const e of list.getEntries())p.tasks.push({at:e.startTime,ms:e.duration,...context()});
+        for(const e of list.getEntries())if(!p.capture&&e.startTime>p.pauseUntil)p.tasks.push({at:e.startTime,ms:e.duration,...context()});
       }).observe({type:'longtask'});
     });
     if(process.env.BG_EXPECT_RELEASE)assert.equal(await page.evaluate(()=>mobileGame.release),process.env.BG_EXPECT_RELEASE,
@@ -110,6 +121,15 @@ async function fullGame(browser, base, out, name) {
     await tap('start',page.locator('#start-match'));
     const deadline=Date.now()+Number(process.env.BG_GAME_TIMEOUT_MS||1200000);
     let lastSequence=-1, chosenAt=0, lastActionAt=Date.now(), rollTapped=-1;
+    const captured=new Set();
+    const capture=async stage=>{
+      if(!process.env.BG_GAME_SCREENSHOTS||captured.has(stage))return;
+      captured.add(stage);
+      await page.evaluate(()=>{mobileGame.capture=true;});
+      await page.screenshot({path:path.join(out,`${name}-${stage}.png`)});
+      await page.evaluate(()=>{mobileGame.capture=false;mobileGame.pauseUntil=performance.now()+150;});
+      await page.waitForTimeout(160);
+    };
     while(Date.now()<deadline){
       const state=await page.evaluate(()=>{
         const p=mobileGame,d=p.d;
@@ -140,6 +160,7 @@ async function fullGame(browser, base, out, name) {
         await page.waitForTimeout(250);continue;
       }
       if(!state.opening&&!state.moving&&state.enabled&&state.state?.phase==='move'&&Date.now()-chosenAt>800){
+        await capture(state.state.off.some(Boolean)?'bearing-off':'playing');
         if(state.confirm){await tap('confirm',page.locator('#confirm'));lastActionAt=Date.now();await page.waitForTimeout(200);continue;}
         const target=await page.evaluate(()=>{
           const {d,rules,results}=mobileGame;

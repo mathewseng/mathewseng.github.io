@@ -231,6 +231,13 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       st.saveSettings({ orientation: 0 });
       dispatchEvent(new Event("bg-settings"));
     });
+    await page.waitForTimeout(100);
+    await page.evaluate(async()=>{
+      const {EquityBar}=await import('/backgammon/ui/equity-bar.mjs');
+      const position=EquityBar.prototype.position;
+      window.equityPositionReads=0;
+      EquityBar.prototype.position=function(...args){equityPositionReads++;return position.apply(this,args);};
+    });
     await page.keyboard.press("1");
     await page.keyboard.press("e");
     await page.locator('#equity-bar[data-state="unavailable"]').waitFor();
@@ -240,6 +247,8 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       await page.locator("#equity-bar").getAttribute("title"),
       /Your choice/,
     );
+    await page.waitForTimeout(100);
+    assert.equal(await page.evaluate(()=>equityPositionReads),0,'moves and equity updates do not remeasure an unchanged board');
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("x");
     await page.locator('#equity-bar[data-state="ready"]').waitFor();

@@ -138,6 +138,7 @@ let config = {
   lastMotion = "",
   renderedGameId = null,
   assistanceJob = null,
+  automaticDraft = null,
   lastUndoNotice = null,
   epoch = 0;
 const barAutoRoll = new BarAutoRoll();
@@ -781,6 +782,7 @@ function render() {
     !botBusy &&
     !committing &&
     !assistanceJob &&
+    automaticDraft?.source !== s &&
     !opening.active &&
     s.phase === "move" &&
     (m.reviewingTurn || (!certainBearoff(s) && !forcedTurn(s)));
@@ -903,30 +905,46 @@ function autoDraft() {
   if (!forced.steps.length && !forced.replacement) return;
   const signature = JSON.stringify(draft.draft),
     id = model()?.id;
-  queueMicrotask(() => {
-    if (
-      model()?.id !== id ||
-      state() !== source ||
-      JSON.stringify(draft.draft) !== signature ||
-      !draft.enabled ||
-      draft.preview ||
-      committing ||
-      assistanceJob ||
-      !myTurn(source)
-    )
-      return;
-    const before = draft.current();
-    draft.draft = [...(forced.replacement || draft.draft), ...forced.steps];
-    draft.selected = null;
-    draft.hint = forced.complete
-      ? "Draft complete. Confirm or revise your move."
-      : "Forced step played. Choose your next move.";
-    draft.render();
-    if (forced.replacement) ui.board.animateRestore(before, draft.current(), "move");
-    else ui.board.playTurn(before, forced.steps);
-    actions();
-    detailDraft();
-    persist();
+  const job = automaticDraft = {source, id};
+  // Let the rolled dice settle before moving compulsory checkers. Previously
+  // three board renders ran in the roll's microtask, dropping animation frames.
+  draft.enabled = false;
+  ui.board.options.interactive = false;
+  actions();
+  queueMicrotask(async () => {
+    try {
+      await ui.board.waitForPresentation();
+      if (!document.hidden) await new Promise(resolve =>
+        requestAnimationFrame(() => setTimeout(resolve, 0)));
+      if (
+        automaticDraft !== job ||
+        model()?.id !== id ||
+        state() !== source ||
+        JSON.stringify(draft.draft) !== signature ||
+        draft.preview ||
+        committing ||
+        assistanceJob ||
+        !myTurn(source)
+      )
+        return;
+      automaticDraft = null;
+      draft.enabled = true;
+      const before = draft.current();
+      draft.draft = [...(forced.replacement || draft.draft), ...forced.steps];
+      draft.selected = null;
+      draft.hint = forced.complete
+        ? "Draft complete. Confirm or revise your move."
+        : "Forced step played. Choose your next move.";
+      draft.render();
+      if (forced.replacement) ui.board.animateRestore(before, draft.current(), "move");
+      else ui.board.playTurn(before, forced.steps);
+      actions();
+      detailDraft();
+      persist();
+    } finally {
+      // A reset, history jump or settings change may supersede this playback.
+      if (automaticDraft === job) { automaticDraft = null; render(); }
+    }
   });
 }
 function closedOutKey(s) {
@@ -1600,7 +1618,7 @@ function renderActions() {
       );
     return;
   }
-  const mine = myTurn(s) && !botBusy && !committing && !assistanceJob;
+  const mine = myTurn(s) && !botBusy && !committing && !assistanceJob && automaticDraft?.source !== s;
   if (assistanceJob?.kind === "submit") {
     $("message").textContent =
       `Checking your decision · ${searchName(config.reviewStrength || "auto")}…`;
@@ -2547,6 +2565,7 @@ function unlockDraft() {
     !committing &&
     !opening.active &&
     !assistanceJob;
+  if (automaticDraft?.source === state()) draft.enabled = false;
   draft.render();
   actions();
   detailDraft();
