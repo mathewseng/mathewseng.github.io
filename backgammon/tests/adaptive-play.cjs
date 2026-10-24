@@ -9,9 +9,10 @@ module.exports=async function adaptivePlay(browser,base,out,name){
   // Exercise live adaptive search; money openings can use a published XG
   // reference with no search ply count. Reference dispatch is tested separately.
   await page.getByLabel('Match length',{exact:true}).selectOption('7');
-  await page.evaluate(async()=>{const {EngineClient}=await import('/backgammon/engine/client.mjs');const original=EngineClient.prototype.analyze;window.engineTrace=[];EngineClient.prototype.analyze=function(state,options={}){return original.call(this,state,options).then(result=>{engineTrace.push({turn:state.turn,phase:state.phase,preset:options.preset||'quick',submitted:!!options.submitted,plies:result.settings?.plies,budget:result.budget?.reason,error:result.error});return result;});};});
+  await page.evaluate(async()=>{const {EngineClient}=await import('/backgammon/engine/client.mjs');const original=EngineClient.prototype.analyze;window.engineTrace=[];EngineClient.prototype.analyze=function(state,options={}){return original.call(this,state,options).then(result=>{engineTrace.push({turn:state.turn,phase:state.phase,preset:options.preset||'quick',submitted:!!options.submitted,displayOnly:!!options.displayOnly,plies:result.settings?.plies,budget:result.budget?.reason,error:result.error});return result;});};});
   await page.locator('#start-match').click();await require('./play-helpers.cjs').openingComplete(page);
-  const started=Date.now();await page.locator('#hint').click();await page.locator('[data-best-move]').waitFor({timeout:120000});
+  await page.locator('#equity-bar[data-state="ready"]').waitFor({timeout:15000});
+  const started=Date.now();await page.locator('#hint').click();await page.locator('#undo-play-best').waitFor({timeout:120000});
   const hintMs=Date.now()-started;
   assert.ok((await page.evaluate(()=>engineTrace)).some(r=>r.preset==='auto'&&r.plies>=3));
   await page.locator('#undo-play-best').click();
@@ -51,12 +52,12 @@ module.exports=async function adaptivePlay(browser,base,out,name){
   await page.locator('dialog .close').click();
   await require('./play-helpers.cjs').roll(page);
   await page.locator('#hint').waitFor();await page.locator('#hint').click();
-  await page.locator('[data-best-move]').waitFor({timeout:120000});
+  await page.locator('#undo-play-best').waitFor({timeout:120000});
   assert.ok((await page.evaluate(()=>engineTrace)).some(r=>r.preset==='standard'&&r.plies===1),'fixed hint stays at exactly 1 ply');
   await page.locator('#undo-play-best').click();
   const fixedDeadline=Date.now()+30000;
-  while(Date.now()<fixedDeadline && !(await page.evaluate(()=>engineTrace.some(r=>r.turn===1&&r.phase==='move'&&r.preset==='quick'&&r.plies===0)))) await page.waitForTimeout(100);
-  assert.ok(await page.evaluate(()=>engineTrace.some(r=>r.turn===1&&r.phase==='move'&&r.preset==='quick'&&r.plies===0)),'fixed bot stays at exactly 0 ply');
+  while(Date.now()<fixedDeadline && !(await page.evaluate(()=>engineTrace.some(r=>r.turn===1&&r.phase==='move'&&r.preset==='quick'&&!r.displayOnly&&r.plies===0)))) await page.waitForTimeout(100);
+  assert.ok(await page.evaluate(()=>engineTrace.some(r=>r.turn===1&&r.phase==='move'&&r.preset==='quick'&&!r.displayOnly&&r.plies===0)),'fixed bot stays at exactly 0 ply');
   assert.deepEqual(errors,[]);return{hintMs,evaluations,trace:await page.evaluate(()=>engineTrace),scale};
  }finally{await context.close();}
 };

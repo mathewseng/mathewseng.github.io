@@ -120,6 +120,13 @@ self.onmessage = async ({ data }) => {
       }
       if (job.cancelled) throw new DOMException("Analysis cancelled.", "AbortError");
     };
+    // Fixed-depth searches also provide a prompt display-only reading. It does
+    // not resolve the requested analysis or lower the depth used to play/grade.
+    if (!request.rollout && !request.prepared && !['auto', 'quick'].includes(request.preset)) {
+      const preview = await evaluator.analyzeAsync(request.state, 'quick', request.kind, null, undefined, yieldWork);
+      postMessage({id, type:'evaluation', result:{...preview, backend:activeBackend, requestId:id}});
+      await yieldWork();
+    }
     const result = request.rollout
       ? await runRollout(
           evaluator,

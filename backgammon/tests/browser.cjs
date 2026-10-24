@@ -750,6 +750,9 @@ const server = http.createServer((req, res) => {
         (report.equityBar ||= []).push(
           await run("equity-bar", browser, base, out, browserName),
         );
+        (report.equityLatency ||= []).push(
+          await run("equity-latency", browser, base, out, browserName),
+        );
         (report.landscapeViewport ||= []).push(
           await run("landscape-viewport", browser, base, out, browserName),
         );

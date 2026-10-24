@@ -525,3 +525,133 @@ test('live equity can reuse prepared and intermediate results without resolving 
     assert.equal(client.peek(state,{preset:'auto'}).settings.plies,3);
   } finally {client.destroy();}
 });
+
+test('equity observers reuse every preset, preserve deepest/reference readings, and detach', () => {
+  const client = new EngineClient({openingBook:null});
+  const state = initialState({phase:'move',dice:[1,4]});
+  const seen = [], other = [];
+  const unsubscribe = client.subscribeReading(state, r => seen.push(r));
+  const detachOther = client.subscribeReading({...state,dice:[2,4]}, r => other.push(r));
+  const job = {key:'fixed',preset:'expert',state:{...state,dice:[4,1]}};
+  const result = {status:'complete',type:'checker',perspective:0,settings:{plies:3},candidates:[{key:'a',equity:.12}]};
+  try {
+    client.rememberReading(job, result);
+    assert.equal(seen.length,1);
+    assert.equal(client.peek(state,{preset:'auto'}),null,'actual preset-specific consumers remain isolated');
+    assert.equal(client.peek(state,{preset:null}).settings.plies,3);
+    client.rememberReading(job,{...result,settings:{plies:0}});
+    assert.equal(seen.length,1,'late shallow stage cannot replace a deeper result');
+    client.rememberReading({...job,key:'quick',preset:'quick'},{...result,settings:{plies:0}});
+    assert.equal(seen.at(-1).settings.plies,3,'another preset cannot downgrade the bar');
+    client.rememberReading({...job,key:'book'},{...result,method:'reference',settings:{plies:0}});
+    assert.equal(seen.at(-1).method,'reference');
+    client.rememberReading({...job,key:'research',preset:'research'},{...result,settings:{plies:4}});
+    assert.equal(seen.at(-1).method,'reference','published rollout takes priority over a tree estimate');
+    assert.equal(other.length,0,'different rolls never receive the reading');
+    let immediate;
+    const detach = client.subscribeReading(state, r => immediate=r);
+    assert.equal(immediate.method,'reference'); detach();
+    const count=seen.length; unsubscribe();
+    client.rememberReading(job,result);
+    assert.equal(seen.length,count);
+    detachOther();
+    assert.equal(client.readingListeners.size,0);
+  } finally {unsubscribe();detachOther();client.destroy();}
+});
+
+test('fixed-depth preview and a queued equity request share the worker without resolving play early', async () => {
+  const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+  const state=initialState({phase:'move',dice:[3,1]});
+  let resolved=false;
+  const stop=client.subscribeReading(state,()=>client.cancelWhere(j=>j.displayOnly));
+  try {
+    const full=client.analyze(state,{preset:'expert',priority:-5}).then(r=>{resolved=true;return r;});
+    await wait();const id=client.active.id;
+    const preview=client.analyze(state,{preset:'quick',priority:0,displayOnly:true});
+    const rejected=assert.rejects(preview,{name:'AbortError'});
+    assert.equal(worker.terminated,false);
+    assert.equal(client.active.id,id);
+    assert.equal(client.active.priority,-5,'a display observer must not promote speculation into uncancellable foreground work');
+    const result={status:'complete',type:'checker',perspective:0,settings:{plies:0},candidates:[]};
+    worker.reply({id,type:'evaluation',result});
+    await rejected;
+    assert.equal(resolved,false,'quick equity is not a completed fixed-depth analysis');
+    assert.equal(client.queue.length,0,'ready equity drops its unnecessary queued preview');
+    worker.reply({id,type:'result',result:{...result,settings:{plies:3}}});
+    assert.equal((await full).settings.plies,3);
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1);
+  } finally {stop();client.destroy();}
+});
+
+test('an actual Quick decision still preempts a slower same-position search', async () => {
+  const workers=[],client=new EngineClient({openingBook:null,workerFactory:()=>{
+    const w=new WorkerMock();workers.push(w);return w;
+  }});
+  const state=initialState({phase:'move',dice:[6,4]});
+  try {
+    const background=client.analyze(state,{preset:'expert',priority:-5});
+    const cancelled=assert.rejects(background,{name:'AbortError'});
+    await wait();
+    const action=client.analyze(state,{preset:'quick',priority:10});
+    await cancelled;await wait();
+    assert.equal(workers[0].terminated,true);
+    workers[1].reply({id:client.active.id,type:'result',result:{valid:true}});
+    assert.equal((await action).valid,true);
+  } finally {client.destroy();}
+});
+
+test('a real decision joining an equity preview protects it from display cancellation', async () => {
+  const worker=new WorkerMock(),client=new EngineClient({workerFactory:()=>worker,openingBook:null});
+  const state=initialState({phase:'roll'});
+  try {
+    const display=client.analyze(state,{preset:'quick',priority:0,displayOnly:true});
+    await wait();
+    const playing=client.analyze(state,{preset:'quick',priority:10});
+    client.cancelWhere(j=>j.displayOnly);
+    assert.ok(client.active);
+    assert.equal(client.active.displayOnly,false);
+    worker.reply({id:client.active.id,type:'result',result:{valid:true}});
+    assert.equal((await display).valid,true);assert.equal((await playing).valid,true);
+  } finally {client.destroy();}
+});
+
+test('a stalled book lookup does not block a new display or discard a warm native worker', async () => {
+  const worker=new WorkerMock();let finishBook;
+  const client=new EngineClient({workerFactory:()=>worker,openingBook:{
+    eligible:(_s,o)=>o.useBook,lookup:()=>new Promise(r=>{finishBook=r;})}});
+  const state=initialState({phase:'move',dice:[3,1]});
+  try {
+    const warm=client.analyze(state,{preset:'quick',useBook:false});await wait();
+    worker.reply({id:client.active.id,type:'result',result:{valid:true}});await warm;
+    const background=client.analyze(state,{preset:'auto',priority:-5});
+    const cancelled=assert.rejects(background,{name:'AbortError'});
+    const fresh={...state,dice:[4,2]};
+    const display=client.analyze(fresh,{preset:'quick',useBook:false,priority:0,displayOnly:true});
+    await cancelled;await wait();
+    assert.equal(client.active?.preset,'quick','no wait for slow book fetch');
+    assert.equal(worker.terminated,false,'idle native worker survives book cancellation');
+    finishBook({status:'complete',settings:{plies:4},candidates:[]});await wait();
+    assert.equal(client.peek(state,{preset:'auto'}),null,'late cancelled book result cannot publish');
+    worker.reply({id:client.active.id,type:'result',result:{valid:true}});
+    assert.equal((await display).valid,true);
+  } finally {client.destroy();}
+});
+
+test('a hung display-only quick search has a short bounded timeout and can retry', async t => {
+  t.mock.timers.enable({apis:['setTimeout']});
+  const workers=[],client=new EngineClient({openingBook:null,workerFactory:()=>{
+    const w=new WorkerMock();workers.push(w);return w;
+  }});
+  const state=initialState({phase:'roll'});
+  try {
+    const first=client.analyze(state,{preset:'quick',displayOnly:true});
+    const rejected=assert.rejects(first,/time limit/);
+    await new Promise(setImmediate);
+    t.mock.timers.tick(5001);await rejected;
+    assert.equal(workers[0].terminated,true);
+    const retry=client.analyze(state,{preset:'quick',displayOnly:true});
+    await new Promise(setImmediate);
+    workers[1].reply({id:client.active.id,type:'result',result:{valid:true}});
+    assert.equal((await retry).valid,true);
+  } finally {client.destroy();}
+});

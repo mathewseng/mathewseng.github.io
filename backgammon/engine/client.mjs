@@ -25,6 +25,7 @@ export class EngineClient {
     this.queue = [];
     this.cache = new Map();
     this.readings = new Map();
+    this.readingListeners = new Set();
     this.decisions = new Map();
     this.serial = 0;
     this.active = null;
@@ -78,7 +79,7 @@ export class EngineClient {
           this.fail(new Error(data.message));
         else if (this.active && data.id === this.active.id) {
           const job = this.active;
-          if (data.type === "evaluation" && job.preset === "auto" && !job.rollout) {
+          if (data.type === "evaluation" && !job.rollout) {
             job.completed = data.result;
             this.rememberReading(job, data.result);
             this.rememberDecision(job, data.result);
@@ -158,6 +159,7 @@ export class EngineClient {
       onEvaluation = () => {},
       onUnlisted = () => {},
       readyOnly = false,
+      displayOnly = false,
     } = {},
   ) {
     readyOnly = readyOnly && preset === 'auto' && !rollout;
@@ -239,6 +241,7 @@ export class EngineClient {
     if (reused) return forCaller(Promise.resolve(reused));
     const existing = [this.active, ...this.queue].find((j) => j?.key === key);
     if (existing) {
+      existing.displayOnly &&= displayOnly;
       if (readyOnly) {
         existing.readyOnly = true;
         if (existing === this.active && this.worker)
@@ -251,8 +254,8 @@ export class EngineClient {
       existing.priority = Math.max(existing.priority, priority);
       this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
       if (this.active && existing !== this.active && existing.priority > this.active.priority) {
-        if (existing.reuseHintKey === this.active.key) {
-          this.active.priority = existing.priority;
+        if (existing.reuseHintKey === this.active.key || this.sharesPreview(this.active, existing)) {
+          if (!existing.displayOnly || this.active.displayOnly) this.active.priority = existing.priority;
           if (readyOnly) this.requestReady(this.active);
         }
         else this.cancelActive("Superseded by the current request.");
@@ -279,6 +282,7 @@ export class EngineClient {
       evaluationListeners: new Set([onEvaluation]),
       unlistedListeners: new Set([onUnlisted]),
       readyOnly,
+      displayOnly,
     };
     job.promise = new Promise((resolve, reject) =>
       Object.assign(job, { resolve, reject }),
@@ -292,8 +296,8 @@ export class EngineClient {
     this.queue.push(job);
     this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
     if (this.active && priority > this.active.priority) {
-      if (reuseHintKey === this.active.key) {
-        this.active.priority = priority;
+      if (reuseHintKey === this.active.key || this.sharesPreview(this.active, job)) {
+        if (!job.displayOnly || this.active.displayOnly) this.active.priority = priority;
         if (readyOnly) this.requestReady(this.active);
       }
       else this.cancelActive("Superseded by the current request.");
@@ -303,6 +307,14 @@ export class EngineClient {
   }
   normalizedPosition(state) {
     return positionKey(state.phase === 'move' ? {...state, dice:[...state.dice].sort((a,b)=>b-a)} : state);
+  }
+  sharesPreview(active, pending) {
+    // A quick display and a deeper search of the same decision can share the
+    // first evaluation. Do not discard/reinitialize a warm worker between them.
+    return !active.cancelBook && !active.rollout && !pending.rollout &&
+      active.kind === pending.kind &&
+      ((active.displayOnly && active.preset === 'quick') || (pending.displayOnly && pending.preset === 'quick')) &&
+      this.normalizedPosition(active.state) === this.normalizedPosition(pending.state);
   }
   asReady(result) {
     return {...structuredClone(result), ...(result.budget ? {budget:{...structuredClone(result.budget), reason:'ready-to-play'}} : {})};
@@ -383,6 +395,8 @@ export class EngineClient {
   // search. They never resolve a decision early or change its search depth.
   rememberReading(job, result) {
     if (result?.status !== 'complete') return;
+    const previous = this.readings.get(job.key)?.result;
+    if (previous && this.betterReading(previous, result)) return;
     this.readings.delete(job.key);
     const value = candidate => candidate && ({key:candidate.key,equity:candidate.equity});
     // The rail needs numbers, not thousands of legal-step/probability arrays.
@@ -390,19 +404,38 @@ export class EngineClient {
       perspective:result.perspective,units:result.units,available:result.available,
       outcomes:result.outcomes,decisionOptions:result.decisionOptions,decision:result.decision,
       candidates:result.candidates?.map(value),actual:value(result.actual)};
-    this.readings.set(job.key, { position:positionKey(job.state), preset:job.preset, result:structuredClone(reading) });
+    const position = this.normalizedPosition(job.state);
+    this.readings.set(job.key, { position, preset:job.preset, result:structuredClone(reading) });
     this.trimResults(this.readings, 64, 4096, entry => entry.result);
+    for (const subscription of this.readingListeners) {
+      if (subscription.position === position) {
+        // A display observer must never interrupt an actual playing decision.
+        try { subscription.listener(this.peek(subscription.state, {preset:null, submitted:subscription.submitted})); }
+        catch (error) { console.error('Equity display update failed', error); }
+      }
+    }
+  }
+  betterReading(a, b) {
+    if (a.method === 'reference' || b.method === 'reference') return a.method === 'reference' && b.method !== 'reference';
+    return (a.settings?.plies ?? -1) > (b.settings?.plies ?? -1);
+  }
+  subscribeReading(state, listener, {submitted = null} = {}) {
+    const subscription = {state:structuredClone(state), position:this.normalizedPosition(state), submitted:structuredClone(submitted), listener};
+    this.readingListeners.add(subscription);
+    const ready = this.peek(state, {preset:null, submitted});
+    if (ready) listener(ready);
+    return () => this.readingListeners.delete(subscription);
   }
   peek(state, { preset = 'auto', submitted = null } = {}) {
     const normalize = s => positionKey(s.phase === 'move' ? {...s, dice:[...s.dice].sort((a,b)=>b-a)} : s);
     const key = normalize(state), actualKey = submitted ? boardKey(commitTurn(state, submitted)) : null;
     let best;
     for (const entry of this.readings.values()) {
-      if (entry.preset !== preset || entry.position !== key) continue;
+      if ((preset !== null && entry.preset !== preset) || entry.position !== key) continue;
       const actual = actualKey && (entry.result.actual?.key === actualKey ? entry.result.actual
         : entry.result.candidates?.find(c => c.key === actualKey));
       if (actualKey && !actual) continue;
-      if (!best || entry.result.settings.plies >= best.settings.plies) {
+      if (!best || !this.betterReading(best, entry.result)) {
         best = {...entry.result, actual:actual || undefined};
       }
     }
@@ -446,9 +479,11 @@ export class EngineClient {
       }
       if (pending.tryBook) {
         this.queue.shift(); this.active = pending;
-        const result = await this.book.lookup(pending.state, { ...pending, onUnlisted: () => {
+        const cancelled = new Promise(resolve => { pending.cancelBook = () => resolve(null); });
+        const result = await Promise.race([cancelled, this.book.lookup(pending.state, { ...pending, onUnlisted: () => {
           if (this.active === pending) for (const listener of pending.unlistedListeners) listener();
-        } });
+        } })]);
+        delete pending.cancelBook;
         if (this.active !== pending) return;
         generation = this.generation;
         if (result) {
@@ -493,6 +528,7 @@ export class EngineClient {
               "Analysis reached its time limit. Completed rollout batches can be resumed; try a shallower tree setting.",
             ),
           ),
+        job.displayOnly && job.preset === 'quick' ? 5000 :
         job.rollout || ["expert", "research", "verify"].includes(job.preset)
           ? 1800000
           : 300000,
@@ -536,7 +572,11 @@ export class EngineClient {
     clearTimeout(this.jobTimeout);
     clearTimeout(this.initTimeout);
     const job = this.active;
-    if (reuse) this.retireWorker(job);
+    if (job?.cancelBook) {
+      job.cancelBook();
+      if (!reuse) this.releaseWorker();
+    }
+    else if (reuse) this.retireWorker(job);
     else this.releaseWorker();
     const error = new DOMException(message, "AbortError");
     this.active?.reject(error);
@@ -559,6 +599,7 @@ export class EngineClient {
     this.cancelActive("Analysis cancelled.", false);
   }
   fail(error) {
+    this.active?.cancelBook?.();
     for (const j of this.queue.splice(0)) j.reject(error);
     if (this.active?.readyOnly && this.active.completed?.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies)
       this.active.resolve(this.asReady(this.active.completed));

@@ -1363,7 +1363,6 @@ function actions() {
   ui.equityBar.set({
     state: state(),
     engine: ahead ? analysis.engine : undefined,
-    preset: ahead ? config.reviewStrength || 'auto' : 'quick',
     auto: true,
     beforeDecision: true,
     blocked:
