@@ -623,3 +623,11 @@ IndexedDB version 2 adds a summary index updated transactionally with each archi
 `game-archive.test.mjs` checks segmentation and variations; `paged-history.cjs` checks interrupted migration, on-demand reads, restore, Library paging and backup compatibility in real browsers. For a sustained real-touch/real-GNUbg run, use `BG_SESSION_GAMES=12 BG_CPU_RATE=4 node backgammon/tests/mobile-session.cjs` against the assembled site. It verifies one active game in memory, every game present on disk, independent replay, bounded caches, no page reloads, and retained heap relative to the warm early-game range.
 
 The 2026-10-24 twelve-game Chromium run at 4× CPU slowdown completed in one document with no page errors, twelve saved archives and exact replay. Post-collection application JavaScript heap ranged from 9.9–12.1 MiB and ended at 11.0 MiB; the live GNUbg worker's native heap remained 64 MiB. The final active history held 74 actions, rather than all twelve games. Browser process RSS is separate and includes browser-managed allocations. This is desktop mobile emulation, not a physical-phone memory-pressure guarantee.
+
+### Compact play controls and combined move review
+
+The Play footer groups Undo turn, Hint (when available), Analysis and Controls in an evenly sized phone row, with primary decisions above it. Routine roll instructions remain on the board; non-routine status messages wrap and center above the controls. Framed skins retain internal padding, including in the landscape dock.
+
+Opening a checker review selects the best move immediately. The original position, best move and played move remain direct buttons; the board and EV-ranked alternatives share one view. Portrait places the board above the list, while landscape and desktop place them side by side. All ten alternatives remain in an independently scrolling list; no preview dropdown or move pagination is needed. Details in the dialog header retains the before/played/best figures and engine explanation.
+
+Browser coverage: `play-footer`, `review-ranked`, `review-selection`, `review-motion`, `landscape-viewport`, `mobile-layout`, `mobile-sheets`, `control-polish`, `practice`, `solution-polish`, `move-arrows`, and `hint-play-best`.

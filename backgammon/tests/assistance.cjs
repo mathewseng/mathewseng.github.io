@@ -368,15 +368,9 @@ module.exports = async function assistanceUX(
     const reviewed = page.locator('[data-decision-type="checker"]').first();
     const opponent = await reviewed.getAttribute("data-history-side") === "opponent";
     await reviewed.click();
-    if (await page.locator(".decision-tabs").count())
-      await page.locator('.decision-tabs [data-view="board"]').click();
-    const preview = page.getByLabel("Preview evaluated move", {exact:true});
-    const playedValue = await preview.locator("option").evaluateAll(
-      (options, labels) => options.find(o => labels.some(label => o.textContent.includes(`· ${label}`)))?.value,
-      opponent ? ["Opponent’s move", "Best/their move"] : ["Your move", "Best/your move"],
-    );
-    assert.ok(playedValue !== undefined, "review labels the actual player's move in its picker");
-    await preview.selectOption(playedValue);
+    const played = page.locator('.decision-choices button').filter({hasText:opponent ? /Opponent’s move|Best\/their move/ : /Your move|Best\/your move/});
+    assert.equal(await played.count(),1,'review labels the actual player’s move');
+    await played.click();
     await shot("review-phone");
     await close();
     await page.locator("#panel-toggle").click();
@@ -467,6 +461,10 @@ module.exports = async function assistanceUX(
       await releaseHeld();
       assert.deepEqual((await saved()).game.state, beforeCancel.game.state);
       assetMode = "fail";
+      // Cancel retains the initialized worker. Use a fresh page for an actual
+      // failed download instead of assuming cancellation restarts GNUbg.
+      await page.goto(base + "/backgammon/play/");
+      await page.locator("#resume-match").click();
       await page.locator("#hint").click();
       await page
         .getByRole("button", { name: "Retry hint", exact: true })
@@ -515,6 +513,8 @@ module.exports = async function assistanceUX(
       assert.deepEqual((await saved()).game.state, pending.game.state);
       await releaseHeld();
       assetMode = "fail";
+      await page.goto(base + "/backgammon/play/");
+      await page.locator("#resume-match").click();
       await page.locator("#confirm").click();
       await page.waitForFunction(() => document.querySelector('#pending-move-loss')?.textContent.includes('EV unavailable'));
       assert.deepEqual((await saved()).game.state, pending.game.state);

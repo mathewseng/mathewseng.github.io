@@ -802,7 +802,6 @@ button kbd.keycap,
 .touch-moves,
 .touch-destinations,
 .study-strip,
-.review-preview-controls,
 #analysis-jump {
   display: none;
 }
@@ -1958,6 +1957,25 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   padding-inline: 10px;
 }
 
+/* Review belongs with the secondary controls, not beside the turn message. */
+.play-page.live-table .help-cluster #analysis-jump {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent);
+}
+
+.play-page.live-table .help-cluster .action-help {
+  flex: none;
+}
+
+.play-page.live-table .help-cluster > .btn,
+.play-page.live-table .help-cluster .action-help > .btn {
+  justify-content: center;
+  text-align: center;
+  line-height: 1.25;
+  min-height: 44px;
+}
+
 .play-page .action-main {
   position: relative;
   flex-wrap: nowrap;
@@ -1999,6 +2017,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .play-page.live-table .action-area {
   overscroll-behavior-y: auto;
+  padding: 8px;
 }
 
 .play-page.live-table .panel-toggle,
@@ -2956,7 +2975,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
       library
    ====================================================================== */
 
-/* Decision review: a bounded, non-scrolling dialog with three views. */
+/* Decision review: board and scrollable comparison, with optional details. */
 .decision-dialog[open] {
   width: min(1440px, calc(100vw - 32px));
   max-width: calc(100vw - 16px);
@@ -2986,13 +3005,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   display: none;
 }
 
-.decision-dialog .decision-tabs {
-  flex: none;
-  gap: 6px;
-}
-
-/* The body is one stretched grid row, so the board column fills the dialog
-   height even when the comparison column is hidden (Board view). */
+/* The board and comparison share the available dialog height. */
 .decision-dialog .dialog-body {
   flex: 1;
   grid-template-rows: minmax(0, 1fr);
@@ -3031,6 +3044,41 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   flex: 1;
   width: 100%;
   min-height: 0;
+}
+
+.decision-dialog[data-decision-kind="checker"] .decision-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.decision-dialog[data-decision-kind="checker"] .decision-content > :is(h3, .decision-best) {
+  display: none;
+}
+
+.decision-dialog .review-moves {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.review-move-rows {
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 2px;
+}
+
+.decision-dialog .review-move { min-height: 44px; }
+
+.decision-dialog .decision-choices { flex-wrap: wrap; flex-shrink: 0; }
+.decision-dialog .decision-choices .btn {
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .decision-board svg {
@@ -3095,13 +3143,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   padding: 8px 0;
 }
 
-.decision-dialog[data-review-view="board"] .decision-content,
 .decision-dialog[data-review-view="notes"] .decision-content,
 .decision-dialog[data-review-view="notes"] .decision-position {
   display: none;
 }
 
-.decision-dialog[data-review-view="board"] .decision-layout,
 .decision-dialog[data-review-view="notes"] .decision-layout {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -3117,7 +3163,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   overflow-wrap: anywhere;
 }
 
-.decision-tabs .btn[aria-selected="true"],
 .history-tree-tablist .btn[aria-selected="true"] {
   border-color: var(--accent);
   background: var(--accent-soft);
@@ -4915,16 +4960,16 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.desktop-table .stage {
-    grid-template-rows: auto minmax(180px, 1fr) auto 72px;
+    grid-template-rows: auto minmax(180px, 1fr) auto auto;
   }
 
   .play-page.desktop-table .action-area {
     position: relative;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: 22px 46px;
-    gap: 0 16px;
+    grid-template-rows: minmax(22px, auto) auto;
+    gap: 6px 16px;
     align-items: center;
-    padding: 4px 0 0;
+    padding: 8px;
     overflow: visible;
   }
 
@@ -5384,9 +5429,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     gap: 0;
   }
 
-  .decision-dialog[data-review-view="decision"] .decision-position {
-    display: none;
-  }
 
   .decision-dialog .decision-content {
     gap: 7px;
@@ -5413,8 +5455,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     gap: 4px;
   }
 
-  .decision-dialog .decision-choices .btn,
-  .decision-dialog .decision-tabs .btn {
+  .decision-dialog .decision-choices .btn {
     padding-inline: 8px;
     font-size: var(--t-sm);
   }
@@ -5685,7 +5726,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.live-table .stage {
-    grid-template-rows: auto max-content auto 60px minmax(110px, 1fr);
+    grid-template-rows: auto max-content auto 60px minmax(64px, 1fr);
   }
 
   .play-page.live-table .board-workspace {
@@ -5721,94 +5762,76 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding: 8px 16px;
   }
 
+  /* A compact footer: readable status above one evenly spaced utility row.
+     Align the panel itself to the bottom so themed surfaces do not stretch
+     across the spare space between it and the board. */
   .play-page.live-table .action-area {
+    display: flex;
+    flex-direction: column;
     grid-row: 5;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto auto;
-    align-content: end;
-    gap: 4px 8px;
-    padding: 8px 0 0;
+    align-self: end;
+    gap: 8px;
+    padding: 8px;
     border-top: 1px solid var(--line);
     overflow: visible;
   }
 
-  /* One status line on phones: the board must keep its full height, so a
-     long status or draft line ellipsizes instead of adding a row (the live
-     region still announces the whole text). */
-  .play-page.live-table .action-message {
-    grid-column: 1 / -1;
-    grid-row: 2;
+  .play-page.live-table .action-message:not(.routine-status) {
     min-width: 0;
-    margin-bottom: 2px;
-    overflow: hidden;
-    font-size: var(--t-sm);
-    line-height: 1.4;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  /* Routine guidance ("Use all playable dice, then confirm.") takes the slot
-     beside the analysis jump instead of leaving that row half empty; the
-     one-tap move list keeps the slot on tall phones. */
-  .play-page.live-table .action-area:not(:has(.touch-moves:not([hidden]))) .action-message.routine-status {
-    position: static;
-    grid-column: 1;
-    grid-row: 1;
-    align-self: center;
-    width: auto;
-    height: auto;
+    min-height: 0;
     margin: 0;
-    clip-path: none;
-    color: var(--muted);
+    font-size: var(--t-sm);
+    line-height: 1.45;
+    text-align: center;
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
   }
 
   .play-page.live-table .action-main {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    flex-direction: column;
-    gap: 6px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 8px;
     padding: 0;
   }
 
   .play-page.live-table #actions {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 6px;
+    margin: 0;
+    width: 100%;
   }
 
   .play-page.live-table #actions > .btn,
   .play-page.live-table #actions > a {
-    flex: 1;
+    flex: 1 1 30%;
+    min-width: 0;
     min-height: 48px;
-    padding-inline: 10px;
-    font-size: var(--t-md);
+    padding: 8px;
+    font-size: var(--t-sm);
     white-space: normal;
   }
 
   .play-page.live-table .help-cluster {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 6px;
+    width: 100%;
   }
 
   .play-page.live-table .help-cluster .action-help {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 4px;
-    padding: 0;
-    overflow: visible;
+    display: contents;
   }
 
+  .play-page.live-table .help-cluster > .btn,
   .play-page.live-table .help-cluster .action-help > .btn {
-    flex: 1;
-    min-width: 44px;
-    min-height: 44px;
-    padding-inline: 6px;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    height: 100%;
+    padding: 8px 4px;
     font-size: var(--t-sm);
     white-space: normal;
-  }
-
-  .play-page.live-table .help-cluster #undo-turn {
-    flex: 1.5;
   }
 
   .play-page.live-table .undo-turn-label-wide {
@@ -5819,30 +5842,9 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     display: inline;
   }
 
-  .play-page.live-table #all-controls {
-    font-size: var(--t-sm);
-    padding-inline: 8px;
-  }
-
-  .play-page.live-table .draft-line {
-    grid-column: 1;
-    grid-row: 1;
-    align-self: center;
-    min-width: 0;
-    overflow: hidden;
-    font-size: var(--t-sm);
-    line-height: 1.4;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  .play-page.live-table #analysis-jump {
-    display: inline-flex;
-    grid-column: 2;
-    grid-row: 1;
-    padding-inline: 8px;
-    color: var(--accent);
-    font-size: var(--t-sm);
+  .play-page.live-table .touch-moves,
+  .play-page.live-table .touch-destinations {
+    order: -1;
   }
 
   .touch-moves:not([hidden]) {
@@ -5939,52 +5941,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 
-  /* The review board keeps its own preview controls on small screens. */
-  .decision-dialog .review-preview-controls:has(.review-preview-strip:not([hidden])) {
-    display: block;
-    flex: none;
-    min-width: 0;
-  }
-
-  .decision-dialog .review-preview-strip:not([hidden]) {
-    display: grid;
-    gap: 6px;
-    padding-top: 8px;
-    border-top: 1px solid var(--line);
-  }
-
-  .decision-dialog .study-preview-controls {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    gap: 6px;
-  }
-
-  .decision-dialog .study-preview-controls .btn {
-    min-height: 44px;
-    padding: 8px;
-    font-size: 20px;
-  }
-
-  .decision-dialog .study-preview-controls select {
-    min-width: 0;
-    max-width: 100%;
-    min-height: 44px;
-    overflow: hidden;
-    font-size: 1rem;
-    text-overflow: ellipsis;
-  }
-
-  .decision-dialog .study-preview-value {
-    min-height: 36px;
-    font-size: var(--t-sm);
-    line-height: 1.3;
-  }
-
-  .decision-position:has(.review-preview-strip:not([hidden])) > .decision-choices,
-  .decision-position:has(.review-preview-strip:not([hidden])) > .decision-caption {
-    display: none;
-  }
-
   /* Bottom sheets open near the thumb and keep Close fixed. */
   .dialog.drawer .dialog-head {
     padding-bottom: 10px;
@@ -6066,7 +6022,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.live-table:has(.board-slot.has-equity-bar) .stage {
     height: 100%;
     min-height: 0;
-    grid-template-rows: auto minmax(140px, 1fr) auto 60px minmax(110px, auto);
+    grid-template-rows: auto minmax(140px, 1fr) auto 60px auto;
   }
   .play-page.live-table .board-workspace > .board-slot.has-equity-bar {
     box-sizing: border-box;
@@ -6153,10 +6109,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
 
   .decision-dialog .decision-values thead th {
     white-space: nowrap;
-  }
-
-  .decision-dialog .decision-tabs .btn {
-    padding-inline: 6px;
   }
 
   .review-cube-choice {
@@ -6681,7 +6633,8 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     align-content: start;
     height: calc(100% - 156px);
     max-height: calc(100% - 156px);
-    padding: 0;
+    padding: 2px 6px;
+    gap: 4px 6px;
   }
   .play-page.live-table .action-area .action-main,
   .play-page.live-table .help-cluster,
@@ -6689,8 +6642,9 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.live-table .action-area .btn { width: 100%; min-width: 0; min-height: 44px; padding: 6px; }
   .play-page.live-table #undo-turn { grid-column: 1; grid-row: 1; }
   .play-page.live-table #hint { grid-column: 2; grid-row: 1; }
-  .play-page.live-table #all-controls { grid-column: 1; grid-row: 2; }
-  .play-page.live-table #analysis-jump { grid-column: 2; grid-row: 2; }
+  .play-page.live-table #analysis-jump { grid-column: 1; grid-row: 2; }
+  .play-page.live-table #all-controls { grid-column: 2; grid-row: 2; }
+  .play-page.live-table .action-area:not(:has(#hint)) #undo-turn { grid-column: 1 / -1; }
   .play-page.live-table .undo-turn-label-wide { display: none; }
   .play-page.live-table .undo-turn-label-phone { display: inline; }
   .play-page.live-table .action-area #actions:empty { display: none; }
@@ -6748,9 +6702,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding: 12px;
   }
 
-  .decision-dialog[data-review-view="decision"] .decision-position {
-    display: none;
-  }
 
   .decision-dialog .decision-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -6803,50 +6754,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     display: inline;
     margin-left: 8px;
     font-size: var(--t-xs);
-  }
-
-  .decision-dialog[data-review-view="board"] .decision-position:has(.review-preview-strip:not([hidden])) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
-    gap: 12px;
-  }
-
-  .decision-dialog .review-preview-controls:has(.review-preview-strip:not([hidden])) {
-    display: block;
-    flex: none;
-    align-self: center;
-    min-width: 0;
-  }
-
-  .decision-dialog .review-preview-strip:not([hidden]) {
-    display: grid;
-    gap: 6px;
-  }
-
-  .decision-dialog .study-preview-controls {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    gap: 6px;
-  }
-
-  .decision-dialog .study-preview-controls .btn {
-    min-height: 44px;
-    padding: 8px;
-    font-size: 20px;
-  }
-
-  .decision-dialog .study-preview-controls select {
-    min-width: 0;
-    max-width: 100%;
-    min-height: 44px;
-    overflow: hidden;
-    font-size: 1rem;
-    text-overflow: ellipsis;
-  }
-
-  .decision-position:has(.review-preview-strip:not([hidden])) > .decision-choices,
-  .decision-position:has(.review-preview-strip:not([hidden])) > .decision-caption {
-    display: none;
   }
 
   .history-dialog[open] {
@@ -7138,4 +7045,52 @@ html.skin-shader .docs-toc--sticky {
   border-radius: 50%;
   background: var(--skin-c0, var(--ink));
   box-shadow: 14px 0 0 var(--skin-c1, var(--accent));
+}
+
+/* Review always pairs the board with its comparison. Keep the board near the
+   header and let the ranked list consume spare space, not an empty SVG slot. */
+
+@media (max-width: 700px) and (min-height: 501px) {
+  .decision-dialog .decision-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+  }
+  .decision-dialog .decision-position { gap: 6px; }
+  .decision-dialog .decision-board {
+    flex: none;
+    height: min(calc((100vw - 48px) * 660 / 876), max(120px, calc(100dvh - 420px)));
+  }
+  .decision-dialog .decision-choices { gap: 6px; }
+  .decision-dialog .decision-choices .btn { flex: 1; padding: 6px; }
+  .decision-dialog .decision-caption { display: none; }
+  .decision-dialog .decision-content { min-height: 0; overflow-y: auto; }
+  .decision-dialog[data-decision-kind="checker"] .decision-content { overflow: hidden; gap: 4px; }
+  .decision-dialog .decision-content > .muted.small { font-size: var(--t-xs); }
+  .decision-dialog .decision-content > .decision-best { display: none; }
+  .decision-dialog .review-move-heading { padding-block: 4px; }
+  .decision-dialog[data-review-view="notes"] .decision-layout { grid-template-rows: minmax(0, 1fr); }
+}
+
+@media (max-height: 500px) and (min-width: 650px) {
+  .decision-dialog .decision-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(290px, 1fr);
+    gap: 12px;
+  }
+  .decision-dialog .decision-content { display: flex; flex-direction: column; overflow-y: auto; gap: 4px; }
+  .decision-dialog[data-decision-kind="checker"] .decision-content { overflow: hidden; }
+  .decision-dialog .decision-content > :is(h3, .decision-best) { display: none; }
+  .decision-dialog .decision-content > .muted.small { font-size: var(--t-xs); }
+  .decision-dialog .decision-position { gap: 4px; }
+  .decision-dialog .decision-choices .btn { flex: 1; padding: 4px; font-size: var(--t-xs); }
+  .decision-dialog .decision-caption { display: none; }
+  .decision-dialog .review-move-heading { padding-block: 2px; }
+  .decision-dialog[data-review-view="notes"] .decision-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.decision-dialog .dialog-header { gap: 8px; }
+.decision-dialog .decision-details-toggle { margin-left: auto; min-height: 44px; }
+@media (max-width: 700px) {
+  .decision-dialog .dialog-header h2 { font-size: 17px; }
+  .decision-dialog .decision-details-toggle { padding-inline: 8px; font-size: var(--t-sm); }
 }

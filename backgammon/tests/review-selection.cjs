@@ -39,23 +39,16 @@ module.exports = async function reviewSelection(browser, base, out, name) {
     assert.notEqual(colors.find(c=>c.active==="true").bg,colors.find(c=>c.active==="false").bg,"active preview has an unmistakable filled surface");
     for(const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1024,768],[1366,768],[1440,900]]) {
       await page.setViewportSize({width,height});
-      await page.getByRole("tab",{name:"Comparison",exact:true}).click();
+
       if([390,1366].includes(width)) await page.screenshot({path:path.join(out,`${name}-review-selection-comparison-${width}.png`)});
-      await page.getByRole("tab",{name:"Board",exact:true}).click();
+
       await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
-      const picker=page.getByLabel("Preview evaluated move",{exact:true});
-      if(await picker.isVisible()) {
-        await picker.selectOption("2");
-        assert.equal(await active.textContent(),"Your move");
-        assert.match(await page.locator('.review-preview-strip .study-strip-heading').textContent(),/^Your move · /);
-        assert.equal(await picker.inputValue(),"2");
-        await picker.selectOption("-1");
-        assert.equal(await active.textContent(),"Position");
-        assert.match(await page.locator('.review-preview-strip .study-strip-heading').textContent(),/^Position · /);
-        await picker.selectOption("0");
-        assert.match(await picker.locator("option:checked").textContent(),/Best/);
-        assert.match(await page.locator('.review-preview-strip .study-strip-heading').textContent(),/^Best move · /);
-      }
+      assert.equal(await page.locator('.decision-dialog select').count(),0);
+      await page.locator('.review-move[data-rank="3"]').click();
+      assert.equal(await active.textContent(),'Your move');
+      await page.getByRole('button',{name:'Position',exact:true}).click();
+      assert.equal(await active.textContent(),'Position');
+      await page.locator('.review-move[data-rank="1"]').click();
       assert.equal(await active.textContent(),"Best move");
       const fits=await page.locator('.decision-dialog').evaluate(d=>({
         x:d.scrollWidth<=d.clientWidth+1, y:d.scrollHeight<=d.clientHeight+1,
@@ -77,6 +70,6 @@ module.exports = async function reviewSelection(browser, base, out, name) {
     await page.locator(".decision-dialog").waitFor({state:"detached"});
     }
     assert.deepEqual(errors,[]);
-    return {browser:name,realEngine:true,viewports:9,buttons:true,rankedRows:true,mobilePicker:true,sharedBest:true};
+    return {browser:name,realEngine:true,viewports:9,buttons:true,rankedRows:true,directMoveButtons:true,sharedBest:true};
   } finally {await context.close();}
 };

@@ -307,7 +307,6 @@ const analysisJump = button("Analysis ↓", () => {
   reviewHeading.scrollIntoView({ block: "start" });
   reviewHeading.focus({ preventScroll: true });
 }, "ghost", { id: "analysis-jump", "aria-label": "Go to analysis and history" });
-document.querySelector(".action-area").append(analysisJump);
 const reviewStatus = el("div", { class: "row wrap muted small", id: "auto-review-status", role: "status", hidden: true });
 reviewArea.append(reviewStatus);
 let feedbackFilter = "self";
@@ -378,7 +377,7 @@ const helpActions = el("div", {
   "aria-label": "Help and practice controls",
   role: "group",
 });
-const allControls = button("All controls", () => {
+const allControls = button("Controls", () => {
   if (document.querySelector(".practice-controls-dialog")) return;
   const menu = el("div", {class:"stack"}, helpActions,
     button("Settings · playing style, board & shortcuts", () => { d.close(); preferences(); }),
@@ -395,8 +394,8 @@ const allControls = button("All controls", () => {
     helpActions.removeEventListener("click", closeOnAction, true);
     helpCluster.prepend(helpActions);
   }, { once: true });
-}, "ghost", { id: "all-controls", hidden: true, "aria-haspopup": "dialog" });
-const helpCluster = el("div", { class: "help-cluster" }, helpActions, allControls);
+}, "ghost", { id: "all-controls", hidden: true, "aria-label": "All controls", "aria-haspopup": "dialog" });
+const helpCluster = el("div", { class: "help-cluster" }, helpActions, analysisJump, allControls);
 document.querySelector(".action-main").prepend(helpCluster);
 helpCluster.insertBefore(draftKeys, allControls);
 const draft = new DraftBoard(ui.board, () => {

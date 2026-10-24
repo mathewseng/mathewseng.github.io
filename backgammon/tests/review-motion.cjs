@@ -45,11 +45,11 @@ module.exports = async function reviewMotion(browser, base, out, name) {
         };
         await window.finishReview();
       });
-      await page.getByRole('tab', { name: 'Board', exact: true }).click();
+
       const choose = async label => {
         const button = page.getByRole('button', { name: label, exact: true });
         if (await button.isVisible()) { if (width === 1366) await button.click(); else await button.tap(); }
-        else await page.getByLabel('Preview evaluated move', { exact: true }).selectOption(label === 'Position' ? '-1' : label === 'Best move' ? '0' : '2');
+        else throw new Error('Preview button should be visible: '+label);
       };
       const pose = () => page.evaluate(() => window.reviewPose());
       const before = await pose();

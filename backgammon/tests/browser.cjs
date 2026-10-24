@@ -803,7 +803,7 @@ const server = http.createServer((req, res) => {
           await run("refresh", browser, out, browserName),
         );
         // The focused Play command is also part of the full regression run.
-        for (const moduleName of ["roll-prompt", "closed-opponent-roll", "hint-play-best", "initial-forced-only", "forced-roll-presentation", "control-polish", "advanced-ui", "dice-order", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
+        for (const moduleName of ["roll-prompt", "closed-opponent-roll", "hint-play-best", "initial-forced-only", "forced-roll-presentation", "control-polish", "play-footer", "advanced-ui", "dice-order", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
           (report.playControls ||= []).push({module: moduleName, browser: browserName,
             result: await run(moduleName, browser, base, out, browserName)});
         }

@@ -54,138 +54,45 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       [1440, 900],
     ];
     for (const [width, height] of sizes) {
-      await page.setViewportSize({ width, height });
+      await page.setViewportSize({width,height});
       await page.waitForTimeout(50);
-      await page
-        .getByRole("tab", { name: "Comparison", exact: true })
-        .click();
-      const visited = new Set();
-      for (let p = 0; p < 12; p++) {
-        const rows = page.locator(".review-move");
-        const ranks = await rows.evaluateAll((ns) =>
-          ns.map((n) => +n.dataset.rank),
-        );
-        ranks.forEach((r) => visited.add(r));
-        const fit = await page.getByRole("dialog").evaluate((d) => ({
-          scroll:
-            d.scrollHeight > d.clientHeight + 1 ||
-            d.scrollWidth > d.clientWidth + 1,
-          rows: d.querySelector(".review-moves").getBoundingClientRect().bottom,
-          footer: d.querySelector("footer").getBoundingClientRect().top,
-        }));
-        if (fit.scroll || fit.rows > fit.footer + 1)
-          await page.screenshot({
-            path: path.join(out, `${name}-ranked-overflow-${width}.png`),
-          });
-        assert.ok(
-          !fit.scroll && fit.rows <= fit.footer + 1,
-          JSON.stringify({ width, height, fit }),
-        );
-        const rank = ranks[0];
-        await rows.first().click();
-        assert.match(
-          await page.locator(".decision-caption").innerText(),
-          new RegExp(rank === 1 ? "Best move ·" : `Move ${rank} ·`),
-        );
-        assert.ok(
-          (await page.locator(".decision-caption").innerText()).includes(
-            expected[rank - 1].notation,
-          ),
-        );
-        if (p === 0 && (width <= 700 || height <= 500)) {
-          const chooser = page.getByLabel("Preview evaluated move", {exact:true});
-          assert.ok(await chooser.isVisible(), "phone review keeps alternatives beside the board");
-          assert.ok(await chooser.evaluate(n => n === document.activeElement), "preview selection moves focus to its visible controls");
-          assert.equal(await chooser.inputValue(), String(rank - 1));
-          const boardBox = await page.locator(".decision-board").boundingBox();
-          const played = await chooser.locator("option").evaluateAll(ns => ns.find(n => n.textContent.includes("· Your move"))?.value);
-          assert.ok(played !== undefined, "played move is available even outside the top ten");
-          await chooser.selectOption(played);
-          assert.equal(await chooser.inputValue(), played);
-          await chooser.selectOption("9");
-          assert.match(await page.locator(".decision-caption").textContent(), /Move 10 ·/);
-          await page.getByRole("button", {name:"Previous move preview",exact:true}).tap();
-          assert.equal(await chooser.inputValue(), "8");
-          await chooser.selectOption("-1");
-          assert.ok(await page.getByRole("button", {name:"Previous move preview",exact:true}).isDisabled());
-          await page.getByRole("button", {name:"Next move preview",exact:true}).tap();
-          assert.equal(await chooser.inputValue(), "0");
-          assert.deepEqual(await page.locator(".decision-board").boundingBox(), boardBox, "preview controls never resize the board");
-          const fit = await page.locator(".decision-dialog").evaluate(d => ({
-            overflow: d.scrollHeight > d.clientHeight + 1 || d.scrollWidth > d.clientWidth + 1,
-            board: d.querySelector(".decision-board").getBoundingClientRect().bottom,
-            controls: d.querySelector(".review-preview-controls").getBoundingClientRect().bottom,
-            footer: d.querySelector("footer").getBoundingClientRect().top,
-          }));
-          assert.ok(!fit.overflow && Math.max(fit.board, fit.controls) <= fit.footer + 1, JSON.stringify({width,height,fit}));
-          if (p === 0) await page.screenshot({path:path.join(out, `${name}-ranked-board-${width}.png`)});
-          await chooser.selectOption("9");
-        }
-        await page
-          .getByRole("tab", { name: "Comparison", exact: true })
-          .click();
-        if (p === 0 && (width <= 700 || height <= 500))
-          assert.ok(await page.locator('.review-move[data-rank="10"][aria-pressed="true"]').isVisible(), "Comparison opens at the move currently previewed");
-        if (
-          !(await page
-            .getByRole("button", { name: "Next moves", exact: true })
-            .isVisible()) ||
-          (await page
-            .getByRole("button", { name: "Next moves", exact: true })
-            .isDisabled())
-        )
-          break;
-        await page
-          .getByRole("button", { name: "Next moves", exact: true })
-          .click();
+      assert.equal(await page.locator('.decision-dialog select').count(),0,'no preview dropdown');
+      assert.equal(await page.getByRole('tab',{name:'Board',exact:true}).count(),0);
+      assert.equal(await page.getByRole('tab',{name:'Comparison',exact:true}).count(),0);
+      assert.ok(await page.locator('.decision-board').isVisible());
+      assert.ok(await page.locator('.review-moves').isVisible(),'comparison and board share the review');
+      assert.equal(await page.locator('.review-move').count(),10);
+      await page.locator('.decision-details-toggle').click();
+      assert.ok(await page.locator('.decision-notes').isVisible());
+      await page.locator('.decision-details-toggle').click();
+      const boardBox=await page.locator('.decision-board').boundingBox();
+      for (const rank of [10,2,1]) {
+        await page.locator(`.review-move[data-rank="${rank}"]`).click();
+        assert.equal(await page.locator('.review-move[aria-pressed="true"]').getAttribute('data-rank'),String(rank));
+        assert.ok((await page.locator('.decision-caption').textContent()).includes(expected[rank-1].notation));
+        assert.deepEqual(await page.locator('.decision-board').boundingBox(),boardBox,'changing move preserves board size');
       }
-      // Resize can retain the previous page; return to page one and traverse all.
-      while (
-        (await page
-          .getByRole("button", { name: "Previous moves", exact: true })
-          .isVisible()) &&
-        !(await page
-          .getByRole("button", { name: "Previous moves", exact: true })
-          .isDisabled())
-      )
-        await page
-          .getByRole("button", { name: "Previous moves", exact: true })
-          .click();
-      for (let p = 0; p < 12; p++) {
-        (
-          await page
-            .locator(".review-move")
-            .evaluateAll((ns) => ns.map((n) => +n.dataset.rank))
-        ).forEach((r) => visited.add(r));
-        if (
-          !(await page
-            .getByRole("button", { name: "Next moves", exact: true })
-            .isVisible()) ||
-          (await page
-            .getByRole("button", { name: "Next moves", exact: true })
-            .isDisabled())
-        )
-          break;
-        await page
-          .getByRole("button", { name: "Next moves", exact: true })
-          .click();
-      }
-      assert.equal(visited.size, 10);
-      while (
-        (await page
-          .getByRole("button", { name: "Previous moves", exact: true })
-          .isVisible()) &&
-        !(await page
-          .getByRole("button", { name: "Previous moves", exact: true })
-          .isDisabled())
-      )
-        await page
-          .getByRole("button", { name: "Previous moves", exact: true })
-          .click();
-      await page.screenshot({
-        path: path.join(out, `${name}-ranked-review-${width}.png`),
-      });
+      const fit=await page.locator('.decision-dialog').evaluate(d=>({
+        overflow:d.scrollHeight>d.clientHeight+1 || d.scrollWidth>d.clientWidth+1,
+        list:d.querySelector('.review-move-rows').getBoundingClientRect().toJSON(),
+        position:d.querySelector('.decision-position').getBoundingClientRect().toJSON(),
+        footer:d.querySelector('footer').getBoundingClientRect().toJSON(),
+      }));
+      assert.ok(!fit.overflow && fit.list.height>=44 && fit.list.bottom<=fit.footer.top+1,JSON.stringify({width,height,fit}));
+      if(width<=700 && height>500) assert.ok(fit.position.bottom<=fit.list.top,'portrait puts choices under board');
+      else assert.ok(fit.position.right<=fit.list.x,'wide views put choices beside board');
+      await page.getByRole('button',{name:'Position',exact:true}).click();
+      assert.equal(await page.locator('.review-move[aria-pressed="true"]').count(),0);
+      await page.getByRole('button',{name:'Best move',exact:true}).click();
+      await page.screenshot({path:path.join(out,`${name}-ranked-review-${width}.png`)});
     }
+    await page.setViewportSize({width:390,height:844});
+    await page.evaluate(async () => {
+      (await import('/backgammon/core/storage.mjs')).saveSettings({skin:'liquid-chrome'});
+      await (await import('/backgammon/ui/skin.mjs')).applySkin('liquid-chrome');
+    });
+    await page.waitForFunction(()=>document.documentElement.dataset.skin==='liquid-chrome');
+    await page.screenshot({path:path.join(out,`${name}-ranked-metallic-phone.png`)});
     await page.getByRole("button", { name: "Best move", exact: true }).click();
     assert.equal(
       await page.locator('.review-move[aria-pressed="true"]').count(),
