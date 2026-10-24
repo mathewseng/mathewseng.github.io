@@ -293,7 +293,11 @@ export class AnalysisPanel {
           "busy",
           ["busy", "loading"].includes(type),
         );
-        this.status.textContent = text;
+        // A finished analysis is shown by its results; only progress and
+        // errors need the status line.
+        const done = type === "ready" && text === "Analysis complete";
+        this.status.hidden = done;
+        this.status.textContent = done ? "" : text;
       };
     this.engine = new EngineClient({onStatus});
     this.moneyEngine = new EngineClient({onStatus, openingBook:null,

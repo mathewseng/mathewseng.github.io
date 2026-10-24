@@ -42,7 +42,7 @@ export class StudyStrip {
     const isChecker = result.type === "checker";
     this.chooser.hidden = !isChecker;
     this.details.hidden = isChecker;
-    if (this.original) this.original.hidden = !isChecker;
+
     const units = result.units === "current-cube-points" ? "equity" : "match win";
     const previewKey = preview ? boardKey(preview) : null;
     const candidates = (result.candidates || []).slice(0, 10);
@@ -53,8 +53,13 @@ export class StudyStrip {
       this.candidates = candidates;
       this.select.replaceChildren(el("option", { value: -1 }, "Original position"),
         ...(earlierPreview ? [el("option", { value: -2, disabled: true }, "Earlier preview · outside current analysis")] : []),
-        ...this.candidates.map((c, i) => el("option", { value: i },
-          `${result.candidates.indexOf(c) + 1 || "Played"}. ${c.notation}${c.key === result.actual?.key ? " · " + (i === 0 ? this.bestPlayedLabel : this.playedLabel) : i === 0 ? " · Best" : ""}`)));
+        ...this.candidates.map((c, i) => {
+          const rank = result.candidates.indexOf(c) + 1;
+          // A played move outside the ranked list names itself once.
+          return el("option", { value: i }, rank
+            ? `${rank}. ${c.notation}${c.key === result.actual?.key ? " · " + (i === 0 ? this.bestPlayedLabel : this.playedLabel) : i === 0 ? " · Best" : ""}`
+            : `${c.notation} · ${this.playedLabel}`);
+        }));
       this.result = result;
       this.earlierPreview = earlierPreview;
     }
@@ -63,6 +68,9 @@ export class StudyStrip {
     if (this.current) {
       this.current.textContent = this.select.selectedOptions[0]?.textContent || 'Original position';
       this.current.dataset.previewIndex = chosen;
+      // The strip already names the original position while it is shown; the
+      // return button appears only once a preview replaces it.
+      this.original.hidden = !isChecker || chosen === -1;
       this.original.setAttribute('aria-pressed', String(chosen === -1));
     }
     this.previous.disabled = chosen < 0;

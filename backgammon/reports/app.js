@@ -74,7 +74,7 @@ const measured = (engine, recordedAt, note = "") =>
   el(
     "p",
     { class: "docs-meta" },
-    el("span", { class: "chip" }, `Measured ${new Date(recordedAt).toLocaleString()}`),
+    el("span", {}, `Measured ${new Date(recordedAt).toLocaleString()}`),
     el("code", {}, engine),
     note ? el("span", {}, note) : null,
   );

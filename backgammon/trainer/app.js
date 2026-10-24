@@ -232,7 +232,17 @@ function render() {
   panel();
   savePractice();
 }
+function draftLine() {
+  // #message already says when the move is ready; the shell line would repeat
+  // it. Keep it for the undo lesson and the shell's own hints, and clear it
+  // once the decision is revealed.
+  const line = $("draft-line");
+  if (!exercise || busy || revealed || exercise.state.phase !== "move") line.textContent = "";
+  else if (!draft.hint && draft.draft.length && draft.complete())
+    line.textContent = "Tap a used die to undo its move.";
+}
 function actions() {
+  draftLine();
   practiceHelp.replaceChildren();
   practiceHelp.hidden = !exercise || busy || revealed;
   if (!exercise) return;

@@ -13,13 +13,13 @@
       content="A flowchart for selecting, moving, deselecting and returning backgammon checkers with taps, clicks and keys."
     />
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=c09d2de3f63111bd" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=c09d2de3f63111bd" />
-    <link rel="stylesheet" href="../styles.css?bgv=c09d2de3f63111bd" />
-    <link rel="stylesheet" href="../docs.css?bgv=c09d2de3f63111bd" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=17e8c8890b16c3a6" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=17e8c8890b16c3a6" />
+    <link rel="stylesheet" href="../styles.css?bgv=17e8c8890b16c3a6" />
+    <link rel="stylesheet" href="../docs.css?bgv=17e8c8890b16c3a6" />
     <script>document.documentElement.classList.add("is-ready");</script>
     <script>(function(){try{var c=JSON.parse(localStorage.getItem("backgammon.v1.skin-boot")||"null"),x=/^#[0-9A-Fa-f]{6}$/;if(c&&/^[a-z][a-z0-9-]{1,23}$/.test(c.id)&&x.test(c.page)){var h=document.documentElement,s=h.style;h.dataset.skin=c.id;s.setProperty("--page",c.page);if(x.test(c.surface))s.setProperty("--surface",c.surface);if(x.test(c.ink))s.setProperty("--ink",c.ink);if(x.test(c.muted))s.setProperty("--muted",c.muted);s.colorScheme=c.scheme==="light"?"light":"dark";}}catch(e){}})();</script>
-    <script type="module" src="../ui/update-page.mjs?bgv=c09d2de3f63111bd"></script>
+    <script type="module" src="../ui/update-page.mjs?bgv=17e8c8890b16c3a6"></script>
   </head>
   <body class="docs-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -63,7 +63,6 @@
             <h2 id="advanced-heading" class="guide-heading">Advanced · the default</h2>
             <p>Click a checker for one die, or a destination for a direct or combined move. Settings → Display lets you switch to Beginner.</p>
             <figure class="docs-flow">
-              <figcaption class="docs-flow-caption">Advanced click flowchart</figcaption>
               <ol class="click-flow">
               <li><div class="flow-question"><span class="flow-number" aria-hidden="true">1</span><h3>Is it your turn to roll?</h3></div>
                 <div class="flow-answer"><span class="flow-yes">Yes <span aria-hidden="true">→</span></span><p>Tap the board or press C to roll; tap the cube or press D to offer a legal double. D also beavers/raccoons, P passes and T takes. Opening rolls happen automatically. With a checker on the bar and at least one entry point blocked by two or more opposing checkers, double tap/click the board to keep rolling on your turns until a checker enters. Tap/click “Auto roll on” to stop; entry choices remain yours. If all six bar entries are blocked, no dice are rolled: choose Double or No double · pass. Settings → Display &amp; controls → Closed-out passing defaults to Off. Forced passes only skips when doubling is unavailable; Skip clearly bad doubles also skips doubles at least 0.25 equity worse in computer games. Any open entry keeps normal rolling.</p></div>
@@ -95,7 +94,6 @@
               opponent’s turn, the board does not accept moves.
             </p>
             <figure class="docs-flow">
-              <figcaption class="docs-flow-caption">Checker click flowchart</figcaption>
               <ol class="click-flow">
               <li>
                 <div class="flow-question">
@@ -196,7 +194,6 @@
               theme; rings, arrows and labels also identify the action.
             </p>
             <figure class="docs-flow">
-              <figcaption class="docs-flow-caption">Checker and location highlight flowchart</figcaption>
               <ol class="click-flow highlight-flow">
               <li>
                 <div class="flow-question">

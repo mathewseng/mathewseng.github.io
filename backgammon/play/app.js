@@ -691,6 +691,7 @@ function stopComputer() {
   epoch++;
   releaseAssistance();
   analysis.cancel();
+  analysis.status.hidden = false;
   analysis.status.textContent = "GNUbg loads when needed.";
   botBusy = false;
   botPaused = false;

@@ -6237,6 +6237,11 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.setup-table .action-area {
     height: auto;
     max-height: none;
+    /* The form scrolls under this pinned strip: a stronger edge and the
+       dock's own surface show where the overlap begins. */
+    border-top: 1px solid var(--line-strong);
+    background: var(--surface);
+    box-shadow: 0 -12px 12px -12px var(--line-strong);
   }
 
   /* The three modes stack in the narrow dock instead of scrolling out of
