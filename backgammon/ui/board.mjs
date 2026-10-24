@@ -1483,8 +1483,8 @@ export class Board {
       s.cube.owner === null
         ? 330
         : s.cube.owner === this.options.orientation
-          ? 354
-          : 306;
+          ? 420
+          : 240;
     const offset = cy(before) - cy(this.state);
     const animation = cube.animate(
       [
@@ -2057,12 +2057,14 @@ export class Board {
     }
     if (s.rules.cube) {
       const cubeLabel = s.cube.value === 1 && !cubeOneAsOne ? 64 : s.cube.value;
+      // An owned cube sits toward the middle of its side's rail, leaving the
+      // lane beside the tray free for bear-off taps.
       const cy =
         s.cube.owner === null
           ? 330
           : s.cube.owner === orientation
-            ? 500
-            : 160;
+            ? 420
+            : 240;
       const cube = svg("g", {
         class: "board-cube",
         "aria-label": `Doubling cube ${s.cube.value}${this.cubeEnabled ? ", offer double" : ""}`,
