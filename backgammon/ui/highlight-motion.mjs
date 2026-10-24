@@ -9,6 +9,11 @@ const paint = ['display', 'fill', 'fill-opacity', 'stroke', 'stroke-width',
   'font-weight', 'text-anchor'];
 const timing = { duration: 280, easing: 'cubic-bezier(.2,.75,.3,1)', id: 'board-highlight' };
 
+// Chromium reports a stroke width written as calc(…·var(--ring-scale)) as
+// "calc(1.85px)" on the live node but as "1.85px" once frozen inline, which
+// would stop an outgoing ring from matching its returning twin.
+const resolved = value => value.replace(/^calc\((-?[\d.]+px)\)$/, "$1");
+
 function snapshot(node) {
   const style = getComputedStyle(node);
   if (style.display === 'none') return null;
@@ -16,7 +21,7 @@ function snapshot(node) {
   clone.removeAttribute('data-highlight-exit');
   // Freeze inherited paint so an outgoing selection does not acquire the new
   // destination's colors/styles. Opacity is tracked separately for interruption.
-  for (const property of paint) clone.style.setProperty(property, style.getPropertyValue(property));
+  for (const property of paint) clone.style.setProperty(property, resolved(style.getPropertyValue(property)));
   clone.style.opacity = '1';
   clone.style.pointerEvents = 'none';
   clone.style.transition = 'none';

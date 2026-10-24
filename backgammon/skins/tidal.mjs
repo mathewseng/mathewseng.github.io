@@ -237,7 +237,8 @@ html[data-skin="tidal"] .bg-board [data-pattern="tray"] {
   stroke: var(--board-border);
   stroke-width: 1;
 }
-html[data-skin="tidal"] .bg-board .point-shape {
+html[data-skin="tidal"] .bg-board .point [data-pattern="pointA"],
+html[data-skin="tidal"] .bg-board .point [data-pattern="pointB"] {
   stroke: rgba(0, 0, 0, 0.38);
   stroke-width: 1.5;
   stroke-linejoin: round;

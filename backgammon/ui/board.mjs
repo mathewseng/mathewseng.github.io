@@ -373,6 +373,10 @@ export class Board {
         ? new ResizeObserver(() => this.scaleStrokes())
         : null;
     this.strokeScale?.observe(container);
+    // Set the scale before the first render: highlight motion matches outgoing
+    // and incoming rings by their frozen paint, so the stroke width must not
+    // change between a selection and its interruption.
+    this.scaleStrokes();
     this.motion = true;
     this.animations = [];
     this.feedbackTimers = [];

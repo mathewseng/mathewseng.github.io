@@ -2381,19 +2381,23 @@ function renderFeedback() {
   const contextText = `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each decision maker’s perspective. Select Cube or Move to review.`;
   if (feedbackView.caption.textContent !== contextText) feedbackView.caption.textContent = contextText;
   const children = [feedbackView.heading, feedbackView.caption];
+  const retained = new Set(), retainedGames = new Set();
+  const gameHeading = game => {
+    retainedGames.add(game);
+    if (!feedbackView.games.has(game))
+      feedbackView.games.set(game, el("h3", { class: "history-game-divider" }, `Game ${game}`));
+    children.push(feedbackView.games.get(game), gameSummaryCard(game, rows, viewer));
+  };
+  // The current game's summary stays in view while it is played, even before
+  // its first graded decision, so the running EV loss is always a scroll away.
+  const currentGame = m?.started ? state().gameNumber : null;
+  if (currentGame && !shown.some(group => group.game === currentGame)) gameHeading(currentGame);
   if (!shown.length) {
     feedbackView.empty.textContent = rows.length ? "No decisions from this player yet." : "Decisions will appear here after play begins.";
     children.push(feedbackView.empty);
   }
-  const retained = new Set(), retainedGames = new Set();
   for (const group of shown) {
-    if (!retainedGames.has(group.game)) {
-      retainedGames.add(group.game);
-      if (!feedbackView.games.has(group.game))
-        feedbackView.games.set(group.game, el("h3", { class: "history-game-divider" }, `Game ${group.game}`));
-      children.push(feedbackView.games.get(group.game));
-      children.push(gameSummaryCard(group.game, rows, viewer));
-    }
+    if (!retainedGames.has(group.game)) gameHeading(group.game);
     retained.add(group.key);
     // Grades arrive independently and each commit clones the match. Keep
     // unchanged DOM in place, but refresh the click handlers' source data.
