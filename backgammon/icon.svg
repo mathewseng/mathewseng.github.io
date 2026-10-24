@@ -1,38 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <radialGradient id="bg" cx="28%" cy="16%" r="115%">
-      <stop offset="0" stop-color="#164650"/>
-      <stop offset=".42" stop-color="#0a2731"/>
-      <stop offset="1" stop-color="#040b11"/>
-    </radialGradient>
-    <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#c2f6ea"/>
-      <stop offset=".55" stop-color="#5fd3bd"/>
-      <stop offset="1" stop-color="#1b8d7e"/>
-    </linearGradient>
-    <linearGradient id="ivory" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#fff8e8"/>
-      <stop offset=".55" stop-color="#e6dac0"/>
-      <stop offset="1" stop-color="#b3a384"/>
-    </linearGradient>
-    <radialGradient id="disc" cx="36%" cy="30%" r="72%">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset=".5" stop-color="#f1e9d8"/>
-      <stop offset="1" stop-color="#c4b38f"/>
-    </radialGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity=".14"/>
-      <stop offset=".55" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
-  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
-  <!-- two opposing points: teal hanging from the top, ivory rising from the bottom -->
-  <path d="M14 8h48L38 114z" fill="url(#teal)"/>
-  <path d="M66 120h48L90 14z" fill="url(#ivory)"/>
-  <!-- a glossy checker seated at the foot of the ivory point -->
-  <circle cx="86" cy="96" r="20" fill="#04101a" opacity=".5"/>
-  <circle cx="86" cy="92" r="20" fill="url(#disc)"/>
-  <circle cx="86" cy="92" r="20" fill="none" stroke="#5fd3bd" stroke-width="3"/>
-  <circle cx="86" cy="92" r="11" fill="none" stroke="#04101a" stroke-opacity=".14" stroke-width="2"/>
-  <rect width="128" height="128" rx="28" fill="url(#sheen)"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs>
+<radialGradient id="bg" cx="28%" cy="16%" r="115%"><stop offset="0" stop-color="#4a1f5a"/><stop offset=".45" stop-color="#2a1034"/><stop offset="1" stop-color="#0d0612"/></radialGradient>
+<linearGradient id="lav" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0d4ff"/><stop offset=".55" stop-color="#c586ec"/><stop offset="1" stop-color="#7d3fa8"/></linearGradient>
+<linearGradient id="ivory" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff5ea"/><stop offset=".55" stop-color="#eadcc6"/><stop offset="1" stop-color="#b8a48c"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffe9a8"/><stop offset=".55" stop-color="#f0c35c"/><stop offset="1" stop-color="#b8872a"/></linearGradient>
+<radialGradient id="disc" cx="36%" cy="30%" r="72%"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#f3eadb"/><stop offset="1" stop-color="#c8b899"/></radialGradient>
+<radialGradient id="pdisc" cx="36%" cy="30%" r="72%"><stop offset="0" stop-color="#c98fe6"/><stop offset=".5" stop-color="#7a3aa6"/><stop offset="1" stop-color="#2d1038"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="flat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b2a6e"/><stop offset="1" stop-color="#2a1034"/></linearGradient>
+</defs><rect width="128" height="128" rx="28" fill="url(#bg)"/><path d="M14 8h48L38 114z" fill="url(#lav)"/><path d="M66 120h48L90 14z" fill="url(#ivory)"/><circle cx="86" cy="96" r="20" fill="#0d0612" opacity=".5"/><circle cx="86" cy="92" r="20" fill="url(#disc)"/><circle cx="86" cy="92" r="20" fill="none" stroke="#c586ec" stroke-width="3"/><circle cx="86" cy="92" r="11" fill="none" stroke="#0d0612" stroke-opacity=".14" stroke-width="2"/><rect width="128" height="128" rx="28" fill="url(#sheen)"/></svg>
