@@ -20,7 +20,7 @@ module.exports = async function lastMoveMotion(browser, base, out, name) {
     })));
     const roll = async () => {
       if (!touch) return page.keyboard.press('c');
-      const p = await page.locator('#board svg').evaluate(svg => {
+      const p = await page.locator('#board svg.bg-board').evaluate(svg => {
         const p = new DOMPoint(240, 330).matrixTransform(svg.getScreenCTM());
         return { x: p.x, y: p.y };
       });
@@ -44,6 +44,13 @@ module.exports = async function lastMoveMotion(browser, base, out, name) {
           const a = animate.call(this, frames, options);
           if (options?.id === 'last-move-exit' && window.pauseMoveExit) { a.pause(); a.currentTime = 0; }
           return a;
+        };
+        // Board transitions start together after all resting poses are read.
+        const play = Animation.prototype.play;
+        Animation.prototype.play = function() {
+          const result = play.call(this);
+          if (this.id === 'last-move-exit' && window.pauseMoveExit) { this.pause(); this.currentTime = 0; }
+          return result;
         };
       });
       await page.goto(base + '/backgammon/');

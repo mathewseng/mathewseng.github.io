@@ -13,6 +13,12 @@ module.exports = async function solverLayout(browser, base, out, name) {
       if (this.closest?.('.bg-board')) window.boardAnimations.push(this.getAttribute('class'));
       return animate.apply(this,args);
     };
+    const play = Animation.prototype.play;
+    Animation.prototype.play = function() {
+      const node = this.effect?.target;
+      if (node?.closest?.('.bg-board')) window.boardAnimations.push(node.getAttribute('class'));
+      return play.call(this);
+    };
   });
   const geometry = () => page.locator('#board').evaluate(n => {
     const r = n.getBoundingClientRect(), svg = n.querySelector('svg').getBoundingClientRect();

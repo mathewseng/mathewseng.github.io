@@ -1,5 +1,6 @@
 // Scripted analysis tests the warning/commit boundary, not GNUbg accuracy.
 const assert=require('node:assert/strict');
+const { waitWork }=require('./play-helpers.cjs');
 module.exports=async function revisionWarning(browser,base){
   const ctx=await browser.newContext({reducedMotion:'reduce',serviceWorkers:'block'}),page=await ctx.newPage();
   const ready=()=>page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
@@ -8,13 +9,15 @@ module.exports=async function revisionWarning(browser,base){
   try{
     await page.goto(base+'/backgammon/play/');await ready();
     for(const loss of [.002,.0021,.003]){
+      // An active Play page saves on pagehide; navigate away before seeding.
+      await page.goto(base+'/backgammon/');await ready();
       await page.evaluate(async()=>{
         const {initialState,legalTurns,positionKey}=await import('/backgammon/core/rules.mjs'),{put,saveSettings}=await import('/backgammon/core/storage.mjs'),{localConfig}=await import('/backgammon/core/play-session.mjs');
         const state=initialState({phase:'move',dice:[4,1],matchLength:0});
         saveSettings({analysisAhead:false,motion:'reduce',equityBar:false});
         await put('work',{id:'play',game:{id:'warning-boundary',initial:state,state,events:[],started:true,names:['You','GNUbg'],config:localConfig({tutor:true,warning:true})},positionKey:positionKey(state),draft:legalTurns(state)[0].steps});
       });
-      await page.reload();await ready();
+      await page.goto(base+'/backgammon/play/');await ready();
       await page.evaluate(async loss=>{
         const {AnalysisPanel}=await import('/backgammon/ui/analysis.mjs'),{EngineClient}=await import('/backgammon/engine/client.mjs');
         const {legalTurns,notation,positionKey}=await import('/backgammon/core/rules.mjs');
@@ -32,6 +35,9 @@ module.exports=async function revisionWarning(browser,base){
       await page.locator('#confirm').click();
       if(loss>.002){
         await page.getByRole('dialog').getByRole('heading',{name:'Review before confirming?'}).waitFor();
+        // The pending warning opens before grading. This case tests revising a
+        // completed grade; the unlisted cases below cover revision while pending.
+        await waitWork(page,w=>w?.game.initialDecision?.evaluation?.result?.error===loss);
         assert.equal((await read()).game.events.length,0,'warning leaves turn uncommitted');
         await page.getByRole('button',{name:'Revise',exact:true}).click();
         assert.equal((await read()).game.events.length,0);
@@ -42,7 +48,7 @@ module.exports=async function revisionWarning(browser,base){
         await page.locator('#confirm').click();
         await page.getByRole('button',{name:'Confirm anyway',exact:true}).click();
       }
-      const deadline=Date.now()+5000;while((await read()).game.events.length===0&&Date.now()<deadline)await page.waitForTimeout(25);
+      await waitWork(page,w=>w?.game.id==='warning-boundary'&&w.game.events.length>0);
       assert.equal((await read()).game.events[0]?.action.type,'move');
       assert.equal((await read()).game.events[0].initialDecision.evaluation.result.error,loss);
       assert.equal(await page.locator('dialog[open]').count(),0);
@@ -50,13 +56,14 @@ module.exports=async function revisionWarning(browser,base){
     }
     // An unlisted candidate opens immediately, before its exact grade exists.
     for(const response of ['revise','confirm','complete','fail']) {
+      await page.goto(base+'/backgammon/');await ready();
       await page.evaluate(async()=>{
         const r=await import('/backgammon/core/rules.mjs'),st=await import('/backgammon/core/storage.mjs');
         const {localConfig}=await import('/backgammon/core/play-session.mjs');
         const state=r.initialState({phase:'move',dice:[4,1],matchLength:0});
         await st.put('work',{id:'play',game:{id:'pending-warning',initial:state,state,events:[],started:true,names:['You','GNUbg'],config:localConfig({tutor:true,warning:true})},positionKey:r.positionKey(state),draft:r.legalTurns(state)[0].steps});
       });
-      await page.reload();await ready();
+      await page.goto(base+'/backgammon/play/');await ready();
       await page.evaluate(async()=>{
         const {AnalysisPanel}=await import('/backgammon/ui/analysis.mjs'),{EngineClient}=await import('/backgammon/engine/client.mjs');
         EngineClient.prototype.analyze=()=>new Promise(()=>{});
@@ -70,8 +77,14 @@ module.exports=async function revisionWarning(browser,base){
           };});
         };
       });
-      await page.locator('#resume-match').click();await page.locator('#confirm').click();
+      await page.locator('#resume-match').click();
+      await page.evaluate(()=>{window.submittedDice=[...document.querySelectorAll('#board .board-die-face')];});
+      await page.locator('#confirm').click();
       await page.locator('#pending-move-loss').waitFor();
+      assert.ok(await page.evaluate(()=>submittedDice.every((node,i)=>node===document.querySelectorAll('#board .board-die-face')[i])),
+        'Confirm keeps the submitted board and its animation nodes while grading');
+      assert.ok(await page.locator('#board [role="button"]').evaluateAll(nodes=>nodes.every(node=>node.getAttribute('aria-disabled')==='true')),
+        'the retained board is locked until the player revises or confirms');
       assert.match(await page.locator('#pending-move-loss').textContent(),/Still calculating EV/);
       assert.equal((await read()).game.events.length,0);
       if(response==='revise') {
@@ -87,7 +100,7 @@ module.exports=async function revisionWarning(browser,base){
           assert.match(await page.locator('#pending-move-loss').textContent(),response==='fail'?/EV unavailable/:/0.020/);
         }
         await page.getByRole('button',{name:'Confirm anyway',exact:true}).click();
-        await page.waitForTimeout(150);
+        await waitWork(page,w=>w?.game.id==='pending-warning'&&w.game.events.length>0);
         assert.equal((await read()).game.events[0]?.action.type,'move');
       }
       cases.push({unlisted:response});

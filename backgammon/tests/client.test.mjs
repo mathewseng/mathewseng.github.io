@@ -407,7 +407,7 @@ test('Auto grading does not reuse an Auto hint that stopped on a clear lead',asy
   const client=new EngineClient({workerFactory:()=>worker,openingBook:null});
   try{
     const hint=client.analyze(s,{preset:'auto'});await wait();
-    const r={...screenedFixture(s,2),budget:{reason:'clear-lead'}};
+    const r={...screenedFixture(s,3),budget:{reason:'clear-lead'}};
     worker.reply({id:worker.messages.at(-1).id,type:'result',result:r});await hint;
     const grade=client.analyze(s,{preset:'auto',submitted:r.candidates[1].steps});await wait();
     assert.equal(worker.messages.filter(m=>m.type==='analyze').length,2);

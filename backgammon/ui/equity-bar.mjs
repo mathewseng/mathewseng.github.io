@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { settings, saveSettings } from "../core/storage.mjs";
+import { readSettings, saveSettings } from "../core/storage.mjs";
 import { positionKey, playerName } from "../core/rules.mjs";
 import { equityFraction, equityReading } from "../core/equity-bar.mjs";
 import { EngineClient } from "../engine/client.mjs";
@@ -18,6 +18,16 @@ export class EquityBar {
     this.node = element("div", "equity-bar");
     this.node.id = "equity-bar";
     this.node.setAttribute("role", "group");
+    this.hide = element("button", "equity-reading");
+    this.hide.type = "button";
+    this.hide.title = "Hide equity bar";
+    this.hide.setAttribute("aria-label", this.hide.title);
+    this.reveal = element("button", "equity-reveal");
+    this.reveal.type = "button";
+    this.reveal.title = "Show equity bar";
+    this.reveal.setAttribute("aria-label", this.reveal.title);
+    this.reveal.setAttribute("aria-controls", this.node.id);
+    this.reveal.innerHTML = `<span class="equity-reveal-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span>Equity</span></span>`;
     this.meter = element("span", "equity-meter");
     this.fill = element("span", "equity-fill");
     this.meter.append(this.fill);
@@ -33,23 +43,21 @@ export class EquityBar {
       this.key = null;
       this.refresh();
     };
-    this.node.append(this.topLabel, this.meter, this.label, this.retry);
-    board.container.append(this.node);
-    this.enabled = settings().equityBar === true;
+    this.hide.append(this.topLabel, this.meter, this.label);
+    this.node.append(this.hide, this.retry);
+    board.container.append(this.node, this.reveal);
+    this.enabled = readSettings().equityBar === true;
     this.life = new AbortController();
     const options = { signal: this.life.signal };
     this.portrait = matchMedia("(max-width: 700px) and (orientation: portrait)");
     this.portrait.addEventListener("change", () => this.schedulePosition(), options);
-    toggle.onclick = () => {
-      this.enabled = !this.enabled;
-      try {
-        saveSettings({ equityBar: this.enabled });
-      } catch {}
-      this.refresh();
-    };
+    toggle.onclick = () => this.setEnabled(!this.enabled);
+    this.hide.onclick = () => this.setEnabled(false);
+    this.reveal.onclick = () => this.setEnabled(true);
     const changed = () => {
-      this.enabled = settings().equityBar === true;
+      this.enabled = readSettings().equityBar === true;
       this.refresh();
+      this.schedulePosition();
     };
     addEventListener("bg-settings", changed, options);
     addEventListener("storage", changed, options);
@@ -64,11 +72,24 @@ export class EquityBar {
     addEventListener("pageshow", () => this.refresh(), options);
     this.observer = new ResizeObserver(() => this.schedulePosition());
     this.observer.observe(board.container);
+    this.observer.observe(board.svg);
+    addEventListener("resize", () => this.schedulePosition(), options);
+    window.visualViewport?.addEventListener("resize", () => this.schedulePosition(), options);
     this.refresh();
   }
   set(context) {
     this.context = context;
     this.refresh();
+  }
+  setEnabled(enabled) {
+    const railFocused = [this.hide, this.reveal].includes(document.activeElement);
+    this.enabled = enabled;
+    try {
+      saveSettings({ equityBar: enabled });
+    } catch {}
+    this.refresh();
+    // Keep keyboard navigation in place when its current control is hidden.
+    if (railFocused) (enabled ? this.hide : this.reveal).focus({ preventScroll: true });
   }
   stop() {
     this.token++;
@@ -77,30 +98,36 @@ export class EquityBar {
     this.reading = null;
   }
   position() {
-    if (!this.enabled) return;
+    const rail = this.enabled ? this.node : this.reveal;
     const r = this.board.svg.getBoundingClientRect(),
       c = this.board.container.getBoundingClientRect();
     const width = Math.min(r.width, (r.height * 876) / 660),
       height = (width * 660) / 876;
+    let geometry;
     if (this.portrait.matches) {
-      Object.assign(this.node.style, {
+      geometry = {
         left: `${r.left - c.left + (r.width - width) / 2}px`,
         top: `${r.top - c.top + (r.height + height) / 2 + 4}px`,
         width: `${width}px`,
         height: "",
-      });
-      return;
+      };
+    } else {
+      rail.style.width = "";
+      geometry = {
+        width: "",
+        left: `${r.left - c.left + (r.width - width) / 2 - rail.offsetWidth - 4}px`,
+        top: `${r.top - c.top + (r.height - height) / 2}px`,
+        height: `${height}px`,
+      };
     }
-    this.node.style.width = "";
-    Object.assign(this.node.style, {
-      left: `${r.left - c.left + (r.width - width) / 2 - this.node.offsetWidth - 4}px`,
-      top: `${r.top - c.top + (r.height - height) / 2}px`,
-      height: `${height}px`,
-    });
+    // Both controls occupy the same reserved strip. Keep their geometry ready
+    // so toggling visibility does not need another synchronous layout read.
+    for (const node of [this.node, this.reveal]) Object.assign(node.style, geometry);
+    this.positioned = true;
   }
   schedulePosition() {
-    // State, actions, and history all update in the same task. Read geometry
-    // once after those writes, not repeatedly in the middle of rebuilding DOM.
+    // Resize/settings changes invalidate geometry; equity and checker changes
+    // do not. Avoid forcing the freshly rebuilt SVG to lay out on every tap.
     if (this.positionFrame !== undefined) return;
     this.positionFrame = requestAnimationFrame(() => {
       this.positionFrame = undefined;
@@ -111,7 +138,7 @@ export class EquityBar {
     this.reading = reading;
     this.node.dataset.state = status;
     this.retry.hidden = status !== "error";
-    const orientation = settings().orientation === 1 ? 1 : 0;
+    const orientation = readSettings().orientation === 1 ? 1 : 0;
     this.node.style.setProperty(
       "--equity-top",
       `var(--board-checker${1 - orientation})`,
@@ -132,12 +159,14 @@ export class EquityBar {
       this.node.title = reason;
     }
     this.node.setAttribute("aria-label", this.node.title);
-    this.schedulePosition();
   }
   refresh() {
     this.toggle.setAttribute("aria-pressed", String(this.enabled));
     this.node.hidden = !this.enabled;
-    this.board.container.classList.toggle("has-equity-bar", this.enabled);
+    this.reveal.hidden = this.enabled;
+    // Reserve the same strip for the reveal handle so taps never shift the board.
+    this.board.container.classList.add("has-equity-bar");
+    if (!this.positioned) this.schedulePosition();
     if (!this.enabled) {
       if (this.key || this.engine.worker) this.stop();
       return;
@@ -182,7 +211,6 @@ export class EquityBar {
     }
     const key = positionKey(state) + JSON.stringify([preset, submitted]);
     if (this.key === key) {
-      this.schedulePosition();
       if (ready || this.reading) this.paint("ready", ready || this.reading);
       return;
     }
@@ -223,5 +251,7 @@ export class EquityBar {
     this.life.abort();
     this.observer.disconnect();
     this.node.remove();
+    this.reveal.remove();
+    this.board.container.classList.remove("has-equity-bar");
   }
 }

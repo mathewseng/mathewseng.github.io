@@ -80,12 +80,12 @@ module.exports = async function decisionUX(
       // Wait for the app's media-query listener to apply its desktop table layout.
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const before = await page.locator("#board").boundingBox();
-      // Actual content may grow arbitrarily. Only the secondary region should scroll.
+      // Actual content may grow arbitrarily. History lives below the table and must not resize it.
       await page.evaluate(() => {
         const n = document.createElement("p");
         n.id = "layout-stress";
         n.textContent = "Long decision history. ".repeat(250);
-        document.querySelector(".action-area").append(n);
+        document.querySelector("#play-review").append(n);
       });
       const after = await page.locator("#board").boundingBox();
       assert.deepEqual(after, before, `fixed board ${width}x${height}`);
@@ -193,14 +193,8 @@ module.exports = async function decisionUX(
     await shot("cube-response");
     await page.getByRole("button", { name: "Pass", exact: true }).click();
     await page.locator("#game-review").waitFor({ timeout: 60000 });
-    const persisted = await page.evaluate(
-      async () =>
-        (
-          await (
-            await import("/backgammon/core/storage.mjs")
-          ).get("work", "play")
-        ).game,
-    );
+    // The game summary paints immediately; background grading is saved later.
+    const persisted = (await waitWork(page, w => w?.game.events.at(-1)?.evaluation?.result)).game;
     const grade = persisted.events.at(-1).evaluation.result;
     assert.equal(grade.type, "cube");
     assert.equal(grade.actualDecision, "pass");
@@ -389,6 +383,7 @@ module.exports = async function decisionUX(
     await page.locator("#hint").click();
     await page.locator("#undo-play-best").waitFor({ timeout: 60000 });
     assert.equal(await page.locator("#undo-play-best").innerText(), "Play best");
+    assert.equal(await page.locator("#use-hint").count(), 0);
     const priorCount = (await waitGame((g) => g.state.phase === "move"))
       .events.length;
     await page.locator("#undo-play-best").click();

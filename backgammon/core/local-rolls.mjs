@@ -3,7 +3,8 @@
 // request. GNUbg still evaluates unknown future rolls normally; only the job
 // scheduler knows which exact future positions are useful to cache.
 import { playAction, tableDice } from './table.mjs';
-import { cryptoDice, decisionPlayer } from './rules.mjs';
+import { certainBearoff } from './certain-bearoff.mjs';
+import { cryptoDice, decisionPlayer, blockedBarRoll } from './rules.mjs';
 
 export function ensureLocalRolls(table) {
   if (table.config?.mode === 'online') throw new Error('Online dice cannot be predetermined.');
@@ -66,15 +67,19 @@ export async function futureLocalRoll(table, offset = 0, actor = null) {
 // Advance only after a successful transition, in the same saved snapshot as
 // its committed dice. Takebacks replay their recorded dice before consuming
 // another indexed roll. Presentation, settings and speculation consume none.
-export async function localPlayAction(source, action) {
+export async function localPlayAction(source, action, options = {}) {
   ensureLocalRolls(source);
+  // Resolve a sealed result before drawing or consuming a saved die. This
+  // also covers a roll queued just before the automatic finish was scheduled.
+  if (action.type === 'roll' && source.state.phase === 'roll' && certainBearoff(source.state)) action = {type:'finish-race'};
+  if (action.type === 'roll' && blockedBarRoll(source.state)) action = {type:'skip-roll'};
   const actor = decisionPlayer(source.state);
   const rolling = ['opening', 'roll'].includes(action.type);
   const replaying = action.type === 'roll' && source.replayDice?.length;
   const draw = rolling && !replaying && source.localRolls;
   const dice = draw ? await seededLocalRoll(source.localRolls)
     : rolling ? action.type === 'roll' ? tableDice(source, actor, cryptoDice) : cryptoDice() : null;
-  const next = playAction(source, rolling ? { ...action, dice } : action, actor);
+  const next = playAction(source, rolling ? { ...action, dice } : action, actor, options);
   if (draw) next.localRolls.cursor++;
   return next;
 }

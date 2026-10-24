@@ -297,8 +297,10 @@ export function stepsForDie(s, die, p = s.turn) {
   });
 }
 export function applyStep(source, step, p = source.turn) {
-  const s = clone(source),
-    sg = sign(p);
+  return moveChecker(clone(source), step, p);
+}
+function moveChecker(s, step, p) {
+  const sg = sign(p);
   if (step.from === "bar") s.bar[p]--;
   else s.points[step.from] -= sg;
   if (step.to === "off") s.off[p]++;
@@ -311,13 +313,41 @@ export function applyStep(source, step, p = source.turn) {
   }
   return s;
 }
+// Positions and saved local tables contain JSON records. Copy their arrays
+// directly instead of paying structured-serialization cost on every branch or
+// confirmation. Keep alias/cycle identity and independent writable snapshots.
+export function cloneRecord(value, seen = new Map()) {
+  if (!value || typeof value !== "object") return value;
+  if (seen.has(value)) return seen.get(value);
+  if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype) return clone(value);
+  const result = Array.isArray(value) ? [] : {};
+  seen.set(value, result);
+  for (const key of Object.keys(value)) {
+    const copied = cloneRecord(value[key], seen);
+    if (key === "__proto__") Object.defineProperty(result, key, {value:copied, enumerable:true, writable:true, configurable:true});
+    else result[key] = copied;
+  }
+  return result;
+}
 const stepEqual = (a, b) =>
   a.from === b.from && a.to === b.to && a.die === b.die;
-export function legalPaths(s) {
+function enumeratePaths(s, distinctResults = false) {
   if (s.phase !== "move") return [];
   const dice = s.dice[0] === s.dice[1] ? Array(4).fill(s.dice[0]) : s.dice;
   const paths = [];
+  // Two routes to the same partial board with the same dice left have exactly
+  // the same completions. Solver callers need only the first route to each
+  // result; interactive drafts still require every legal path. Keep remaining
+  // dice in the key so maximum-use and higher-die checks retain their meaning.
+  // Ordinary rolls only meet again at their final board, which legalTurns
+  // already deduplicates. Avoid adding a per-node lookup to those short trees.
+  const visited = distinctResults && dice.length === 4 ? new Set() : null;
   function walk(b, remaining, steps) {
+    if (visited) {
+      const key = `${remaining.join(",")}|${boardKey(b)}`;
+      if (visited.has(key)) return;
+      visited.add(key);
+    }
     if (!remaining.length || b.off[s.turn] === 15) {
       paths.push({ steps, state: b });
       return;
@@ -328,7 +358,7 @@ export function legalPaths(s) {
         any = true;
         const rest = [...remaining];
         rest.splice(rest.indexOf(d), 1);
-        walk(applyStep(b, step), rest, [...steps, step]);
+        walk(moveChecker(cloneRecord(b), step, b.turn), rest, [...steps, step]);
       }
     if (!any) paths.push({ steps, state: b });
   }
@@ -343,9 +373,12 @@ export function legalPaths(s) {
   }
   return valid;
 }
+export function legalPaths(s) {
+  return enumeratePaths(s);
+}
 export function legalTurns(s) {
   const map = new Map();
-  for (const path of legalPaths(s)) {
+  for (const path of enumeratePaths(s, true)) {
     const key = boardKey(path.state);
     if (!map.has(key)) map.set(key, { ...path, key });
   }
@@ -395,6 +428,13 @@ export function commitTurn(s, steps) {
   if (!path)
     throw new Error("Complete the legal turn using all playable dice.");
   return path.state;
+}
+// Every possible roll is unplayable. This proves a checker pass, not a cube
+// decision: the player may still double before choosing to skip the roll.
+export function blockedBarRoll(s) {
+  if (s.phase !== "roll" || s.pending || !s.bar[s.turn]) return false;
+  const start = s.turn ? 0 : 18, opponent = s.turn ? 1 : -1;
+  return s.points.slice(start, start + 6).every(n => n * opponent >= 2);
 }
 export function canDouble(s) {
   return (
@@ -465,6 +505,12 @@ export function transition(source, action, actor = source.turn) {
       }
       break;
     }
+    case "skip-roll":
+      if (!blockedBarRoll(s) || action.dice !== undefined)
+        throw new Error("Only a fully closed-out player may pass without rolling.");
+      s.turn = 1 - s.turn;
+      s.dice = [];
+      break;
     case "roll":
       if (s.phase !== "roll") throw new Error("Dice cannot be rolled now.");
       checkDice(action.dice);

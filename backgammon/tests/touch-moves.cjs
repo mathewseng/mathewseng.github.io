@@ -68,6 +68,8 @@ module.exports = async function touchMoves(browser, base, out, name) {
     await destination.selectOption({value:"3"});
     assert.equal((await read()).draft.length,3,"multi-die shortcuts use the same legal paths");
     await set("off");
+    assert.deepEqual(await page.locator('#board .board-die').evaluateAll(ns=>ns.map(n=>Number(n.dataset.die))),[4,3],"higher die displays first");
+    await page.locator('#board .board-die[data-die="3"]').tap();
     await source.selectOption({value:"2"});
     await destination.selectOption({value:"off"});
     assert.equal(await page.getByRole("dialog").count(),0,"bearoff uses the selected die without a chooser");

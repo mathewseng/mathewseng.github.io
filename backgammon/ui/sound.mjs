@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { settings, saveSettings } from "../core/storage.mjs";
+import { readSettings, saveSettings } from "../core/storage.mjs";
 import { synthesizeCue, normalizeSound } from "../core/sound.mjs";
 
 let localPreference = null;
-export const soundPreferences = () => localPreference || settings().sound;
+export const soundPreferences = () => localPreference || readSettings().sound;
 export function setSoundPreferences(value) {
   const next = normalizeSound({ ...soundPreferences(), ...value });
   try {

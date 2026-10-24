@@ -104,6 +104,44 @@ test('closing the startup gate prevents background update failures reloading a l
   assert.equal(h.reloads(),0);assert.equal(h.nodes.size,0);
 });
 
+test('repeated Safari page-cache restores keep the live game without reloading',async()=>{
+  const h=harness({published:'old'});await h.start();
+  h.memory.set('backgammon.page-progress./backgammon/play/','draft-checkpoint');
+  for(let i=0;i<5;i++){
+    h.events.dispatchEvent(Object.assign(new Event('pageshow'),{persisted:true}));
+    await h.tick(1);
+  }
+  assert.equal(h.reloads(),0);
+  assert.equal(h.updates(),6,'each restore can check for an update');
+  assert.equal(h.nodes.size,0,'restoring a live page does not reopen the load gate');
+  assert.equal(h.memory.get('backgammon.page-progress./backgammon/play/'),'draft-checkpoint');
+  assert.equal(h.memory.has('backgammon.update-resume'),false);
+});
+
+test('a staged update stays staged when Safari restores an active game',async()=>{
+  const h=harness({published:'old'});await h.start();
+  h.registration.waiting=h.worker('new','installed');
+  let activations=0;
+  h.registration.waiting.postMessage=()=>activations++;
+  h.events.dispatchEvent(Object.assign(new Event('pageshow'),{persisted:true}));
+  await h.tick(30000);
+  assert.equal(h.reloads(),0);
+  assert.equal(activations,0);
+  assert.equal(h.nodes.size,0);
+});
+
+test('a failed background check after restoring is harmless and can retry',async()=>{
+  const h=harness({published:'old'});await h.start();
+  h.setBehavior(async()=>{throw new Error('offline');});
+  h.events.dispatchEvent(Object.assign(new Event('pageshow'),{persisted:true}));
+  await h.tick(30000);
+  h.setBehavior(async()=>{});
+  h.events.dispatchEvent(new Event('online'));await h.tick(1);
+  assert.equal(h.reloads(),0);
+  assert.equal(h.updates(),3);
+  assert.equal(h.nodes.size,0);
+});
+
 test('retry waits while hidden and foregrounding recovers automatically',async()=>{
   const h=harness();h.setBehavior(async()=>{throw new Error('temporary failure');});
   await h.start();h.document.hidden=true;await h.tick(1200);

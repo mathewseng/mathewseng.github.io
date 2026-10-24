@@ -140,3 +140,26 @@ test('prepared grading supports an improved actual move and retries a failed sco
   assert.equal(grade.candidates[0].key,winner.key);assert.equal(grade.error,0);
   assert.equal(grade.actual.equity,winner.equity);
 });
+
+test('yielding checker evaluations preserves scores, coverage and native call order',async()=>{
+  for(const preset of ['quick','standard','deep','expert','research']) {
+    const sync=fixture(),asyncEngine=fixture();
+    const expected=sync.engine.analyze(sync.state,preset);
+    let checkpoints=0;
+    const actual=await asyncEngine.engine.analyzeAsync(asyncEngine.state,preset,'checker',null,{},async()=>{checkpoints++;});
+    const {elapsedMs:a,...left}=actual,{elapsedMs:b,...right}=expected;
+    assert.deepEqual(left,right,preset);
+    assert.deepEqual(asyncEngine.calls,sync.calls,preset+' uses the same ordered native evaluations');
+    assert.ok(checkpoints>0);
+  }
+});
+
+test('cancelling between native scores stops work and allows the next full evaluation',async()=>{
+  const f=fixture();let checkpoints=0;
+  await assert.rejects(f.engine.analyzeAsync(f.state,'research','checker',null,{},async()=>{
+    if(++checkpoints===3)throw new DOMException('cancelled','AbortError');
+  }),{name:'AbortError'});
+  assert.equal(f.calls.length,3,'nothing else is evaluated after cancellation');
+  const result=await f.engine.analyzeAsync(f.state,'research','checker',null,{},async()=>{});
+  assert.deepEqual(result.candidates,fixture().engine.analyze(f.state,'research').candidates);
+});

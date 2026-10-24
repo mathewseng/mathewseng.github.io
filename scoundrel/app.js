@@ -20,7 +20,7 @@
   if (saved && !keepSlots && saved.keepSlots !== false) saved = null;
   if (saved) saved.keepSlots = keepSlots;
   let state = requestedSeed && /^[a-zA-Z0-9-]{1,80}$/.test(requestedSeed) && saved?.seed !== requestedSeed ? E.createGame({ seed: requestedSeed, keepSlots }) : saved || E.createGame({ seed: seed(), keepSlots });
-  let selected = null, worker = null, request = 0, analysis = [], audio = null, known = new Set(), resultShown = false, searchStatus = null;
+  let selected = null, worker = null, request = 0, analysis = [], audio = null, known = new Set(), resultShown = false, searchStatus = null, analysisError = null;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)"), motion = () => prefs.motion && !reduced.matches;
   const roman = (n) => n < 40 ? ["", "X", "XX", "XXX"][Math.floor(n / 10)] + ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"][n % 10] : String(n);
   const names = { monster: "Monster", weapon: "Weapon", potion: "Potion" };
@@ -28,10 +28,15 @@
   const name = (c) => catalog[c.id].name;
   const art = (c) => c.image + "?v=20261022-ash";
   const sources = (c) => c.image.replace("/cards/", "/cards/thumbs/") + "?v=20261022-ash 320w, " + art(c) + " 960w";
+  const deckOverview = ScoundrelDeckOverview.create({ onInspect: openArtwork });
+  let artworkOpener = null, artworkCard = null;
+  ScoundrelCardMotion.attach($("room-cards"), { selector: ".encounter", enabled: motion });
+  ScoundrelCardMotion.attach($("catalog-grid"), { selector: ".catalog-art-button", enabled: motion });
 
   function preferences() {
     document.documentElement.dataset.atmosphere = ["ember", "moon", "moss"].includes(prefs.atmosphere) ? prefs.atmosphere : "ember";
     document.documentElement.dataset.motion = prefs.motion ? "on" : "off";
+    if (!motion()) ScoundrelCardMotion.resetAll();
     $("sound-button").setAttribute("aria-pressed", String(!!prefs.sound));
     $("sound-button").setAttribute("aria-label", prefs.sound ? "Mute sound" : "Enable sound");
     $("sound-button").innerHTML = icon(prefs.sound ? "sound" : "sound-off");
@@ -66,7 +71,7 @@
     $("weapon-display").innerHTML = (state.weapon ? seal(state.weapon) : '<span class="weapon-empty" aria-hidden="true">◇</span>') + `<div class="weapon-numbers"><strong>${state.weapon?.value || "—"}</strong><span>${state.weapon ? "Power" : "Unarmed"}</span></div>`;
     $("weapon-rule").textContent = !state.weapon ? "Unarmed" : E.weaponLimit(state) === 15 ? "Power " + state.weapon.value + " · any monster" : "Power " + state.weapon.value + " · next below " + E.weaponLimit(state);
     $("weapon-chain").innerHTML = state.slain.map((c) => `<span class="chain-mark" title="${esc(E.label(c))}">${c.value}</span>`).join("");
-    $("deck-count").textContent = state.deck.length; $("cleared-count").textContent = 44 - E.remaining(state);
+    $("deck-count").textContent = E.remaining(state); $("cleared-count").textContent = 44 - E.remaining(state);
     $("dungeon-progress").style.width = (44 - E.remaining(state)) / 44 * 100 + "%";
     $("run-label").textContent = "Descent " + state.seed.slice(0, 14).toUpperCase();
     const focused = document.activeElement?.dataset.card;
@@ -143,8 +148,9 @@
   const best = () => analysis.filter((r) => r.score != null).sort((a, b) => b.score - a.score || Number(b.exact) - Number(a.exact))[0];
   function renderAnalysis(pending = false) {
     for (const el of document.querySelectorAll(".encounter.is-best")) { el.classList.remove("is-best"); el.querySelector(".best-ribbon")?.remove(); }
-    if (!prefs.oracle) return;
     updateAvoidValues();
+    if (!prefs.oracle) return;
+    if (analysisError) { $("oracle-summary").textContent = analysisError; $("search-progress").textContent = ""; $("action-values").innerHTML = ""; $("extend-button").disabled = true; return; }
     const b = best();
     const isBest = row => row?.score != null && b && row.score === b.score && (row.equivalence === b.equivalence || row.exact && b.exact);
     const winners = analysis.filter(isBest);
@@ -166,16 +172,16 @@
     }).join("");
   }
   function analyze() {
-    worker?.terminate(); worker = null; searchStatus = null; const requestId = ++request;
-    if (!prefs.oracle || !E.actions(state).length) { renderAnalysis(); return; }
-    if (!window.Worker) { $("oracle-summary").textContent = "This browser does not support the worker required for analysis."; return; }
+    worker?.terminate(); worker = null; searchStatus = null; analysisError = null; const requestId = ++request;
+    if (!E.actions(state).length) { renderAnalysis(); return; }
+    if (!window.Worker) { analysisError = "This browser does not support the worker required for analysis."; renderAnalysis(); return; }
     try {
       worker = new Worker("solver-worker.js?v=20261022-slots");
-      worker.onmessage = ({ data }) => { if (data.requestId !== request) return; if (data.error) { $("oracle-summary").textContent = "Analysis unavailable: " + data.error; return; } analysis = data.results; searchStatus = { pending: data.pending, simulations: data.simulations, target: data.target }; renderAnalysis(data.pending); };
-      worker.onerror = () => { $("oracle-summary").textContent = "The analysis worker could not load. Try reloading the page."; };
+      worker.onmessage = ({ data }) => { if (data.requestId !== request) return; if (data.error) { analysisError = "Analysis unavailable: " + data.error; renderAnalysis(); return; } analysis = data.results; searchStatus = { pending: data.pending, simulations: data.simulations, target: data.target }; renderAnalysis(data.pending); };
+      worker.onerror = () => { analysisError = "The analysis worker could not load. Try reloading the page."; renderAnalysis(); };
       searchStatus = { pending: true, simulations: 0, target: 100000 };
-      worker.postMessage({ requestId, observation: E.observe(state) }); renderAnalysis(true);
-    } catch { $("oracle-summary").textContent = "Analysis needs a browser that supports Web Workers."; }
+      worker.postMessage({ requestId, observation: E.observe(state), target: 100000 }); renderAnalysis(true);
+    } catch { analysisError = "Analysis needs a browser that supports Web Workers."; renderAnalysis(); }
   }
   $("extend-button").addEventListener("click", () => {
     if (!worker || searchStatus?.target === 1000000) return;
@@ -195,18 +201,28 @@
     setTimeout(() => { if (state.id === runId && !$("result-dialog").open) $("result-dialog").showModal(); }, motion() ? 650 : 0);
   }
   function updateAvoidValues() {
+    const b = prefs.oracle && !analysisError && best();
+    const recommended = row => !!(b && row?.score != null && row.score === b.score && (row.equivalence === b.equivalence || row.exact && b.exact));
+    const avoidBest = E.canFlee(state) && analysis.some(row => row.action.type === "flee" && recommended(row));
+    $("flee-button").classList.toggle("is-best", avoidBest);
+    $("flee-button").setAttribute("aria-description", avoidBest ? "Recommended: best EV" : "");
     for (const el of document.querySelectorAll("[data-avoid-ev]")) {
       const row = analysis.find(r => same(r.action, { type: "flee", direction: el.dataset.avoidEv }));
+      const choice = el.closest("[data-avoid]");
+      choice.classList.toggle("is-best", recommended(row));
+      choice.setAttribute("aria-description", recommended(row) ? "Recommended: best EV" : "");
+      choice.querySelector(".avoid-recommendation").hidden = !recommended(row);
       el.hidden = !prefs.oracle;
       el.textContent = row?.score == null ? "EV: calculating…" : row.exact ? `EV ${ev(row.score)} · exact` : `EV ${ev(row.score)} · ${row.samples.toLocaleString()} samples`;
     }
   }
-  function openAvoid(direction = "left") {
+  function openAvoid(direction) {
     if (!E.canFlee(state)) return;
+    if (!direction) direction = prefs.oracle && best()?.action.type === "flee" ? best().action.direction : "left";
     $("avoid-description").textContent = state.deck.length ? `These cards go after the ${state.deck.length} cards already in the deck. Then you’ll draw them in this order:` : "The deck is empty. These cards will be drawn again immediately, in this order:";
     $("avoid-choices").innerHTML = ["left", "right"].map(dir => {
       const cards = E.fleeOrder(state, dir);
-      return `<button class="avoid-choice" type="button" data-avoid="${dir}" aria-label="Avoid ${dir}. After ${state.deck.length} cards already in the deck, draw ${cards.map((c, i) => `${i + 1}: ${esc(name(c))}, value ${c.value}`).join('; ')}. Last card is at the bottom of the deck."><span class="avoid-choice-title"><strong>${dir === "left" ? "←" : "→"} Avoid ${dir}</strong><span>${dir === "left" ? "Keep room order" : "Reverse room order"}</span></span><span class="avoid-order" aria-hidden="true"><span>Drawn first</span><span>Last · deck bottom</span></span><span class="avoid-preview" aria-hidden="true">${cards.map((c, i) => `<span class="avoid-position"><span class="avoid-card" data-suit="${c.suit}"><img src="${catalog[c.id].image.replace('/cards/', '/cards/thumbs/')}" alt="" /><strong>${c.value}</strong></span><span class="avoid-draw-order">${["1st", "2nd", "3rd", "4th"][i]}</span></span>`).join('<i>→</i>')}</span><span class="avoid-value" data-avoid-ev="${dir}"></span></button>`;
+      return `<button class="avoid-choice" type="button" data-avoid="${dir}" aria-label="Avoid ${dir}. After ${state.deck.length} cards already in the deck, draw ${cards.map((c, i) => `${i + 1}: ${esc(name(c))}, value ${c.value}`).join('; ')}. Last card is at the bottom of the deck."><span class="avoid-choice-title"><strong>${dir === "left" ? "←" : "→"} Avoid ${dir}<small class="avoid-recommendation" hidden>Best EV</small></strong><span>${dir === "left" ? "Keep room order" : "Reverse room order"}</span></span><span class="avoid-order" aria-hidden="true"><span>Drawn first</span><span>Last · deck bottom</span></span><span class="avoid-preview" aria-hidden="true">${cards.map((c, i) => `<span class="avoid-position"><span class="avoid-card" data-suit="${c.suit}"><img src="${catalog[c.id].image.replace('/cards/', '/cards/thumbs/')}" alt="" /><strong>${c.value}</strong></span><span class="avoid-draw-order">${["1st", "2nd", "3rd", "4th"][i]}</span></span>`).join('<i>→</i>')}</span><span class="avoid-value" data-avoid-ev="${dir}"></span></button>`;
     }).join("");
     updateAvoidValues();
     $("avoid-dialog").showModal();
@@ -239,6 +255,8 @@
   $("confirm-new").addEventListener("click", start); $("result-new").addEventListener("click", start);
   $("rules-button").addEventListener("click", () => $("rules-dialog").showModal());
   $("settings-button").addEventListener("click", () => { $("local-stats").textContent = `${stats.played} completed descents · ${stats.won} survived · Best score ${stats.best ?? "—"}`; $("settings-dialog").showModal(); });
+  $("cards-left-button").addEventListener("click", () => deckOverview.open("left", E.observe(state)));
+  $("cards-resolved-button").addEventListener("click", () => deckOverview.open("resolved", E.observe(state)));
   function showCatalog(filter = "all") {
     $("catalog-grid").innerHTML = Object.values(catalog).filter((c) => filter === "all" || c.id.endsWith(filter)).map((c) => `<figure data-suit="${c.id.slice(-1)}"><button type="button" class="catalog-art-button" data-art="${c.id}" aria-label="View ${esc(c.name)} artwork"><img src="${art(c)}" srcset="${sources(c)}" sizes="(max-width: 600px) calc((100vw - 100px) / 2), 240px" alt="" loading="lazy" decoding="async" /></button><figcaption>${seal(E.card(c.id))}<div><strong>${esc(c.name)}</strong><span>${c.race || names[E.card(c.id).type]}</span></div></figcaption></figure>`).join("");
     for (const b of document.querySelectorAll("[data-filter]")) b.setAttribute("aria-pressed", String(b.dataset.filter === filter));
@@ -246,20 +264,27 @@
   $("catalog-button").addEventListener("click", () => { $("settings-dialog").close(); showCatalog(); $("catalog-dialog").showModal(); });
   $("catalog-dialog").addEventListener("click", (event) => {
     const b = event.target.closest("[data-filter]"); if (b) showCatalog(b.dataset.filter);
-    const target = event.target.closest("[data-art]"); if (!target) return;
-    const c = catalog[target.dataset.art], card = E.card(c.id);
+    const target = event.target.closest("[data-art]"); if (target) openArtwork(target.dataset.art, target);
+  });
+  function openArtwork(id, opener = document.activeElement) {
+    artworkOpener = opener; artworkCard = id;
+    const c = catalog[id], card = E.card(c.id);
     $("artwork-image").src = art(c); $("artwork-image").alt = c.subject;
     $("artwork-title").textContent = c.name; $("artwork-role").textContent = c.race || names[card.type];
     $("artwork-dialog").dataset.suit = card.suit;
     $("artwork-value").textContent = (card.type === "monster" ? "Strength " : card.type === "weapon" ? "Power " : "Healing ") + card.value;
     $("artwork-dialog").showModal();
+  }
+  $("artwork-dialog").addEventListener("close", () => {
+    const target = artworkOpener?.isConnected ? artworkOpener : $("deck-dialog").open ? $("deck-matrix").querySelector(`[data-inventory-card="${artworkCard}"]`) : null;
+    target?.focus({ preventScroll: true });
   });
   $("journal-button").addEventListener("click", () => { $("journal-list").innerHTML = state.history.length ? state.history.slice().reverse().map((h) => `<li><b>Room ${h.room}</b> · ${esc(h.message)}</li>`).join("") : "<li>No moves yet.</li>"; $("journal-dialog").showModal(); });
   for (const dialog of document.querySelectorAll("dialog")) dialog.addEventListener("click", (event) => { if (event.target.closest("[data-close]")) dialog.close(); if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
   $("sound-button").addEventListener("click", () => { prefs.sound = !prefs.sound; preferences(); sound("room"); });
   $("atmosphere").addEventListener("change", (event) => { prefs.atmosphere = event.target.value; preferences(); });
   $("motion-setting").addEventListener("change", (event) => { prefs.motion = event.target.checked; preferences(); });
-  $("oracle-toggle").addEventListener("change", (event) => { prefs.oracle = event.target.checked; preferences(); analyze(); });
+  $("oracle-toggle").addEventListener("change", (event) => { prefs.oracle = event.target.checked; preferences(); renderAnalysis(!!searchStatus?.pending); });
   document.addEventListener("keydown", (event) => {
     if (event.repeat || event.ctrlKey || event.altKey || event.metaKey || document.querySelector("dialog[open]") || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName)) return;
     const i = Number(event.key) - 1;

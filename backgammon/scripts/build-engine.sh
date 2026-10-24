@@ -11,6 +11,7 @@ build=$(mktemp -d)
 trap 'rm -rf "$build"' EXIT
 curl -fL https://github.com/ascottix/gnubg-core/archive/955555c69adebb1d7de23abc1018074158621168.tar.gz | tar xz -C "$build" --strip-components=1
 cp "$root/engine/source/bridge.c" "$build/src/bridge.c"
+cp "$root/engine/source/verify-checker.c" "$build/src/verify-checker.c"
 python3 "$root/scripts/patch-engine.py" "$build"
 (cd "$build" && make -f Makefile.emcc -j4)
 (cd "$build" && make -f Makefile.emcc VARIANT=simd -j4)
@@ -19,4 +20,4 @@ cmp "$build/dist/gnubg-core-module.data" "$build/dist_simd/gnubg-core-module.dat
 mkdir -p "$output/vendor/simd" "$output/source"
 cp "$build"/dist/gnubg-core-module.* "$output/vendor/"
 cp "$build/dist_simd/gnubg-core-module.js" "$build/dist_simd/gnubg-core-module.wasm" "$output/vendor/simd/"
-python3 "$root/scripts/archive-engine.py" "$build" "$output/source/gnubg-core-955555c-bg8.tar.gz"
+python3 "$root/scripts/archive-engine.py" "$build" "$output/source/gnubg-core-955555c-bg9.tar.gz"

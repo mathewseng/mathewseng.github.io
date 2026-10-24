@@ -2,8 +2,11 @@
 import { SEARCH_MODEL } from './search-model.mjs';
 import { PRESETS } from './metadata.mjs';
 
-export const SEARCH_POLICY_VERSION = 'minimum-two-v3';
-export const SEARCH_LIMITS = Object.freeze({ minimumPlies: 2, maxNextStageMs: 5000, maximumCubePlies: 3 });
+export const SEARCH_POLICY_VERSION = 'minimum-three-v2';
+export const SEARCH_LIMITS = Object.freeze({ minimumPlies: 3, maxNextStageMs: 10000, maximumCubePlies: 3 });
+// Policy preferences, separate from the historical timing model's fitted data.
+// A larger, stable lead is required before giving up optional fourth-ply work.
+export const SEARCH_GAPS = Object.freeze({ cubeless: .080, money: .160, previous: .040 });
 
 export function leadInfo(current, previous) {
   const a = current?.candidates, b = previous?.candidates;
@@ -65,7 +68,7 @@ export function forecastNext(state, evaluations) {
   // The historical regression was trained on capped timings and can badly
   // underestimate 4 ply (live 4-1: ~0.8 s at 3 ply, ~13.5 s at 4). At that
   // optional stage use both its upper residual and observed per-candidate
-  // growth. Keep the 2→3 policy unchanged; never skip the 2-ply minimum.
+  // growth. The mandatory minimum is enforced before any cost/gap stop.
   const observedGrowthMs = Math.max(.25, current.stageMs) * count / current.candidates.length *
     Math.max(1, (Math.max(.25,current.stageMs)/current.candidates.length) /
       (Math.max(.25,previous.stageMs)/previous.candidates.length));
@@ -85,7 +88,8 @@ export function forecastNext(state, evaluations) {
 
 export function chooseSearchDecision(state, evaluations, submitted = null) {
   const current = evaluations.at(-1), previous = evaluations.at(-2);
-  if (!['checker', 'cube'].includes(current?.type) || ![2, 3].includes(current.settings.plies))
+  if (!['checker', 'cube'].includes(current?.type) ||
+      current.settings.plies < SEARCH_LIMITS.minimumPlies || ![2, 3].includes(current.settings.plies))
     return { reason: 'searching', lead: null, forecast: null };
   // Cube 0–3 ply can be almost entirely warm from the previous checker search,
   // while 4 ply still takes several seconds. That ratio is not a safe forecast.
@@ -95,12 +99,12 @@ export function chooseSearchDecision(state, evaluations, submitted = null) {
   const lead = leadInfo(current, previous), forecast = forecastNext(state, evaluations);
   // Match equity and actual-move grading need more than a stable top ranking.
   // Cubeful money gets a larger margin than the historical cubeless sample.
-  const margin = state.rules?.cube ? SEARCH_MODEL.policy.moneyGap : SEARCH_MODEL.policy.cubelessGap;
+  const margin = state.rules?.cube ? SEARCH_GAPS.money : SEARCH_GAPS.cubeless;
   if (!submitted && !state.matchLength && lead?.stable && lead.gap >= margin &&
-      lead.previousGap >= .02 && forecast?.estimateMs >= 50)
+      lead.previousGap >= SEARCH_GAPS.previous && forecast?.estimateMs >= 50)
     return { reason: 'clear-lead', lead, forecast };
-  // Five seconds is an estimate for the NEXT stage, not a total-time deadline.
-  // Completing the minimum depth never consumes the allowance for trying 3 ply.
+  // Ten seconds is an estimate for the NEXT stage, not a total-time deadline.
+  // Completing the minimum depth never consumes the allowance for trying 4 ply.
   if (forecast && forecast.estimateMs > SEARCH_LIMITS.maxNextStageMs)
     return { reason: 'predicted-cost', lead, forecast };
   return { reason: 'searching', lead, forecast };

@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const { seedOpening } = require('./play-helpers.cjs');
 
 // Real bot play with the bundled engine, followed by shared-board edge cases.
 // Pause only the trace animations; checker playback, input and rules run normally.
@@ -11,14 +12,10 @@ module.exports = async function lastMoveEntry(browser, base, out, name) {
     const page = await context.newPage(), errors = [];
     page.on('pageerror', e => errors.push(e.message));
     try {
+      // Local games use HMAC-indexed rolls rather than individual random bytes.
+      await seedOpening(page, [4, 1]);
       await page.addInitScript(() => {
         window.pauseTrace = true;
-        // Keep the following human roll reproducible: a random forced turn
-        // would advance the game and correctly clear this decorative trace.
-        const random = crypto.getRandomValues.bind(crypto);
-        let die = 0;
-        crypto.getRandomValues = data => data instanceof Uint8Array && data.length === 1
-          ? (data[0] = [3, 0][die++ % 2], data) : random(data);
         const animate = Element.prototype.animate;
         Element.prototype.animate = function(frames, options) {
           const a = animate.call(this, frames, options);
@@ -26,6 +23,13 @@ module.exports = async function lastMoveEntry(browser, base, out, name) {
             a.pause(); a.currentTime = 0;
           }
           return a;
+        };
+        // Board transitions start together after all resting poses are read.
+        const play = Animation.prototype.play;
+        Animation.prototype.play = function() {
+          const result = play.call(this);
+          if (window.pauseTrace && ['last-move-entry', 'move-arrow-entry', 'last-move-exit'].includes(this.id)) { this.pause(); this.currentTime = 0; }
+          return result;
         };
       });
       await page.goto(base + '/backgammon/');

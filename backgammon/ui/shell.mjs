@@ -2,8 +2,9 @@
 import { installInputBehavior } from "./input-behavior.mjs";
 import { advancedAction, selectedDie } from "../core/advanced-input.mjs";
 import { EquityBar } from "./equity-bar.mjs";
+import { installDisplayControls } from "./display-controls.mjs";
 import {
-  settings,
+  settings, readSettings,
   saveSettings,
   put,
   itemRecord,
@@ -18,6 +19,7 @@ import {
   clone,
   boardKey,
   decisionPlayer,
+  blockedBarRoll,
 } from "../core/rules.mjs";
 import { Board } from "./board.mjs";
 import {
@@ -320,9 +322,11 @@ function changeSound(value) {
       "Sound setting applies to this tab. Browser storage is unavailable.",
     );
 }
-let activeBoard, activeEquity;
+let activeBoard, activeEquity, stopDisplayControls;
 export function shell(page, title, subtitle = "") {
   installInputBehavior();
+  stopDisplayControls?.();
+  stopDisplayControls = null;
   activeEquity?.destroy();
   activeEquity = null;
   activeBoard?.destroy();
@@ -334,6 +338,7 @@ export function shell(page, title, subtitle = "") {
       applyBoardTheme(settings().boardTheme);
       document.documentElement.dataset.motion = settings().motion;
       dispatchEvent(new Event("bg-motion"));
+      dispatchEvent(new Event("bg-settings"));
     }
   });
   const label = page[0].toUpperCase() + page.slice(1);
@@ -365,10 +370,28 @@ export function shell(page, title, subtitle = "") {
   // The body was just rebuilt: the skin re-attaches its canvas and defs first,
   // then the board theme paints its pattern definitions.
   applySkin(settings().skin);
+  if (page === "play") {
+    const screen = el("button", {id:"screen-toggle", type:"button", class:"btn btn--ghost btn--icon"});
+    screen.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>';
+    mute.after(screen);
+    stopDisplayControls = installDisplayControls(document.querySelector('.app'), screen, () => {
+      if (document.querySelector('.fullscreen-help')) return;
+      const content = el('div', {class:'stack'},
+        el('p', {}, 'Your browser controls its toolbar. On iPhone Safari, rotation alone cannot hide it.'),
+        el('p', {}, el('strong', {}, 'Hide it now'), el('br'),
+          'Safari’s address field menu → Hide Toolbar (under More on some versions).'),
+        el('p', {}, el('strong', {}, 'Play without browser bars'), el('br'),
+          'Share → Add to Home Screen → Open as Web App. Then launch from your Home Screen.'),
+        el('a', {href:'https://support.apple.com/guide/iphone/iphb3100d149/ios', target:'_blank', rel:'noopener'}, 'Safari display help'));
+      dialog('More room for the board', content).classList.add('fullscreen-help');
+    });
+  }
   applyBoardTheme(settings().boardTheme);
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
   $("preferences").onclick = () => preferences().catch(showError);
+  $("preferences").setAttribute("aria-label", "Settings");
+  $("preferences").title = "Settings";
   installMobileTools(page);
   activeBoard = new Board($("board"));
   if (["play", "trainer", "solver"].includes(page)) {
@@ -510,9 +533,26 @@ export async function preferences() {
     el("p", { class: "muted small" }, "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
+    el("label", { class: "check" }, el("input", {
+      type: "checkbox", checked: s.cubeOneAsOne,
+      onChange: e => {
+        saveSettings({ cubeOneAsOne: e.target.checked });
+        dispatchEvent(new Event("bg-settings"));
+      },
+    }), "Show unturned cube as 1 instead of 64"),
     el("label", { class: "check" }, moveHints, "Show legal-move hints in beginner mode"),
     el("p", { class: "muted small" },
       "Turn off checker rings and destination highlights. Your selected checker stays marked; taps, dragging and keyboard moves still work."),
+    field("Closed-out passing", select([
+      ["off", "Off"],
+      ["forced", "Forced passes only"],
+      ["bad-double", "Skip clearly bad doubles"],
+    ], s.closedOutPassing, value => {
+      saveSettings({closedOutPassing:value});
+      dispatchEvent(new Event("bg-settings"));
+    })),
+    el("p", {class:"muted small"},
+      "Off waits for your input. Forced passes only skips when all six bar entries are blocked and doubling is unavailable. Skip clearly bad doubles also skips a double at least 0.25 equity worse in computer games. Any open entry keeps normal rolling. Online, this applies only to your own turns."),
     el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.equityBar,
       onChange: e => { saveSettings({equityBar:e.target.checked}); dispatchEvent(new Event("bg-settings")); }}), "Show equity bar against the computer"),
     el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.moveFeedback,
@@ -617,7 +657,7 @@ export function about() {
       el(
         "p",
         {},
-        "GNUbg Core 955555c · web binding bg6. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution. Browser-supported SIMD acceleration and the scalar fallback use the same weights and analysis settings.",
+        "GNUbg Core 955555c · web binding bg9. Neural-network evaluation with Kazaross–XG2 match equity and bearoff databases. Evaluation is an estimate, not an exact solution. Browser-supported SIMD acceleration and the scalar fallback use the same weights and analysis settings.",
       ),
       el(
         "p",
@@ -633,13 +673,16 @@ export function about() {
       el(
         "p",
         {},
-        "Auto (the default for computer play, hints and reviews) completes at least 2 ply and normally continues to 3, up to 4, unless the next stage is estimated above 5 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts offer Basic (0/0), Balanced (1/1, default), Strong (2/2) and Short/deep checker/cube policies with ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
+        "Auto (the default for computer play, hints and reviews) completes at least 3 ply and may continue to 4, unless that next stage is estimated above 10 seconds or the leader has a substantial stable advantage. Full 0–2 ply searches remain available. Resumable GNUbg rollouts offer Basic (0/0), Balanced (1/1, default), Strong (2/2) and Short/deep checker/cube policies with ordinary cube rules; beavers/raccoons remain tree-analysis only. GNU IDs and proprietary binary imports are unsupported.",
       ),
       el(
         "p",
         {},
         "Local data stays in this browser. Export a Library backup to move it between devices. Online rooms use PeerJS signaling and may fail on restricted networks. They are casual peer-to-peer games, not tournament security.",
       ),
+      el("p", {}, "Solver also offers experimental PureTD money checker analysis: a separately trained, MIT-licensed model by Alex Strehl. It supports Jacoby money play without beavers/raccoons and reports cubeful equity only. Its one-ply search evaluates every legal root move. GNUbg remains the default engine and supplies rollouts and match/cube analysis."),
+      el("a", {href:"/backgammon/engine/vendor/puretd/LICENSE.txt",target:"_blank"}, "PureTD model and engine · MIT license"),
+      el("a", {href:"/backgammon/engine/source/puretd/puretd-18b0a80-source.tar.gz"}, "PureTD pinned source and original model"),
       el(
         "a",
         { href: "/backgammon/licenses/GPL-3.0.txt", target: "_blank" },
@@ -647,7 +690,7 @@ export function about() {
       ),
       el(
         "a",
-        { href: "/backgammon/engine/source/gnubg-core-955555c-bg8.tar.gz" },
+        { href: "/backgammon/engine/source/gnubg-core-955555c-bg9.tar.gz" },
         "Download corresponding engine source",
       ),
       el(
@@ -663,7 +706,7 @@ export function about() {
   );
 }
 export function players(s, names = ["White", "Black"]) {
-  const orientation = settings().orientation;
+  const orientation = readSettings().orientation;
   for (const [id, p] of [
     ["opponent", 1 - orientation],
     ["player", orientation],
@@ -695,7 +738,7 @@ export function players(s, names = ["White", "Black"]) {
         }),
         el("strong", { title: names[p] }, names[p]),
         active ? el("span", { class: "player-status badge badge--accent badge--plain" },
-          s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply") : null,
+          blockedBarRoll(s) ? "Closed out" : s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply") : null,
       ),
       el(
         "span",
@@ -803,7 +846,7 @@ export class DraftBoard {
     };
     addEventListener("bg-settings", () => this.render());
   }
-  set(s, paths, enabled = true) {
+  set(s, paths, enabled = true, presentation = null) {
     this.board.endDrag();
     this.dragging = false;
     this.state = s;
@@ -817,7 +860,7 @@ export class DraftBoard {
     this.preview = null;
     if (enabled && !this.advanced && s.bar[s.turn] && this.candidates().length)
       this.selected = "bar";
-    this.render();
+    this.render(presentation);
   }
   cached(name, calculate) {
     const key = JSON.stringify([this.draft, this.minDraft]);
@@ -912,7 +955,7 @@ export class DraftBoard {
       ...this.entrySwitches().filter((st) => st.from === this.selected),
     ];
   }
-  get advanced() { return settings().interactionMode === "advanced"; }
+  get advanced() { return readSettings().interactionMode === "advanced"; }
   activeDie() { return selectedDie(this.candidates(), this.preferred, this.state.dice); }
   switchDice() {
     if (!this.enabled || this.preview) return;
@@ -1277,10 +1320,10 @@ export class DraftBoard {
     if (changed) this.board.animateRestore(before, this.current());
     this.onChange({ kind: "reset" });
   }
-  render() {
+  render(presentation = null) {
     if (!this.state) return;
     const s = this.preview || this.current();
-    const display = settings();
+    const display = {...readSettings()};
     // While holding a checker, show all its legal landing/return targets in
     // either input mode. Releasing restores the user's normal hint preference.
     display.moveHints = this.dragging || (display.moveHints && !this.advanced);
@@ -1294,7 +1337,7 @@ export class DraftBoard {
       orientation: display.orientation,
     });
     this.board.render(s, {
-      ...display,
+      ...display, presentation,
       selected: this.enabled && !this.preview ? this.selected : null,
       destinations: moves.map((st) => st.to),
       reverseTargets:
@@ -1333,7 +1376,7 @@ export class DraftBoard {
       preview: !!this.preview,
       usedDice: this.draft.map((st) => st.die),
       lockedDice: this.minDraft,
-      forcedDice: this.draft.filter((st, index) => index < this.minDraft || nextSteps(this.paths, this.draft.slice(0, index)).length === 1).map(st => st.die),
+      forcedDice: this.draft.slice(0, this.minDraft).map(st => st.die),
       playableDice: this.enabled && !this.preview ? this.candidates().map(st => st.die) : null,
       boardShortcuts: this.shortcutsEnabled && display.keyboardEnabled ? display.shortcuts : null,
       advanced: this.advanced,

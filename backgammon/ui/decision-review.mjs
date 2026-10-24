@@ -36,7 +36,7 @@ export function decisionReview(
     title = "Move hint",
     opponent = false,
     onClose = () => {},
-    onUse,
+    replayLabel = "Undo & play best",
     onReplay,
     onReturn,
     replayDescription = "Rewinds this turn and any bot reply, then plays the best move. Already rolled dice are preserved.",
@@ -426,7 +426,7 @@ export function decisionReview(
             ));
       if (onReplay && !bestPlayed) {
         const replay = button(
-          onUse ? "Play best" : "Undo & play best",
+          replayLabel,
           async () => {
             if (replay.disabled) return;
             replay.disabled = true;
@@ -443,13 +443,6 @@ export function decisionReview(
         footer.append(replay);
         body.append(el("p", { class: "muted small" }, replayDescription));
       }
-      if (onUse)
-        footer.prepend(
-          button("Use best move", () => onUse(best.steps), "", {
-            id: "use-hint",
-            title: "Replaces your draft. Review it, then confirm on the table.",
-          }),
-        );
       body.append(
         el(
           "details",

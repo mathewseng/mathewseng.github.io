@@ -8,6 +8,7 @@ import { routeArrow } from "./move-arrow-route.mjs";
 import { captureHighlights, animateHighlights, clearHighlightExits } from "./highlight-motion.mjs";
 import { LAST_MOVE_ENTRY_TIMING, captureLastMoveEntry, animateLastMoveEntry, captureLastMoveExit, animateLastMoveExit, clearLastMoveExits } from "./last-move-motion.mjs";
 import { capturePreview, animatePreview, clearPreview } from "./preview-motion.mjs";
+import { animate as animateBatched, beginAnimationBatch, finishAnimationBatch, resumeAnimation } from "./animation-batch.mjs";
 const NS = "http://www.w3.org/2000/svg";
 let boardSerial = 0;
 const STACK_LIMIT = 5,
@@ -370,6 +371,8 @@ export class Board {
     this.feedbackTimers = [];
     this.lifecycle = new AbortController();
     const listen = { signal: this.lifecycle.signal };
+    this.touchInput = matchMedia('(pointer: coarse)');
+    this.touchInput.addEventListener('change', () => this.updateCaption(), listen);
     const settle = () => {
       if (this.playbackTimer && this.playbackFinal) {
         const { state, options } = this.playbackFinal;
@@ -411,9 +414,12 @@ export class Board {
       const pointer = e.detail && this.touchTap ? this.touchTap : e;
       const target = pointer === e ? e.target : document.elementFromPoint(pointer.clientX, pointer.clientY);
       this.touchTap = null;
-      if (performance.now() < (this.suppressClickUntil || 0) || this.playbackTimer) return;
+      if (performance.now() < (this.suppressClickUntil || 0)) return;
+      // A second roll tap may arrive during the first roll's animation.
+      // Let Play recognize that intent before locking ordinary board actions.
+      if (!target?.closest('.board-cube') && this.onRoll?.({target, clientX:pointer.clientX, clientY:pointer.clientY})) return;
+      if (this.playbackTimer) return;
       if (target?.closest(".board-cube")) { this.onCube?.(); return; }
-      if (this.onRoll?.()) return;
       if (!this.options?.interactive) return;
       if (target?.closest(".dice-switch, .dice-switch-hit")) { this.onSwitchDice?.(); return; }
       const die = target?.closest("[data-die]");
@@ -438,6 +444,11 @@ export class Board {
         this.onPoint(raw, { quick: !checkerTap, checkerTap });
       } else this.onBackground?.();
     });
+    this.svg.addEventListener('keydown', e => {
+      if (e.target.closest?.('.board-caption') && ['Enter',' '].includes(e.key)) {
+        e.preventDefault(); e.stopImmediatePropagation(); this.onRoll?.(e);
+      }
+    }, true);
     this.svg.addEventListener("pointerdown", (e) => {
       this.suppressClickUntil = 0;
       this.touchTap = e.isPrimary && e.pointerType === "touch"
@@ -712,16 +723,18 @@ export class Board {
       die.append(svg("rect", { class: "board-die-hit", x: -34, y: -36,
         width: 68, height: 72, fill: "transparent", "aria-hidden": "true" }));
       const body = svg("g", { class: "board-die-face", "pointer-events": "none" });
-      body.append(face, patternOverlay(face, `die${s.turn}`));
+      const ink = svg("g", {class:"die-ink"});
+      ink.append(face, patternOverlay(face, `die${s.turn}`));
+      body.append(ink);
       // A restrained colored rim reinforces size/shadow. Keep it mounted so
       // switching, using and undoing can reverse its fade from the visible frame.
-      body.append(svg("rect", { class: "die-status-mark die-selection-accent",
+      ink.append(svg("rect", { class: "die-status-mark die-selection-accent",
         "data-die-mark": "selected", x: -31, y: -31, width: 62, height: 62, rx: 11,
         fill: "color-mix(in srgb, var(--board-selection) 35%, transparent)",
         stroke: boardColor("selection"), "stroke-width": 2.4,
         opacity: active && clickable ? 1 : 0, "aria-hidden": "true" }));
       for (const pip of pips[value])
-        body.append(
+        ink.append(
           svg("circle", {
             cx: ((pip % 3) - 1) * 18,
             cy: (Math.floor(pip / 3) - 1) * 18,
@@ -978,7 +991,7 @@ export class Board {
       await new Promise(resolve => setTimeout(resolve, 32));
     }
   }
-  playTurn(before, steps, { automatic = false, rolled = false } = {}) {
+  playTurn(before, steps, { automatic = false, rolled = false, final = this.state, options = this.renderOptions } = {}) {
     if (!steps.length) return;
     if (this.reducedMotion() || document.hidden) {
       const after = steps.reduce((s, step) => applyStep(s, step), before);
@@ -992,8 +1005,6 @@ export class Board {
       return;
     }
     clearTimeout(this.playbackTimer);
-    const final = this.state,
-      options = this.renderOptions;
     this.playbackFinal = { state: final, options };
     let current = before,
       index = 0;
@@ -1024,8 +1035,7 @@ export class Board {
     };
     if (rolled) {
       this.render(before, {...options, playback:true, interactive:false, lastMove:null,
-        selected:null, sources:[], destinations:[], moves:[], usedDice:[], forcedDice:[]});
-      this.animateDice();
+        selected:null, sources:[], destinations:[], moves:[], usedDice:[], forcedDice:[], presentation:{roll:true}});
       this.playbackTimer = setTimeout(advance, Math.max(0, this.diceSettledAt - performance.now()));
     } else advance();
   }
@@ -1168,20 +1178,21 @@ export class Board {
     this.animations.push(animation);
     if (drop && origin.landing?.target === String(raw))
       this.settleDropGhost(origin.landing, destination, flight, animation);
-    animation.finished
-      .then(() => {
+    const settle = completed => {
         piece.remove();
         piece.resident?.remove();
-        animation.cancel();
         const landed = piece.arrival;
-        if (landed && Number(landed.dataset.arriving) <= 1) {
+        // A newer move can reuse this cached stack before a cancelled flight's
+        // rejection runs. Reveal it only after its last live arrival retires.
+        const arriving = [...this.svg.querySelectorAll('.moving-checker')]
+          .some(node => node.arrival === landed);
+        if (landed?.hasAttribute('data-arriving') && !arriving) {
           landed.style.opacity = "";
           landed.removeAttribute("data-arriving");
-        } else if (landed)
-          landed.dataset.arriving = Number(landed.dataset.arriving) - 1;
-        this.contact(destination);
-      })
-      .catch(() => {});
+        }
+        if (completed) { animation.cancel(); this.contact(destination); }
+    };
+    animation.finished.then(() => settle(true), () => settle(false));
     return flight;
   }
   contact(position) {
@@ -1205,6 +1216,7 @@ export class Board {
   animateRestore(before, after, cue = "reset") {
     sound.play(cue);
     if (this.reducedMotion() || document.hidden) return;
+    const firstAnimation = this.animations.length;
     for (const player of [0, 1]) {
       const origins = [],
         destinations = [];
@@ -1252,6 +1264,7 @@ export class Board {
         }
       }
     }
+    return Promise.allSettled(this.animations.slice(firstAnimation).map(animation => animation.finished));
   }
   returnDragged(point) {
     if (!this.dropOrigin || this.reducedMotion() || document.hidden) return;
@@ -1281,7 +1294,7 @@ export class Board {
       // it, preserving focus/hit targets and displaying only the committed value.
       // Land at the selected die's raised resting pose, without a final snap.
       const sign = i % 2 ? 1 : -1;
-      const animation = face.animate(
+      const animation = animateBatched(face,
         [
           {
             transform: `translate(${sign * 24}px,-9px) rotate(${sign * 32}deg) scale(.86)`,
@@ -1300,7 +1313,7 @@ export class Board {
           easing: "cubic-bezier(.2,.75,.3,1)",
           fill: "backwards",
           id: "dice-roll",
-        },
+        }, this.animations,
       );
       this.animations.push(animation);
     });
@@ -1309,14 +1322,15 @@ export class Board {
     // Snapshot before render cancels animations/removes SVG children. This also
     // captures interrupted lifts/fades, so switching and undo never jump.
     if (this.reducedMotion() || document.hidden) return null;
-    const dice = [...this.svg.querySelectorAll('.board-die')].map(die => {
+    const diceNodes = [...this.svg.querySelectorAll('.board-die')];
+    const dice = diceNodes.map(die => {
       const face = die.querySelector('.board-die-face');
       const group = die.closest('.board-dice');
       const style = getComputedStyle(face);
       return { value: die.dataset.die, location: die.getAttribute('transform'),
         layout: getComputedStyle(die).transform === 'none' ? diceTransform(die) : getComputedStyle(die).transform,
         opacity: getComputedStyle(die).opacity,
-        copy: die.cloneNode(true),
+        copy: diceNodes.length === 4 ? die.cloneNode(true) : null,
         player: group.dataset.player, historical: group.classList.contains('last-roll'),
         transform: style.transform, filter: style.filter,
         marks: Object.fromEntries([...face.querySelectorAll('[data-die-mark]')].map(mark => {
@@ -1346,7 +1360,7 @@ export class Board {
     const timing = {duration: 420, easing: 'cubic-bezier(.22,.7,.25,1)', id: 'dice-layout'};
     const animate = (node, from, to, opts = timing) => {
       if (from.transform === to.transform && from.opacity === to.opacity) return;
-      this.animations.push(node.animate([from, to], opts));
+      this.animations.push(animateBatched(node, [from, to], opts, this.animations));
     };
     dice.forEach((die, i) => {
       // WebKit can report `none` for an SVG transform attribute. Give WAAPI
@@ -1372,8 +1386,8 @@ export class Board {
         group.append(ghost);
         const target = dice[i - 1].getAttribute('transform').match(/translate\(([-\d.]+) ([-\d.]+)\)/);
         const targetTransform = `matrix(1,0,0,1,${target[1]},${target[2]})`;
-        const animation = ghost.animate([{transform:before.layout, opacity:before.opacity},
-          {transform:targetTransform, opacity:0}], {...timing, id:'dice-layout-exit', fill:'forwards'});
+        const animation = animateBatched(ghost, [{transform:before.layout, opacity:before.opacity},
+          {transform:targetTransform, opacity:0}], {...timing, id:'dice-layout-exit', fill:'forwards'}, this.animations);
         animation.onfinish = () => ghost.remove(); this.animations.push(animation);
       }
     } else if (samePlayer) {
@@ -1381,8 +1395,8 @@ export class Board {
       for (const item of poses?.retiring || []) {
         if (!item.frames || item.time >= item.timing.duration) continue;
         group.append(item.node);
-        const animation = item.node.animate(item.frames, {...item.timing, id:'dice-layout-exit'});
-        animation.currentTime = item.time;
+        const animation = animateBatched(item.node, item.frames, {...item.timing, id:'dice-layout-exit'}, this.animations);
+        resumeAnimation(animation, item.time, this.animations);
         animation.onfinish = () => item.node.remove(); this.animations.push(animation);
       }
     }
@@ -1444,7 +1458,7 @@ export class Board {
       });
     }
     for (const {node, frames, options} of pending)
-      this.animations.push(node.animate(frames, options));
+      this.animations.push(animateBatched(node, frames, options, this.animations));
   }
   animateCube(before) {
     sound.play("cube");
@@ -1484,8 +1498,9 @@ export class Board {
         : `${node.tagName}:${node.classList[0] || ''}`;
       const index = counts.get(base) || 0;
       counts.set(base, index + 1);
-      const key = `${base}:${index}`, signature = node.outerHTML;
+      const key = `${base}:${index}`;
       const old = this.childCache?.get(key);
+      const signature = old?.node === node ? old.signature : node.outerHTML;
       // Dice have their own snapshot/animation handoff and may be replaced
       // independently by the advanced die-switch fast path.
       if (old?.signature === signature && old.node.parentNode === this.svg &&
@@ -1506,6 +1521,7 @@ export class Board {
     {
       orientation = 0,
       numbers = true,
+      cubeOneAsOne = false,
       moveHints = true,
       selected = null,
       destinations = [],
@@ -1521,6 +1537,7 @@ export class Board {
       editor = false,
       diceState = null,
       playback = false,
+      presentation = null,
       usedDice = [],
       forcedDice = [], lockedDice = 0, playableDice = null, advanced = false, boardShortcuts: shortcuts = null,
       chooseDie = null,
@@ -1529,11 +1546,19 @@ export class Board {
       lastMove = null,
     } = {},
   ) {
-    const nextOptions = { orientation, numbers, moveHints, selected, destinations,
+    const nextOptions = { orientation, numbers, cubeOneAsOne, moveHints, selected, destinations,
       reachable, reverseTargets, undoSources, revisionTargets, sources, moves,
       dropPreview, interactive, preview, editor, diceState, usedDice, forcedDice,
       lockedDice, playableDice, advanced, boardShortcuts: shortcuts, chooseDie,
       preferredDie, hideDice, lastMove };
+    if (presentation?.steps?.length) {
+      // Start at the first visible move. Building the final board/arrows here
+      // only to discard them for playback doubles the work on Confirm.
+      const moving = !this.reducedMotion() && !document.hidden;
+      this.playTurn(presentation.before, presentation.steps,
+        {...presentation, final:s, options:nextOptions});
+      if (moving) return;
+    }
     // Advanced die switching changes only the dice. Keep the board, flights and
     // their animation clocks alive instead of rebuilding hundreds of SVG nodes.
     const diceOnlyKey = JSON.stringify({ ...nextOptions, preferredDie: null });
@@ -1550,12 +1575,15 @@ export class Board {
       for (const animation of this.animations)
         if (['dice-layout','dice-selection','dice-opacity','dice-mark','dice-control'].includes(animation.id)) animation.cancel();
       this.animations = this.animations.filter(a => a.playState !== 'idle' && a.playState !== 'finished');
+      beginAnimationBatch(this.animations);
       old.replaceWith(this.dice(diceState || s, { ...nextOptions, shortcuts }));
       this.animateDiceLayout(poses);
       this.animateDiceSelection(poses);
+      finishAnimationBatch(this.animations);
       if (focused) this.svg.querySelector(`[data-die="${focused}"][role="button"]`)?.focus({preventScroll:true});
       return;
     }
+    const compact = this.container.clientWidth < 600;
     const dicePoses = this.dicePoses();
     const highlightMotion = !this.reducedMotion() && !document.hidden;
     const lastMoveEntry = highlightMotion ? captureLastMoveEntry(this.svg) : [];
@@ -1586,6 +1614,7 @@ export class Board {
       this.playbackFinal = null;
     }
     this.cancelAnimations(settling);
+    beginAnimationBatch(this.animations);
     if (this.options?.orientation !== orientation || !interactive)
       this.endDrag();
     this.state = s;
@@ -1596,7 +1625,6 @@ export class Board {
       "has-moves",
       interactive && sources.length > 0,
     );
-    const compact = this.container.clientWidth < 600;
     const focused = this.svg.contains(document.activeElement)
       ? document.activeElement
       : null;
@@ -1642,6 +1670,8 @@ export class Board {
       }),
     );
     const ghosts = lastMoveGhosts(lastMove, orientation);
+    const pointCache = this.pointCache || (this.pointCache = new Map());
+    const showShortcuts = numbers && shortcuts && !matchMedia("(pointer: coarse), (max-width: 700px)").matches;
     for (let p = 0; p < 24; p++) {
       const { x, y, top } = pointGeometry(p, orientation),
         v = s.points[p],
@@ -1665,6 +1695,17 @@ export class Board {
               .join(" or ")
           : ""
       }${reverseTargets.includes(p) ? ", draft return: tap point space to restore a checker and its dice" : ""}${moved ? `, ${moved} moved last turn` : ""}${lastMove?.origins?.[p] ? `, previous location of ${lastMove.origins[p].count} ${playerName(lastMove.player)} checkers, shown as ghosts` : ""}`;
+      const pointKey = JSON.stringify([orientation, numbers, compact, moveHints,
+        sources.includes(p) || destinations.includes(p) ? s.turn : null,
+        selected === p, selected === null, label, undoSources.includes(p) && interactive,
+        showShortcuts && shortcuts, ghosts.filter(ghost => ghost.point === p)]);
+      const cached = pointCache.get(p);
+      if (cached?.key === pointKey && cached.node.parentNode === this.svg) {
+        if (cached.node.getAttribute('aria-disabled') !== String(!interactive))
+          cached.node.setAttribute('aria-disabled', !interactive);
+        children.push(cached.node);
+        continue;
+      }
       const g = svg("g", {
         "data-point": p,
         role: "button",
@@ -1701,16 +1742,14 @@ export class Board {
       // non-scaling border is wider than the gap beside the triangle, so drawing
       // it underneath lets the triangle/pattern cut off the inside of the ring.
       g.append(g.querySelector(".point-hit"));
-      if (reachable.includes(p)) {
+      if (moveHints && reachable.includes(p)) {
         // One inset rounded outline, rather than a filtered triangle whose
         // sharp corners/blur leave rectangular seams on small Safari boards.
         g.append(svg('rect', {x:x+5, y:top ? 29 : 368, width:50, height:263,
           rx:8, class:'point-glow', fill:'none', 'pointer-events':'none'}));
       }
       if (
-        destinations.includes(p) ||
-        reachable.includes(p) ||
-        reverseTargets.includes(p) ||
+        (moveHints && (destinations.includes(p) || reachable.includes(p) || reverseTargets.includes(p))) ||
         selected === p
       )
         g.append(
@@ -1724,7 +1763,7 @@ export class Board {
             "pointer-events": "none",
           }),
         );
-      if (reachable.includes(p)) g.append(g.querySelector('.point-glow'));
+      if (moveHints && reachable.includes(p)) g.append(g.querySelector('.point-glow'));
       if (numbers) {
         // The number lane is destination space too, not a dead strip of frame.
         g.append(svg("rect", {
@@ -1763,7 +1802,7 @@ export class Board {
             interactive && undoSources.includes(p) && i === Math.min(n, STACK_LIMIT) - 1,
           ),
         );
-      if (destinations.includes(p))
+      if (moveHints && destinations.includes(p))
         g.append(
           svg("rect", {
             x: x + 8,
@@ -1779,7 +1818,7 @@ export class Board {
           }),
         );
       if (
-        destinations.includes(p) &&
+        moveHints && destinations.includes(p) &&
         !(n >= STACK_LIMIT && Math.sign(v) === (s.turn ? -1 : 1))
       ) {
         const next = { ...s, points: [...s.points] };
@@ -1800,7 +1839,7 @@ export class Board {
           }),
         );
       }
-      if (destinations.includes(p))
+      if (moveHints && destinations.includes(p))
         g.append(
           svg(
             "text",
@@ -1822,7 +1861,7 @@ export class Board {
           ),
         );
       if (
-        (sources.includes(p) || selected === p) &&
+        ((moveHints && sources.includes(p)) || selected === p) &&
         n &&
         (selected === null || selected === p)
       ) {
@@ -1844,7 +1883,7 @@ export class Board {
         halo.setAttribute("class", `ring-halo${ring.classList.contains("source-ring") ? " source-ring-halo" : ""}`);
         ring.before(halo);
       }
-      if (numbers && shortcuts && !matchMedia("(pointer: coarse), (max-width: 700px)").matches) {
+      if (showShortcuts) {
         const visible = orientation ? 23 - p : p;
         const id = visible >= 12 ? `top${visible - 12}` : `bottom${11 - visible}`;
         const key = shortcuts[id]?.[0];
@@ -1853,6 +1892,7 @@ export class Board {
         const label = g.querySelector(":scope > text");
         if (label) { label.setAttribute("y", top ? 10 : 640); label.setAttribute("font-size", "14"); }
       }
+      pointCache.set(p, {key:pointKey, node:g});
       children.push(g);
     }
     for (const p of [0, 1]) {
@@ -2002,6 +2042,7 @@ export class Board {
       children.push(off);
     }
     if (s.rules.cube) {
+      const cubeLabel = s.cube.value === 1 && !cubeOneAsOne ? 64 : s.cube.value;
       const cy =
         s.cube.owner === null
           ? 330
@@ -2032,11 +2073,11 @@ export class Board {
             y: cy + 1,
             "text-anchor": "middle",
             "dominant-baseline": "middle",
-            "font-size": Math.min(36, 44 / (String(s.cube.value === 1 ? 64 : s.cube.value).length * .62)),
+            "font-size": Math.min(36, 44 / (String(cubeLabel).length * .62)),
             fill: boardColor("cubeText"),
             "font-weight": 700,
           },
-          s.cube.value === 1 ? "64" : s.cube.value,
+          cubeLabel,
         ),
       );
       cube.insertBefore(
@@ -2060,29 +2101,20 @@ export class Board {
       !s.dice.length && lastMove?.dice?.length === 2;
     children.push(
       svg(
-        "text",
+        "g",
         {
-          x: historicalDice
+          class: 'board-caption',
+          // The caption colour rides on the group so the palette coverage
+          // (tests/appearance.cjs) holds even while the caption text is empty.
+          fill: boardColor("caption"),
+          'data-x': historicalDice
             ? lastMove.player !== orientation
               ? 610
               : 196
             : s.dice.length && s.turn !== orientation
               ? 610
               : 196,
-          y: 337,
-          "text-anchor": "middle",
-          fill: boardColor("caption"),
-          "font-size": 14,
         },
-        historicalDice
-          ? "Last roll"
-          : preview
-            ? "Move preview"
-            : editor
-              ? "Position editor"
-              : interactive
-                ? ""
-                : "Backgammon",
       ),
     );
     children.push(
@@ -2119,6 +2151,7 @@ export class Board {
     const newArrows = this.arrowKey !== arrowKey;
     this.arrowKey = arrowKey;
     this.updateChildren(children);
+    this.updateCaption();
     animateLastMoveExit(this.svg, lastMoveExit, this.animations);
     this.animateDiceLayout(dicePoses);
     this.animateDiceSelection(dicePoses);
@@ -2135,13 +2168,15 @@ export class Board {
             { strokeDasharray: '1000', strokeDashoffset: 0, opacity: getComputedStyle(path).opacity }]);
         const timing = pose?.timing || (tip ? { duration: 240, delay: 520, fill: 'backwards' }
           : LAST_MOVE_ENTRY_TIMING);
-        const animation = path.animate(frames, { ...timing, id: 'move-arrow-entry' });
+        const animation = animateBatched(path, frames, { ...timing, id: 'move-arrow-entry' }, this.animations);
         // Disabling controls while committing the roll also redraws the board.
         // Preserve the entrance until the rolled state starts the exit fade.
-        if (pose) animation.currentTime = pose.time;
+        if (pose) resumeAnimation(animation, pose.time, this.animations);
         this.animations.push(animation);
       });
     }
+    if (presentation?.roll) this.animateDice();
+    finishAnimationBatch(this.animations);
     for (const node of settling) {
       this.svg.append(node);
       if (node.arrivalTarget) {
@@ -2179,5 +2214,38 @@ export class Board {
       this.svg
         .querySelector(`[data-die="${focusedDie}"][role="button"]`)
         ?.focus({ preventScroll: true });
+  }
+  setRollPrompt(prompt) {
+    this.rollPrompt = prompt;
+    this.updateCaption();
+  }
+  updateCaption() {
+    const node = this.svg.querySelector('.board-caption');
+    if (!node) return;
+    const {preview,editor,hideDice} = this.renderOptions || {};
+    const prompt = this.rollPrompt || {}, touch = this.touchInput.matches;
+    const active = !preview && !editor && !hideDice && prompt.auto;
+    const ready = !preview && !editor && !hideDice && prompt.ready && this.state?.phase === 'roll';
+    const main = preview ? 'Move preview' : editor ? 'Position editor' :
+      active ? 'Auto roll on' : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
+    const detail = active ? `${touch ? 'Tap' : 'Click'} to stop` :
+      ready && prompt.canAutoRoll ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
+    // Roll instructions stay with the local player’s dice even without a
+    // previous roll. While dice are visible, keep the auto-roll stop label
+    // in the unused lane so it never overlaps the rolling dice.
+    const x = ready || (active && this.state?.phase === 'roll') ? 610 : +node.dataset.x;
+    const key = JSON.stringify([main,detail,active,ready,x]);
+    if (node.dataset.caption === key) return;
+    node.dataset.caption = key;
+    node.replaceChildren();
+    node.dataset.auto = String(!!active);
+    node.setAttribute('role', active || ready ? 'button' : 'img');
+    node.setAttribute('tabindex', active || ready ? '0' : '-1');
+    node.setAttribute('aria-label', [main,detail].filter(Boolean).join('. '));
+    if (!main) return;
+    if (active || ready) node.append(svg('rect', {class:'board-caption-hit',x:x-174,y:291,width:348,height:80,rx:12,fill:'transparent'}));
+    node.append(svg('text', {class:'board-caption-main',x,y:detail ? 318 : 337,'text-anchor':'middle',fill:boardColor('caption'),
+      'font-size':active || ready ? 26 : 14}, main));
+    if (detail) node.append(svg('text', {class:'board-caption-detail',x,y:351,'text-anchor':'middle',fill:boardColor('caption')}, detail));
   }
 }

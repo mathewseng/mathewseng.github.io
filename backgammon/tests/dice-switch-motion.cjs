@@ -80,6 +80,13 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
           if (["dice-selection", "dice-opacity", "dice-mark", "dice-control"].includes(options?.id)) { result.pause(); result.currentTime = 0; }
           return result;
         };
+        // Board transitions start together after all resting poses are read.
+        const play = Animation.prototype.play;
+        Animation.prototype.play = function() {
+          const result = play.call(this);
+          if (["dice-selection", "dice-opacity", "dice-mark", "dice-control"].includes(this.id)) { this.pause(); this.currentTime = 0; }
+          return result;
+        };
       });
       await page.goto(base + "/backgammon/play/"); await ready();
       await loadRoll([4, 1]);

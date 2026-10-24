@@ -2,8 +2,8 @@
 import { supportsSIMD, backendPath } from "./backend.mjs";
 import { createEvaluator } from "./evaluate.mjs";
 import { runRollout } from "./rollout.mjs";
-import { runAdaptive } from "./adaptive.mjs";
-let evaluator, activeBackend;
+import { runAdaptiveAsync } from "./adaptive.mjs";
+let evaluator, activeBackend, current;
 async function init() {
   const start = performance.now();
   const asset = async (name) => {
@@ -82,18 +82,39 @@ async function init() {
 }
 self.onmessage = async ({ data }) => {
   const { id, type, ...request } = data;
+  if (type === 'finish-ready') {
+    if (current?.id === id) current.readyOnly = true;
+    return;
+  }
+  if (type === 'cancel') {
+    if (current?.id === id) current.cancelled = true;
+    else postMessage({id, type:'cancelled'});
+    return;
+  }
   try {
     if (type === "init") {
       const timing = await init();
       postMessage({
         id,
         type: "ready",
+        cooperativeCancellation: true,
         ...timing,
         capabilities: evaluator.capabilities,
       });
       return;
     }
     if (!evaluator) throw new Error("Engine is not initialized.");
+    const job = current = {id, readyOnly:request.readyOnly};
+    let yieldedAt = performance.now();
+    const yieldWork = async () => {
+      // Batch cheap native calls; expensive candidates and cube branches yield
+      // individually so a superseded search can release its warm engine.
+      if (performance.now() - yieldedAt >= 8) {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        yieldedAt = performance.now();
+      }
+      if (job.cancelled) throw new DOMException("Analysis cancelled.", "AbortError");
+    };
     const result = request.rollout
       ? await runRollout(
           evaluator,
@@ -105,16 +126,21 @@ self.onmessage = async ({ data }) => {
       : request.prepared
         ? evaluator.gradePrepared(request.state, request.prepared, request.submitted)
       : request.preset === "auto"
-        ? runAdaptive(evaluator, request.state, request.kind, request.submitted,
-            result => postMessage({ id, type: "evaluation", result: { ...result, backend: activeBackend, requestId: id } }))
-        : evaluator.analyze(
+        ? await runAdaptiveAsync(evaluator, request.state, request.kind, request.submitted,
+            result => postMessage({ id, type: "evaluation", result: { ...result, backend: activeBackend, requestId: id } }),
+            () => current?.id === id && current.readyOnly, yieldWork)
+        : await evaluator.analyzeAsync(
           request.state,
           request.preset,
           request.kind,
           request.submitted,
+          undefined,
+          yieldWork,
         );
     postMessage({ id, type: "result", result: { ...result, backend: activeBackend, requestId: id } });
   } catch (e) {
-    postMessage({ id, type: "error", message: e.message });
+    postMessage({ id, type: current?.id === id && current.cancelled ? 'cancelled' : 'error', message: e.message });
+  } finally {
+    if (current?.id === id) current = null;
   }
 };

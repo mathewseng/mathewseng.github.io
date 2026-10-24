@@ -4,30 +4,26 @@ import { historyStateKey } from "./history-tree.mjs";
 import { historyStates } from "./history-states.mjs";
 import { certainBearoff } from "./certain-bearoff.mjs";
 import { acceptedAttempt, beginDecisionAttempt } from "./decision-attempt.mjs";
+import { canAutoPassClosedOut } from './closed-out.mjs';
 import {
   clone,
+  cloneRecord,
   transition,
   legalTurns,
   replay,
   decisionPlayer,
   legalPaths,
   matchingPaths,
-  nextSteps,
   boardKey,
   applyStep,
   stepsForDie,
+  blockedBarRoll,
+  canDouble,
 } from "./rules.mjs";
+export { blockedBarRoll } from './rules.mjs';
 
 const forcedCache = new WeakMap(),
   undoCache = new WeakMap();
-// Table convenience: when every entry is closed, roll and pass without a
-// prompt. Still commit real dice for replay/recovery. This intentionally also
-// skips the optional pre-roll double; pending cube/resignation replies never skip.
-export function blockedBarRoll(state) {
-  if (state.phase !== "roll" || state.pending || !state.bar[state.turn]) return false;
-  const start = state.turn ? 0 : 18, opponent = state.turn ? 1 : -1;
-  return state.points.slice(start, start + 6).every(n => n * opponent >= 2);
-}
 // Play state objects are immutable. Equivalent legal paths count as one choice.
 // Two different outcomes that use every die prove a turn is not forced. Stop
 // there instead of generating hundreds of interchangeable double sequences.
@@ -70,14 +66,15 @@ export function forcedTurn(state) {
 }
 
 // Follow forced steps without choosing between genuinely different outcomes.
-// A completed user draft is left for Confirm; only an unfinished forced suffix
-// is auto-completed. Dice-order equivalents count as the same final outcome.
+// This detects compulsory continuations; draftAutomation limits execution to
+// the initial roll. Dice-order equivalents count as the same final outcome.
 export function forcedContinuation(
   state,
   draft = [],
   paths = legalPaths(state),
 ) {
   let prefix = [...draft];
+  const keys = new Map(paths.map(path => [path, boardKey(path.state)]));
   for (;;) {
     const matches = matchingPaths(paths, prefix);
     if (
@@ -88,32 +85,33 @@ export function forcedContinuation(
         steps: prefix.slice(draft.length),
         complete: prefix.length > draft.length,
       };
-    if (new Set(matches.map((p) => boardKey(p.state))).size === 1)
+    const outcomes = new Set(matches.map(path => keys.get(path)));
+    if (outcomes.size === 1)
       return {
         steps: matches[0].steps.slice(draft.length),
         complete: true,
       };
-    // A compulsory step need not be first in every dice order. It is safe
-    // to play first only when EVERY distinct final board remains reachable.
-    // Counting paths (or playable dice) would confuse order with a choice.
-    const outcomes = new Set(matches.map((p) => boardKey(p.state)));
-    const next = nextSteps(paths, prefix).find(
-      (step) =>
-        new Set(
-          matchingPaths(matches, [...prefix, step]).map((p) =>
-            boardKey(p.state),
-          ),
-        ).size === outcomes.size,
-    );
+    // Group once by the next step. Re-filtering the full path list and
+    // serializing every final board for each candidate stalls double rolls.
+    const choices = new Map();
+    for (const path of matches) {
+      const step = path.steps[prefix.length];
+      const key = `${step.from}/${step.to}/${step.die}`;
+      if (!choices.has(key)) choices.set(key, {step, outcomes:new Set()});
+      choices.get(key).outcomes.add(keys.get(path));
+    }
+    // Only a step preserving EVERY distinct final board can auto-play.
+    const next = [...choices.values()].find(choice => choice.outcomes.size === outcomes.size)?.step;
     if (!next) return { steps: prefix.slice(draft.length), complete: false };
     prefix.push(next);
   }
 }
 
 // Preview automation never authorizes a commit. Only forcedTurn() can advance
-// without Confirm. A fresh forward choice may fill its unavoidable suffix;
-// undo/reset/recovery only restore the globally mandatory initial prefix.
-export function draftAutomation(state, draft, paths, advance = false) {
+// without Confirm. Only the globally mandatory initial prefix is automatic;
+// a player's choice must never trigger an automatic remaining die. Reviewing
+// a fully forced roll can restore its initial steps without committing it.
+export function draftAutomation(state, draft, paths, restoreForcedRoll = false) {
   const initial = forcedContinuation(state, [], paths);
   const mandatory = initial.complete ? [] : initial.steps;
   const same = (a, b) =>
@@ -121,24 +119,8 @@ export function draftAutomation(state, draft, paths, advance = false) {
   const starts = (steps) => mandatory.every((s, i) => same(s, steps[i]));
   let normalized = draft;
   if (draft.length && mandatory.length && !starts(draft)) {
-    // Recover drafts saved by an older policy without locking a chosen die.
-    // Reorder the same steps (or add only missing compulsory steps), keeping
-    // the exact set of choices the user had before recovery.
-    const counts = (steps) => {
-      const m = new Map();
-      for (const step of steps) {
-        const k = `${step.from}/${step.to}/${step.die}`;
-        m.set(k, (m.get(k) || 0) + 1);
-      }
-      return m;
-    };
-    const required = counts(draft);
-    for (const [k, n] of counts(mandatory))
-      required.set(k, Math.max(n, required.get(k) || 0));
-    const length = [...required.values()].reduce((a, b) => a + b, 0);
-    const outcomes = new Set(
-      matchingPaths(paths, draft).map((p) => boardKey(p.state)),
-    );
+    // Recover the ordering of older drafts without moving another checker.
+    // A missing compulsory die stays manual once any choice has been made.
     const current = boardKey(draft.reduce((s, st) => applyStep(s, st), state));
     const dice = (steps) =>
       steps
@@ -156,24 +138,6 @@ export function draftAutomation(state, draft, paths, advance = false) {
         normalized = equivalent;
         break;
       }
-      const candidate = path.steps.slice(0, length),
-        actual = counts(candidate);
-      if (
-        candidate.length !== length ||
-        actual.size !== required.size ||
-        [...required].some(([k, n]) => actual.get(k) !== n)
-      )
-        continue;
-      const remaining = new Set(
-        matchingPaths(paths, candidate).map((p) => boardKey(p.state)),
-      );
-      if (
-        remaining.size === outcomes.size &&
-        [...outcomes].every((k) => remaining.has(k))
-      ) {
-        normalized = candidate;
-        break;
-      }
     }
   }
   // Noncanonical legacy paths that cannot safely be reordered must never have
@@ -187,7 +151,7 @@ export function draftAutomation(state, draft, paths, advance = false) {
     )
       minDraft++;
   const plan =
-    normalized.length >= minDraft && !advance
+    normalized.length >= minDraft && !(restoreForcedRoll && !normalized.length)
       ? { steps: [], complete: false, minDraft }
       : { ...forcedContinuation(state, normalized, paths), minDraft };
   return normalized === draft ? plan : { ...plan, replacement: normalized };
@@ -195,7 +159,8 @@ export function draftAutomation(state, draft, paths, advance = false) {
 
 function append(table, action, actor, automatic = false) {
   const next = transition(table.state, action, actor);
-  const initialDecision = ["move", "roll", "double", "take", "pass", "beaver", "raccoon"].includes(action.type)
+  const initialDecision = ["move", "roll", "skip-roll", "double", "take", "pass", "beaver", "raccoon"].includes(action.type) &&
+    !(action.type === 'skip-roll' && automatic)
     ? acceptedAttempt(table, action) : null;
   table.state = next;
   delete table.initialDecision;
@@ -233,8 +198,11 @@ export function playAction(
   source,
   action,
   actor = decisionPlayer(source.state),
+  { autoPass = false, cubeEvaluation = null } = {},
 ) {
-  const table = clone(source);
+  if (autoPass && (action.type !== 'skip-roll' || !canAutoPassClosedOut(source.state, cubeEvaluation)))
+    throw new Error('This cube decision cannot be skipped automatically.');
+  const table = cloneRecord(source);
   delete table.reviewingTurn;
   if (action.type === "roll" && table.replayDice?.length) {
     const known = table.replayDice.shift();
@@ -245,11 +213,17 @@ export function playAction(
       throw new Error("A takeback must reuse the committed dice.");
   }
   if (action.type === "next") table.replayDice = [];
+  // Older takeback queues may contain a previously revealed closed-out roll.
+  // Retire that entry without drawing dice; the opponent keeps their own roll.
+  if (action.type === 'skip-roll' && table.replayDice?.[0]?.actor === actor)
+    table.replayDice.shift();
   append(
     table,
     action,
     actor,
     action.type === "finish-race" || (action.type === "move" && !!forcedTurn(source.state)) ||
+      (action.type === 'skip-roll' && (autoPass || !canDouble(source.state))) ||
+      // Preserve the interpretation of legacy saved roll/pass pairs.
       (action.type === "roll" && blockedBarRoll(source.state)),
   );
   table.undoReply = null;

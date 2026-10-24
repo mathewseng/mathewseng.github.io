@@ -6,7 +6,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 
 | Path | What it is |
 | --- | --- |
-| `index.html` | Searchable, grouped directory linking every project directly, with created and updated dates |
+| `index.html` | Illustrated project homepage with grouped links and created and updated dates |
 | `gym/` | Gym Tracker training app (Vite + React; the only page with a build step) |
 | `cards/` | Card Table Workshop |
 | `microtonal-lab/` | Tuning explorer and browser instrument |
@@ -31,7 +31,17 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
   import commit, and historical dates for the matheweon.github.io collection. `legacyPaths`
   records its original page URLs. Source-only helpers are linked individually as well.
   Run `node scripts/build-project-directory.mjs` after editing the catalog. It generates
-  the homepage and Music, Games, and Tools hubs, and stamps the imported page headers.
+  the homepage from `scripts/templates/home.html` and the Music, Games, and Tools hubs,
+  and stamps the imported page headers. The homepage preserves the original card fan
+  and illustrated tiles, with additional projects in matching groups; `home.css` only
+  styles its date labels and added tiles. Search is available in the category hubs.
+  The homepage and category directories share `shared/dither.css` and `dither.js`:
+  cached sea-glass/blue dither artwork with a gentle CSS transform on desktop.
+  Phones, reduced motion and data saver use a still background; the desktop footer
+  control pauses the drift, and hidden tabs pause it automatically. Visitors never
+  load a shader or create a WebGL context. To regenerate the two WebP textures from
+  @pennadenoiz's OpenShaders source in `scripts/art/dither-shader.mjs`, run
+  `node scripts/render-dither-field.cjs` with Playwright installed.
   Creation follows the earliest recorded primary-file commit, following renames but
   stopping at copied templates; updates
   follow changes under each project's source paths. Imported creation dates are preserved;
@@ -81,7 +91,7 @@ That runs every `*.test.cjs` and `*.test.mjs` outside `gym/`, including the colo
 ```bash
 sh scripts/assemble-site.sh _site
 node scripts/shell-browser.cjs      # every page at 1440x900, 375x812 and 844x390: overflow, 44px targets, focus rings, 12px floor
-node scripts/project-directory-browser.cjs # search, category navigation, and no-JavaScript links
+node scripts/project-directory-browser.cjs # homepage links, category search, and no-JavaScript links
 node scripts/screenshots.cjs --compare   # every page at 1440x900 and 375x812 against scripts/screenshots/baseline/
 ```
 
@@ -96,6 +106,25 @@ a compilation or publishing failure is reported in that workflow.
 `.github/workflows/validate.yml` runs site tests, assembled-site browser tests, and Gym checks
 independently on pushes and pull requests. Validation failures stay visible in Actions but do
 not block publication. Check both workflows when diagnosing a release.
+The browser-test job is pinned to Ubuntu 24.04, which is supported by the locked
+Playwright version. Review that runner image together with Playwright upgrades.
+It uses Ubuntu's primary package mirror for browser dependencies to avoid slow
+downloads from the runner's Azure mirror.
+
+The two Backgammon study workflows share the `backgammon-research` concurrency
+group and run at most 16 of their 20 shards at once. This leaves four standard
+runner slots available for Pages publishing, validation, and other short jobs
+on an account with a 20-job limit. Further study runs queue without interrupting
+the active study. Workflow changes affect newly dispatched runs only; a study
+already using all 20 slots must release a runner before a queued publish can start.
+
+For an urgent publish while hosted runners are full, the Publish GitHub Pages
+manual dispatch accepts a `runner_label`. A temporary self-hosted runner with
+that unique label can run the same build and deployment. Register it without
+default labels, use a separate checkout, and remove it after publishing. Pushes
+and manual runs with the default input continue to use `ubuntu-latest`.
+Dependency caching is disabled on self-hosted runs so a local machine's npm cache
+is never uploaded by the publishing workflow.
 
 ## Backgammon validation
 

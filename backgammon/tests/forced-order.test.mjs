@@ -63,15 +63,17 @@ for (const [name, step] of [
         );
         assert.equal(forcedTurn(s), null);
         assert.deepEqual(draftAutomation(s, a.steps, paths).steps, []);
-        // Old saved draft: optional die played first. Recovery adds the compulsory
-        // six without erasing the choice, locking that optional die, or committing.
+        // Old drafts can reorder existing steps, but never add a missing die
+        // after a choice has been made.
         for (const path of paths.filter((p) => p.steps[0].die !== step.die))
           for (const n of [1, 2]) {
             const old = path.steps.slice(0, n),
               plan = draftAutomation(s, old, paths),
               next = [...(plan.replacement || old), ...plan.steps];
-            assert.deepEqual(next[0], expected);
-            assert.equal(plan.minDraft, 1);
+            assert.equal(next.length, old.length);
+            if (n === 2) assert.deepEqual(next[0], expected);
+            else assert.deepEqual(next, old);
+            assert.equal(plan.minDraft, n === 2 ? 1 : 0);
             assert.deepEqual(
               outcomes(matchingPaths(paths, next)),
               outcomes(matchingPaths(paths, old)),
@@ -80,7 +82,7 @@ for (const [name, step] of [
               assert.equal(boardKey(at(s, next)), boardKey(at(s, old)));
             assert.deepEqual(draftAutomation(s, next, paths), {
               steps: [],
-              minDraft: 1,
+              minDraft: n === 2 ? 1 : 0,
               complete: false,
             });
           }
@@ -133,6 +135,7 @@ test("seeded legal prefixes: automatic actions never discard ANY final position,
             a = forcedContinuation(s, d, paths);
           const plan = draftAutomation(s, d, paths),
             normalized = [...(plan.replacement || d), ...plan.steps];
+          if (d.length) assert.equal(normalized.length, d.length, "no additional dice after a choice");
           assert.deepEqual(
             outcomes(matchingPaths(paths, normalized)),
             outcomes(matchingPaths(paths, d)),

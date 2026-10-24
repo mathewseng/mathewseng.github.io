@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "id": "filtered-rollout-v1",
+  "complete": false,
+  "status": "Running full-game trials",
+  "executionUrl": "https://github.com/mathewseng/mathewseng.github.io/actions/runs/39851646711",
+  "plannedRecords": 14336,
+  "plannedGames": 458752,
+  "positions": 7,
+  "candidatePolicyCells": 28,
+  "trialsPerMovePolicy": 16384,
+  "equityTolerance": 0.005
+}

@@ -137,7 +137,9 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       .getByRole("button", { name: "Play from this position", exact: true })
       .click();
     await page.locator("#confirm").waitFor();
-    const study = await saved();
+    // Play renders its controls before its initial IndexedDB write completes.
+    // Wait for the committed study instead of reading the previous table.
+    const study = await waitWork(page,work=>work?.game?.id && work.game.id!==partial.game.id);
     assert.notEqual(study.game.id, partial.game.id);
     assert.deepEqual(study.game.state, partial.game.state);
     assert.equal(study.game.config.mode, "computer");
@@ -147,7 +149,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     await page.goBack();
     await page.getByRole("link", { name: "Play", exact: true }).click();
     await page.locator("#confirm").waitFor();
-    assert.equal((await saved()).game.id, partial.game.id);
+    assert.equal((await waitWork(page,work=>work?.game?.id===partial.game.id)).game.id, partial.game.id);
     cases.push(
       "play-forward inherits bot",
       "original table survives a separate study",
@@ -169,7 +171,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       await page
         .locator(".last-roll .board-die")
         .evaluateAll((nodes) => nodes.map((n) => Number(n.dataset.die))),
-      previousDice,
+      [...previousDice].sort((a,b)=>b-a),
     );
     assert.match(await page.locator("#draft-line").innerText(), /Last move/);
     const last = await saved();
@@ -187,7 +189,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
       await page
         .locator(".last-roll .board-die")
         .evaluateAll((nodes) => nodes.map((n) => Number(n.dataset.die))),
-      previousDice,
+      [...previousDice].sort((a,b)=>b-a),
     );
     cases.push(
       "last-move ghosts and original dice survive reload without rerolling",
@@ -268,7 +270,7 @@ module.exports = async function tableControls(browser, base, out, browserName) {
     // Hold a real worker's load to exercise cancellation during initialization.
     await assign("play-both");
     await roll(page);
-    const untouched = await saved();
+    const untouched = await waitWork(page, work => work?.game.state.phase === "move");
     let release, started;
     const gate = new Promise((r) => {
         release = r;

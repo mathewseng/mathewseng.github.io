@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initialState,legalTurns,boardKey,commitTurn} from '../core/rules.mjs';
 import {bookBoardKey} from '../engine/opening-book.mjs';
-import {RolloutOpeningBook,rolloutBookResult,ROLLOUT_BOOK_ID,ROLLOUT_BOOK_ENGINE} from '../engine/rollout-book.mjs';
+import {RolloutOpeningBook,rolloutBookResult,ROLLOUT_BOOK_ID,ROLLOUT_BOOK_ENGINE,ROLLOUT_BOOK_LIVE_POLICY_REVISION,ROLLOUT_BOOK_RETIREMENT} from '../engine/rollout-book.mjs';
 const state=initialState({matchLength:0,phase:'move',dice:[2,1],rules:{cube:true,jacoby:true,immediateRedoubles:0}});
 function data(){
  const turns=legalTurns(state),rows=turns.slice(0,2).map((t,i)=>[t.steps.map(({from,to,die})=>[from,to,die]),.1-i*.01,.07,.53,.1,.01,.05,.005]);
@@ -20,19 +20,23 @@ test('stored rollout estimates retain samples, uncertainty, source and mirrored 
  assert.throws(()=>rolloutBookResult(state,{...entry,standardErrors:[.01,-1]},index,'auto'),/estimate/);
  assert.throws(()=>rolloutBookResult(state,entry,{...index,settings:{...index.settings,truncationPlies:7}},'auto'),/entry/);
 });
-test('missing, corrupt and uncovered rollout entries fall back without mixing methods',async()=>{
- const {index,entry,turns}=data();let falls=0;
+test('affected historical rollout policy is retired and live lookup uses the unaffected fallback',async()=>{
+ const {index,entry,turns}=data();let falls=0,requests=0;
  const fallback={lookup:async()=>{falls++;return {method:'tree',settings:{plies:5}};},mayHave:()=>true,prepare:async()=>{}};
- const book=new RolloutOpeningBook({fetcher:async()=>Response.json(index),fallback});
+ const book=new RolloutOpeningBook({fetcher:async()=>{requests++;return Response.json(index);},fallback});
  const options={kind:'checker',preset:'auto'};
- assert.equal((await book.lookup(state,options)).method,'rollout');assert.equal(falls,0);
- assert.equal((await book.lookup(state,{...options,submitted:turns[2].steps})).method,'tree');assert.equal(falls,1);
- book.index.entries[bookBoardKey(state)]['21']={...entry,rows:[entry.rows[0],entry.rows[0]]};
- assert.equal((await book.lookup(state,options)).method,'tree');assert.equal(falls,2);
+ assert.equal(ROLLOUT_BOOK_LIVE_POLICY_REVISION,null);
+ assert.equal(ROLLOUT_BOOK_RETIREMENT.id,ROLLOUT_BOOK_ID);
+ assert.equal(ROLLOUT_BOOK_RETIREMENT.reason,'mixed-depth-final-sort');
+ assert.equal((await book.lookup(state,options)).method,'tree');assert.equal(falls,1);
+ assert.equal((await book.lookup(state,{...options,submitted:turns[2].steps})).method,'tree');assert.equal(falls,2);
+ book.index=index; // Previously decoded stale in-memory data is also ineligible.
+ assert.equal(await book.lookupRollout(state),null);
+ assert.equal((await book.lookup(state,options)).method,'tree');assert.equal(falls,3);
  assert.equal(await book.lookup({...state,matchLength:5},options),null);
- let requests=0;const offline=new RolloutOpeningBook({fallback,fetcher:()=>{requests++;throw Error('offline');}});
- assert.equal((await offline.lookup(state,options)).method,'tree');assert.equal(requests,1);
- offline.retryAt=0;await offline.lookup(state,options);assert.equal(requests,2,'synchronous fetch failures must be retryable');
+ await book.prepare(state);assert.equal(requests,0,'retired estimates do not delay fallback with a fetch');
+ assert.equal(book.mayHave(state),true);
+ assert.equal(rolloutBookResult(state,entry,index,'auto').method,'rollout','historical data remains inspectable');
 });
 
 import {readFileSync} from 'node:fs';

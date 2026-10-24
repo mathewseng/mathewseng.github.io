@@ -157,3 +157,37 @@ test('online host adjudication is idempotent, recoverable and requires both conn
  assert.deepEqual(table.state,table.initial);assert.equal(table.reviewingTurn,true);assert.ok(verifyHistory(table));
  assert.throws(()=>accept(table,'guest',envelope(table,'guest',{type:'auto'},'repeat-finish'),restoredOptions),/Confirm the restored turn/);
 });
+
+
+test('queued local rolls finish an already sealed game without consuming private or replay dice',async()=>{
+ const {localPlayAction}=await import('../core/local-rolls.mjs');
+ for(const turn of [0,1])for(const mode of ['computer','local'])for(const queued of [false,true]){
+  const initial=position([1],[7],turn);
+  const source={id:'queued-certain',started:true,initial,state:initial,events:[],config:{mode},
+   ...(mode==='computer'?{localRolls:{version:1,seed:'ab'.repeat(32),cursor:19}}:{}),
+   ...(queued?{replayDice:[{actor:turn,dice:[6,6]}]}:{})};
+  const before=structuredClone(source),ended=await localPlayAction(source,{type:'roll'});
+  assert.deepEqual(source,before);
+  assert.deepEqual(ended.events.map(e=>e.action),[{type:'finish-race'}]);
+  assert.equal(ended.state.result.winner,0);
+  assert.deepEqual(ended.localRolls,source.localRolls);
+  assert.deepEqual(ended.replayDice,source.replayDice);
+  assert.deepEqual(replay(initial,ended.events).at(-1),ended.state);
+  await assert.rejects(()=>localPlayAction({...source,state:{...initial,phase:'move',dice:[1,2]}},{type:'roll'}));
+ }
+});
+
+test('an online roll request cannot draw dice before a known certain result',async()=>{
+ const {session,accept,envelope,verifyHistory}=await import('../core/protocol.mjs');
+ const players=[{id:'host',name:'White'},{id:'guest',name:'Black'}];
+ for(const turn of [0,1]){
+  const table=session(players,position([1],[7],turn),'sealed-before-roll');table.started=true;
+  const options={hostId:'host',connected:['host','guest'],dice:()=>{throw Error('must not roll a sealed game');}};
+  const id=players[turn].id;
+  const ended=accept(table,id,envelope(table,id,{type:'roll'},'queued-roll'),options);
+  assert.deepEqual(ended.events.map(e=>e.action),[{type:'finish-race'}]);
+  assert.equal(ended.state.result.winner,0);assert.ok(verifyHistory(ended));
+  assert.deepEqual(accept(ended,id,envelope(table,id,{type:'roll'},'queued-roll'),options),ended);
+  assert.throws(()=>accept(table,id,envelope(table,id,{type:'roll',dice:[1,2]},'forged-dice'),options),/Only the host supplies dice/);
+ }
+});

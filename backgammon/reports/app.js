@@ -8,6 +8,8 @@ import { EngineClient } from "../engine/client.mjs";
 import { renderCubePolicyStudy } from "./cube-policy-study.mjs";
 import { renderReplyPrecision } from "./reply-fullgame-precision.mjs";
 import { renderFullgamePrecision } from "./fullgame-precision.mjs";
+import { renderFilteredRolloutStudy } from "./filtered-rollout-study.mjs";
+import { renderLearnedEvaluators } from "./learned-evaluators.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
@@ -410,6 +412,8 @@ if ($('fullgame-ablation-content')) try {
     downloads(link('Independent opening confirmation','../docs/opening-fullgame-confirmation-comparison.json'),link('Opening confirmation plan','../docs/opening-fullgame-confirmation-inputs.json'),link('Opening confirmation batches (gzip)','../docs/opening-fullgame-confirmation-batches.jsonl.gz'),link('Full results and intervals','../docs/fullgame-ablation-comparison.json'),link('Fixed plan and seeds','../docs/fullgame-ablation-inputs.json'),link('Raw full-game batches (gzip)','../docs/fullgame-ablation-batches.jsonl.gz'),link('Native implementation checks','../docs/fullgame-native-validation.json'),link('Second-host parity checks','../docs/fullgame-remote-validation.json'),link('Runtime weights and database checks','../docs/fullgame-runtime-validation.json'),link('Secondary cohort plan','../docs/fullgame-cohort-analysis-plan.json'),link('Method and reproduction','https://github.com/mathewseng/mathewseng.github.io/blob/main/backgammon/docs/FULLGAME-ABLATION.md')),
   );draw();
 } catch(e) { failed($('fullgame-ablation-content'),e); }
+if ($('learned-evaluators-content')) await renderLearnedEvaluators($('learned-evaluators-content'), {json,table,link,downloads,failed});
+if ($('corrected-rollout-content')) await renderFilteredRolloutStudy($('corrected-rollout-content'), {json,table,link,downloads,failed});
 if ($('cube-policy-study-content')) await renderCubePolicyStudy($('cube-policy-study-content'), {json,table,link,downloads,failed});
 if ($('reply-fullgame-precision-content')) await renderReplyPrecision($('reply-fullgame-precision-content'), {json,table,link,downloads,failed});
 if ($('fullgame-precision-content')) await renderFullgamePrecision($('fullgame-precision-content'), {json,table,link,measured,downloads,failed});
@@ -420,7 +424,7 @@ $("method-content").append(
     ...[
       [
         "Auto",
-        "Complete at least two plies, normally try three, and potentially reach four. The next-stage cost estimate and stable-lead policy can stop further search. Only completed same-depth comparisons replace the current result. A broad zero-ply screen retains at least sixteen candidates, up to twenty-four within 0.160, plus the submitted move; higher depths narrow that list further. The completed depth and screening limits are shown.",
+        "Complete at least three plies, and potentially reach four for checker decisions. Cube decisions complete three plies. The next-stage cost estimate and stable-lead policy can stop further search. Only completed same-depth comparisons replace the current result. A broad zero-ply screen retains at least sixteen candidates, up to twenty-four within 0.160, plus the submitted move; higher depths narrow that list further. The completed depth and screening limits are shown.",
       ],
       [
         "Quick / Standard / Deep",

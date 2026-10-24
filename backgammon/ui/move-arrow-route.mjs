@@ -32,6 +32,15 @@ function line(a, b) {
 function arc(c, a, sweep) {
   return { kind: "arc", c, a, sweep, length: Math.abs(sweep) * c.r };
 }
+// Most collision samples only need position, not three derivative vectors.
+function spanPoint(span, s) {
+  if (span.kind === "line") return {
+    x: span.a.x + (span.b.x - span.a.x) * s / span.length,
+    y: span.a.y + (span.b.y - span.a.y) * s / span.length,
+  };
+  const t = span.a + Math.sign(span.sweep) * s / span.c.r;
+  return {x:span.c.x + span.c.r * Math.cos(t), y:span.c.y + span.c.r * Math.sin(t)};
+}
 function jet(span, s) {
   if (span.kind === "line") {
     const dx = (span.b.x - span.a.x) / span.length,
@@ -112,7 +121,7 @@ function route(from, to, blockers) {
         steps = Math.ceil(span.length / 3);
       let clear = true;
       for (let n = 0; n <= steps; n++) {
-        const p = jet(span, (span.length * n) / steps)[0];
+        const p = spanPoint(span, (span.length * n) / steps);
         if (
           !within(p) ||
           blockers.some((o) => o !== c && gap(o, p) < o.r - EPS)
@@ -188,12 +197,16 @@ function shortestRoute(from, to, blockers) {
     if (attempt === 4) relevant = blockers;
     const path = route(from, to, relevant);
     if (!path) return null;
-    const added = blockers.filter(o => !relevant.includes(o) && path.some(span => {
-      if (span.kind === "line") return !segmentClear(span.a, span.b, [o]);
+    // Reuse arc samples for all checkers, rather than repeating trigonometry
+    // and vector allocations for every obstacle on the confirmation frame.
+    const samples = path.map(span => {
+      if (span.kind === "line") return null;
       const count = Math.ceil(span.length / 3);
-      for (let i = 0; i <= count; i++) if (gap(jet(span, span.length * i / count)[0], o) < o.r - EPS) return true;
-      return false;
-    }));
+      return Array.from({length:count + 1}, (_, i) => spanPoint(span, span.length * i / count));
+    });
+    const added = blockers.filter(o => !relevant.includes(o) && path.some((span, index) =>
+      span.kind === "line" ? !segmentClear(span.a, span.b, [o])
+        : samples[index].some(point => gap(point, o) < o.r - EPS)));
     if (!added.length) return path;
     relevant = [...relevant, ...added];
   }
@@ -222,14 +235,14 @@ export function smoothJoin(left, right, length) {
     ];
   });
 }
-function poly(c, t, derivative = 0) {
-  return c.reduce((sum, v, i) => {
-    if (i < derivative) return sum;
-    let k = 1;
-    for (let j = 0; j < derivative; j++) k *= i - j;
-    return sum + v * k * t ** (i - derivative);
-  }, 0);
+function poly(c, t) {
+  // Horner evaluation keeps the same polynomial/root precision without
+  // repeatedly calculating powers in the clearance search.
+  let value = 0;
+  for (let i = c.length - 1; i >= 0; i--) value = value * t + c[i];
+  return value;
 }
+
 const dot = (a, b) => a.x * b.x + a.y * b.y;
 function quadraticRoots(a, b, c) {
   if (Math.abs(a) < EPS) return Math.abs(b) < EPS ? [] : [-c / b];
@@ -372,7 +385,7 @@ function calculateRoute(from, to, obstacles) {
     }
     let i = path.findIndex((_, i) => s <= offsets[i + 1]);
     if (i < 0) i = path.length - 1;
-    return jet(path[i], Math.max(0, s - offsets[i]))[0];
+    return spanPoint(path[i], Math.max(0, s - offsets[i]));
   }
   let start = 0,
     end = length;

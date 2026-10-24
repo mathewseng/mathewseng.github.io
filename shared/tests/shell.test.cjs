@@ -93,7 +93,7 @@ test("every page that links app.css links tokens.css before any other stylesheet
     const links = Array.from(html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g), (m) => m[1]);
     assert.ok(links.length && /shared\/tokens\.css/.test(links[0]), `${page} links tokens.css first (got ${links[0]})`);
     assert.ok(/shared\/app\.css/.test(links[1]), `${page} links app.css second`);
-    if (/class="directory"/.test(html)) {
+    if (/class="[^"]*\bdirectory\b[^"]*"/.test(html)) {
       const categories = JSON.parse(read('shared/site-map.json')).categories;
       assert.match(html, /aria-label="Project categories"/, `${page} has category navigation`);
       for (const category of categories) assert.ok(html.includes(`#${category.id}"`), `${page} links ${category.name}`);

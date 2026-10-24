@@ -13,7 +13,19 @@ import {
   parseBenchmarkMove,
 } from "../scripts/benchmark-reference.mjs";
 import { localConfig } from "../core/play-session.mjs";
-import { comparisonSummary, moveFeatures } from "../core/analysis-insight.mjs";
+import { analysisDepthLabel, comparisonSummary, moveFeatures } from "../core/analysis-insight.mjs";
+test("analysis depth describes completed work, not the preset or next planned depth", () => {
+  for (const plies of [0, 1, 2, 3, 4])
+    assert.equal(analysisDepthLabel({ settings: { name: "Auto", plies },
+      budget: { forecast: { plies: 4 } } }), `${plies} ply`);
+  assert.equal(analysisDepthLabel({ settings: { plies: 5 }, book: {} }), "5 ply · Book");
+  assert.equal(analysisDepthLabel({ method: "reference", settings: { plies: null } }), "Published book");
+  assert.equal(analysisDepthLabel({ method: "rollout", settings: { plies: 2 } }), "Rollout");
+  assert.equal(analysisDepthLabel(null), null);
+  for (const plies of [null, undefined, -1, NaN, "2"])
+    assert.equal(analysisDepthLabel({ settings: { name: "Legacy analysis", plies } }), "Legacy analysis");
+  assert.equal(analysisDepthLabel({}), "Analyzed");
+});
 test("pool independent rollout batch moments, not average confidence margins", () => {
   const batch = (a) => ({
     samples: a.length,

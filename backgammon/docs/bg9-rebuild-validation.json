@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "verifiedAt": "2026-10-22T20:33:02.934941+00:00",
+  "sourceSHA256": "559cd43de37b6194d28fdf66ef74f287bcef13552c9b48ef6c476be73b55e7dd",
+  "emscripten": "4.0.15",
+  "method": "Clean extraction of shipped corresponding source; make scalar and SIMD using archive Makefile; byte-for-byte comparison of all five production outputs.",
+  "assets": {
+    "vendor/gnubg-core-module.js": "dcbbc729055d5475df97f0199e087b4f410a6d5f819b13329e3acb8338b05858",
+    "vendor/gnubg-core-module.wasm": "44d5a51bc0363037b5bd99046da2287f0194e4654c3e0772eb6d182381435d82",
+    "vendor/gnubg-core-module.data": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49",
+    "vendor/simd/gnubg-core-module.js": "39c0393c2058053143e658c5c14a28069b72a60e1db3b1387e98394d48833898",
+    "vendor/simd/gnubg-core-module.wasm": "d193892f48e9a4435f0ebdf1cb35815475ac186957e24380609b6093d2553f26"
+  },
+  "passed": true
+}

@@ -4,20 +4,28 @@ import { ENGINE_VERSION, PRESETS } from "./metadata.mjs";
 import { ADAPTIVE_SEARCH } from "./adaptive.mjs";
 import { bookEligible } from "./opening-book.mjs";
 import { PreferredOpeningBook } from "./xg-reference-book.mjs";
-// One worker, bounded LRU, priority queue. Termination is intentional: WASM calls are synchronous.
+// One worker, bounded LRU, priority queue. Reuse it after cooperative cancellation;
+// an unresponsive native call still has a bounded termination fallback.
 export class EngineClient {
   constructor({
     workerFactory = () =>
       new Worker(new URL("./worker.mjs", import.meta.url), { type: "module" }),
     onStatus = () => {},
     openingBook = new PreferredOpeningBook(),
+    engineName = "GNUbg",
+    assetsDescription = "its local databases",
+    presetNames = {},
   } = {}) {
     this.factory = workerFactory;
     this.book = openingBook;
     this.onStatus = onStatus;
+    this.engineName = engineName;
+    this.assetsDescription = assetsDescription;
+    this.presetNames = presetNames;
     this.queue = [];
     this.cache = new Map();
     this.readings = new Map();
+    this.decisions = new Map();
     this.serial = 0;
     this.active = null;
     this.worker = null;
@@ -28,7 +36,7 @@ export class EngineClient {
     if (this.initializing) return this.initializing;
     if (this.ready) return Promise.resolve();
     const generation = ++this.generation;
-    this.onStatus("loading", "Loading GNUbg and its local databases…");
+    this.onStatus("loading", `Loading ${this.engineName} and ${this.assetsDescription}…`);
     let resolveReady;
     const pending = new Promise((resolve, reject) => {
       resolveReady = resolve;
@@ -47,6 +55,14 @@ export class EngineClient {
       };
       this.worker.onmessage = ({ data }) => {
         if (generation !== this.generation) return;
+        if (data.id === this.retiring?.id) {
+          if (["cancelled", "result", "error"].includes(data.type)) {
+            clearTimeout(this.retireTimer);
+            this.retiring = null;
+            this.pump();
+          }
+          return; // A cancelled search cannot publish a stale evaluation.
+        }
         if (data.type === "ready") {
           this.startup = data;
           clearTimeout(this.initTimeout);
@@ -55,7 +71,7 @@ export class EngineClient {
           this.initReject = null;
           this.onStatus(
             "ready",
-            `GNUbg ready · ${(data.elapsedMs / 1000).toFixed(2)} s startup`,
+            `${this.engineName} ready · ${(data.elapsedMs / 1000).toFixed(2)} s startup`,
           );
           resolveReady();
         } else if (data.id === 0 && data.type === "error")
@@ -65,14 +81,15 @@ export class EngineClient {
           if (data.type === "evaluation" && job.preset === "auto" && !job.rollout) {
             job.completed = data.result;
             this.rememberReading(job, data.result);
+            this.rememberDecision(job, data.result);
             try {
               for (const listener of job.evaluationListeners) listener(structuredClone(data.result));
             } catch (e) {
               this.fail(e);
               return;
             }
-            // Intermediate 0/1-ply updates do not resolve Auto. The worker must
-            // complete at least 2 ply, regardless of how long earlier stages took.
+            // Intermediate updates do not resolve Auto. The worker must reach
+            // the required minimum, regardless of how long earlier stages took.
             return;
           }
           if (data.type === "progress") {
@@ -88,8 +105,8 @@ export class EngineClient {
           clearTimeout(this.jobTimeout);
           if (data.type !== "error" && job.preset === "auto" && !job.rollout &&
               !(data.result?.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies)) {
-            job.reject(new Error("Automatic analysis ended before the required 2 ply. Retry the analysis."));
-            this.onStatus("error", "Automatic analysis did not complete 2 ply.");
+            job.reject(new Error(`Automatic analysis ended before the required ${ADAPTIVE_SEARCH.minimumPlies} ply. Retry the analysis.`));
+            this.onStatus("error", `Automatic analysis did not complete ${ADAPTIVE_SEARCH.minimumPlies} ply.`);
             this.pump();
             return;
           }
@@ -97,10 +114,13 @@ export class EngineClient {
           else {
             // Returned results are editable previews; never expose the object
             // retained for future hints/grades to a caller's mutations.
-            this.cache.set(job.key, structuredClone(data.result));
+            // An action deadline is not a completed adaptive search. Keep it
+            // available for play, without satisfying later full-depth reviews.
+            if (data.result.budget?.reason !== 'ready-to-play')
+              this.cache.set(job.key, structuredClone(data.result));
             this.rememberReading(job, data.result);
-            while (this.cache.size > 64)
-              this.cache.delete(this.cache.keys().next().value);
+            this.rememberDecision(job, data.result);
+            this.trimCache();
             job.resolve(data.result);
           }
           this.onStatus(
@@ -137,8 +157,30 @@ export class EngineClient {
       onProgress = () => {},
       onEvaluation = () => {},
       onUnlisted = () => {},
+      readyOnly = false,
     } = {},
   ) {
+    readyOnly = readyOnly && preset === 'auto' && !rollout;
+    if (readyOnly) {
+      let ready;
+      try { ready = this.readyResult(state, {preset, submitted, useBook}); }
+      catch (error) { return Promise.reject(error); }
+      if (ready) {
+        const active = this.active;
+        // If an optional deeper stage is already inside synchronous WASM,
+        // take its completed answer now. Ignore late messages after stopping.
+        if (active?.preset === preset && active.priority <= priority &&
+            this.normalizedPosition(active.state) === this.normalizedPosition(state) &&
+            active.completed?.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies) {
+          this.active = null;
+          clearTimeout(this.jobTimeout);
+          this.retireWorker(active);
+          active.resolve(this.asReady(active.completed));
+          this.pump();
+        }
+        return Promise.resolve(ready);
+      }
+    }
     // Unscreened checker analysis scores every legal result at one depth.
     // Grading a move is a projection of that same result, not another WASM job.
     // Screened searches/rollouts still depend on the submitted move because
@@ -193,10 +235,15 @@ export class EngineClient {
     const hint = this.cache.get(keyFor(null));
     if (submittedKey && hint?.status === "complete" && hint.type === "checker" &&
         !hint.candidates.some(c => c.key === submittedKey)) onUnlisted();
-    const reused = this.reuseGrade(reuseHintKey, preset, submittedKey);
+    const reused = this.reuseGrade(reuseHintKey, preset, submittedKey, readyOnly);
     if (reused) return forCaller(Promise.resolve(reused));
     const existing = [this.active, ...this.queue].find((j) => j?.key === key);
     if (existing) {
+      if (readyOnly) {
+        existing.readyOnly = true;
+        if (existing === this.active && this.worker)
+          this.worker.postMessage({type:'finish-ready', id:existing.id});
+      }
       existing.progressListeners.add(onProgress);
       existing.evaluationListeners.add(onEvaluation);
       existing.unlistedListeners.add(onUnlisted);
@@ -204,7 +251,10 @@ export class EngineClient {
       existing.priority = Math.max(existing.priority, priority);
       this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
       if (this.active && existing !== this.active && existing.priority > this.active.priority) {
-        if (existing.reuseHintKey === this.active.key) this.active.priority = existing.priority;
+        if (existing.reuseHintKey === this.active.key) {
+          this.active.priority = existing.priority;
+          if (readyOnly) this.requestReady(this.active);
+        }
         else this.cancelActive("Superseded by the current request.");
       }
       this.pump();
@@ -228,6 +278,7 @@ export class EngineClient {
       progressListeners: new Set([onProgress]),
       evaluationListeners: new Set([onEvaluation]),
       unlistedListeners: new Set([onUnlisted]),
+      readyOnly,
     };
     job.promise = new Promise((resolve, reject) =>
       Object.assign(job, { resolve, reject }),
@@ -241,21 +292,91 @@ export class EngineClient {
     this.queue.push(job);
     this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
     if (this.active && priority > this.active.priority) {
-      if (reuseHintKey === this.active.key) this.active.priority = priority;
+      if (reuseHintKey === this.active.key) {
+        this.active.priority = priority;
+        if (readyOnly) this.requestReady(this.active);
+      }
       else this.cancelActive("Superseded by the current request.");
     }
     this.pump();
     return forCaller(job.promise);
   }
-  gradeBasis(key, preset, submittedKey) {
+  normalizedPosition(state) {
+    return positionKey(state.phase === 'move' ? {...state, dice:[...state.dice].sort((a,b)=>b-a)} : state);
+  }
+  asReady(result) {
+    return {...structuredClone(result), ...(result.budget ? {budget:{...structuredClone(result.budget), reason:'ready-to-play'}} : {})};
+  }
+  rememberDecision(job, result) {
+    if (job.rollout || result?.status !== 'complete' ||
+        !(result.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies || result.method === 'reference')) return;
+    // Revisiting a position can start another adaptive search. Its early
+    // checkpoint must not replace a deeper answer we already completed.
+    const previous = this.decisions.get(job.key)?.result;
+    if (previous && result.method !== 'reference' &&
+        (previous.method === 'reference' || previous.settings.plies > result.settings.plies)) return;
+    // Excluded shallow scores are not playable finalists. Do not retain their
+    // thousands of paths in every completed checkpoint of a doubles search.
+    const screen = value => value && (() => {
+      const {excluded, initial, ...metadata} = value;
+      return {...metadata, ...(initial ? {initial:screen(initial)} : {})};
+    })();
+    result = {...result, ...(result.screening ? {screening:screen(result.screening)} : {})};
+    this.decisions.delete(job.key);
+    this.decisions.set(job.key, {position:this.normalizedPosition(job.state), preset:job.preset, result});
+    // Also bound retained candidate rows, including screened-out alternatives.
+    // Sixty-four large doubles results used to count as only sixty-four items.
+    this.trimResults(this.decisions, 16, 2048, entry => entry.result);
+  }
+  resultWeight(result) {
+    let count = result.candidates?.length || 1;
+    for (let screen=result.screening; screen; screen=screen.initial) count += screen.excluded?.length || 0;
+    return count;
+  }
+  trimResults(map, count, rows, value = r => r) {
+    let weight = [...map.values()].reduce((sum, entry) => sum + this.resultWeight(value(entry)), 0);
+    while (map.size && (map.size > count || weight > rows)) {
+      const key=map.keys().next().value;
+      weight -= this.resultWeight(value(map.get(key))); map.delete(key);
+    }
+  }
+  trimCache() { this.trimResults(this.cache, 64, 4096); }
+  readyResult(state, {preset='auto', submitted=null, useBook=true} = {}) {
+    const key=this.normalizedPosition(state), actualKey=submitted ? boardKey(commitTurn(state,submitted)) : null;
+    let best;
+    for (const entry of this.decisions.values()) {
+      if (entry.position !== key || entry.preset !== preset) continue;
+      const result=entry.result;
+      if (!useBook && (result.book || result.method === 'reference')) continue;
+      const actual=actualKey && (result.actual?.key === actualKey ? result.actual : result.candidates?.find(c=>c.key===actualKey));
+      if (actualKey && !actual) continue;
+      // Published references have no tree depth; do not replace their grades
+      // with engine scores or mix candidates from different methods/depths.
+      if (!best || (result.method === 'reference' && best.method !== 'reference') ||
+          (best.method !== 'reference' && result.settings.plies >= best.settings.plies))
+        best={...result, ...(actual ? {actual,error:Math.max(0,result.candidates[0].equity-actual.equity)} : {})};
+    }
+    return best ? {...this.asReady(best),positionKey:positionKey(state),cached:true} : null;
+  }
+  requestReady(job) {
+    job.readyOnly = true;
+    if (job === this.active && this.worker) this.worker.postMessage({type:'finish-ready',id:job.id});
+  }
+  gradeBasis(key, preset, submittedKey, readyOnly = false) {
     if (!key) return null;
+    if (readyOnly && preset === 'auto') {
+      const ready=this.decisions.get(key)?.result;
+      if (ready?.type === 'checker' && ready.engine === ENGINE_VERSION &&
+          ready.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies) return ready;
+    }
     const hint = this.cache.get(key);
     if (hint?.status !== "complete" || hint.type !== "checker" ||
         (preset === "auto"
           ? !(hint.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies &&
               (["predicted-cost", "maximum-depth"].includes(hint.budget?.reason) ||
                 (hint.budget?.reason === 'clear-lead' && hint.candidates?.[0]?.key === submittedKey)))
-          : hint.settings?.plies !== PRESETS[preset]?.plies)) return null;
+          : hint.settings?.plies !== PRESETS[preset]?.plies ||
+            (hint.settings?.pruning !== false) !== PRESETS[preset]?.pruning)) return null;
     return hint;
   }
   // Display-only snapshots, including completed shallow stages of an Auto
@@ -270,7 +391,7 @@ export class EngineClient {
       outcomes:result.outcomes,decisionOptions:result.decisionOptions,decision:result.decision,
       candidates:result.candidates?.map(value),actual:value(result.actual)};
     this.readings.set(job.key, { position:positionKey(job.state), preset:job.preset, result:structuredClone(reading) });
-    while (this.readings.size > 64) this.readings.delete(this.readings.keys().next().value);
+    this.trimResults(this.readings, 64, 4096, entry => entry.result);
   }
   peek(state, { preset = 'auto', submitted = null } = {}) {
     const normalize = s => positionKey(s.phase === 'move' ? {...s, dice:[...s.dice].sort((a,b)=>b-a)} : s);
@@ -287,16 +408,25 @@ export class EngineClient {
     }
     return best ? {...structuredClone(best), positionKey:positionKey(state), cached:true} : null;
   }
-  reuseGrade(key, preset, submittedKey) {
-    const hint=this.gradeBasis(key,preset,submittedKey);
+  reuseGrade(key, preset, submittedKey, readyOnly = false) {
+    const hint=this.gradeBasis(key,preset,submittedKey,readyOnly);
     if (!hint?.candidates?.some(c=>c.key===submittedKey)) return null;
-    this.cache.delete(key); this.cache.set(key, hint);
+    if (this.cache.has(key)) { this.cache.delete(key); this.cache.set(key, hint); }
     const result = structuredClone(hint);
     const actual = result.candidates.find(c => c.key === submittedKey);
     return { ...result, actual, error: Math.max(0, result.candidates[0].equity - actual.equity),
       cached: true, reusedHint: true };
   }
   async pump() {
+    if (this.retiring) {
+      // A real decision must not wait for an obsolete native call. Background
+      // cancellations can wait longer for the next safe checkpoint.
+      if (this.queue.some(job => job.priority >= 0) && !this.retiring.urgent) {
+        this.retiring.urgent = true;
+        this.armRetirement(100);
+      }
+      return;
+    }
     if (this.active || !this.queue.length || this.pumping) return;
     this.pumping = true;
     let generation = this.generation;
@@ -308,7 +438,7 @@ export class EngineClient {
         for (const listener of pending.unlistedListeners) listener();
       // A matching hint may have completed while this grade was queued. Check
       // before starting or messaging a worker, including concurrent callers.
-      const reused = this.reuseGrade(pending.reuseHintKey, pending.preset, pending.submittedKey);
+      const reused = this.reuseGrade(pending.reuseHintKey, pending.preset, pending.submittedKey, pending.readyOnly);
       if (reused) {
         this.queue.shift();
         pending.resolve({ ...reused, requestId: pending.id });
@@ -326,7 +456,8 @@ export class EngineClient {
           result.requestId = pending.id;
           this.cache.set(pending.key, structuredClone(result));
           this.rememberReading(pending, result);
-          while (this.cache.size > 64) this.cache.delete(this.cache.keys().next().value);
+          this.rememberDecision(pending, result);
+          this.trimCache();
           pending.resolve(result);
           this.onStatus("ready", `Opening book · ${result.method === "reference" ? "XG published reference" : result.method === "rollout" ? `${result.settings.trials} rollout trials` : `${result.settings.plies} ply`} · ready`);
           return;
@@ -341,7 +472,7 @@ export class EngineClient {
       const job = this.queue.shift();
       this.active = job;
       job.started = performance.now();
-      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? "Analyzing · at least 2 ply…" : `Evaluating ${job.preset}…`);
+      this.onStatus("busy", job.rollout ? "Running GNUbg rollout…" : job.preset === "auto" ? `Analyzing · at least ${ADAPTIVE_SEARCH.minimumPlies} ply…` : `Evaluating ${this.presetNames[job.preset] || job.preset}…`);
       this.worker.postMessage({
         id: job.id,
         type: "analyze",
@@ -350,9 +481,10 @@ export class EngineClient {
         kind: job.kind,
         submitted: job.submitted,
         rollout: job.rollout,
+        readyOnly: job.readyOnly,
         // An unlisted actual move needs one same-depth score, not another
         // adaptive search of alternatives already completed at that depth.
-        prepared: this.gradeBasis(job.reuseHintKey, job.preset, job.submittedKey),
+        prepared: this.gradeBasis(job.reuseHintKey, job.preset, job.submittedKey, job.readyOnly),
       });
       this.jobTimeout = setTimeout(
         () =>
@@ -361,7 +493,7 @@ export class EngineClient {
               "Analysis reached its time limit. Completed rollout batches can be resumed; try a shallower tree setting.",
             ),
           ),
-        job.rollout || ["expert", "research"].includes(job.preset)
+        job.rollout || ["expert", "research", "verify"].includes(job.preset)
           ? 1800000
           : 300000,
       );
@@ -373,13 +505,39 @@ export class EngineClient {
       if (!this.active && this.queue.length) this.pump();
     }
   }
-  cancelActive(message = "Analysis cancelled.") {
-    clearTimeout(this.jobTimeout);
-    clearTimeout(this.initTimeout);
+  armRetirement(milliseconds) {
+    clearTimeout(this.retireTimer);
+    this.retireTimer = setTimeout(() => {
+      this.releaseWorker();
+      this.pump();
+    }, milliseconds);
+  }
+  retireWorker(job) {
+    if (job && this.ready && this.startup?.cooperativeCancellation) {
+      this.retiring = {id:job.id, urgent:this.queue.some(pending => pending.priority >= 0)};
+      // On a slow phone one native candidate may exceed a second. If nobody
+      // needs the engine yet, let it reach its cancellation checkpoint rather
+      // than repeatedly allocate another WASM heap. Foreground work still
+      // shortens this to 100 ms in pump(). The fallback remains bounded.
+      this.armRetirement(this.retiring.urgent ? 100 : 5000);
+      try { this.worker.postMessage({type:"cancel", id:job.id}); }
+      catch { this.releaseWorker(); }
+    } else this.releaseWorker();
+  }
+  releaseWorker() {
+    clearTimeout(this.retireTimer);
+    this.retiring = null;
     this.generation++;
     this.worker?.terminate();
     this.worker = null;
     this.ready = false;
+  }
+  cancelActive(message = "Analysis cancelled.", reuse = true) {
+    clearTimeout(this.jobTimeout);
+    clearTimeout(this.initTimeout);
+    const job = this.active;
+    if (reuse) this.retireWorker(job);
+    else this.releaseWorker();
     const error = new DOMException(message, "AbortError");
     this.active?.reject(error);
     this.active = null;
@@ -398,26 +556,26 @@ export class EngineClient {
   cancel() {
     for (const j of this.queue.splice(0))
       j.reject(new DOMException("Analysis cancelled.", "AbortError"));
-    this.cancelActive();
+    this.cancelActive("Analysis cancelled.", false);
   }
   fail(error) {
     for (const j of this.queue.splice(0)) j.reject(error);
-    this.active?.reject(error);
+    if (this.active?.readyOnly && this.active.completed?.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies)
+      this.active.resolve(this.asReady(this.active.completed));
+    else this.active?.reject(error);
     this.active = null;
     this.initReject?.(error);
     this.initReject = null;
     clearTimeout(this.initTimeout);
     clearTimeout(this.jobTimeout);
-    this.worker?.terminate();
-    this.worker = null;
-    this.ready = false;
+    this.releaseWorker();
     this.initializing = null;
-    this.generation++;
     this.onStatus("error", error.message);
   }
   destroy() {
     this.cancel();
     this.cache.clear();
     this.readings.clear();
+    this.decisions.clear();
   }
 }

@@ -1,6 +1,6 @@
 # 300-position comparison: 2, 3 and 4 ply
 
-Recorded October 11, 2026, 20:14–20:33 UTC. **Three ply was the best cost/quality compromise in this sample.** Four ply changed the recommendation about as often as three ply did, but cost much more and did not improve the aggregate historical-reference result over three ply. This motivated the earlier one-second Auto policy. The current user-selected policy requires at least two ply and normally tries three; see [SEARCH-POLICY.md](SEARCH-POLICY.md). No engine settings were changed by this study.
+Recorded October 11, 2026, 20:14–20:33 UTC. **Three ply was the best cost/quality compromise in this sample.** Four ply changed the recommendation about as often as three ply did, but cost much more and did not improve the aggregate historical-reference result over three ply. This motivated the earlier one-second Auto policy. The current user-selected policy requires at least three ply; see [SEARCH-POLICY.md](SEARCH-POLICY.md). No engine settings were changed by this study.
 
 ## Evidence and method
 

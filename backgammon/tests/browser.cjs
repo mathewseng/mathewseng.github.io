@@ -481,6 +481,7 @@ const server = http.createServer((req, res) => {
           await run("highlight-rendering", browser, base, out, browserName),
         );
         (report.actionReadiness ||= []).push(
+          await run("confirm-readiness", browser, base, out, browserName),
           await run("action-readiness", browser, base, out, browserName),
           await run("confirm-latency", browser, base, out, browserName),
           await run("automatic-motion", browser, base, out, browserName),
@@ -615,6 +616,9 @@ const server = http.createServer((req, res) => {
         (report.replyFullgamePrecision ||= []).push(
           await run("reply-fullgame-report", browser, base, out, browserName),
         );
+        (report.correctedRolloutStudy ||= []).push(
+          await run("filtered-rollout-report", browser, base, out, browserName),
+        );
         (report.cubePolicyStudy ||= []).push(
           await run("cube-policy-report", browser, base, out, browserName),
         );
@@ -654,8 +658,26 @@ const server = http.createServer((req, res) => {
         (report.researchScreen ||= []).push(
           {browser: browserName, cases: await run("research-screen", browser, base, out, browserName)},
         );
+        (report.checkerVerification ||= []).push(
+          {browser: browserName, result: await run("verify-search", browser, base)},
+        );
+        (report.verifyUI ||= []).push(
+          await run("verify-ui", browser, base, out, browserName),
+        );
+        (report.puretdUI ||= []).push(
+          await run("puretd-ui", browser, base, out, browserName),
+        );
+        (report.learnedEvaluators ||= []).push(
+          await run("learned-evaluators", browser, base, out, browserName),
+        );
+        (report.puretdLoading ||= []).push(
+          {browser:browserName,cases:await run("puretd-loading",browser,base)},
+        );
         (report.engineCacheContext ||= []).push(
           {browser: browserName, cases: await run("engine-cache-context", browser, base)},
+        );
+        (report.engineLifecycle ||= []).push(
+          {browser: browserName, ...await run("engine-lifecycle", browser, base)},
         );
         (report.backendLoading ||= []).push({browser: browserName,
           cases: await run("backend-loading", browser, base),
@@ -693,6 +715,12 @@ const server = http.createServer((req, res) => {
         (report.mobileHistory ||= []).push(
           await run("mobile-history", browser, base, out, browserName),
         );
+        (report.cubeHistory ||= []).push(
+          await run("cube-history", browser, base, out, browserName),
+        );
+        (report.cubeDisplay ||= []).push(
+          await run("cube-display", browser, base, out, browserName),
+        );
         (report.mobileSettings ||= []).push(
           await run("mobile-settings", browser, base, out, browserName),
         );
@@ -720,6 +748,9 @@ const server = http.createServer((req, res) => {
         (report.equityBar ||= []).push(
           await run("equity-bar", browser, base, out, browserName),
         );
+        (report.landscapeViewport ||= []).push(
+          await run("landscape-viewport", browser, base, out, browserName),
+        );
         (report.historyTree ||= []).push(
           await run("history-tree", browser, base, out, browserName),
         );
@@ -733,6 +764,9 @@ const server = http.createServer((req, res) => {
             out,
             browserName,
           ),
+        );
+        (report.historyRetention ||= []).push(
+          await run("history-retention", browser, base, out, browserName),
         );
         (report.practiceUX ||= []).push(
           await run("practice", browser, base, out, browserName),
@@ -768,7 +802,7 @@ const server = http.createServer((req, res) => {
           await run("refresh", browser, out, browserName),
         );
         // The focused Play command is also part of the full regression run.
-        for (const moduleName of ["control-polish", "advanced-ui", "dice-order", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
+        for (const moduleName of ["roll-prompt", "closed-opponent-roll", "hint-play-best", "initial-forced-only", "forced-roll-presentation", "control-polish", "advanced-ui", "dice-order", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
           (report.playControls ||= []).push({module: moduleName, browser: browserName,
             result: await run(moduleName, browser, base, out, browserName)});
         }

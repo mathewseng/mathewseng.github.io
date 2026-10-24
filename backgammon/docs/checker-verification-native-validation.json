@@ -1,0 +1,373 @@
+{
+  "schema": 1,
+  "cases": 72,
+  "maxDifference": 5.000000025123796e-09,
+  "zeroPlyPruningEquality": 36,
+  "results": [
+    {
+      "id": "contact-0-cubeless",
+      "depth": 0,
+      "maxDifference": 2.999999970665357e-09
+    },
+    {
+      "id": "contact-0-cubeless",
+      "depth": 0,
+      "maxDifference": 2.999999970665357e-09
+    },
+    {
+      "id": "contact-0-cubeless",
+      "depth": 2,
+      "maxDifference": 5.0000000112460086e-09
+    },
+    {
+      "id": "contact-0-cubeless",
+      "depth": 2,
+      "maxDifference": 4.999999997368221e-09
+    },
+    {
+      "id": "contact-0-money",
+      "depth": 0,
+      "maxDifference": 2.999999970665357e-09
+    },
+    {
+      "id": "contact-0-money",
+      "depth": 0,
+      "maxDifference": 2.999999970665357e-09
+    },
+    {
+      "id": "contact-0-money",
+      "depth": 2,
+      "maxDifference": 4.999999997368221e-09
+    },
+    {
+      "id": "contact-0-money",
+      "depth": 2,
+      "maxDifference": 4.909999998595205e-09
+    },
+    {
+      "id": "contact-0-match",
+      "depth": 0,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "contact-0-match",
+      "depth": 0,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "contact-0-match",
+      "depth": 2,
+      "maxDifference": 4.340000000005451e-09
+    },
+    {
+      "id": "contact-0-match",
+      "depth": 2,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "contact-10-cubeless",
+      "depth": 0,
+      "maxDifference": 5.000000025123796e-09
+    },
+    {
+      "id": "contact-10-cubeless",
+      "depth": 0,
+      "maxDifference": 5.000000025123796e-09
+    },
+    {
+      "id": "contact-10-cubeless",
+      "depth": 2,
+      "maxDifference": 4.900000001237248e-09
+    },
+    {
+      "id": "contact-10-cubeless",
+      "depth": 2,
+      "maxDifference": 3.000000026176508e-09
+    },
+    {
+      "id": "contact-10-money",
+      "depth": 0,
+      "maxDifference": 5.000000025123796e-09
+    },
+    {
+      "id": "contact-10-money",
+      "depth": 0,
+      "maxDifference": 5.000000025123796e-09
+    },
+    {
+      "id": "contact-10-money",
+      "depth": 2,
+      "maxDifference": 4.999999997368221e-09
+    },
+    {
+      "id": "contact-10-money",
+      "depth": 2,
+      "maxDifference": 4.999999969612645e-09
+    },
+    {
+      "id": "contact-10-match",
+      "depth": 0,
+      "maxDifference": 5.000000025123796e-09
+    },
+    {
+      "id": "contact-10-match",
+      "depth": 0,
+      "maxDifference": 5.000000025123796e-09
+    },
+    {
+      "id": "contact-10-match",
+      "depth": 2,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "contact-10-match",
+      "depth": 2,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "race-0-cubeless",
+      "depth": 0,
+      "maxDifference": 2.889100000001124e-09
+    },
+    {
+      "id": "race-0-cubeless",
+      "depth": 0,
+      "maxDifference": 2.889100000001124e-09
+    },
+    {
+      "id": "race-0-cubeless",
+      "depth": 2,
+      "maxDifference": 9.999999994736442e-10
+    },
+    {
+      "id": "race-0-cubeless",
+      "depth": 2,
+      "maxDifference": 9.999999994736442e-10
+    },
+    {
+      "id": "race-0-money",
+      "depth": 0,
+      "maxDifference": 2.889100000001124e-09
+    },
+    {
+      "id": "race-0-money",
+      "depth": 0,
+      "maxDifference": 2.889100000001124e-09
+    },
+    {
+      "id": "race-0-money",
+      "depth": 2,
+      "maxDifference": 9.999999994736442e-10
+    },
+    {
+      "id": "race-0-money",
+      "depth": 2,
+      "maxDifference": 9.999999994736442e-10
+    },
+    {
+      "id": "race-0-match",
+      "depth": 0,
+      "maxDifference": 2.889100000001124e-09
+    },
+    {
+      "id": "race-0-match",
+      "depth": 0,
+      "maxDifference": 2.889100000001124e-09
+    },
+    {
+      "id": "race-0-match",
+      "depth": 2,
+      "maxDifference": 9.999999994736442e-10
+    },
+    {
+      "id": "race-0-match",
+      "depth": 2,
+      "maxDifference": 9.999999994736442e-10
+    },
+    {
+      "id": "race-10-cubeless",
+      "depth": 0,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "race-10-cubeless",
+      "depth": 0,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "race-10-cubeless",
+      "depth": 2,
+      "maxDifference": 4.999999969612645e-09
+    },
+    {
+      "id": "race-10-cubeless",
+      "depth": 2,
+      "maxDifference": 4.999999969612645e-09
+    },
+    {
+      "id": "race-10-money",
+      "depth": 0,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "race-10-money",
+      "depth": 0,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "race-10-money",
+      "depth": 2,
+      "maxDifference": 4.999999969612645e-09
+    },
+    {
+      "id": "race-10-money",
+      "depth": 2,
+      "maxDifference": 4.999999969612645e-09
+    },
+    {
+      "id": "race-10-match",
+      "depth": 0,
+      "maxDifference": 2.1624000000005673e-09
+    },
+    {
+      "id": "race-10-match",
+      "depth": 0,
+      "maxDifference": 2.1624000000005673e-09
+    },
+    {
+      "id": "race-10-match",
+      "depth": 2,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "race-10-match",
+      "depth": 2,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "crashed-0-cubeless",
+      "depth": 0,
+      "maxDifference": 2.0000000544584395e-09
+    },
+    {
+      "id": "crashed-0-cubeless",
+      "depth": 0,
+      "maxDifference": 2.0000000544584395e-09
+    },
+    {
+      "id": "crashed-0-cubeless",
+      "depth": 2,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "crashed-0-cubeless",
+      "depth": 2,
+      "maxDifference": 3.000000026176508e-09
+    },
+    {
+      "id": "crashed-0-money",
+      "depth": 0,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "crashed-0-money",
+      "depth": 0,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "crashed-0-money",
+      "depth": 2,
+      "maxDifference": 3.999999997894577e-09
+    },
+    {
+      "id": "crashed-0-money",
+      "depth": 2,
+      "maxDifference": 2.9999999151542056e-09
+    },
+    {
+      "id": "crashed-0-match",
+      "depth": 0,
+      "maxDifference": 2.0000000544584395e-09
+    },
+    {
+      "id": "crashed-0-match",
+      "depth": 0,
+      "maxDifference": 2.0000000544584395e-09
+    },
+    {
+      "id": "crashed-0-match",
+      "depth": 2,
+      "maxDifference": 4.999999969612645e-09
+    },
+    {
+      "id": "crashed-0-match",
+      "depth": 2,
+      "maxDifference": 3.5500000001263687e-09
+    },
+    {
+      "id": "crashed-10-cubeless",
+      "depth": 0,
+      "maxDifference": 2.0000000544584395e-09
+    },
+    {
+      "id": "crashed-10-cubeless",
+      "depth": 0,
+      "maxDifference": 2.0000000544584395e-09
+    },
+    {
+      "id": "crashed-10-cubeless",
+      "depth": 2,
+      "maxDifference": 2.0000000544584395e-09
+    },
+    {
+      "id": "crashed-10-cubeless",
+      "depth": 2,
+      "maxDifference": 4.299999998430559e-09
+    },
+    {
+      "id": "crashed-10-money",
+      "depth": 0,
+      "maxDifference": 3.000000026176508e-09
+    },
+    {
+      "id": "crashed-10-money",
+      "depth": 0,
+      "maxDifference": 3.000000026176508e-09
+    },
+    {
+      "id": "crashed-10-money",
+      "depth": 2,
+      "maxDifference": 4.8999999995025245e-09
+    },
+    {
+      "id": "crashed-10-money",
+      "depth": 2,
+      "maxDifference": 3.200000001091219e-09
+    },
+    {
+      "id": "crashed-10-match",
+      "depth": 0,
+      "maxDifference": 1.9999999989472883e-09
+    },
+    {
+      "id": "crashed-10-match",
+      "depth": 0,
+      "maxDifference": 1.9999999989472883e-09
+    },
+    {
+      "id": "crashed-10-match",
+      "depth": 2,
+      "maxDifference": 4.999999969612645e-09
+    },
+    {
+      "id": "crashed-10-match",
+      "depth": 2,
+      "maxDifference": 3.999999997894577e-09
+    }
+  ],
+  "method": "Standalone new bg_score_config ABI compared with independently constructed ScoreMove probe; 18 contexts \u00d7 depths0,2 \u00d7 pruningoff,on. Caches reset for matching conditions. Separate from frozen v2 rollout data.",
+  "sourceSHA256": "d0ab4142ca398fa707a39e02e38955d5c21c431764dceacb690650ceb6ab72a8",
+  "frozenBridgeSHA256": "ac4e57573cf7cfab7f76fe5961cec367817c85597f482c714a1bfc12ca7a7269",
+  "nativeBinarySHA256": "6832f25fafc36e123b8890eb8b26b63f34426efa4b1048d91b865eb82763b729",
+  "runtimeBinarySHA256": "492649aac0d81ee61c7ca82ab7e56f1aecc93f9d8140d02f6033a3b9855d0919"
+}

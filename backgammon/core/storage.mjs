@@ -6,6 +6,7 @@ import { mergeEvaluations } from "./decision-history.mjs";
 import { validateTakebacks } from "./table.mjs";
 import { normalizeShortcuts, DEFAULT_SHORTCUTS } from "./shortcuts.mjs";
 import { DEFAULT_SKIN, DEFAULT_SKIN_BOARD_THEME, SKIN_IDS } from "../skins/index.mjs";
+import { PURETD, PURETD_WIDE } from "../engine/puretd-metadata.mjs";
 export const PREFIX = "backgammon.v1.";
 export const MAX_BACKUP = 8 * 1024 * 1024;
 export const settingsDefaults = {
@@ -13,6 +14,7 @@ export const settingsDefaults = {
   keyboardEnabled: true,
   shortcuts: DEFAULT_SHORTCUTS,
   numbers: true,
+  cubeOneAsOne: false,
   moveHints: true,
   interactionMode: "advanced",
   motion: "system",
@@ -21,6 +23,7 @@ export const settingsDefaults = {
   moveFeedback: true,
   equityBar: true,
   analysisAhead: true,
+  closedOutPassing: "off",
   boardTheme: DEFAULT_SKIN_BOARD_THEME,
   skin: DEFAULT_SKIN,
   sound: DEFAULT_SOUND,
@@ -43,12 +46,21 @@ function migrateBoardTheme(saved) {
   return untouched ? DEFAULT_SKIN_BOARD_THEME : saved.boardTheme;
 }
 let settingsText, normalizedSettings;
-export function settings() {
+const freezeSettings = value => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.values(value).forEach(freezeSettings);
+    Object.freeze(value);
+  }
+  return value;
+};
+// Rendering and gesture handlers only read preferences. Share an immutable
+// snapshot there instead of copying the entire palette/shortcut tree per read.
+export function readSettings() {
   try {
     const text = localStorage.getItem(PREFIX + "settings") || "{}";
     // Gesture handlers read settings many times. Validate only when stored text
-    // changes (including another tab); callers still receive independent copies.
-    if (text === settingsText && normalizedSettings) return clone(normalizedSettings);
+    // changes (including another tab); editors use settings() for writable copies.
+    if (text === settingsText && normalizedSettings) return normalizedSettings;
     const saved = JSON.parse(text);
     const normalized = {
       ...settingsDefaults,
@@ -59,18 +71,21 @@ export function settings() {
       keyboardEnabled: saved?.keyboardEnabled !== false,
       equityBar: saved?.equityBar !== false,
       analysisAhead: saved?.analysisAhead !== false,
+      closedOutPassing: ["forced", "bad-double"].includes(saved?.closedOutPassing) ? saved.closedOutPassing : "off",
       moveFeedback: saved?.moveFeedback !== false,
       interactionMode: saved?.interactionMode === "beginner" ? "beginner" : "advanced",
       moveHints: saved?.moveHints !== false,
+      cubeOneAsOne: saved?.cubeOneAsOne === true,
       sound: normalizeSound(saved?.sound),
     };
     settingsText = text;
-    normalizedSettings = normalized;
-    return clone(normalized);
+    normalizedSettings = freezeSettings(normalized);
+    return normalizedSettings;
   } catch {
-    return { ...settingsDefaults };
+    return freezeSettings({ ...settingsDefaults });
   }
 }
+export function settings() { return clone(readSettings()); }
 export function saveSettings(value) {
   const next = { ...settings(), ...value };
   next.boardTheme = normalizeBoardTheme(next.boardTheme);
@@ -183,13 +198,20 @@ export function validateItem(item) {
   if (item.analysis) {
     const a = item.analysis;
     const valid = (n) => typeof n === "number" && Number.isFinite(n);
+    const isNeural = a.method === 'neural';
+    const learned = isNeural && [PURETD, PURETD_WIDE].find(model => model.id === a.engine);
+    if (isNeural && (!learned || a.type !== 'checker' ||
+        a.model?.id !== learned.model || a.model.sha256 !== learned.modelSHA256 || a.model.equityOnly !== true ||
+        ![0, 1].includes(a.settings?.plies) || a.settings.cubeful !== true ||
+        a.settings.pruning !== false || a.units !== 'current-cube-points'))
+      throw new Error('Invalid learned-model provenance.');
     const evaluation = (c) =>
       c &&
       valid(c.equity) &&
-      valid(c.cubeless) &&
+      (isNeural ? c.cubeless === null && c.probabilities === null : valid(c.cubeless) &&
       Array.isArray(c.probabilities) &&
       c.probabilities.length === 5 &&
-      c.probabilities.every((n) => valid(n) && n >= -0.0001 && n <= 1.0001);
+      c.probabilities.every((n) => valid(n) && n >= -0.0001 && n <= 1.0001));
     const isReference = a.method === "reference";
     const credit = c => c?.referenceCredit &&
       typeof c.referenceCredit.author === "string" && c.referenceCredit.author.trim().length > 0 && c.referenceCredit.author.length <= 120 &&

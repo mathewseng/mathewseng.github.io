@@ -1,0 +1,423 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-22T20:18:53.814Z",
+  "seed": 31811004,
+  "trialsPerCase": 2,
+  "excludedFromStudy": true,
+  "cacheDisabled": false,
+  "harness": null,
+  "method": "Deterministic path diagnostic, not an equity estimate or additional accuracy trials. Two fixed excluded-seed full games for each retained continuation at the recorded depths; ordinary cube, Jacoby, ISAAC, pruning, normal checker filters, variance reduction at checker depth minus one, no fixed cutoff or late weakening, exact bearoff allowed. Independent unmodified official GNUbg CLI versus the frozen local study executable or cache-disabled temporary harness. CLI runs the after-position with the opponent on roll; output is inverted to the original player. Both executables start fresh for every case. With normal cache settings, frozen 2-ply results must reproduce the existing smoke fixture exactly.",
+  "limitations": [
+    "Standalone CLI rollout skips the initial cube decision; ScoreMoveRollout permits it. Separate 2-ply hints for both positions say no double, but evaluator/cache call order can differ.",
+    "The fork includes cache-key fixes and deterministic move tie ordering absent upstream; these can change individual seeded paths. A mismatch does not by itself prove a port defect or mean equity bias.",
+    "CLI is scalar x86_64 under Rosetta; the frozen local executable is ARM64. Floating-point differences can alter tied or near-tied later choices.",
+    "The displayed official probabilities and equities are rounded to six decimal places. These tiny validation samples cannot assess XG agreement or the 0.005 equity target."
+  ],
+  "cacheMethod": "Each executable uses its default/frozen cache settings and key semantics.",
+  "binarySHA256": "961ff5dbadcac129c03fdf6a7535f5e741c16defcbc65db1cd314584f9c1ba45",
+  "nativeSHA256": "492649aac0d81ee61c7ca82ab7e56f1aecc93f9d8140d02f6033a3b9855d0919",
+  "frozenNativeSHA256": "492649aac0d81ee61c7ca82ab7e56f1aecc93f9d8140d02f6033a3b9855d0919",
+  "scriptSHA256": "28b352465b48ada0c4f1c3005879221a2d443467139befcc78d28d41633a517b",
+  "inputsSHA256": "a2adce251235be40ecf3a2d6d8a771372131d259f9edcaca4c90a3819f641ac1",
+  "dataFiles": {
+    "gnubg.wd": "bb045bb416c70706ba34ad64595af2b43cac3722560b6ab01829eb719417153b",
+    "gnubg.weights": "d03c629d8b916236ce6eee05d891986830ec943fce6febd4e5b6725b284c66ee",
+    "gnubg_os0.bd": "38089567e87a681682bb4ff53f30d781af215fc04debbdff3f61b6db68547a49",
+    "gnubg_ts0.bd": "9eac8a2c697dae8a09f2e5653022084b9e725df6c32950cb5299b273fc64500f",
+    "met/Kazaross-XG2.xml": "7a232b171744b8db34306d11cff79a5974541328bb033b6bf16c012e8f7a3cc3"
+  },
+  "results": [
+    {
+      "id": "previous-choice-0ply",
+      "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "after": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+      "cliAfter": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:00:0:0:1:0:10",
+      "plies": 0,
+      "vrPlies": 0,
+      "initialCubeCheck": null,
+      "upstream": {
+        "equity": 0.140114,
+        "cubeless": 0.257209,
+        "probabilities": [
+          0.555514,
+          0.201043,
+          0.040345,
+          0.090193,
+          0.005016
+        ],
+        "standardError": 0.623193
+      },
+      "native": {
+        "samples": 2,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": 0.14013195,
+        "cubeless": 0.25721127,
+        "probabilities": [
+          0.55551541,
+          0.20104362,
+          0.04034521,
+          0.09019333,
+          0.00501552
+        ],
+        "mwc": null,
+        "standardError": 0.62317562,
+        "mwcStandardError": 0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 0,
+        "maxCube": 4,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          67,
+          129,
+          0
+        ],
+        "cacheContext": 0
+      },
+      "equityDifference": 0.000017950000000016564,
+      "cubelessDifference": 0.0000022699999999709064,
+      "maxProbabilityDifference": 0.0000014100000000905055,
+      "outputSHA256": "f53430383b7f825e1f85f5e4ea0c3348f8d9f2efb70c2ada30aa4bd1348b6347",
+      "nativeOutputSHA256": "9baebf03a4bea73435908327c21b656df6610bbdc4de67f2d83dbcd0bd658a64"
+    },
+    {
+      "id": "previous-choice-1ply",
+      "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "after": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+      "cliAfter": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:00:0:0:1:0:10",
+      "plies": 1,
+      "vrPlies": 0,
+      "initialCubeCheck": null,
+      "upstream": {
+        "equity": -0.360288,
+        "cubeless": -0.027498,
+        "probabilities": [
+          0.460679,
+          0.134323,
+          0,
+          0.046166,
+          0.001427
+        ],
+        "standardError": 1.436628
+      },
+      "native": {
+        "samples": 2,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": -0.36029202,
+        "cubeless": -0.02749938,
+        "probabilities": [
+          0.46067914,
+          0.134323,
+          0,
+          0.04616632,
+          0.00142684
+        ],
+        "mwc": null,
+        "standardError": 1.43662715,
+        "mwcStandardError": 0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 0,
+        "maxCube": 4,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          65,
+          124,
+          0
+        ],
+        "cacheContext": 0
+      },
+      "equityDifference": -0.000004019999999993473,
+      "cubelessDifference": -0.0000013799999999987433,
+      "maxProbabilityDifference": 3.199999999980996e-7,
+      "outputSHA256": "4ac4fd68012aecfe13b3060f6e29023c74968ac029980c6ee5104a72465af5a1",
+      "nativeOutputSHA256": "b6dbcbb6f3cd835404dd7184007b15633b299129f80008079b4fe6ee80fa7750"
+    },
+    {
+      "id": "previous-choice-2ply",
+      "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "after": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+      "cliAfter": "XGID=bb--B-E-A---dE--Ac-d----A-:0:0:-1:00:0:0:1:0:10",
+      "plies": 2,
+      "vrPlies": 1,
+      "initialCubeCheck": {
+        "action": "No double, take",
+        "equity": -0.630738,
+        "outputSHA256": "1f76c8588677c0c777839a6365a218a69da95b28b59dc685bd9049f05e859cdd"
+      },
+      "upstream": {
+        "equity": 0.811705,
+        "cubeless": 0.502746,
+        "probabilities": [
+          0.650122,
+          0.242562,
+          0.025826,
+          0.062154,
+          0.003732
+        ],
+        "standardError": 0.305024
+      },
+      "native": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.75336504,
+        "cubeless": 0.50171679,
+        "probabilities": [
+          0.66004473,
+          0.22443126,
+          0.02337042,
+          0.06243293,
+          0.00374231
+        ],
+        "mwc": null,
+        "standardError": 0.37440729,
+        "mwcStandardError": 0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          63,
+          120,
+          0
+        ],
+        "cacheContext": 0
+      },
+      "equityDifference": -0.05833995999999997,
+      "cubelessDifference": -0.0010292100000000026,
+      "maxProbabilityDifference": 0.018130740000000006,
+      "outputSHA256": "8ef70e00854c57a3015bd52e5bdd356d27d45edda99ddb5465130099ce53fb6c",
+      "nativeOutputSHA256": "b90b791a1e751dae921165b02aa73354a763c2561810c65374d61e33a02a6e5c"
+    },
+    {
+      "id": "xg-choice-0ply",
+      "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "after": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+      "cliAfter": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:00:0:0:1:0:10",
+      "plies": 0,
+      "vrPlies": 0,
+      "initialCubeCheck": null,
+      "upstream": {
+        "equity": 0.50143,
+        "cubeless": 0.385075,
+        "probabilities": [
+          0.601981,
+          0.225882,
+          0.033254,
+          0.074163,
+          0.003859
+        ],
+        "standardError": 0.477975
+      },
+      "native": {
+        "samples": 2,
+        "checkerPlies": 0,
+        "cubePlies": 0,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 0,
+        "lateCubePlies": 0,
+        "equity": 0.50142992,
+        "cubeless": 0.38507572,
+        "probabilities": [
+          0.60198122,
+          0.22588146,
+          0.03325392,
+          0.07416264,
+          0.00385881
+        ],
+        "mwc": null,
+        "standardError": 0.4779762,
+        "mwcStandardError": 0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 0,
+        "maxCube": 2,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          60,
+          115,
+          0
+        ],
+        "cacheContext": 0
+      },
+      "equityDifference": -8.000000006891383e-8,
+      "cubelessDifference": 7.200000000096018e-7,
+      "maxProbabilityDifference": 5.399999999933236e-7,
+      "outputSHA256": "482bf00b831adc63a5f03e0325658218a351d13de4e63cb245597a346dc0a639",
+      "nativeOutputSHA256": "67e58cc55ea74accf27eda0962a2099fabb2399f520c95069f87ed7c66c78072"
+    },
+    {
+      "id": "xg-choice-1ply",
+      "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "after": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+      "cliAfter": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:00:0:0:1:0:10",
+      "plies": 1,
+      "vrPlies": 0,
+      "initialCubeCheck": null,
+      "upstream": {
+        "equity": 0.125702,
+        "cubeless": 0.158674,
+        "probabilities": [
+          0.5053,
+          0.168133,
+          0.070283,
+          0.085883,
+          0.00446
+        ],
+        "standardError": 0.132293
+      },
+      "native": {
+        "samples": 2,
+        "checkerPlies": 1,
+        "cubePlies": 1,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 1,
+        "lateCubePlies": 1,
+        "equity": 0.12570524,
+        "cubeless": 0.15867436,
+        "probabilities": [
+          0.50530136,
+          0.16813235,
+          0.07028352,
+          0.08588333,
+          0.00446039
+        ],
+        "mwc": null,
+        "standardError": 0.13229132,
+        "mwcStandardError": 0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 0,
+        "maxCube": 2,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          56,
+          106,
+          0
+        ],
+        "cacheContext": 0
+      },
+      "equityDifference": 0.000003239999999987697,
+      "cubelessDifference": 3.5999999997704535e-7,
+      "maxProbabilityDifference": 0.0000013600000000613122,
+      "outputSHA256": "0e89945aac2a3c6eb1be949ab4543ee13142cba765692e4368e5353cd148c6c8",
+      "nativeOutputSHA256": "e7a70b2d10e40380b8605c415d0c51d0860ca33cea447934c3d35f5215c9ec6f"
+    },
+    {
+      "id": "xg-choice-2ply",
+      "original": "XGID=-b----E-C---dE--ac-da---B-:0:0:1:44:0:0:1:0:10",
+      "after": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:1:00:0:0:1:0:10",
+      "cliAfter": "XGID=bb----E-CB--dC--Ac-d----A-:0:0:-1:00:0:0:1:0:10",
+      "plies": 2,
+      "vrPlies": 1,
+      "initialCubeCheck": {
+        "action": "No double, take",
+        "equity": -0.621741,
+        "outputSHA256": "734a2608320d0e94d838fcce17a758877d3ef1f5daa65160cbd79dbb41fb3729"
+      },
+      "upstream": {
+        "equity": 0.248452,
+        "cubeless": 0.25982,
+        "probabilities": [
+          0.573077,
+          0.213267,
+          0.011361,
+          0.10649,
+          0.004474
+        ],
+        "standardError": 0.00518
+      },
+      "native": {
+        "samples": 2,
+        "checkerPlies": 2,
+        "cubePlies": 2,
+        "truncationPlies": 0,
+        "lateAfterPlies": 0,
+        "lateCheckerPlies": 2,
+        "lateCubePlies": 2,
+        "equity": 0.2014218,
+        "cubeless": 0.2634497,
+        "probabilities": [
+          0.56589812,
+          0.23544505,
+          0.00730644,
+          0.10653371,
+          0.00456486
+        ],
+        "mwc": null,
+        "standardError": 0.01325506,
+        "mwcStandardError": 0,
+        "rulesMode": 0,
+        "filter": 0,
+        "vrPlies": 1,
+        "maxCube": 2,
+        "cubeActions": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          71,
+          138,
+          0
+        ],
+        "cacheContext": 0
+      },
+      "equityDifference": -0.047030199999999994,
+      "cubelessDifference": 0.0036297000000000135,
+      "maxProbabilityDifference": 0.022178049999999977,
+      "outputSHA256": "632bc0c52ca061c66b210bbd624c9925d479a696725c4e0098b7031371e0715a",
+      "nativeOutputSHA256": "911ce95d244e639b477d80d04a3ce13f007aaf0ad148db841af7e0ecc218f952"
+    }
+  ]
+}

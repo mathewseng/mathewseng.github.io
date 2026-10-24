@@ -41,7 +41,9 @@ module.exports=async(browser,base,out,name)=>{
   const saved=await page.evaluate(async()=>{const st=await import('/backgammon/core/storage.mjs'),r=await import('/backgammon/core/rules.mjs');return (await st.all()).some(item=>item.title==='Compact solution regression'&&r.positionKey(item.state)===r.positionKey(window.solutionSource));});
   assert.equal(saved,true,'saved original decision and dice');
   await page.keyboard.press('Escape');
-  await page.evaluate(()=>window.showSolution({onUse:()=>{},onReplay:()=>{}}));
+  await page.evaluate(()=>window.showSolution({replayLabel:"Play best",onReplay:()=>{}}));
+  assert.equal(await page.getByRole('button',{name:'Use best move',exact:true}).count(),0);
+  assert.equal(await page.getByRole('button',{name:'Play best',exact:true}).count(),1);
   for(const [width,height] of [[320,568],[390,844],[844,390]]) {
     await page.setViewportSize({width,height});await page.getByRole('tab',{name:'Board',exact:true}).click();
     assert.equal(await page.locator('.decision-dialog').evaluate(d=>d.scrollHeight<=d.clientHeight+1 && [...d.querySelectorAll('footer button')].every(b=>{const r=b.getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=innerHeight;})),true,'hint actions fit with Save');
@@ -106,7 +108,7 @@ module.exports=async(browser,base,out,name)=>{
     const board=window.polishBoard.svg,cube=board.querySelector('.cube-hit').getBoundingClientRect(),off=board.querySelector('[data-point="off0"] .point-hit').getBoundingClientRect();
     return {separated:cube.bottom<off.top,numbers:[...window.polishBar.node.querySelectorAll('.equity-number')].every(n=>n.scrollWidth<=n.clientWidth+1),overflow:document.documentElement.scrollWidth<=innerWidth+1};
    });
-   assert.deepEqual(bounds,{separated:true,numbers:true,overflow:true});
+   assert.deepEqual(bounds,{separated:true,numbers:true,overflow:true},`${width}x${height} equity rail`);
    await page.screenshot({path:path.join(out,`${name}-board-polish-${width}.png`)});
   }
   assert.deepEqual(errors,[]);

@@ -109,7 +109,7 @@ export function lastMove(game) {
   for (let index = game.events.length - 1; index >= 0; index--) {
     const event = game.events[index];
     if (
-      ["opening", "roll", "practice-roll", "next"].includes(
+      ["opening", "roll", "skip-roll", "practice-roll", "next"].includes(
         event.action.type,
       )
     )

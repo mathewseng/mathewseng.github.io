@@ -10,10 +10,18 @@ module.exports = async function highlightMotion(browser, base, out, name) {
     page.on('pageerror', e => errors.push(e.message));
     try {
       await page.addInitScript(() => {
+        window.pauseHighlights = true;
         const animate = Element.prototype.animate;
         Element.prototype.animate = function(frames, options) {
           const result = animate.call(this, frames, options);
-          if (options?.id === 'board-highlight') { result.pause(); result.currentTime = 0; }
+          if (window.pauseHighlights && options?.id === 'board-highlight') { result.pause(); result.currentTime = 0; }
+          return result;
+        };
+        // Board transitions start together after all resting poses are read.
+        const play = Animation.prototype.play;
+        Animation.prototype.play = function() {
+          const result = play.call(this);
+          if (window.pauseHighlights && this.id === 'board-highlight') { this.pause(); this.currentTime = 0; }
           return result;
         };
       });
@@ -141,7 +149,7 @@ module.exports = async function highlightMotion(browser, base, out, name) {
       await finish();
       // Let animations finish on their own once; exits must not collect in the DOM.
       await tap(12,true);
-      await page.evaluate(()=>document.getAnimations().filter(a=>a.id==='board-highlight').forEach(a=>a.play()));
+      await page.evaluate(()=>{window.pauseHighlights=false;document.getAnimations().filter(a=>a.id==='board-highlight').forEach(a=>a.play());});
       await page.waitForFunction(()=>!document.querySelector('[data-highlight-exit]'));
       await page.waitForFunction(()=>!document.getAnimations().some(a=>a.id==='board-highlight'));
       assert.deepEqual(errors,[]);

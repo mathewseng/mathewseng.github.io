@@ -69,7 +69,7 @@ Vertical swipes on open board space scroll the page; starting on an actual movab
 
 The diagram describes ordinary pointer input. Keyboard-only undo is the explicit exception above. A drop is always constrained to the dragged checker; invalid or outside drops cancel. Point-number lanes accept destination clicks and drops.
 
-A roll with more than one legal final position always requires Confirm, regardless of shortcut length or input method. A fresh forward choice can preview its forced continuation; Undo, Reset and reverse moves leave removed choices undone. Only the globally compulsory initial prefix is locked. Fully forced original rolls and passes still advance automatically.
+A roll with more than one legal final position always requires Confirm, regardless of shortcut length or input method. After a forward choice, the remaining dice always stay manual, even with only one legal continuation. Undo, Reset and reverse moves leave removed choices undone. Only the globally compulsory initial prefix is locked. Fully forced original rolls and passes still advance automatically.
 
 Selected moved checkers expose every legal placement obtained by revising their own steps and spending any unused dice. Both bar/24/20 and bar/21/20 with 1–4 show points 21 and 24 simultaneously. Partial chains, doubles and bearoff use the same rule. Other checkers’ moves remain in order, and the compulsory prefix is unchanged. Every replacement is a prefix of a complete legal turn. Teal ↔ targets revise the journey; amber ↶ only returns to the pre-roll origin. A revision never refills its removed continuation or confirms the turn.
 

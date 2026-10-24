@@ -11,13 +11,20 @@ import { decisionFeedback } from "./decision-feedback.mjs";
 import { CUBE_LABELS, gradeCube } from "../engine/cube-grade.mjs";
 import { sameDecisionAction } from "./decision-attempt.mjs";
 export function compactEvaluation(source, result) {
-  const compact = clone(result);
-  if (compact.type === "checker") {
-    compact.evaluatedCount =
-      compact.evaluatedCount ?? compact.candidates.length;
-    compact.candidates = compact.candidates.slice(0, 10);
-  }
-  return { result: compact };
+  // A saved review needs the ranked moves, submitted move and screening
+  // summary, not thousands of discarded search paths. Compact before cloning:
+  // every later turn copies this history, including initial/accepted grades.
+  const screen = value => {
+    const {excluded, initial, ...summary} = value;
+    return {...summary, ...(initial ? {initial:screen(initial)} : {})};
+  };
+  return { result: clone({ ...result,
+    ...(result.type === "checker" ? {
+      evaluatedCount: result.evaluatedCount ?? result.candidates.length,
+      candidates: result.candidates.slice(0, 10),
+    } : {}),
+    ...(result.screening ? {screening:screen(result.screening)} : {}),
+  }) };
 }
 export function gradeDecision(source, result, action) {
   return action.type === "move"
@@ -41,14 +48,15 @@ export function decisionHistory(model) {
     if (index && source.gameNumber !== states[index - 1].gameNumber) {
       turn = 1;
       turnStart = index;
-    } else if (index && model.events[index - 1].action.type === "move") {
+    } else if (index && ['move', 'skip-roll'].includes(model.events[index - 1].action.type)) {
       turn++;
       turnStart = index;
     }
     const eligible =
       a.type === "move" ||
       (source.phase === "roll" &&
-        ["roll", "double"].includes(a.type) &&
+        ["roll", "skip-roll", "double"].includes(a.type) &&
+        !(a.type === 'skip-roll' && event.automatic) &&
         !(a.type === "roll" && blockedBarRoll(source)) &&
         canDouble(source)) ||
       (source.phase === "double" &&

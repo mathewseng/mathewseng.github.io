@@ -86,7 +86,10 @@ module.exports = async function mobileQuick(browser, base, out, name) {
     }
     await set("doubles");await select(12);await tap(3);
     assert.equal((await read()).draft.length,3,"doubles permit combined destinations");
-    await set("off");await select(2);await tap("off");
+    await set("off");
+    assert.deepEqual(await page.locator('#board .board-die').evaluateAll(ns=>ns.map(n=>Number(n.dataset.die))),[4,3],"higher die displays first");
+    await page.locator('#board .board-die[data-die="3"]').tap();
+    await select(2);await tap("off");
     assert.equal(await page.getByRole("dialog").count(),0,"bearoff uses the selected die without a prompt");
     assert.equal((await read()).draft[0].die,3,"bearoff uses the selected die first");
     await set();await select(12);

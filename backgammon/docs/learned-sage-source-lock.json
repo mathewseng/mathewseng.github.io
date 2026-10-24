@@ -1,0 +1,868 @@
+{
+  "repository": "https://github.com/markbgsage/bgsage",
+  "commit": "139427d826dd67798226e7d23c003c90315306ba",
+  "files": [
+    {
+      "path": "CMakeLists.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c7651c0b9229ac83ac7b850ebdbe0d4b78c7acc9",
+      "size": 3162,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/c7651c0b9229ac83ac7b850ebdbe0d4b78c7acc9"
+    },
+    {
+      "path": "LICENSE",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d0a1fa1482eea82e19510e7920cbe3a03e41f691",
+      "size": 16726,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/d0a1fa1482eea82e19510e7920cbe3a03e41f691"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "41b2af8a7fe170f07e20b6f1d61718c545119f08",
+      "size": 4923,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/41b2af8a7fe170f07e20b6f1d61718c545119f08"
+    },
+    {
+      "path": "cpp/CMakeLists.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a1db0f6c6c5ba7dc664ce86490d938d720edbd6c",
+      "size": 3481,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/a1db0f6c6c5ba7dc664ce86490d938d720edbd6c"
+    },
+    {
+      "path": "cpp/CMakeLists_cpu.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f79a4509c0c0da01e2a69b2516ceaeca94e71f22",
+      "size": 4517,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/f79a4509c0c0da01e2a69b2516ceaeca94e71f22"
+    },
+    {
+      "path": "cpp/include/bgbot/bearoff.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "314d473cd205aa70273e39d7e5dae742e99c6187",
+      "size": 8280,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/314d473cd205aa70273e39d7e5dae742e99c6187"
+    },
+    {
+      "path": "cpp/include/bgbot/benchmark.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6fe0f6314f1b6ba9d8b6b624e1a890591c06c32b",
+      "size": 4674,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/6fe0f6314f1b6ba9d8b6b624e1a890591c06c32b"
+    },
+    {
+      "path": "cpp/include/bgbot/board.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "815c9907204319ddfa40428e6eefd90afc3a874e",
+      "size": 1183,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/815c9907204319ddfa40428e6eefd90afc3a874e"
+    },
+    {
+      "path": "cpp/include/bgbot/cube.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e94b86381d9eaec3ee94b96ab3f4293a391e6f9d",
+      "size": 22939,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/e94b86381d9eaec3ee94b96ab3f4293a391e6f9d"
+    },
+    {
+      "path": "cpp/include/bgbot/cuda_nn.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da4ffb9cbb0908c45b685fdd094906b2f28aae89",
+      "size": 1780,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/da4ffb9cbb0908c45b685fdd094906b2f28aae89"
+    },
+    {
+      "path": "cpp/include/bgbot/encoding.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f55af39336f5547e158e157439373cb3acebee34",
+      "size": 7997,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/f55af39336f5547e158e157439373cb3acebee34"
+    },
+    {
+      "path": "cpp/include/bgbot/game.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f441735401f959b4a17f44ca4e7d11819a25569b",
+      "size": 2009,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/f441735401f959b4a17f44ca4e7d11819a25569b"
+    },
+    {
+      "path": "cpp/include/bgbot/match_equity.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aae41734803d616cff181abea98ecdd292c2b04f",
+      "size": 3227,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/aae41734803d616cff181abea98ecdd292c2b04f"
+    },
+    {
+      "path": "cpp/include/bgbot/mobile.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d8ec65f02ceb30a5e94390292cb1df4a4e058ae8",
+      "size": 1301,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/d8ec65f02ceb30a5e94390292cb1df4a4e058ae8"
+    },
+    {
+      "path": "cpp/include/bgbot/moves.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5fef0046d9164bb50d2270a5a76402e0039cd7e0",
+      "size": 1819,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/5fef0046d9164bb50d2270a5a76402e0039cd7e0"
+    },
+    {
+      "path": "cpp/include/bgbot/multipy.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "970880bea959a2dc6a78418ecd7197fcd03c8dca",
+      "size": 21015,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/970880bea959a2dc6a78418ecd7197fcd03c8dca"
+    },
+    {
+      "path": "cpp/include/bgbot/neural_net.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ca64f3b3a91219d76485b113d0677a1e764c4e86",
+      "size": 32427,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/ca64f3b3a91219d76485b113d0677a1e764c4e86"
+    },
+    {
+      "path": "cpp/include/bgbot/pubeval.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a98cfaa3cde26e7424a78a1d3458cb5db244faf4",
+      "size": 787,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/a98cfaa3cde26e7424a78a1d3458cb5db244faf4"
+    },
+    {
+      "path": "cpp/include/bgbot/rollout.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8c80515536883e2723736db76504727c0adeacd4",
+      "size": 27284,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/8c80515536883e2723736db76504727c0adeacd4"
+    },
+    {
+      "path": "cpp/include/bgbot/strategy.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c3cdf2e01973a0896a89eef790e700bce00bf067",
+      "size": 11416,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/c3cdf2e01973a0896a89eef790e700bce00bf067"
+    },
+    {
+      "path": "cpp/include/bgbot/training.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3418e8e3cc940e7adfe0252fd4bfdf47d4b28d86",
+      "size": 10813,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/3418e8e3cc940e7adfe0252fd4bfdf47d4b28d86"
+    },
+    {
+      "path": "cpp/include/bgbot/types.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5b514122d833ca7dd0109c2fbb3963560047b02e",
+      "size": 1162,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/5b514122d833ca7dd0109c2fbb3963560047b02e"
+    },
+    {
+      "path": "cpp/move_array_probe/CMakeLists.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "836a576e53c4e9077a77e1b05a2ee2b14b8573ec",
+      "size": 593,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/836a576e53c4e9077a77e1b05a2ee2b14b8573ec"
+    },
+    {
+      "path": "cpp/move_array_probe/bindings.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6be5afba46cde41469d1e645b767ec6712af2e72",
+      "size": 552,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/6be5afba46cde41469d1e645b767ec6712af2e72"
+    },
+    {
+      "path": "cpp/pybind/bindings.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fe1fd6673778f99ddceeca66bfede6a23c349a60",
+      "size": 275046,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/fe1fd6673778f99ddceeca66bfede6a23c349a60"
+    },
+    {
+      "path": "cpp/pybind/move_arrays.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b113d85663b1db21951db73a0ad65d5690140d21",
+      "size": 3369,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/b113d85663b1db21951db73a0ad65d5690140d21"
+    },
+    {
+      "path": "cpp/src/bearoff.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8d67d99667e172477217b3962797db961917405c",
+      "size": 32541,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/8d67d99667e172477217b3962797db961917405c"
+    },
+    {
+      "path": "cpp/src/benchmark.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "168e44bc5cf94b55aedb69b4b64faf93d55465a1",
+      "size": 13283,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/168e44bc5cf94b55aedb69b4b64faf93d55465a1"
+    },
+    {
+      "path": "cpp/src/benchmark_3t.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f4ebe39c7f67a378dcba6136687a47629f5d617d",
+      "size": 4013,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/f4ebe39c7f67a378dcba6136687a47629f5d617d"
+    },
+    {
+      "path": "cpp/src/benchmark_3t_experiment.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3c33822bc28ea7e4c2e89084293533376484e59f",
+      "size": 4461,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/3c33822bc28ea7e4c2e89084293533376484e59f"
+    },
+    {
+      "path": "cpp/src/benchmark_3t_profile.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "223cfa3a051f8dbdf9efe59fc3b0975484ce10b2",
+      "size": 14589,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/223cfa3a051f8dbdf9efe59fc3b0975484ce10b2"
+    },
+    {
+      "path": "cpp/src/benchmark_4ply.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "05d6956d05184e4a8016380a354b2c332eb7667d",
+      "size": 3129,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/05d6956d05184e4a8016380a354b2c332eb7667d"
+    },
+    {
+      "path": "cpp/src/benchmark_4ply_opt.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ea22f64de81fefee555f00ffd6f3db7c1a944f8b",
+      "size": 5053,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/ea22f64de81fefee555f00ffd6f3db7c1a944f8b"
+    },
+    {
+      "path": "cpp/src/benchmark_truncated_rollout.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53a54c9bfe5059c9c4ca442064d1cc01e8b1c9e9",
+      "size": 5493,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/53a54c9bfe5059c9c4ca442064d1cc01e8b1c9e9"
+    },
+    {
+      "path": "cpp/src/board.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6f2e6faf3372bc780ab791ec098e26452c9ed095",
+      "size": 4545,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/6f2e6faf3372bc780ab791ec098e26452c9ed095"
+    },
+    {
+      "path": "cpp/src/cube.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "af61a9857f812d9e7e56fa90cf23cab1b408cd11",
+      "size": 102050,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/af61a9857f812d9e7e56fa90cf23cab1b408cd11"
+    },
+    {
+      "path": "cpp/src/cube_eval.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9170d403ae9e9ed49a01ade0550b22cd6e043657",
+      "size": 44285,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/9170d403ae9e9ed49a01ade0550b22cd6e043657"
+    },
+    {
+      "path": "cpp/src/cuda_nn.cu",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1dc544e96bcf259adc1981f3870390e0f55f7730",
+      "size": 26300,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/1dc544e96bcf259adc1981f3870390e0f55f7730"
+    },
+    {
+      "path": "cpp/src/cuda_nn_stub.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6df235dbebdbab23bfcc7701ac4a91c46f8ac4b6",
+      "size": 445,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/6df235dbebdbab23bfcc7701ac4a91c46f8ac4b6"
+    },
+    {
+      "path": "cpp/src/encoding.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "32aa1bae48878fbfeabb983eb41cd09bd6364844",
+      "size": 69014,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/32aa1bae48878fbfeabb983eb41cd09bd6364844"
+    },
+    {
+      "path": "cpp/src/game.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "be60f9163c2a486f2eb51009dc01dd6a51cf4e14",
+      "size": 5419,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/be60f9163c2a486f2eb51009dc01dd6a51cf4e14"
+    },
+    {
+      "path": "cpp/src/main.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7f5198e785932d1ab7655baa67884a9612a37b92",
+      "size": 2027,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/7f5198e785932d1ab7655baa67884a9612a37b92"
+    },
+    {
+      "path": "cpp/src/match_equity.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "85d6e6c3d8f005f856fca39496a12d3e8621b123",
+      "size": 14093,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/85d6e6c3d8f005f856fca39496a12d3e8621b123"
+    },
+    {
+      "path": "cpp/src/mobile.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9f31bb57da17c242cbfeaf1377b9efabc761173f",
+      "size": 8424,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/9f31bb57da17c242cbfeaf1377b9efabc761173f"
+    },
+    {
+      "path": "cpp/src/moves.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7841c510f8889541ba744e285a7b6e6d9f24daa2",
+      "size": 12387,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/7841c510f8889541ba744e285a7b6e6d9f24daa2"
+    },
+    {
+      "path": "cpp/src/multipy.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "25e31defe2424efef026cc441b916e18f29f2e31",
+      "size": 51701,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/25e31defe2424efef026cc441b916e18f29f2e31"
+    },
+    {
+      "path": "cpp/src/neural_net.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "379ba26e37e8ba167a5006e216853307014651c8",
+      "size": 115834,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/379ba26e37e8ba167a5006e216853307014651c8"
+    },
+    {
+      "path": "cpp/src/profile_0ply.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dd0f3963bdf4137c423e642321e5cb2b8b4e7273",
+      "size": 6058,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/dd0f3963bdf4137c423e642321e5cb2b8b4e7273"
+    },
+    {
+      "path": "cpp/src/profile_3t.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2876410027d57e300232329c80dedb4e6cb4acee",
+      "size": 7694,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/2876410027d57e300232329c80dedb4e6cb4acee"
+    },
+    {
+      "path": "cpp/src/profile_3t_detailed.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53104684d3f5d234d639419f6a11429b8faf9985",
+      "size": 9957,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/53104684d3f5d234d639419f6a11429b8faf9985"
+    },
+    {
+      "path": "cpp/src/profile_cube_4ply.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9b906d4976dcd52bedbfb4defdba922abcb6389d",
+      "size": 4579,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/9b906d4976dcd52bedbfb4defdba922abcb6389d"
+    },
+    {
+      "path": "cpp/src/profile_cube_benchmark.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "160b2c7d51f2a3ae1980859cff3b8c012718a99d",
+      "size": 23446,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/160b2c7d51f2a3ae1980859cff3b8c012718a99d"
+    },
+    {
+      "path": "cpp/src/profile_nn_inference.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c2dd5045d803d1aa3ca0f80987483f4b4b992d5",
+      "size": 9177,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/1c2dd5045d803d1aa3ca0f80987483f4b4b992d5"
+    },
+    {
+      "path": "cpp/src/profile_training.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "310bad56231acf35053edee4bb2a4e2486c392a1",
+      "size": 8139,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/310bad56231acf35053edee4bb2a4e2486c392a1"
+    },
+    {
+      "path": "cpp/src/pubeval.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "37d8031562984ba871e8d9fa9f8392791ed14f0e",
+      "size": 7616,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/37d8031562984ba871e8d9fa9f8392791ed14f0e"
+    },
+    {
+      "path": "cpp/src/rollout.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d183cad8f1f6da3550cea2fa31033b4ca11f0a7",
+      "size": 150723,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/7d183cad8f1f6da3550cea2fa31033b4ca11f0a7"
+    },
+    {
+      "path": "cpp/src/strategy.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "00d1f5b923448d1d5a827283a851a9a5c3f5563a",
+      "size": 7906,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/00d1f5b923448d1d5a827283a851a9a5c3f5563a"
+    },
+    {
+      "path": "cpp/src/test_4ply_accuracy.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "36990cd982697b4dfaed33c017c49345d925e7e6",
+      "size": 2809,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/36990cd982697b4dfaed33c017c49345d925e7e6"
+    },
+    {
+      "path": "cpp/src/test_benchmark_crash.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "30361f779c464b69576cbfb7893af2854dc5d1c7",
+      "size": 3597,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/30361f779c464b69576cbfb7893af2854dc5d1c7"
+    },
+    {
+      "path": "cpp/src/training.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3fc0175d0baa5a5798dc10e0b061ce9ceaca64ac",
+      "size": 61008,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/3fc0175d0baa5a5798dc10e0b061ce9ceaca64ac"
+    },
+    {
+      "path": "data/bearoff_1sided.db",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d6179c2c3939530b369e3c48712e29f5800355c",
+      "size": 4899292,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/0d6179c2c3939530b369e3c48712e29f5800355c"
+    },
+    {
+      "path": "mobile/CMakeLists.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "637a5be3640a5e18fa81428565fb5ce1fee50d01",
+      "size": 608,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/637a5be3640a5e18fa81428565fb5ce1fee50d01"
+    },
+    {
+      "path": "mobile/test_parity.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9e2e7e0eae2cdaa9d41e4568024d6b1b391ea7df",
+      "size": 6594,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/9e2e7e0eae2cdaa9d41e4568024d6b1b391ea7df"
+    },
+    {
+      "path": "models/sl_s11_bg_containment.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e2194a509473d9ce55d9d2abbf008741f7f42045",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/e2194a509473d9ce55d9d2abbf008741f7f42045"
+    },
+    {
+      "path": "models/sl_s11_bg_deep.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "79b63729dbd63c0fc472f024c639dc6049c245c6",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/79b63729dbd63c0fc472f024c639dc6049c245c6"
+    },
+    {
+      "path": "models/sl_s11_bg_double.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "97760267852a6012a03bfaab0ae9f1502126eb5b",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/97760267852a6012a03bfaab0ae9f1502126eb5b"
+    },
+    {
+      "path": "models/sl_s11_bg_massive.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0068710fc328c60140eb871bc5703394aa700e83",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/0068710fc328c60140eb871bc5703394aa700e83"
+    },
+    {
+      "path": "models/sl_s11_bg_middle.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e9b5408e257a8d6e2d772badf73ac8337d9c412b",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/e9b5408e257a8d6e2d772badf73ac8337d9c412b"
+    },
+    {
+      "path": "models/sl_s11_bg_p3.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "255d25c305ac289435856674156ef7b86139cb9d",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/255d25c305ac289435856674156ef7b86139cb9d"
+    },
+    {
+      "path": "models/sl_s11_bg_snake.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ec7c258ed0edb13b2a2b76e0a86490f11d0604e3",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/ec7c258ed0edb13b2a2b76e0a86490f11d0604e3"
+    },
+    {
+      "path": "models/sl_s9_anch_att.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "de18bf0a8ce8cfe5714d1cc2bf35d5ed3f7b7547",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/de18bf0a8ce8cfe5714d1cc2bf35d5ed3f7b7547"
+    },
+    {
+      "path": "models/sl_s9_anch_race.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "485480b3a144fd73426cbdee1752db4e034c7dbc",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/485480b3a144fd73426cbdee1752db4e034c7dbc"
+    },
+    {
+      "path": "models/sl_s9_att_anch.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b8ebb3b75f103d1cc605157d87ceb86c9f7bf492",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/b8ebb3b75f103d1cc605157d87ceb86c9f7bf492"
+    },
+    {
+      "path": "models/sl_s9_att_att.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f9e00ae787ba9eb7daa139820993d390b6f6c39e",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/f9e00ae787ba9eb7daa139820993d390b6f6c39e"
+    },
+    {
+      "path": "models/sl_s9_att_prim.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "204bcc01b135d30d5450e156d5e177e5e8af2964",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/204bcc01b135d30d5450e156d5e177e5e8af2964"
+    },
+    {
+      "path": "models/sl_s9_att_race.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1a98da8bc605bbf1bfda3509c7fefb2d35d3484a",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/1a98da8bc605bbf1bfda3509c7fefb2d35d3484a"
+    },
+    {
+      "path": "models/sl_s9_prim_anch.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e9275d6002bd688ed5706670aee9f21371f3071c",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/e9275d6002bd688ed5706670aee9f21371f3071c"
+    },
+    {
+      "path": "models/sl_s9_prim_att.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e363de40914f1a307fdd2682adcd0dd2d68559f6",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/e363de40914f1a307fdd2682adcd0dd2d68559f6"
+    },
+    {
+      "path": "models/sl_s9_prim_race.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "47c03fa73134a3ce9a261899432c0b4f96f2ae6e",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/47c03fa73134a3ce9a261899432c0b4f96f2ae6e"
+    },
+    {
+      "path": "models/sl_s9_purerace.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9fbfb78fa08657663ce9b3bb8dbc8eb52a8ad7d",
+      "size": 80832,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/d9fbfb78fa08657663ce9b3bb8dbc8eb52a8ad7d"
+    },
+    {
+      "path": "models/sl_s9_race_anch.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6ebd2858cc9906d4d8caa9c32791edf3360f3da8",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/6ebd2858cc9906d4d8caa9c32791edf3360f3da8"
+    },
+    {
+      "path": "models/sl_s9_race_att.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "76303f5b4fd6b211513b40f3463c7fee87dad37a",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/76303f5b4fd6b211513b40f3463c7fee87dad37a"
+    },
+    {
+      "path": "models/sl_s9_race_prim.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ef938d04d28c7d9b011a2aedefab23455dc7ca99",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/ef938d04d28c7d9b011a2aedefab23455dc7ca99"
+    },
+    {
+      "path": "models/sl_s9_race_race.weights.best",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "378bea144f8e1e8db2a3df44270096b7ce3a039e",
+      "size": 400032,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/378bea144f8e1e8db2a3df44270096b7ce3a039e"
+    },
+    {
+      "path": "pyproject.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d53e319b836ee690afcdf914fe52eb85d57e12aa",
+      "size": 4004,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/d53e319b836ee690afcdf914fe52eb85d57e12aa"
+    },
+    {
+      "path": "python/bgsage/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4b6818d02262120c165c7579c28f0b1843889aaf",
+      "size": 2702,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/4b6818d02262120c165c7579c28f0b1843889aaf"
+    },
+    {
+      "path": "python/bgsage/analyzer.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9fa35958736ec13dac69efaa29ab48f1cc461bb",
+      "size": 77690,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/d9fa35958736ec13dac69efaa29ab48f1cc461bb"
+    },
+    {
+      "path": "python/bgsage/batch.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9e9993e0ea542462375a8816a9d2a86d87d13a89",
+      "size": 19867,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/9e9993e0ea542462375a8816a9d2a86d87d13a89"
+    },
+    {
+      "path": "python/bgsage/board.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "19a76b4484f1596e7e8d29019725fbaa8e215892",
+      "size": 4727,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/19a76b4484f1596e7e8d29019725fbaa8e215892"
+    },
+    {
+      "path": "python/bgsage/cube_points.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9b632910dd9a5dd471793a772f986b5a5c0079f1",
+      "size": 23345,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/9b632910dd9a5dd471793a772f986b5a5c0079f1"
+    },
+    {
+      "path": "python/bgsage/data.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b50b066bda0598ee67918f0e0a0bdad1dfde8e0",
+      "size": 7002,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/0b50b066bda0598ee67918f0e0a0bdad1dfde8e0"
+    },
+    {
+      "path": "python/bgsage/gnubg.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cbd1bd7ce85e6424366f485172286687287f5e34",
+      "size": 25762,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/cbd1bd7ce85e6424366f485172286687287f5e34"
+    },
+    {
+      "path": "python/bgsage/luck.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c63966207e3b8fda35ea0f602f470bc2935170fe",
+      "size": 4813,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/c63966207e3b8fda35ea0f602f470bc2935170fe"
+    },
+    {
+      "path": "python/bgsage/matchinfo.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8e444fc3f9438ae391254f39e60f0606e9f7385f",
+      "size": 9244,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/8e444fc3f9438ae391254f39e60f0606e9f7385f"
+    },
+    {
+      "path": "python/bgsage/move_arrays.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "45b2b48748344847787475e217f9e7bc9b3f9d00",
+      "size": 2088,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/45b2b48748344847787475e217f9e7bc9b3f9d00"
+    },
+    {
+      "path": "python/bgsage/simulation.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0fa2e22cd77dc5fd96d54e6002a2175f7d7f306b",
+      "size": 11139,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/0fa2e22cd77dc5fd96d54e6002a2175f7d7f306b"
+    },
+    {
+      "path": "python/bgsage/text_export.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c6a3c7616a8d495b1e3658930f7489c8ff6000cf",
+      "size": 20964,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/c6a3c7616a8d495b1e3658930f7489c8ff6000cf"
+    },
+    {
+      "path": "python/bgsage/types.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7f034558e3b5581beef50e1d321c19241d68506d",
+      "size": 7593,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/7f034558e3b5581beef50e1d321c19241d68506d"
+    },
+    {
+      "path": "python/bgsage/weights.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7c9a47aee1a32f4ffc50a3104a0a4bfb51948f18",
+      "size": 19808,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/7c9a47aee1a32f4ffc50a3104a0a4bfb51948f18"
+    },
+    {
+      "path": "python/bgsage/xg_compare.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f1aaf7afd021c77251448f3d2897a91424867edb",
+      "size": 35089,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/f1aaf7afd021c77251448f3d2897a91424867edb"
+    },
+    {
+      "path": "python/bgsage/xg_file.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "099291c13b6e65467ca58d86960fe36a81ac1ed3",
+      "size": 25061,
+      "url": "https://api.github.com/repos/markbgsage/bgsage/git/blobs/099291c13b6e65467ca58d86960fe36a81ac1ed3"
+    }
+  ],
+  "model": "stage11",
+  "paths": [
+    "/tmp/bg-sage-review/models/sl_s9_purerace.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_race_race.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_race_att.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_race_prim.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_race_anch.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_att_race.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_att_att.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_att_prim.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_att_anch.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_prim_race.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_prim_att.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_prim_anch.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_prim_anch.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_anch_race.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_anch_att.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_prim_anch.weights.best",
+    "/tmp/bg-sage-review/models/sl_s9_prim_anch.weights.best",
+    "/tmp/bg-sage-review/models/sl_s11_bg_deep.weights.best",
+    "/tmp/bg-sage-review/models/sl_s11_bg_middle.weights.best",
+    "/tmp/bg-sage-review/models/sl_s11_bg_double.weights.best",
+    "/tmp/bg-sage-review/models/sl_s11_bg_p3.weights.best",
+    "/tmp/bg-sage-review/models/sl_s11_bg_containment.weights.best",
+    "/tmp/bg-sage-review/models/sl_s11_bg_snake.weights.best",
+    "/tmp/bg-sage-review/models/sl_s11_bg_massive.weights.best"
+  ],
+  "hidden": [
+    100,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400,
+    400
+  ],
+  "strategyType": "backgame_pair_phased"
+}

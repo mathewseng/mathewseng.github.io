@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "origin": "First non-tie checker divergence against unmodified GNUbg in the excluded-seed cache-off diagnostic. No new accuracy trials.",
+  "seed": 31811004,
+  "game": 1,
+  "turn": 40,
+  "candidate": "previous-choice",
+  "state": {
+    "version": 1,
+    "points": [
+      -3,
+      2,
+      6,
+      2,
+      0,
+      0,
+      -2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      0,
+      0,
+      -2,
+      0,
+      -2,
+      -2,
+      -3,
+      0,
+      0,
+      0
+    ],
+    "bar": [
+      0,
+      0
+    ],
+    "off": [
+      5,
+      0
+    ],
+    "turn": 1,
+    "dice": [
+      6,
+      3
+    ],
+    "phase": "move",
+    "cube": {
+      "value": 2,
+      "owner": 1
+    },
+    "scores": [
+      0,
+      0
+    ],
+    "matchLength": 0,
+    "rules": {
+      "cube": true,
+      "jacoby": true,
+      "automaticDoubles": 0,
+      "immediateRedoubles": 0
+    },
+    "crawford": false,
+    "crawfordPlayed": false,
+    "gameNumber": 1,
+    "sequence": 0,
+    "result": null,
+    "pending": null
+  },
+  "original": "XGID=-cBFB--b-----a---b-bbc----:1:-1:-1:63:0:0:1:0:10",
+  "expectedMove": "24/18 12/9",
+  "expectedPositionID": "9hsAAMBtFsCBAQ",
+  "previousMove": "24/15",
+  "previousPositionID": "9hsAAMBthoiBAQ"
+}

@@ -179,6 +179,15 @@ module.exports = async function practiceUX(browser, base, out, name) {
         `${width} document overflow`,
       );
       const box = await page.locator("#all-controls").boundingBox();
+      if (width > 360 && box.y + box.height > height + 1) {
+        console.log('Practice viewport geometry', JSON.stringify(await page.evaluate(() => ({
+          appHeight:document.querySelector('.app').getBoundingClientRect().height,
+          stageRows:getComputedStyle(document.querySelector('.stage')).gridTemplateRows,
+          boardHeight:document.querySelector('.board-slot').getBoundingClientRect().height,
+          controlsBottom:document.querySelector('#all-controls').getBoundingClientRect().bottom,
+        }))));
+        await page.screenshot({path:path.join(out,`${name}-practice-controls-overflow-${width}.png`)});
+      }
       if (width > 360)
         assert.ok(
           box.y + box.height <= height + 1,

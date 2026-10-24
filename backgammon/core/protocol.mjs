@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { certainBearoff } from './certain-bearoff.mjs';
-import { initialState, clone, assertState, replay } from "./rules.mjs";
+import { initialState, clone, assertState, replay, canDouble } from "./rules.mjs";
 import { defaultPlayRules } from "./play-session.mjs";
 import {
   playAction,
@@ -206,12 +206,9 @@ export function accept(
         throw new Error("Only the host can advance a forced turn.");
       const before = s.events.length;
       if (certainBearoff(s.state)) s = playAction(s, {type:"finish-race"}, s.state.turn);
-      else if (blockedBarRoll(s.state)) {
+      else if (blockedBarRoll(s.state) && !canDouble(s.state)) {
         const actor = s.state.turn;
-        // Include the host's actual roll in the recovery hash even though every
-        // roll passes to the same board. Never use dice supplied by the command.
-        action.dice = tableDice(s, actor, dice);
-        s = playAction(s, { type: "roll", dice: action.dice }, actor);
+        s = playAction(s, { type: "skip-roll" }, actor, {autoPass:true});
       } else settleForced(s);
       if (s.events.length === before)
         throw new Error("This turn has a choice.");
@@ -236,6 +233,11 @@ export function accept(
       if (!s.started) throw new Error("The room has not started.");
       if (action.type === "practice-roll")
         throw new Error("Practice dice are not permitted in online rooms.");
+      if (action.type === 'roll') {
+        if (action.dice) throw new Error("Only the host supplies dice.");
+        if (s.state.phase === 'roll' && certainBearoff(s.state)) action.type = 'finish-race';
+        else if (blockedBarRoll(s.state)) action.type = 'skip-roll';
+      }
       if (["opening", "roll"].includes(action.type)) {
         if (action.dice) throw new Error("Only the host supplies dice.");
         action.dice =

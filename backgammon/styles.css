@@ -49,7 +49,8 @@
   --tone-medium: color-mix(in oklab, var(--warn) 45%, var(--bad));
   --tone-large: var(--bad);
   --bg-shadow: color-mix(in oklab, var(--page) 45%, transparent);
-  --bg-equity-width: 44px;
+  /* Leave 36px for a three-decimal value beside the 10px track and gap. */
+  --bg-equity-width: 48px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -822,13 +823,24 @@ button kbd.keycap,
   opacity: 0.55;
 }
 
+/* Bound the native select itself as well as its grid track. WebKit can retain
+   the widest option's overflow after a portrait viewport shrinks. */
+.study-preview-controls select {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Equity rail aligned to the rendered board (ui/equity-bar.mjs positions it). */
 .board-slot.has-equity-bar > .bg-board {
   width: calc(100% - var(--bg-equity-width) - 6px);
   margin-left: calc(var(--bg-equity-width) + 6px);
 }
 
-.equity-bar {
+.equity-bar,
+.equity-reveal {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -838,7 +850,76 @@ button kbd.keycap,
   font-variant-numeric: tabular-nums;
 }
 
+.equity-reading,
+.equity-reveal {
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.equity-reading {
+  display: flex;
+  flex: 1;
+  flex-direction: inherit;
+  align-items: center;
+  gap: inherit;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.equity-reveal {
+  justify-content: center;
+  color: var(--muted);
+}
+
+.equity-reveal::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  border-left: 1px dashed var(--line-strong);
+}
+
+.equity-reveal-label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.equity-reveal-label > span {
+  writing-mode: vertical-rl;
+}
+
+@media (hover: hover) {
+  .equity-reading:hover,
+  .equity-reveal:hover {
+    background: var(--surface-2);
+    color: var(--accent);
+  }
+}
+
+.equity-reading:active,
+.equity-reveal:active {
+  background: var(--surface-2);
+}
+
 .equity-number {
+  flex-shrink: 0;
   width: 100%;
   min-height: 1.2em;
   font-size: var(--t-xs);
@@ -861,6 +942,7 @@ button kbd.keycap,
 
 .equity-fill {
   position: absolute;
+  left: 0;
   bottom: 0;
   width: 100%;
   height: var(--equity-fraction);
@@ -871,6 +953,7 @@ button kbd.keycap,
   content: "";
   position: absolute;
   top: 50%;
+  left: 0;
   width: 100%;
   border-top: 1px solid var(--line);
 }
@@ -896,12 +979,18 @@ button kbd.keycap,
   cursor: pointer;
 }
 
+/* The vertical rail includes a value slot at each end. Keep both slots so
+   changing the leading player never shifts or clips the centered meter. */
+
 /* Portrait phones keep the full board width, with equity below the frame.
    Content-box sizing reserves the strip without shrinking the board's ratio. */
 @media (max-width: 700px) and (orientation: portrait) {
-  .board-slot.has-equity-bar {
+  .board-slot.has-equity-bar,
+  .app[data-page="solver"] .board-slot {
+    /* Solver reserves this rail while hidden so toggling equity does not
+       shift its board, editor or preview controls. */
     box-sizing: content-box;
-    padding-bottom: 28px;
+    padding-bottom: 48px;
   }
 
   .board-slot.has-equity-bar > .bg-board {
@@ -909,10 +998,36 @@ button kbd.keycap,
     margin-left: 0;
   }
 
-  .equity-bar {
+  .equity-bar,
+  .equity-reveal {
     flex-direction: row;
-    height: 24px;
+    /* The rail is positioned after ResizeObserver; constrain its previous
+       inline width while a narrower portrait board is being laid out. */
+    max-width: 100%;
+    height: 44px;
     gap: 8px;
+  }
+
+  .equity-reading {
+    height: 100%;
+  }
+
+  .equity-reveal::before {
+    top: auto;
+    bottom: auto;
+    left: 16px;
+    right: 16px;
+    border-left: 0;
+    border-top: 1px dashed var(--line-strong);
+  }
+
+  .equity-reveal-label {
+    flex-direction: row;
+    padding: 6px 10px;
+  }
+
+  .equity-reveal-label > span {
+    writing-mode: horizontal-tb;
   }
 
   .equity-number {
@@ -926,6 +1041,7 @@ button kbd.keycap,
   }
 
   .equity-fill {
+    left: auto;
     right: 0;
     width: var(--equity-fraction);
     height: 100%;
@@ -938,14 +1054,6 @@ button kbd.keycap,
     height: 100%;
     border-top: 0;
     border-left: 1px solid var(--line);
-  }
-
-  .board-slot.has-equity-bar:has(.equity-bar[data-state="error"]) {
-    padding-bottom: 48px;
-  }
-
-  .equity-bar[data-state="error"] {
-    height: 44px;
   }
 
   .equity-retry {
@@ -1046,6 +1154,31 @@ button.die.preferred {
 .bg-board,
 .bg-board * {
   transition-property: none;
+}
+
+/* A quiet, legible action prompt in the board's open center lane. */
+.board-caption {
+  font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+.board-caption[role="button"] { cursor: pointer; outline: none; }
+.board-caption[role="button"] .board-caption-main {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -.025em;
+  transition: fill 180ms ease;
+}
+.board-caption-detail {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: .005em;
+  opacity: .75;
+}
+.board-caption[data-auto="true"] .board-caption-main { fill: var(--board-selection); }
+.board-caption-hit { stroke: var(--board-selection); stroke-width: 1.5; stroke-opacity: 0; }
+html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-caption-hit { stroke-opacity: 1; }
+@media (hover: hover) {
+  .board-caption[role="button"]:hover .board-caption-main { fill: var(--board-selection); }
 }
 
 /* Background taps can focus the SVG itself; only its controls draw focus. */
@@ -1275,7 +1408,7 @@ html[data-focus-navigation="true"] .bg-board.no-move-hints .point:focus-visible 
   vector-effect: non-scaling-stroke;
 }
 
-html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > rect:first-child {
+html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > .die-ink > rect:first-child {
   stroke: var(--board-focus, var(--accent));
   stroke-width: 4;
   vector-effect: non-scaling-stroke;
@@ -2481,6 +2614,49 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: color-mix(in srgb, var(--history-color) 8%, transparent);
 }
 
+/* Decision type is separate from the player stripe and EV-loss severity.
+   Keep the cube treatment visible while its analysis is still pending. */
+.play-feedback .history-turn [data-decision-type="cube"] {
+  background: color-mix(in srgb, var(--cat-5) 12%, transparent);
+}
+
+.play-feedback .history-turn .feedback-review[data-decision-type="cube"]:hover {
+  background: color-mix(in srgb, var(--cat-5) 20%, transparent);
+}
+
+.play-feedback [data-decision-type="cube"] .history-kind-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--cat-5);
+}
+
+.history-cube-icon {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: 2px;
+  box-sizing: border-box;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.history-cube-action {
+  display: flex;
+  align-items: start;
+  gap: 5px;
+}
+
+.history-action-icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--cat-5);
+}
+
 .history-move {
   display: grid;
   grid-area: move;
@@ -2491,6 +2667,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .history-kind {
   font-size: var(--t-xs);
+}
+
+.history-depth {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
 }
 
 .history-kind-label {
@@ -4292,6 +4473,21 @@ button.library-item {
   overflow: visible;
 }
 
+/* WebKit needs the moved inspector's intrinsic size as this flex item's
+   basis; a zero basis collapses the Results sheet to its heading. */
+.bg-dialog.drawer > .dialog-body {
+  flex-basis: auto;
+}
+
+.fullscreen-help {
+  width: min(640px, calc(100vw - 24px));
+  max-height: calc(100dvh - 16px);
+}
+
+.fullscreen-help .dialog-body { flex-basis: auto; font-size: var(--t-sm); }
+.fullscreen-help .stack { gap: 12px; }
+.fullscreen-help p { margin: 0; }
+
 /* Dialog controls are 44px at every width: Settings opens from the keyboard
    on desktops too, and mobile-settings.cjs measures its tabs and selects
    with a touch context at 1366×768. */
@@ -5358,10 +5554,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
       margin-left: var(--bg-equity-width);
     }
 
-    .play-page.live-table .equity-meter {
-      width: 10px;
-    }
-
     .play-page.live-table .equity-number {
       font-weight: 500;
       letter-spacing: -0.05em;
@@ -5738,17 +5930,39 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 }
 
-/* Short Solver screens reserve space for result navigation and analysis
-   controls; the board uses the remaining height without distorting its SVG. */
+/* Short portrait screens reserve space for the controls; the board
+   uses the remaining height without distorting its SVG. */
 @media (max-width: 700px) and (min-height: 501px) and (max-height: 740px) {
+  /* The full-width board plus its equity rail can exceed a short phone's
+     remaining height. Keep controls visible and shrink the board track. */
+  .play-page.live-table:has(.board-slot.has-equity-bar) { height: 100dvh; }
+  .play-page.live-table:has(.board-slot.has-equity-bar) .stage {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(140px, 1fr) auto 60px minmax(110px, auto);
+  }
+  .play-page.live-table .board-workspace > .board-slot.has-equity-bar {
+    box-sizing: border-box;
+    height: 100%;
+    max-height: 100%;
+    aspect-ratio: auto;
+  }
   .app[data-page="solver"] #subtitle { min-height: 2lh; }
-  .app[data-page="solver"]:not(.editing-position) { height: 100dvh; }
-  .app[data-page="solver"]:not(.editing-position) .stage {
+  .app[data-page="solver"].editing-position .board-slot {
+    box-sizing: border-box;
+  }
+  .app[data-page="solver"]:not(.editing-position),
+  .app[data-page="trainer"] { height: 100dvh; }
+  .app[data-page="solver"]:not(.editing-position) .stage,
+  .app[data-page="trainer"] .stage {
     height: 100%;
     min-height: 0;
     grid-template-rows: auto minmax(140px, 1fr) auto auto;
   }
-  .app[data-page="solver"]:not(.editing-position) .board-slot {
+  .app[data-page="solver"]:not(.editing-position) .board-slot,
+  .app[data-page="trainer"] .board-slot {
+    /* Include the portrait equity rail in the track's available height. */
+    box-sizing: border-box;
     height: 100%;
     max-height: 100%;
     aspect-ratio: auto;
@@ -6123,9 +6337,10 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   /* The live table: the topbar collapses into the dock, player strips sit
      beside the board, confirmation and controls stack in the dock. */
   .play-page.live-table {
+    --bg-equity-width: 48px;
     grid-template-rows: 0 0 minmax(0, 1fr);
-    height: 100dvh;
-    min-height: 340px;
+    height: var(--play-visible-height, 100dvh);
+    min-height: 0;
     padding-block: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-bottom));
   }
 
@@ -6158,9 +6373,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.live-table > .topbar .topbar-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: none;
   }
 
   .play-page.live-table .tool-head {
@@ -6286,6 +6499,67 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     justify-self: end;
     color: var(--accent);
   }
+
+  /* Two short rows of actions fit even with both Safari toolbar rows open.
+     The dock grows sideways, using the space left by the height-limited board. */
+  .play-page.live-table .workspace { grid-template-columns: minmax(0, 1fr) 208px; }
+  .play-page.live-table > .topbar,
+  .play-page.live-table .tool-head,
+  .play-page.live-table .board-actions,
+  .play-page.live-table .action-area { width: 208px; }
+  .play-page.live-table .player-strip { width: 72px; top: 82px; }
+  .play-page.live-table #opponent { top: 82px; }
+  .play-page.live-table #player { top: 82px; left: calc(100% + 84px); width: 132px; }
+  .play-page.live-table .stage:has(#opponent.active) #opponent { width: 132px; }
+  .play-page.live-table .stage:has(#opponent.active) #player { width: 72px; left: calc(100% + 144px); }
+  .play-page.live-table .player-name { min-width: 0; gap: 4px; }
+  .play-page.live-table .board-actions { top: 108px; height: 44px; }
+  .play-page.live-table .board-actions #confirm { min-height: 44px; height: 44px; }
+  .play-page.live-table .action-area {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    height: calc(100% - 156px);
+    max-height: calc(100% - 156px);
+    padding: 0;
+  }
+  .play-page.live-table .action-area .action-main,
+  .play-page.live-table .help-cluster,
+  .play-page.live-table .help-cluster .action-help { display: contents; }
+  .play-page.live-table .action-area .btn { width: 100%; min-width: 0; min-height: 44px; padding: 6px; }
+  .play-page.live-table #undo-turn { grid-column: 1; grid-row: 1; }
+  .play-page.live-table #hint { grid-column: 2; grid-row: 1; }
+  .play-page.live-table #all-controls { grid-column: 1; grid-row: 2; }
+  .play-page.live-table #analysis-jump { grid-column: 2; grid-row: 2; }
+  .play-page.live-table .undo-turn-label-wide { display: none; }
+  .play-page.live-table .undo-turn-label-phone { display: inline; }
+  .play-page.live-table .action-area #actions:empty { display: none; }
+  .play-page.live-table .action-area #actions,
+  .play-page.live-table .action-area .touch-moves,
+  .play-page.live-table .action-area .touch-destinations { grid-column: 1 / -1; }
+  /* Cube responses and next-game actions use the otherwise empty confirm
+     row; keep the primary decision above the secondary controls. */
+  .play-page.live-table .action-area:has(#actions:not(:empty)) {
+    height: calc(100% - 108px);
+    max-height: calc(100% - 108px);
+  }
+  .play-page.live-table .action-area #actions:not(:empty) {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-row: 1;
+    width: 100%;
+    margin: 0;
+    gap: 4px;
+  }
+  .play-page.live-table .action-area #actions > .btn {
+    height: 44px;
+    font-size: var(--t-xs);
+    line-height: 1.2;
+    white-space: normal;
+  }
+  .play-page.live-table .action-area:has(#actions:not(:empty)) :is(#undo-turn, #hint) { grid-row: 2; }
+  .play-page.live-table .action-area:has(#actions:not(:empty)) :is(#all-controls, #analysis-jump) { grid-row: 3; }
 
   .touch-moves:not([hidden]) {
     display: grid;

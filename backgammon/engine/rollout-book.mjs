@@ -4,6 +4,13 @@ import {OpeningBook,bookBoardKey,bookContext,bookEligible} from './opening-book.
 import {ROLLOUT_POLICIES} from './rollout-policy.mjs';
 export const ROLLOUT_BOOK_ID='jacoby-rollout-v2';
 export const ROLLOUT_BOOK_ENGINE='gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg7-native';
+// The historical file remains inspectable, but its filtered checker policy
+// could select an excluded shallow score after the finalists were searched.
+// A future book needs a new engine/id and an explicitly approved policy
+// revision bound to a completed validation run before live lookup is enabled.
+export const ROLLOUT_BOOK_LIVE_POLICY_REVISION=null;
+export const ROLLOUT_BOOK_RETIREMENT=Object.freeze({id:ROLLOUT_BOOK_ID,
+ reason:'mixed-depth-final-sort',fallback:'unaffected direct-evaluation book or live analysis'});
 const URL_INDEX=new URL('./opening-book-data/rollout/index.json',import.meta.url);
 const START=bookBoardKey(initialState({matchLength:0}));
 const mirror=p=>typeof p==='number'?23-p:p;
@@ -50,17 +57,18 @@ export class RolloutOpeningBook{
  }
  load(file){return this.fallback.load(file);}
  async rolloutIndex(){
+  if(!ROLLOUT_BOOK_LIVE_POLICY_REVISION)return null;
   if(this.index)return this.index;if(this.pending)return this.pending;if(Date.now()<this.retryAt)return null;
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),1500);
   this.pending=Promise.resolve().then(async()=>{try{
    const response=await this.fetcher(URL_INDEX,{signal:controller.signal});if(!response.ok)throw Error('Missing rollout book');
    const text=await response.text();if(text.length>2_000_000)throw Error('Oversized rollout book');
-   const index=JSON.parse(text);if(index.schema!==1||index.id!==ROLLOUT_BOOK_ID||index.engine!==ROLLOUT_BOOK_ENGINE||!index.entries||!index.provenance?.builtAt)throw Error('Incompatible rollout book');
+   const index=JSON.parse(text);if(index.schema!==1||index.id!==ROLLOUT_BOOK_ID||index.engine!==ROLLOUT_BOOK_ENGINE||!index.entries||!index.provenance?.builtAt||index.policyRevision!==ROLLOUT_BOOK_LIVE_POLICY_REVISION||index.provenance?.validation?.complete!==true||typeof index.provenance.validation.signature!=='string')throw Error('Incompatible rollout book');
    this.index=index;return index;
   }catch{this.retryAt=Date.now()+30000;return null;}finally{clearTimeout(timer);this.pending=null;}});
   return this.pending;
  }
- mayHave(state){return bookContext(state)&&(!this.index||!!this.index.entries[bookBoardKey(state)]||this.fallback.mayHave(state));}
+ mayHave(state){return bookContext(state)&&(ROLLOUT_BOOK_LIVE_POLICY_REVISION?(!this.index||!!this.index.entries[bookBoardKey(state)]||this.fallback.mayHave(state)):this.fallback.mayHave(state));}
  async lookupRollout(state,preset='expert',submitted=null){
   if(!bookContext(state)||state.phase!=='move')return null;
   const index=await this.rolloutIndex(),roll=[...state.dice].sort((a,b)=>b-a).join('');
