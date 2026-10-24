@@ -744,6 +744,9 @@ const server = http.createServer((req, res) => {
         (report.rankedReview ||= []).push(
           await run("review-ranked", browser, base, out, browserName),
         );
+        (report.modalFit ||= []).push(
+          await run("modal-fit", browser, base, out, browserName),
+        );
         (report.cubeOptions ||= []).push(
           await run("cube-options", browser, base, out, browserName),
         );

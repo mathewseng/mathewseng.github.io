@@ -48,8 +48,8 @@ module.exports = async function mobileSheets(browser, base, out, name) {
       await d.waitFor();
       const box=await d.boundingBox();
       if(width<=700 && height>500) {
-        assert.equal(box.x,0,"phone sheet spans the available width");
-        assert.ok(Math.abs(box.y+box.height-height)<2,"phone tools open at the bottom");
+        assert.equal(box.x,8,"phone sheet leaves a safe edge");
+        assert.ok(Math.abs(box.y+box.height-(height-12))<2,"phone tools stay above the bottom safe edge");
       }
       for(const button of await d.locator("button").all()) {
         const r=await button.boundingBox();

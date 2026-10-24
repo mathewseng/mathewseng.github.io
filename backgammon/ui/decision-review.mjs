@@ -15,6 +15,7 @@ import { decisionFeedback, lossTone } from "../core/decision-feedback.mjs";
 import { decisionValues, lossLegend } from "./decision-values.mjs";
 import { equity, percentage } from "./analysis.mjs";
 import { reviewSearch } from "./review-search.mjs";
+import { returnIcon } from "./return-icon.mjs";
 
 function lossSummary(feedback) {
   const units = feedback.label === "EV lost" ? feedback.units : "normalized match equity";
@@ -84,11 +85,15 @@ export function decisionReview(
   const layout = d.querySelector(".decision-layout");
   layout.append(notes);
   let moveListResize = () => {}, revealSelectedMove = () => {};
+  let moveRowsObserver;
   const resizeMoves = () => moveListResize();
   window.addEventListener("resize", resizeMoves);
   d.addEventListener(
     "close",
-    () => window.removeEventListener("resize", resizeMoves),
+    () => {
+      window.removeEventListener("resize", resizeMoves);
+      moveRowsObserver?.disconnect();
+    },
     { once: true },
   );
   const detailToggle = button("Details", () => {
@@ -381,11 +386,22 @@ export function decisionReview(
       const position = button('', () => {show([], 'Position');search.loadPosition();}, 'review-move review-position', {
         'aria-label':'Position', 'aria-pressed':false, 'data-preview':'position',
       });
-      position.append(el('span',{class:'review-rank','aria-hidden':'true'},'↶'),
+      position.append(el('span',{class:'review-rank','aria-hidden':'true'},returnIcon()),
         el('span',{class:'review-notation'},'Position',el('small',{},'Before roll')),
         search.positionEquity,
         el('span',{class:'review-position-dice','aria-label':`Rolled ${source.dice.join('–')}`},...source.dice.map(value=>dieFace(value,{player:source.turn}))));
+      // Size to the actual first six rows, including wrapped notation/source
+      // credits. Extra candidates scroll inside this fixed-height list.
+      const sizeMoves = () => {
+        const visible = [...rows.children].slice(0, 6);
+        if (!visible.length || !rows.getClientRects().length) return;
+        const height = visible.reduce((sum, row) => sum + row.getBoundingClientRect().height, 0) + 4;
+        rows.style.height = `${height}px`;
+      };
+      moveRowsObserver?.disconnect();
+      moveRowsObserver = new ResizeObserver(sizeMoves);
       const redraw = () => {
+        moveRowsObserver.disconnect();
         position.setAttribute("aria-pressed",String(selected === -1));
         const scrollTop = rows.scrollTop;
         rows.replaceChildren(
@@ -445,6 +461,8 @@ export function decisionReview(
             return row;
           }),
         );
+        for (const row of [...rows.children].slice(0, 6)) moveRowsObserver.observe(row);
+        sizeMoves();
         rows.scrollTop = scrollTop;
       };
       ranked.append(
@@ -466,7 +484,7 @@ export function decisionReview(
         else if (top + row.offsetHeight > rows.clientHeight)
           rows.scrollTop += top + row.offsetHeight - rows.clientHeight;
       };
-      moveListResize = revealSelectedMove;
+      moveListResize = () => { sizeMoves(); revealSelectedMove(); };
       selectPreview = (steps, label) => {
         const key = boardKey(steps.reduce((s, st) => applyStep(s, st), source));
         const next =

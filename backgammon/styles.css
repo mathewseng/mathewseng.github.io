@@ -2975,11 +2975,10 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .decision-dialog[open] {
   width: min(1440px, calc(100vw - 32px));
   max-width: calc(100vw - 16px);
-  height: min(900px, calc(100dvh - 32px));
-  max-height: calc(100dvh - 32px);
+  height: min(900px, var(--dialog-available-height));
   gap: 12px;
   padding: 20px;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .decision-dialog .dialog-header,
@@ -3008,7 +3007,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   align-content: stretch;
   min-height: 0;
   padding: 0;
-  overflow: visible;
+  overflow: auto;
 }
 
 .decision-layout {
@@ -3054,12 +3053,13 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .decision-dialog .review-moves {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: none;
   min-height: 0;
   align-self: stretch;
 }
 
 .review-move-rows {
+  flex: none;
   overflow-y: auto;
   min-height: 0;
   overscroll-behavior: contain;
@@ -3132,6 +3132,10 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .decision-dialog .decision-values caption {
   margin-bottom: 6px;
 }
+
+.decision-dialog .decision-values[data-cube-options] table { table-layout: fixed; }
+.decision-dialog .decision-values[data-cube-options] th:first-child { width: 45%; }
+.decision-dialog .decision-values { min-width: 0; }
 
 .decision-dialog .decision-content .list-row {
   display: flex;
@@ -3271,6 +3275,9 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .review-cube-choice {
   width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
   padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
@@ -4579,6 +4586,36 @@ button.library-item {
   translate: 0 0;
 }
 
+/* Keep every modal below the status-bar fade/notch and above the home
+   indicator, even when Safari's chrome or keyboard changes the viewport.
+   More specific than individual dialog/sheet sizes: content scrolls, the
+   header and actions never leave the visible screen. */
+.dialog.bg-dialog[open] {
+  --dialog-edge-top: max(20px, calc(env(safe-area-inset-top, 0px) + 12px));
+  --dialog-edge-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  --dialog-edge-left: max(8px, env(safe-area-inset-left, 0px));
+  --dialog-edge-right: max(8px, env(safe-area-inset-right, 0px));
+  --dialog-available-height: calc(var(--dialog-visible-height, 100dvh) - var(--dialog-edge-top) - var(--dialog-edge-bottom));
+  top: calc(var(--dialog-visible-top, 0px) + var(--dialog-edge-top));
+  bottom: calc(100% - var(--dialog-visible-top, 0px) - var(--dialog-visible-height, 100dvh) + var(--dialog-edge-bottom));
+  left: calc(var(--dialog-visible-left, 0px) + var(--dialog-edge-left));
+  right: calc(100% - var(--dialog-visible-left, 0px) - var(--dialog-visible-width, 100vw) + var(--dialog-edge-right));
+  max-height: var(--dialog-available-height);
+  max-width: calc(var(--dialog-visible-width, 100vw) - var(--dialog-edge-left) - var(--dialog-edge-right));
+  margin: auto;
+  overflow: hidden;
+}
+
+@media (max-width: 700px) and (min-height: 501px) {
+  .dialog.bg-dialog.dialog--sheet[open]:not([data-keyboard]) {
+    top: auto;
+    margin: 0 auto;
+    max-height: var(--dialog-available-height);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+  }
+}
+
 @starting-style {
   .bg-dialog[open],
   .dialog.bg-dialog.dialog--sheet[open]:not([data-keyboard]) {
@@ -5420,8 +5457,7 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
   /* Decision review and history dialogs on phones. */
   .decision-dialog[open] {
     width: calc(100vw - 16px);
-    height: calc(100dvh - 16px);
-    max-height: none;
+    height: var(--dialog-available-height);
     gap: 8px;
     padding: 12px;
   }
@@ -5516,8 +5552,7 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
   .settings-dialog {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
-    height: calc(100dvh - 16px);
-    max-height: calc(100dvh - 16px);
+    height: var(--dialog-available-height);
   }
 
   .settings-tabs {
@@ -6699,8 +6734,7 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
 
   /* Review dialogs in landscape: two columns of compact content. */
   .decision-dialog[open] {
-    height: calc(100dvh - 16px);
-    max-height: calc(100dvh - 16px);
+    height: var(--dialog-available-height);
     gap: 6px;
     padding: 12px;
   }
@@ -7050,28 +7084,34 @@ html.skin-shader .docs-toc--sticky {
   box-shadow: 14px 0 0 var(--skin-c1, var(--accent));
 }
 
-/* Review always pairs the board with its comparison. Keep the board near the
-   header and let the ranked list consume spare space, not an empty SVG slot. */
+/* Review always pairs the board with its comparison. Lists are six rows
+   tall at most; scroll the content column on shorter screens. */
+.decision-dialog .dialog-body { align-content: stretch; }
+.decision-dialog .decision-content { grid-template-columns: minmax(0, 1fr); overflow-y: auto; overscroll-behavior: contain; }
 
 @media (max-width: 700px) and (min-height: 501px) {
   .decision-dialog .decision-layout {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(140px, 1fr) max-content;
+    height: 100%;
+    align-content: start;
     gap: 10px;
   }
   .decision-dialog .decision-position { gap: 6px; }
   .decision-dialog .decision-board {
-    flex: none;
-    height: min(calc((100vw - 48px) * 660 / 876), max(120px, calc(100dvh - 420px)));
+    flex: 1;
+    height: auto;
   }
   .decision-dialog .decision-choices { gap: 6px; }
   .decision-dialog .decision-choices .btn { flex: 1; padding: 6px; }
   .decision-dialog .decision-caption { display: none; }
-  .decision-dialog .decision-content { min-height: 0; overflow-y: auto; }
-  .decision-dialog[data-decision-kind="checker"] .decision-content { overflow: hidden; gap: 4px; }
+  .decision-dialog .decision-content { min-height: 0; overflow: visible; }
+  .decision-dialog[data-decision-kind="checker"] .decision-content { gap: 6px; }
   .decision-dialog .decision-content > .muted.small { font-size: var(--t-xs); }
   .decision-dialog .decision-content > .decision-best { display: none; }
   .decision-dialog .review-move-heading { padding-block: 4px; }
+  .decision-dialog[data-decision-kind="cube"] .decision-layout { grid-template-rows: minmax(108px, 1fr) minmax(0, 1fr); }
+  .decision-dialog[data-decision-kind="cube"] .decision-content { overflow-y: auto; }
   .decision-dialog[data-review-view="notes"] .decision-layout { grid-template-rows: minmax(0, 1fr); }
 }
 
@@ -7081,7 +7121,6 @@ html.skin-shader .docs-toc--sticky {
     gap: 12px;
   }
   .decision-dialog .decision-content { display: flex; flex-direction: column; overflow-y: auto; gap: 4px; }
-  .decision-dialog[data-decision-kind="checker"] .decision-content { overflow: hidden; }
   .decision-dialog .decision-content > :is(h3, .decision-best) { display: none; }
   .decision-dialog .decision-content > .muted.small { font-size: var(--t-xs); }
   .decision-dialog .decision-position { gap: 4px; }
@@ -7099,14 +7138,29 @@ html.skin-shader .docs-toc--sticky {
 }
 
 /* The original position and ranked moves form one preview list. */
-.decision-dialog .review-position { flex-shrink: 0; border-bottom: 1px solid var(--line); }
+.decision-dialog .review-position {
+  flex-shrink: 0;
+  min-height: 52px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.decision-dialog .review-position[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 var(--accent);
+}
+.review-position .review-notation { font-weight: 650; }
+.review-position .review-rank { display: flex; justify-content: center; color: var(--ink); }
+.review-position .return-icon { flex: none; }
 .decision-dialog .review-position small { color: var(--muted); }
 .review-position-dice { display: flex; gap: 5px; justify-content: flex-end; }
 .review-position-dice .die { width: 23px; height: 23px; min-width: 0; min-height: 0; padding: 3px; gap: 2px; border-radius: 5px; }
 .review-position-dice .die i { width: 4px; height: 4px; }
 .review-search { flex-shrink: 0; border-top: 1px solid var(--line); padding-top: 6px; }
 .review-depth-options { display: flex; gap: 6px; }
-.review-depth-options .review-depth { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 8px; }
+.review-depth-options .review-depth { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 44px; padding: 4px 8px; white-space: normal; }
 .review-depth small { color: var(--muted); font-size: var(--t-xs); font-weight: 400; }
 .review-search-working { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 8px; align-items: center; font-size: var(--t-xs); }
 .review-search-working progress { grid-column: 1/-1; width: 100%; height: 6px; accent-color: var(--accent); }
@@ -7114,9 +7168,6 @@ html.skin-shader .docs-toc--sticky {
 .review-search-notice { margin: 4px 0 0; }
 .review-search-notice .btn { padding-block: 2px; }
 .review-depth-options:empty { display:none; }
-@media (max-width:700px) and (min-height:501px) {
-  .decision-dialog .decision-board { height: min(calc((100vw - 48px) * 660 / 876), max(108px, calc(100dvh - 450px))); }
-}
 
 /* A compact running summary below the controls on portrait phones. */
 .mobile-game-summary { display: none; }
