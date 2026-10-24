@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { ProgressWriter } from "../core/progress-writer.mjs";
+import { nextGameTable, archivedTable } from '../core/game-archive.mjs';
+import { clearHistoryStates } from '../core/history-states.mjs';
+import { savedGames } from '../ui/saved-games.mjs';
 import { presentMove } from "../core/move-presentation.mjs";
 import { presentCubeAction } from "../core/cube-presentation.mjs";
 import { analysisDepthLabel } from "../core/analysis-insight.mjs";
@@ -31,6 +34,7 @@ import {
   readSettings,
   saveSettings,
   saveMatchHistory,
+  migratePlayHistory,
   download,
 } from "../core/storage.mjs";
 import {
@@ -107,7 +111,7 @@ import { preferences } from "../ui/shell.mjs";
 async function boot() {
 await startUpdates();
 const updatedOnLoad = resumedAfterUpdate();
-const pageProgress = readPageProgress();
+let pageProgress = readPageProgress();
 const ui = shell("play", "Play");
 document.querySelector(".app").classList.add("play-page");
 const progressWriter = new ProgressWriter();
@@ -291,6 +295,7 @@ const reviewArea = el("section", {
 const reviewHeading = el("h2", { id: "review-heading", tabindex: "-1" }, "Analysis & history");
 reviewArea.append(el("header", { class: "review-header" },
   reviewHeading,
+  button('Saved games', showSavedGames, '', {id:'saved-games'}),
   button("History tree", showHistoryTree, "", {id: "history-tree"}),
   button("Back to board ↑", () => {
     window.scrollTo({ top: 0 });
@@ -674,7 +679,9 @@ try {
   // Recover an unfinished local write, but never overwrite a newer save from
   // another view/tab (or an explicitly imported recovery) with this tab's copy.
   if (pageProgress?.game && (!saved || pageProgress.base === persistedWork)) saved = pageProgress;
-  const study = await get("work", "study");
+  saved = await migratePlayHistory(saved);
+  persistedWork = JSON.stringify(saved);
+  const study = params.get('study') === '1' ? await get("work", "study") : null;
   if (study && params.get("study") === "1") {
     game = studyGame(study.state, study.context, crypto.randomUUID());
     config = game.config;
@@ -683,7 +690,7 @@ try {
   } else if (!roomCode) {
     const id = params.get("resume") || resumeIntent() || (updatedOnLoad && saved?.game?.id);
     if (id) {
-      const original = await get("work", "solver-context");
+      const original = saved?.game?.id === id ? null : await migratePlayHistory(await get("work", "solver-context"));
       const recovery =
         saved?.game?.id === id
           ? saved
@@ -697,6 +704,7 @@ try {
 } catch (e) {
   showError(e);
 }
+pageProgress = null;
 render();
 if (game) await persist();
 keepPageProgress(() =>
@@ -1290,6 +1298,7 @@ function start() {
         : [config.name || "White", config.opponent || "Black"],
     humanNames: [config.name || "White", config.opponent || "Black"],
     started: true,
+    historyVersion: 2,
   };
   feedback = null;
   botPaused = false;
@@ -2144,7 +2153,7 @@ function saveDraftAfterPaint() {
     draftSaveTimer = setTimeout(() => { draftSaveTimer = null; persist(false); }, 0);
   });
 }
-async function persist(history = true) {
+async function persist(history = true, required = false) {
   cancelAnimationFrame(draftSaveFrame);
   clearTimeout(draftSaveTimer);
   draftSaveFrame = draftSaveTimer = null;
@@ -2160,6 +2169,7 @@ async function persist(history = true) {
     try {
       await progressWriter.save(saved, { history, stored: key => { persistedWork = key; } });
     } catch (e) {
+      if (required) throw e;
       showError(e);
     }
   }
@@ -2180,6 +2190,9 @@ async function commit(action, evaluation = null, options = {}) {
     actions();
     if (!document.hidden) await new Promise(resolve =>
       requestAnimationFrame(() => setTimeout(resolve, 0)));
+    // Do not release any completed game until its archive has committed.
+    // A failed save leaves the result and its full history on the table.
+    if (action.type === 'next') await persist(true, true);
     const eventIndex = game.events.length;
     game = await localPlayAction(game, action, options);
     if (evaluation) {
@@ -2188,7 +2201,11 @@ async function commit(action, evaluation = null, options = {}) {
         evaluation.result,
       );
     }
-    if (action.type === "next") feedback = null;
+    if (action.type === "next") {
+      game = nextGameTable(game);
+      feedback = null;
+      clearHistoryStates();
+    }
     draft.draft = [];
     boardKey = "";
   } finally {
@@ -2296,6 +2313,30 @@ function showHistoryTree() {
   } catch (error) { showError(error); }
 }
 
+function showSavedGames() {
+  const sessionId = model()?.id;
+  if (!sessionId) return;
+  savedGames(sessionId, {
+    onReturn: config.mode === 'online' ? undefined : async (item, path) => {
+      if (committing || assistanceJob || game?.id !== sessionId) throw Error('The table changed. Reopen saved games.');
+      await persist(true, true);
+      // A bot or another review may have extended this game while the dialog
+      // was open. Keep that newest line as the saved variation when returning.
+      const source = (game.archiveId || game.id) === item.id ? game
+        : archivedTable(await get('items', item.id) || item, config);
+      const restored = returnToHistory(source, path);
+      stopComputer();
+      game = config.mode === 'computer' ? changeControl(restored, decisionPlayer(restored.state)) : restored;
+      config = {...game.config};
+      feedback = null; draft.draft = []; boardKey = '';
+      clearHistoryStates();
+      if (opening.active) opening.dismiss();
+      await persist(); render();
+      window.scrollTo({top:0, behavior:'instant'});
+    },
+  });
+}
+
 function showSessionReview() {
   const m = model();
   if (!m) return;
@@ -2351,7 +2392,12 @@ function renderFeedback() {
       state().phase === "over")
   );
   feedbackFilters.hidden = feedbackStrip.hidden;
-  if (feedbackStrip.hidden) return;
+  if (feedbackStrip.hidden) {
+    feedbackView.turns.clear(); feedbackView.games.clear();
+    feedbackView.cards.clear(); feedbackView.openGames.clear();
+    feedbackStrip.replaceChildren(); renderedFeedback = null;
+    return;
+  }
   if (renderedFeedback === m.events) return;
   renderedFeedback = m.events;
   const rows = decisionHistory(m);
@@ -2523,6 +2569,8 @@ function renderFeedback() {
   }
   for (const key of feedbackView.turns.keys()) if (!retained.has(key)) feedbackView.turns.delete(key);
   for (const game of feedbackView.games.keys()) if (!retainedGames.has(game)) feedbackView.games.delete(game);
+  for (const game of feedbackView.cards.keys()) if (!retainedGames.has(game)) feedbackView.cards.delete(game);
+  for (const game of feedbackView.openGames) if (!retainedGames.has(game)) feedbackView.openGames.delete(game);
   children.push(feedbackView.footer);
   const wanted = new Set(children);
   for (const child of [...feedbackStrip.children]) if (!wanted.has(child)) child.remove();
@@ -2536,7 +2584,7 @@ function renderFeedback() {
 function canReturnToDecision(row, id) {
   return (
     config.mode !== "online" && game?.id === id && !committing &&
-    !assistanceJob && row.index < game.events.length
+    !assistanceJob && row.game === game.state.gameNumber && row.index < game.events.length
   );
 }
 async function restoreDecision(row, id) {

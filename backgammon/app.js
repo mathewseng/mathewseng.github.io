@@ -2,7 +2,7 @@
 import { installInputBehavior } from "./ui/input-behavior.mjs";
 import { Board } from "./ui/board.mjs";
 import { initialState } from "./core/rules.mjs";
-import { get, all, settings } from "./core/storage.mjs";
+import { get, listItemSummaries, settings } from "./core/storage.mjs";
 import { applyBoardTheme } from "./core/appearance.mjs";
 import { applySkin } from "./ui/skin.mjs";
 import { startUpdates } from "./ui/updates.mjs";
@@ -34,7 +34,7 @@ board.render(initialState(), { ...settings(), interactive: false });
 try {
   const recent = document.getElementById("recent"),
     saved = await get("work", "play"),
-    items = await all();
+    items = (await listItemSummaries({limit:1})).items;
   if (saved?.game?.id && saved.game.config?.mode !== "online") {
     const a = document.createElement("a");
     a.href = `/backgammon/play/#resume=${encodeURIComponent(saved.game.id)}`;

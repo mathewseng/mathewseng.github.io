@@ -53,6 +53,22 @@ process.env.BG_CPU_RATE ||= '4';
    onReady:async({page})=>{docToken=await page.evaluate(()=>sessionProbe.token);},
    onGame:async({page,cdp,gameIndex,report})=>{
     await page.waitForTimeout(1500);
+    const history=await page.evaluate(async()=>{
+      const {get,database}=await import('/backgammon/core/storage.mjs');
+      const work=await get('work','play'),game=work.game;
+      const db=await database();
+      const savedGames=await new Promise((resolve,reject)=>{
+        const request=db.transaction('summaries').objectStore('summaries').index('session')
+          .count(IDBKeyRange.bound([game.id],[game.id,[]]));
+        request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);
+      });
+      return {savedGames,gameNumber:game.state.gameNumber,initialGameNumber:game.initial.gameNumber,
+        events:game.events.length,branches:game.undoLog?.length||0,workBytes:JSON.stringify(work).length,
+        hasGameBoundary:game.events.some(e=>e.action.type==='next'),rows:document.querySelectorAll('.history-turn').length};
+    });
+    assert.equal(history.initialGameNumber,history.gameNumber,'only the active game is hydrated');
+    assert.equal(history.hasGameBoundary,false,'old games are not retained in the active event log');
+    assert.equal(history.savedGames,gameIndex,'every completed game remains on disk');
     const beforeGC=await cdp.send('Runtime.getHeapUsage');
     await cdp.send('HeapProfiler.collectGarbage');
     await page.waitForTimeout(100);
@@ -74,16 +90,20 @@ process.env.BG_CPU_RATE ||= '4';
     });
     await cdp.send('HeapProfiler.collectGarbage');
     const appHeap=await cdp.send('Runtime.getHeapUsage');
-    const sample={game:gameIndex,at:new Date().toISOString(),release:report.timing.release,events:report.game.events.length,heap,appHeap,beforeGC,dom,processes,rssKiB:rss,...details};
+    const sample={game:gameIndex,history,at:new Date().toISOString(),release:report.timing.release,events:report.game.events.length,heap,appHeap,beforeGC,dom,processes,rssKiB:rss,...details};
     samples.push(sample);save();
     assert.ok(details.workers.filter(w=>!w.end && w.url.endsWith('/engine/worker.mjs')).length<=1,'at most one live GNUbg worker');
     assert.ok(details.workers.some(w=>w.bytes>0),'native memory instrumentation reached the real worker');
     for(const client of details.clients){
       assert.ok(client.cache<=64 && client.cacheRows<=4096 && client.decisions<=16 && client.readings<=64,'engine caches remain bounded');
     }
-    console.log('MEMORY',JSON.stringify({game:gameIndex,heapMiB:heap.usedSize/2**20,appHeapMiB:appHeap.usedSize/2**20,wasmMiB:details.workers.filter(w=>!w.end).reduce((n,w)=>n+w.bytes,0)/2**20,workers:details.workers.length,liveWorkers:details.workers.filter(w=>!w.end).length,dom,clients:details.clients}));
+    console.log('MEMORY',JSON.stringify({game:gameIndex,history,heapMiB:heap.usedSize/2**20,appHeapMiB:appHeap.usedSize/2**20,wasmMiB:details.workers.filter(w=>!w.end).reduce((n,w)=>n+w.bytes,0)/2**20,workers:details.workers.length,liveWorkers:details.workers.filter(w=>!w.end).length,dom,clients:details.clients}));
    }
   });
   assert.equal(samples.length,games);
+  if(games>=10){
+    const warm=Math.max(...samples.slice(1,4).map(s=>s.appHeap.usedSize));
+    assert.ok(samples.at(-1).appHeap.usedSize<=warm+4*2**20,'retained heap stays within 4 MiB of the warm early-game range');
+  }
  }finally{save();await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -611,3 +611,15 @@ a previous pass, review/undo, or an open dialog keeps that action manual
 (or pauses it until the dialog closes). Live roll prompts stay in the right dice
 area in both orientations. `closed-opponent-roll`, `roll-prompt`, `certain-bearoff`,
 and `sealed-roll` browser checks cover these boundaries and saved-game replay.
+
+### Bounded local-session history
+
+Local and computer tables keep only the current game's events, grades and variations in the live model. Before starting another game, Play waits for the completed game's archive transaction to commit, then keeps its score/Crawford context and private dice cursor while releasing its history. A failed save leaves the completed game on the table. Online protocol logs remain unchanged.
+
+**Saved games** below the board pages through eight metadata records at a time. Opening Review or History tree loads that game alone; returning to a position keeps later games and the original line saved. Library similarly pages through twelve headers, loading a body only when selected, and destroys the previous preview board. The hub and Trainer no longer read every archived match just to find a recent item or practice position. Explicit exports still include the saved records.
+
+IndexedDB version 2 adds a summary index updated transactionally with each archive, edit, delete or import. Legacy active multi-game saves are split into independently replayable games in the same transaction as their new live pointer, preserving notes, evaluations, score context and variations. This does not clear browser storage. Current game histories may vary in size, but completing more games no longer adds their events or DOM rows to the live page.
+
+`game-archive.test.mjs` checks segmentation and variations; `paged-history.cjs` checks interrupted migration, on-demand reads, restore, Library paging and backup compatibility in real browsers. For a sustained real-touch/real-GNUbg run, use `BG_SESSION_GAMES=12 BG_CPU_RATE=4 node backgammon/tests/mobile-session.cjs` against the assembled site. It verifies one active game in memory, every game present on disk, independent replay, bounded caches, no page reloads, and retained heap relative to the warm early-game range.
+
+The 2026-10-24 twelve-game Chromium run at 4× CPU slowdown completed in one document with no page errors, twelve saved archives and exact replay. Post-collection application JavaScript heap ranged from 9.9–12.1 MiB and ended at 11.0 MiB; the live GNUbg worker's native heap remained 64 MiB. The final active history held 74 actions, rather than all twelve games. Browser process RSS is separate and includes browser-managed allocations. This is desktop mobile emulation, not a physical-phone memory-pressure guarantee.

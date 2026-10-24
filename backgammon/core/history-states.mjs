@@ -6,6 +6,7 @@ import { assertState, clone, transition } from "./rules.mjs";
 // Match updates clone events and grades arrive in place, so reference identity
 // cannot identify a prefix. Compare actual actions, including actor and dice.
 const histories = new Map();
+export function clearHistoryStates() { histories.clear(); }
 function immutable(value) {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     for (const child of Object.values(value)) immutable(child);

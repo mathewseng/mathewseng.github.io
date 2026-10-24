@@ -28,11 +28,11 @@ module.exports = async function pageProgress(browser, base) {
     await page.waitForFunction(() => document.documentElement.dataset.appReady === "true");
     const storedBase = await page.evaluate(async () => {
       const value = await (await import("/backgammon/core/storage.mjs")).get("work", "play");
-      const put = IDBObjectStore.prototype.put;
-      IDBObjectStore.prototype.put = function(value, ...args) {
-        if (this.name === "work" && value?.id === "play") throw new Error("Simulated interrupted save");
-        return put.call(this, value, ...args);
-      };
+      // Persistence runs in a worker now; changing the window's IndexedDB
+      // prototype no longer interrupts a real Play save. Fail the writer's
+      // public boundary so the pagehide checkpoint must recover the draft.
+      const {ProgressWriter} = await import('/backgammon/core/progress-writer.mjs');
+      ProgressWriter.prototype.save = async () => { throw new Error('Simulated interrupted save'); };
       return JSON.stringify(value);
     });
     await page.locator("#draft-controls select").selectOption({index: 1});

@@ -49,8 +49,9 @@ module.exports = async function mobileLibrary(browser, base, out, name) {
         await page.locator(".library-layout").evaluate(e => e.scrollTop = 0);
       }
       await page.screenshot({path:path.join(out,`${name}-library-list-${width}.png`)});
-      await page.getByLabel("Collection filter",{exact:true}).selectOption("Contact");
+      await page.getByLabel("Collection filter",{exact:true}).fill("Contact");
       await page.getByLabel("Search Library",{exact:true}).fill("long saved");
+      await page.waitForFunction(()=>document.querySelectorAll('.library-item').length===1);
       assert.equal(await page.locator(".library-item").count(),1);
       await page.getByRole("button",{name:`Open ${fixture.position}`,exact:true}).tap();
       const open = page.getByRole("button",{name:"Open in Solver",exact:true});
@@ -62,10 +63,12 @@ module.exports = async function mobileLibrary(browser, base, out, name) {
         await page.locator("#details-dialog").waitFor({state:"detached"});
       }
       await page.getByLabel("Search Library",{exact:true}).fill("");
-      await page.getByLabel("Collection filter",{exact:true}).selectOption("");
+      await page.getByLabel("Collection filter",{exact:true}).fill("");
+      await page.waitForFunction(()=>document.querySelectorAll('.library-item').length===12);
     }
     await page.setViewportSize({width:390,height:460});
     await page.getByLabel("Search Library",{exact:true}).fill("no matches");
+    await page.locator('.empty').waitFor();
     assert.match(await page.locator(".empty").textContent(), /No matching items/);
     await page.getByLabel("Search Library",{exact:true}).fill("long saved");
     await page.getByRole("button",{name:`Open ${fixture.position}`,exact:true}).tap();

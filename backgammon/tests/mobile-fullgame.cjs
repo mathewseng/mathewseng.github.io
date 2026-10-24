@@ -123,6 +123,7 @@ async function fullGame(browser, base, out, name, {games=1, contextOptions={}, o
     for(gameIndex=1;gameIndex<=games;gameIndex++){
     completed=false;
     if(gameIndex>1){
+      const previousGame = await page.evaluate(()=>mobileGame.d.state.gameNumber);
       await page.evaluate(()=>{
         const p=mobileGame;
         // The diagnostic must not retain old evaluations/DOM/controllers itself.
@@ -130,6 +131,9 @@ async function fullGame(browser, base, out, name, {games=1, contextOptions={}, o
         p.results.clear();
       });
       await tap('next-game',page.locator('#next-game'));
+      // The old result remains visible until its archive is safely committed.
+      // Do not mistake that finished game for the next game's result.
+      await page.waitForFunction(previous=>mobileGame.d.state.gameNumber>previous,previousGame,{timeout:30000});
     } else
     await tap('start',page.locator('#start-match'));
     const deadline=Date.now()+Number(process.env.BG_GAME_TIMEOUT_MS||1200000);

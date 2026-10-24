@@ -4,6 +4,7 @@ import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
 import { historyExplorer } from "../ui/history-tree.mjs";
 import {
   all,
+  listItemSummaries,
   get,
   put,
   remove,
@@ -16,11 +17,7 @@ import {
 } from "../core/storage.mjs";
 import { shareURL } from "../core/xgid.mjs";
 import { replay } from "../core/rules.mjs";
-import {
-  decisionHistory,
-  decisionTotals,
-  sameDecisionPrefix,
-} from "../core/decision-history.mjs";
+import { sameDecisionPrefix } from "../core/decision-history.mjs";
 import { sessionReview } from "../ui/session-review.mjs";
 import { Board } from "../ui/board.mjs";
 import {
@@ -59,6 +56,7 @@ await startUpdates();
 resumedAfterUpdate();
 const pageProgress = readPageProgress();
 shell("library", "Library");
+let cursor = null, nextCursor = null, listGeneration = 0, selectionGeneration = 0, previewBoard = null;
 let items = [],
   selected = null,
   query = "",
@@ -99,7 +97,7 @@ if (pageProgress) {
   query = pageProgress.query || "";
   collection = pageProgress.collection || "";
   kind = pageProgress.kind || "";
-  selected = items.find((i) => i.id === pageProgress.selected) || null;
+  selected = pageProgress.selected ? await get("items", pageProgress.selected) : null;
   render();
 }
 keepPageProgress(() => ({
@@ -111,11 +109,16 @@ keepPageProgress(() => ({
     (n) => n.value,
   ),
 }));
-async function refresh() {
+async function refresh(controls = true) {
+  const token = ++listGeneration;
   try {
-    items = (await all()).sort((a, b) => b.updatedAt - a.updatedAt);
-    selected = items.find((i) => i.id === selected?.id) || null;
-    render();
+    const page = await listItemSummaries({cursor, query, collection, kind, limit:12});
+    if (token !== listGeneration) return;
+    items = page.items; nextCursor = page.cursor;
+    if (controls) {
+      selected = selected ? await get("items", selected.id) : null;
+      render();
+    } else renderList();
   } catch (e) {
     showError(e);
   }
@@ -128,12 +131,9 @@ function render() {
     "aria-label": "Search Library",
     onInput: (e) => {
       query = e.target.value;
-      renderList();
+      cursor = null; refresh(false);
     },
   });
-  const collections = [
-    ...new Set(items.map((i) => i.collection).filter(Boolean)),
-  ];
   const typeFilter = select(
     [
       ["", "All items"],
@@ -149,7 +149,7 @@ function render() {
         "",
         value === "match" ? "#games" : location.pathname,
       );
-      renderList();
+      cursor = null; refresh(false);
     },
   );
   typeFilter.setAttribute("aria-label", "Item type");
@@ -159,14 +159,8 @@ function render() {
       { class: "library-filters" },
       search,
       typeFilter,
-      Object.assign(select(
-        [["", "All collections"], ...collections.map((c) => [c, c])],
-        collection,
-        (v) => {
-          collection = v;
-          renderList();
-        },
-      ), { ariaLabel: "Collection filter" }),
+      el("input", {type:"search", value:collection, placeholder:"Collection", "aria-label":"Collection filter",
+        onInput:e => {collection=e.target.value; cursor=null; refresh(false);}}),
     ),
     el("div", { id: "items" }),
   );
@@ -193,21 +187,20 @@ function renderList() {
         el(
           "h2",
           {},
-          items.length
+          query || collection || kind
             ? "No matching items"
             : "Nothing saved yet.",
         ),
         el(
           "p",
           { class: "muted" },
-          items.length
+          query || collection || kind
             ? "Try another search or collection."
             : "Games you play save here on their own. Save positions from the Solver and mistakes from the Trainer.",
         ),
         el("a", { class: "btn", href: "/backgammon/solver/" }, "Open Solver"),
       ),
     );
-    return;
   }
   // Rows are real buttons with a pressed state for the selected item; their
   // content is phrasing content (spans), the title a <strong>.
@@ -234,11 +227,10 @@ function renderList() {
       ),
     );
     if (item.kind === "match") {
-      const decisions = decisionHistory(item);
+      const totals = item.decisionSummary;
       const summary = el("span", { class: "library-session-summary" });
-      if (decisions.length) {
-        const totals = [0, 1].map(player => decisionTotals(decisions, player));
-        const games = new Set(decisions.map(r => r.game)).size;
+      if (totals) {
+        const games = item.gameCount || 1;
         summary.append(
           el("span", { class: "library-session-players" }, ...totals.map((t, player) =>
             el("span", { class: "library-session-player", "data-player": player },
@@ -249,20 +241,28 @@ function renderList() {
             `${games} ${games === 1 ? "game" : "games"} · ${totals.reduce((n, t) => n + t.evaluated, 0)} evaluated · ${totals.reduce((n, t) => n + t.pending, 0)} unreviewed`),
         );
       }
-      if (!decisions.length)
-        summary.append(el("span", { class: "library-session-count" }, "No decisions played yet"));
+      if (!totals)
+        summary.append(el("span", { class: "library-session-count" }, `${item.eventCount} saved actions`));
+      if (item.gameCount === 1) summary.prepend(el("span", {class:"library-session-count"}, `Game ${item.gameNumber}`));
       row.lastElementChild.append(summary);
     }
     parent.append(row);
   }
+  if (cursor || nextCursor) parent.append(el('div', {class:'row spread'},
+    button('Latest items', () => {cursor=null; refresh(false);}, '', {disabled:!cursor}),
+    button('Older items', () => {cursor=nextCursor; refresh(false);}, '', {disabled:!nextCursor})));
 }
-function choose(item) {
-  selected = item;
+async function choose(item) {
+  const token = ++selectionGeneration;
+  const loaded = await get('items',item.id);
+  if (token !== selectionGeneration) return;
+  selected = loaded;
   renderList();
   inspector();
   if (getComputedStyle($("inspector")).display === "none") openPanel();
 }
 function inspector() {
+  previewBoard?.destroy(); previewBoard = null;
   const p = $("panel");
   p.replaceChildren();
   if (!selected) {
@@ -362,7 +362,7 @@ function inspector() {
   if (item.kind !== "collection") {
     const slot = el("div", { class: "library-preview" });
     openGroup.append(slot);
-    const board = new Board(slot);
+    const board = previewBoard = new Board(slot);
     board.render(
       item.kind === "match"
         ? replay(item.initial, item.events).at(-1)
