@@ -21,6 +21,8 @@ function resolveBookInputs() {
   // Direct full-turn validation skips alternate paths without changing legality.
   // Closed-out skip-roll adds a dice-free table transition; checker moves and
   // historical roll/move replay remain unchanged.
+  // Direct record cloning in enumeration preserves the same boards and moves;
+  // compatibility checks exercise every unordered roll, including doubles.
   // book-inputs.test.cjs compares current legal turns and encoding to the
   // immutable bg5 snapshot. Compatible hashes do not change book provenance.
   for (const file of ['core/rules.mjs', 'core/xgid.mjs'])
