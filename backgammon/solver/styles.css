@@ -153,6 +153,8 @@
     aspect-ratio: auto;
   }
   .app[data-page="solver"]:not(.editing-position) .solver-setup-dock { display: none; }
+  /* Tapping "Edit position" puts the editor directly under the board. */
+  .app[data-page="solver"].editing-position .solver-setup-dock { order: -1; }
   .solver-controls { padding-top: 0; }
   .solver-analysis-controls { padding-top: 8px; }
   .solver-controls .action-main { gap: 8px; }
@@ -160,6 +162,7 @@
 }
 
 @media (max-height: 500px) and (min-width: 650px) {
+  .app[data-page="solver"].editing-position .solver-setup-dock { order: -1; }
   .solver-controls .solver-setup-dock,
   .solver-controls .solver-analysis-controls { padding-block: 8px; }
   .solver-controls .solver-group-title { font-size: var(--t-sm); }

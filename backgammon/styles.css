@@ -3864,7 +3864,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   display: none;
 }
 
-.app[data-page="solver"].editing-position #message:empty {
+.app[data-page="solver"] #message:empty {
   display: none;
 }
 

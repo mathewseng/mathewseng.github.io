@@ -417,7 +417,7 @@ function render() {
             ? `Best evaluated: ${result.candidates[0].notation} · ${result.settings.name}`
             : result?.type === "cube"
               ? `GNUbg: ${result.action} · ${result.settings.name}`
-              : "Analyze from the player-on-roll perspective.";
+              : "";
   $("message").classList.toggle("error", !!problems.length && !emptySetup);
   const editLabel = editing ? "Done editing" : "Edit position";
   if (editControl.textContent !== editLabel)
