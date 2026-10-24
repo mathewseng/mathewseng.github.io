@@ -67,7 +67,7 @@ module.exports = async function mobileSettings(browser, base, out, name) {
     await page.setViewportSize({width:320,height:568});
     await tab("Board colors").tap();
     await page.locator('[data-preset="amber"]').tap();
-    await reachable(tab("Display & controls")); // tabs remain pinned at the end of 24 presets
+    await reachable(tab("Display & controls")); // tabs remain pinned at the end of the skin picker and every preset
     await tab("Display & controls").tap();
     await page.getByLabel("Show legal-move hints in beginner mode", {exact:true}).uncheck();
     await page.getByLabel("Motion", {exact:true}).selectOption("reduce");

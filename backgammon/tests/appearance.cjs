@@ -97,7 +97,9 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
       async () =>
         (await import("/backgammon/core/appearance.mjs")).BOARD_PRESETS,
     );
-    assert.equal(themes.length, 24);
+    // The 24 house palettes plus one per skin (backgammon/skins/).
+    assert.ok(themes.length >= 24, `${themes.length} presets`);
+    assert.equal(new Set(themes.map((t) => t.id)).size, themes.length);
     for (const theme of themes) {
       await page.locator(`[data-preset="${theme.id}"]`).click();
       assert.equal((await stored()).preset, theme.id);
@@ -124,7 +126,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
       }
     }
     report.cases.push(
-      "24 presets with real SVG, die and pip colors",
+      `${themes.length} presets with real SVG, die and pip colors`,
       "all preset readability checks",
     );
     await group("Board surfaces");

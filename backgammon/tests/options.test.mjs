@@ -20,6 +20,7 @@ import {
   normalizeBoardTheme,
   elementPattern,
 } from "../core/appearance.mjs";
+import { SKIN_PRESETS } from "../skins/index.mjs";
 const money = (options) =>
   initialState({ matchLength: 0, phase: "roll", ...options });
 const act = (s, type, rest = {}) =>
@@ -225,9 +226,10 @@ test("moving a checker back preserves unrelated legal moves and restores hits an
     boardKey(hit),
   );
 });
-test("24 coordinated themes and bounded patterns reject unsafe stored values", () => {
-  assert.equal(BOARD_PRESETS.length, 24);
-  assert.equal(new Set(BOARD_PRESETS.map((p) => p.id)).size, 24);
+test("24 house themes plus one per skin, and bounded patterns reject unsafe stored values", () => {
+  assert.ok(BOARD_PRESETS.length >= 24);
+  assert.equal(BOARD_PRESETS.length, 24 + SKIN_PRESETS.length);
+  assert.equal(new Set(BOARD_PRESETS.map((p) => p.id)).size, BOARD_PRESETS.length);
   const value = {
     version: 1,
     preset: "linen",

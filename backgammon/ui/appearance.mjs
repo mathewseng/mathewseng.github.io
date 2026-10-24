@@ -16,6 +16,8 @@ import {
   PATTERN_KINDS,
   elementPattern,
 } from "../core/appearance.mjs";
+import { SKINS } from "../skins/index.mjs";
+import { selectSkin } from "./skin.mjs";
 
 // Only this isolated sample has a selection. Editing colors never touches a game,
 // its draft, history, engine requests or an opponent's appearance preferences.
@@ -23,7 +25,8 @@ export function appearanceControls() {
   let theme = settings().boardTheme;
   const history = [],
     fields = new Map(),
-    presets = new Map();
+    presets = new Map(),
+    skins = new Map();
   const title = el("strong", { id: "theme-name" });
   const saved = el("span", {
     class: "muted small",
@@ -81,6 +84,43 @@ export function appearanceControls() {
       "Live preview · colors save automatically in this browser.",
     ),
   );
+  // Skin picker (skin-contract.md §6): selecting saves the skin and its board
+  // palette, then the editor follows so #theme-name, the pressed preset and the
+  // sample board agree.
+  const skinGrid = el("div", { class: "skin-grid" });
+  for (const skin of SKINS) {
+    const thumb = el("div", {
+      class: "skin-thumb",
+      "aria-hidden": "true",
+      style: `--skin-preview:${skin.preview};--skin-c0:${skin.board.checker0};--skin-c1:${skin.board.checker1};--skin-point:${skin.board.pointA}`,
+    });
+    const choice = button(
+      "",
+      () => {
+        selectSkin(skin.id);
+        change({
+          version: 1,
+          preset: skin.id === "classic" ? "slate" : skin.id,
+          colors: {},
+        });
+      },
+      "skin-choice",
+      {
+        "aria-label": `${skin.name}: ${skin.description}`,
+        "aria-pressed": false,
+        "data-skin": skin.id,
+        title: skin.description,
+      },
+    );
+    choice.append(thumb, el("span", {}, skin.name));
+    skins.set(skin.id, choice);
+    skinGrid.append(choice);
+  }
+  const stylePanel = el(
+    "section",
+    { class: "skin-section", "aria-label": "Style" },
+    skinGrid,
+  );
   const grid = el("div", {
     class: "theme-presets",
     "aria-label": "Board presets",
@@ -128,11 +168,6 @@ export function appearanceControls() {
   const palettePanel = el(
     "section",
     { "aria-label": "Theme presets" },
-    el(
-      "p",
-      { class: "muted small" },
-      "24 clean palettes. Choose a starting point, then make it yours.",
-    ),
     grid,
   );
   const colorPanel = el(
@@ -361,6 +396,9 @@ export function appearanceControls() {
     undo.disabled = !history.length;
     for (const [id, node] of presets)
       node.setAttribute("aria-pressed", String(id === theme.preset));
+    const currentSkin = settings().skin;
+    for (const [id, node] of skins)
+      node.setAttribute("aria-pressed", String(id === currentSkin));
     for (const [key, input] of fields) {
       input.restore.disabled = !theme.colors[key];
       if (updateInputs) {
@@ -394,7 +432,12 @@ export function appearanceControls() {
     refresh(updateInputs);
   }
   refresh();
-  const node = el("div", { class: "theme-layout" }, preview, controls);
+  const node = el(
+    "div",
+    { class: "theme-editor" },
+    stylePanel,
+    el("div", { class: "theme-layout" }, preview, controls),
+  );
   node.dispose = () => sampleBoard.destroy();
   return node;
 }

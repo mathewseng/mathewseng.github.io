@@ -1,0 +1,417 @@
+<section class="theme" id="theme-gloaming" data-theme="gloaming">
+<style>
+#theme-gloaming {
+  --page: #120f1e;
+  --shader-1: #ff9a5c;
+  --shader-2: #655596;
+  --shader-3: #120f1e;
+  --surface: #1c1730;
+  --surface-2: #251f3d;
+  --line: #3a3156;
+  --ink: #f6eee6;
+  --muted: #b7a9b8;
+  --accent: #ff9a5c;
+  --accent-ink: #2a1206;
+  --danger: #ff6b7a;
+  --board-frame: #2a2140;
+  --board-surface: #1a1528;
+  --point-a: #e0683f;
+  --point-b: #655596;
+  --bar: #0f0c1a;
+  --checker-white: #fbe9d3;
+  --checker-white-edge: #c9a37a;
+  --checker-black: #1b1026;
+  --checker-black-edge: #a898d6;
+  --dice: #fff2e2;
+  --pips: #2a1206;
+  --cube: #ffb27a;
+  --cube-text: #2a1206;
+  --highlight: #7df5e2;
+  --last-move: #ffd166;
+  --shadow-tint: #0a0616;
+  font-family: -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-weight: 400;
+  font-variant-numeric: lining-nums proportional-nums;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-sizing: border-box;
+  max-width: 640px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--page);
+  color: var(--ink);
+  line-height: 1.4;
+}
+#theme-gloaming * { box-sizing: border-box; }
+#theme-gloaming .shader {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top, var(--accent) 0%, var(--point-b) 50%, var(--page) 100%);
+}
+#theme-gloaming .board {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 16px;
+  border-radius: 14px;
+  box-shadow: 0 24px 24px -16px var(--shadow-tint);
+}
+#theme-gloaming .chrome {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+#theme-gloaming h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+#theme-gloaming p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 34ch;
+}
+#theme-gloaming .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+#theme-gloaming button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+#theme-gloaming .btn-primary { background: var(--accent); color: var(--accent-ink); }
+#theme-gloaming .btn-ghost { background: transparent; color: var(--accent); border-color: var(--accent); }
+#theme-gloaming .btn-danger { background: var(--danger); color: var(--accent-ink); }
+#theme-gloaming .panel {
+  min-width: 190px;
+  align-self: stretch;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px rgba(246, 238, 230, 0.18), 0 24px 24px -12px var(--shadow-tint);
+}
+#theme-gloaming .intro { padding: 16px 18px; }
+#theme-gloaming .kv { display: flex; justify-content: space-between; gap: 16px; padding: 4px 0; }
+#theme-gloaming .kv + .kv { border-top: 1px solid var(--line); }
+#theme-gloaming .kv span { color: var(--muted); font-size: 13px; letter-spacing: 0.01em; }
+#theme-gloaming .kv strong { font-weight: 500; font-size: 15px; }
+#theme-gloaming .equity { position: relative; height: 4px; margin-top: 12px; border-radius: 2px; background: var(--line); }
+#theme-gloaming .equity i { position: absolute; left: 0; top: 0; bottom: 0; width: 58%; border-radius: 2px; background: var(--last-move); }
+#theme-gloaming .swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px rgba(246, 238, 230, 0.18), 0 24px 24px -12px var(--shadow-tint);
+}
+#theme-gloaming .swatches figure { margin: 0; }
+#theme-gloaming .swatches i { display: block; height: 36px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(246, 238, 230, 0.12); }
+#theme-gloaming .swatches figcaption { margin-top: 4px; font-size: 12px; color: var(--muted); letter-spacing: 0.01em; }
+@media (max-width: 520px) {
+  #theme-gloaming .chrome { grid-template-columns: 1fr; }
+  #theme-gloaming .swatches { grid-template-columns: repeat(4, 1fr); }
+}
+</style>
+
+<canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="bottom-left" data-pointer-idle="center" data-still="0"></canvas>
+<script type="x-shader/x-fragment" id="frag-gloaming">
+precision mediump float;
+uniform float u_time;
+uniform vec2  u_resolution;
+uniform vec2  u_pointer;
+uniform vec3  u_c1; // accent apricot  #ff9a5c
+uniform vec3  u_c2; // dusk violet     #655596
+uniform vec3  u_c3; // page            #120f1e
+
+float hash21(vec2 p) {
+  p = fract(p * vec2(127.1, 311.7));
+  p += dot(p, p + 19.19);
+  return fract(p.x * p.y);
+}
+
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+float fbm(vec2 p) {
+  float v = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 3; i++) {
+    v += amp * vnoise(p);
+    p = p * 2.02 + vec2(1.7, 9.2);
+    amp *= 0.5;
+  }
+  return v;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+  float aspect = u_resolution.x / u_resolution.y;
+  float t = u_time;
+  vec2 ptr = u_pointer / u_resolution.xy - 0.5;
+
+  // Sky: apricot horizon -> violet at mid -> page colour at the top.
+  vec3 col = mix(u_c1, u_c2, smoothstep(0.0, 0.5, uv.y));
+  col = mix(col, u_c3, smoothstep(0.5, 1.0, uv.y));
+
+  // Two domain-warped fbm layers as thin cirrus bands, mixed at 12%.
+  vec2 p = vec2(uv.x * aspect, uv.y) * 3.0 + vec2(t * 0.01, 0.0);
+  vec2 warp = vec2(sin(p.y * 2.0 + t * 0.05), cos(p.x * 2.0 + t * 0.05)) * 0.35;
+  float layerA = fbm(p + warp);
+  float layerB = fbm(p * vec2(2.4, 0.9) - warp * 0.6 + vec2(3.1, 1.4));
+  float bands = smoothstep(0.42, 0.72, layerA * 0.55 + layerB * 0.45);
+  bands *= smoothstep(0.02, 0.2, uv.y) * (1.0 - smoothstep(0.4, 0.75, uv.y));
+  col += bands * 0.12 * vec3(1.0, 0.86, 0.72);
+
+  // Soft sun low at bottom-left; breathes and drifts 2% with the pointer.
+  vec2 sunPos = vec2(0.2, 0.08) + ptr * 0.02;
+  float breathe = 1.0 + sin(t * 0.3) * 0.02;
+  vec2 d = vec2((uv.x - sunPos.x) * aspect, uv.y - sunPos.y);
+  float sun = 1.0 - smoothstep(0.0, 0.35 * breathe, length(d));
+  sun *= sun;
+  col += sun * 0.25 * vec3(1.0, 0.82, 0.62);
+
+  // First stars: sparse hash grid in the top 15% only.
+  vec2 cell = floor(vec2(uv.x * aspect, uv.y) * 90.0);
+  vec2 cf = fract(vec2(uv.x * aspect, uv.y) * 90.0);
+  float h = hash21(cell);
+  float star = step(0.995, h);
+  vec2 sp = vec2(hash21(cell + 7.3), hash21(cell + 2.1));
+  float sd = length(cf - sp);
+  float twinkle = 0.75 + 0.25 * sin(t * 2.0 + h * 6.2831);
+  float glow = (1.0 - smoothstep(0.0, 0.12, sd)) * star * twinkle;
+  glow *= smoothstep(0.85, 0.92, uv.y);
+  col += glow * 0.2;
+
+  // Keep the upper field quiet under the UI.
+  float darken = smoothstep(0.55, 0.78, uv.y);
+  col *= 1.0 - darken * 0.35;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<svg class="board" viewBox="0 0 600 420" role="img" aria-label="Gloaming board sample" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gloaming-rail" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="gloaming-warmth" cx="0.04" cy="0.96" r="0.7">
+      <stop offset="0" style="stop-color:var(--accent);stop-opacity:0.1"/>
+      <stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="gloaming-gloss" cx="0.34" cy="0.68" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gloaming-die-gloss" cx="0.3" cy="0.75" r="0.6">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="gloaming-inset" x="-20%" y="-20%" width="140%" height="140%">
+      <feComponentTransfer in="SourceAlpha" result="inv"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
+      <feGaussianBlur in="inv" stdDeviation="3" result="blur"/>
+      <feOffset in="blur" dx="2" dy="-2" result="off"/>
+      <feFlood flood-color="#000000" flood-opacity="0.7" result="flood"/>
+      <feComposite in="flood" in2="off" operator="in" result="shade"/>
+      <feComposite in="shade" in2="SourceAlpha" operator="in" result="clipped"/>
+      <feComposite in="clipped" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <filter id="gloaming-chk-shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="1.5" dy="-1.5" stdDeviation="1.2" flood-color="#0a0616" flood-opacity="0.55"/>
+    </filter>
+    <filter id="gloaming-lift" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="5" dy="-7" stdDeviation="4" flood-color="#5a2a14" flood-opacity="0.75"/>
+    </filter>
+    <filter id="gloaming-die-shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="2" dy="-2" stdDeviation="2" flood-color="#0a0616" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- frame slab, lit along the top rail only -->
+  <rect x="0" y="0" width="600" height="420" rx="14" fill="var(--board-frame)"/>
+  <rect x="0" y="0" width="600" height="28" fill="url(#gloaming-rail)"/>
+
+  <!-- playing surface with inner lip -->
+  <rect x="28" y="28" width="492" height="364" fill="var(--board-surface)"/>
+  <rect x="28" y="28" width="492" height="364" fill="url(#gloaming-warmth)"/>
+  <rect x="27" y="27" width="494" height="366" fill="none" stroke="var(--bar)" stroke-width="2"/>
+
+  <!-- points: flat triangles, 1px darker outline, softly rounded apex -->
+  <g stroke-width="1.5" stroke-linejoin="round">
+    <g fill="var(--point-b)" stroke="color-mix(in srgb, var(--point-b) 60%, #000)">
+      <polygon points="28,28 66,28 47,178"/>
+      <polygon points="104,28 142,28 123,178"/>
+      <polygon points="180,28 218,28 199,178"/>
+      <polygon points="292,28 330,28 311,178"/>
+      <polygon points="368,28 406,28 387,178"/>
+      <polygon points="444,28 482,28 463,178"/>
+      <polygon points="66,392 104,392 85,242"/>
+      <polygon points="142,392 180,392 161,242"/>
+      <polygon points="218,392 256,392 237,242"/>
+      <polygon points="330,392 368,392 349,242"/>
+      <polygon points="406,392 444,392 425,242"/>
+      <polygon points="482,392 520,392 501,242"/>
+    </g>
+    <g fill="var(--point-a)" stroke="color-mix(in srgb, var(--point-a) 60%, #000)">
+      <polygon points="66,28 104,28 85,178"/>
+      <polygon points="142,28 180,28 161,178"/>
+      <polygon points="218,28 256,28 237,178"/>
+      <polygon points="330,28 368,28 349,178"/>
+      <polygon points="406,28 444,28 425,178"/>
+      <polygon points="482,28 520,28 501,178"/>
+      <polygon points="28,392 66,392 47,242"/>
+      <polygon points="104,392 142,392 123,242"/>
+      <polygon points="180,392 218,392 199,242"/>
+      <polygon points="292,392 330,392 311,242"/>
+      <polygon points="368,392 406,392 387,242"/>
+      <polygon points="444,392 482,392 463,242"/>
+    </g>
+  </g>
+
+  <!-- bar and bear-off trays: deeper wells -->
+  <rect x="256" y="28" width="36" height="364" fill="var(--bar)" filter="url(#gloaming-inset)"/>
+  <rect x="532" y="28" width="40" height="168" rx="4" fill="var(--bar)" filter="url(#gloaming-inset)"/>
+  <rect x="532" y="224" width="40" height="168" rx="4" fill="var(--bar)" filter="url(#gloaming-inset)"/>
+  <g fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="1">
+    <rect x="538" y="178" width="28" height="7" rx="2"/>
+    <rect x="538" y="168" width="28" height="7" rx="2"/>
+  </g>
+
+  <!-- point numbers -->
+  <g fill="var(--muted)" font-family="inherit" font-size="12" text-anchor="middle">
+    <text x="501" y="410">1</text>
+    <text x="311" y="410">6</text>
+    <text x="47" y="19">13</text>
+  </g>
+
+  <!-- last-move arrow: 13 -> 17 -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 47 105 C 80 190, 150 200, 193 150" stroke="var(--bar)" stroke-width="5"/>
+    <path d="M 47 105 C 80 190, 150 200, 193 150" stroke="var(--last-move)" stroke-width="3"/>
+    <polygon points="195,148 190,161 182,154" fill="var(--last-move)" stroke="var(--bar)" stroke-width="1"/>
+  </g>
+
+  <!-- legal-move ring on an empty point -->
+  <circle cx="349" cy="375" r="18" fill="none" stroke="var(--bar)" stroke-width="1"/>
+  <circle cx="349" cy="375" r="16.5" fill="none" stroke="var(--highlight)" stroke-width="2"/>
+
+  <!-- black stacks -->
+  <g filter="url(#gloaming-chk-shadow)">
+    <g fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2">
+      <circle cx="311" cy="45" r="16"/><circle cx="311" cy="79" r="16"/><circle cx="311" cy="113" r="16"/><circle cx="311" cy="147" r="16"/><circle cx="311" cy="181" r="16"/>
+      <circle cx="199" cy="45" r="16"/><circle cx="199" cy="79" r="16"/><circle cx="199" cy="113" r="16"/>
+      <circle cx="501" cy="375" r="16"/><circle cx="501" cy="341" r="16"/>
+    </g>
+    <g fill="url(#gloaming-gloss)">
+      <circle cx="311" cy="45" r="15"/><circle cx="311" cy="79" r="15"/><circle cx="311" cy="113" r="15"/><circle cx="311" cy="147" r="15"/><circle cx="311" cy="181" r="15"/>
+      <circle cx="199" cy="45" r="15"/><circle cx="199" cy="79" r="15"/><circle cx="199" cy="113" r="15"/>
+      <circle cx="501" cy="375" r="15"/><circle cx="501" cy="341" r="15"/>
+    </g>
+  </g>
+
+  <!-- white stacks -->
+  <g filter="url(#gloaming-chk-shadow)">
+    <g fill="var(--checker-white)" stroke="var(--checker-white-edge)" stroke-width="2">
+      <circle cx="311" cy="375" r="16"/><circle cx="311" cy="341" r="16"/><circle cx="311" cy="307" r="16"/><circle cx="311" cy="273" r="16"/><circle cx="311" cy="239" r="16"/>
+      <circle cx="199" cy="375" r="16"/><circle cx="199" cy="341" r="16"/>
+      <circle cx="501" cy="45" r="16"/><circle cx="501" cy="79" r="16"/>
+    </g>
+    <g fill="url(#gloaming-gloss)">
+      <circle cx="311" cy="375" r="15"/><circle cx="311" cy="341" r="15"/><circle cx="311" cy="307" r="15"/><circle cx="311" cy="273" r="15"/><circle cx="311" cy="239" r="15"/>
+      <circle cx="199" cy="375" r="15"/><circle cx="199" cy="341" r="15"/>
+      <circle cx="501" cy="45" r="15"/><circle cx="501" cy="79" r="15"/>
+    </g>
+  </g>
+
+  <!-- stack-count badge: ink pill on the opposite colour -->
+  <rect x="313" y="221" width="18" height="12" rx="6" fill="var(--checker-black)" stroke="var(--checker-white-edge)" stroke-width="1"/>
+  <text x="322" y="230.5" font-family="inherit" font-size="10" font-weight="500" fill="var(--ink)" text-anchor="middle">5</text>
+
+  <!-- selected checker: lifted 4px, apricot-tinted shadow, highlight ring -->
+  <g filter="url(#gloaming-lift)">
+    <circle cx="199" cy="303" r="16" fill="var(--checker-white)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+    <circle cx="199" cy="303" r="15" fill="url(#gloaming-gloss)"/>
+  </g>
+  <circle cx="199" cy="303" r="21.5" fill="none" stroke="var(--bar)" stroke-width="1"/>
+  <circle cx="199" cy="303" r="20" fill="none" stroke="var(--highlight)" stroke-width="2"/>
+
+  <!-- dice: 6 live, 3 played -->
+  <g filter="url(#gloaming-die-shadow)">
+    <rect x="98" y="193" width="34" height="34" rx="8" fill="var(--dice)"/>
+    <rect x="98" y="193" width="34" height="34" rx="8" fill="url(#gloaming-die-gloss)"/>
+    <g fill="var(--pips)">
+      <circle cx="107" cy="202" r="3"/><circle cx="107" cy="210" r="3"/><circle cx="107" cy="218" r="3"/>
+      <circle cx="123" cy="202" r="3"/><circle cx="123" cy="210" r="3"/><circle cx="123" cy="218" r="3"/>
+    </g>
+  </g>
+  <g opacity="0.55">
+    <rect x="146" y="193" width="34" height="34" rx="8" fill="var(--dice)"/>
+    <g fill="var(--pips)">
+      <circle cx="155" cy="202" r="3"/><circle cx="163" cy="210" r="3"/><circle cx="171" cy="218" r="3"/>
+    </g>
+  </g>
+
+  <!-- doubling cube -->
+  <g filter="url(#gloaming-die-shadow)">
+    <rect x="260" y="196" width="28" height="28" rx="5" fill="var(--cube)"/>
+    <text x="274" y="214.5" font-family="inherit" font-size="13" font-weight="500" fill="var(--cube-text)" text-anchor="middle">64</text>
+  </g>
+</svg>
+
+<div class="chrome">
+  <div class="panel intro">
+    <h2>Gloaming</h2>
+    <p>A warm dusk board, lit from one low side like a table on a terrace.</p>
+    <div class="actions">
+      <button type="button" class="btn-primary">Roll</button>
+      <button type="button" class="btn-ghost">Undo</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="kv"><span>Equity</span><strong>+0.312</strong></div>
+    <div class="kv"><span>Pip count</span><strong>167 · 142</strong></div>
+    <div class="equity"><i></i></div>
+  </div>
+</div>
+
+<div class="swatches">
+  <figure><i style="background:var(--page)"></i><figcaption>#120f1e</figcaption></figure>
+  <figure><i style="background:var(--surface)"></i><figcaption>#1c1730</figcaption></figure>
+  <figure><i style="background:var(--ink)"></i><figcaption>#f6eee6</figcaption></figure>
+  <figure><i style="background:var(--accent)"></i><figcaption>#ff9a5c</figcaption></figure>
+  <figure><i style="background:var(--point-a)"></i><figcaption>#e0683f</figcaption></figure>
+  <figure><i style="background:var(--point-b)"></i><figcaption>#655596</figcaption></figure>
+  <figure><i style="background:var(--checker-white)"></i><figcaption>#fbe9d3</figcaption></figure>
+  <figure><i style="background:var(--checker-black)"></i><figcaption>#1b1026</figcaption></figure>
+  <figure><i style="background:var(--dice)"></i><figcaption>#fff2e2</figcaption></figure>
+  <figure><i style="background:var(--cube)"></i><figcaption>#ffb27a</figcaption></figure>
+  <figure><i style="background:var(--highlight)"></i><figcaption>#7df5e2</figcaption></figure>
+  <figure><i style="background:var(--last-move)"></i><figcaption>#ffd166</figcaption></figure>
+</div>
+</section>

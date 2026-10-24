@@ -2,6 +2,8 @@
 import { el, button, select, field } from "../ui/shell.mjs";
 import { PRESETS, ENGINE_VERSION } from "../engine/metadata.mjs";
 import { startUpdates } from "../ui/updates.mjs";
+import { settings } from "../core/storage.mjs";
+import { applySkin } from "../ui/skin.mjs";
 import { EngineClient } from "../engine/client.mjs";
 import { renderCubePolicyStudy } from "./cube-policy-study.mjs";
 import { renderReplyPrecision } from "./reply-fullgame-precision.mjs";
@@ -13,6 +15,10 @@ let readerMoved = false;
 for (const type of ["wheel", "touchmove", "keydown", "pointerdown"])
   addEventListener(type, () => (readerMoved = true), { once: true, passive: true });
 async function boot() {
+applySkin(settings().skin);
+addEventListener("storage", (e) => {
+  if (e.key === "backgammon.v1.settings" || e.key === null) applySkin(settings().skin);
+});
 await startUpdates();
 const $ = (id) => document.getElementById(id);
 const time = (n) =>

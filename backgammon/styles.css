@@ -3804,6 +3804,13 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   padding-right: 36px;
 }
 
+/* Phones: the filter row and setup checkboxes meet the 44px touch floor. */
+@media (pointer: coarse), (max-width: 700px) {
+  .library-filters > * {
+    min-height: 44px;
+  }
+}
+
 .library-item {
   display: flex;
   align-items: center;
@@ -6518,4 +6525,122 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     gap: 0 12px;
     margin-top: 2px;
   }
+}
+
+/* ======================================================================
+   9. Skins (ui/skin.mjs, ui/shader-layer.mjs, the picker in ui/appearance.mjs)
+   ====================================================================== */
+
+/* While a shader runs, the page colour comes from the canvas behind the body:
+   html keeps var(--page) under it (app.css), the body and the kit's aura and
+   dot pseudo-elements step aside. Sticky headers keep their opaque surface so
+   scrolled content stays legible. */
+html.skin-shader body {
+  background: transparent;
+}
+
+html.skin-shader body::before,
+html.skin-shader body::after {
+  display: none;
+}
+
+/* Sticky bars that paint var(--page) to cover scrolled content become glass
+   over the shader (every skin sets --glass as an rgba of its surface). */
+html.skin-shader .play-page.setup-table .action-area,
+html.skin-shader .play-review .review-header,
+html.skin-shader .library-filters,
+html.skin-shader .docs-toc--sticky {
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+#skin-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Picker: section[aria-label="Style"] > .skin-grid > button.skin-choice. The
+   thumbnail reads its skin through inline custom properties set from JS. */
+.skin-section {
+  margin-bottom: 18px;
+}
+
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.skin-choice {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 4px 7px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.skin-choice:hover {
+  color: var(--ink);
+}
+
+.skin-choice[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.skin-choice > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skin-thumb {
+  position: relative;
+  width: 64px;
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--skin-preview, var(--surface-2));
+  pointer-events: none;
+}
+
+.skin-thumb::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  width: 14px;
+  height: 26px;
+  clip-path: polygon(0 100%, 100% 100%, 50% 0);
+  background: var(--skin-point, var(--surface-3));
+}
+
+.skin-thumb::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 22px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--skin-c0, var(--ink));
+  box-shadow: 14px 0 0 var(--skin-c1, var(--accent));
 }

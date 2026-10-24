@@ -4,12 +4,16 @@ import { Board } from "./ui/board.mjs";
 import { initialState } from "./core/rules.mjs";
 import { get, all, settings } from "./core/storage.mjs";
 import { applyBoardTheme } from "./core/appearance.mjs";
+import { applySkin } from "./ui/skin.mjs";
 import { startUpdates } from "./ui/updates.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
 async function boot() {
 installInputBehavior();
+// Chrome tokens first (the head script only painted data-skin and --page); the
+// shader itself starts at idle, after first paint.
+applySkin(settings().skin);
 await startUpdates({
   hub: true,
   onStatus: ({ state, message }) => {
@@ -20,8 +24,10 @@ await startUpdates({
 });
 applyBoardTheme(settings().boardTheme);
 addEventListener("storage", (e) => {
-  if (e.key === "backgammon.v1.settings" || e.key === null)
+  if (e.key === "backgammon.v1.settings" || e.key === null) {
+    applySkin(settings().skin);
     applyBoardTheme(settings().boardTheme);
+  }
 });
 const board = new Board(document.getElementById("hub-board"));
 board.render(initialState(), { ...settings(), interactive: false });

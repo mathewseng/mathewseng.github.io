@@ -1,0 +1,313 @@
+<section class="theme" id="theme-dessau-primary" data-theme="dessau-primary">
+<style>
+#theme-dessau-primary {
+  --page: #EFEBE1;
+  --shader-1: #D32F2F;
+  --shader-2: #1E4FA3;
+  --shader-3: #F2C230;
+  --surface: #F7F4EC;
+  --surface-2: #E3DED1;
+  --line: #161616;
+  --ink: #161616;
+  --muted: #5A5751;
+  --accent: #D32F2F;
+  --accent-ink: #FFFFFF;
+  --board-frame: #161616;
+  --board-surface: #F7F4EC;
+  --point-a: #1E4FA3;
+  --point-b: #F2C230;
+  --bar: #161616;
+  --checker-white: #FFFFFF;
+  --checker-white-edge: #161616;
+  --checker-black: #161616;
+  --checker-black-edge: #FFFFFF;
+  --dice: #FFFFFF;
+  --pips: #161616;
+  --cube: #D32F2F;
+  --cube-text: #FFFFFF;
+  --highlight: #161616;
+  --last-move: #D32F2F;
+  font-family: "Futura", "Avenir Next", "Jost", "Century Gothic", system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: var(--page);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 960px;
+  padding: 24px;
+  border: 2px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-areas: "board chrome" "swatches swatches";
+  gap: 24px;
+  border-radius: 0;
+}
+#theme-dessau-primary *, #theme-dessau-primary *::before, #theme-dessau-primary *::after { box-sizing: border-box; border-radius: 0; }
+#theme-dessau-primary .shader {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%; display: block; pointer-events: none;
+}
+#theme-dessau-primary > :not(.shader):not(style):not(script) { position: relative; z-index: 1; }
+#theme-dessau-primary .board { grid-area: board; width: 100%; height: auto; display: block; }
+#theme-dessau-primary .chrome { grid-area: chrome; display: flex; flex-direction: column; gap: 16px; align-self: start; }
+#theme-dessau-primary h2 { margin: 0; font-size: 28px; line-height: 1.1; font-weight: 700; }
+#theme-dessau-primary p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink); }
+#theme-dessau-primary .actions { display: flex; gap: 12px; }
+#theme-dessau-primary .btn {
+  font: inherit; font-weight: 700; font-size: 15px; letter-spacing: inherit;
+  min-height: 44px; min-width: 96px; padding: 0 20px; cursor: pointer;
+  border: 2px solid var(--line); background: transparent; color: var(--ink);
+}
+#theme-dessau-primary .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+#theme-dessau-primary .panel {
+  background: var(--surface); border: 2px solid var(--line);
+  display: grid; grid-template-columns: 1fr 1fr;
+}
+#theme-dessau-primary .panel .cell { padding: 12px 14px; }
+#theme-dessau-primary .panel .cell + .cell { border-left: 2px solid var(--line); }
+#theme-dessau-primary .panel .label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+#theme-dessau-primary .panel .value { display: block; font-size: 24px; font-weight: 700; line-height: 1.2; margin-top: 4px; }
+#theme-dessau-primary .board text { font-family: inherit; font-weight: 700; }
+#theme-dessau-primary .swatches {
+  grid-area: swatches; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0;
+  border: 2px solid var(--line); background: var(--surface);
+}
+#theme-dessau-primary .swatches > div { padding: 8px 6px 8px; }
+#theme-dessau-primary .swatches > div + div { border-left: 2px solid var(--line); }
+#theme-dessau-primary .swatches i { display: block; height: 36px; border: 1.5px solid var(--line); }
+#theme-dessau-primary .swatches small {
+  display: block; margin-top: 6px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px; color: var(--ink); letter-spacing: 0; white-space: nowrap; overflow: hidden;
+}
+@media (max-width: 720px) {
+  #theme-dessau-primary { grid-template-columns: minmax(0, 1fr); grid-template-areas: "board" "chrome" "swatches"; padding: 16px; }
+  #theme-dessau-primary .swatches { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #theme-dessau-primary .swatches > div + div { border-left: 0; }
+  #theme-dessau-primary .swatches > div { border-top: 2px solid var(--line); border-right: 2px solid var(--line); }
+  #theme-dessau-primary .swatches > div:nth-child(-n+4) { border-top: 0; }
+  #theme-dessau-primary .swatches > div:nth-child(4n) { border-right: 0; }
+}
+</style>
+
+<canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="top-left" data-pointer-idle="center" data-still="17"></canvas>
+<script type="x-shader/x-fragment" id="frag-dessau-primary">
+precision mediump float;
+
+uniform float u_time;
+uniform vec2  u_resolution;
+uniform vec2  u_pointer;
+uniform vec3  u_c1; // red
+uniform vec3  u_c2; // blue
+uniform vec3  u_c3; // yellow
+
+const float TAU = 6.28318530718;
+const vec3  PAGE = vec3(0.937, 0.922, 0.882); // #EFEBE1
+
+float sdCircle(vec2 p, float r) {
+  return length(p) - r;
+}
+
+float sdBox(vec2 p, vec2 b) {
+  vec2 d = abs(p) - b;
+  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+mat2 rot(float a) {
+  float c = cos(a), s = sin(a);
+  return mat2(c, -s, s, c);
+}
+
+// Slow lissajous drift: two incommensurate periods, amplitude in viewport units.
+vec2 drift(float t, float p1, float p2, float phase, vec2 amp) {
+  return amp * vec2(sin(t * TAU / p1 + phase), cos(t * TAU / p2 - phase * 0.5));
+}
+
+// Pointer nudge: at most 1% of the viewport, toward the pointer.
+vec2 nudge(vec2 c, vec2 ptr, float on, float aspect) {
+  vec2 d = ptr - c;
+  float len = max(length(d), 1e-4);
+  return on * 0.01 * vec2(aspect, 1.0) * (d / len);
+}
+
+float fill(float sd, float px) {
+  return 1.0 - smoothstep(-px, px, sd);
+}
+
+void main() {
+  vec2  res    = u_resolution;
+  float aspect = res.x / res.y;
+  vec2  uv     = (gl_FragCoord.xy - 0.5 * res) / res.y;
+  vec2  ptr    = (vec2(u_pointer.x, res.y - u_pointer.y) - 0.5 * res) / res.y;
+  float px     = 1.5 / res.y;
+  float t      = u_time;
+  vec2  amp    = 0.04 * vec2(aspect, 1.0);
+
+  // Resting positions of the three primitives.
+  vec2 cC = vec2(-0.30 * aspect,  0.14) + drift(t, 47.0, 61.0, 0.9, amp);
+  vec2 cR = vec2( 0.22 * aspect, -0.10) + drift(t, 53.0, 41.0, 2.1, amp);
+  vec2 cB = vec2( 0.00 * aspect,  0.00) + drift(t, 67.0, 44.0, 4.0, amp);
+
+  // Only the shape nearest the pointer responds.
+  float dC = distance(ptr, cC), dR = distance(ptr, cR), dB = distance(ptr, cB);
+  float nC = step(dC, min(dR, dB));
+  float nR = step(dR, min(dC, dB)) * (1.0 - nC);
+  float nB = 1.0 - nC - nR;
+  cC += nudge(cC, ptr, nC, aspect);
+  cR += nudge(cR, ptr, nR, aspect);
+  cB += nudge(cB, ptr, nB, aspect);
+
+  // Circle (red), rectangle (blue), long rotated bar (yellow).
+  float mC = fill(sdCircle(uv - cC, 0.34), px);
+  float mR = fill(sdBox(uv - cR, vec2(0.46, 0.30)), px);
+  float mB = fill(sdBox(rot(-0.42 + 0.03 * sin(t * TAU / 70.0)) * (uv - cB), vec2(0.95, 0.075)), px);
+
+  // Multiply blend at 12% opacity; overlaps compound into new hues.
+  vec3 col = PAGE;
+  col *= mix(vec3(1.0), u_c1, 0.12 * mC);
+  col *= mix(vec3(1.0), u_c2, 0.12 * mR);
+  col *= mix(vec3(1.0), u_c3, 0.12 * mB);
+
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<svg class="board" viewBox="0 0 600 420" role="img" aria-label="Dessau Primary board sample">
+  <defs>
+    <marker id="dessau-primary-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 L10 5 L0 10 Z" fill="var(--last-move)"/>
+    </marker>
+    <g id="dessau-primary-checker-white">
+      <circle r="18" fill="var(--checker-white)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+    </g>
+    <g id="dessau-primary-checker-black">
+      <circle r="18" fill="var(--checker-black)"/>
+      <circle r="14" fill="none" stroke="var(--checker-black-edge)" stroke-width="1.5"/>
+    </g>
+  </defs>
+
+  <!-- frame and surface -->
+  <rect x="10" y="10" width="580" height="400" fill="var(--board-surface)" stroke="var(--board-frame)" stroke-width="2"/>
+
+  <!-- points: top row (13-24, left to right), bottom row (12-1, left to right) -->
+  <g stroke="var(--line)" stroke-width="1.5" stroke-linejoin="miter">
+    <polygon points="26,26 68,26 47,186" fill="var(--point-a)"/>
+    <polygon points="68,26 110,26 89,186" fill="var(--point-b)"/>
+    <polygon points="110,26 152,26 131,186" fill="var(--point-a)"/>
+    <polygon points="152,26 194,26 173,186" fill="var(--point-b)"/>
+    <polygon points="194,26 236,26 215,186" fill="var(--point-a)"/>
+    <polygon points="236,26 278,26 257,186" fill="var(--point-b)"/>
+    <polygon points="288,26 330,26 309,186" fill="var(--point-a)"/>
+    <polygon points="330,26 372,26 351,186" fill="var(--point-b)"/>
+    <polygon points="372,26 414,26 393,186" fill="var(--point-a)"/>
+    <polygon points="414,26 456,26 435,186" fill="var(--point-b)"/>
+    <polygon points="456,26 498,26 477,186" fill="var(--point-a)"/>
+    <polygon points="498,26 540,26 519,186" fill="var(--point-b)"/>
+
+    <polygon points="26,394 68,394 47,234" fill="var(--point-b)"/>
+    <polygon points="68,394 110,394 89,234" fill="var(--point-a)"/>
+    <polygon points="110,394 152,394 131,234" fill="var(--point-b)"/>
+    <polygon points="152,394 194,394 173,234" fill="var(--point-a)"/>
+    <polygon points="194,394 236,394 215,234" fill="var(--point-b)"/>
+    <polygon points="236,394 278,394 257,234" fill="var(--point-a)"/>
+    <polygon points="288,394 330,394 309,234" fill="var(--point-b)"/>
+    <polygon points="330,394 372,394 351,234" fill="var(--point-a)"/>
+    <polygon points="372,394 414,394 393,234" fill="var(--point-b)"/>
+    <polygon points="414,394 456,394 435,234" fill="var(--point-a)"/>
+    <polygon points="456,394 498,394 477,234" fill="var(--point-b)"/>
+    <polygon points="498,394 540,394 519,234" fill="var(--point-a)"/>
+  </g>
+
+  <!-- bar and bear-off trays -->
+  <rect x="278" y="10" width="10" height="400" fill="var(--bar)"/>
+  <rect x="548" y="26" width="36" height="174" fill="var(--board-frame)"/>
+  <rect x="548" y="220" width="36" height="174" fill="var(--board-frame)"/>
+
+  <!-- point numbers -->
+  <g fill="var(--ink)" font-size="12" text-anchor="middle">
+    <text x="47" y="21">13</text>
+    <text x="519" y="21">24</text>
+    <text x="519" y="405">1</text>
+  </g>
+
+  <!-- last-move arrow: 12-point to 9-point -->
+  <line x1="68" y1="300" x2="166" y2="300" stroke="var(--last-move)" stroke-width="3" marker-end="url(#dessau-primary-arrowhead)"/>
+
+  <!-- legal-move ring on the 9-point -->
+  <circle cx="173" cy="340" r="18" fill="none" stroke="var(--highlight)" stroke-width="3"/>
+  <circle cx="173" cy="340" r="16" fill="none" stroke="var(--checker-white)" stroke-width="1"/>
+
+  <!-- checkers -->
+  <use href="#dessau-primary-checker-white" x="47" y="44"/>
+  <use href="#dessau-primary-checker-white" x="47" y="80"/>
+
+  <use href="#dessau-primary-checker-black" x="519" y="44"/>
+  <use href="#dessau-primary-checker-black" x="519" y="80"/>
+  <use href="#dessau-primary-checker-black" x="519" y="116"/>
+  <use href="#dessau-primary-checker-black" x="519" y="152"/>
+  <use href="#dessau-primary-checker-black" x="519" y="188"/>
+  <rect x="511" y="180" width="16" height="16" fill="var(--accent)"/>
+  <text x="519" y="192.5" font-size="12" fill="var(--accent-ink)" text-anchor="middle">7</text>
+
+  <use href="#dessau-primary-checker-black" x="47" y="376"/>
+  <use href="#dessau-primary-checker-black" x="47" y="340"/>
+
+  <use href="#dessau-primary-checker-white" x="519" y="376"/>
+  <use href="#dessau-primary-checker-white" x="519" y="340"/>
+  <use href="#dessau-primary-checker-white" x="519" y="304"/>
+  <use href="#dessau-primary-checker-white" x="519" y="268"/>
+  <use href="#dessau-primary-checker-white" x="519" y="232"/>
+  <!-- selected: 3px red outer ring -->
+  <circle cx="519" cy="232" r="21.5" fill="none" stroke="var(--accent)" stroke-width="3"/>
+
+  <!-- doubling cube at 64 -->
+  <rect x="134" y="192" width="36" height="36" fill="var(--cube)"/>
+  <text x="152" y="215" font-size="14" fill="var(--cube-text)" text-anchor="middle">64</text>
+
+  <!-- dice: 6 and 3 -->
+  <g>
+    <rect x="372" y="193" width="34" height="34" fill="var(--dice)" stroke="var(--line)" stroke-width="1.5"/>
+    <g fill="var(--pips)">
+      <circle cx="381" cy="202" r="3"/><circle cx="397" cy="202" r="3"/>
+      <circle cx="381" cy="210" r="3"/><circle cx="397" cy="210" r="3"/>
+      <circle cx="381" cy="218" r="3"/><circle cx="397" cy="218" r="3"/>
+    </g>
+    <rect x="420" y="193" width="34" height="34" fill="var(--dice)" stroke="var(--line)" stroke-width="1.5"/>
+    <g fill="var(--pips)">
+      <circle cx="429" cy="202" r="3"/><circle cx="437" cy="210" r="3"/><circle cx="445" cy="218" r="3"/>
+    </g>
+  </g>
+</svg>
+
+<div class="chrome">
+  <h2>Dessau Primary</h2>
+  <p>White field, black rules, primary colour used as material. Flat board, square dice, hard shadows.</p>
+  <div class="actions">
+    <button class="btn primary" type="button">Roll</button>
+    <button class="btn" type="button">Undo</button>
+  </div>
+  <div class="panel">
+    <div class="cell"><span class="label">Pips</span><span class="value">167</span></div>
+    <div class="cell"><span class="label">Equity</span><span class="value">+0.142</span></div>
+  </div>
+</div>
+
+<div class="swatches">
+  <div><i style="background:#EFEBE1"></i><small>#EFEBE1</small></div>
+  <div><i style="background:#F7F4EC"></i><small>#F7F4EC</small></div>
+  <div><i style="background:#E3DED1"></i><small>#E3DED1</small></div>
+  <div><i style="background:#161616"></i><small>#161616</small></div>
+  <div><i style="background:#5A5751"></i><small>#5A5751</small></div>
+  <div><i style="background:#D32F2F"></i><small>#D32F2F</small></div>
+  <div><i style="background:#1E4FA3"></i><small>#1E4FA3</small></div>
+  <div><i style="background:#F2C230"></i><small>#F2C230</small></div>
+  <div><i style="background:#FFFFFF"></i><small>#FFFFFF</small></div>
+  <div><i style="background:#161616"></i><small>#161616</small></div>
+  <div><i style="background:#D32F2F"></i><small>#D32F2F</small></div>
+  <div><i style="background:#D32F2F"></i><small>#D32F2F</small></div>
+</div>
+
+</section>

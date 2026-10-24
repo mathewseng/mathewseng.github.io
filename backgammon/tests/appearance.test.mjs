@@ -98,6 +98,7 @@ test("legacy settings, invalid persisted colors and a storage failure do not cor
   try {
     const { settings, saveSettings, PREFIX } =
       await import("../core/storage.mjs");
+    const { DEFAULT_SKIN_BOARD_THEME } = await import("../skins/index.mjs");
     memory.set(
       PREFIX + "settings",
       JSON.stringify({
@@ -107,7 +108,7 @@ test("legacy settings, invalid persisted colors and a storage failure do not cor
         preset: "standard",
       }),
     );
-    assert.equal(settings().boardTheme.preset, "slate");
+    assert.equal(settings().boardTheme.preset, DEFAULT_SKIN_BOARD_THEME.preset);
     saveSettings({
       boardTheme: {
         version: 1,
@@ -120,11 +121,11 @@ test("legacy settings, invalid persisted colors and a storage failure do not cor
     assert.equal(settings().numbers, false);
     assert.deepEqual(settings().boardTheme.colors, { frame: "#AABBCC" });
     memory.set(PREFIX + "settings", "malformed json");
-    assert.equal(settings().boardTheme.preset, "slate");
+    assert.equal(settings().boardTheme.preset, DEFAULT_SKIN_BOARD_THEME.preset);
     globalThis.localStorage.getItem = () => {
       throw new Error("Denied");
     };
-    assert.equal(settings().boardTheme.preset, "slate");
+    assert.equal(settings().boardTheme.preset, DEFAULT_SKIN_BOARD_THEME.preset);
   } finally {
     if (previous === undefined) delete globalThis.localStorage;
     else globalThis.localStorage = previous;

@@ -1,0 +1,404 @@
+<section class="theme" id="theme-carrara-verde" data-theme="carrara-verde">
+<style>
+#theme-carrara-verde {
+  --page: #ece9e3;
+  --shader-1: #f1eee8;
+  --shader-2: #e4e0d8;
+  --shader-3: #4b7a67;
+  --surface: #f7f5f1;
+  --surface-2: #e4e0d8;
+  --line: #cfc9bf;
+  --edge: #d8d3ca;
+  --ink: #1d1f24;
+  --muted: #5a5e66;
+  --accent: #2f5a4a;
+  --accent-ink: #f3f6f2;
+  --danger: #8c2f2a;
+  --board-frame: #b7b1a7;
+  --board-surface: #efece6;
+  --point-a: #8d8f93;
+  --point-b: #2f5a4a;
+  --bar: #3a3c40;
+  --checker-white: #fbfaf6;
+  --checker-white-edge: #d2cdc2;
+  --checker-black: #15171c;
+  --checker-black-edge: #3b3e46;
+  --dice: #15171c;
+  --pips: #f7f5f1;
+  --cube: #c9a24d;
+  --cube-edge: #8c6f2c;
+  --cube-text: #1d1f24;
+  --highlight: #c25a12;
+  --last-move: #b0392f;
+  font-family: Optima, "Gill Sans", "Gill Sans Nova", Candara, "Trebuchet MS", sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: var(--ink);
+  background: var(--page);
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+#theme-carrara-verde *, #theme-carrara-verde *::before, #theme-carrara-verde *::after { box-sizing: border-box; }
+#theme-carrara-verde .shader {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: block; z-index: 0; pointer-events: none;
+}
+#theme-carrara-verde .tile {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+#theme-carrara-verde .board { width: 100%; height: auto; display: block; }
+#theme-carrara-verde h2 {
+  margin: 0 0 12px; font-weight: 500; font-size: 28px; line-height: 1.15; letter-spacing: 0;
+}
+#theme-carrara-verde p { margin: 0 0 20px; color: var(--ink); max-width: 36ch; }
+#theme-carrara-verde .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+#theme-carrara-verde .btn {
+  font: inherit; font-weight: 500; min-height: 44px; min-width: 44px; padding: 0 18px;
+  border-radius: 4px; border: 1px solid transparent; cursor: pointer; box-shadow: none;
+}
+#theme-carrara-verde .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+#theme-carrara-verde .btn-ghost { background: transparent; color: var(--ink); border-color: var(--point-a); }
+#theme-carrara-verde .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+#theme-carrara-verde .panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom: 2px solid var(--edge);
+  border-radius: 4px;
+  padding: 14px 16px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+#theme-carrara-verde .panel dl { margin: 0; }
+#theme-carrara-verde .panel dt { color: var(--muted); font-size: 13px; margin-bottom: 2px; }
+#theme-carrara-verde .panel dd { margin: 0; font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums lining-nums; }
+#theme-carrara-verde .swatches {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px;
+  margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line);
+}
+#theme-carrara-verde .swatch { display: grid; gap: 4px; }
+#theme-carrara-verde .swatch i { display: block; height: 32px; border-radius: 4px; border: 1px solid var(--line); }
+#theme-carrara-verde .swatch span { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#theme-carrara-verde .swatch b { font-weight: 500; color: var(--ink); font-size: 12px; display: block; }
+#theme-carrara-verde .board text { font-family: inherit; }
+@media (max-width: 720px) {
+  #theme-carrara-verde .tile { grid-template-columns: 1fr; }
+}
+</style>
+
+<canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="bottom-left" data-pointer-idle="center" data-still="0"></canvas>
+<script type="x-shader/x-fragment" id="frag-carrara-verde">
+precision mediump float;
+
+uniform float u_time;        // seconds
+uniform vec2  u_resolution;  // px
+uniform vec2  u_pointer;     // px, bottom-left origin, already lerped at 20% by the host
+uniform vec3  u_c1;          // light carrara  #f1eee8
+uniform vec3  u_c2;          // shaded carrara #e4e0d8
+uniform vec3  u_c3;          // verde alpi      #4b7a67
+
+// --- textbook value noise -------------------------------------------------
+float hash(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+// 3-octave fbm, enough for cloudy stone
+float fbm(vec2 p) {
+  float v = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 3; i++) {
+    v += amp * vnoise(p);
+    p = p * 2.03 + vec2(1.7, 9.2);
+    amp *= 0.5;
+  }
+  return v;
+}
+
+float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+
+  // --- marble: domain-warped fbm, folded into thin veins -----------------
+  vec2 p = uv * vec2(aspect, 1.0) * 1.6;
+  vec2 q = p + 0.4 * vec2(fbm(p + 1.7), fbm(p + 9.2));
+  float v = fbm(q * 2.0 + vec2(0.0, u_time * 0.004));
+  float veins = pow(1.0 - abs(sin(v * 6.28318 * 1.5)), 10.0);
+
+  // cloudy tonal variation of the honed slab
+  vec3 base = mix(u_c1, u_c2, fbm(p * 0.7));
+
+  // grey bardiglio veins
+  vec3 greyVein = vec3(0.655, 0.667, 0.682); // #a7aaae
+  vec3 col = mix(base, greyVein, veins * 0.55);
+
+  // a few veins carry a verde tint
+  float verdeMask = smoothstep(0.58, 0.68, fbm(q * 0.5));
+  col = mix(col, u_c3, veins * verdeMask * 0.25);
+
+  // --- daylight from a tall window, top-left ----------------------------
+  float sway = sin(u_time * 0.05) * 0.00524; // 0.3 degrees in radians
+  vec2 dir = normalize(vec2(-1.0 + sway, 1.0 + sway));
+  vec2 c = (uv - 0.5) * vec2(aspect, 1.0);
+  float reach = 0.5 * length(vec2(aspect, 1.0));
+  float light = clamp(dot(c, dir) / reach, 0.0, 1.0) * 0.03;
+  col += light;
+
+  // --- pointer: polished stone catching the light -----------------------
+  float d = distance(gl_FragCoord.xy, u_pointer);
+  float spec = smoothstep(150.0, 0.0, d);
+  spec = spec * spec * 0.06;
+  col += spec;
+
+  // --- legibility floor: keep luminance >= 0.86 for the ink above ------
+  float l = luma(col);
+  col += max(0.0, 0.86 - l);
+  col = min(col, vec3(1.0));
+
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<div class="tile">
+<svg class="board" viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Carrara Verde board sample">
+  <defs>
+    <filter id="carrara-verde-vein-frame" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.004 0.02" numOctaves="3" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.52  0 0 0 0 0.50  0 0 0 0 0.47  1 0 0 0 0" result="m"/>
+      <feComponentTransfer in="m" result="v"><feFuncA type="table" tableValues="0 0 0 0.05 0.3 0.55"/></feComponentTransfer>
+      <feComposite in="v" in2="SourceGraphic" operator="in" result="vc"/>
+      <feComposite in="vc" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <filter id="carrara-verde-vein-surface" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.004 0.02" numOctaves="3" seed="4" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.604  0 0 0 0 0.612  0 0 0 0 0.627  1 0 0 0 0" result="m"/>
+      <feComponentTransfer in="m" result="v"><feFuncA type="table" tableValues="0 0 0 0 0.12 0.28"/></feComponentTransfer>
+      <feComposite in="v" in2="SourceGraphic" operator="in" result="vc"/>
+      <feComposite in="vc" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <filter id="carrara-verde-vein-grey" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.004 0.02" numOctaves="3" seed="19" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.74  0 0 0 0 0.75  0 0 0 0 0.77  1 0 0 0 0" result="m"/>
+      <feComponentTransfer in="m" result="v"><feFuncA type="table" tableValues="0 0 0 0.05 0.3 0.5"/></feComponentTransfer>
+      <feComposite in="v" in2="SourceGraphic" operator="in" result="vc"/>
+      <feComposite in="vc" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <filter id="carrara-verde-vein-verde" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.004 0.02" numOctaves="3" seed="27" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.294  0 0 0 0 0.478  0 0 0 0 0.404  1 0 0 0 0" result="m"/>
+      <feComponentTransfer in="m" result="v"><feFuncA type="table" tableValues="0 0 0 0.05 0.35 0.6"/></feComponentTransfer>
+      <feComposite in="v" in2="SourceGraphic" operator="in" result="vc"/>
+      <feComposite in="vc" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <filter id="carrara-verde-vein-bar" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.012 0.03" numOctaves="3" seed="33" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1 0 0 0 0" result="m"/>
+      <feComponentTransfer in="m" result="v"><feFuncA type="table" tableValues="0 0 0 0 0.1 0.6"/></feComponentTransfer>
+      <feComposite in="v" in2="SourceGraphic" operator="in" result="vc"/>
+      <feComposite in="vc" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <radialGradient id="carrara-verde-bone" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fdf8ea"/>
+      <stop offset="0.55" stop-color="#fcf9f1"/>
+      <stop offset="1" stop-color="var(--checker-white)"/>
+    </radialGradient>
+    <filter id="carrara-verde-drag" x="-40%" y="-40%" width="180%" height="200%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1d1f24" flood-opacity="0.25"/>
+    </filter>
+    <g id="carrara-verde-onyx">
+      <circle r="19" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="1.5"/>
+      <path d="M -12.5 -8.5 A 15 15 0 0 1 -8.5 -12.5" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="1" stroke-linecap="round"/>
+    </g>
+    <g id="carrara-verde-bone-checker">
+      <circle r="19" fill="url(#carrara-verde-bone)" stroke="var(--checker-white-edge)" stroke-width="1.5"/>
+    </g>
+  </defs>
+
+  <!-- frame: bardiglio -->
+  <rect x="0" y="0" width="600" height="420" fill="var(--board-frame)" filter="url(#carrara-verde-vein-frame)"/>
+  <rect x="0.5" y="0.5" width="599" height="419" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="1"/>
+
+  <!-- surface: carrara -->
+  <rect x="24" y="24" width="552" height="372" fill="var(--board-surface)" filter="url(#carrara-verde-vein-surface)"/>
+  <rect x="24.5" y="24.5" width="551" height="371" fill="none" stroke="var(--line)" stroke-width="1"/>
+
+  <!-- points: inlaid, sharp tips, 0.5px seam -->
+  <g filter="url(#carrara-verde-vein-grey)">
+    <g fill="var(--point-a)">
+      <polygon points="24,24 66,24 45,184"/>
+      <polygon points="108,24 150,24 129,184"/>
+      <polygon points="192,24 234,24 213,184"/>
+      <polygon points="324,24 366,24 345,184"/>
+      <polygon points="408,24 450,24 429,184"/>
+      <polygon points="492,24 534,24 513,184"/>
+      <polygon points="66,396 108,396 87,236"/>
+      <polygon points="150,396 192,396 171,236"/>
+      <polygon points="234,396 276,396 255,236"/>
+      <polygon points="366,396 408,396 387,236"/>
+      <polygon points="450,396 492,396 471,236"/>
+      <polygon points="534,396 576,396 555,236"/>
+    </g>
+  </g>
+  <g filter="url(#carrara-verde-vein-verde)">
+    <g fill="var(--point-b)">
+      <polygon points="66,24 108,24 87,184"/>
+      <polygon points="150,24 192,24 171,184"/>
+      <polygon points="234,24 276,24 255,184"/>
+      <polygon points="366,24 408,24 387,184"/>
+      <polygon points="450,24 492,24 471,184"/>
+      <polygon points="534,24 576,24 555,184"/>
+      <polygon points="24,396 66,396 45,236"/>
+      <polygon points="108,396 150,396 129,236"/>
+      <polygon points="192,396 234,396 213,236"/>
+      <polygon points="324,396 366,396 345,236"/>
+      <polygon points="408,396 450,396 429,236"/>
+      <polygon points="492,396 534,396 513,236"/>
+    </g>
+  </g>
+  <g fill="none" stroke="var(--line)" stroke-width="0.5">
+    <polygon points="24,24 66,24 45,184"/><polygon points="66,24 108,24 87,184"/><polygon points="108,24 150,24 129,184"/>
+    <polygon points="150,24 192,24 171,184"/><polygon points="192,24 234,24 213,184"/><polygon points="234,24 276,24 255,184"/>
+    <polygon points="324,24 366,24 345,184"/><polygon points="366,24 408,24 387,184"/><polygon points="408,24 450,24 429,184"/>
+    <polygon points="450,24 492,24 471,184"/><polygon points="492,24 534,24 513,184"/><polygon points="534,24 576,24 555,184"/>
+    <polygon points="24,396 66,396 45,236"/><polygon points="66,396 108,396 87,236"/><polygon points="108,396 150,396 129,236"/>
+    <polygon points="150,396 192,396 171,236"/><polygon points="192,396 234,396 213,236"/><polygon points="234,396 276,396 255,236"/>
+    <polygon points="324,396 366,396 345,236"/><polygon points="366,396 408,396 387,236"/><polygon points="408,396 450,396 429,236"/>
+    <polygon points="450,396 492,396 471,236"/><polygon points="492,396 534,396 513,236"/><polygon points="534,396 576,396 555,236"/>
+  </g>
+
+  <!-- bar: nero marquina -->
+  <rect x="276" y="24" width="48" height="372" fill="var(--bar)" filter="url(#carrara-verde-vein-bar)"/>
+  <rect x="276.5" y="24.5" width="47" height="371" fill="none" stroke="var(--line)" stroke-width="1"/>
+
+  <!-- point numbers -->
+  <g fill="var(--muted)" font-size="12" text-anchor="middle">
+    <text x="555" y="411">1</text>
+    <text x="345" y="411">6</text>
+    <text x="45" y="411">12</text>
+  </g>
+
+  <!-- last-move arrow: 24 -> 21 -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 555 128 Q 492 54 440 118" stroke="#fff" stroke-width="4"/>
+    <path d="M 555 128 Q 492 54 440 118" stroke="var(--last-move)" stroke-width="2"/>
+    <polygon points="429,130 443,110 450,124" fill="var(--last-move)" stroke="#fff" stroke-width="1"/>
+  </g>
+
+  <!-- onyx stack, point 13 (top-left), seven deep -->
+  <g>
+    <use href="#carrara-verde-onyx" x="45" y="45"/>
+    <use href="#carrara-verde-onyx" x="45" y="82"/>
+    <use href="#carrara-verde-onyx" x="45" y="119"/>
+    <use href="#carrara-verde-onyx" x="45" y="156"/>
+    <use href="#carrara-verde-onyx" x="45" y="193"/>
+    <circle cx="45" cy="193" r="9" fill="var(--checker-white)"/>
+    <text x="45" y="197.3" font-size="12" font-weight="500" text-anchor="middle" fill="var(--checker-black)">7</text>
+  </g>
+
+  <!-- bone pair, point 24 (top-right) -->
+  <g>
+    <use href="#carrara-verde-bone-checker" x="555" y="45"/>
+    <use href="#carrara-verde-bone-checker" x="555" y="82"/>
+  </g>
+
+  <!-- onyx stack, point 6 (bottom, right of bar) -->
+  <g>
+    <use href="#carrara-verde-onyx" x="345" y="375"/>
+    <use href="#carrara-verde-onyx" x="345" y="338"/>
+    <use href="#carrara-verde-onyx" x="345" y="301"/>
+    <use href="#carrara-verde-onyx" x="345" y="264"/>
+  </g>
+
+  <!-- bone stack, point 7 (bottom, left of bar); top checker selected -->
+  <g>
+    <use href="#carrara-verde-bone-checker" x="255" y="375"/>
+    <use href="#carrara-verde-bone-checker" x="255" y="338"/>
+    <g filter="url(#carrara-verde-drag)">
+      <use href="#carrara-verde-bone-checker" x="255" y="301"/>
+    </g>
+    <circle cx="255" cy="301" r="21.5" fill="none" stroke="#fff" stroke-width="5"/>
+    <circle cx="255" cy="301" r="21.5" fill="none" stroke="var(--highlight)" stroke-width="3"/>
+  </g>
+
+  <!-- legal-move ring on point 4 -->
+  <circle cx="429" cy="375" r="19" fill="none" stroke="#fff" stroke-width="4.5"/>
+  <circle cx="429" cy="375" r="19" fill="none" stroke="var(--highlight)" stroke-width="2.5"/>
+
+  <!-- dice: 6 and 3 -->
+  <g>
+    <rect x="392" y="190" width="40" height="40" rx="6.4" fill="var(--dice)"/>
+    <g fill="var(--pips)">
+      <circle cx="402" cy="200" r="3.4"/><circle cx="402" cy="210" r="3.4"/><circle cx="402" cy="220" r="3.4"/>
+      <circle cx="422" cy="200" r="3.4"/><circle cx="422" cy="210" r="3.4"/><circle cx="422" cy="220" r="3.4"/>
+    </g>
+    <g fill="none" stroke="#000" stroke-opacity="0.35" stroke-width="0.6">
+      <circle cx="402" cy="200" r="3.7"/><circle cx="402" cy="210" r="3.7"/><circle cx="402" cy="220" r="3.7"/>
+      <circle cx="422" cy="200" r="3.7"/><circle cx="422" cy="210" r="3.7"/><circle cx="422" cy="220" r="3.7"/>
+    </g>
+    <rect x="448" y="190" width="40" height="40" rx="6.4" fill="var(--dice)"/>
+    <g fill="var(--pips)">
+      <circle cx="458" cy="200" r="3.4"/><circle cx="468" cy="210" r="3.4"/><circle cx="478" cy="220" r="3.4"/>
+    </g>
+    <g fill="none" stroke="#000" stroke-opacity="0.35" stroke-width="0.6">
+      <circle cx="458" cy="200" r="3.7"/><circle cx="468" cy="210" r="3.7"/><circle cx="478" cy="220" r="3.7"/>
+    </g>
+  </g>
+
+  <!-- doubling cube: gold leaf, 64 -->
+  <g>
+    <rect x="132.5" y="192.5" width="35" height="35" rx="3" fill="var(--cube)" stroke="var(--cube-edge)" stroke-width="1"/>
+    <text x="150" y="216" font-size="16" font-weight="500" text-anchor="middle" fill="var(--cube-text)" style="font-variant-numeric: tabular-nums">64</text>
+  </g>
+</svg>
+
+<div class="chrome">
+  <h2>Carrara Verde</h2>
+  <p>Honed marble, inlaid Verde Alpi, onyx and bone, lit from a tall north window.</p>
+  <div class="actions">
+    <button class="btn btn-primary" type="button">New game</button>
+    <button class="btn btn-ghost" type="button">Analyse</button>
+  </div>
+  <div class="panel">
+    <dl><dt>Pip count</dt><dd>167</dd></dl>
+    <dl><dt>Equity</dt><dd>+0.12</dd></dl>
+  </div>
+</div>
+</div>
+
+<div class="swatches">
+  <div class="swatch"><i style="background:#ece9e3"></i><b>Page</b><span>#ece9e3</span></div>
+  <div class="swatch"><i style="background:#f7f5f1"></i><b>Surface</b><span>#f7f5f1</span></div>
+  <div class="swatch"><i style="background:#1d1f24"></i><b>Ink</b><span>#1d1f24</span></div>
+  <div class="swatch"><i style="background:#2f5a4a"></i><b>Verde</b><span>#2f5a4a</span></div>
+  <div class="swatch"><i style="background:#b7b1a7"></i><b>Frame</b><span>#b7b1a7</span></div>
+  <div class="swatch"><i style="background:#8d8f93"></i><b>Bardiglio</b><span>#8d8f93</span></div>
+  <div class="swatch"><i style="background:#efece6"></i><b>Carrara</b><span>#efece6</span></div>
+  <div class="swatch"><i style="background:#3a3c40"></i><b>Nero</b><span>#3a3c40</span></div>
+  <div class="swatch"><i style="background:#15171c"></i><b>Onyx</b><span>#15171c</span></div>
+  <div class="swatch"><i style="background:#c9a24d"></i><b>Gold</b><span>#c9a24d</span></div>
+  <div class="swatch"><i style="background:#c25a12"></i><b>Highlight</b><span>#c25a12</span></div>
+  <div class="swatch"><i style="background:#b0392f"></i><b>Last move</b><span>#b0392f</span></div>
+</div>
+
+</section>

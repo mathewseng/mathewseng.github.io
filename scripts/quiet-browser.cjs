@@ -32,8 +32,10 @@ function muteRealtimeAudio() {
 async function launchQuietBrowser(type, options = {}) {
   const name = type.name();
   const launch = { ...options, headless: options.headless ?? true };
+  // Headless Chromium has no GPU: the SwiftShader flag keeps WebGL available
+  // for the Backgammon skin shaders (software renderer, detected by the layer).
   if (name === "chromium")
-    launch.args = [...new Set([...(options.args || []), "--mute-audio"])];
+    launch.args = [...new Set([...(options.args || []), "--mute-audio", "--enable-unsafe-swiftshader"])];
   if (name === "firefox")
     launch.firefoxUserPrefs = {
       ...options.firefoxUserPrefs,

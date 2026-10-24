@@ -87,7 +87,7 @@ export function releaseStatus() {
     role: "status",
     class: "muted small",
   });
-  const check = node("button", "Check for updates", { type: "button" });
+  const check = node("button", "Check for updates", { type: "button", class: "btn btn--ghost" });
   const refresh = node("a", "Refresh app", {
     href: "/backgammon/refresh/",
   });

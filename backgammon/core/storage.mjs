@@ -5,6 +5,7 @@ import { DEFAULT_SOUND, normalizeSound } from "./sound.mjs";
 import { mergeEvaluations } from "./decision-history.mjs";
 import { validateTakebacks } from "./table.mjs";
 import { normalizeShortcuts, DEFAULT_SHORTCUTS } from "./shortcuts.mjs";
+import { DEFAULT_SKIN, DEFAULT_SKIN_BOARD_THEME, SKIN_IDS } from "../skins/index.mjs";
 export const PREFIX = "backgammon.v1.";
 export const MAX_BACKUP = 8 * 1024 * 1024;
 export const settingsDefaults = {
@@ -20,9 +21,27 @@ export const settingsDefaults = {
   moveFeedback: true,
   equityBar: true,
   analysisAhead: true,
-  boardTheme: DEFAULT_BOARD_THEME,
+  boardTheme: DEFAULT_SKIN_BOARD_THEME,
+  skin: DEFAULT_SKIN,
   sound: DEFAULT_SOUND,
 };
+// The skin id is an allow-list: unknown or missing values mean the default.
+export function normalizeSkin(value) {
+  return SKIN_IDS.includes(value) ? value : DEFAULT_SKIN;
+}
+// Settings saved before skins existed carry no skin and, unless the board was
+// customised, the house slate palette. Those boards follow the default skin;
+// a customised board (another preset, colours or patterns) is kept as is.
+function migrateBoardTheme(saved) {
+  if (saved?.skin !== undefined) return saved.boardTheme;
+  if (saved?.boardTheme === undefined) return DEFAULT_SKIN_BOARD_THEME;
+  const theme = normalizeBoardTheme(saved.boardTheme);
+  const untouched =
+    theme.preset === DEFAULT_BOARD_THEME.preset &&
+    Object.keys(theme.colors || {}).length === 0 &&
+    !theme.patterns;
+  return untouched ? DEFAULT_SKIN_BOARD_THEME : saved.boardTheme;
+}
 let settingsText, normalizedSettings;
 export function settings() {
   try {
@@ -34,7 +53,8 @@ export function settings() {
     const normalized = {
       ...settingsDefaults,
       ...saved,
-      boardTheme: normalizeBoardTheme(saved?.boardTheme),
+      boardTheme: normalizeBoardTheme(migrateBoardTheme(saved)),
+      skin: normalizeSkin(saved?.skin),
       shortcuts: normalizeShortcuts(saved?.shortcuts),
       keyboardEnabled: saved?.keyboardEnabled !== false,
       equityBar: saved?.equityBar !== false,
@@ -54,6 +74,7 @@ export function settings() {
 export function saveSettings(value) {
   const next = { ...settings(), ...value };
   next.boardTheme = normalizeBoardTheme(next.boardTheme);
+  next.skin = normalizeSkin(next.skin);
   next.shortcuts = normalizeShortcuts(next.shortcuts);
   next.sound = normalizeSound(next.sound);
   localStorage.setItem(PREFIX + "settings", JSON.stringify(next));

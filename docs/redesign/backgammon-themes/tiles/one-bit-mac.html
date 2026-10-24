@@ -1,0 +1,397 @@
+<section class="theme" id="theme-one-bit-mac" data-theme="one-bit-mac">
+<style>
+#theme-one-bit-mac {
+  --page: #f4f4f0;
+  --shader-1: #f4f4f0;
+  --shader-2: #111111;
+  --shader-3: #111111;
+  --surface: #ffffff;
+  --surface-2: #ececea;
+  --line: #111111;
+  --ink: #111111;
+  --muted: #4a4a4a;
+  --accent: #111111;
+  --accent-ink: #ffffff;
+  --board-frame: #111111;
+  --board-surface: #ffffff;
+  --point-a: #d9d9d9;
+  --point-b: #7a7a7a;
+  --bar: #111111;
+  --checker-white: #ffffff;
+  --checker-white-edge: #111111;
+  --checker-black: #111111;
+  --checker-black-edge: #ffffff;
+  --dice: #ffffff;
+  --pips: #111111;
+  --cube: #111111;
+  --cube-text: #ffffff;
+  --highlight: #111111;
+  --last-move: #111111;
+  font-family: 'Chicago', 'Charcoal', 'Geneva', ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--ink);
+  background: var(--page);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  grid-template-areas: "board chrome" "swatches swatches";
+  gap: 24px;
+  border: 1px solid var(--line);
+}
+#theme-one-bit-mac *, #theme-one-bit-mac *::before, #theme-one-bit-mac *::after { box-sizing: border-box; }
+#theme-one-bit-mac > .shader {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: block; z-index: 0; image-rendering: pixelated;
+}
+#theme-one-bit-mac > :not(.shader) { position: relative; z-index: 1; }
+#theme-one-bit-mac .board { grid-area: board; }
+#theme-one-bit-mac .board svg {
+  display: block; width: 100%; height: auto;
+  shape-rendering: crispEdges;
+  background: var(--board-surface);
+  box-shadow: 2px 2px 0 var(--line);
+}
+#theme-one-bit-mac .board text { shape-rendering: auto; }
+#theme-one-bit-mac .board circle, #theme-one-bit-mac .board .round { shape-rendering: geometricPrecision; }
+#theme-one-bit-mac .ants {
+  stroke-dasharray: 4 4;
+  animation: one-bit-mac-march 1s linear infinite;
+}
+@keyframes one-bit-mac-march { to { stroke-dashoffset: -8; } }
+@media (prefers-reduced-motion: reduce) { #theme-one-bit-mac .ants { animation: none; } }
+
+#theme-one-bit-mac .chrome { grid-area: chrome; display: flex; flex-direction: column; gap: 12px; }
+#theme-one-bit-mac h2 {
+  margin: 0; font-size: 22px; font-weight: 700; line-height: 1.1;
+  -webkit-font-smoothing: none;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+#theme-one-bit-mac h2, #theme-one-bit-mac p {
+  background: var(--page); padding-left: 2px; padding-right: 2px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+#theme-one-bit-mac p { margin: 0; color: var(--muted); }
+#theme-one-bit-mac .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+#theme-one-bit-mac .btn {
+  font: inherit; font-weight: 700; min-height: 44px; min-width: 44px;
+  padding: 0 16px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line);
+  -webkit-font-smoothing: none;
+}
+#theme-one-bit-mac .btn.primary { background: var(--accent); color: var(--accent-ink); }
+#theme-one-bit-mac .btn.primary:hover { box-shadow: inset 0 0 0 1px var(--accent-ink); }
+#theme-one-bit-mac .btn.ghost { background: var(--surface); color: var(--ink); }
+#theme-one-bit-mac .btn.ghost:hover { background: var(--ink); color: var(--surface); }
+#theme-one-bit-mac .panel {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 0;
+  box-shadow: 2px 2px 0 var(--line); padding: 10px 12px;
+  display: grid; grid-template-columns: 1fr auto; row-gap: 6px; column-gap: 12px;
+}
+#theme-one-bit-mac .panel dt { color: var(--muted); margin: 0; }
+#theme-one-bit-mac .panel dd { margin: 0; font-weight: 700; text-align: right; -webkit-font-smoothing: none; }
+#theme-one-bit-mac .equity {
+  grid-column: 1 / -1; height: 6px; border: 1px solid var(--line);
+  background: repeating-conic-gradient(var(--ink) 0 25%, transparent 0 100%) 0 0 / 4px 4px;
+  background-color: var(--surface);
+}
+#theme-one-bit-mac .equity i { display: block; height: 100%; width: 58%; background: var(--ink); }
+
+#theme-one-bit-mac .swatches {
+  grid-area: swatches; display: grid; gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+}
+#theme-one-bit-mac .swatches figure {
+  margin: 0; border: 1px solid var(--line); background: var(--surface);
+  box-shadow: 2px 2px 0 var(--line);
+}
+#theme-one-bit-mac .swatches i { display: block; height: 36px; border-bottom: 1px solid var(--line); }
+#theme-one-bit-mac .swatches figcaption {
+  font-size: 12px; padding: 4px 6px; line-height: 1.3;
+  font-family: ui-monospace, Menlo, Monaco, monospace;
+}
+#theme-one-bit-mac .swatches figcaption b { display: block; font-weight: 700; font-family: inherit; }
+@media (max-width: 720px) {
+  #theme-one-bit-mac { grid-template-columns: 1fr; grid-template-areas: "board" "chrome" "swatches"; padding: 16px; }
+}
+</style>
+
+<canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="top-left" data-pointer-idle="center" data-still="0"></canvas>
+<script type="x-shader/x-fragment" id="frag-one-bit-mac">
+precision mediump float;
+
+uniform float u_time;
+uniform vec2  u_resolution;
+uniform vec2  u_pointer;
+uniform vec3  u_c1; // paper  #f4f4f0
+uniform vec3  u_c2; // ink    #111111
+uniform vec3  u_c3; // unused here: binary output only
+
+// 2x2 Bayer cell: [[0,2],[3,1]] expressed without arrays.
+float bayer2(vec2 p) {
+  float x = mod(p.x, 2.0);
+  float y = mod(p.y, 2.0);
+  float x_xor_y = mod(x + y, 2.0);
+  return 2.0 * x_xor_y + y;
+}
+
+// 4x4 Bayer threshold via the recursive bit-interleave form:
+// M4(x,y) = 4 * M2(x mod 2, y mod 2) + M2(x / 2, y / 2). Returns 0..15.
+float bayer4(vec2 p) {
+  vec2 lo = mod(p, 2.0);
+  vec2 hi = floor(mod(p, 4.0) / 2.0);
+  return 4.0 * bayer2(lo) + bayer2(hi);
+}
+
+// One drifting blob: 0..1, soft ring falloff from its centre.
+float blob(vec2 uv, vec2 c, float k, float t) {
+  float d = distance(uv, c);
+  return 0.5 + 0.5 * sin(d * k - t * 0.3);
+}
+
+void main() {
+  vec2 frag = gl_FragCoord.xy;
+  vec2 uv = frag / u_resolution;
+  float aspect = u_resolution.x / max(u_resolution.y, 1.0);
+  vec2 q = vec2(uv.x * aspect, uv.y);
+
+  // Teletext-style page refresh: time advances in discrete steps so the
+  // field redraws in frames rather than shimmering per refresh.
+  float t = floor(u_time * 4.0) / 4.0;
+
+  // Three slow lava-lamp blobs.
+  vec2 c1 = vec2(0.5 * aspect + 0.35 * aspect * sin(t * 0.11), 0.55 + 0.30 * cos(t * 0.07));
+  vec2 c2 = vec2(0.5 * aspect + 0.40 * aspect * cos(t * 0.05), 0.40 + 0.35 * sin(t * 0.09));
+  vec2 c3 = vec2(0.5 * aspect + 0.30 * aspect * sin(t * 0.08 + 2.0), 0.60 + 0.25 * cos(t * 0.13 + 1.0));
+  float v = blob(q, c1, 7.0, t) + blob(q, c2, 9.0, t * 1.3) + blob(q, c3, 5.0, t * 0.7);
+  v /= 3.0;
+
+  // Vertical gradient: lighter at the top.
+  v = v * 0.6 + 0.4 * uv.y;
+
+  // Keep the board's centre near-pure paper; let ink gather at the edges.
+  vec2 fromCentre = (uv - 0.5) * vec2(aspect, 1.0);
+  float edge = smoothstep(0.25, 0.75, length(fromCentre));
+
+  // Compress into a narrow band so coverage stays ~0-10%.
+  float field = mix(0.98, 0.78, v * edge);
+  field = clamp(field + 0.10 * (1.0 - edge), 0.0, 1.0);
+
+  // Pointer pulls ink: a 90px circle lowers the field toward ~30% coverage.
+  vec2 pointerPx = vec2(u_pointer.x, u_resolution.y - u_pointer.y);
+  float pull = 1.0 - smoothstep(60.0, 90.0, distance(frag, pointerPx));
+  field -= 0.28 * pull;
+
+  // Ordered dither: 1-bit output only.
+  float threshold = (bayer4(floor(frag)) + 0.5) / 16.0;
+  float ink = step(field, threshold);
+
+  vec3 col = mix(u_c1, u_c2, ink);
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<div class="board">
+<svg viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One-Bit Dither board preview">
+  <defs>
+    <pattern id="one-bit-mac-stipple25" patternUnits="userSpaceOnUse" width="4" height="4">
+      <rect x="0" y="0" width="1" height="1" fill="var(--ink)"/>
+      <rect x="2" y="2" width="1" height="1" fill="var(--ink)"/>
+      <rect x="2" y="0" width="1" height="1" fill="var(--ink)"/>
+      <rect x="0" y="2" width="1" height="1" fill="var(--ink)"/>
+    </pattern>
+    <pattern id="one-bit-mac-stipple50" patternUnits="userSpaceOnUse" width="4" height="4">
+      <rect x="0" y="0" width="1" height="1" fill="var(--ink)"/>
+      <rect x="2" y="2" width="1" height="1" fill="var(--ink)"/>
+      <rect x="2" y="0" width="1" height="1" fill="var(--ink)"/>
+      <rect x="0" y="2" width="1" height="1" fill="var(--ink)"/>
+      <rect x="1" y="1" width="1" height="1" fill="var(--ink)"/>
+      <rect x="3" y="3" width="1" height="1" fill="var(--ink)"/>
+      <rect x="3" y="1" width="1" height="1" fill="var(--ink)"/>
+      <rect x="1" y="3" width="1" height="1" fill="var(--ink)"/>
+    </pattern>
+    <pattern id="one-bit-mac-stipple75" patternUnits="userSpaceOnUse" width="4" height="4">
+      <rect x="0" y="0" width="4" height="4" fill="var(--ink)"/>
+      <rect x="1" y="0" width="1" height="1" fill="var(--board-surface)"/>
+      <rect x="3" y="2" width="1" height="1" fill="var(--board-surface)"/>
+      <rect x="3" y="0" width="1" height="1" fill="var(--board-surface)"/>
+      <rect x="1" y="2" width="1" height="1" fill="var(--board-surface)"/>
+    </pattern>
+    <pattern id="one-bit-mac-pinstripe" patternUnits="userSpaceOnUse" width="4" height="3">
+      <rect width="4" height="3" fill="var(--board-surface)"/>
+      <rect width="4" height="1" fill="var(--board-frame)"/>
+    </pattern>
+    <clipPath id="one-bit-mac-checker-clip"><circle r="17"/></clipPath>
+    <g id="one-bit-mac-checker-w">
+      <circle r="19" fill="var(--checker-white)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <g clip-path="url(#one-bit-mac-checker-clip)">
+        <circle cx="-6" cy="-6" r="17" fill="none" stroke="url(#one-bit-mac-stipple50)" stroke-width="6"/>
+      </g>
+    </g>
+    <g id="one-bit-mac-checker-b">
+      <circle r="19" fill="var(--checker-black)"/>
+      <circle r="16.5" fill="none" stroke="var(--checker-black-edge)" stroke-width="1"/>
+    </g>
+    <g id="one-bit-mac-pip"><circle r="2.4" fill="var(--pips)"/></g>
+  </defs>
+
+  <!-- Frame: 2px outline, 1px inner line, pinstripe rail -->
+  <rect x="0" y="0" width="600" height="420" fill="url(#one-bit-mac-pinstripe)"/>
+  <rect x="1" y="1" width="598" height="418" fill="none" stroke="var(--board-frame)" stroke-width="2"/>
+  <rect x="4.5" y="4.5" width="591" height="411" fill="none" stroke="var(--board-frame)" stroke-width="1"/>
+
+  <!-- Playing surface -->
+  <rect x="16" y="16" width="540" height="388" fill="var(--board-surface)"/>
+  <rect x="15.5" y="15.5" width="541" height="389" fill="none" stroke="var(--board-frame)" stroke-width="1"/>
+
+  <!-- Points: alternating 25% / 75% stipple triangles with 1px outlines -->
+  <g stroke="var(--line)" stroke-width="1" stroke-linejoin="miter">
+    <!-- top left -->
+    <polygon points="16,16 58.7,16 37.3,166" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="58.7,16 101.3,16 80,166" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="101.3,16 144,16 122.7,166" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="144,16 186.7,16 165.3,166" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="186.7,16 229.3,16 208,166" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="229.3,16 272,16 250.7,166" fill="url(#one-bit-mac-stipple25)"/>
+    <!-- top right -->
+    <polygon points="300,16 342.7,16 321.3,166" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="342.7,16 385.3,16 364,166" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="385.3,16 428,16 406.7,166" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="428,16 470.7,16 449.3,166" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="470.7,16 513.3,16 492,166" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="513.3,16 556,16 534.7,166" fill="url(#one-bit-mac-stipple25)"/>
+    <!-- bottom left -->
+    <polygon points="16,404 58.7,404 37.3,254" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="58.7,404 101.3,404 80,254" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="101.3,404 144,404 122.7,254" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="144,404 186.7,404 165.3,254" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="186.7,404 229.3,404 208,254" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="229.3,404 272,404 250.7,254" fill="url(#one-bit-mac-stipple75)"/>
+    <!-- bottom right -->
+    <polygon points="300,404 342.7,404 321.3,254" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="342.7,404 385.3,404 364,254" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="385.3,404 428,404 406.7,254" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="428,404 470.7,404 449.3,254" fill="url(#one-bit-mac-stipple75)"/>
+    <polygon points="470.7,404 513.3,404 492,254" fill="url(#one-bit-mac-stipple25)"/>
+    <polygon points="513.3,404 556,404 534.7,254" fill="url(#one-bit-mac-stipple75)"/>
+  </g>
+
+  <!-- Bar: solid ink with a 1px white inner line -->
+  <rect x="272" y="16" width="28" height="388" fill="var(--bar)"/>
+  <rect x="274.5" y="18.5" width="23" height="383" fill="none" stroke="var(--board-surface)" stroke-width="1"/>
+
+  <!-- Bear-off trays: 50% stipple boxes -->
+  <rect x="556" y="16" width="6" height="388" fill="var(--board-frame)"/>
+  <rect x="562" y="16" width="22" height="184" fill="url(#one-bit-mac-stipple50)" stroke="var(--line)" stroke-width="1"/>
+  <rect x="562" y="220" width="22" height="184" fill="url(#one-bit-mac-stipple50)" stroke="var(--line)" stroke-width="1"/>
+  <rect x="562" y="200" width="22" height="20" fill="var(--board-surface)" stroke="var(--line)" stroke-width="1"/>
+
+  <!-- Point numbers on white tabs over the rail -->
+  <g font-weight="700" font-size="12" fill="var(--ink)" text-anchor="middle">
+    <rect x="70" y="2" width="20" height="13" fill="var(--board-surface)"/>
+    <text x="80" y="12.5">13</text>
+    <rect x="482" y="2" width="20" height="13" fill="var(--board-surface)"/>
+    <text x="492" y="12.5">20</text>
+    <rect x="482" y="405" width="20" height="13" fill="var(--board-surface)"/>
+    <text x="492" y="415.5">5</text>
+  </g>
+
+  <!-- Checkers -->
+  <!-- Stack: 5 white, top-left point 13, badge 7 -->
+  <use href="#one-bit-mac-checker-w" x="80" y="36"/>
+  <use href="#one-bit-mac-checker-w" x="80" y="72"/>
+  <use href="#one-bit-mac-checker-w" x="80" y="108"/>
+  <use href="#one-bit-mac-checker-w" x="80" y="144"/>
+  <use href="#one-bit-mac-checker-w" x="80" y="180"/>
+  <g class="round">
+    <rect x="72.5" y="172.5" width="15" height="15" fill="var(--surface)" stroke="var(--line)" stroke-width="1"/>
+    <text x="80" y="184" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">7</text>
+  </g>
+  <!-- Stack: 3 black, top-right point 20 -->
+  <use href="#one-bit-mac-checker-b" x="492" y="36"/>
+  <use href="#one-bit-mac-checker-b" x="492" y="72"/>
+  <use href="#one-bit-mac-checker-b" x="492" y="108"/>
+  <!-- Stack: 5 black, bottom-left -->
+  <use href="#one-bit-mac-checker-b" x="80" y="384"/>
+  <use href="#one-bit-mac-checker-b" x="80" y="348"/>
+  <use href="#one-bit-mac-checker-b" x="80" y="312"/>
+  <use href="#one-bit-mac-checker-b" x="80" y="276"/>
+  <use href="#one-bit-mac-checker-b" x="80" y="240"/>
+  <!-- Stack: 2 white, bottom-right point 5, top one selected (inverted + marching ants) -->
+  <use href="#one-bit-mac-checker-w" x="492" y="384"/>
+  <g transform="translate(492 348)">
+    <circle r="19" fill="url(#one-bit-mac-stipple50)" stroke="var(--checker-white-edge)" stroke-width="3"/>
+    <circle r="24" fill="none" stroke="var(--board-surface)" stroke-width="2"/>
+    <circle class="ants" r="24" fill="none" stroke="var(--highlight)" stroke-width="2"/>
+  </g>
+  <!-- Legal-move ring on an empty destination -->
+  <g transform="translate(364 384)">
+    <circle r="19" fill="none" stroke="var(--board-surface)" stroke-width="2"/>
+    <circle class="ants" r="19" fill="none" stroke="var(--highlight)" stroke-width="2"/>
+  </g>
+  <!-- Origin left by a drag: 1px dotted outline -->
+  <circle cx="321.3" cy="384" r="19" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="1 2"/>
+
+  <!-- Dice: 6 (live) and 3 (played, 50% stipple over face) -->
+  <g transform="translate(386 195)">
+    <rect x="0" y="0" width="30" height="30" rx="4" fill="var(--dice)" stroke="var(--line)" stroke-width="2"/>
+    <use href="#one-bit-mac-pip" x="9" y="8"/><use href="#one-bit-mac-pip" x="21" y="8"/>
+    <use href="#one-bit-mac-pip" x="9" y="15"/><use href="#one-bit-mac-pip" x="21" y="15"/>
+    <use href="#one-bit-mac-pip" x="9" y="22"/><use href="#one-bit-mac-pip" x="21" y="22"/>
+  </g>
+  <g transform="translate(440 195)">
+    <rect x="0" y="0" width="30" height="30" rx="4" fill="var(--dice)" stroke="var(--line)" stroke-width="2"/>
+    <use href="#one-bit-mac-pip" x="8" y="8"/><use href="#one-bit-mac-pip" x="15" y="15"/><use href="#one-bit-mac-pip" x="22" y="22"/>
+    <rect x="1" y="1" width="28" height="28" rx="3" fill="url(#one-bit-mac-stipple50)" opacity="0.6"/>
+  </g>
+
+  <!-- Doubling cube at 64 -->
+  <g transform="translate(128 194)">
+    <rect x="0" y="0" width="32" height="32" fill="var(--cube)"/>
+    <rect x="2.5" y="2.5" width="27" height="27" fill="none" stroke="var(--cube-text)" stroke-width="1"/>
+    <text x="16" y="21" font-size="13" font-weight="700" fill="var(--cube-text)" text-anchor="middle">64</text>
+  </g>
+
+  <!-- Last-move arrow: black 2px line with 1px white outline, solid head -->
+  <g class="round" fill="none" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M492,126 C 470,200 420,150 372,236" stroke="var(--board-surface)" stroke-width="4"/>
+    <path d="M492,126 C 470,200 420,150 372,236" stroke="var(--last-move)" stroke-width="2"/>
+    <polygon points="364,250 366,232 380,240" fill="var(--last-move)" stroke="var(--board-surface)" stroke-width="1"/>
+  </g>
+</svg>
+</div>
+
+<div class="chrome">
+  <h2>One-Bit Dither</h2>
+  <p>Pure black on pure white. Shading is stipple; hierarchy is stroke weight.</p>
+  <div class="buttons">
+    <button class="btn primary" type="button">Roll</button>
+    <button class="btn ghost" type="button">Undo</button>
+  </div>
+  <dl class="panel">
+    <dt>Pip count</dt><dd>167 – 152</dd>
+    <dt>Equity</dt><dd>+0.184</dd>
+    <div class="equity"><i></i></div>
+  </dl>
+</div>
+
+<div class="swatches">
+  <figure><i style="background:#f4f4f0"></i><figcaption><b>page</b>#f4f4f0</figcaption></figure>
+  <figure><i style="background:#ffffff"></i><figcaption><b>surface</b>#ffffff</figcaption></figure>
+  <figure><i style="background:#ececea"></i><figcaption><b>surface-2</b>#ececea</figcaption></figure>
+  <figure><i style="background:#111111"></i><figcaption><b>ink</b>#111111</figcaption></figure>
+  <figure><i style="background:#4a4a4a"></i><figcaption><b>muted</b>#4a4a4a</figcaption></figure>
+  <figure><i style="background:#d9d9d9"></i><figcaption><b>point-a</b>#d9d9d9</figcaption></figure>
+  <figure><i style="background:#7a7a7a"></i><figcaption><b>point-b</b>#7a7a7a</figcaption></figure>
+  <figure><i style="background:#111111"></i><figcaption><b>bar</b>#111111</figcaption></figure>
+  <figure><i style="background:#ffffff"></i><figcaption><b>checker-white</b>#ffffff</figcaption></figure>
+  <figure><i style="background:#111111"></i><figcaption><b>checker-black</b>#111111</figcaption></figure>
+  <figure><i style="background:#ffffff"></i><figcaption><b>dice</b>#ffffff</figcaption></figure>
+  <figure><i style="background:#111111"></i><figcaption><b>cube</b>#111111</figcaption></figure>
+</div>
+</section>

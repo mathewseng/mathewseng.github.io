@@ -1,0 +1,331 @@
+<section class="theme" id="theme-obsidian" data-theme="obsidian">
+  <style>
+    #theme-obsidian {
+      --page: #0a0a0c;
+      --shader-1: #ff6a2a;
+      --shader-2: #ffb347;
+      --shader-3: #0a0a0c;
+      --surface: #141417;
+      --surface-2: #1c1c21;
+      --line: #2a2a31;
+      --ink: #ecebe8;
+      --muted: #a09d98;
+      --accent: #ff6a2a;
+      --accent-ink: #140800;
+      --board-frame: #151518;
+      --board-surface: #1b1b1f;
+      --point-a: #5b4a42;
+      --point-b: #2a2a33;
+      --bar: #0a0a0c;
+      --checker-white: #e9e4dc;
+      --checker-white-edge: #a8a39a;
+      --checker-black: #0c0c0e;
+      --checker-black-edge: #ff6a2a;
+      --dice: #e9e4dc;
+      --pips: #0a0a0c;
+      --cube: #ff6a2a;
+      --cube-text: #140800;
+      --highlight: #ffb347;
+      --last-move: #4fd1ff;
+      --font-sans: -apple-system, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      box-sizing: border-box;
+      max-width: 960px;
+      padding: 24px;
+      border-radius: 4px;
+      background: var(--page);
+      color: var(--ink);
+      font: 400 15px/1.5 var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+    }
+    #theme-obsidian *, #theme-obsidian *::before, #theme-obsidian *::after { box-sizing: border-box; }
+    #theme-obsidian .shader { position: absolute; inset: 0; z-index: -1; display: block; width: 100%; height: 100%; }
+    #theme-obsidian .layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(220px, 1fr); gap: 24px; align-items: start; }
+    @media (max-width: 720px) { #theme-obsidian .layout { grid-template-columns: 1fr; } }
+    #theme-obsidian .board { display: block; width: 100%; height: auto; }
+    #theme-obsidian .board .num { font-family: var(--font-mono); font-weight: 500; }
+    #theme-obsidian h2 { margin: 0 0 8px; font: 700 28px/1.1 var(--font-sans); letter-spacing: -0.02em; color: var(--ink); }
+    #theme-obsidian p { margin: 0 0 16px; color: var(--muted); }
+    #theme-obsidian .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    #theme-obsidian .btn { font: 600 14px/1 var(--font-sans); min-height: 44px; min-width: 44px; padding: 0 18px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; }
+    #theme-obsidian .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    #theme-obsidian .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+    #theme-obsidian .panel { padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 1px 0 var(--page); }
+    #theme-obsidian .panel dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 0 0 12px; }
+    #theme-obsidian .panel dt { font-size: 13px; color: var(--muted); }
+    #theme-obsidian .panel dd { margin: 0; font: 500 14px/1.4 var(--font-mono); color: var(--ink); }
+    #theme-obsidian .equity { display: flex; height: 6px; border-radius: 2px; overflow: hidden; background: var(--page); }
+    #theme-obsidian .equity b { display: block; height: 100%; background: var(--checker-white); }
+    #theme-obsidian .equity i { display: block; height: 100%; width: 1px; background: var(--page); }
+    #theme-obsidian .equity s { display: block; height: 100%; background: var(--accent); }
+    #theme-obsidian .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; margin-top: 24px; }
+    #theme-obsidian .swatch { padding: 5px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+    #theme-obsidian .swatch i { display: block; height: 32px; border-radius: 3px; border: 1px solid var(--line); }
+    #theme-obsidian .swatch span { display: block; margin-top: 5px; font: 500 12px/1.2 var(--font-mono); color: var(--muted); }
+  </style>
+
+  <canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="bottom-left" data-pointer-idle="none" data-still="2.2"></canvas>
+  <script type="x-shader/x-fragment" id="frag-obsidian">
+precision mediump float;
+
+uniform float u_time;
+uniform vec2  u_resolution;
+uniform vec2  u_pointer;
+uniform vec3  u_c1; // ember   #ff6a2a
+uniform vec3  u_c2; // amber   #ffb347
+uniform vec3  u_c3; // page    #0a0a0c
+
+// --- hashes -------------------------------------------------------------
+float hash1(vec2 p) {
+  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+vec2 hash2(vec2 p) {
+  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+  return fract(sin(p) * 43758.5453);
+}
+
+// --- value noise + 3-octave fbm (glassy surface grain) -------------------
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = hash1(i);
+  float b = hash1(i + vec2(1.0, 0.0));
+  float c = hash1(i + vec2(0.0, 1.0));
+  float d = hash1(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 3; i++) {
+    v += a * vnoise(p);
+    p = p * 2.03 + vec2(1.7, 9.2);
+    a *= 0.5;
+  }
+  return v;
+}
+
+// --- voronoi plates: returns (d1, d2, hash of nearest cell) -------------
+vec3 voronoi(vec2 p) {
+  vec2 n = floor(p);
+  vec2 f = fract(p);
+  float d1 = 8.0;
+  float d2 = 8.0;
+  float h = 0.0;
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 g = vec2(float(i), float(j));
+      vec2 o = 0.5 + 0.42 * (hash2(n + g) - 0.5) * 2.0;
+      vec2 r = g + o - f;
+      float d = dot(r, r);
+      if (d < d1) { d2 = d1; d1 = d; h = hash1(n + g); }
+      else if (d < d2) { d2 = d; }
+    }
+  }
+  return vec3(sqrt(d1), sqrt(d2), h);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution.y;   // aspect-correct, 0..~1.8 x 0..1
+
+  // plates and fissures
+  vec3  v    = voronoi(uv * 4.0);
+  float w    = v.y - v.x;                        // crack width
+  float glow = smoothstep(0.06, 0.0, w);
+  float dark = smoothstep(0.14, 0.0, w);         // plate edges fall away into the crack
+
+  // each fissure breathes on its own phase
+  float pulse     = 0.5 + 0.5 * sin(u_time * 0.6 + v.z * 6.28318);
+  vec3  glowCol   = mix(u_c1, u_c2, pulse);
+  float intensity = mix(0.08, 0.16, pulse);
+
+  // pointer heats the nearest ~280px of cracks
+  float pd   = length(gl_FragCoord.xy - u_pointer) / 280.0;
+  float heat = 1.0 + 0.8 / (1.0 + pd * pd);
+
+  // glassy plate: near-black, +/-2% grain, slow diagonal sheen
+  float grain = (fbm(uv * 9.0 + v.z) - 0.5) * 0.04;
+  float band  = dot(uv, vec2(0.7, 0.7)) + u_time * 0.03;
+  float sheen = smoothstep(0.55, 1.0, sin(band * 2.4)) * 0.02;
+  vec3  plate = u_c3 * (1.0 + grain) + vec3(sheen);
+  plate *= 1.0 - 0.3 * dark;                     // cooled rims sink toward the fissure
+
+  vec3 col = plate + glowCol * glow * intensity * heat;
+
+  // soft vignette so the corners never compete with the board
+  vec2 q = gl_FragCoord.xy / u_resolution - 0.5;
+  col *= 1.0 - 0.35 * dot(q, q);
+
+  gl_FragColor = vec4(col, 1.0);
+}
+  </script>
+
+  <div class="layout">
+    <svg class="board" viewBox="0 0 600 420" role="img" aria-label="Obsidian board sample">
+      <defs>
+        <linearGradient id="obsidian-frame-sheen" x1="0" y1="0" x2="1" y2="0" gradientTransform="rotate(35 .5 .5)">
+          <stop offset="0" stop-color="#ffffff" stop-opacity=".06"/>
+          <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="obsidian-pa-down" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--point-a)"/>
+          <stop offset="1" stop-color="color-mix(in srgb, var(--point-a), #ffffff 20%)"/>
+        </linearGradient>
+        <linearGradient id="obsidian-pa-up" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="var(--point-a)"/>
+          <stop offset="1" stop-color="color-mix(in srgb, var(--point-a), #ffffff 20%)"/>
+        </linearGradient>
+        <linearGradient id="obsidian-pb-down" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--point-b)"/>
+          <stop offset="1" stop-color="color-mix(in srgb, var(--point-b), #ffffff 20%)"/>
+        </linearGradient>
+        <linearGradient id="obsidian-pb-up" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="var(--point-b)"/>
+          <stop offset="1" stop-color="color-mix(in srgb, var(--point-b), #ffffff 20%)"/>
+        </linearGradient>
+        <radialGradient id="obsidian-white-sheen" cx=".38" cy=".32" r=".8">
+          <stop offset="0" stop-color="#fbf8f2"/>
+          <stop offset=".55" stop-color="var(--checker-white)"/>
+          <stop offset="1" stop-color="#cfc9bf"/>
+        </radialGradient>
+        <marker id="obsidian-arrowhead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--last-move)"/>
+        </marker>
+      </defs>
+
+      <!-- frame: matte black glass with conchoidal sheen -->
+      <rect x="0.5" y="16.5" width="599" height="387" rx="4" fill="var(--board-frame)" stroke="var(--line)" stroke-width="1"/>
+      <rect x="0.5" y="16.5" width="599" height="387" rx="4" fill="url(#obsidian-frame-sheen)"/>
+      <!-- playing surface -->
+      <rect x="16" y="30" width="568" height="360" fill="var(--board-surface)"/>
+
+      <!-- points -->
+      <polygon points="538,390 579,390 558.5,250" fill="url(#obsidian-pa-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="495,390 536,390 515.5,250" fill="url(#obsidian-pb-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="452,390 493,390 472.5,250" fill="url(#obsidian-pa-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="409,390 450,390 429.5,250" fill="url(#obsidian-pb-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="366,390 407,390 386.5,250" fill="url(#obsidian-pa-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="323,390 364,390 343.5,250" fill="url(#obsidian-pb-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="236,390 277,390 256.5,250" fill="url(#obsidian-pa-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="193,390 234,390 213.5,250" fill="url(#obsidian-pb-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="150,390 191,390 170.5,250" fill="url(#obsidian-pa-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="107,390 148,390 127.5,250" fill="url(#obsidian-pb-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="64,390 105,390 84.5,250" fill="url(#obsidian-pa-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="21,390 62,390 41.5,250" fill="url(#obsidian-pb-up)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="21,30 62,30 41.5,170" fill="url(#obsidian-pa-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="64,30 105,30 84.5,170" fill="url(#obsidian-pb-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="107,30 148,30 127.5,170" fill="url(#obsidian-pa-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="150,30 191,30 170.5,170" fill="url(#obsidian-pb-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="193,30 234,30 213.5,170" fill="url(#obsidian-pa-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="236,30 277,30 256.5,170" fill="url(#obsidian-pb-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="323,30 364,30 343.5,170" fill="url(#obsidian-pa-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="366,30 407,30 386.5,170" fill="url(#obsidian-pb-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="409,30 450,30 429.5,170" fill="url(#obsidian-pa-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="452,30 493,30 472.5,170" fill="url(#obsidian-pb-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="495,30 536,30 515.5,170" fill="url(#obsidian-pa-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="538,30 579,30 558.5,170" fill="url(#obsidian-pb-down)" stroke="var(--line)" stroke-width="1" stroke-linejoin="round"/>
+
+      <!-- bar: page black with an ember hairline -->
+      <rect x="282" y="30" width="36" height="360" fill="var(--bar)"/>
+      <line x1="300" y1="30" x2="300" y2="390" stroke="var(--accent)" stroke-opacity=".4" stroke-width="1"/>
+
+      <!-- last-move arrow (6 to 4) -->
+      <path d="M 343.5 200 Q 386.5 154 429.5 334" fill="none" stroke="var(--last-move)" stroke-width="3" stroke-linecap="round" marker-end="url(#obsidian-arrowhead)"/>
+
+      <!-- checkers -->
+      <circle cx="41.5" cy="49" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+      <circle cx="41.5" cy="49" r="14" fill="none" stroke="var(--checker-black-edge)" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="41.5" cy="82" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+      <circle cx="41.5" cy="82" r="14" fill="none" stroke="var(--checker-black-edge)" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="41.5" cy="115" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+      <circle cx="41.5" cy="115" r="14" fill="none" stroke="var(--checker-black-edge)" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="41.5" cy="148" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+      <circle cx="41.5" cy="148" r="14" fill="none" stroke="var(--checker-black-edge)" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="41.5" cy="181" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+      <circle cx="41.5" cy="181" r="14" fill="none" stroke="var(--checker-black-edge)" stroke-opacity=".3" stroke-width="1"/>
+      <rect x="32.5" y="174" width="18" height="14" rx="7" fill="var(--accent)"/>
+      <text x="41.5" y="185" text-anchor="middle" class="num" font-size="12" fill="var(--accent-ink)">5</text>
+      <circle cx="41.5" cy="181" r="22" fill="none" stroke="var(--highlight)" stroke-width="3"/>
+      <circle cx="558.5" cy="49" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="558.5" cy="82" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="343.5" cy="371" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="343.5" cy="338" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="343.5" cy="305" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="343.5" cy="272" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="343.5" cy="239" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <rect x="334.5" y="232" width="18" height="14" rx="7" fill="var(--page)"/>
+      <text x="343.5" y="243" text-anchor="middle" class="num" font-size="12" fill="var(--checker-white)">5</text>
+      <circle cx="213.5" cy="371" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="213.5" cy="338" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="213.5" cy="305" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+      <circle cx="558.5" cy="371" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+      <circle cx="558.5" cy="371" r="14" fill="none" stroke="var(--checker-black-edge)" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="558.5" cy="338" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+      <circle cx="558.5" cy="338" r="14" fill="none" stroke="var(--checker-black-edge)" stroke-opacity=".3" stroke-width="1"/>
+      <circle cx="429.5" cy="371" r="18" fill="url(#obsidian-white-sheen)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+
+      <!-- legal-move rings -->
+      <circle cx="256.5" cy="371" r="17" fill="none" stroke="var(--page)" stroke-width="5"/>
+      <circle cx="256.5" cy="371" r="17" fill="none" stroke="var(--highlight)" stroke-width="3"/>
+      <circle cx="127.5" cy="371" r="17" fill="none" stroke="var(--page)" stroke-width="5"/>
+      <circle cx="127.5" cy="371" r="17" fill="none" stroke="var(--highlight)" stroke-width="3"/>
+
+      <!-- dice 6 and 3 -->
+      <rect x="392" y="192" width="36" height="36" rx="6.5" fill="var(--dice)" stroke="var(--checker-white-edge)" stroke-width="1"/>
+      <circle cx="401" cy="201" r="3" fill="var(--pips)"/>
+      <circle cx="419" cy="201" r="3" fill="var(--pips)"/>
+      <circle cx="401" cy="210" r="3" fill="var(--pips)"/>
+      <circle cx="419" cy="210" r="3" fill="var(--pips)"/>
+      <circle cx="401" cy="219" r="3" fill="var(--pips)"/>
+      <circle cx="419" cy="219" r="3" fill="var(--pips)"/>
+      <rect x="440" y="192" width="36" height="36" rx="6.5" fill="var(--dice)" stroke="var(--checker-white-edge)" stroke-width="1"/>
+      <circle cx="449" cy="201" r="3" fill="var(--pips)"/>
+      <circle cx="458" cy="210" r="3" fill="var(--pips)"/>
+      <circle cx="467" cy="219" r="3" fill="var(--pips)"/>
+
+      <!-- doubling cube -->
+      <rect x="236" y="192" width="36" height="36" rx="4" fill="var(--cube)" stroke="#c24d18" stroke-width="1"/>
+      <text x="254" y="215" text-anchor="middle" class="num" font-size="14" fill="var(--cube-text)">64</text>
+
+      <!-- point numbers -->
+      <text x="41.5" y="12" text-anchor="middle" class="num" font-size="12" fill="var(--muted)">13</text>
+      <text x="558.5" y="12" text-anchor="middle" class="num" font-size="12" fill="var(--muted)">24</text>
+      <text x="558.5" y="417" text-anchor="middle" class="num" font-size="12" fill="var(--muted)">1</text>
+    </svg>
+
+    <div class="chrome">
+      <h2>Obsidian</h2>
+      <p>Volcanic glass. Light comes up through the cracks, never down from the sky.</p>
+      <div class="actions">
+        <button class="btn btn-primary" type="button">Roll</button>
+        <button class="btn btn-ghost" type="button">Undo</button>
+      </div>
+      <div class="panel">
+        <dl>
+          <dt>Pip count</dt><dd>167 / 158</dd>
+          <dt>Cube</dt><dd>64 · White</dd>
+        </dl>
+        <div class="equity" aria-label="Equity"><b style="width:56%"></b><i></i><s style="flex:1"></s></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="swatches">
+    <div class="swatch"><i style="background:#0a0a0c"></i><span>#0a0a0c</span></div>
+    <div class="swatch"><i style="background:#141417"></i><span>#141417</span></div>
+    <div class="swatch"><i style="background:#2a2a31"></i><span>#2a2a31</span></div>
+    <div class="swatch"><i style="background:#ecebe8"></i><span>#ecebe8</span></div>
+    <div class="swatch"><i style="background:#a09d98"></i><span>#a09d98</span></div>
+    <div class="swatch"><i style="background:#ff6a2a"></i><span>#ff6a2a</span></div>
+    <div class="swatch"><i style="background:#5b4a42"></i><span>#5b4a42</span></div>
+    <div class="swatch"><i style="background:#2a2a33"></i><span>#2a2a33</span></div>
+    <div class="swatch"><i style="background:#e9e4dc"></i><span>#e9e4dc</span></div>
+    <div class="swatch"><i style="background:#0c0c0e"></i><span>#0c0c0e</span></div>
+    <div class="swatch"><i style="background:#ffb347"></i><span>#ffb347</span></div>
+    <div class="swatch"><i style="background:#4fd1ff"></i><span>#4fd1ff</span></div>
+  </div>
+</section>

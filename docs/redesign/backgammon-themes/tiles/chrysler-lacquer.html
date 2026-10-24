@@ -1,0 +1,477 @@
+<section class="theme" id="theme-chrysler-lacquer" data-theme="chrysler-lacquer">
+<style>
+#theme-chrysler-lacquer {
+  --page: #0C0D12;
+  --shader-1: #0C0D12;
+  --shader-2: #D6B25E;
+  --shader-3: #F0D27A;
+  --surface: #15171F;
+  --surface-2: #1E2130;
+  --line: #D6B25E;
+  --ink: #F3EAD3;
+  --muted: #B3A98C;
+  --accent: #D6B25E;
+  --accent-ink: #1A1407;
+  --board-frame: #B8923E;
+  --board-surface: #111218;
+  --point-a: #9A7A2E;
+  --point-b: #2F6E62;
+  --bar: #0A0A0E;
+  --checker-white: #F4EBD3;
+  --checker-white-edge: #B8923E;
+  --checker-black: #1B1A20;
+  --checker-black-edge: #D6B25E;
+  --dice: #F4EBD3;
+  --pips: #1B1A20;
+  --cube: #D6B25E;
+  --cube-text: #1A1407;
+  --highlight: #F0D27A;
+  --last-move: #F08A7A;
+  --font-body: "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
+  --font-display: "Avenir Next Condensed", "Futura Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--ink);
+  background: var(--page);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 24px;
+  border-radius: 2px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--surface-2);
+  min-height: 360px;
+}
+#theme-chrysler-lacquer *, #theme-chrysler-lacquer *::before, #theme-chrysler-lacquer *::after { box-sizing: border-box; }
+#theme-chrysler-lacquer .shader {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: var(--page);
+  z-index: 0;
+}
+#theme-chrysler-lacquer .tile-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(240px, 2fr);
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  #theme-chrysler-lacquer .tile-grid { grid-template-columns: minmax(0, 1fr); }
+}
+#theme-chrysler-lacquer .board {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 2px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
+}
+#theme-chrysler-lacquer .board text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+#theme-chrysler-lacquer .chrome { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+#theme-chrysler-lacquer h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: .08em;
+  color: var(--ink);
+}
+#theme-chrysler-lacquer p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 36ch;
+}
+#theme-chrysler-lacquer .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+#theme-chrysler-lacquer .btn {
+  font: inherit;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 2px;
+  cursor: pointer;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--ink);
+}
+#theme-chrysler-lacquer .btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  box-shadow: inset 0 1px 0 var(--highlight);
+}
+#theme-chrysler-lacquer .btn-primary:hover { background: var(--highlight); }
+#theme-chrysler-lacquer .btn-ghost:hover { background: rgba(214, 178, 94, .12); }
+#theme-chrysler-lacquer .panel {
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--surface-2);
+  border-radius: 2px;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+#theme-chrysler-lacquer .panel .label {
+  display: block;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+#theme-chrysler-lacquer .panel .value {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+#theme-chrysler-lacquer .swatches {
+  position: relative;
+  z-index: 1;
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+#theme-chrysler-lacquer .swatch {
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--surface-2);
+  border-radius: 2px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#theme-chrysler-lacquer .swatch i {
+  display: block;
+  height: 28px;
+  border-radius: 2px;
+  background: var(--sw);
+  border: 1px solid rgba(214, 178, 94, .35);
+}
+#theme-chrysler-lacquer .swatch span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--ink);
+  letter-spacing: .02em;
+}
+#theme-chrysler-lacquer .swatch small {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+</style>
+
+<canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="top-left" data-pointer-idle="center" data-still="0"></canvas>
+<script type="x-shader/x-fragment" id="frag-chrysler-lacquer">
+precision mediump float;
+
+uniform float u_time;        // seconds
+uniform vec2  u_resolution;  // px
+uniform vec2  u_pointer;     // CSS px, origin top-left
+uniform vec3  u_c1;          // page      #0C0D12
+uniform vec3  u_c2;          // accent    #D6B25E brass
+uniform vec3  u_c3;          // highlight #F0D27A
+
+const float PI = 3.14159265;
+const float FLUTES = 28.0;
+
+float hash(vec2 p) {
+  p = fract(p * vec2(127.1, 311.7));
+  p += dot(p, p + 19.19);
+  return fract(p.x * p.y);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float aspect = u_resolution.x / u_resolution.y;
+
+  // Fluted lacquer: 28 half-round ridges across the width.
+  float fx = fract(uv.x * FLUTES) - 0.5;            // -0.5 .. 0.5 across one flute
+  float ridge = cos(fx * PI);                        // 1 on the crest, 0 in the seam
+  vec3 n = normalize(vec3(sin(fx * PI) * 1.4, 0.0, 1.0));
+
+  // Raking light, one revolution per 90 s. At t = 0 it sits 35 deg from the top-left,
+  // which is also where reduced-motion leaves it.
+  float a = radians(125.0) + u_time * (2.0 * PI / 90.0);
+  vec3 L = normalize(vec3(cos(a), sin(a), 0.75));
+  vec3 V = vec3(0.0, 0.0, 1.0);
+  vec3 H = normalize(L + V);
+
+  float diff = max(dot(n, L), 0.0);
+  float spec = pow(max(dot(n, H), 0.0), 48.0);
+
+  // Lacquer body: near-black, a hair lighter toward the top, darker in the seams.
+  vec3 col = u_c1 * (0.80 + 0.30 * uv.y) * (0.82 + 0.18 * ridge);
+
+  // Brushing along the flutes.
+  float grain = noise(vec2(uv.x * FLUTES * 3.0, uv.y * 220.0)) - 0.5;
+  col += grain * 0.025;
+
+  // Brass specular on each crest, 18% at most, plus a whisper of diffuse.
+  col += u_c2 * (spec * 0.18 + diff * 0.05);
+
+  // Sunburst: 12 wedges radiating from the top centre at 4%.
+  vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 1.08);
+  float ang = atan(p.x, -p.y);                       // 0 straight down, +/- PI/2 at the sides
+  float w = abs(fract(ang * 12.0 / PI) - 0.5) * 2.0;
+  float wedge = 1.0 - smoothstep(0.35, 0.65, w);
+  float reach = 1.0 - smoothstep(0.1, 1.3, length(p));
+  col += u_c3 * wedge * reach * 0.04;
+
+  // Pointer: a faint warm spot.
+  vec2 ptr = vec2(u_pointer.x, u_resolution.y - u_pointer.y) / u_resolution;
+  vec2 m = (ptr - uv) * vec2(aspect, 1.0);
+  float d = length(m);
+  col += u_c3 * exp(-d * d * 8.0) * 0.06;
+
+  // Vignette.
+  vec2 q = uv - 0.5;
+  col *= 1.0 - dot(q, q) * 0.55;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<div class="tile-grid">
+<svg class="board" viewBox="0 0 600 420" role="img" aria-label="Chrysler Lacquer board sample" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chrysler-lacquer-frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" style="stop-color:var(--highlight)"/>
+      <stop offset="0.5" style="stop-color:var(--board-frame)"/>
+      <stop offset="1" style="stop-color:#8E6F2A"/>
+    </linearGradient>
+    <radialGradient id="chrysler-lacquer-spec" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="chrysler-lacquer-blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+    <pattern id="chrysler-lacquer-brush" patternUnits="userSpaceOnUse" width="2" height="2">
+      <rect x="0" y="0.5" width="2" height="1" style="fill:var(--highlight)" opacity="0.3"/>
+    </pattern>
+    <radialGradient id="chrysler-lacquer-ivory" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#FFF8E6"/>
+      <stop offset="1" stop-color="#E6D9B6"/>
+    </radialGradient>
+    <radialGradient id="chrysler-lacquer-onyx" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#2A2930"/>
+      <stop offset="1" stop-color="#141318"/>
+    </radialGradient>
+    <linearGradient id="chrysler-lacquer-cube" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(--highlight)"/>
+      <stop offset="1" style="stop-color:var(--board-frame)"/>
+    </linearGradient>
+    <filter id="chrysler-lacquer-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" style="flood-color:var(--accent)" flood-opacity="0.95"/>
+    </filter>
+    <filter id="chrysler-lacquer-lift" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <g id="chrysler-lacquer-ivory-checker">
+      <circle r="19" fill="url(#chrysler-lacquer-ivory)" style="stroke:var(--checker-white-edge)" stroke-width="2"/>
+    </g>
+    <g id="chrysler-lacquer-onyx-checker">
+      <circle r="19" fill="url(#chrysler-lacquer-onyx)" style="stroke:var(--checker-black-edge)" stroke-width="2"/>
+      <circle r="15.5" fill="none" style="stroke:var(--highlight)" stroke-width="0.5"/>
+    </g>
+    <g id="chrysler-lacquer-pip">
+      <circle r="3.4" style="fill:var(--pips);stroke:var(--accent)" stroke-width="0.5"/>
+    </g>
+    <marker id="chrysler-lacquer-arrow-halo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.6" markerHeight="3.6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000000"/>
+    </marker>
+    <marker id="chrysler-lacquer-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" style="fill:var(--last-move)"/>
+    </marker>
+  </defs>
+
+  <!-- frame -->
+  <rect x="0" y="0" width="600" height="420" rx="2" fill="url(#chrysler-lacquer-frame)"/>
+  <rect x="6.5" y="6.5" width="587" height="407" fill="none" style="stroke:var(--highlight)" stroke-width="1"/>
+
+  <!-- playing surface -->
+  <rect x="22" y="22" width="556" height="376" style="fill:var(--board-surface)"/>
+  <ellipse cx="120" cy="80" rx="200" ry="110" fill="url(#chrysler-lacquer-spec)" filter="url(#chrysler-lacquer-blur)"/>
+
+  <!-- points: truncated tips, brushed brass (A) and malachite (B), 1px brass stroke -->
+  <g stroke-width="1" style="stroke:var(--line)" stroke-linejoin="miter">
+    <!-- top left: 13..18 -->
+    <path d="M22,22 H65.5 L45.75,162 H41.75 Z" style="fill:var(--point-a)"/>
+    <path d="M65.5,22 H109 L89.25,162 H85.25 Z" style="fill:var(--point-b)"/>
+    <path d="M109,22 H152.5 L132.75,162 H128.75 Z" style="fill:var(--point-a)"/>
+    <path d="M152.5,22 H196 L176.25,162 H172.25 Z" style="fill:var(--point-b)"/>
+    <path d="M196,22 H239.5 L219.75,162 H215.75 Z" style="fill:var(--point-a)"/>
+    <path d="M239.5,22 H283 L263.25,162 H259.25 Z" style="fill:var(--point-b)"/>
+    <!-- top right: 19..24 -->
+    <path d="M317,22 H360.5 L340.75,162 H336.75 Z" style="fill:var(--point-a)"/>
+    <path d="M360.5,22 H404 L384.25,162 H380.25 Z" style="fill:var(--point-b)"/>
+    <path d="M404,22 H447.5 L427.75,162 H423.75 Z" style="fill:var(--point-a)"/>
+    <path d="M447.5,22 H491 L471.25,162 H467.25 Z" style="fill:var(--point-b)"/>
+    <path d="M491,22 H534.5 L514.75,162 H510.75 Z" style="fill:var(--point-a)"/>
+    <path d="M534.5,22 H578 L558.25,162 H554.25 Z" style="fill:var(--point-b)"/>
+    <!-- bottom left: 12..7 -->
+    <path d="M22,398 H65.5 L45.75,258 H41.75 Z" style="fill:var(--point-b)"/>
+    <path d="M65.5,398 H109 L89.25,258 H85.25 Z" style="fill:var(--point-a)"/>
+    <path d="M109,398 H152.5 L132.75,258 H128.75 Z" style="fill:var(--point-b)"/>
+    <path d="M152.5,398 H196 L176.25,258 H172.25 Z" style="fill:var(--point-a)"/>
+    <path d="M196,398 H239.5 L219.75,258 H215.75 Z" style="fill:var(--point-b)"/>
+    <path d="M239.5,398 H283 L263.25,258 H259.25 Z" style="fill:var(--point-a)"/>
+    <!-- bottom right: 6..1 -->
+    <path d="M317,398 H360.5 L340.75,258 H336.75 Z" style="fill:var(--point-b)"/>
+    <path d="M360.5,398 H404 L384.25,258 H380.25 Z" style="fill:var(--point-a)"/>
+    <path d="M404,398 H447.5 L427.75,258 H423.75 Z" style="fill:var(--point-b)"/>
+    <path d="M447.5,398 H491 L471.25,258 H467.25 Z" style="fill:var(--point-a)"/>
+    <path d="M491,398 H534.5 L514.75,258 H510.75 Z" style="fill:var(--point-b)"/>
+    <path d="M534.5,398 H578 L558.25,258 H554.25 Z" style="fill:var(--point-a)"/>
+  </g>
+  <!-- brushed overlay on the brass points -->
+  <g fill="url(#chrysler-lacquer-brush)" stroke="none">
+    <path d="M22,22 H65.5 L45.75,162 H41.75 Z"/>
+    <path d="M109,22 H152.5 L132.75,162 H128.75 Z"/>
+    <path d="M196,22 H239.5 L219.75,162 H215.75 Z"/>
+    <path d="M317,22 H360.5 L340.75,162 H336.75 Z"/>
+    <path d="M404,22 H447.5 L427.75,162 H423.75 Z"/>
+    <path d="M491,22 H534.5 L514.75,162 H510.75 Z"/>
+    <path d="M65.5,398 H109 L89.25,258 H85.25 Z"/>
+    <path d="M152.5,398 H196 L176.25,258 H172.25 Z"/>
+    <path d="M239.5,398 H283 L263.25,258 H259.25 Z"/>
+    <path d="M360.5,398 H404 L384.25,258 H380.25 Z"/>
+    <path d="M447.5,398 H491 L471.25,258 H467.25 Z"/>
+    <path d="M534.5,398 H578 L558.25,258 H554.25 Z"/>
+  </g>
+
+  <!-- bar -->
+  <rect x="283" y="22" width="34" height="376" style="fill:var(--bar)"/>
+  <line x1="283.5" y1="22" x2="283.5" y2="398" style="stroke:var(--line)" stroke-width="1" opacity="0.6"/>
+  <line x1="316.5" y1="22" x2="316.5" y2="398" style="stroke:var(--line)" stroke-width="1" opacity="0.6"/>
+
+  <!-- point numbers -->
+  <g font-size="12" text-anchor="middle" style="fill:var(--ink)">
+    <text x="261.25" y="180">18</text>
+    <text x="556.25" y="180">24</text>
+    <text x="556.25" y="250">1</text>
+  </g>
+
+  <!-- last-move arrow: onyx 13 -> 18 -->
+  <path d="M60,214 Q150,255 247,170" fill="none" stroke="#000000" stroke-width="5" stroke-linecap="round" opacity="0.9" marker-end="url(#chrysler-lacquer-arrow-halo)"/>
+  <path d="M60,214 Q150,255 247,170" fill="none" style="stroke:var(--last-move)" stroke-width="3" stroke-linecap="round" marker-end="url(#chrysler-lacquer-arrow)"/>
+
+  <!-- onyx on 13 (five, badge reads 6) -->
+  <use href="#chrysler-lacquer-onyx-checker" x="43.75" y="41"/>
+  <use href="#chrysler-lacquer-onyx-checker" x="43.75" y="77"/>
+  <use href="#chrysler-lacquer-onyx-checker" x="43.75" y="113"/>
+  <use href="#chrysler-lacquer-onyx-checker" x="43.75" y="149"/>
+  <use href="#chrysler-lacquer-onyx-checker" x="43.75" y="185"/>
+  <circle cx="43.75" cy="185" r="9" style="fill:var(--accent)"/>
+  <text x="43.75" y="189.5" font-size="12" text-anchor="middle" style="fill:var(--accent-ink)">6</text>
+
+  <!-- onyx on 18 (three) -->
+  <use href="#chrysler-lacquer-onyx-checker" x="261.25" y="41"/>
+  <use href="#chrysler-lacquer-onyx-checker" x="261.25" y="77"/>
+  <use href="#chrysler-lacquer-onyx-checker" x="261.25" y="113"/>
+
+  <!-- ivory on 6 (five) -->
+  <use href="#chrysler-lacquer-ivory-checker" x="338.75" y="379"/>
+  <use href="#chrysler-lacquer-ivory-checker" x="338.75" y="343"/>
+  <use href="#chrysler-lacquer-ivory-checker" x="338.75" y="307"/>
+  <use href="#chrysler-lacquer-ivory-checker" x="338.75" y="271"/>
+  <use href="#chrysler-lacquer-ivory-checker" x="338.75" y="235"/>
+
+  <!-- ivory on 8 (three; top one selected) -->
+  <use href="#chrysler-lacquer-ivory-checker" x="217.75" y="379"/>
+  <use href="#chrysler-lacquer-ivory-checker" x="217.75" y="343"/>
+  <use href="#chrysler-lacquer-ivory-checker" x="217.75" y="307" filter="url(#chrysler-lacquer-glow)"/>
+  <circle cx="217.75" cy="307" r="22.5" fill="none" stroke="#000000" stroke-width="5" opacity="0.85"/>
+  <circle cx="217.75" cy="307" r="22.5" fill="none" style="stroke:var(--highlight)" stroke-width="3"/>
+
+  <!-- legal-move rings on 5 and 2 -->
+  <circle cx="382.25" cy="379" r="19" fill="none" stroke="#000000" stroke-width="5" opacity="0.85"/>
+  <circle cx="382.25" cy="379" r="19" fill="none" style="stroke:var(--highlight)" stroke-width="3"/>
+  <circle cx="512.75" cy="379" r="19" fill="none" stroke="#000000" stroke-width="5" opacity="0.85"/>
+  <circle cx="512.75" cy="379" r="19" fill="none" style="stroke:var(--highlight)" stroke-width="3"/>
+
+  <!-- dice: 6 and 3 -->
+  <g filter="url(#chrysler-lacquer-lift)">
+    <rect x="396" y="192" width="36" height="36" rx="3" style="fill:var(--dice)"/>
+    <rect x="452" y="192" width="36" height="36" rx="3" style="fill:var(--dice)"/>
+  </g>
+  <use href="#chrysler-lacquer-pip" x="405" y="201"/>
+  <use href="#chrysler-lacquer-pip" x="405" y="210"/>
+  <use href="#chrysler-lacquer-pip" x="405" y="219"/>
+  <use href="#chrysler-lacquer-pip" x="423" y="201"/>
+  <use href="#chrysler-lacquer-pip" x="423" y="210"/>
+  <use href="#chrysler-lacquer-pip" x="423" y="219"/>
+  <use href="#chrysler-lacquer-pip" x="461" y="201"/>
+  <use href="#chrysler-lacquer-pip" x="470" y="210"/>
+  <use href="#chrysler-lacquer-pip" x="479" y="219"/>
+
+  <!-- doubling cube at 64, on the bar -->
+  <g filter="url(#chrysler-lacquer-lift)">
+    <rect x="285" y="195" width="30" height="30" rx="2" fill="url(#chrysler-lacquer-cube)"/>
+    <rect x="285.5" y="195.5" width="29" height="29" rx="2" fill="none" style="stroke:var(--highlight)" stroke-width="1"/>
+  </g>
+  <text x="300" y="215" font-size="14" font-weight="700" text-anchor="middle" style="fill:var(--cube-text)">64</text>
+</svg>
+
+<div class="chrome">
+  <h2>Chrysler Lacquer</h2>
+  <p>Black lacquer, brushed brass and ivory under a light that rakes across the room.</p>
+  <div class="actions">
+    <button class="btn btn-primary" type="button">Roll</button>
+    <button class="btn btn-ghost" type="button">Undo</button>
+  </div>
+  <div class="panel">
+    <div><span class="label">Equity</span><span class="value">+0.142</span></div>
+    <div><span class="label">Pip count</span><span class="value">148 · 161</span></div>
+  </div>
+</div>
+</div>
+
+<div class="swatches">
+  <div class="swatch" style="--sw:#0C0D12"><i></i><span>#0C0D12</span><small>page</small></div>
+  <div class="swatch" style="--sw:#15171F"><i></i><span>#15171F</span><small>surface</small></div>
+  <div class="swatch" style="--sw:#F3EAD3"><i></i><span>#F3EAD3</span><small>ink</small></div>
+  <div class="swatch" style="--sw:#B3A98C"><i></i><span>#B3A98C</span><small>muted</small></div>
+  <div class="swatch" style="--sw:#D6B25E"><i></i><span>#D6B25E</span><small>accent</small></div>
+  <div class="swatch" style="--sw:#B8923E"><i></i><span>#B8923E</span><small>frame</small></div>
+  <div class="swatch" style="--sw:#9A7A2E"><i></i><span>#9A7A2E</span><small>point a</small></div>
+  <div class="swatch" style="--sw:#2F6E62"><i></i><span>#2F6E62</span><small>point b</small></div>
+  <div class="swatch" style="--sw:#F4EBD3"><i></i><span>#F4EBD3</span><small>ivory</small></div>
+  <div class="swatch" style="--sw:#1B1A20"><i></i><span>#1B1A20</span><small>onyx</small></div>
+  <div class="swatch" style="--sw:#F0D27A"><i></i><span>#F0D27A</span><small>highlight</small></div>
+  <div class="swatch" style="--sw:#F08A7A"><i></i><span>#F08A7A</span><small>last move</small></div>
+</div>
+</section>

@@ -1,0 +1,590 @@
+<section class="theme" id="theme-nacre-shell" data-theme="nacre-shell">
+<style>
+#theme-nacre-shell {
+  --page: #f6f3f1;
+  --shader-1: #f6f3f1;
+  --shader-2: #7fb8b0;
+  --shader-3: #cf8a91;
+  --surface: #fffdfb;
+  --surface-2: #f0ebea;
+  --line: #d9d1cc;
+  --ink: #1f2a33;
+  --muted: #5a6670;
+  --accent: #0f6e7a;
+  --accent-ink: #f6fffe;
+  --danger: #a3341c;
+  --board-frame: #d9d1cc;
+  --board-surface: #f8f4f1;
+  --point-a: #cf8a91;
+  --point-b: #7fb8b0;
+  --point-a-edge: #b97078;
+  --point-b-edge: #5f9a92;
+  --bar: #c9bfba;
+  --checker-white: #fbfaf7;
+  --checker-white-edge: #7d8891;
+  --checker-black: #1b2a33;
+  --checker-black-edge: #5fb7b0;
+  --dice: #fbfaf7;
+  --pips: #1b2a33;
+  --cube: #0f6e7a;
+  --cube-text: #f6fffe;
+  --highlight: #0b5c54;
+  --last-move: #b23a18;
+  --frame-sheen-a: #e8dfe2;
+  --frame-sheen-b: #d6e3e0;
+  --surface-sheen-a: #f1e9ec;
+  --surface-sheen-b: #e9f1ef;
+  --pearl-pink: #f3c4d3;
+  --pearl-mint: #c4ecdf;
+  --pearl-lilac: #cfd3f5;
+  --white: #ffffff;
+  --font-serif: "Didot", "Bodoni 72", "Playfair Display", Georgia, serif;
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 24px;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 28px;
+  isolation: isolate;
+}
+#theme-nacre-shell *,
+#theme-nacre-shell *::before,
+#theme-nacre-shell *::after { box-sizing: border-box; }
+
+#theme-nacre-shell .shader {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#theme-nacre-shell .layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  #theme-nacre-shell { padding: 20px; }
+  #theme-nacre-shell .layout { grid-template-columns: 1fr; gap: 20px; }
+}
+
+#theme-nacre-shell .board {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(31, 42, 51, 0.08);
+}
+#theme-nacre-shell .board .num {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 500;
+  fill: var(--muted);
+  text-anchor: middle;
+}
+#theme-nacre-shell .board .badge-text {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--white);
+  text-anchor: middle;
+}
+#theme-nacre-shell .board .cube-text {
+  font-family: var(--font-serif);
+  font-variant-numeric: lining-nums proportional-nums;
+  font-size: 22px;
+  font-weight: 400;
+  fill: var(--cube-text);
+  text-anchor: middle;
+}
+
+#theme-nacre-shell .chrome {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+#theme-nacre-shell h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+#theme-nacre-shell p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 34ch;
+}
+#theme-nacre-shell .actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#theme-nacre-shell .btn {
+  appearance: none;
+  font: inherit;
+  font-weight: 500;
+  font-size: 15px;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#theme-nacre-shell .btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  box-shadow: 0 6px 16px rgba(15, 110, 122, 0.22);
+}
+#theme-nacre-shell .btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+#theme-nacre-shell .btn-danger {
+  background: var(--danger);
+  color: var(--white);
+  border-color: var(--danger);
+}
+
+#theme-nacre-shell .panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 30px rgba(31, 42, 51, 0.08), inset 0 1px 0 var(--white);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+#theme-nacre-shell .panel dl { margin: 0; display: contents; }
+#theme-nacre-shell .panel .stat { display: flex; flex-direction: column; gap: 2px; }
+#theme-nacre-shell .panel dt {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+#theme-nacre-shell .panel dd {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-numeric: lining-nums proportional-nums;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+#theme-nacre-shell .equity {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--checker-black);
+  border: 1px solid var(--line);
+}
+#theme-nacre-shell .equity .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 58%;
+  background: var(--checker-white);
+}
+#theme-nacre-shell .equity .divider {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: 58%;
+  width: 2px;
+  background: var(--accent);
+}
+#theme-nacre-shell .tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+#theme-nacre-shell .tab {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 10px 2px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+#theme-nacre-shell .tab.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+#theme-nacre-shell .toast {
+  align-self: flex-start;
+  background: var(--surface-2);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+}
+
+#theme-nacre-shell .swatches {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+  margin-top: 28px;
+}
+#theme-nacre-shell .swatch {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+#theme-nacre-shell .swatch i {
+  display: block;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--sw);
+}
+#theme-nacre-shell .swatch b {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#theme-nacre-shell .swatch code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+</style>
+
+<canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="bottom-left" data-pointer-idle="center" data-still="0"></canvas>
+<script type="x-shader/x-fragment" id="frag-nacre-shell">
+precision mediump float;
+
+uniform float u_time;
+uniform vec2  u_resolution;
+uniform vec2  u_pointer;
+uniform vec3  u_c1; /* page pearl  #f6f3f1 */
+uniform vec3  u_c2; /* seafoam     #7fb8b0 */
+uniform vec3  u_c3; /* dusty rose  #cf8a91 */
+
+/* --- textbook value noise + 3-octave fbm ------------------------------ */
+float hash21(vec2 p) {
+  p = fract(p * vec2(127.1, 311.7));
+  p += dot(p, p + 19.19);
+  return fract(p.x * p.y);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 3; i++) {
+    v += amp * vnoise(p);
+    p = p * 2.0 + vec2(17.3, 9.1);
+    amp *= 0.5;
+  }
+  return v;
+}
+
+/* cosine rainbow: the thin-film interference colour for a thickness t */
+vec3 film(float t) {
+  return 0.5 + 0.5 * cos(6.2832 * (t + vec3(0.0, 0.33, 0.67)));
+}
+
+void main() {
+  vec2 frag = gl_FragCoord.xy / u_resolution;            /* 0..1 */
+  vec2 uv   = gl_FragCoord.xy / u_resolution.y;          /* aspect-true */
+
+  /* large, slow height field: ~1.8 bands over screen height */
+  float h = fbm(uv * 1.8 + 0.03 * u_time);
+
+  /* optical thickness, plus a view-angle term from the pointer */
+  vec2  ptr  = u_pointer / u_resolution;
+  float view = 0.6 * length(frag - ptr);
+  float t    = 2.0 + 3.0 * h + view;
+
+  /* interference colour, nudged toward the theme's rose / seafoam, then
+     desaturated 70% so it reads as shell rather than oil slick */
+  vec3 c = film(t);
+  c = mix(c, mix(u_c3, u_c2, smoothstep(0.3, 0.7, h)), 0.22);
+  float lum = dot(c, vec3(0.299, 0.587, 0.114));
+  c = mix(c, vec3(lum), 0.7);
+  c = mix(vec3(1.0), c, 0.75);                           /* lift toward white */
+
+  /* page stays pearl: only 0.18 of the banding comes through */
+  vec3 col = mix(u_c1, c, 0.18);
+
+  /* one broad, soft specular sweep, very slow */
+  float g    = dot(frag, normalize(vec2(0.85, 0.53)));
+  float band = 0.25 + 0.45 * (0.5 + 0.5 * sin(u_time * 0.05));
+  float spec = smoothstep(band - 0.32, band, g) * (1.0 - smoothstep(band, band + 0.32, g));
+  col += 0.08 * spec;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<div class="layout">
+  <svg class="board" viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nacre Shell board sample">
+    <defs>
+      <linearGradient id="nacre-shell-frame" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--white)"/>
+        <stop offset="0.5" stop-color="var(--frame-sheen-a)"/>
+        <stop offset="1" stop-color="var(--frame-sheen-b)"/>
+      </linearGradient>
+      <linearGradient id="nacre-shell-surface" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--white)" stop-opacity="0.5"/>
+        <stop offset="0.5" stop-color="var(--surface-sheen-a)" stop-opacity="0.5"/>
+        <stop offset="1" stop-color="var(--surface-sheen-b)" stop-opacity="0.5"/>
+      </linearGradient>
+      <!-- points: base solid, tip lightened ~8% by letting the pale surface through -->
+      <linearGradient id="nacre-shell-pa-down" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--point-a)" stop-opacity="1"/>
+        <stop offset="1" stop-color="var(--point-a)" stop-opacity="0.88"/>
+      </linearGradient>
+      <linearGradient id="nacre-shell-pa-up" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="var(--point-a)" stop-opacity="1"/>
+        <stop offset="1" stop-color="var(--point-a)" stop-opacity="0.88"/>
+      </linearGradient>
+      <linearGradient id="nacre-shell-pb-down" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--point-b)" stop-opacity="1"/>
+        <stop offset="1" stop-color="var(--point-b)" stop-opacity="0.88"/>
+      </linearGradient>
+      <linearGradient id="nacre-shell-pb-up" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="var(--point-b)" stop-opacity="1"/>
+        <stop offset="1" stop-color="var(--point-b)" stop-opacity="0.88"/>
+      </linearGradient>
+      <!-- pearl checker: disc + faint rainbow sheen (3 pastel stops at 25%) -->
+      <radialGradient id="nacre-shell-pearl" cx="0.4" cy="0.35" r="0.75">
+        <stop offset="0" stop-color="var(--white)"/>
+        <stop offset="1" stop-color="var(--checker-white)"/>
+      </radialGradient>
+      <linearGradient id="nacre-shell-sheen" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--pearl-pink)" stop-opacity="0.25"/>
+        <stop offset="0.5" stop-color="var(--pearl-mint)" stop-opacity="0.25"/>
+        <stop offset="1" stop-color="var(--pearl-lilac)" stop-opacity="0.25"/>
+      </linearGradient>
+      <!-- abalone checker: dark disc with blue-green depth -->
+      <radialGradient id="nacre-shell-abalone" cx="0.38" cy="0.32" r="0.8">
+        <stop offset="0" stop-color="var(--checker-black-edge)" stop-opacity="0.35"/>
+        <stop offset="0.45" stop-color="var(--checker-black)" stop-opacity="0"/>
+        <stop offset="1" stop-color="var(--checker-black)" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="nacre-shell-die" cx="0.35" cy="0.3" r="0.9">
+        <stop offset="0" stop-color="var(--white)"/>
+        <stop offset="1" stop-color="var(--dice)"/>
+      </radialGradient>
+      <filter id="nacre-shell-soft" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="1.6"/>
+      </filter>
+      <filter id="nacre-shell-lift" x="-40%" y="-40%" width="180%" height="200%">
+        <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="var(--ink)" flood-opacity="0.25"/>
+      </filter>
+      <filter id="nacre-shell-shadow" x="-40%" y="-40%" width="180%" height="200%">
+        <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="var(--ink)" flood-opacity="0.18"/>
+      </filter>
+      <pattern id="nacre-shell-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect x="0" y="0" width="6" height="1" fill="var(--pips)" fill-opacity="0.35"/>
+      </pattern>
+
+      <g id="nacre-shell-white">
+        <circle r="19" fill="url(#nacre-shell-pearl)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+        <circle r="18" fill="url(#nacre-shell-sheen)"/>
+        <ellipse cx="-5" cy="-7" rx="8" ry="4.5" fill="var(--white)" fill-opacity="0.8" filter="url(#nacre-shell-soft)"/>
+      </g>
+      <g id="nacre-shell-black">
+        <circle r="19" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle r="18" fill="url(#nacre-shell-abalone)"/>
+        <path d="M-12.5 -5.5 A13.5 13.5 0 0 1 4 -12.5" fill="none" stroke="var(--checker-black-edge)" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.75" filter="url(#nacre-shell-soft)"/>
+      </g>
+      <g id="nacre-shell-pip"><circle r="3.2" fill="var(--pips)"/></g>
+    </defs>
+
+    <!-- frame -->
+    <rect x="0" y="0" width="600" height="420" rx="20" fill="var(--board-frame)"/>
+    <rect x="0" y="0" width="600" height="420" rx="20" fill="url(#nacre-shell-frame)" fill-opacity="0.7"/>
+    <rect x="1.5" y="1.5" width="597" height="417" rx="19" fill="none" stroke="var(--white)" stroke-width="1" stroke-opacity="0.9"/>
+
+    <!-- playing surface -->
+    <rect x="24" y="24" width="552" height="372" rx="8" fill="var(--board-surface)"/>
+    <rect x="24" y="24" width="552" height="372" rx="8" fill="url(#nacre-shell-surface)"/>
+    <rect x="24.5" y="24.5" width="551" height="371" rx="8" fill="none" stroke="var(--white)" stroke-width="1" stroke-opacity="0.8"/>
+
+    <!-- 24 points; width 43.33, height 150 -->
+    <g stroke-width="1" stroke-linejoin="round">
+      <!-- top left (points 13-18), left to right -->
+      <path d="M24 24 H67.33 L45.67 174 Z" fill="url(#nacre-shell-pb-down)" stroke="var(--point-b-edge)"/>
+      <path d="M67.33 24 H110.67 L89 174 Z" fill="url(#nacre-shell-pa-down)" stroke="var(--point-a-edge)"/>
+      <path d="M110.67 24 H154 L132.33 174 Z" fill="url(#nacre-shell-pb-down)" stroke="var(--point-b-edge)"/>
+      <path d="M154 24 H197.33 L175.67 174 Z" fill="url(#nacre-shell-pa-down)" stroke="var(--point-a-edge)"/>
+      <path d="M197.33 24 H240.67 L219 174 Z" fill="url(#nacre-shell-pb-down)" stroke="var(--point-b-edge)"/>
+      <path d="M240.67 24 H284 L262.33 174 Z" fill="url(#nacre-shell-pa-down)" stroke="var(--point-a-edge)"/>
+      <!-- top right (points 19-24) -->
+      <path d="M316 24 H359.33 L337.67 174 Z" fill="url(#nacre-shell-pb-down)" stroke="var(--point-b-edge)"/>
+      <path d="M359.33 24 H402.67 L381 174 Z" fill="url(#nacre-shell-pa-down)" stroke="var(--point-a-edge)"/>
+      <path d="M402.67 24 H446 L424.33 174 Z" fill="url(#nacre-shell-pb-down)" stroke="var(--point-b-edge)"/>
+      <path d="M446 24 H489.33 L467.67 174 Z" fill="url(#nacre-shell-pa-down)" stroke="var(--point-a-edge)"/>
+      <path d="M489.33 24 H532.67 L511 174 Z" fill="url(#nacre-shell-pb-down)" stroke="var(--point-b-edge)"/>
+      <path d="M532.67 24 H576 L554.33 174 Z" fill="url(#nacre-shell-pa-down)" stroke="var(--point-a-edge)"/>
+      <!-- bottom left (points 12-7), left to right -->
+      <path d="M24 396 H67.33 L45.67 246 Z" fill="url(#nacre-shell-pa-up)" stroke="var(--point-a-edge)"/>
+      <path d="M67.33 396 H110.67 L89 246 Z" fill="url(#nacre-shell-pb-up)" stroke="var(--point-b-edge)"/>
+      <path d="M110.67 396 H154 L132.33 246 Z" fill="url(#nacre-shell-pa-up)" stroke="var(--point-a-edge)"/>
+      <path d="M154 396 H197.33 L175.67 246 Z" fill="url(#nacre-shell-pb-up)" stroke="var(--point-b-edge)"/>
+      <path d="M197.33 396 H240.67 L219 246 Z" fill="url(#nacre-shell-pa-up)" stroke="var(--point-a-edge)"/>
+      <path d="M240.67 396 H284 L262.33 246 Z" fill="url(#nacre-shell-pb-up)" stroke="var(--point-b-edge)"/>
+      <!-- bottom right (points 6-1) -->
+      <path d="M316 396 H359.33 L337.67 246 Z" fill="url(#nacre-shell-pa-up)" stroke="var(--point-a-edge)"/>
+      <path d="M359.33 396 H402.67 L381 246 Z" fill="url(#nacre-shell-pb-up)" stroke="var(--point-b-edge)"/>
+      <path d="M402.67 396 H446 L424.33 246 Z" fill="url(#nacre-shell-pa-up)" stroke="var(--point-a-edge)"/>
+      <path d="M446 396 H489.33 L467.67 246 Z" fill="url(#nacre-shell-pb-up)" stroke="var(--point-b-edge)"/>
+      <path d="M489.33 396 H532.67 L511 246 Z" fill="url(#nacre-shell-pa-up)" stroke="var(--point-a-edge)"/>
+      <path d="M532.67 396 H576 L554.33 246 Z" fill="url(#nacre-shell-pb-up)" stroke="var(--point-b-edge)"/>
+    </g>
+
+    <!-- bar -->
+    <rect x="284" y="24" width="32" height="372" fill="var(--bar)"/>
+    <rect x="284.5" y="24.5" width="31" height="371" fill="none" stroke="var(--white)" stroke-width="1" stroke-opacity="0.9"/>
+
+    <!-- point numbers -->
+    <text class="num" x="554.33" y="412">1</text>
+    <text class="num" x="337.67" y="412">6</text>
+    <text class="num" x="45.67" y="412">12</text>
+
+    <!-- last-move arrow: point 24 (top right) to point 19 (top, right of bar) -->
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M554 150 Q446 118 348 150" stroke="var(--white)" stroke-width="5.5"/>
+      <path d="M554 150 Q446 118 348 150" stroke="var(--last-move)" stroke-width="2.5"/>
+      <path d="M360 140 L346 151 L362 154" stroke="var(--white)" stroke-width="5.5"/>
+      <path d="M360 140 L346 151 L362 154" stroke="var(--last-move)" stroke-width="2.5"/>
+    </g>
+
+    <!-- stacks -->
+    <g filter="url(#nacre-shell-shadow)">
+      <!-- point 24 (top right): 2 pearl -->
+      <use href="#nacre-shell-white" x="554.33" y="44"/>
+      <use href="#nacre-shell-white" x="554.33" y="82"/>
+      <!-- point 13 (top left): 5 abalone -->
+      <use href="#nacre-shell-black" x="45.67" y="44"/>
+      <use href="#nacre-shell-black" x="45.67" y="82"/>
+      <use href="#nacre-shell-black" x="45.67" y="120"/>
+      <use href="#nacre-shell-black" x="45.67" y="158"/>
+      <use href="#nacre-shell-black" x="45.67" y="196"/>
+      <!-- point 8 (bottom left, seafoam): 3 abalone -->
+      <use href="#nacre-shell-black" x="219" y="376"/>
+      <use href="#nacre-shell-black" x="219" y="338"/>
+      <use href="#nacre-shell-black" x="219" y="300"/>
+      <!-- point 6 (bottom right, rose): 5 pearl + badge -->
+      <use href="#nacre-shell-white" x="337.67" y="376"/>
+      <use href="#nacre-shell-white" x="337.67" y="338"/>
+      <use href="#nacre-shell-white" x="337.67" y="300"/>
+      <use href="#nacre-shell-white" x="337.67" y="262"/>
+      <use href="#nacre-shell-white" x="337.67" y="224"/>
+    </g>
+    <!-- stack badge: 7 on the six point -->
+    <rect x="325.67" y="214" width="24" height="20" rx="10" fill="var(--muted)"/>
+    <text class="badge-text" x="337.67" y="228.5">7</text>
+
+    <!-- selected checker: point 19 (top, seafoam), lifted, deep-teal rim -->
+    <g filter="url(#nacre-shell-lift)">
+      <use href="#nacre-shell-white" x="381" y="44"/>
+    </g>
+    <circle cx="381" cy="44" r="19" fill="none" stroke="var(--highlight)" stroke-width="3"/>
+
+    <!-- legal-move ring on point 18 (top, rose) -->
+    <circle cx="262.33" cy="44" r="16" fill="none" stroke="var(--white)" stroke-width="4.5" stroke-opacity="0.9"/>
+    <circle cx="262.33" cy="44" r="16" fill="none" stroke="var(--highlight)" stroke-width="2.5"/>
+
+    <!-- doubling cube: 64 -->
+    <g filter="url(#nacre-shell-shadow)">
+      <rect x="121" y="190" width="40" height="40" rx="7" fill="var(--cube)"/>
+    </g>
+    <text class="cube-text" x="141" y="218">64</text>
+
+    <!-- dice: 6 (played, faded) and 3 -->
+    <g filter="url(#nacre-shell-shadow)" opacity="0.55">
+      <rect x="402" y="190" width="40" height="40" rx="6" fill="url(#nacre-shell-die)" stroke="var(--line)" stroke-width="1"/>
+      <use href="#nacre-shell-pip" x="412" y="200"/><use href="#nacre-shell-pip" x="432" y="200"/>
+      <use href="#nacre-shell-pip" x="412" y="210"/><use href="#nacre-shell-pip" x="432" y="210"/>
+      <use href="#nacre-shell-pip" x="412" y="220"/><use href="#nacre-shell-pip" x="432" y="220"/>
+    </g>
+    <g filter="url(#nacre-shell-shadow)">
+      <rect x="456" y="190" width="40" height="40" rx="6" fill="url(#nacre-shell-die)" stroke="var(--line)" stroke-width="1"/>
+      <use href="#nacre-shell-pip" x="466" y="200"/>
+      <use href="#nacre-shell-pip" x="476" y="210"/>
+      <use href="#nacre-shell-pip" x="486" y="220"/>
+    </g>
+  </svg>
+
+  <div class="chrome">
+    <h2>Nacre Shell</h2>
+    <p>Mother-of-pearl white, rose and seafoam points, an abalone opponent.</p>
+    <div class="tabs">
+      <span class="tab is-active">Board</span>
+      <span class="tab">Moves</span>
+      <span class="tab">Analysis</span>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn btn-primary">Roll</button>
+      <button type="button" class="btn btn-ghost">Undo</button>
+    </div>
+    <div class="panel">
+      <dl>
+        <div class="stat"><dt>Pip count</dt><dd>142</dd></div>
+        <div class="stat"><dt>Equity</dt><dd>+0.184</dd></div>
+      </dl>
+      <div class="equity" role="img" aria-label="Equity bar, 58 percent"><div class="fill"></div><div class="divider"></div></div>
+    </div>
+    <div class="toast">Doubled to 64</div>
+  </div>
+</div>
+
+<div class="swatches">
+  <div class="swatch" style="--sw:#f6f3f1"><i></i><b>Page</b><code>#f6f3f1</code></div>
+  <div class="swatch" style="--sw:#fffdfb"><i></i><b>Surface</b><code>#fffdfb</code></div>
+  <div class="swatch" style="--sw:#1f2a33"><i></i><b>Ink</b><code>#1f2a33</code></div>
+  <div class="swatch" style="--sw:#0f6e7a"><i></i><b>Accent</b><code>#0f6e7a</code></div>
+  <div class="swatch" style="--sw:#d9d1cc"><i></i><b>Frame</b><code>#d9d1cc</code></div>
+  <div class="swatch" style="--sw:#cf8a91"><i></i><b>Point rose</b><code>#cf8a91</code></div>
+  <div class="swatch" style="--sw:#7fb8b0"><i></i><b>Point seafoam</b><code>#7fb8b0</code></div>
+  <div class="swatch" style="--sw:#fbfaf7"><i></i><b>Pearl checker</b><code>#fbfaf7</code></div>
+  <div class="swatch" style="--sw:#1b2a33"><i></i><b>Abalone checker</b><code>#1b2a33</code></div>
+  <div class="swatch" style="--sw:#5fb7b0"><i></i><b>Abalone rim</b><code>#5fb7b0</code></div>
+  <div class="swatch" style="--sw:#0b5c54"><i></i><b>Highlight</b><code>#0b5c54</code></div>
+  <div class="swatch" style="--sw:#b23a18"><i></i><b>Last move</b><code>#b23a18</code></div>
+</div>
+</section>

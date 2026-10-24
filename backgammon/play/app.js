@@ -772,7 +772,7 @@ function render() {
     for (const id of ["player", "opponent"]) $(id).classList.remove("active");
   $("subtitle").textContent = m?.started
     ? `${s.matchLength ? s.matchLength + "-point match" : "Unlimited points"} · ${s.crawford ? "Crawford game" : s.crawfordPlayed ? "Post-Crawford" : `Game ${s.gameNumber}`} · cube ${s.cube.value}${!s.matchLength && s.rules.jacoby ? " · Jacoby" : ""}`
-    : "Computer, same-device, or a private room";
+    : "";
   $("panel-toggle").textContent = m?.started ? "Details" : "Setup";
   actions();
   panel();

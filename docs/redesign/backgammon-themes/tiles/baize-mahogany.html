@@ -1,0 +1,465 @@
+<section class="theme" id="theme-baize-mahogany" data-theme="baize-mahogany">
+  <style>
+    #theme-baize-mahogany {
+      --page: #0e2a1f;
+      --surface: #153626;
+      --surface-2: #1b4230;
+      --line: #2a5440;
+      --ink: #eef3e9;
+      --muted: #a9c4b2;
+      --accent: #b3382f;
+      --accent-ink: #fff6ee;
+      --board-frame: #4b1d12;
+      --board-surface: #14402b;
+      --point-a: #b89560;
+      --point-b: #b23a2e;
+      --bar: #3a1710;
+      --checker-white: #f8f3e6;
+      --checker-white-edge: #d6ccb3;
+      --checker-black: #121110;
+      --checker-black-edge: #3a3634;
+      --dice: #c8262a;
+      --pips: #ffffff;
+      --cube: #f5efe0;
+      --cube-text: #1a1a1a;
+      --highlight: #a6f2c9;
+      --last-move: #bfe3ff;
+      --shader-1: #0a2017;
+      --shader-2: #1a4a33;
+      --shader-3: #081a13;
+      font-family: Futura, "Avenir Next", Avenir, "Century Gothic", "Segoe UI", sans-serif;
+      font-variant-numeric: tabular-nums lining-nums;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px;
+      border-radius: 14px;
+      background: var(--page);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.45;
+      font-weight: 400;
+    }
+    #theme-baize-mahogany *, #theme-baize-mahogany *::before, #theme-baize-mahogany *::after { box-sizing: inherit; }
+    #theme-baize-mahogany .shader {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      display: block; z-index: 0; pointer-events: none;
+    }
+    #theme-baize-mahogany .tile {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      gap: 24px; align-items: start;
+    }
+    #theme-baize-mahogany .board {
+      width: 100%; height: auto; display: block;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45), 0 20px 40px rgba(0,0,0,0.35);
+      font-family: inherit;
+    }
+    #theme-baize-mahogany h2 {
+      margin: 0 0 8px; font-size: 24px; font-weight: 500; letter-spacing: 0.01em; line-height: 1.2;
+    }
+    #theme-baize-mahogany p { margin: 0 0 16px; color: var(--muted); }
+    #theme-baize-mahogany .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    #theme-baize-mahogany button {
+      font: inherit; font-weight: 500; letter-spacing: 0.01em;
+      min-height: 44px; padding: 0 22px; border-radius: 999px; cursor: pointer;
+      border: 1px solid transparent; background: transparent; color: var(--ink);
+    }
+    #theme-baize-mahogany .primary { background: var(--accent); color: var(--accent-ink); box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
+    #theme-baize-mahogany .ghost { border-color: rgba(169,196,178,0.6); }
+    #theme-baize-mahogany .panel {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    #theme-baize-mahogany .panel dl { margin: 0; }
+    #theme-baize-mahogany .panel dt { font-size: 12px; color: var(--muted); margin: 0 0 2px; }
+    #theme-baize-mahogany .panel dd { margin: 0; font-size: 22px; font-weight: 500; }
+    #theme-baize-mahogany .swatches {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 24px;
+    }
+    #theme-baize-mahogany .swatches div {
+      height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+      display: flex; align-items: flex-end; padding: 6px 8px; font-size: 12px;
+    }
+    @media (max-width: 720px) {
+      #theme-baize-mahogany { padding: 16px; }
+      #theme-baize-mahogany .tile { grid-template-columns: 1fr; }
+      #theme-baize-mahogany .swatches { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+  </style>
+  <canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="top-left" data-pointer-idle="center" data-still="0"></canvas>
+  <script type="x-shader/x-fragment" id="frag-baize-mahogany">
+precision mediump float;
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec2 u_pointer;
+uniform vec3 u_c1; /* felt in shadow */
+uniform vec3 u_c2; /* felt under the lamp */
+uniform vec3 u_c3; /* corner vignette */
+
+/* --- helpers: value noise, 2-octave fbm --- */
+float hash(vec2 p) {
+  p = fract(p * vec2(127.1, 311.7));
+  p += dot(p, p + 19.19);
+  return fract(p.x * p.y);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm2(vec2 p) {
+  float v = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 2; i++) {
+    v += amp * noise(p);
+    p = p * 2.1 + vec2(1.7, 9.2);
+    amp *= 0.5;
+  }
+  return v;
+}
+
+void main() {
+  /* top-down uv so the lamp hangs above centre */
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  uv.y = 1.0 - uv.y;
+  float aspect = u_resolution.x / u_resolution.y;
+
+  /* lamp centre, nudged 0.02 toward the pointer */
+  vec2 ptr = clamp(u_pointer / u_resolution, 0.0, 1.0);
+  vec2 c = vec2(0.5, 0.35) + (ptr - vec2(0.5, 0.35)) * 0.02;
+
+  /* soft cone of tungsten light */
+  vec2 d = (uv - c) * vec2(aspect, 1.25);
+  float l = smoothstep(1.1, 0.0, length(d));
+  l *= 1.0 + 0.03 * sin(u_time * 0.6);
+  vec3 col = mix(u_c1, u_c2, l);
+
+  /* felt nap: static, high-frequency, barely there */
+  float n = noise(uv * vec2(aspect, 1.0) * 420.0);
+  col += (n - 0.5) * 0.06;
+
+  /* smoke: two fbm layers drifting upward, only visible where lit */
+  vec2 sp = uv * vec2(aspect, 1.0);
+  float s1 = fbm2(sp * 3.0 + vec2(0.0, u_time * 0.02));
+  float s2 = fbm2(sp * 5.5 + vec2(1.3, u_time * 0.03) + s1 * 0.8);
+  float smoke = smoothstep(0.30, 0.78, s1 * 0.6 + s2 * 0.4);
+  col += vec3(0.78, 0.74, 0.68) * smoke * 0.035 * l;
+
+  /* vignette to the corners */
+  float v = smoothstep(1.35, 0.5, length((uv - 0.5) * vec2(aspect, 1.0)));
+  col = mix(u_c3, col, v);
+
+  gl_FragColor = vec4(col, 1.0);
+}
+  </script>
+  <div class="tile">
+  <svg class="board" viewBox="0 0 600 420" role="img" aria-label="Baize and Mahogany board sample">
+    <defs>
+      <linearGradient id="baize-mahogany-mahogany" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#5c2416"/>
+        <stop offset="1" stop-color="#3d170e"/>
+      </linearGradient>
+      <filter id="baize-mahogany-grain" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.02 0.6" numOctaves="2" seed="11" result="n"/>
+        <feColorMatrix in="n" type="saturate" values="0" result="g"/>
+        <feComponentTransfer in="g" result="g2"><feFuncA type="linear" slope="0.28"/></feComponentTransfer>
+        <feBlend in="SourceGraphic" in2="g2" mode="overlay"/>
+      </filter>
+      <filter id="baize-mahogany-nap" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n"/>
+        <feColorMatrix in="n" type="saturate" values="0" result="g"/>
+        <feComponentTransfer in="g" result="g2"><feFuncA type="linear" slope="0.10"/></feComponentTransfer>
+        <feBlend in="SourceGraphic" in2="g2" mode="overlay"/>
+      </filter>
+      <linearGradient id="baize-mahogany-leather-a" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c6a471"/>
+        <stop offset="0.5" stop-color="var(--point-a)"/>
+        <stop offset="1" stop-color="#a7835a"/>
+      </linearGradient>
+      <linearGradient id="baize-mahogany-leather-b" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c2473a"/>
+        <stop offset="0.5" stop-color="var(--point-b)"/>
+        <stop offset="1" stop-color="#9c3126"/>
+      </linearGradient>
+      <radialGradient id="baize-mahogany-ivory" cx="0.42" cy="0.38" r="0.68">
+        <stop offset="0" stop-color="#fffbf2"/>
+        <stop offset="0.55" stop-color="var(--checker-white)"/>
+        <stop offset="1" stop-color="#e6dcc3"/>
+      </radialGradient>
+      <linearGradient id="baize-mahogany-lacquer" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+        <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.12"/>
+        <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="baize-mahogany-dice" cx="0.5" cy="0.45" r="0.62">
+        <stop offset="0" stop-color="#e04a48"/>
+        <stop offset="0.55" stop-color="#d4343a"/>
+        <stop offset="1" stop-color="var(--dice)"/>
+      </radialGradient>
+      <radialGradient id="baize-mahogany-brass" cx="0.35" cy="0.3" r="0.8">
+        <stop offset="0" stop-color="#f1d58a"/>
+        <stop offset="1" stop-color="#8a6420"/>
+      </radialGradient>
+      <linearGradient id="baize-mahogany-well" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#103323"/>
+        <stop offset="1" stop-color="var(--board-surface)"/>
+      </linearGradient>
+      <filter id="baize-mahogany-lift" x="-50%" y="-50%" width="200%" height="220%">
+        <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.6"/>
+      </filter>
+      <filter id="baize-mahogany-soft" x="-30%" y="-30%" width="160%" height="170%">
+        <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.5"/>
+      </filter>
+      <marker id="baize-mahogany-arrow" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M1.5,1.5 L10.5,6 L1.5,10.5 Z" fill="var(--last-move)" stroke="var(--page)" stroke-width="1.5" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+
+    <!-- frame -->
+    <rect x="0" y="0" width="600" height="420" rx="14" fill="url(#baize-mahogany-mahogany)" filter="url(#baize-mahogany-grain)"/>
+    <rect x="22" y="22" width="528" height="376" rx="12" fill="none" stroke="#7a3320" stroke-width="2"/>
+
+    <!-- playing surface -->
+    <rect x="24" y="24" width="524" height="372" rx="10" fill="var(--board-surface)" filter="url(#baize-mahogany-nap)"/>
+    <rect x="24" y="24" width="524" height="372" rx="10" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="1.5"/>
+
+    <!-- points -->
+    <g fill="rgba(0,0,0,0.45)">
+      <path d="M25,24 L64,24 L47,162 Q44.5,168 42,162 Z" transform="translate(0 1)"/>
+      <path d="M25,396 L64,396 L47,258 Q44.5,252 42,258 Z" transform="translate(0 1)"/>
+      <path d="M66,24 L105,24 L88,162 Q85.5,168 83,162 Z" transform="translate(0 1)"/>
+      <path d="M66,396 L105,396 L88,258 Q85.5,252 83,258 Z" transform="translate(0 1)"/>
+      <path d="M107,24 L146,24 L129,162 Q126.5,168 124,162 Z" transform="translate(0 1)"/>
+      <path d="M107,396 L146,396 L129,258 Q126.5,252 124,258 Z" transform="translate(0 1)"/>
+      <path d="M148,24 L187,24 L170,162 Q167.5,168 165,162 Z" transform="translate(0 1)"/>
+      <path d="M148,396 L187,396 L170,258 Q167.5,252 165,258 Z" transform="translate(0 1)"/>
+      <path d="M189,24 L228,24 L211,162 Q208.5,168 206,162 Z" transform="translate(0 1)"/>
+      <path d="M189,396 L228,396 L211,258 Q208.5,252 206,258 Z" transform="translate(0 1)"/>
+      <path d="M230,24 L269,24 L252,162 Q249.5,168 247,162 Z" transform="translate(0 1)"/>
+      <path d="M230,396 L269,396 L252,258 Q249.5,252 247,258 Z" transform="translate(0 1)"/>
+      <path d="M303,24 L342,24 L325,162 Q322.5,168 320,162 Z" transform="translate(0 1)"/>
+      <path d="M303,396 L342,396 L325,258 Q322.5,252 320,258 Z" transform="translate(0 1)"/>
+      <path d="M344,24 L383,24 L366,162 Q363.5,168 361,162 Z" transform="translate(0 1)"/>
+      <path d="M344,396 L383,396 L366,258 Q363.5,252 361,258 Z" transform="translate(0 1)"/>
+      <path d="M385,24 L424,24 L407,162 Q404.5,168 402,162 Z" transform="translate(0 1)"/>
+      <path d="M385,396 L424,396 L407,258 Q404.5,252 402,258 Z" transform="translate(0 1)"/>
+      <path d="M426,24 L465,24 L448,162 Q445.5,168 443,162 Z" transform="translate(0 1)"/>
+      <path d="M426,396 L465,396 L448,258 Q445.5,252 443,258 Z" transform="translate(0 1)"/>
+      <path d="M467,24 L506,24 L489,162 Q486.5,168 484,162 Z" transform="translate(0 1)"/>
+      <path d="M467,396 L506,396 L489,258 Q486.5,252 484,258 Z" transform="translate(0 1)"/>
+      <path d="M508,24 L547,24 L530,162 Q527.5,168 525,162 Z" transform="translate(0 1)"/>
+      <path d="M508,396 L547,396 L530,258 Q527.5,252 525,258 Z" transform="translate(0 1)"/>
+    </g>
+    <g>
+      <path d="M25,24 L64,24 L47,162 Q44.5,168 42,162 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M25,396 L64,396 L47,258 Q44.5,252 42,258 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M66,24 L105,24 L88,162 Q85.5,168 83,162 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M66,396 L105,396 L88,258 Q85.5,252 83,258 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M107,24 L146,24 L129,162 Q126.5,168 124,162 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M107,396 L146,396 L129,258 Q126.5,252 124,258 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M148,24 L187,24 L170,162 Q167.5,168 165,162 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M148,396 L187,396 L170,258 Q167.5,252 165,258 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M189,24 L228,24 L211,162 Q208.5,168 206,162 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M189,396 L228,396 L211,258 Q208.5,252 206,258 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M230,24 L269,24 L252,162 Q249.5,168 247,162 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M230,396 L269,396 L252,258 Q249.5,252 247,258 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M303,24 L342,24 L325,162 Q322.5,168 320,162 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M303,396 L342,396 L325,258 Q322.5,252 320,258 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M344,24 L383,24 L366,162 Q363.5,168 361,162 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M344,396 L383,396 L366,258 Q363.5,252 361,258 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M385,24 L424,24 L407,162 Q404.5,168 402,162 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M385,396 L424,396 L407,258 Q404.5,252 402,258 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M426,24 L465,24 L448,162 Q445.5,168 443,162 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M426,396 L465,396 L448,258 Q445.5,252 443,258 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M467,24 L506,24 L489,162 Q486.5,168 484,162 Z" fill="url(#baize-mahogany-leather-b)"/>
+      <path d="M467,396 L506,396 L489,258 Q486.5,252 484,258 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M508,24 L547,24 L530,162 Q527.5,168 525,162 Z" fill="url(#baize-mahogany-leather-a)"/>
+      <path d="M508,396 L547,396 L530,258 Q527.5,252 525,258 Z" fill="url(#baize-mahogany-leather-b)"/>
+    </g>
+    <g fill="none" stroke="#e3c17a" stroke-opacity="0.4" stroke-width="1" stroke-dasharray="1.5 1.5">
+      <path d="M28.5,27 L60.5,27 L44.5,159 Z"/>
+      <path d="M28.5,393 L60.5,393 L44.5,261 Z"/>
+      <path d="M69.5,27 L101.5,27 L85.5,159 Z"/>
+      <path d="M69.5,393 L101.5,393 L85.5,261 Z"/>
+      <path d="M110.5,27 L142.5,27 L126.5,159 Z"/>
+      <path d="M110.5,393 L142.5,393 L126.5,261 Z"/>
+      <path d="M151.5,27 L183.5,27 L167.5,159 Z"/>
+      <path d="M151.5,393 L183.5,393 L167.5,261 Z"/>
+      <path d="M192.5,27 L224.5,27 L208.5,159 Z"/>
+      <path d="M192.5,393 L224.5,393 L208.5,261 Z"/>
+      <path d="M233.5,27 L265.5,27 L249.5,159 Z"/>
+      <path d="M233.5,393 L265.5,393 L249.5,261 Z"/>
+      <path d="M306.5,27 L338.5,27 L322.5,159 Z"/>
+      <path d="M306.5,393 L338.5,393 L322.5,261 Z"/>
+      <path d="M347.5,27 L379.5,27 L363.5,159 Z"/>
+      <path d="M347.5,393 L379.5,393 L363.5,261 Z"/>
+      <path d="M388.5,27 L420.5,27 L404.5,159 Z"/>
+      <path d="M388.5,393 L420.5,393 L404.5,261 Z"/>
+      <path d="M429.5,27 L461.5,27 L445.5,159 Z"/>
+      <path d="M429.5,393 L461.5,393 L445.5,261 Z"/>
+      <path d="M470.5,27 L502.5,27 L486.5,159 Z"/>
+      <path d="M470.5,393 L502.5,393 L486.5,261 Z"/>
+      <path d="M511.5,27 L543.5,27 L527.5,159 Z"/>
+      <path d="M511.5,393 L543.5,393 L527.5,261 Z"/>
+    </g>
+
+    <!-- bar -->
+    <rect x="270" y="24" width="32" height="372" fill="var(--bar)"/>
+    <rect x="271" y="24" width="30" height="372" fill="none" stroke="#5a2518" stroke-width="1"/>
+    <circle cx="286" cy="38" r="3.5" fill="url(#baize-mahogany-brass)"/>
+    <circle cx="286" cy="382" r="3.5" fill="url(#baize-mahogany-brass)"/>
+
+    <!-- bear-off trays -->
+    <rect x="558" y="30" width="34" height="172" rx="6" fill="url(#baize-mahogany-well)" stroke="#2a0f08" stroke-width="1.5"/>
+    <rect x="558" y="218" width="34" height="172" rx="6" fill="url(#baize-mahogany-well)" stroke="#2a0f08" stroke-width="1.5"/>
+
+    <!-- point numbers -->
+    <g fill="var(--muted)" font-size="12" text-anchor="middle">
+      <text x="527.5" y="412">1</text>
+      <text x="44.5" y="412">12</text>
+      <text x="44.5" y="16">13</text>
+    </g>
+
+    <!-- last-move arrow -->
+    <path d="M249.5,104 Q292,220 208.5,334" fill="none" stroke="var(--page)" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M249.5,104 Q292,220 208.5,334" fill="none" stroke="var(--last-move)" stroke-width="2" stroke-linecap="round" marker-end="url(#baize-mahogany-arrow)"/>
+
+    <!-- legal-move ring on the target point -->
+    <circle cx="208.5" cy="376" r="19" fill="none" stroke="var(--page)" stroke-width="4.5"/>
+    <circle cx="208.5" cy="376" r="19" fill="none" stroke="var(--highlight)" stroke-width="2.5"/>
+
+    <!-- checkers -->
+      <g>
+        <circle cx="527.5" cy="376" r="18" fill="url(#baize-mahogany-ivory)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+        <circle cx="527.5" cy="376" r="17" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.75"/>
+      </g>
+      <g>
+        <circle cx="527.5" cy="340" r="18" fill="url(#baize-mahogany-ivory)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+        <circle cx="527.5" cy="340" r="17" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.75"/>
+      </g>
+      <g>
+        <circle cx="527.5" cy="304" r="18" fill="url(#baize-mahogany-ivory)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+        <circle cx="527.5" cy="304" r="17" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.75"/>
+      </g>
+      <g>
+        <circle cx="527.5" cy="268" r="18" fill="url(#baize-mahogany-ivory)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+        <circle cx="527.5" cy="268" r="17" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.75"/>
+      </g>
+      <g filter="url(#baize-mahogany-lift)">
+        <circle cx="527.5" cy="232" r="18" fill="url(#baize-mahogany-ivory)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+        <circle cx="527.5" cy="232" r="17" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.75"/>
+      </g>
+      <circle cx="527.5" cy="232" r="21" fill="none" stroke="var(--page)" stroke-width="5"/>
+      <circle cx="527.5" cy="232" r="21" fill="none" stroke="var(--highlight)" stroke-width="3"/>
+      <g>
+        <circle cx="322.5" cy="44" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle cx="322.5" cy="44" r="17" fill="url(#baize-mahogany-lacquer)"/>
+      </g>
+      <g>
+        <circle cx="322.5" cy="80" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle cx="322.5" cy="80" r="17" fill="url(#baize-mahogany-lacquer)"/>
+      </g>
+      <g>
+        <circle cx="322.5" cy="116" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle cx="322.5" cy="116" r="17" fill="url(#baize-mahogany-lacquer)"/>
+      </g>
+      <g>
+        <circle cx="322.5" cy="152" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle cx="322.5" cy="152" r="17" fill="url(#baize-mahogany-lacquer)"/>
+      </g>
+      <g>
+        <circle cx="322.5" cy="188" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle cx="322.5" cy="188" r="17" fill="url(#baize-mahogany-lacquer)"/>
+      </g>
+      <g>
+        <circle cx="322.5" cy="188" r="9" fill="var(--point-b)" stroke="var(--checker-black-edge)" stroke-width="1"/>
+        <text x="322.5" y="192" text-anchor="middle" font-size="12" font-weight="500" fill="#ffffff">6</text>
+      </g>
+      <g>
+        <circle cx="126.5" cy="376" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle cx="126.5" cy="376" r="17" fill="url(#baize-mahogany-lacquer)"/>
+      </g>
+      <g>
+        <circle cx="126.5" cy="340" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle cx="126.5" cy="340" r="17" fill="url(#baize-mahogany-lacquer)"/>
+      </g>
+      <g>
+        <circle cx="126.5" cy="304" r="18" fill="var(--checker-black)" stroke="var(--checker-black-edge)" stroke-width="2"/>
+        <circle cx="126.5" cy="304" r="17" fill="url(#baize-mahogany-lacquer)"/>
+      </g>
+      <g>
+        <circle cx="249.5" cy="44" r="18" fill="url(#baize-mahogany-ivory)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+        <circle cx="249.5" cy="44" r="17" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.75"/>
+      </g>
+      <g>
+        <circle cx="249.5" cy="80" r="18" fill="url(#baize-mahogany-ivory)" stroke="var(--checker-white-edge)" stroke-width="2"/>
+        <circle cx="249.5" cy="80" r="17" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.75"/>
+      </g>
+
+    <!-- dice -->
+      <g transform="translate(392 192)" filter="url(#baize-mahogany-soft)">
+        <rect width="36" height="36" rx="3.6" fill="url(#baize-mahogany-dice)" stroke="rgba(0,0,0,0.35)" stroke-width="1"/>
+        <rect x="1.5" y="1.5" width="33" height="33" rx="3.6" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <circle cx="8.64" cy="8.64" r="3.2" fill="var(--pips)"/>
+        <circle cx="8.64" cy="18" r="3.2" fill="var(--pips)"/>
+        <circle cx="8.64" cy="27.36" r="3.2" fill="var(--pips)"/>
+        <circle cx="27.36" cy="8.64" r="3.2" fill="var(--pips)"/>
+        <circle cx="27.36" cy="18" r="3.2" fill="var(--pips)"/>
+        <circle cx="27.36" cy="27.36" r="3.2" fill="var(--pips)"/>
+      </g>
+      <g transform="translate(446 192)" filter="url(#baize-mahogany-soft)">
+        <rect width="36" height="36" rx="3.6" fill="url(#baize-mahogany-dice)" stroke="rgba(0,0,0,0.35)" stroke-width="1"/>
+        <rect x="1.5" y="1.5" width="33" height="33" rx="3.6" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <circle cx="8.64" cy="8.64" r="3.2" fill="var(--pips)"/>
+        <circle cx="18" cy="18" r="3.2" fill="var(--pips)"/>
+        <circle cx="27.36" cy="27.36" r="3.2" fill="var(--pips)"/>
+      </g>
+
+    <!-- doubling cube -->
+    <g transform="translate(271 195)" filter="url(#baize-mahogany-soft)">
+      <rect width="30" height="30" rx="4" fill="var(--cube)"/>
+      <rect x="1" y="1" width="28" height="28" rx="3.5" fill="none" stroke="var(--checker-white-edge)" stroke-width="1"/>
+      <text x="15" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="var(--cube-text)">64</text>
+    </g>
+  </svg>
+    <div class="chrome">
+      <h2>Baize &amp; Mahogany</h2>
+      <p>Green baize under one lamp, a mahogany rail, leather points, ivory and lacquer checkers.</p>
+      <div class="actions">
+        <button type="button" class="primary">Roll</button>
+        <button type="button" class="ghost">Undo</button>
+      </div>
+      <div class="panel">
+        <dl><dt>Pip count</dt><dd>167</dd></dl>
+        <dl><dt>Match</dt><dd>3&#8211;1</dd></dl>
+      </div>
+    </div>
+  </div>
+  <div class="swatches">
+    <div style="background:#0e2a1f;color:#eef3e9">#0e2a1f</div>
+    <div style="background:#153626;color:#eef3e9">#153626</div>
+    <div style="background:#eef3e9;color:#121110">#eef3e9</div>
+    <div style="background:#b3382f;color:#eef3e9">#b3382f</div>
+    <div style="background:#4b1d12;color:#eef3e9">#4b1d12</div>
+    <div style="background:#14402b;color:#eef3e9">#14402b</div>
+    <div style="background:#b89560;color:#121110">#b89560</div>
+    <div style="background:#b23a2e;color:#eef3e9">#b23a2e</div>
+    <div style="background:#f8f3e6;color:#121110">#f8f3e6</div>
+    <div style="background:#121110;color:#eef3e9">#121110</div>
+    <div style="background:#c8262a;color:#eef3e9">#c8262a</div>
+    <div style="background:#a6f2c9;color:#121110">#a6f2c9</div>
+  </div>
+</section>

@@ -521,6 +521,10 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        report.skinsUX ||= [];
+        report.skinsUX.push(
+          await run("skins", browser, base, out, browserName),
+        );
         report.optionsUX ||= [];
         report.optionsUX.push(
           await run("options-ui",

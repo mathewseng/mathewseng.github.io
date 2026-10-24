@@ -1,0 +1,383 @@
+<section class="theme" id="theme-phosphor-terminal" data-theme="phosphor-terminal">
+<style>
+#theme-phosphor-terminal {
+  --page: #030803;
+  --shader-1: #030803;
+  --shader-2: #5cff7d;
+  --shader-3: #8cff96;
+  --surface: #071207;
+  --surface-2: #0b1c0c;
+  --line: #1e4a26;
+  --ink: #8cff96;
+  --muted: #4fbf62;
+  --accent: #5cff7d;
+  --accent-ink: #031a08;
+  --board-frame: #0a1a0c;
+  --board-surface: #061006;
+  --point-a: #123a1c;
+  --point-b: #1f6b31;
+  --bar: #0d2612;
+  --checker-white: #e4ffe8;
+  --checker-white-edge: #8cff96;
+  --checker-black: #020703;
+  --checker-black-edge: #8cff96;
+  --dice: #e4ffe8;
+  --pips: #071207;
+  --cube: #5cff7d;
+  --cube-text: #031a08;
+  --highlight: #f4ffb0;
+  --last-move: #ffd166;
+  --bloom: 0 0 6px rgba(140, 255, 150, .45);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--page);
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+  padding: 24px;
+  box-sizing: border-box;
+  max-width: 960px;
+  margin: 0 auto;
+}
+#theme-phosphor-terminal *, #theme-phosphor-terminal *::before, #theme-phosphor-terminal *::after { box-sizing: inherit; }
+#theme-phosphor-terminal .shader {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: block; z-index: 0; pointer-events: none;
+}
+#theme-phosphor-terminal .tile {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr);
+  gap: 24px; align-items: start;
+}
+@media (max-width: 720px) {
+  #theme-phosphor-terminal .tile { grid-template-columns: 1fr; }
+}
+#theme-phosphor-terminal .board {
+  display: block; width: 100%; height: auto;
+  background: var(--board-surface);
+  border-radius: 2px;
+}
+#theme-phosphor-terminal .board text {
+  font-family: inherit; font-variant-numeric: tabular-nums lining-nums;
+}
+#theme-phosphor-terminal .pt-a { fill: var(--point-a); stroke: var(--muted); stroke-width: 1; }
+#theme-phosphor-terminal .pt-b { fill: url(#phosphor-terminal-hatch); stroke: var(--muted); stroke-width: 1; }
+#theme-phosphor-terminal .hatch-bg { fill: var(--board-surface); }
+#theme-phosphor-terminal .hatch-ln { stroke: var(--point-b); stroke-width: 1.2; }
+#theme-phosphor-terminal .frame-outer { fill: none; stroke: var(--ink); stroke-width: 2; }
+#theme-phosphor-terminal .frame-inner { fill: var(--board-surface); stroke: var(--line); stroke-width: 1; }
+#theme-phosphor-terminal .bar { fill: var(--bar); stroke: var(--line); stroke-width: 1; }
+#theme-phosphor-terminal .tray { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 3; }
+#theme-phosphor-terminal .scan { fill: url(#phosphor-terminal-scan); pointer-events: none; }
+#theme-phosphor-terminal .ck-w { fill: var(--checker-white); stroke: var(--checker-white-edge); stroke-width: 1.5; filter: url(#phosphor-terminal-bloom); }
+#theme-phosphor-terminal .ck-b { fill: var(--checker-black); stroke: var(--checker-black-edge); stroke-width: 2; }
+#theme-phosphor-terminal .ck-sel { stroke: var(--highlight); stroke-width: 3; filter: url(#phosphor-terminal-bloom-2x); }
+#theme-phosphor-terminal .badge { fill: var(--ink); }
+#theme-phosphor-terminal .badge-n { fill: var(--accent-ink); font-size: 12px; font-weight: 600; text-anchor: middle; }
+#theme-phosphor-terminal .die { fill: var(--dice); stroke: var(--checker-white-edge); stroke-width: 1; }
+#theme-phosphor-terminal .pip { fill: var(--pips); }
+#theme-phosphor-terminal .cube { fill: var(--cube); }
+#theme-phosphor-terminal .cube-n { fill: var(--cube-text); font-size: 15px; font-weight: 600; text-anchor: middle; }
+#theme-phosphor-terminal .pn { fill: var(--muted); font-size: 12px; font-weight: 600; text-anchor: middle; }
+#theme-phosphor-terminal .ring {
+  fill: none; stroke: var(--highlight); stroke-width: 2; stroke-dasharray: 4 3;
+  animation: phosphor-terminal-march 1.2s linear infinite;
+}
+@keyframes phosphor-terminal-march { to { stroke-dashoffset: -14; } }
+#theme-phosphor-terminal .arrow-contour { fill: none; stroke: var(--page); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+#theme-phosphor-terminal .arrow { fill: none; stroke: var(--last-move); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#theme-phosphor-terminal .arrow-head { fill: var(--board-surface); stroke: var(--last-move); stroke-width: 2; stroke-linejoin: round; }
+#theme-phosphor-terminal .eq-track { fill: var(--line); }
+#theme-phosphor-terminal .eq-fill { fill: var(--ink); }
+
+#theme-phosphor-terminal .chrome { display: grid; gap: 16px; }
+#theme-phosphor-terminal h2 {
+  margin: 0; font-size: 22px; font-weight: 600; line-height: 1.2; letter-spacing: 0;
+  text-shadow: var(--bloom);
+}
+#theme-phosphor-terminal p { margin: 0; color: var(--muted); }
+#theme-phosphor-terminal .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+#theme-phosphor-terminal .btn {
+  font: inherit; font-weight: 600; min-height: 44px; min-width: 44px; padding: 0 18px;
+  border-radius: 2px; cursor: pointer; border: 1px solid transparent;
+}
+#theme-phosphor-terminal .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+#theme-phosphor-terminal .btn-primary:hover { filter: brightness(1.08); }
+#theme-phosphor-terminal .btn-ghost { background: transparent; color: var(--ink); border-color: var(--muted); }
+#theme-phosphor-terminal .btn-ghost:hover { background: var(--muted); color: var(--accent-ink); }
+#theme-phosphor-terminal .btn:focus-visible { outline: 2px solid var(--highlight); outline-offset: 2px; }
+#theme-phosphor-terminal .panel {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 14px 16px;
+}
+#theme-phosphor-terminal .panel dl {
+  margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px;
+}
+#theme-phosphor-terminal .panel dt { color: var(--muted); }
+#theme-phosphor-terminal .panel dd { margin: 0; font-weight: 600; text-align: right; }
+#theme-phosphor-terminal .tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); }
+#theme-phosphor-terminal .tab { padding: 10px 0; color: var(--muted); border-bottom: 2px solid transparent; min-height: 44px; display: flex; align-items: center; }
+#theme-phosphor-terminal .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+#theme-phosphor-terminal .swatches {
+  position: relative; z-index: 1; margin-top: 24px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px;
+}
+#theme-phosphor-terminal .swatch {
+  border: 1px solid var(--line); border-radius: 2px; background: var(--surface);
+  padding: 6px; display: grid; gap: 6px; font-size: 12px; color: var(--muted);
+}
+#theme-phosphor-terminal .swatch i { display: block; height: 28px; border-radius: 2px; border: 1px solid var(--line); }
+#theme-phosphor-terminal .swatch b { font-weight: 600; color: var(--ink); display: block; }
+#theme-phosphor-terminal .swatch span { display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  #theme-phosphor-terminal .ring { animation: none; }
+}
+</style>
+
+<canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="bottom-left" data-pointer-idle="center" data-still="0"></canvas>
+<script type="x-shader/x-fragment" id="frag-phosphor-terminal">
+precision mediump float;
+
+uniform float u_time;
+uniform vec2  u_resolution;
+uniform vec2  u_pointer;
+uniform vec3  u_c1; // page glass
+uniform vec3  u_c2; // accent phosphor
+uniform vec3  u_c3; // ink
+
+// --- helpers ---------------------------------------------------------------
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// two-octave phosphor grain for a given frame seed
+float grain(vec2 cell, float seed) {
+  return vnoise(cell + seed * 17.0) * 0.65
+       + vnoise(cell * 2.0 + seed * 31.0) * 0.35;
+}
+
+// rounded-rectangle signed distance (tube silhouette)
+float sdRoundBox(vec2 p, vec2 b, float r) {
+  vec2 q = abs(p) - b + r;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+// --- main ------------------------------------------------------------------
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec2 c  = uv * 2.0 - 1.0;
+
+  // barrel distortion of the glass
+  vec2 cb  = c * (1.0 + 0.08 * dot(c, c));
+  vec2 uvb = cb * 0.5 + 0.5;
+
+  // tube edge: darken outside the curved glass
+  float edge  = sdRoundBox(cb, vec2(1.0), 0.12);
+  float glass = 1.0 - smoothstep(-0.03, 0.01, edge);
+  float vign  = 1.0 - 0.30 * dot(c, c);
+
+  // scanline mask, 8% depth, 1 line per 2 px
+  float sl   = 0.5 + 0.5 * sin(uvb.y * u_resolution.y * 3.14159);
+  float scan = 1.0 - 0.08 * sl;
+
+  // rolling brightness band, one pass every ~6 s, 5% intensity
+  float bandY = 1.2 - fract(u_time / 6.0) * 1.5;
+  float band  = smoothstep(0.14, 0.0, abs(uvb.y - bandY)) * 0.05;
+
+  // phosphor grain: 2 px cells, re-seeded 24x per second, temporally smoothed
+  vec2  cell = floor(gl_FragCoord.xy / 2.0);
+  float fr   = u_time * 24.0;
+  float g0   = grain(cell, floor(fr));
+  float g1   = grain(cell, floor(fr) + 1.0);
+  float g    = mix(g0, g1, fract(fr)) - 0.5;
+
+  // slow afterglow drift across the whole tube
+  float drift = vnoise(uvb * 3.0 + vec2(u_time * 0.04, -u_time * 0.03));
+
+  // beam glow following the pointer, 180 px radius, 6% of accent
+  float pd   = distance(gl_FragCoord.xy, u_pointer);
+  float beam = 1.0 - smoothstep(0.0, 180.0, pd);
+  beam = beam * beam * 0.06;
+
+  // compose: all light is emitted phosphor on near-black glass
+  vec3 col = u_c1;
+  col += u_c2 * (0.025 + 0.015 * drift + band) * scan;
+  col += u_c2 * g * 0.03;
+  col += u_c3 * beam;
+  col *= glass * vign;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<div class="tile">
+<svg class="board" viewBox="0 0 600 420" role="img" aria-label="Phosphor Terminal board preview">
+  <defs>
+    <pattern id="phosphor-terminal-hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+      <rect class="hatch-bg" width="6" height="6"/>
+      <line class="hatch-ln" x1="0" y1="0" x2="0" y2="6"/>
+    </pattern>
+    <pattern id="phosphor-terminal-scan" patternUnits="userSpaceOnUse" width="2" height="2">
+      <rect width="2" height="1" style="fill:var(--ink)" fill-opacity="0.06"/>
+    </pattern>
+    <filter id="phosphor-terminal-bloom" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="3" style="flood-color:var(--checker-white-edge)" flood-opacity="0.5"/>
+    </filter>
+    <filter id="phosphor-terminal-bloom-2x" x="-80%" y="-80%" width="260%" height="260%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" style="flood-color:var(--highlight)" flood-opacity="0.7"/>
+    </filter>
+    <filter id="phosphor-terminal-text-bloom" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="2" style="flood-color:var(--ink)" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- frame -->
+  <rect class="frame-inner" x="12" y="12" width="576" height="396"/>
+  <rect class="frame-outer" x="8" y="8" width="584" height="404"/>
+
+  <!-- bear-off trays (dashed, recede) -->
+  <rect class="tray" x="574" y="30" width="12" height="150"/>
+  <rect class="tray" x="574" y="240" width="12" height="150"/>
+
+  <!-- top points 13..24 -->
+  <polygon class="pt-a" points="30,30 70,30 50,180"/>
+  <polygon class="pt-b" points="70,30 110,30 90,180"/>
+  <polygon class="pt-a" points="110,30 150,30 130,180"/>
+  <polygon class="pt-b" points="150,30 190,30 170,180"/>
+  <polygon class="pt-a" points="190,30 230,30 210,180"/>
+  <polygon class="pt-b" points="230,30 270,30 250,180"/>
+  <polygon class="pt-a" points="330,30 370,30 350,180"/>
+  <polygon class="pt-b" points="370,30 410,30 390,180"/>
+  <polygon class="pt-a" points="410,30 450,30 430,180"/>
+  <polygon class="pt-b" points="450,30 490,30 470,180"/>
+  <polygon class="pt-a" points="490,30 530,30 510,180"/>
+  <polygon class="pt-b" points="530,30 570,30 550,180"/>
+
+  <!-- bottom points 12..1 -->
+  <polygon class="pt-b" points="30,390 70,390 50,240"/>
+  <polygon class="pt-a" points="70,390 110,390 90,240"/>
+  <polygon class="pt-b" points="110,390 150,390 130,240"/>
+  <polygon class="pt-a" points="150,390 190,390 170,240"/>
+  <polygon class="pt-b" points="190,390 230,390 210,240"/>
+  <polygon class="pt-a" points="230,390 270,390 250,240"/>
+  <polygon class="pt-b" points="330,390 370,390 350,240"/>
+  <polygon class="pt-a" points="370,390 410,390 390,240"/>
+  <polygon class="pt-b" points="410,390 450,390 430,240"/>
+  <polygon class="pt-a" points="450,390 490,390 470,240"/>
+  <polygon class="pt-b" points="490,390 530,390 510,240"/>
+  <polygon class="pt-a" points="530,390 570,390 550,240"/>
+
+  <!-- bar -->
+  <rect class="bar" x="270.5" y="30.5" width="59" height="359"/>
+
+  <!-- scanline overlay on the playing surface -->
+  <rect class="scan" x="12" y="12" width="576" height="396"/>
+
+  <!-- point numbers -->
+  <text class="pn" x="50" y="25">13</text>
+  <text class="pn" x="550" y="25">24</text>
+  <text class="pn" x="350" y="404">6</text>
+
+  <!-- last-move arrow: 13 -> 17 (shape + tier + black contour separate it from rings) -->
+  <path class="arrow-contour" d="M 72 100 L 182 100"/>
+  <path class="arrow" d="M 72 100 L 182 100"/>
+  <polygon class="arrow-head" points="196,100 182,93 182,107"/>
+
+  <!-- black stack on 13 (4) -->
+  <circle class="ck-b" cx="50" cy="48" r="18"/>
+  <circle class="ck-b" cx="50" cy="84" r="18"/>
+  <circle class="ck-b" cx="50" cy="120" r="18"/>
+  <circle class="ck-b" cx="50" cy="156" r="18"/>
+
+  <!-- black on 17 (1, just moved) -->
+  <circle class="ck-b" cx="210" cy="48" r="18"/>
+
+  <!-- white stack on 6 (5) with count badge -->
+  <circle class="ck-w" cx="350" cy="372" r="18"/>
+  <circle class="ck-w" cx="350" cy="336" r="18"/>
+  <circle class="ck-w" cx="350" cy="300" r="18"/>
+  <circle class="ck-w" cx="350" cy="264" r="18"/>
+  <circle class="ck-w" cx="350" cy="228" r="18"/>
+  <rect class="badge" x="342" y="220" width="16" height="16"/>
+  <text class="badge-n" x="350" y="232.5">5</text>
+
+  <!-- white stack on 8 (3), top checker selected -->
+  <circle class="ck-w" cx="210" cy="372" r="18"/>
+  <circle class="ck-w" cx="210" cy="336" r="18"/>
+  <circle class="ck-w ck-sel" cx="210" cy="300" r="18"/>
+
+  <!-- legal-move rings for 3 and 6: points 5 and 2 -->
+  <circle class="ring" cx="390" cy="372" r="16"/>
+  <circle class="ring" cx="510" cy="372" r="16"/>
+
+  <!-- dice 6 and 3 -->
+  <rect class="die" x="402" y="192" width="36" height="36" rx="2"/>
+  <circle class="pip" cx="411" cy="201" r="3"/><circle class="pip" cx="429" cy="201" r="3"/>
+  <circle class="pip" cx="411" cy="210" r="3"/><circle class="pip" cx="429" cy="210" r="3"/>
+  <circle class="pip" cx="411" cy="219" r="3"/><circle class="pip" cx="429" cy="219" r="3"/>
+  <rect class="die" x="462" y="192" width="36" height="36" rx="2"/>
+  <circle class="pip" cx="471" cy="201" r="3"/><circle class="pip" cx="480" cy="210" r="3"/><circle class="pip" cx="489" cy="219" r="3"/>
+
+  <!-- doubling cube -->
+  <rect class="cube" x="282" y="192" width="36" height="36" rx="2" filter="url(#phosphor-terminal-text-bloom)"/>
+  <text class="cube-n" x="300" y="215.5">64</text>
+
+  <!-- equity bar -->
+  <rect class="eq-track" x="30" y="203" width="230" height="4"/>
+  <rect class="eq-fill" x="30" y="203" width="134" height="4"/>
+</svg>
+
+<div class="chrome">
+  <h2>Phosphor Terminal</h2>
+  <p>Green P1 phosphor on black glass. Every element is emitted light, separated by brightness and shape.</p>
+  <div class="actions">
+    <button class="btn btn-primary" type="button">Roll</button>
+    <button class="btn btn-ghost" type="button">Undo</button>
+  </div>
+  <div class="tabs" role="tablist">
+    <span class="tab" role="tab" aria-selected="true">Board</span>
+    <span class="tab" role="tab" aria-selected="false">Analysis</span>
+  </div>
+  <div class="panel">
+    <dl>
+      <dt>Pip count</dt><dd>167 : 152</dd>
+      <dt>Equity</dt><dd>+0.184</dd>
+    </dl>
+  </div>
+</div>
+</div>
+
+<div class="swatches">
+  <div class="swatch"><i style="background:var(--page)"></i><b>page</b><span>#030803</span></div>
+  <div class="swatch"><i style="background:var(--surface)"></i><b>surface</b><span>#071207</span></div>
+  <div class="swatch"><i style="background:var(--line)"></i><b>line</b><span>#1e4a26</span></div>
+  <div class="swatch"><i style="background:var(--muted)"></i><b>muted</b><span>#4fbf62</span></div>
+  <div class="swatch"><i style="background:var(--ink)"></i><b>ink</b><span>#8cff96</span></div>
+  <div class="swatch"><i style="background:var(--accent)"></i><b>accent</b><span>#5cff7d</span></div>
+  <div class="swatch"><i style="background:var(--point-a)"></i><b>point a</b><span>#123a1c</span></div>
+  <div class="swatch"><i style="background:var(--point-b)"></i><b>point b</b><span>#1f6b31</span></div>
+  <div class="swatch"><i style="background:var(--checker-white)"></i><b>white</b><span>#e4ffe8</span></div>
+  <div class="swatch"><i style="background:var(--checker-black)"></i><b>black</b><span>#020703</span></div>
+  <div class="swatch"><i style="background:var(--highlight)"></i><b>highlight</b><span>#f4ffb0</span></div>
+  <div class="swatch"><i style="background:var(--last-move)"></i><b>last move</b><span>#ffd166</span></div>
+</div>
+
+</section>

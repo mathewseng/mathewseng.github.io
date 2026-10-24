@@ -1,0 +1,399 @@
+<section class="theme" id="theme-tidal" data-theme="tidal">
+<style>
+  #theme-tidal {
+    --page: #06141f;
+    --shader-1: #06141f;
+    --shader-2: #132d40;
+    --shader-3: #3fd6c3;
+    --surface: #0d2130;
+    --surface-2: #132d40;
+    --line: #1f4257;
+    --ink: #e6f1f5;
+    --muted: #8fb3c2;
+    --accent: #3fd6c3;
+    --accent-ink: #06141f;
+    --board-frame: #0a1a26;
+    --board-surface: #0f2a3a;
+    --point-a: #2b7f8c;
+    --point-b: #174c60;
+    --bar: #081620;
+    --checker-white: #f2efe4;
+    --checker-white-edge: #b9b3a0;
+    --checker-black: #0a1216;
+    --checker-black-edge: #3fd6c3;
+    --dice: #f2efe4;
+    --pips: #06141f;
+    --cube: #f2efe4;
+    --cube-text: #06141f;
+    --highlight: #7dffe9;
+    --last-move: #ffb86b;
+    --danger: #ff6b6b;
+    --font-sans: -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 28px;
+    border-radius: 20px;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums lining-nums;
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(220px, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  #theme-tidal .shader {
+    position: absolute; inset: 0; z-index: 0;
+    width: 100%; height: 100%;
+    display: block;
+    background: linear-gradient(var(--surface-2), var(--page));
+  }
+  #theme-tidal > :not(.shader) { position: relative; z-index: 1; }
+
+  /* ---- board ---- */
+  #theme-tidal .board { width: 100%; height: auto; display: block; }
+  #theme-tidal .frame { fill: var(--board-frame); }
+  #theme-tidal .frame-stroke { fill: none; stroke: var(--line); stroke-width: 2; }
+  #theme-tidal .surface { fill: var(--board-surface); }
+  #theme-tidal .pa, #theme-tidal .pb { stroke: rgba(0, 0, 0, .35); stroke-width: 1.5; stroke-linejoin: round; }
+  #theme-tidal .pa { fill: var(--point-a); }
+  #theme-tidal .pb { fill: var(--point-b); }
+  #theme-tidal .bar { fill: var(--bar); }
+  #theme-tidal .bar-line { stroke: var(--accent); stroke-width: 1; opacity: .7; }
+  #theme-tidal .white-face { fill: var(--checker-white); stroke: var(--checker-white-edge); stroke-width: 2; }
+  #theme-tidal .black-face { fill: var(--checker-black); stroke: var(--checker-black-edge); stroke-width: 2; }
+  #theme-tidal .black-inner { fill: none; stroke: var(--checker-black-edge); stroke-width: 1; opacity: .45; }
+  #theme-tidal .badge-on-black rect { fill: var(--checker-white); }
+  #theme-tidal .badge-on-black text { fill: var(--accent-ink); }
+  #theme-tidal .badge-on-white rect { fill: var(--accent-ink); }
+  #theme-tidal .badge-on-white text { fill: var(--checker-white); }
+  #theme-tidal .badge-on-black text, #theme-tidal .badge-on-white text {
+    font: 600 11px var(--font-mono); text-anchor: middle;
+  }
+  #theme-tidal .selected { fill: none; stroke: var(--highlight); stroke-width: 3; }
+  #theme-tidal .dragging { transform: scale(1.06); transform-box: fill-box; transform-origin: center; filter: drop-shadow(0 0 10px rgba(63, 214, 195, .6)); }
+  #theme-tidal .legal-back { fill: none; stroke: var(--page); stroke-width: 7; opacity: .85; }
+  #theme-tidal .legal { fill: none; stroke: var(--highlight); stroke-width: 3; }
+  #theme-tidal .last-move { fill: none; stroke: var(--last-move); stroke-width: 3; stroke-linecap: round; }
+  #theme-tidal .arrowhead { fill: var(--last-move); }
+  #theme-tidal .die rect { fill: var(--dice); stroke: rgba(0, 0, 0, .22); stroke-width: 1; }
+  #theme-tidal .die .pip { fill: var(--pips); }
+  #theme-tidal .die.played { opacity: .45; }
+  #theme-tidal .die.blocked rect:first-child { fill: url(#tidal-hatch); }
+  #theme-tidal .cube rect { fill: var(--cube); stroke: rgba(0, 0, 0, .25); stroke-width: 1; }
+  #theme-tidal .cube .cube-shadow { fill: rgba(0, 0, 0, .35); stroke: none; }
+  #theme-tidal .cube text { fill: var(--cube-text); font: 600 15px var(--font-mono); text-anchor: middle; }
+  #theme-tidal .num { fill: var(--muted); font: 400 12px var(--font-mono); text-anchor: middle; }
+
+  /* ---- chrome ---- */
+  #theme-tidal .chrome { display: flex; flex-direction: column; gap: 14px; }
+  #theme-tidal h2 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: .01em; line-height: 1.15; }
+  #theme-tidal p { margin: 0; color: var(--muted); max-width: 32ch; }
+  #theme-tidal .buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  #theme-tidal .btn {
+    font: 600 15px var(--font-sans);
+    min-height: 44px; padding: 0 20px; border-radius: 999px; cursor: pointer;
+    border: 1px solid transparent; background: transparent; color: var(--ink);
+  }
+  #theme-tidal .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  #theme-tidal .btn-ghost { border-color: var(--line); color: var(--ink); }
+  #theme-tidal .btn-danger { background: var(--danger); color: var(--accent-ink); }
+  #theme-tidal .panel {
+    background: rgba(13, 33, 48, .86);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+    padding: 14px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  #theme-tidal .panel dt { font-size: 13px; color: var(--muted); margin: 0 0 2px; }
+  #theme-tidal .panel dd { margin: 0; font: 600 20px var(--font-mono); color: var(--ink); }
+  #theme-tidal .panel dl { margin: 0; }
+  #theme-tidal .tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); }
+  #theme-tidal .tab { padding: 8px 0 10px; color: var(--muted); font-weight: 600; font-size: 14px; }
+  #theme-tidal .tab.active { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+  #theme-tidal .toast { background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+
+  /* ---- swatches ---- */
+  #theme-tidal .swatches { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  #theme-tidal .swatch { display: flex; flex-direction: column; gap: 6px; font: 400 12px var(--font-mono); color: var(--muted); }
+  #theme-tidal .swatch i { display: block; height: 34px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, .08); }
+  #theme-tidal .swatch b { font-weight: 600; color: var(--ink); }
+  @media (max-width: 720px) {
+    #theme-tidal { grid-template-columns: 1fr; padding: 16px; }
+    #theme-tidal .swatches { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>
+
+<canvas class="shader" width="640" height="360" aria-hidden="true" data-pointer-origin="top-left" data-pointer-idle="center" data-still="0"></canvas>
+<script type="x-shader/x-fragment" id="frag-tidal">
+precision mediump float;
+
+uniform float u_time;        // seconds
+uniform vec2  u_resolution;  // px
+uniform vec2  u_pointer;     // px, top-left origin
+uniform vec3  u_c1;          // page
+uniform vec3  u_c2;          // surface-2
+uniform vec3  u_c3;          // accent
+
+float hash(vec2 p) {
+  p = fract(p * vec2(127.1, 311.7));
+  p += dot(p, p + 19.19);
+  return fract(p.x * p.y);
+}
+
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+float fbm(vec2 p) {
+  float v = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 3; i++) {
+    v += a * vnoise(p);
+    p = p * 2.03 + vec2(1.7, 9.2);
+    a *= 0.5;
+  }
+  return v;
+}
+
+float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+  float depth = 1.0 - uv.y;                       // 0 at the water line, 1 at the bottom
+  float aspect = u_resolution.x / u_resolution.y;
+
+  // sloped seabed: the field stretches as it falls away from the light
+  vec2 p = vec2(uv.x * aspect, uv.y) * 3.2;
+  p.y *= 1.0 + depth * 0.5;
+
+  float t = u_time;
+  vec2 q1 = p + 0.08 * t;
+  vec2 q2 = p - 0.05 * t;
+
+  // domain-warped value noise, two layers drifting against each other
+  vec2 w1 = vec2(fbm(q1 + vec2(0.0, t * 0.03)), fbm(q1 + vec2(5.2, 1.3)));
+  vec2 w2 = vec2(fbm(q2 + vec2(3.1, 2.7)), fbm(q2 - vec2(1.0, 4.4)));
+  float n1 = fbm(q1 + 1.4 * w1);
+  float n2 = fbm(q2 + 1.4 * w2);
+
+  // thin bright filaments where both wavefronts cross zero
+  float caustic = pow(1.0 - abs(sin(n1 * 6.28318) * sin(n2 * 6.28318)), 8.0);
+  caustic *= 1.0 - depth * 0.7;
+
+  // water column: lighter near the surface, page colour at the bottom
+  // (kept a little under surface-2 so the filaments have headroom)
+  vec3 col = mix(u_c2, u_c1, 0.3 + depth * 0.7);
+
+  // slow large-scale swell
+  col *= 1.0 + 0.04 * sin(uv.x * 2.0 + t * 0.15);
+
+  col += u_c3 * caustic * 0.26;
+
+  // pointer: a soft brightening within 300px
+  vec2 pp = gl_FragCoord.xy - vec2(u_pointer.x, u_resolution.y - u_pointer.y);
+  float d = length(pp) / 300.0;
+  col += u_c3 * 0.06 * (1.0 / (1.0 + d * d)) * smoothstep(1.0, 0.6, d);
+
+  // legibility: capped just above surface-2 luminance, then under a 35% page overlay,
+  // so filaments stay within a few percent of the base behind panels
+  float lmax = luma(u_c2) * 1.3;
+  float l = luma(col);
+  if (l > lmax) col *= lmax / l;
+  col = mix(col, u_c1, 0.35);
+
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<svg class="board" viewBox="0 0 600 420" role="img" aria-label="Tidal board sample">
+  <defs>
+    <radialGradient id="tidal-surface-light" cx="18%" cy="12%" r="95%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tidal-ridge-top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="tidal-ridge-bot" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#000000" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="tidal-ivory-sheen" cx="32%" cy="26%" r="75%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".55"/>
+      <stop offset=".55" stop-color="#ffffff" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".08"/>
+    </radialGradient>
+    <pattern id="tidal-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="var(--dice)"/>
+      <rect width="2" height="6" fill="rgba(6,20,31,.35)"/>
+    </pattern>
+    <marker id="tidal-arrowhead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0 0 L10 5 L0 10 Z"/>
+    </marker>
+  </defs>
+
+  <rect class="frame" x="0" y="16" width="600" height="388" rx="10"/>
+  <rect class="frame-stroke" x="8" y="24" width="584" height="372" rx="6"/>
+  <rect class="surface" x="28" y="32" width="250" height="356"/>
+  <rect class="surface" x="322" y="32" width="250" height="356"/>
+  <rect x="28" y="32" width="250" height="356" fill="url(#tidal-surface-light)"/>
+  <rect x="322" y="32" width="250" height="356" fill="url(#tidal-surface-light)"/>
+  <g class="points">
+      <path class="pa" d="M530.3 388 L572.0 388 L551.2 238 Z"/>
+      <path d="M530.3 388 L572.0 388 L551.2 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pb" d="M488.7 388 L530.3 388 L509.5 238 Z"/>
+      <path d="M488.7 388 L530.3 388 L509.5 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pa" d="M447.0 388 L488.7 388 L467.8 238 Z"/>
+      <path d="M447.0 388 L488.7 388 L467.8 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pb" d="M405.3 388 L447.0 388 L426.2 238 Z"/>
+      <path d="M405.3 388 L447.0 388 L426.2 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pa" d="M363.7 388 L405.3 388 L384.5 238 Z"/>
+      <path d="M363.7 388 L405.3 388 L384.5 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pb" d="M322.0 388 L363.7 388 L342.8 238 Z"/>
+      <path d="M322.0 388 L363.7 388 L342.8 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pa" d="M236.3 388 L278.0 388 L257.2 238 Z"/>
+      <path d="M236.3 388 L278.0 388 L257.2 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pb" d="M194.7 388 L236.3 388 L215.5 238 Z"/>
+      <path d="M194.7 388 L236.3 388 L215.5 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pa" d="M153.0 388 L194.7 388 L173.8 238 Z"/>
+      <path d="M153.0 388 L194.7 388 L173.8 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pb" d="M111.3 388 L153.0 388 L132.2 238 Z"/>
+      <path d="M111.3 388 L153.0 388 L132.2 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pa" d="M69.7 388 L111.3 388 L90.5 238 Z"/>
+      <path d="M69.7 388 L111.3 388 L90.5 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pb" d="M28.0 388 L69.7 388 L48.8 238 Z"/>
+      <path d="M28.0 388 L69.7 388 L48.8 238 Z" fill="url(#tidal-ridge-bot)" stroke="none"/>
+      <path class="pa" d="M28.0 32 L69.7 32 L48.8 182 Z"/>
+      <path d="M28.0 32 L69.7 32 L48.8 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pb" d="M69.7 32 L111.3 32 L90.5 182 Z"/>
+      <path d="M69.7 32 L111.3 32 L90.5 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pa" d="M111.3 32 L153.0 32 L132.2 182 Z"/>
+      <path d="M111.3 32 L153.0 32 L132.2 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pb" d="M153.0 32 L194.7 32 L173.8 182 Z"/>
+      <path d="M153.0 32 L194.7 32 L173.8 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pa" d="M194.7 32 L236.3 32 L215.5 182 Z"/>
+      <path d="M194.7 32 L236.3 32 L215.5 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pb" d="M236.3 32 L278.0 32 L257.2 182 Z"/>
+      <path d="M236.3 32 L278.0 32 L257.2 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pa" d="M322.0 32 L363.7 32 L342.8 182 Z"/>
+      <path d="M322.0 32 L363.7 32 L342.8 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pb" d="M363.7 32 L405.3 32 L384.5 182 Z"/>
+      <path d="M363.7 32 L405.3 32 L384.5 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pa" d="M405.3 32 L447.0 32 L426.2 182 Z"/>
+      <path d="M405.3 32 L447.0 32 L426.2 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pb" d="M447.0 32 L488.7 32 L467.8 182 Z"/>
+      <path d="M447.0 32 L488.7 32 L467.8 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pa" d="M488.7 32 L530.3 32 L509.5 182 Z"/>
+      <path d="M488.7 32 L530.3 32 L509.5 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+      <path class="pb" d="M530.3 32 L572.0 32 L551.2 182 Z"/>
+      <path d="M530.3 32 L572.0 32 L551.2 182 Z" fill="url(#tidal-ridge-top)" stroke="none"/>
+  </g>
+  <rect class="bar" x="278" y="32" width="44" height="356"/>
+  <line class="bar-line" x1="300" y1="40" x2="300" y2="380"/>
+      <path class="last-move" d="M52.8 210.0 Q 81.3 133.0 167.8 80.0" marker-end="url(#tidal-arrowhead)"/>
+      <circle class="legal-back" cx="426.2" cy="51.0" r="17"/>
+      <circle class="legal" cx="426.2" cy="51.0" r="17"/>
+      <circle class="legal-back" cx="257.2" cy="51.0" r="17"/>
+      <circle class="legal" cx="257.2" cy="51.0" r="17"/>
+  <g class="checkers">
+      <g class="checker white" transform="translate(342.8 369.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(342.8 335.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(342.8 301.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(342.8 267.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(342.8 233.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(215.5 369.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(215.5 335.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(215.5 301.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(48.8 51.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(48.8 85.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(48.8 119.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(48.8 153.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="checker white" transform="translate(48.8 187.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <g class="badge-on-white" transform="translate(48.8 187.0)"><rect x="-9" y="-7" width="18" height="14" rx="7"/><text y="3.8">6</text></g>
+      <g class="checker black" transform="translate(551.2 369.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(551.2 335.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(48.8 369.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(48.8 335.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(48.8 301.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(48.8 267.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(48.8 233.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="badge-on-black" transform="translate(48.8 233.0)"><rect x="-9" y="-7" width="18" height="14" rx="7"/><text y="3.8">6</text></g>
+      <g class="checker black" transform="translate(173.8 51.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(215.5 51.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(215.5 85.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(215.5 119.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(342.8 51.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(342.8 85.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker black" transform="translate(342.8 119.0)"><circle class="black-face" r="17"/><circle class="black-inner" r="10.2"/></g>
+      <g class="checker white" transform="translate(551.2 51.0)"><circle class="white-face" r="17"/><circle r="16" fill="url(#tidal-ivory-sheen)"/></g>
+      <circle class="selected" cx="551.2" cy="51.0" r="20"/>
+  </g>
+      <g class="die" transform="translate(420 210)">
+        <rect x="-20" y="-20" width="40" height="40" rx="8.8"/>
+        <rect x="-20" y="-20" width="40" height="40" rx="8.8" fill="url(#tidal-ivory-sheen)" stroke="none"/>
+        <circle class="pip" cx="-10" cy="-10" r="3.3"/>
+        <circle class="pip" cx="-10" cy="0" r="3.3"/>
+        <circle class="pip" cx="-10" cy="10" r="3.3"/>
+        <circle class="pip" cx="10" cy="-10" r="3.3"/>
+        <circle class="pip" cx="10" cy="0" r="3.3"/>
+        <circle class="pip" cx="10" cy="10" r="3.3"/>
+      </g>
+      <g class="die" transform="translate(476 210)">
+        <rect x="-20" y="-20" width="40" height="40" rx="8.8"/>
+        <rect x="-20" y="-20" width="40" height="40" rx="8.8" fill="url(#tidal-ivory-sheen)" stroke="none"/>
+        <circle class="pip" cx="-10" cy="-10" r="3.3"/>
+        <circle class="pip" cx="0" cy="0" r="3.3"/>
+        <circle class="pip" cx="10" cy="10" r="3.3"/>
+      </g>
+      <g class="cube" transform="translate(153 210)">
+        <rect x="-18" y="-17" width="38" height="38" rx="6" class="cube-shadow"/>
+        <rect x="-19" y="-19" width="38" height="38" rx="6"/>
+        <text y="6">64</text>
+      </g>
+      <text class="num" x="48.8" y="11">13</text>
+      <text class="num" x="551.2" y="11">24</text>
+      <text class="num" x="551.2" y="418">1</text>
+</svg>
+
+<div class="chrome">
+  <h2>Tidal</h2>
+  <p>Translucent navy panels over slow caustic light; the pieces stay warm ivory so the game reads first.</p>
+  <div class="buttons">
+    <button class="btn btn-primary" type="button">Roll</button>
+    <button class="btn btn-ghost" type="button">Undo</button>
+  </div>
+  <div class="panel">
+    <dl><dt>Pips</dt><dd>167</dd></dl>
+    <dl><dt>Equity</dt><dd>+0.12</dd></dl>
+  </div>
+</div>
+
+<div class="swatches">
+  <div class="swatch"><i style="background:#06141f"></i><b>page</b>#06141f</div>
+  <div class="swatch"><i style="background:#0d2130"></i><b>surface</b>#0d2130</div>
+  <div class="swatch"><i style="background:#132d40"></i><b>surface 2</b>#132d40</div>
+  <div class="swatch"><i style="background:#e6f1f5"></i><b>ink</b>#e6f1f5</div>
+  <div class="swatch"><i style="background:#3fd6c3"></i><b>accent</b>#3fd6c3</div>
+  <div class="swatch"><i style="background:#0f2a3a"></i><b>board</b>#0f2a3a</div>
+  <div class="swatch"><i style="background:#2b7f8c"></i><b>point a</b>#2b7f8c</div>
+  <div class="swatch"><i style="background:#174c60"></i><b>point b</b>#174c60</div>
+  <div class="swatch"><i style="background:#f2efe4"></i><b>white</b>#f2efe4</div>
+  <div class="swatch"><i style="background:#0a1216"></i><b>black</b>#0a1216</div>
+  <div class="swatch"><i style="background:#7dffe9"></i><b>highlight</b>#7dffe9</div>
+  <div class="swatch"><i style="background:#ffb86b"></i><b>last move</b>#ffb86b</div>
+</div>
+</section>

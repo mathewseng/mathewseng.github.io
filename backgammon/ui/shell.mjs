@@ -31,6 +31,7 @@ import {
   preferHittingRoutes,
 } from "../core/draft.mjs";
 import { applyBoardTheme } from "../core/appearance.mjs";
+import { applySkin } from "./skin.mjs";
 import {
   sound,
   installSound,
@@ -65,7 +66,7 @@ export function el(tag, attrs = {}, ...children) {
 const KIT_VARIANTS = { primary: "btn--primary", ghost: "btn--ghost", danger: "btn--danger" };
 const CUSTOM_CONTROLS = new Set([
   "list-row", "review-move", "review-cube-choice", "feedback-review",
-  "history-evaluation", "history-node-toggle", "theme-preset",
+  "history-evaluation", "history-node-toggle", "theme-preset", "skin-choice",
 ]);
 export function buttonClasses(cls = "") {
   const tokens = String(cls).split(/\s+/).filter(Boolean);
@@ -329,6 +330,7 @@ export function shell(page, title, subtitle = "") {
   installSound();
   addEventListener("storage", (e) => {
     if (e.key === "backgammon.v1.settings" || e.key === null) {
+      applySkin(settings().skin);
       applyBoardTheme(settings().boardTheme);
       document.documentElement.dataset.motion = settings().motion;
       dispatchEvent(new Event("bg-motion"));
@@ -360,6 +362,9 @@ export function shell(page, title, subtitle = "") {
   updateMute();
   addEventListener("bg-sound", updateMute);
   $("preferences").before(mute);
+  // The body was just rebuilt: the skin re-attaches its canvas and defs first,
+  // then the board theme paints its pattern definitions.
+  applySkin(settings().skin);
   applyBoardTheme(settings().boardTheme);
   $("subtitle").textContent = subtitle;
   $("panel-toggle").onclick = () => openPanel();
