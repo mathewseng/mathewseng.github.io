@@ -69,6 +69,7 @@ const KIT_VARIANTS = { primary: "btn--primary", ghost: "btn--ghost", danger: "bt
 const CUSTOM_CONTROLS = new Set([
   "list-row", "review-move", "review-cube-choice", "feedback-review",
   "history-evaluation", "history-node-toggle", "theme-preset", "skin-choice",
+  "history-game-toggle",
 ]);
 export function buttonClasses(cls = "") {
   const tokens = String(cls).split(/\s+/).filter(Boolean);

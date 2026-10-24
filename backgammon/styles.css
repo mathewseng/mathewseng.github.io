@@ -2018,12 +2018,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   margin-left: 28px;
 }
 
-/* Before a match exists there is nothing to undo or draft: only the status
-   and the Start action remain. */
-.play-page.setup-table .help-cluster {
-  display: none;
-}
-
 /* Board state carries routine guidance visually; keep the live descriptions
    for screen readers without a second line of copy. */
 .play-page #draft-line,
@@ -2546,6 +2540,88 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .history-context + .history-game-divider {
   margin-top: 0;
+}
+
+/* Game summary card under each divider: a toggle row of per-player losses,
+   the full per-game table beneath it once opened. */
+.history-game-card {
+  margin: 0 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.history-game-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-game-toggle:hover {
+  background: var(--surface-3);
+}
+
+.history-game-title {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.play-feedback .history-game-card .history-game-stat {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--r-pill);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.play-feedback .history-game-card .history-game-stat strong {
+  font-weight: 650;
+}
+
+.play-feedback .history-game-card .history-game-stat::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--history-color, var(--ink));
+  align-self: center;
+}
+
+.history-game-chevron {
+  margin-left: auto;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform var(--d-fast) var(--ease);
+}
+
+.history-game-toggle[aria-expanded="true"] .history-game-chevron {
+  transform: rotate(-135deg);
+}
+
+.history-game-detail {
+  padding: 0 12px 12px;
+}
+
+.history-game-detail .game-loss-summary {
+  margin: 0;
 }
 
 /* One turn shares its player identity; cube and checker grades stay

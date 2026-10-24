@@ -84,9 +84,10 @@ import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
 import { decisionValues } from "../ui/decision-values.mjs";
-import { decisionFeedback, needsRevisionWarning } from "../core/decision-feedback.mjs";
+import { decisionFeedback, needsRevisionWarning, lossTone } from "../core/decision-feedback.mjs";
 import { beginDecisionAttempt, recordInitialEvaluation } from "../core/decision-attempt.mjs";
 import { gameLossTable } from "../ui/game-loss-summary.mjs";
+import { gameLossSummary } from "../core/game-loss-summary.mjs";
 import { PRESETS, SEARCH_OPTIONS, searchName, SEARCH_DESCRIPTION } from "../engine/metadata.mjs";
 import { Online } from "./network.mjs";
 import { ruleControls, ruleReference } from "../ui/rules.mjs";
@@ -212,10 +213,66 @@ const feedbackStrip = el("div", {
   "aria-label": "Decision history",
   hidden: true,
 });
+// Below each game divider in the decision history: a card with each player's
+// accepted EV loss for that game. Tapping it opens the full per-game table.
+function gameSummaryCard(game, rows, viewer) {
+  const s = state();
+  const visible = config.mode === "computer" ? [config.humanSide] : [0, 1];
+  const summary = gameLossSummary(rows, game, s.matchLength);
+  const unit = summary.money ? "pts" : "";
+  const players = summary.players.filter(player => visible.includes(player.player));
+  const signature = JSON.stringify([game, s.matchLength, names(), players]);
+  let card = feedbackView.cards.get(game);
+  if (card?.dataset.signature === signature) return card;
+  const open = feedbackView.openGames.has(game);
+  const label = player => config.mode === "local" ? names()[player.player]
+    : player.player === viewer ? "You" : "Opponent";
+  const total = player => {
+    const checker = player.checker.accepted, cube = player.cube.accepted;
+    const known = checker.evaluated + cube.evaluated > 0 || checker.count + cube.count === 0;
+    const loss = checker.total + cube.total;
+    const pending = checker.pending + cube.pending;
+    return { known, loss, mistakes: checker.mistakes + cube.mistakes, pending };
+  };
+  const chips = players.map(player => {
+    const t = total(player);
+    return el("span", { class: "history-game-stat", "data-history-player": player.player },
+      el("span", { class: "history-game-name" }, label(player)),
+      el("strong", t.known ? { "data-loss-tone": lossTone(t.loss).tone } : {},
+        t.known ? `−${t.loss.toFixed(3)}${unit ? " " + unit : ""}` : "—"),
+      el("span", { class: "muted" },
+        t.known ? `${t.mistakes} mistake${t.mistakes === 1 ? "" : "s"}` : "not analyzed",
+        ...(t.pending ? [` · ${t.pending} pending`] : [])),
+    );
+  });
+  const panel = el("div", { class: "history-game-detail", hidden: !open });
+  if (open) panel.append(gameLossTable(rows, { gameNumber: game, matchLength: s.matchLength }, names(), visible));
+  const toggle = button("", () => {
+    const next = panel.hidden;
+    panel.hidden = !next;
+    toggle.setAttribute("aria-expanded", String(next));
+    if (next) {
+      feedbackView.openGames.add(game);
+      if (!panel.childElementCount)
+        panel.append(gameLossTable(rows, { gameNumber: game, matchLength: s.matchLength }, names(), visible));
+    } else feedbackView.openGames.delete(game);
+  }, "history-game-toggle", {
+    "aria-expanded": String(open),
+    "aria-label": `Game ${game} summary`,
+  });
+  toggle.append(el("span", { class: "history-game-title" }, "Game summary"), ...chips,
+    el("span", { class: "history-game-chevron", "aria-hidden": "true" }));
+  card = el("section", { class: "history-game-card", "data-game": game, "aria-label": `Game ${game} summary` }, toggle, panel);
+  card.dataset.signature = signature;
+  feedbackView.cards.set(game, card);
+  return card;
+}
 const feedbackView = {
   context: null,
   turns: new Map(),
   games: new Map(),
+  cards: new Map(),
+  openGames: new Set(),
   heading: el("h2", { class: "sr-only" }, "Decision history"),
   caption: el("p", { class: "history-context muted" }),
   empty: el("p", { class: "history-empty muted", role: "status" }),
@@ -2319,6 +2376,7 @@ function renderFeedback() {
     feedbackView.context = context;
     feedbackView.turns.clear();
     feedbackView.games.clear();
+    feedbackView.cards.clear();
   }
   const contextText = `Equity · ${state().matchLength ? "normalized match equity" : "current-cube points"} · each decision maker’s perspective. Select Cube or Move to review.`;
   if (feedbackView.caption.textContent !== contextText) feedbackView.caption.textContent = contextText;
@@ -2334,6 +2392,7 @@ function renderFeedback() {
       if (!feedbackView.games.has(group.game))
         feedbackView.games.set(group.game, el("h3", { class: "history-game-divider" }, `Game ${group.game}`));
       children.push(feedbackView.games.get(group.game));
+      children.push(gameSummaryCard(group.game, rows, viewer));
     }
     retained.add(group.key);
     // Grades arrive independently and each commit clones the match. Keep
