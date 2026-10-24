@@ -9,10 +9,10 @@ import {
   visiblePoint,
 } from "../core/shortcuts.mjs";
 import { keycap } from "./keycap.mjs";
-import { settings, saveSettings } from "../core/storage.mjs";
+import { readSettings, saveSettings } from "../core/storage.mjs";
 import { el, button, field, toast } from "./shell.mjs";
 export function decorateShortcuts(root) {
-  const prefs = settings();
+  const prefs = readSettings();
   const actions = { "confirm": "confirm", "roll": "roll", "double-cube": "double",
     "drop-cube": "drop", "take-cube": "take", "immediate-redouble": "redouble",
     "hint": "hint", "undo": "undo", "reset-draft": "reset", "start-match": "confirm" };
@@ -30,7 +30,7 @@ export function shortcutControls() {
     error = el("p", { class: "error", role: "alert" });
   const enabled = el("input", {
     type: "checkbox",
-    checked: settings().keyboardEnabled,
+    checked: readSettings().keyboardEnabled,
     onChange: () => saveSettings({ keyboardEnabled: enabled.checked }),
   });
   root.append(
@@ -51,7 +51,7 @@ export function shortcutControls() {
     });
     for (const def of defs) {
       const input = el("input", {
-        value: settings().shortcuts[def.id].join(", "),
+        value: readSettings().shortcuts[def.id].join(", "),
         maxlength: 40,
         autocomplete: "off",
         spellcheck: "false",
@@ -116,7 +116,7 @@ export function installPlayShortcuts({ phase, point, run }) {
       )
     )
       return;
-    const prefs = settings();
+    const prefs = readSettings();
     if (!prefs.keyboardEnabled) return;
     const key = keyForEvent(e),
       action = shortcutAction(prefs.shortcuts, key, phase());

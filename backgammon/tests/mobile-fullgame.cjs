@@ -185,7 +185,14 @@ async function fullGame(browser, base, out, name) {
         assert.ok(target&&!target.missing,`No legal touch target: ${JSON.stringify({state,target})}`);
         await tap(target.kind,null,target);lastActionAt=Date.now();await page.waitForTimeout(350);continue;
       }
-      if(Date.now()-lastActionAt>90000)throw Error(`Game stopped responding: ${JSON.stringify(state)}`);
+      if(Date.now()-lastActionAt>90000){
+        const motion=await page.evaluate(()=>({timer:mobileGame.d.board.playbackTimer,final:mobileGame.d.board.playbackFinal,
+          sprites:[...document.querySelectorAll('.moving-checker')].map(n=>({parent:n.parentElement?.getAttribute('class'),
+            board:n.closest('svg')?.parentElement?.id,html:n.outerHTML,animations:n.getAnimations().map(a=>({state:a.playState,time:a.currentTime,timing:a.effect.getComputedTiming()}))}))}));
+        latest=await page.evaluate(async()=> (await mobileGame.st.get('work','play')).game);
+        await page.screenshot({path:path.join(out,`${name}-stalled.png`)});
+        throw Error(`Game stopped responding: ${JSON.stringify({state,motion})}`);
+      }
       await page.waitForTimeout(100);
     }
     assert.ok(completed,'the game reaches its result card');

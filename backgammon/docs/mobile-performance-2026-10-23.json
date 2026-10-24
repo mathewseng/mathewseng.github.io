@@ -1,0 +1,809 @@
+{
+  "recordedAt": "2026-10-24T02:20:30.037Z",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "platform": "Darwin arm64"
+  },
+  "method": "Full real-touch game, real GNUbg Auto analysis, full motion, isolated browser storage, and independent saved-game replay. Chromium 4x CPU slowdown at 390x844. Historical deployed baseline compared with the assembled revised site; each run was sequential with other test workloads stopped. User applications remained running. Timing is descriptive, not a physical iPhone or low-battery guarantee.",
+  "sameActions": true,
+  "changes": [
+    "Reuse mounted point stacks without reconstructing SVG nodes.",
+    "Read shared frozen preferences while editors retain independent writable copies.",
+    "Batch animation setup and animate die ink as a group. Include roll entry in the render batch.",
+    "Avoid redundant submitted-board and pre-playback final-position renders.",
+    "Enumerate legal paths and copy independent game snapshots without structured-serialization overhead.",
+    "Group forced-step outcomes once and preserve every legal choice.",
+    "Simplify arrow clearance math without changing smoothness or clearance.",
+    "Clean up cancelled checker flights and retain correct arrival visibility."
+  ],
+  "before": {
+    "recordedAt": "2026-10-24T00:50:11.055Z",
+    "base": "https://mathewseng.github.io",
+    "loadedRelease": "7238c5060ba813dd",
+    "browser": "chromium 145.0.7632.6",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "cpuSlowdown": 4,
+    "completed": true,
+    "errors": [],
+    "events": 107,
+    "summary": {
+      "tapToFrame": {
+        "count": 113,
+        "median": 38.200000047683716,
+        "p95": 57.90000009536743,
+        "max": 66.60000002384186
+      },
+      "byAction": {
+        "start": {
+          "count": 1,
+          "median": 0.5999999046325684,
+          "p95": 0.5999999046325684,
+          "max": 0.5999999046325684
+        },
+        "checker": {
+          "count": 53,
+          "median": 40.89999997615814,
+          "p95": 60.799999952316284,
+          "max": 63
+        },
+        "confirm": {
+          "count": 26,
+          "median": 42.09999990463257,
+          "p95": 57.5,
+          "max": 66.60000002384186
+        },
+        "roll": {
+          "count": 25,
+          "median": 8.5,
+          "p95": 27.399999976158142,
+          "max": 28.100000023841858
+        },
+        "accept-warning": {
+          "count": 2,
+          "median": 28.700000047683716,
+          "p95": 28.700000047683716,
+          "max": 28.700000047683716
+        },
+        "take-cube": {
+          "count": 1,
+          "median": 50.39999997615814,
+          "p95": 50.39999997615814,
+          "max": 50.39999997615814
+        },
+        "bearoff": {
+          "count": 5,
+          "median": 36,
+          "p95": 38.60000002384186,
+          "max": 38.60000002384186
+        }
+      },
+      "actionToPosition": {
+        "start": {
+          "count": 1,
+          "median": 70.39999997615814,
+          "p95": 70.39999997615814,
+          "max": 70.39999997615814
+        },
+        "checker": {
+          "count": 53,
+          "median": 27.5,
+          "p95": 40.89999997615814,
+          "max": 50.5
+        },
+        "confirm": {
+          "count": 25,
+          "median": 94.89999997615814,
+          "p95": 121.79999995231628,
+          "max": 125.70000004768372
+        },
+        "roll": {
+          "count": 25,
+          "median": 83.5,
+          "p95": 101.90000009536743,
+          "max": 124
+        },
+        "accept-warning": {
+          "count": 2,
+          "median": 59.700000047683716,
+          "p95": 59.700000047683716,
+          "max": 59.700000047683716
+        },
+        "take-cube": {
+          "count": 0
+        },
+        "bearoff": {
+          "count": 5,
+          "median": 27.5,
+          "p95": 28.5,
+          "max": 28.5
+        }
+      },
+      "confirmToDecision": {
+        "count": 26,
+        "median": 94.89999997615814,
+        "p95": 121.79999995231628,
+        "max": 125.70000004768372
+      },
+      "stalls": {
+        "count": 162,
+        "median": 58.19999999999709,
+        "p95": 84.30000000000291,
+        "max": 132.5
+      },
+      "longTasks": {
+        "count": 60,
+        "median": 58,
+        "p95": 110,
+        "max": 117
+      },
+      "renders": {
+        "count": 538,
+        "median": 19.200000047683716,
+        "p95": 33,
+        "max": 60.299999952316284
+      },
+      "slowestFrames": [
+        {
+          "at": 2274.1,
+          "ms": 132.5,
+          "sequence": 0,
+          "phase": "opening",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "start"
+        },
+        {
+          "at": 109132.7,
+          "ms": 117.09999999999127,
+          "sequence": 61,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 48269.4,
+          "ms": 116.70000000000437,
+          "sequence": 29,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 62878.3,
+          "ms": 99.80000000000291,
+          "sequence": 37,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 6886.8,
+          "ms": 99.69999999999982,
+          "sequence": 2,
+          "phase": "roll",
+          "player": 1,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 166148.4,
+          "ms": 99.29999999998836,
+          "sequence": 103,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            5,
+            12
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 2000,
+          "ms": 91.59999999999991
+        },
+        {
+          "at": 138940.8,
+          "ms": 87.59999999997672,
+          "sequence": 82,
+          "phase": "roll",
+          "player": 0,
+          "off": [
+            0,
+            4
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 101366,
+          "ms": 84.30000000000291,
+          "sequence": 57,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 170707.3,
+          "ms": 83.69999999998254,
+          "sequence": 107,
+          "phase": "over",
+          "player": 0,
+          "off": [
+            7,
+            13
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 115719.7,
+          "ms": 83.39999999999418,
+          "sequence": 64,
+          "phase": "roll",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 122653.2,
+          "ms": 83.39999999999418,
+          "sequence": 70,
+          "phase": "roll",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "accept-warning"
+        },
+        {
+          "at": 54391.1,
+          "ms": 83.29999999999563,
+          "sequence": 32,
+          "phase": "roll",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 140473.9,
+          "ms": 83.29999999998836,
+          "sequence": 83,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            4
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 161178.5,
+          "ms": 83.29999999998836,
+          "sequence": 99,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            4,
+            11
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 69444.6,
+          "ms": 82.30000000000291,
+          "sequence": 40,
+          "phase": "roll",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 159671,
+          "ms": 80.10000000000582,
+          "sequence": 98,
+          "phase": "roll",
+          "player": 0,
+          "off": [
+            4,
+            11
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 150657.1,
+          "ms": 78.70000000001164,
+          "sequence": 91,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            2,
+            7
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 86290.1,
+          "ms": 78.60000000000582,
+          "sequence": 49,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 110760.4,
+          "ms": 78.09999999999127,
+          "sequence": 61,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 2,
+          "action": "checker"
+        }
+      ]
+    }
+  },
+  "after": {
+    "recordedAt": "2026-10-24T02:20:30.037Z",
+    "base": "http://127.0.0.1:63099",
+    "loadedRelease": "d4070e9f1219cb81",
+    "browser": "chromium 145.0.7632.6",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "cpuSlowdown": 4,
+    "completed": true,
+    "errors": [],
+    "events": 107,
+    "summary": {
+      "tapToFrame": {
+        "count": 113,
+        "median": 26.199999928474426,
+        "p95": 40.40000009536743,
+        "max": 49
+      },
+      "byAction": {
+        "start": {
+          "count": 1,
+          "median": 0.7999999523162842,
+          "p95": 0.7999999523162842,
+          "max": 0.7999999523162842
+        },
+        "checker": {
+          "count": 53,
+          "median": 30.700000047683716,
+          "p95": 43.10000002384186,
+          "max": 49
+        },
+        "confirm": {
+          "count": 26,
+          "median": 18.200000047683716,
+          "p95": 30.700000047683716,
+          "max": 37.39999997615814
+        },
+        "roll": {
+          "count": 25,
+          "median": 0.8999999761581421,
+          "p95": 12.200000047683716,
+          "max": 14.299999952316284
+        },
+        "accept-warning": {
+          "count": 2,
+          "median": 30.299999952316284,
+          "p95": 30.299999952316284,
+          "max": 30.299999952316284
+        },
+        "take-cube": {
+          "count": 1,
+          "median": 37.200000047683716,
+          "p95": 37.200000047683716,
+          "max": 37.200000047683716
+        },
+        "bearoff": {
+          "count": 5,
+          "median": 28.600000023841858,
+          "p95": 31.200000047683716,
+          "max": 31.200000047683716
+        }
+      },
+      "actionToPosition": {
+        "start": {
+          "count": 1,
+          "median": 50.5,
+          "p95": 50.5,
+          "max": 50.5
+        },
+        "checker": {
+          "count": 53,
+          "median": 19.600000023841858,
+          "p95": 25.5,
+          "max": 28.399999976158142
+        },
+        "confirm": {
+          "count": 25,
+          "median": 64,
+          "p95": 75.10000002384186,
+          "max": 79
+        },
+        "roll": {
+          "count": 25,
+          "median": 50.300000071525574,
+          "p95": 71.79999995231628,
+          "max": 77.69999992847443
+        },
+        "accept-warning": {
+          "count": 2,
+          "median": 63.39999997615814,
+          "p95": 63.39999997615814,
+          "max": 63.39999997615814
+        },
+        "take-cube": {
+          "count": 0
+        },
+        "bearoff": {
+          "count": 5,
+          "median": 18.799999952316284,
+          "p95": 20.5,
+          "max": 20.5
+        }
+      },
+      "confirmToDecision": {
+        "count": 26,
+        "median": 64,
+        "p95": 75.10000002384186,
+        "max": 79
+      },
+      "stalls": {
+        "count": 83,
+        "median": 49.89999999999418,
+        "p95": 74.09999999999854,
+        "max": 91.60000000000002
+      },
+      "longTasks": {
+        "count": 5,
+        "median": 56,
+        "p95": 79,
+        "max": 79
+      },
+      "renders": {
+        "count": 434,
+        "median": 13.5,
+        "p95": 23.800000071525574,
+        "max": 38.299999952316284
+      },
+      "slowestFrames": [
+        {
+          "at": 451,
+          "ms": 91.60000000000002
+        },
+        {
+          "at": 4950.6,
+          "ms": 82.60000000000036,
+          "sequence": 2,
+          "phase": "roll",
+          "player": 1,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 658.9,
+          "ms": 82.39999999999998,
+          "sequence": 0,
+          "phase": "opening",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "start"
+        },
+        {
+          "at": 102408.9,
+          "ms": 74.39999999999418,
+          "sequence": 61,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 45242.1,
+          "ms": 74.09999999999854,
+          "sequence": 29,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 96159.5,
+          "ms": 66.69999999999709,
+          "sequence": 57,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 139792.7,
+          "ms": 59.40000000002328,
+          "sequence": 88,
+          "phase": "roll",
+          "player": 1,
+          "off": [
+            2,
+            5
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 16168.2,
+          "ms": 59.30000000000109,
+          "sequence": 10,
+          "phase": "roll",
+          "player": 1,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 110217.5,
+          "ms": 59,
+          "sequence": 65,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 142092.6,
+          "ms": 58.89999999999418,
+          "sequence": 91,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            2,
+            7
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 75976.2,
+          "ms": 58.80000000000291,
+          "sequence": 46,
+          "phase": "roll",
+          "player": 1,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 159417.5,
+          "ms": 58.70000000001164,
+          "sequence": 104,
+          "phase": "roll",
+          "player": 1,
+          "off": [
+            7,
+            12
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 137517.7,
+          "ms": 58.60000000000582,
+          "sequence": 87,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            1,
+            5
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 157192.5,
+          "ms": 58.60000000000582,
+          "sequence": 103,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            5,
+            12
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 90601.2,
+          "ms": 58.39999999999418,
+          "sequence": 55,
+          "phase": "move",
+          "player": 1,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 113826,
+          "ms": 58.30000000000291,
+          "sequence": 69,
+          "phase": "move",
+          "player": 1,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "accept-warning"
+        },
+        {
+          "at": 122309.4,
+          "ms": 58.29999999998836,
+          "sequence": 75,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "roll"
+        },
+        {
+          "at": 161650.8,
+          "ms": 58.29999999998836,
+          "sequence": 107,
+          "phase": "over",
+          "player": 0,
+          "off": [
+            7,
+            13
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 112592.6,
+          "ms": 58.20000000001164,
+          "sequence": 66,
+          "phase": "roll",
+          "player": 1,
+          "off": [
+            0,
+            0
+          ],
+          "draft": 0,
+          "action": "confirm"
+        },
+        {
+          "at": 148041.6,
+          "ms": 58.20000000001164,
+          "sequence": 95,
+          "phase": "move",
+          "player": 0,
+          "off": [
+            3,
+            9
+          ],
+          "draft": 0,
+          "action": "roll"
+        }
+      ]
+    }
+  },
+  "validation": {
+    "unitTests": 449,
+    "browserEngines": [
+      "Chromium 145",
+      "WebKit 26"
+    ],
+    "checks": [
+      "animation interruption/cleanup",
+      "dice and highlight motion",
+      "drag and undo",
+      "initial-roll-only forced steps",
+      "portrait and landscape equity rail",
+      "worker save recovery",
+      "1356-event confirmation and independent replay"
+    ]
+  },
+  "limits": [
+    "A throttled desktop browser is not a physical phone.",
+    "The recorded full game still has occasional missed frames; long-task and frame-gap outliers are retained in the summaries.",
+    "Only five manual bearing-off taps occur in this game; it is not a broad position corpus.",
+    "Search depth, legal moves and animation durations were not reduced."
+  ]
+}

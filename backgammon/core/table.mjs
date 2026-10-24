@@ -7,13 +7,13 @@ import { acceptedAttempt, beginDecisionAttempt } from "./decision-attempt.mjs";
 import { canAutoPassClosedOut } from './closed-out.mjs';
 import {
   clone,
+  cloneRecord,
   transition,
   legalTurns,
   replay,
   decisionPlayer,
   legalPaths,
   matchingPaths,
-  nextSteps,
   boardKey,
   applyStep,
   stepsForDie,
@@ -74,6 +74,7 @@ export function forcedContinuation(
   paths = legalPaths(state),
 ) {
   let prefix = [...draft];
+  const keys = new Map(paths.map(path => [path, boardKey(path.state)]));
   for (;;) {
     const matches = matchingPaths(paths, prefix);
     if (
@@ -84,23 +85,23 @@ export function forcedContinuation(
         steps: prefix.slice(draft.length),
         complete: prefix.length > draft.length,
       };
-    if (new Set(matches.map((p) => boardKey(p.state))).size === 1)
+    const outcomes = new Set(matches.map(path => keys.get(path)));
+    if (outcomes.size === 1)
       return {
         steps: matches[0].steps.slice(draft.length),
         complete: true,
       };
-    // A compulsory step need not be first in every dice order. It is safe
-    // to play first only when EVERY distinct final board remains reachable.
-    // Counting paths (or playable dice) would confuse order with a choice.
-    const outcomes = new Set(matches.map((p) => boardKey(p.state)));
-    const next = nextSteps(paths, prefix).find(
-      (step) =>
-        new Set(
-          matchingPaths(matches, [...prefix, step]).map((p) =>
-            boardKey(p.state),
-          ),
-        ).size === outcomes.size,
-    );
+    // Group once by the next step. Re-filtering the full path list and
+    // serializing every final board for each candidate stalls double rolls.
+    const choices = new Map();
+    for (const path of matches) {
+      const step = path.steps[prefix.length];
+      const key = `${step.from}/${step.to}/${step.die}`;
+      if (!choices.has(key)) choices.set(key, {step, outcomes:new Set()});
+      choices.get(key).outcomes.add(keys.get(path));
+    }
+    // Only a step preserving EVERY distinct final board can auto-play.
+    const next = [...choices.values()].find(choice => choice.outcomes.size === outcomes.size)?.step;
     if (!next) return { steps: prefix.slice(draft.length), complete: false };
     prefix.push(next);
   }
@@ -201,7 +202,7 @@ export function playAction(
 ) {
   if (autoPass && (action.type !== 'skip-roll' || !canAutoPassClosedOut(source.state, cubeEvaluation)))
     throw new Error('This cube decision cannot be skipped automatically.');
-  const table = clone(source);
+  const table = cloneRecord(source);
   delete table.reviewingTurn;
   if (action.type === "roll" && table.replayDice?.length) {
     const known = table.replayDice.shift();

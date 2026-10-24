@@ -12,7 +12,8 @@ module.exports = async function advancedUI(browser,base,out,name='browser') {
     assert.equal(await page.getByLabel('Warn before confirming a costly move').isChecked(),true);
     assert.equal(await page.getByLabel('Automatic opening doubles',{exact:true}).inputValue(),'-1');
     assert.equal(await page.getByLabel('Immediate redoubles',{exact:true}).inputValue(),'2');
-    assert.equal(await page.getByLabel('Computer strength',{exact:true}).locator('option').count(),6);
+    assert.deepEqual(await page.getByLabel('Computer strength',{exact:true}).locator('option').evaluateAll(nodes=>nodes.map(node=>node.value)),
+      ['auto','quick','standard','deep','expert','research','verify']);
     await page.locator('#preferences').click();
     assert.equal(await page.getByLabel('Playing style',{exact:true}).inputValue(),'advanced');
     await page.locator('dialog .close').click();
@@ -20,14 +21,19 @@ module.exports = async function advancedUI(browser,base,out,name='browser') {
     // Animate two opening ties, then a winner. Source still uses committed cryptoDice.
     await page.evaluate(()=>{let i=0;const values=[1,1,3,3,5,0];crypto.getRandomValues=buffer=>{for(let j=0;j<buffer.length;j++)buffer[j]=values[i++]??0;return buffer;};});
     await page.getByRole('button',{name:'Same device',exact:true}).click();
+    await page.evaluate(()=>{window.openingReveals=[];new MutationObserver(()=>{
+      const n=document.querySelectorAll('.opening-player.revealed').length;
+      if(n&&openingReveals.at(-1)!==n)openingReveals.push(n);
+    }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});});
     await page.locator('#start-match').click();
     await page.waitForSelector('.opening-roll');
     assert.equal(await page.locator('#begin-turn').count(),0);
     assert.equal(await page.locator('#roll').count(),0);
     await page.waitForSelector('.opening-player.revealed');
-    assert.equal(await page.locator('.opening-player.revealed').count(),1,'opening dice reveal separately');
     await page.screenshot({path:path.join(out,`${name}-opening-reveal.png`)});
     await page.waitForSelector('#confirm',{timeout:15000});
+    assert.ok(await page.evaluate(()=>openingReveals.includes(1)&&openingReveals.includes(2)),
+      'opening dice reveal separately, even if the test runner samples after both reveals');
     const stored=await page.evaluate(async()=>{const {get}=await import('/backgammon/core/storage.mjs');return (await get('work','play')).game;});
     assert.deepEqual(stored.events.slice(0,3).map(e=>e.action.dice),[[2,2],[4,4],[6,1]]);
     assert.equal(stored.state.cube.value,4);
@@ -87,7 +93,9 @@ module.exports = async function advancedUI(browser,base,out,name='browser') {
       const dims=await page.evaluate(()=>{const c=document.querySelector('#confirm').getBoundingClientRect(),b=document.querySelector('#board svg').getBoundingClientRect();return{overflow:document.documentElement.scrollWidth>innerWidth+1,confirm:c.toJSON(),board:b.toJSON()};});
       assert.equal(dims.overflow,false,`overflow at ${width}`);
       assert.ok(dims.confirm.top>=0&&dims.confirm.bottom<=height+2,`confirmation visible at ${width}: ${JSON.stringify(dims.confirm)}`);
-      assert.ok(dims.board.top>=0&&dims.board.bottom<=height+2&&dims.board.height>200&&dims.board.width>260,`board visible at ${width}: ${JSON.stringify(dims.board)}`);
+      // Short portrait layouts reserve the action row and use a 140 px minimum board track.
+      const minBoardHeight=width<=700&&height<=740?140:200;
+      assert.ok(dims.board.top>=0&&dims.board.bottom<=height+2&&dims.board.height>=minBoardHeight&&dims.board.width>260,`board visible at ${width}: ${JSON.stringify(dims.board)}`);
       if(width>height&&height<=500)assert.ok(dims.board.height>height*.85,'landscape board uses almost all height');
       const shot=`${name}-advanced-${width}x${height}.png`;await page.screenshot({path:path.join(out,shot)});report.screenshots.push(shot);
     }

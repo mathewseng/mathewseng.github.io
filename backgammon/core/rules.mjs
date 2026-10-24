@@ -297,8 +297,10 @@ export function stepsForDie(s, die, p = s.turn) {
   });
 }
 export function applyStep(source, step, p = source.turn) {
-  const s = clone(source),
-    sg = sign(p);
+  return moveChecker(clone(source), step, p);
+}
+function moveChecker(s, step, p) {
+  const sg = sign(p);
   if (step.from === "bar") s.bar[p]--;
   else s.points[step.from] -= sg;
   if (step.to === "off") s.off[p]++;
@@ -310,6 +312,22 @@ export function applyStep(source, step, p = source.turn) {
     s.points[step.to] += sg;
   }
   return s;
+}
+// Positions and saved local tables contain JSON records. Copy their arrays
+// directly instead of paying structured-serialization cost on every branch or
+// confirmation. Keep alias/cycle identity and independent writable snapshots.
+export function cloneRecord(value, seen = new Map()) {
+  if (!value || typeof value !== "object") return value;
+  if (seen.has(value)) return seen.get(value);
+  if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype) return clone(value);
+  const result = Array.isArray(value) ? [] : {};
+  seen.set(value, result);
+  for (const key of Object.keys(value)) {
+    const copied = cloneRecord(value[key], seen);
+    if (key === "__proto__") Object.defineProperty(result, key, {value:copied, enumerable:true, writable:true, configurable:true});
+    else result[key] = copied;
+  }
+  return result;
 }
 const stepEqual = (a, b) =>
   a.from === b.from && a.to === b.to && a.die === b.die;
@@ -340,7 +358,7 @@ function enumeratePaths(s, distinctResults = false) {
         any = true;
         const rest = [...remaining];
         rest.splice(rest.indexOf(d), 1);
-        walk(applyStep(b, step), rest, [...steps, step]);
+        walk(moveChecker(cloneRecord(b), step, b.turn), rest, [...steps, step]);
       }
     if (!any) paths.push({ steps, state: b });
   }

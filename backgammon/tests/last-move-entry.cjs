@@ -24,6 +24,13 @@ module.exports = async function lastMoveEntry(browser, base, out, name) {
           }
           return a;
         };
+        // Board transitions start together after all resting poses are read.
+        const play = Animation.prototype.play;
+        Animation.prototype.play = function() {
+          const result = play.call(this);
+          if (window.pauseTrace && ['last-move-entry', 'move-arrow-entry', 'last-move-exit'].includes(this.id)) { this.pause(); this.currentTime = 0; }
+          return result;
+        };
       });
       await page.goto(base + '/backgammon/');
       await page.evaluate(async () => {

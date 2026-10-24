@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Decorative SVG fragments only. The live point classes/hit regions always
 // describe the current legal actions, even while an old highlight fades away.
+import { animate } from "./animation-batch.mjs";
 const fragments = '.draft-undo-tint,.draft-undo-mark,.point-glow,.point-accent,.point-wash,.source-ring,.landing-ring,.ring-halo,.destination-badge,.destination-die';
 const paint = ['display', 'fill', 'fill-opacity', 'stroke', 'stroke-width',
   'stroke-opacity', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap',
@@ -41,9 +42,12 @@ export function animateHighlights(board, previous, animations, enabled) {
     for (const node of point.querySelectorAll(fragments)) {
       const kind = node.classList[0], index = counts.get(kind) || 0;
       counts.set(kind, index + 1);
-      node.dataset.highlight = `${point.dataset.point}:${kind}:${index}`;
-      node.setAttribute('aria-hidden', 'true');
-      node.style.pointerEvents = 'none';
+      const key = `${point.dataset.point}:${kind}:${index}`;
+      if (node.dataset.highlight !== key) {
+        node.dataset.highlight = key;
+        node.setAttribute('aria-hidden', 'true');
+        node.style.pointerEvents = 'none';
+      }
       nodes.push(node);
     }
   }
@@ -52,8 +56,8 @@ export function animateHighlights(board, previous, animations, enabled) {
     if (!current) continue;
     const found = old.findIndex(item => item.key === current.key && item.signature === current.signature);
     const from = found < 0 ? 0 : old.splice(found, 1)[0].opacity;
-    if (from !== current.opacity) animations.push(node.animate(
-      [{ opacity: from }, { opacity: current.opacity }], timing));
+    if (from !== current.opacity) animations.push(animate(node,
+      [{ opacity: from }, { opacity: current.opacity }], timing, animations));
   }
   if (!enabled) return;
   for (const item of old) {
@@ -65,7 +69,7 @@ export function animateHighlights(board, previous, animations, enabled) {
     // Washes/glows stay behind the checkers. Rings and labels stay above them.
     const beneath = node.matches('.point-glow,.point-accent,.point-wash');
     point.insertBefore(node, beneath ? point.querySelector('.checker') : null);
-    const animation = node.animate([{ opacity: item.opacity }, { opacity: 0 }], { ...timing, fill: 'forwards' });
+    const animation = animate(node, [{ opacity: item.opacity }, { opacity: 0 }], { ...timing, fill: 'forwards' }, animations);
     animation.onfinish = () => node.remove();
     animations.push(animation);
   }

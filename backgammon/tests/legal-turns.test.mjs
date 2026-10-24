@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { initialState, legalPaths, legalTurns, boardKey, assertState } from '../core/rules.mjs';
+import { initialState, legalPaths, legalTurns, boardKey, assertState, stepsForDie } from '../core/rules.mjs';
 
 // Independent exhaustive oracle: retain the first full legal path to each
 // resulting board, exactly as the solver did before partial-board pruning.
@@ -70,4 +70,50 @@ test('distinct-turn generation has no shared mutable results or stale non-board 
   first[0].state.points[0] = 99;
   compare({...state,sequence:11,gameNumber:4}, 'fresh sequence and game number');
   assert.deepEqual(legalTurns({...state,phase:'roll',dice:[]}),[]);
+});
+
+// Independent traversal with native deep copies catches shared branches and
+// lost cube/rule metadata in the fast interactive enumeration.
+function nativePaths(source) {
+  const dice=source.dice[0]===source.dice[1]?Array(4).fill(source.dice[0]):source.dice;
+  const results=[];
+  const visit=(state,left,steps)=>{
+    if(!left.length||state.off[source.turn]===15){results.push({steps,state});return;}
+    let any=false;
+    for(const die of new Set(left))for(const step of stepsForDie(state,die)){
+      any=true;const next=structuredClone(state),sg=source.turn?-1:1;
+      if(step.from==='bar')next.bar[source.turn]--;else next.points[step.from]-=sg;
+      if(step.to==='off')next.off[source.turn]++;
+      else{if(next.points[step.to]===-sg){next.points[step.to]=0;next.bar[1-source.turn]++;}next.points[step.to]+=sg;}
+      const rest=[...left];rest.splice(rest.indexOf(die),1);visit(next,rest,[...steps,step]);
+    }
+    if(!any)results.push({steps,state});
+  };
+  visit(source,dice,[]);
+  const max=Math.max(...results.map(p=>p.steps.length));
+  let valid=results.filter(p=>p.steps.length===max||p.state.off[source.turn]===15);
+  if(max===1&&dice[0]!==dice[1]){const high=Math.max(...valid.map(p=>p.steps[0].die));valid=valid.filter(p=>p.steps[0].die===high);}
+  return valid;
+}
+
+test('fast path copies preserve every native legal path, hits, bar entry, bearoffs and independent context',()=>{
+  const positions=[initialState(), initialState({points:[2,2,2,3,2,4,...Array(12).fill(0),-4,-2,-3,-2,-2,-2]})];
+  const bar=initialState();bar.points[23]--;bar.bar[0]++;
+  bar.points[22]=-1;bar.points[18]++;
+  positions.push(bar);
+  for(const position of positions)for(const side of [position,mirror(position)])
+    for(let a=1;a<=6;a++)for(let b=a;b<=6;b++){
+      const s={...side,phase:'move',dice:[a,b],matchLength:0,sequence:17,cube:{value:4,owner:1},rules:{...side.rules,jacoby:true}};
+      assertState(s);const before=structuredClone(s),actual=legalPaths(s);
+      assert.deepEqual(actual,nativePaths(s),`both generators agree for ${a}-${b}, player ${s.turn}`);
+      assert.deepEqual(s,before);
+      if(actual.length>1&&actual[0].steps.length){
+        const other=structuredClone(actual[1]);
+        actual[0].state.cube.value=128;actual[0].state.rules.jacoby=false;
+        actual[0].state.scores[0]=99;actual[0].state.dice[0]=6;
+        actual[0].state.points[0]=99;actual[0].state.bar[0]=99;actual[0].state.off[0]=99;
+        assert.deepEqual(actual[1],other,'a result never shares mutable metadata with another result');
+        assert.deepEqual(s,before,'a result never shares mutable metadata with the input');
+      }
+    }
 });

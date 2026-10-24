@@ -11,6 +11,7 @@ module.exports=async(browser,base,out,name)=>{
     const {saveSettings}=await import('/backgammon/core/storage.mjs');saveSettings({motion:'full',equityBar:false});document.documentElement.dataset.motion='full';
     const board=shell('trainer','Dice motion').board;window.diceCount={board,initialState};
     const animate=Element.prototype.animate;Element.prototype.animate=function(frames,options){const a=animate.call(this,frames,options);if(options?.id?.startsWith('dice-layout')){a.pause();a.currentTime=0;}return a;};
+    const play=Animation.prototype.play;Animation.prototype.play=function(){const result=play.call(this);if(this.id.startsWith('dice-layout')){this.pause();this.currentTime=0;}return result;};
    });
    const render=async(dice,turn=0,historical=false)=>page.evaluate(({dice,turn,historical})=>{
     const {board,initialState}=diceCount;board.render(initialState({phase:historical?'roll':'move',dice:historical?[]:dice,turn:historical?1-turn:turn}),{

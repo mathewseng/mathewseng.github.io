@@ -28,7 +28,7 @@ import {
   get,
   put,
   itemRecord,
-  settings,
+  readSettings,
   saveSettings,
   saveMatchHistory,
   download,
@@ -119,7 +119,7 @@ let config = {
     matchLength: 0,
     strength: "auto",
     reviewStrength: "auto",
-    tutor: settings().moveFeedback === true,
+    tutor: readSettings().moveFeedback === true,
     warning: true,
     name: "You",
     opponent: "Friend",
@@ -348,7 +348,7 @@ draft.shortcutsEnabled = true;
 const prethink = new Prethink({
   engine: analysis.engine,
   view: () => ({ game,
-    enabled: config.mode === "computer" && settings().analysisAhead && !document.hidden && !leaving,
+    enabled: config.mode === "computer" && readSettings().analysisAhead && !document.hidden && !leaving,
     idle: !committing && !botBusy && !assistanceJob,
     submitted: draft.state === game?.state && draft.complete() && draft.draft.length ? clone(draft.draft) : null,
   }),
@@ -470,7 +470,7 @@ installPlayShortcuts({
       return true;
     }
     if (action === "flip") {
-      saveSettings({ orientation: 1 - settings().orientation });
+      saveSettings({ orientation: 1 - readSettings().orientation });
       dispatchEvent(new Event("bg-settings"));
       return true;
     }
@@ -792,7 +792,7 @@ function render() {
     boardKey = key;
     draft.names = m?.names ||
       m?.players?.map((p) => p.name) || ["White", "Black"];
-    draft.set(s, legalPaths(s), enabled);
+    let presentation = null;
     if (
       before &&
       renderedGameId === m?.id &&
@@ -803,7 +803,7 @@ function render() {
       before.turn === event.actor &&
       checkerKey(before) !== checkerKey(s)
     )
-      ui.board.playTurn(before, event.action.steps, { automatic: !!event.automatic });
+      presentation = {before, steps:event.action.steps, automatic:!!event.automatic};
     else if (
       before &&
       renderedGameId === m?.id &&
@@ -813,16 +813,14 @@ function render() {
       before.sequence + 2 === s.sequence
     ) {
       const roll = m.events.at(-2);
-      ui.board.playTurn(
-        transition(before, roll.action, roll.actor),
-        event.action.steps,
-        { automatic: true, rolled: true },
-      );
+      presentation = {before:transition(before, roll.action, roll.actor),
+        steps:event.action.steps, automatic:true, rolled:true};
     }
+    if (freshEvent && ["roll", "practice-roll"].includes(event?.action.type))
+      presentation = {roll:true};
+    draft.set(s, legalPaths(s), enabled, presentation);
     if (freshEvent) {
-      if (["roll", "practice-roll"].includes(event?.action.type))
-        ui.board.animateDice();
-      else if (
+      if (
         ["double", "take", "beaver", "raccoon"].includes(event?.action.type)
       )
         ui.board.animateCube(previous);
@@ -955,10 +953,10 @@ function closedOutEvaluation(s) {
     ? closedOutCheck.result : null;
 }
 function automaticClosedOutPass(s) {
-  return myTurn(s) && shouldAutoPassClosedOut(s, settings().closedOutPassing, closedOutEvaluation(s));
+  return myTurn(s) && shouldAutoPassClosedOut(s, readSettings().closedOutPassing, closedOutEvaluation(s));
 }
 function checkClosedOutCube(s) {
-  if (settings().closedOutPassing !== 'bad-double' || !blockedBarRoll(s) || !canDouble(s) || config.mode !== 'computer' || !myTurn(s)) return;
+  if (readSettings().closedOutPassing !== 'bad-double' || !blockedBarRoll(s) || !canDouble(s) || config.mode !== 'computer' || !myTurn(s)) return;
   const key = closedOutKey(s);
   if (closedOutCheck?.key === key) return;
   // Reuse completed analysis in the exact score/cube/rule context, including
@@ -1250,7 +1248,7 @@ function start() {
 function actions() {
   const table = model();
   const hasDraft = draft.draft.length > 0;
-  const ahead = settings().analysisAhead;
+  const ahead = readSettings().analysisAhead;
   ui.equityBar.set({
     state: state(),
     engine: ahead ? analysis.engine : undefined,
@@ -1320,7 +1318,7 @@ function arrangeActions() {
     if (blockedBarRoll(state()) && ['roll','double-cube'].includes(id)) continue;
     if (b) helpActions.append(b);
   }
-  const prefs = settings();
+  const prefs = readSettings();
   draftKeys.replaceChildren(...(prefs.keyboardEnabled ? [["undo", "Undo"], ["reset", "Reset"]].filter(([action]) => prefs.shortcuts[action]?.[0]).map(([action, label]) =>
     el("span", {}, shortcutBadge(prefs.shortcuts[action][0]), label)) : []));
   placeConfirm();
@@ -1690,7 +1688,7 @@ function renderActions() {
   } else if (s.phase === "roll") {
     const previous = m.events.at(-1);
     const closed = blockedBarRoll(s);
-    const prefs = settings();
+    const prefs = readSettings();
     const keycap = action => prefs.keyboardEnabled && prefs.shortcuts[action]?.length
       ? shortcutBadge(prefs.shortcuts[action][0]) : "";
     $("message").replaceChildren(
@@ -2582,7 +2580,15 @@ function assistance(kind) {
   };
   assistanceJob = job;
   draft.enabled = false;
-  draft.render();
+  // The submitted board is already painted. Lock its handlers while grading,
+  // but keep the dice/checkers and their running animations mounted until the
+  // decision changes. Rebuilding here used an entire slow-phone frame solely
+  // to remove controls, immediately before the committed-state render.
+  if (kind === "hint") draft.render();
+  else {
+    ui.board.options.interactive = false;
+    ui.board.svg.querySelectorAll('[role="button"]').forEach(node => node.setAttribute('aria-disabled', 'true'));
+  }
   actions();
   return job;
 }

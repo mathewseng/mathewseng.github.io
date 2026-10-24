@@ -555,3 +555,22 @@ and accepting a warning at most 63 ms. The 1,356-event fixture responded in
 19 ms at 6× slowdown. WebKit completed without errors, though one first-turn
 checker tap had a 404 ms frame outlier. Neither run proves physical-iPhone
 crash immunity; cold searches still need to complete at least 3 ply.
+
+### October 23 slow-phone frame audit
+
+The [4× CPU full-game measurements](docs/mobile-performance-2026-10-23.json)
+record real touch input, GNUbg Auto analysis, full animations and independent saved-game
+replay. The revised portrait run reduced long JavaScript tasks from 60 to 5; median
+tap-to-frame response was 1 ms for rolling, 18 ms for confirmation and 29 ms for
+bearing off. Unchanged point stacks and immutable settings are reused, animation
+setup is batched, and legal-path/history copies avoid structured serialization.
+Cancelled checker flights also retire their sprites and restore their landing faces.
+Search depth and animation duration are unchanged. These measurements retain the
+remaining frame outliers and are desktop mobile emulation, not physical-phone results.
+
+Run `BG_MODULES=mobile-fullgame BG_CPU_RATE=4 BG_GAME_SCREENSHOTS=1 node backgammon/tests/browser.cjs`
+after assembly, without concurrent tests. `BG_GAME_ORIENTATION=landscape` selects
+the short phone layout; `BG_BROWSERS=webkit` covers WebKit without CPU throttling.
+`tests/checker-animation-cleanup.cjs` covers chained moves, intervening renders and
+cancellation; the full-game runner preserves diagnostic state and a screenshot if
+a playthrough stalls.

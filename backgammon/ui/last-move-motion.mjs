@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Coordinate decorative previous-move ink. Legal targets and checker faces
 // always describe the current board, independently of these transitions.
+import { animate, resumeAnimation } from "./animation-batch.mjs";
 const NS = 'http://www.w3.org/2000/svg';
 export const LAST_MOVE_ENTRY_TIMING = { duration: 760, easing: 'cubic-bezier(.4,0,.2,1)' };
 const timing = { duration: 320, easing: 'cubic-bezier(.2,.75,.3,1)',
@@ -26,9 +27,9 @@ export function animateLastMoveEntry(board, previous, animations, fresh) {
     if (!fresh && !pose) return;
     // Off-tray strips are real checkers, so fade only their outline. Ghosts
     // and separate checker rings can fade as a whole, retaining their opacity.
-    const animation = node.animate(pose?.frames || [{ [property]: 0 }, { [property]: target }],
-      { ...LAST_MOVE_ENTRY_TIMING, id: 'last-move-entry' });
-    if (pose) animation.currentTime = pose.time;
+    const animation = animate(node, pose?.frames || [{ [property]: 0 }, { [property]: target }],
+      { ...LAST_MOVE_ENTRY_TIMING, id: 'last-move-entry' }, animations);
+    if (pose) resumeAnimation(animation, pose.time, animations);
     animations.push(animation);
   });
 }
@@ -86,10 +87,10 @@ export function animateLastMoveExit(board, previous, animations) {
       if (!point) continue;
       point.insertBefore(node, node.dataset.lastMoveExit === 'ghost' ? point.querySelector('.checker') : null);
     }
-    const animation = node.animate([{ opacity: 1 }, { opacity: 0 }], timing);
+    const animation = animate(node, [{ opacity: 1 }, { opacity: 0 }], timing, animations);
     // Continue the same curve across selection/undo rerenders, rather than
     // restarting (and potentially prolonging) a fade on every interaction.
-    animation.currentTime = elapsed;
+    resumeAnimation(animation, elapsed, animations);
     animation.onfinish = () => node.remove();
     animations.push(animation);
   }

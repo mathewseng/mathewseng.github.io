@@ -27,12 +27,21 @@ export const settingsDefaults = {
   sound: DEFAULT_SOUND,
 };
 let settingsText, normalizedSettings;
-export function settings() {
+const freezeSettings = value => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.values(value).forEach(freezeSettings);
+    Object.freeze(value);
+  }
+  return value;
+};
+// Rendering and gesture handlers only read preferences. Share an immutable
+// snapshot there instead of copying the entire palette/shortcut tree per read.
+export function readSettings() {
   try {
     const text = localStorage.getItem(PREFIX + "settings") || "{}";
     // Gesture handlers read settings many times. Validate only when stored text
-    // changes (including another tab); callers still receive independent copies.
-    if (text === settingsText && normalizedSettings) return clone(normalizedSettings);
+    // changes (including another tab); editors use settings() for writable copies.
+    if (text === settingsText && normalizedSettings) return normalizedSettings;
     const saved = JSON.parse(text);
     const normalized = {
       ...settingsDefaults,
@@ -50,12 +59,13 @@ export function settings() {
       sound: normalizeSound(saved?.sound),
     };
     settingsText = text;
-    normalizedSettings = normalized;
-    return clone(normalized);
+    normalizedSettings = freezeSettings(normalized);
+    return normalizedSettings;
   } catch {
-    return { ...settingsDefaults };
+    return freezeSettings({ ...settingsDefaults });
   }
 }
+export function settings() { return clone(readSettings()); }
 export function saveSettings(value) {
   const next = { ...settings(), ...value };
   next.boardTheme = normalizeBoardTheme(next.boardTheme);

@@ -77,8 +77,14 @@ module.exports=async function revisionWarning(browser,base){
           };});
         };
       });
-      await page.locator('#resume-match').click();await page.locator('#confirm').click();
+      await page.locator('#resume-match').click();
+      await page.evaluate(()=>{window.submittedDice=[...document.querySelectorAll('#board .board-die-face')];});
+      await page.locator('#confirm').click();
       await page.locator('#pending-move-loss').waitFor();
+      assert.ok(await page.evaluate(()=>submittedDice.every((node,i)=>node===document.querySelectorAll('#board .board-die-face')[i])),
+        'Confirm keeps the submitted board and its animation nodes while grading');
+      assert.ok(await page.locator('#board [role="button"]').evaluateAll(nodes=>nodes.every(node=>node.getAttribute('aria-disabled')==='true')),
+        'the retained board is locked until the player revises or confirms');
       assert.match(await page.locator('#pending-move-loss').textContent(),/Still calculating EV/);
       assert.equal((await read()).game.events.length,0);
       if(response==='revise') {

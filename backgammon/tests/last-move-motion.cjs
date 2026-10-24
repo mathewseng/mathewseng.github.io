@@ -45,6 +45,13 @@ module.exports = async function lastMoveMotion(browser, base, out, name) {
           if (options?.id === 'last-move-exit' && window.pauseMoveExit) { a.pause(); a.currentTime = 0; }
           return a;
         };
+        // Board transitions start together after all resting poses are read.
+        const play = Animation.prototype.play;
+        Animation.prototype.play = function() {
+          const result = play.call(this);
+          if (this.id === 'last-move-exit' && window.pauseMoveExit) { this.pause(); this.currentTime = 0; }
+          return result;
+        };
       });
       await page.goto(base + '/backgammon/');
       await page.evaluate(async () => {

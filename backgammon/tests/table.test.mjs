@@ -28,6 +28,22 @@ import {
 } from "../core/protocol.mjs";
 import { itemRecord, validateItem, parseBackup } from "../core/storage.mjs";
 import { decisionHistory } from "../core/decision-history.mjs";
+test('committing a turn preserves independent history, grades, takebacks and local dice', () => {
+  let source=table();
+  source=playAction(source,{type:'opening',dice:[6,1]},0);
+  source.events[0].evaluation={candidates:[{equity:.12,steps:[{from:12,to:6,die:6}]}]};
+  source.localRolls={version:1,seed:'ab'.repeat(32),cursor:1};
+  source.undoLog=[{events:[{note:'preserve branch'}]}];
+  const before=structuredClone(source);
+  const next=playAction(source,{type:'move',steps:legalTurns(source.state)[0].steps});
+  assert.deepEqual(source,before);
+  assert.deepEqual(replay(next.initial,next.events).at(-1),next.state);
+  next.events[0].evaluation.candidates[0].equity=99;
+  next.localRolls.cursor++;
+  next.undoLog[0].events[0].note='changed';
+  next.initial.points[0]=99;
+  assert.deepEqual(source,before,'later grades, dice, branches and editor changes cannot mutate the prior snapshot');
+});
 const players = [
   { id: "host", name: "Ivory" },
   { id: "guest", name: "Teal" },

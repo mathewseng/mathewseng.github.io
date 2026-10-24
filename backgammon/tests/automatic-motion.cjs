@@ -22,8 +22,19 @@ module.exports=async function automaticMotion(browser,base){
   });
   await page.goto(base+'/backgammon/play/#resume=forced-animation');
   await page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
-  await page.evaluate(()=>{
-   window.motionLog=[];const animate=Element.prototype.animate;
+  await page.evaluate(async()=>{
+   window.motionLog=[];window.boardPaints=[];
+   const {Board}=await import('/backgammon/ui/board.mjs'),paint=Board.prototype.updateChildren;
+   Board.prototype.updateChildren=function(children){
+    boardPaints.push({phase:this.state.phase,sequence:this.state.sequence,flight:motionLog.some(m=>m.id==='checker')});
+    return paint.call(this,children);
+   };
+   const play=Animation.prototype.play;
+   Animation.prototype.play=function(){
+    if(this.id==='dice-roll')motionLog.push({at:performance.now(),id:this.id,duration:this.effect.getTiming().duration});
+    return play.call(this);
+   };
+   const animate=Element.prototype.animate;
    Element.prototype.animate=function(frames,options){
     if(options?.id==='dice-roll'||this.classList.contains('moving-checker'))motionLog.push({at:performance.now(),id:options?.id||'checker',duration:options.duration});
     return animate.call(this,frames,options);
@@ -37,6 +48,8 @@ module.exports=async function automaticMotion(browser,base){
   const roll=timeline.find(m=>m.id==='dice-roll'),move=timeline.find(m=>m.id==='checker');
   assert.ok(move.at-roll.at>=700,JSON.stringify(timeline));
   assert.ok(move.duration>=450);
+  assert.ok(await page.evaluate(()=>!boardPaints.some(p=>p.sequence===2&&p.phase==='roll'&&!p.flight)),
+    'the final position is not built and discarded before the first checker flight');
   await page.waitForFunction(()=>!document.querySelector('#board .moving-checker'));
   const game=await page.evaluate(async()=>(await(await import('/backgammon/core/storage.mjs')).get('work','play')).game);
   assert.equal(game.state.phase,'roll');assert.equal(game.state.turn,1);assert.equal(game.localRolls.cursor,1);assert.equal(game.events.length,2);

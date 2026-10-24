@@ -4,7 +4,7 @@ import { advancedAction, selectedDie } from "../core/advanced-input.mjs";
 import { EquityBar } from "./equity-bar.mjs";
 import { installDisplayControls } from "./display-controls.mjs";
 import {
-  settings,
+  settings, readSettings,
   saveSettings,
   put,
   itemRecord,
@@ -701,7 +701,7 @@ export function about() {
   );
 }
 export function players(s, names = ["White", "Black"]) {
-  const orientation = settings().orientation;
+  const orientation = readSettings().orientation;
   for (const [id, p] of [
     ["opponent", 1 - orientation],
     ["player", orientation],
@@ -841,7 +841,7 @@ export class DraftBoard {
     };
     addEventListener("bg-settings", () => this.render());
   }
-  set(s, paths, enabled = true) {
+  set(s, paths, enabled = true, presentation = null) {
     this.board.endDrag();
     this.dragging = false;
     this.state = s;
@@ -855,7 +855,7 @@ export class DraftBoard {
     this.preview = null;
     if (enabled && !this.advanced && s.bar[s.turn] && this.candidates().length)
       this.selected = "bar";
-    this.render();
+    this.render(presentation);
   }
   cached(name, calculate) {
     const key = JSON.stringify([this.draft, this.minDraft]);
@@ -950,7 +950,7 @@ export class DraftBoard {
       ...this.entrySwitches().filter((st) => st.from === this.selected),
     ];
   }
-  get advanced() { return settings().interactionMode === "advanced"; }
+  get advanced() { return readSettings().interactionMode === "advanced"; }
   activeDie() { return selectedDie(this.candidates(), this.preferred, this.state.dice); }
   switchDice() {
     if (!this.enabled || this.preview) return;
@@ -1315,10 +1315,10 @@ export class DraftBoard {
     if (changed) this.board.animateRestore(before, this.current());
     this.onChange({ kind: "reset" });
   }
-  render() {
+  render(presentation = null) {
     if (!this.state) return;
     const s = this.preview || this.current();
-    const display = settings();
+    const display = {...readSettings()};
     // While holding a checker, show all its legal landing/return targets in
     // either input mode. Releasing restores the user's normal hint preference.
     display.moveHints = this.dragging || (display.moveHints && !this.advanced);
@@ -1332,7 +1332,7 @@ export class DraftBoard {
       orientation: display.orientation,
     });
     this.board.render(s, {
-      ...display,
+      ...display, presentation,
       selected: this.enabled && !this.preview ? this.selected : null,
       destinations: moves.map((st) => st.to),
       reverseTargets:

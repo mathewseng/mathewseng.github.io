@@ -1408,7 +1408,7 @@ html[data-focus-navigation="true"] .bg-board.no-move-hints .point:focus-visible 
   vector-effect: non-scaling-stroke;
 }
 
-html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > rect:first-child {
+html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > .die-ink > rect:first-child {
   stroke: var(--board-focus, var(--accent));
   stroke-width: 4;
   vector-effect: non-scaling-stroke;

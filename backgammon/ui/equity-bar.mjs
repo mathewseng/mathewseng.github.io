@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { settings, saveSettings } from "../core/storage.mjs";
+import { readSettings, saveSettings } from "../core/storage.mjs";
 import { positionKey, playerName } from "../core/rules.mjs";
 import { equityFraction, equityReading } from "../core/equity-bar.mjs";
 import { EngineClient } from "../engine/client.mjs";
@@ -46,7 +46,7 @@ export class EquityBar {
     this.hide.append(this.topLabel, this.meter, this.label);
     this.node.append(this.hide, this.retry);
     board.container.append(this.node, this.reveal);
-    this.enabled = settings().equityBar === true;
+    this.enabled = readSettings().equityBar === true;
     this.life = new AbortController();
     const options = { signal: this.life.signal };
     this.portrait = matchMedia("(max-width: 700px) and (orientation: portrait)");
@@ -55,7 +55,7 @@ export class EquityBar {
     this.hide.onclick = () => this.setEnabled(false);
     this.reveal.onclick = () => this.setEnabled(true);
     const changed = () => {
-      this.enabled = settings().equityBar === true;
+      this.enabled = readSettings().equityBar === true;
       this.refresh();
       this.schedulePosition();
     };
@@ -138,7 +138,7 @@ export class EquityBar {
     this.reading = reading;
     this.node.dataset.state = status;
     this.retry.hidden = status !== "error";
-    const orientation = settings().orientation === 1 ? 1 : 0;
+    const orientation = readSettings().orientation === 1 ? 1 : 0;
     this.node.style.setProperty(
       "--equity-top",
       `var(--board-checker${1 - orientation})`,
