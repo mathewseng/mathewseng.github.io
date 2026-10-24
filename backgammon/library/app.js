@@ -137,7 +137,7 @@ function render() {
   const typeFilter = select(
     [
       ["", "All items"],
-      ["match", "Session Library"],
+      ["match", "Games"],
       ["position", "Positions"],
       ["mistake", "Mistakes"],
     ],
@@ -195,14 +195,14 @@ function renderList() {
           {},
           items.length
             ? "No matching items"
-            : "A place for your next insight.",
+            : "Nothing saved yet.",
         ),
         el(
           "p",
           { class: "muted" },
           items.length
             ? "Try another search or collection."
-            : "Played games save here automatically, including unfinished games. You can also save positions and training mistakes.",
+            : "Games you play save here on their own. Save positions from the Solver and mistakes from the Trainer.",
         ),
         el("a", { class: "btn", href: "/backgammon/solver/" }, "Open Solver"),
       ),
