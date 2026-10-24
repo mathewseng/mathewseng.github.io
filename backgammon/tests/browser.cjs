@@ -672,6 +672,9 @@ const server = http.createServer((req, res) => {
         (report.engineCacheContext ||= []).push(
           {browser: browserName, cases: await run("engine-cache-context", browser, base)},
         );
+        (report.engineLifecycle ||= []).push(
+          {browser: browserName, ...await run("engine-lifecycle", browser, base)},
+        );
         (report.backendLoading ||= []).push({browser: browserName,
           cases: await run("backend-loading", browser, base),
         });

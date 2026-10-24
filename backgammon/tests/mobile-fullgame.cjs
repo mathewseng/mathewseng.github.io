@@ -41,10 +41,10 @@ async function fullGame(browser, base, out, name) {
     fs.writeFileSync(path.join(out,`${name}-mobile-fullgame.json`),JSON.stringify(report,null,2));
     return report;
   };
-  const tap=async(kind,locator,point)=>{
+  const tap=async(kind,locator,point,options={})=>{
     await page.evaluate(kind=>{mobileGame.nextAction=kind},kind);
     if(point)await page.touchscreen.tap(point.x,point.y);
-    else await locator.tap();
+    else await locator.tap(options);
   };
   try {
     await seedOpening(page,[6,1]);
@@ -150,7 +150,18 @@ async function fullGame(browser, base, out, name) {
       }
       if(state.over){completed=true;break;}
       if(state.warning){
-        await tap('accept-warning',page.locator('dialog[open]').getByRole('button',{name:'Confirm anyway',exact:true}));lastActionAt=Date.now();continue;
+        try {
+          await tap('accept-warning',page.locator('dialog[open]').getByRole('button',{name:'Confirm anyway',exact:true}),null,{timeout:1000});
+        } catch(error) {
+          // A pending grade can become known-good and close itself between the
+          // poll and the real tap. Accept only a verified forward transition;
+          // a missing/unusable button on the same decision still fails.
+          const continued=error.name==='TimeoutError' && await page.evaluate(sequence=>
+            !document.querySelector('dialog[open]') && mobileGame.d.state.sequence>sequence,state.state.sequence);
+          if(!continued)throw error;
+          await page.evaluate(()=>{mobileGame.nextAction=null;});
+        }
+        lastActionAt=Date.now();continue;
       }
       if(state.take){await tap('take-cube',page.locator('#take-cube'));lastActionAt=Date.now();continue;}
       if(!state.opening&&!state.moving&&state.roll&&rollTapped!==lastSequence){

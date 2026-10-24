@@ -4,7 +4,8 @@ import { ENGINE_VERSION, PRESETS } from "./metadata.mjs";
 import { ADAPTIVE_SEARCH } from "./adaptive.mjs";
 import { bookEligible } from "./opening-book.mjs";
 import { PreferredOpeningBook } from "./xg-reference-book.mjs";
-// One worker, bounded LRU, priority queue. Termination is intentional: WASM calls are synchronous.
+// One worker, bounded LRU, priority queue. Reuse it after cooperative cancellation;
+// an unresponsive native call still has a bounded termination fallback.
 export class EngineClient {
   constructor({
     workerFactory = () =>
@@ -54,6 +55,14 @@ export class EngineClient {
       };
       this.worker.onmessage = ({ data }) => {
         if (generation !== this.generation) return;
+        if (data.id === this.retiring?.id) {
+          if (["cancelled", "result", "error"].includes(data.type)) {
+            clearTimeout(this.retireTimer);
+            this.retiring = null;
+            this.pump();
+          }
+          return; // A cancelled search cannot publish a stale evaluation.
+        }
         if (data.type === "ready") {
           this.startup = data;
           clearTimeout(this.initTimeout);
@@ -164,7 +173,8 @@ export class EngineClient {
             this.normalizedPosition(active.state) === this.normalizedPosition(state) &&
             active.completed?.settings?.plies >= ADAPTIVE_SEARCH.minimumPlies) {
           this.active = null;
-          this.cancelActive('Using the completed analysis.');
+          clearTimeout(this.jobTimeout);
+          this.retireWorker(active);
           active.resolve(this.asReady(active.completed));
           this.pump();
         }
@@ -408,6 +418,15 @@ export class EngineClient {
       cached: true, reusedHint: true };
   }
   async pump() {
+    if (this.retiring) {
+      // A real decision must not wait for an obsolete native call. Background
+      // cancellations can wait longer for the next safe checkpoint.
+      if (this.queue.some(job => job.priority >= 0) && !this.retiring.urgent) {
+        this.retiring.urgent = true;
+        this.armRetirement(100);
+      }
+      return;
+    }
     if (this.active || !this.queue.length || this.pumping) return;
     this.pumping = true;
     let generation = this.generation;
@@ -486,13 +505,35 @@ export class EngineClient {
       if (!this.active && this.queue.length) this.pump();
     }
   }
-  cancelActive(message = "Analysis cancelled.") {
-    clearTimeout(this.jobTimeout);
-    clearTimeout(this.initTimeout);
+  armRetirement(milliseconds) {
+    clearTimeout(this.retireTimer);
+    this.retireTimer = setTimeout(() => {
+      this.releaseWorker();
+      this.pump();
+    }, milliseconds);
+  }
+  retireWorker(job) {
+    if (job && this.ready && this.startup?.cooperativeCancellation) {
+      this.retiring = {id:job.id, urgent:this.queue.some(pending => pending.priority >= 0)};
+      this.armRetirement(this.retiring.urgent ? 100 : 1000);
+      try { this.worker.postMessage({type:"cancel", id:job.id}); }
+      catch { this.releaseWorker(); }
+    } else this.releaseWorker();
+  }
+  releaseWorker() {
+    clearTimeout(this.retireTimer);
+    this.retiring = null;
     this.generation++;
     this.worker?.terminate();
     this.worker = null;
     this.ready = false;
+  }
+  cancelActive(message = "Analysis cancelled.", reuse = true) {
+    clearTimeout(this.jobTimeout);
+    clearTimeout(this.initTimeout);
+    const job = this.active;
+    if (reuse) this.retireWorker(job);
+    else this.releaseWorker();
     const error = new DOMException(message, "AbortError");
     this.active?.reject(error);
     this.active = null;
@@ -511,7 +552,7 @@ export class EngineClient {
   cancel() {
     for (const j of this.queue.splice(0))
       j.reject(new DOMException("Analysis cancelled.", "AbortError"));
-    this.cancelActive();
+    this.cancelActive("Analysis cancelled.", false);
   }
   fail(error) {
     for (const j of this.queue.splice(0)) j.reject(error);
@@ -523,11 +564,8 @@ export class EngineClient {
     this.initReject = null;
     clearTimeout(this.initTimeout);
     clearTimeout(this.jobTimeout);
-    this.worker?.terminate();
-    this.worker = null;
-    this.ready = false;
+    this.releaseWorker();
     this.initializing = null;
-    this.generation++;
     this.onStatus("error", error.message);
   }
   destroy() {

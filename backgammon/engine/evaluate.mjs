@@ -128,7 +128,21 @@ export function createEvaluator(module) {
         throw new Error("GNUbg returned invalid rollout statistics.");
       return result;
     },
-    analyze(
+    analyze(...args) {
+      const work = this.analyzeSteps(...args);
+      let step;
+      do { step = work.next(); } while (!step.done);
+      return step.value;
+    },
+    async analyzeAsync(s, preset, kind, submitted, options, yieldWork) {
+      const work = this.analyzeSteps(s, preset, kind, submitted, options);
+      try {
+        let step;
+        while (!(step = work.next()).done) await yieldWork();
+        return step.value;
+      } finally { work.return(); }
+    },
+    *analyzeSteps(
       s,
       preset = "quick",
       kind = s.phase === "move" ? "checker" : "cube",
@@ -167,40 +181,33 @@ export function createEvaluator(module) {
             "Cube analysis requires a pre-roll or offered-cube position.",
           );
         const result = call(cube, [xgid, settings.plies, beavers]);
+        yield;
         if (beavers) {
           // Enumerate real legal cube-response branches. Values retain the
           // original roller's perspective and original cube units throughout.
           const unit = s.cube.value;
-          const leaf = (state) =>
-            state.phase === "over"
-              ? ((state.result.winner === s.turn ? 1 : -1) *
-                  state.result.points) /
-                unit
-              : (call(value, [toXGID(state), settings.plies, beavers]).equity *
-                  state.cube.value) /
-                unit;
-          const response = (state) => {
-            const actor = decisionPlayer(state),
-              actions = ["take", "pass"];
-            if (canImmediateRedouble(state))
-              actions.push(offerDepth(state) ? "raccoon" : "beaver");
-            const choices = actions.map((action) => {
+          const leaf = function* (state) {
+            if (state.phase === "over")
+              return ((state.result.winner === s.turn ? 1 : -1) * state.result.points) / unit;
+            const result = call(value, [toXGID(state), settings.plies, beavers]);
+            yield;
+            return result.equity * state.cube.value / unit;
+          };
+          const response = function* (state) {
+            const actor = decisionPlayer(state), actions = ["take", "pass"], choices = [];
+            if (canImmediateRedouble(state)) actions.push(offerDepth(state) ? "raccoon" : "beaver");
+            for (const action of actions) {
               const next = transition(state, { type: action }, actor);
-              return {
-                action,
-                equity:
-                  next.phase === "double"
-                    ? response(next).best.equity
-                    : leaf(next),
-              };
-            });
+              choices.push({action, equity: next.phase === "double"
+                ? (yield* response(next)).best.equity : yield* leaf(next)});
+            }
             const sorted = [...choices].sort((a, b) =>
               actor === s.turn ? b.equity - a.equity : a.equity - b.equity,
             );
             return { choices, best: sorted[0] };
           };
           if (s.phase === "double") {
-            const replies = response(s);
+            const replies = yield* response(s);
             result.decisionOptions = replies.choices;
             result.action = replies.best.action;
             result.equity = replies.best.equity;
@@ -211,7 +218,7 @@ export function createEvaluator(module) {
             ];
           } else if (canDouble(s)) {
             const offered = transition(s, { type: "double" }, s.turn),
-              replies = response(offered);
+              replies = yield* response(offered);
             result.decisionOptions = [
               { action: "roll", equity: result.outcomes[0] },
               { action: "double", equity: replies.best.equity },
@@ -236,27 +243,21 @@ export function createEvaluator(module) {
         throw new Error("Checker analysis requires rolled dice.");
       const turns = legalTurns(s);
       const submittedKey = submitted ? boardKey(commitTurn(s, submitted)) : null;
-      const scoreTurns = (choices, plies) => choices.map((turn) => {
-          // Preserve the original player on roll, cube and match context in the after-XGID.
+      const scoreTurns = function* (choices, plies) {
+        const scores = [];
+        for (const turn of choices) {
+          // Preserve the original player, cube and match context in after-XGID.
           const after = { ...turn.state, dice: [], phase: "roll" };
-          const value = call(score, [
-            xgid,
-            toXGID(after),
-            plies,
-            beavers,
-          ]);
-          return {
-            ...value,
-            steps: turn.steps,
-            key: turn.key,
-            notation: notation(turn.steps, s.turn),
-          };
-        })
-        .sort((a, b) => b.equity - a.equity);
+          const value = call(score, [xgid, toXGID(after), plies, beavers]);
+          yield;
+          scores.push({...value, steps:turn.steps, key:turn.key, notation:notation(turn.steps, s.turn)});
+        }
+        return scores.sort((a,b) => b.equity-a.equity);
+      };
       let rootTurns = turns, screening = null;
       if (automatic && settings.plies > 0) {
         const quick = quickCache?.key === base.positionKey
-          ? structuredClone(quickCache.candidates) : scoreTurns(turns, 0);
+          ? structuredClone(quickCache.candidates) : yield* scoreTurns(turns, 0);
         const finalists = quick.filter((c, i) => i < ADAPTIVE_ROOT.minimum ||
           (i < ADAPTIVE_ROOT.maximum && quick[0].equity - c.equity <= ADAPTIVE_ROOT.threshold) ||
           c.key === submittedKey || retainKeys.includes(c.key));
@@ -271,7 +272,7 @@ export function createEvaluator(module) {
       const rootKey = JSON.stringify(rootTurns.map(t => t.key));
       let candidates = settings.plies > 2 && screeningCache?.key === base.positionKey && screeningCache.rootKey === rootKey
         ? structuredClone(screeningCache.candidates)
-        : scoreTurns(rootTurns, Math.min(2, settings.plies));
+        : yield* scoreTurns(rootTurns, Math.min(2, settings.plies));
       if (settings.plies === 0)
         quickCache = { key: base.positionKey, candidates: structuredClone(candidates) };
       if (settings.plies >= 2)
@@ -280,16 +281,17 @@ export function createEvaluator(module) {
         const original = candidates;
         const inFilter = (c, i, filter) => i < 2 ||
           (i < filter.finalists && original[0].equity - c.equity <= filter.threshold);
-        const scoreFinalists = (choices, plies, pruning = true) => {
+        const scoreFinalists = function* (choices, plies, pruning = true) {
           const cacheId = `${plies}:${pruning}`;
           let cache = finalistCaches.get(cacheId);
           if (cache?.key !== base.positionKey || cache.rootKey !== rootKey) {
             cache = { key: base.positionKey, rootKey, rows: new Map() };
             finalistCaches.set(cacheId, cache);
           }
-          return choices.map(c => {
+          const scores = [];
+          for (const c of choices) {
             const cached = cache.rows.get(c.key);
-            if (cached) return { ...c, ...structuredClone(cached) };
+            if (cached) { scores.push({ ...c, ...structuredClone(cached) }); continue; }
             const turn = turns.find(t => t.key === c.key);
             const scored = scoreChecker([xgid,
               toXGID({ ...turn.state, dice: [], phase: "roll" }), plies, beavers], pruning);
@@ -297,8 +299,10 @@ export function createEvaluator(module) {
             // from this request's independently validated complete turn set.
             cache.rows.set(c.key, structuredClone(scored));
             if (cache.rows.size > 32) cache.rows.delete(cache.rows.keys().next().value);
-            return { ...c, ...scored };
-          }).sort((a, b) => b.equity - a.equity);
+            scores.push({ ...c, ...scored });
+            yield;
+          }
+          return scores.sort((a, b) => b.equity - a.equity);
         };
         const finalists = original.filter(
           (c, i) =>
@@ -315,14 +319,14 @@ export function createEvaluator(module) {
             retainedLeader = { plies: 3, candidates: expertChoices.length, key: null,
               added: false, reason: 'all-expert-candidates-retained' };
           } else {
-            const leader = scoreFinalists(expertChoices, 3)[0];
+            const leader = (yield* scoreFinalists(expertChoices, 3))[0];
             const added = !keys.has(leader.key);
             if (added) finalists.push(original.find(c => c.key === leader.key));
             retainedLeader = { plies: 3, candidates: expertChoices.length, key: leader.key,
               equity: leader.equity, added, reason: 'expert-leader-retained' };
           }
         }
-        candidates = scoreFinalists(finalists, settings.plies, settings.pruning);
+        candidates = yield* scoreFinalists(finalists, settings.plies, settings.pruning);
         screening = {
           plies: 2,
           total: turns.length,

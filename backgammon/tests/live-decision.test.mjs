@@ -161,3 +161,74 @@ test('completed optional four ply is used by the next live action without anothe
     assert.equal(w.messages.filter(m=>m.type==='analyze').length,1);
   } finally {h.client.destroy();}
 });
+
+test('cooperative cancellation reuses the warm worker and ignores cancelled checkpoints',async()=>{
+  const h=harness(),s=source();
+  try {
+    const obsolete=h.client.analyze(s,{preset:'auto',priority:-20});
+    const rejected=assert.rejects(obsolete,{name:'AbortError'});
+    const id=await h.start(),w=h.workers[0];h.client.startup.cooperativeCancellation=true;
+    const nextState={...s,dice:[5,2]};
+    const next=h.client.analyze(nextState,{preset:'auto',priority:20});
+    await rejected;
+    assert.equal(w.terminated,undefined);
+    assert.deepEqual(w.messages.at(-1),{type:'cancel',id});
+    assert.equal(h.client.active,null,'replacement cannot overlap a still-running native call');
+    w.reply({id,type:'evaluation',result:result(s,4)});
+    assert.equal(h.client.readyResult(s),null,'cancelled work cannot publish stale checkpoints');
+    w.reply({id,type:'cancelled'});await tick();
+    assert.equal(h.workers.length,1);
+    assert.equal(w.messages.at(-1).type,'analyze');
+    w.reply({id:h.client.active.id,type:'result',result:result(nextState,3)});
+    assert.equal((await next).settings.plies,3);
+  } finally {h.client.destroy();}
+});
+
+test('completed live answer is immediate while optional work cooperatively stops',async()=>{
+  const h=harness(),s=source();
+  try {
+    const background=h.client.analyze(s,{preset:'auto',priority:-20});
+    const id=await h.start(),w=h.workers[0];h.client.startup.cooperativeCancellation=true;
+    w.reply({id,type:'evaluation',result:result(s,3)});
+    const ready=await h.client.analyze(s,{preset:'auto',readyOnly:true});
+    assert.equal(ready.settings.plies,3);
+    assert.equal((await background).settings.plies,3);
+    assert.equal(w.terminated,undefined);
+    // Completion can race the cancellation message. Either is a safe idle acknowledgement.
+    w.reply({id,type:'result',result:result(s,4)});
+    assert.equal(h.client.retiring,null);
+    assert.equal(h.client.readyResult(s).settings.plies,3);
+    assert.equal(h.client.worker,w);
+  } finally {h.client.destroy();}
+});
+
+test('foreground work bounds an unresponsive cooperative cancellation',async()=>{
+  const h=harness(),s=source();
+  try {
+    const old=h.client.analyze(s,{preset:'auto',priority:-20});
+    const rejected=assert.rejects(old,{name:'AbortError'});
+    const id=await h.start(),w=h.workers[0];h.client.startup.cooperativeCancellation=true;
+    h.client.cancelWhere(job=>job.priority<0);await rejected;
+    const next=h.client.analyze({...s,dice:[5,2]},{preset:'auto',priority:20});
+    await new Promise(resolve=>setTimeout(resolve,140));
+    assert.equal(w.terminated,true,'a hung native call cannot hold up the next decision');
+    const nextId=await h.start();
+    w.reply({id,type:'cancelled'});
+    w.reply({id,type:'result',result:result(s,4)});
+    h.workers[1].reply({id:nextId,type:'result',result:result({...s,dice:[5,2]},3)});
+    assert.equal((await next).settings.plies,3);
+    assert.equal(h.workers.length,2);
+  } finally {h.client.destroy();}
+});
+
+test('destroy releases a retiring worker and never revives queued work',async()=>{
+  const h=harness(),s=source();
+  const old=h.client.analyze(s,{preset:'auto',priority:-20});
+  const rejected=assert.rejects(old,{name:'AbortError'});
+  const id=await h.start(),w=h.workers[0];h.client.startup.cooperativeCancellation=true;
+  h.client.cancelWhere(job=>job.priority<0);await rejected;
+  h.client.destroy();
+  w.reply({id,type:'cancelled'});await tick();
+  assert.equal(w.terminated,true);assert.equal(h.client.retiring,null);
+  assert.equal(h.workers.length,1);assert.equal(h.client.worker,null);
+});

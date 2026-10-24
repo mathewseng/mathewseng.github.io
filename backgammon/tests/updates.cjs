@@ -334,6 +334,16 @@ module.exports = async function updatesUX(browser, _base, out, browserName) {
       game,
       "Committed dice and unfinished draft unchanged",
     );
+    await page.evaluate(() => {
+      window.restoreSentinel = {alive:true};
+      dispatchEvent(new PageTransitionEvent("pagehide", {persisted:true}));
+      dispatchEvent(new PageTransitionEvent("pageshow", {persisted:true}));
+    });
+    await page.locator("#confirm").waitFor();
+    await page.waitForTimeout(300);
+    assert.equal(loads, gameLoads, "A page-cache restore stages updates without reloading play");
+    assert.equal(await page.evaluate(() => window.restoreSentinel?.alive), true);
+    assert.deepEqual((await saved(page)).work, game.work, "The restored draft is unchanged with an update waiting");
     // A load with a staged release cannot expose controls before activation.
     let leavePrompts = 0;
     page.on("dialog", (d) => { leavePrompts++; d.accept(); });
@@ -349,19 +359,25 @@ module.exports = async function updatesUX(browser, _base, out, browserName) {
     assert.deepEqual(restored.items, game.items);
     await shot(page, "game-restored");
     const promptsBefore = leavePrompts;
-    await Promise.all([
-      page.waitForEvent("framenavigated", {predicate: frame => frame === page.mainFrame()}),
-      page.evaluate(() => dispatchEvent(new PageTransitionEvent("pageshow", {persisted:true}))),
-    ]);
+    const restoredLoads = loads;
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => {
+        dispatchEvent(new PageTransitionEvent("pagehide", {persisted:true}));
+        dispatchEvent(new PageTransitionEvent("pageshow", {persisted:true}));
+      });
+      await page.waitForTimeout(100);
+    }
     await atRelease(page, "four");
     await page.locator("#confirm").waitFor();
-    assert.equal(leavePrompts, promptsBefore, "history-cache reload does not prompt before restoring its draft");
+    assert.equal(loads, restoredLoads, "Repeated page-cache restores never navigate");
+    assert.equal(leavePrompts, promptsBefore, "Restoring a page does not prompt to leave");
     assert.deepEqual((await saved(page)).work, restored.work);
 
     report.cases.push(
       "load gate installs a staged update before play",
       "active play is not interrupted by background downloads",
       "draft, dice, Library and preferences survive the required reload",
+      "Safari page-cache restores retain the live document and draft, with and without a staged update",
     );
     await page.goto(base + "/backgammon/");
     await atRelease(page, "four");

@@ -12,15 +12,15 @@ export const ADAPTIVE_ROOT = Object.freeze({ plies: 0, minimum: 16, maximum: 24,
 
 // Publish whole evaluations, always completing at least three plies. Deeper
 // stages are gated by estimated cost/stability, not an elapsed-time cutoff.
-export function* adaptiveStages(evaluator, state, kind, submitted, now = () => performance.now()) {
+function* searchRequests(state, submitted, now = () => performance.now()) {
   const start = now(), levels = [], evaluations = [];
   let result;
   for (const preset of ADAPTIVE_SEARCH.presets) {
     const previous = evaluations.at(-1), began = now();
-    const evaluation = evaluator.analyze(state, preset, kind, submitted, {
+    const evaluation = yield { preset, options: {
       automatic: true,
       retainKeys: previous?.candidates?.length ? [previous.candidates[0].key] : [],
-    });
+    } };
     const stageMs = now() - began;
     const completed = { ...evaluation, stageMs,
       settings: { ...evaluation.settings, searchPolicy: SEARCH_POLICY_VERSION, ...SEARCH_LIMITS } };
@@ -38,10 +38,23 @@ export function* adaptiveStages(evaluator, state, kind, submitted, now = () => p
       budget: { ...SEARCH_LIMITS, levels: [...levels], reason,
         policy: SEARCH_POLICY_VERSION, lead: leadInfo(completed, previous), forecast: decision.forecast },
     };
-    yield result;
+    yield { result };
     if (reason !== 'searching') break;
   }
   return result;
+}
+
+export function* adaptiveStages(evaluator, state, kind, submitted, now) {
+  const requests = searchRequests(state, submitted, now);
+  let step = requests.next();
+  while (!step.done) {
+    const {preset, options} = step.value;
+    const evaluation = evaluator.analyze(state, preset, kind, submitted, options);
+    step = requests.next(evaluation);
+    yield step.value.result;
+    step = requests.next();
+  }
+  return step.value;
 }
 
 export function runAdaptive(evaluator, state, kind, submitted, publish, now) {
@@ -54,13 +67,21 @@ export function runAdaptive(evaluator, state, kind, submitted, publish, now) {
 // at the minimum depth without reloading the WASM instance and its warm cache.
 export async function runAdaptiveAsync(evaluator, state, kind, submitted, publish,
   readyOnly = () => false, yieldStage = () => new Promise(resolve => setTimeout(resolve, 0))) {
-  let result;
-  for (result of adaptiveStages(evaluator, state, kind, submitted)) {
+  const requests = searchRequests(state, submitted);
+  let step = requests.next(), result;
+  while (!step.done) {
+    const {preset, options} = step.value;
+    const evaluation = evaluator.analyzeAsync
+      ? await evaluator.analyzeAsync(state, preset, kind, submitted, options, yieldStage)
+      : evaluator.analyze(state, preset, kind, submitted, options);
+    step = requests.next(evaluation);
+    result = step.value.result;
     publish(result);
     await yieldStage();
     if (readyOnly() && result.settings.plies >= ADAPTIVE_SEARCH.minimumPlies) {
       return {...result, budget:{...result.budget, reason:'ready-to-play'}};
     }
+    step = requests.next();
   }
   return result;
 }

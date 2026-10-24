@@ -336,9 +336,10 @@ export function startUpdates({ onStatus = () => {} } = {}) {
     addEventListener("focus", () => check());
     addEventListener("online", () => check(true));
     addEventListener("pageshow", (e) => {
-      // A restored BFCache page contains live in-memory work. Save through its
-      // normal pagehide checkpoint, then run the load gate on a real navigation.
-      if (e.persisted) reloadPage();
+      // Safari can restore a live game from its page cache. Treat it like
+      // foregrounding: stage updates without replacing the restored document.
+      // Only a fresh navigation opens the mandatory update gate.
+      if (e.persisted) check(true);
     });
     // A stalled network must not leave a blank page forever. Only a confirmed
     // update is mandatory; an unconfirmed check can fall back to the saved app.
