@@ -24,11 +24,12 @@ module.exports=async(browser,base,out,name)=>{
           const {localConfig}=await import('/backgammon/core/play-session.mjs');
           const points=Array(24).fill(0);for(let i=0;i<5;i++)points[i]=2;points[5]=4;
           for(let i=18;i<23;i++)points[i]=-2;points[17]=-4;
-          if(entry!=='blocked') {
+          if(entry==='partial') points[5]=2;
+          else if(entry!=='blocked') {
             for(let i=18;i<24;i++)points[i]=entry==='blots'?-1:0;
             points[17]=entry==='blots'?-8:-14;
           }
-          const s=initialState({phase:'roll',points,bar:[1,1],matchLength:0,cube:{value:2,owner:0}});
+          const s=initialState({phase:'roll',points,bar:[entry==='partial'?3:1,1],matchLength:0,cube:{value:2,owner:0}});
           saveSettings({motion:'full',analysisAhead:false,equityBar:false,moveFeedback:false});
           await put('work',{id:'play',draft:[],game:{id:'auto-bar-fixture',started:true,state:s,initial:s,events:[],
             names:['You','Black'],config:localConfig({mode:'computer',humanSide:0,tutor:false,warning:false,strength:'quick'})}});
@@ -62,10 +63,18 @@ module.exports=async(browser,base,out,name)=>{
       await page.locator('.settings-dialog .close').click();
       const completed=await waitWork(page,w=>w?.game.localRolls?.cursor===3&&w.draft.some(step=>step.from==='bar'));
       assert.deepEqual(completed.game.events.filter(e=>e.action.type==='roll').map(e=>[e.actor,e.action.dice]),[[0,[2,3]],[0,[4,5]],[0,[1,2]]]);
-      assert.equal(await caption.locator('text').count(),0,'auto-roll ends as soon as a checker enters the draft');
+      assert.equal(await caption.locator('text').count(),0,'auto-roll ends as soon as the final checker enters the draft');
       assert.deepEqual(completed.draft,[{from:'bar',to:23,die:1}],'leave the remaining checker choices to the player');
       await page.waitForTimeout(350);
-      assert.equal((await waitWork(page,w=>!!w?.game)).game.localRolls.cursor,3,'entry stops automatic rolling');
+      assert.equal((await waitWork(page,w=>!!w?.game)).game.localRolls.cursor,3,'the final entry stops automatic rolling');
+
+      await load('partial');await tap(2);
+      const partial=await waitWork(page,w=>w?.game.localRolls?.cursor===3&&w.game.state.bar[0]===2);
+      assert.ok(partial.game.events.some(e=>e.action.steps?.some(st=>st.from==='bar')));
+      assert.ok((await caption.textContent()).includes('Auto roll on'),'a partial entry keeps auto roll enabled');
+      await waitWork(page,w=>w?.game.localRolls?.cursor>=4);
+      assert.ok((await caption.textContent()).includes('Auto roll on'),'the next turn rolls with two checkers still on the bar');
+      await caption.locator('.board-caption-hit')[touch?'tap':'click']();
 
       await load();await tap(2);
       await page.waitForFunction(()=>document.querySelector('#board .board-caption')?.textContent.includes('Auto roll on'));
@@ -92,7 +101,7 @@ module.exports=async(browser,base,out,name)=>{
         b.destroy();return labels;
       }),['','Move preview','Position editor']);
       assert.deepEqual(errors,[]);
-      report.push({touch,singleRoll:true,repeatedUntilEntry:true,dialogPauseAndResume:true,manualStop:true,requiresBlockedEntry:true});
+      report.push({touch,singleRoll:true,repeatedUntilAllEntered:true,partialEntryContinues:true,dialogPauseAndResume:true,manualStop:true,requiresBlockedEntry:true});
     } finally {await context.close();}
   }
   return report;

@@ -245,7 +245,7 @@ summary::before {
   content: "›";
   margin-right: 9px;
   font-size: 20px;
-  transition: rotate var(--d-fast) var(--ease);
+  transition: rotate calc(var(--d-fast) * var(--bg-motion-scale, 1)) var(--ease);
 }
 
 details[open] > summary::before {
@@ -271,7 +271,7 @@ details .stack {
   margin-right: 7px;
   border-radius: 50%;
   background: var(--accent);
-  animation: breathe 1s ease-in-out infinite alternate;
+  animation: breathe calc(1s * var(--bg-motion-scale, 1)) ease-in-out infinite alternate;
 }
 
 @keyframes breathe {
@@ -802,7 +802,6 @@ button kbd.keycap,
 .touch-moves,
 .touch-destinations,
 .study-strip,
-.review-preview-controls,
 #analysis-jump {
   display: none;
 }
@@ -859,7 +858,7 @@ button kbd.keycap,
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: background-color calc(160ms * var(--bg-motion-scale, 1)) ease, color calc(160ms * var(--bg-motion-scale, 1)) ease;
 }
 
 .equity-reading {
@@ -1118,8 +1117,8 @@ button.die {
   padding: 7px;
   cursor: pointer;
   transition:
-    transform 220ms var(--ease),
-    box-shadow 220ms ease;
+    transform calc(220ms * var(--bg-motion-scale, 1)) var(--ease),
+    box-shadow calc(220ms * var(--bg-motion-scale, 1)) ease;
 }
 
 button.die:hover {
@@ -1166,7 +1165,7 @@ button.die.preferred {
   font-size: 28px;
   font-weight: 600;
   letter-spacing: -.025em;
-  transition: fill 180ms ease;
+  transition: fill calc(180ms * var(--bg-motion-scale, 1)) ease;
 }
 .board-caption-detail {
   font-size: 20px;
@@ -1193,7 +1192,9 @@ html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-ca
   touch-action: pan-y pinch-zoom;
 }
 
-/* Reserve touch dragging for movable discs, not the whole board. */
+/* Occupied movable point lanes are generous pickup areas. Empty points and
+   the centre of the board still allow native scrolling. */
+.bg-board.has-moves .point.movable,
 .bg-board.has-moves .point.movable .checker,
 .bg-board.has-moves .point.movable .checker-hit,
 .bg-board.has-moves .point.movable .checker *,
@@ -1246,8 +1247,8 @@ html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-ca
    carry the state. */
 .point .point-hit {
   transition:
-    fill 0.12s,
-    stroke 0.12s;
+    fill calc(0.12s * var(--bg-motion-scale, 1)),
+    stroke calc(0.12s * var(--bg-motion-scale, 1));
 }
 
 .point:not([aria-disabled="true"]):is(.movable, .reachable, .destination, .return-destination, .selected):hover .point-hit,
@@ -1511,7 +1512,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .board-cube[role="button"] {
-  transition: filter 180ms ease;
+  transition: filter calc(180ms * var(--bg-motion-scale, 1)) ease;
 }
 
 .board-cube[role="button"]:active {
@@ -1523,8 +1524,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   transform-box: view-box;
   transform-origin: 0 0;
   transition:
-    transform 220ms var(--ease),
-    filter 220ms ease;
+    transform calc(220ms * var(--bg-motion-scale, 1)) var(--ease),
+    filter calc(220ms * var(--bg-motion-scale, 1)) ease;
 }
 
 .board-die.preferred .board-die-face {
@@ -1548,8 +1549,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .dice-switch-surface {
   transition:
-    fill 160ms ease,
-    stroke 160ms ease;
+    fill calc(160ms * var(--bg-motion-scale, 1)) ease,
+    stroke calc(160ms * var(--bg-motion-scale, 1)) ease;
 }
 
 .dice-switch:active .dice-switch-surface {
@@ -1607,7 +1608,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 /* The confirm stage (.action-stage is not in app.css yet; see
    docs/redesign/shared-requests). Stacked layouts and the landscape dock
    show it as a full-width row under the board; wide tables leave it empty
-   and #confirm sits at the end of the action row instead. */
+   and :is(#confirm, #immediate-redouble) sits at the end of the action row instead. */
 .board-actions {
   display: flex;
   align-items: center;
@@ -1619,7 +1620,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   display: none;
 }
 
-#confirm {
+:is(#confirm, #immediate-redouble) {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -1633,31 +1634,31 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   white-space: normal;
 }
 
-.board-actions #confirm {
+.board-actions :is(#confirm, #immediate-redouble) {
   width: 100%;
 }
 
-/* placeConfirm() rehomes #confirm from desktopTable's matchMedia "change"
+/* placeConfirm() rehomes the primary action from desktopTable's matchMedia "change"
    listener, which runs at the next rendering update, while these media
    queries apply as soon as the viewport changes. A layout read in between
-   (a resize, then a measurement in the same task) found #confirm still in
+   (a resize, then a measurement in the same task) found the primary action still in
    the other layout's home: on a 375x667 phone it sat in #actions as an
    extra 48px row and the reserved 60px stage row stayed empty, so the shell
    grew by 33.5px. On stacked layouts the unused #actions home takes no
    space, so that unpainted moment has the target layout's exact size. The
    query is the complement of desktopTable's (play/app.js). The reverse move
-   needs no rule: hiding .board-actions on wide tables left a #confirm still
+   needs no rule: hiding .board-actions on wide tables left the primary action still
    inside it without a box for that moment (mobile-history.cjs measures
    Confirm straight after resizing from 768x1024 to 1366x768), and an empty
    .board-actions is already hidden by :empty. */
 @media (max-width: 1024px), (max-height: 500px) {
-  .play-page #actions > #confirm,
-  .play-page #actions:has(> #confirm:only-child) {
+  .play-page #actions > :is(#confirm, #immediate-redouble),
+  .play-page #actions:has(> :is(#confirm, #immediate-redouble):only-child) {
     display: none;
   }
 }
 
-#confirm kbd.keycap {
+:is(#confirm, #immediate-redouble) kbd.keycap {
   align-self: center;
   width: auto;
   margin: 0;
@@ -1688,7 +1689,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   line-height: 1;
 }
 
-#confirm:disabled {
+:is(#confirm, #immediate-redouble):disabled {
   border-color: var(--line-strong);
   background: var(--surface);
   color: var(--muted);
@@ -1696,7 +1697,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   opacity: 1;
 }
 
-#confirm:disabled .confirm-check {
+:is(#confirm, #immediate-redouble):disabled .confirm-check {
   opacity: 0.45;
 }
 
@@ -1714,7 +1715,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: var(--surface);
   box-shadow: var(--shadow-raised);
   text-align: center;
-  animation: roll-panel-in 240ms ease-out;
+  animation: roll-panel-in calc(240ms * var(--bg-motion-scale, 1)) ease-out;
 }
 
 .bg-result-card[hidden] {
@@ -1891,7 +1892,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .turn-ready {
-  animation: turn-ready 320ms ease-out;
+  animation: turn-ready calc(320ms * var(--bg-motion-scale, 1)) ease-out;
 }
 
 @keyframes turn-ready {
@@ -1906,15 +1907,15 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 :is(.board-actions, .action-help, #actions) .btn {
   transition:
-    background-color 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+    background-color calc(160ms * var(--bg-motion-scale, 1)) ease,
+    border-color calc(160ms * var(--bg-motion-scale, 1)) ease,
+    box-shadow calc(160ms * var(--bg-motion-scale, 1)) ease;
 }
 
 :is(.board-actions, .action-help) .btn kbd.keycap {
   transition:
-    transform 140ms var(--ease),
-    opacity 140ms ease;
+    transform calc(140ms * var(--bg-motion-scale, 1)) var(--ease),
+    opacity calc(140ms * var(--bg-motion-scale, 1)) ease;
 }
 
 :is(.board-actions, .action-help) .btn:active:not(:disabled) {
@@ -1958,6 +1959,25 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   padding-inline: 10px;
 }
 
+/* Review belongs with the secondary controls, not beside the turn message. */
+.play-page.live-table .help-cluster #analysis-jump {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent);
+}
+
+.play-page.live-table .help-cluster .action-help {
+  flex: none;
+}
+
+.play-page.live-table .help-cluster > .btn,
+.play-page.live-table .help-cluster .action-help > .btn {
+  justify-content: center;
+  text-align: center;
+  line-height: 1.25;
+  min-height: 44px;
+}
+
 .play-page .action-main {
   position: relative;
   flex-wrap: nowrap;
@@ -1999,6 +2019,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .play-page.live-table .action-area {
   overscroll-behavior-y: auto;
+  padding: 8px;
 }
 
 .play-page.live-table .panel-toggle,
@@ -2043,7 +2064,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: var(--surface);
   box-shadow: var(--shadow-raised);
   text-align: center;
-  animation: roll-panel-in 240ms ease-out;
+  animation: roll-panel-in calc(240ms * var(--bg-motion-scale, 1)) ease-out;
 }
 
 .opening-roll h2 {
@@ -2099,8 +2120,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   opacity: 0;
   transform: translateY(-10px) rotate(-12deg);
   transition:
-    opacity 150ms,
-    transform 220ms var(--ease);
+    opacity calc(150ms * var(--bg-motion-scale, 1)),
+    transform calc(220ms * var(--bg-motion-scale, 1)) var(--ease);
 }
 
 .opening-die .die i {
@@ -2122,7 +2143,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .opening-player.revealed .die {
   opacity: 1;
   transform: none;
-  animation: opening-land 420ms var(--ease);
+  animation: opening-land calc(420ms * var(--bg-motion-scale, 1)) var(--ease);
 }
 
 .opening-winner .die {
@@ -2542,8 +2563,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   margin-top: 0;
 }
 
-/* Game summary card under each divider: a toggle row of per-player losses,
-   the full per-game table beneath it once opened. */
+/* Game summaries in history are always expanded. */
 .history-game-card {
   margin: 0 0 10px;
   border: 1px solid var(--line);
@@ -2551,7 +2571,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: var(--surface-2);
 }
 
-.history-game-toggle {
+.history-game-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2565,11 +2585,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   color: var(--ink);
   font: inherit;
   text-align: left;
-  cursor: pointer;
-}
-
-.history-game-toggle:hover {
-  background: var(--surface-3);
 }
 
 .history-game-title {
@@ -2609,10 +2624,10 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   border-right: 2px solid var(--muted);
   border-bottom: 2px solid var(--muted);
   transform: rotate(45deg);
-  transition: transform var(--d-fast) var(--ease);
+  transition: transform calc(var(--d-fast) * var(--bg-motion-scale, 1)) var(--ease);
 }
 
-.history-game-toggle[aria-expanded="true"] .history-game-chevron {
+.mobile-game-summary[open] .history-game-chevron {
   transform: rotate(-135deg);
 }
 
@@ -2956,7 +2971,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
       library
    ====================================================================== */
 
-/* Decision review: a bounded, non-scrolling dialog with three views. */
+/* Decision review: board and scrollable comparison, with optional details. */
 .decision-dialog[open] {
   width: min(1440px, calc(100vw - 32px));
   max-width: calc(100vw - 16px);
@@ -2986,13 +3001,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   display: none;
 }
 
-.decision-dialog .decision-tabs {
-  flex: none;
-  gap: 6px;
-}
-
-/* The body is one stretched grid row, so the board column fills the dialog
-   height even when the comparison column is hidden (Board view). */
+/* The board and comparison share the available dialog height. */
 .decision-dialog .dialog-body {
   flex: 1;
   grid-template-rows: minmax(0, 1fr);
@@ -3031,6 +3040,41 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   flex: 1;
   width: 100%;
   min-height: 0;
+}
+
+.decision-dialog[data-decision-kind="checker"] .decision-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.decision-dialog[data-decision-kind="checker"] .decision-content > :is(h3, .decision-best) {
+  display: none;
+}
+
+.decision-dialog .review-moves {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.review-move-rows {
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 2px;
+}
+
+.decision-dialog .review-move { min-height: 44px; }
+
+.decision-dialog .decision-choices { flex-wrap: wrap; flex-shrink: 0; }
+.decision-dialog .decision-choices .btn {
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .decision-board svg {
@@ -3095,13 +3139,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   padding: 8px 0;
 }
 
-.decision-dialog[data-review-view="board"] .decision-content,
 .decision-dialog[data-review-view="notes"] .decision-content,
 .decision-dialog[data-review-view="notes"] .decision-position {
   display: none;
 }
 
-.decision-dialog[data-review-view="board"] .decision-layout,
 .decision-dialog[data-review-view="notes"] .decision-layout {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -3117,7 +3159,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   overflow-wrap: anywhere;
 }
 
-.decision-tabs .btn[aria-selected="true"],
 .history-tree-tablist .btn[aria-selected="true"] {
   border-color: var(--accent);
   background: var(--accent-soft);
@@ -3455,6 +3496,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 .settings-dialog {
   width: min(980px, calc(100vw - 28px));
   max-width: calc(100vw - 20px);
+  /* A definite height keeps WebKit's flex body from collapsing on rotation. */
+  height: min(900px, 90dvh);
   max-height: 90dvh;
   overflow: hidden;
 }
@@ -3512,7 +3555,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   border-top: 1px solid var(--line);
 }
 
-.sound-settings input[type="range"] {
+.sound-settings input[type="range"],
+.motion-settings input[type="range"] {
   min-height: 44px;
   accent-color: var(--accent);
 }
@@ -4725,16 +4769,15 @@ html.bg-dialog-open {
   stroke-linecap: round;
 }
 
-/* Motion opt-out from Settings (data-motion), beside the system preference
-   that tokens.css honours. Animation durations collapse; nothing is removed,
-   so scripts waiting on animationend still finish (no script in this family
-   waits on transitionend). */
-html[data-motion="reduce"] :is(.board-die-face, button.die, .dice-switch-surface, .board-cube, .opening-die .die, .opening-player.revealed .die, .opening-roll, .turn-ready, .engine-status.busy, .player-strip, .dialog, .toast, summary, .point .point-hit, .bg-dialog),
-html[data-motion="reduce"] :is(.engine-status.busy, .dialog)::before,
-html[data-motion="reduce"] .dialog::backdrop {
-  animation-duration: 0.01ms;
-  animation-iteration-count: 1;
+/* Family motion scales include the shared kit's controls and dialogs. */
+.app .btn, .bg-dialog .btn, .bg-dialog input, .bg-dialog select {
+  transition-duration: calc(var(--d-fast) * var(--bg-motion-scale, 1));
 }
+.bg-dialog, .bg-dialog::backdrop, .toast {
+  transition-duration: calc(var(--d-base) * var(--bg-motion-scale, 1));
+}
+.motion-settings { display: grid; gap: 0; }
+.motion-settings output { color: var(--ink); font-weight: 600; }
 
 /* With motion reduced there are no transitions at all. tokens.css shortens
    them to 0.01ms rather than removing them, so a property that changes (a
@@ -4748,6 +4791,7 @@ html[data-motion="reduce"] .dialog::backdrop {
   body:not(#bg-motion) *::before,
   body:not(#bg-motion) *::after {
     transition-property: none;
+    animation: none !important;
   }
 }
 
@@ -4756,7 +4800,10 @@ html[data-motion="reduce"] body:not(#bg-motion) *,
 html[data-motion="reduce"] body:not(#bg-motion) *::before,
 html[data-motion="reduce"] body:not(#bg-motion) *::after {
   transition-property: none;
+  animation: none !important;
 }
+
+html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: none; }
 
 /* ======================================================================
    7. Hub
@@ -4915,16 +4962,16 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.desktop-table .stage {
-    grid-template-rows: auto minmax(180px, 1fr) auto 72px;
+    grid-template-rows: auto minmax(180px, 1fr) auto auto;
   }
 
   .play-page.desktop-table .action-area {
     position: relative;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: 22px 46px;
-    gap: 0 16px;
+    grid-template-rows: minmax(22px, auto) auto;
+    gap: 6px 16px;
     align-items: center;
-    padding: 4px 0 0;
+    padding: 8px;
     overflow: visible;
   }
 
@@ -4962,7 +5009,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     font-size: var(--t-sm);
   }
 
-  .play-page.desktop-table #actions #confirm {
+  .play-page.desktop-table #actions :is(#confirm, #immediate-redouble) {
     min-width: 180px;
   }
 
@@ -5218,9 +5265,9 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .app .tool-nav a {
-    flex: 1 1 0;
+    flex: 1 0 auto;
     justify-content: center;
-    padding-inline: 8px;
+    padding-inline: 4px;
   }
 
   .app .tool-head {
@@ -5384,9 +5431,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     gap: 0;
   }
 
-  .decision-dialog[data-review-view="decision"] .decision-position {
-    display: none;
-  }
 
   .decision-dialog .decision-content {
     gap: 7px;
@@ -5413,8 +5457,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     gap: 4px;
   }
 
-  .decision-dialog .decision-choices .btn,
-  .decision-dialog .decision-tabs .btn {
+  .decision-dialog .decision-choices .btn {
     padding-inline: 8px;
     font-size: var(--t-sm);
   }
@@ -5473,6 +5516,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .settings-dialog {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
     max-height: calc(100dvh - 16px);
   }
 
@@ -5685,7 +5729,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   }
 
   .play-page.live-table .stage {
-    grid-template-rows: auto max-content auto 60px minmax(110px, 1fr);
+    grid-template-rows: auto max-content auto 60px minmax(64px, 1fr);
   }
 
   .play-page.live-table .board-workspace {
@@ -5716,99 +5760,81 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding-block: 4px;
   }
 
-  .board-actions #confirm {
+  .board-actions :is(#confirm, #immediate-redouble) {
     min-height: 52px;
     padding: 8px 16px;
   }
 
+  /* A compact footer: readable status above one evenly spaced utility row.
+     Align the panel itself to the bottom so themed surfaces do not stretch
+     across the spare space between it and the board. */
   .play-page.live-table .action-area {
+    display: flex;
+    flex-direction: column;
     grid-row: 5;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto auto;
-    align-content: end;
-    gap: 4px 8px;
-    padding: 8px 0 0;
+    align-self: end;
+    gap: 8px;
+    padding: 8px;
     border-top: 1px solid var(--line);
     overflow: visible;
   }
 
-  /* One status line on phones: the board must keep its full height, so a
-     long status or draft line ellipsizes instead of adding a row (the live
-     region still announces the whole text). */
-  .play-page.live-table .action-message {
-    grid-column: 1 / -1;
-    grid-row: 2;
+  .play-page.live-table .action-message:not(.routine-status) {
     min-width: 0;
-    margin-bottom: 2px;
-    overflow: hidden;
-    font-size: var(--t-sm);
-    line-height: 1.4;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  /* Routine guidance ("Use all playable dice, then confirm.") takes the slot
-     beside the analysis jump instead of leaving that row half empty; the
-     one-tap move list keeps the slot on tall phones. */
-  .play-page.live-table .action-area:not(:has(.touch-moves:not([hidden]))) .action-message.routine-status {
-    position: static;
-    grid-column: 1;
-    grid-row: 1;
-    align-self: center;
-    width: auto;
-    height: auto;
+    min-height: 0;
     margin: 0;
-    clip-path: none;
-    color: var(--muted);
+    font-size: var(--t-sm);
+    line-height: 1.45;
+    text-align: center;
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
   }
 
   .play-page.live-table .action-main {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    flex-direction: column;
-    gap: 6px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 8px;
     padding: 0;
   }
 
   .play-page.live-table #actions {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 6px;
+    margin: 0;
+    width: 100%;
   }
 
   .play-page.live-table #actions > .btn,
   .play-page.live-table #actions > a {
-    flex: 1;
+    flex: 1 1 30%;
+    min-width: 0;
     min-height: 48px;
-    padding-inline: 10px;
-    font-size: var(--t-md);
+    padding: 8px;
+    font-size: var(--t-sm);
     white-space: normal;
   }
 
   .play-page.live-table .help-cluster {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 6px;
+    width: 100%;
   }
 
   .play-page.live-table .help-cluster .action-help {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 4px;
-    padding: 0;
-    overflow: visible;
+    display: contents;
   }
 
+  .play-page.live-table .help-cluster > .btn,
   .play-page.live-table .help-cluster .action-help > .btn {
-    flex: 1;
-    min-width: 44px;
-    min-height: 44px;
-    padding-inline: 6px;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    height: 100%;
+    padding: 8px 4px;
     font-size: var(--t-sm);
     white-space: normal;
-  }
-
-  .play-page.live-table .help-cluster #undo-turn {
-    flex: 1.5;
   }
 
   .play-page.live-table .undo-turn-label-wide {
@@ -5819,30 +5845,9 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     display: inline;
   }
 
-  .play-page.live-table #all-controls {
-    font-size: var(--t-sm);
-    padding-inline: 8px;
-  }
-
-  .play-page.live-table .draft-line {
-    grid-column: 1;
-    grid-row: 1;
-    align-self: center;
-    min-width: 0;
-    overflow: hidden;
-    font-size: var(--t-sm);
-    line-height: 1.4;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  .play-page.live-table #analysis-jump {
-    display: inline-flex;
-    grid-column: 2;
-    grid-row: 1;
-    padding-inline: 8px;
-    color: var(--accent);
-    font-size: var(--t-sm);
+  .play-page.live-table .touch-moves,
+  .play-page.live-table .touch-destinations {
+    order: -1;
   }
 
   .touch-moves:not([hidden]) {
@@ -5939,52 +5944,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 
-  /* The review board keeps its own preview controls on small screens. */
-  .decision-dialog .review-preview-controls:has(.review-preview-strip:not([hidden])) {
-    display: block;
-    flex: none;
-    min-width: 0;
-  }
-
-  .decision-dialog .review-preview-strip:not([hidden]) {
-    display: grid;
-    gap: 6px;
-    padding-top: 8px;
-    border-top: 1px solid var(--line);
-  }
-
-  .decision-dialog .study-preview-controls {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    gap: 6px;
-  }
-
-  .decision-dialog .study-preview-controls .btn {
-    min-height: 44px;
-    padding: 8px;
-    font-size: 20px;
-  }
-
-  .decision-dialog .study-preview-controls select {
-    min-width: 0;
-    max-width: 100%;
-    min-height: 44px;
-    overflow: hidden;
-    font-size: 1rem;
-    text-overflow: ellipsis;
-  }
-
-  .decision-dialog .study-preview-value {
-    min-height: 36px;
-    font-size: var(--t-sm);
-    line-height: 1.3;
-  }
-
-  .decision-position:has(.review-preview-strip:not([hidden])) > .decision-choices,
-  .decision-position:has(.review-preview-strip:not([hidden])) > .decision-caption {
-    display: none;
-  }
-
   /* Bottom sheets open near the thumb and keep Close fixed. */
   .dialog.drawer .dialog-head {
     padding-bottom: 10px;
@@ -6066,7 +6025,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.live-table:has(.board-slot.has-equity-bar) .stage {
     height: 100%;
     min-height: 0;
-    grid-template-rows: auto minmax(140px, 1fr) auto 60px minmax(110px, auto);
+    grid-template-rows: auto minmax(140px, 1fr) auto 60px auto;
   }
   .play-page.live-table .board-workspace > .board-slot.has-equity-bar {
     box-sizing: border-box;
@@ -6153,10 +6112,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
 
   .decision-dialog .decision-values thead th {
     white-space: nowrap;
-  }
-
-  .decision-dialog .decision-tabs .btn {
-    padding-inline: 6px;
   }
 
   .review-cube-choice {
@@ -6562,7 +6517,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding: 0;
   }
 
-  .board-actions #confirm {
+  .board-actions :is(#confirm, #immediate-redouble) {
     gap: 6px;
     min-height: 60px;
     padding: 8px;
@@ -6674,14 +6629,15 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.live-table .stage:has(#opponent.active) #player { width: 72px; left: calc(100% + 144px); }
   .play-page.live-table .player-name { min-width: 0; gap: 4px; }
   .play-page.live-table .board-actions { top: 108px; height: 44px; }
-  .play-page.live-table .board-actions #confirm { min-height: 44px; height: 44px; }
+  .play-page.live-table .board-actions :is(#confirm, #immediate-redouble) { min-height: 44px; height: 44px; }
   .play-page.live-table .action-area {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
     height: calc(100% - 156px);
     max-height: calc(100% - 156px);
-    padding: 0;
+    padding: 2px 6px;
+    gap: 4px 6px;
   }
   .play-page.live-table .action-area .action-main,
   .play-page.live-table .help-cluster,
@@ -6689,8 +6645,9 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.live-table .action-area .btn { width: 100%; min-width: 0; min-height: 44px; padding: 6px; }
   .play-page.live-table #undo-turn { grid-column: 1; grid-row: 1; }
   .play-page.live-table #hint { grid-column: 2; grid-row: 1; }
-  .play-page.live-table #all-controls { grid-column: 1; grid-row: 2; }
-  .play-page.live-table #analysis-jump { grid-column: 2; grid-row: 2; }
+  .play-page.live-table #analysis-jump { grid-column: 1; grid-row: 2; }
+  .play-page.live-table #all-controls { grid-column: 2; grid-row: 2; }
+  .play-page.live-table .action-area:not(:has(#hint)) #undo-turn { grid-column: 1 / -1; }
   .play-page.live-table .undo-turn-label-wide { display: none; }
   .play-page.live-table .undo-turn-label-phone { display: inline; }
   .play-page.live-table .action-area #actions:empty { display: none; }
@@ -6748,9 +6705,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     padding: 12px;
   }
 
-  .decision-dialog[data-review-view="decision"] .decision-position {
-    display: none;
-  }
 
   .decision-dialog .decision-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -6803,50 +6757,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     display: inline;
     margin-left: 8px;
     font-size: var(--t-xs);
-  }
-
-  .decision-dialog[data-review-view="board"] .decision-position:has(.review-preview-strip:not([hidden])) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
-    gap: 12px;
-  }
-
-  .decision-dialog .review-preview-controls:has(.review-preview-strip:not([hidden])) {
-    display: block;
-    flex: none;
-    align-self: center;
-    min-width: 0;
-  }
-
-  .decision-dialog .review-preview-strip:not([hidden]) {
-    display: grid;
-    gap: 6px;
-  }
-
-  .decision-dialog .study-preview-controls {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    gap: 6px;
-  }
-
-  .decision-dialog .study-preview-controls .btn {
-    min-height: 44px;
-    padding: 8px;
-    font-size: 20px;
-  }
-
-  .decision-dialog .study-preview-controls select {
-    min-width: 0;
-    max-width: 100%;
-    min-height: 44px;
-    overflow: hidden;
-    font-size: 1rem;
-    text-overflow: ellipsis;
-  }
-
-  .decision-position:has(.review-preview-strip:not([hidden])) > .decision-choices,
-  .decision-position:has(.review-preview-strip:not([hidden])) > .decision-caption {
-    display: none;
   }
 
   .history-dialog[open] {
@@ -7138,4 +7048,177 @@ html.skin-shader .docs-toc--sticky {
   border-radius: 50%;
   background: var(--skin-c0, var(--ink));
   box-shadow: 14px 0 0 var(--skin-c1, var(--accent));
+}
+
+/* Review always pairs the board with its comparison. Keep the board near the
+   header and let the ranked list consume spare space, not an empty SVG slot. */
+
+@media (max-width: 700px) and (min-height: 501px) {
+  .decision-dialog .decision-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+  }
+  .decision-dialog .decision-position { gap: 6px; }
+  .decision-dialog .decision-board {
+    flex: none;
+    height: min(calc((100vw - 48px) * 660 / 876), max(120px, calc(100dvh - 420px)));
+  }
+  .decision-dialog .decision-choices { gap: 6px; }
+  .decision-dialog .decision-choices .btn { flex: 1; padding: 6px; }
+  .decision-dialog .decision-caption { display: none; }
+  .decision-dialog .decision-content { min-height: 0; overflow-y: auto; }
+  .decision-dialog[data-decision-kind="checker"] .decision-content { overflow: hidden; gap: 4px; }
+  .decision-dialog .decision-content > .muted.small { font-size: var(--t-xs); }
+  .decision-dialog .decision-content > .decision-best { display: none; }
+  .decision-dialog .review-move-heading { padding-block: 4px; }
+  .decision-dialog[data-review-view="notes"] .decision-layout { grid-template-rows: minmax(0, 1fr); }
+}
+
+@media (max-height: 500px) and (min-width: 650px) {
+  .decision-dialog .decision-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(290px, 1fr);
+    gap: 12px;
+  }
+  .decision-dialog .decision-content { display: flex; flex-direction: column; overflow-y: auto; gap: 4px; }
+  .decision-dialog[data-decision-kind="checker"] .decision-content { overflow: hidden; }
+  .decision-dialog .decision-content > :is(h3, .decision-best) { display: none; }
+  .decision-dialog .decision-content > .muted.small { font-size: var(--t-xs); }
+  .decision-dialog .decision-position { gap: 4px; }
+  .decision-dialog .decision-choices .btn { flex: 1; padding: 4px; font-size: var(--t-xs); }
+  .decision-dialog .decision-caption { display: none; }
+  .decision-dialog .review-move-heading { padding-block: 2px; }
+  .decision-dialog[data-review-view="notes"] .decision-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.decision-dialog .dialog-header { gap: 8px; }
+.decision-dialog .decision-details-toggle { margin-left: auto; min-height: 44px; }
+@media (max-width: 700px) {
+  .decision-dialog .dialog-header h2 { font-size: 17px; }
+  .decision-dialog .decision-details-toggle { padding-inline: 8px; font-size: var(--t-sm); }
+}
+
+/* The original position and ranked moves form one preview list. */
+.decision-dialog .review-position { flex-shrink: 0; border-bottom: 1px solid var(--line); }
+.decision-dialog .review-position small { color: var(--muted); }
+.review-position-dice { display: flex; gap: 5px; justify-content: flex-end; }
+.review-position-dice .die { width: 23px; height: 23px; min-width: 0; min-height: 0; padding: 3px; gap: 2px; border-radius: 5px; }
+.review-position-dice .die i { width: 4px; height: 4px; }
+.review-search { flex-shrink: 0; border-top: 1px solid var(--line); padding-top: 6px; }
+.review-depth-options { display: flex; gap: 6px; }
+.review-depth-options .review-depth { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; padding: 4px 8px; }
+.review-depth small { color: var(--muted); font-size: var(--t-xs); font-weight: 400; }
+.review-search-working { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 8px; align-items: center; font-size: var(--t-xs); }
+.review-search-working progress { grid-column: 1/-1; width: 100%; height: 6px; accent-color: var(--accent); }
+.review-search-status { font-variant-numeric: tabular-nums; }
+.review-search-notice { margin: 4px 0 0; }
+.review-search-notice .btn { padding-block: 2px; }
+.review-depth-options:empty { display:none; }
+@media (max-width:700px) and (min-height:501px) {
+  .decision-dialog .decision-board { height: min(calc((100vw - 48px) * 660 / 876), max(108px, calc(100dvh - 450px))); }
+}
+
+/* A compact running summary below the controls on portrait phones. */
+.mobile-game-summary { display: none; }
+@media (max-width: 600px) and (orientation: portrait) {
+  .mobile-game-summary:not([hidden]) {
+    display: block;
+    margin: 12px 6px 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+  }
+  .mobile-game-summary > summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    min-height: 52px;
+    padding: 12px;
+    list-style: none;
+    font-size: var(--t-sm);
+    cursor: pointer;
+  }
+  .mobile-game-summary > summary::-webkit-details-marker,
+  .mobile-game-summary > summary::before { display: none; }
+  .mobile-summary-loss { display: inline-flex; gap: 5px; align-items: baseline; font-variant-numeric: tabular-nums; }
+  .mobile-summary-loss small { color: var(--muted); }
+  .mobile-game-summary .history-game-chevron { flex-shrink: 0; }
+}
+
+.checker-warning .dialog-foot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.checker-warning .dialog-foot > button { min-width: 0; padding-inline: 10px; }
+
+.board-cube-replies {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.board-cube-replies[hidden] { display: none; }
+.board-cube-replies .cube-reply {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 40%;
+  max-width: 220px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--t-md);
+}
+.cube-reply-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--cube-reply-face-height, 48px);
+  padding: 0 6px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 650;
+  line-height: 1;
+}
+.cube-reply-take .cube-reply-face { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.cube-reply > kbd { position: absolute; right: 8px; margin: 0; }
+@media (min-width: 1025px) and (min-height: 501px) {
+  .cube-reply:has(> kbd) .cube-reply-face { padding-right: 34px; }
+}
+@media (max-width: 600px), (max-height: 500px) {
+  .board-cube-replies .cube-reply { font-size: var(--t-sm); }
+}
+
+@media (max-width: 600px) and (orientation: portrait) and (min-height: 741px) {
+  .play-page.live-table:has(+ .mobile-game-summary:not([hidden])) {
+    min-height: calc(100dvh - 64px);
+  }
+}
+
+/* Even the short Play label retains a complete touch target in every skin. */
+.app .topbar .tool-nav a { min-width: 44px; }
+@media (max-width: 380px) {
+  .app .topbar:has(.tool-nav) { padding-inline: 4px; }
+  .app .topbar .tool-nav { gap: 1px; }
+  .app .topbar .tool-nav a { padding-inline: 3px; font-size: var(--t-xs); }
+}
+
+/* Very short portrait phones save height in noninteractive chrome, keeping
+   checker space and the primary action separate instead of squeezing the board. */
+@media (max-width: 380px) and (orientation: portrait) and (max-height: 640px) {
+  .play-page.live-table .player-strip { min-height: 26px; padding-block: 2px; font-size: var(--t-xs); }
+  .play-page.live-table .tool-head { min-height: 48px; padding-block: 2px; }
+  .play-page.live-table .tool-head .subtitle { display: none; }
 }

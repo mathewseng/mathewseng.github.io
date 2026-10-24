@@ -5,7 +5,7 @@ import { gradeCube } from "../engine/cube-grade.mjs";
 export function equityFraction(equity) {
   return (1 + equity / (1 + Math.abs(equity))) / 2;
 }
-export function equityReading(source, result) {
+export function equityReading(source, result, {beforeDecision = false} = {}) {
   if (
     !result ||
     result.status !== "complete" ||
@@ -25,7 +25,7 @@ export function equityReading(source, result) {
       ? graded.available === false
         ? { equity: graded.outcomes?.[0] }
         : graded.decision.best
-      : graded.actual || graded.candidates?.[0];
+      : (!beforeDecision && graded.actual) || graded.candidates?.[0];
   const perspective = graded.decision?.player ?? graded.perspective;
   if (
     !candidate ||
@@ -40,6 +40,6 @@ export function equityReading(source, result) {
         ? "current-cube points"
         : "normalized match equity",
     setting: graded.settings.name,
-    choice: graded.actual ? "Your choice" : "Best continuation",
+    choice: beforeDecision ? "Before decision" : graded.actual ? "Your choice" : "Best continuation",
   };
 }

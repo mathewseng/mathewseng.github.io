@@ -179,6 +179,7 @@ export class EquityBar {
       submitted = null,
       engine = this.engine,
       preset = 'quick',
+      beforeDecision = false,
     } = this.context;
     if (
       blocked ||
@@ -194,7 +195,7 @@ export class EquityBar {
       return;
     }
     const prepared = auto ? engine.peek(state, {preset, submitted}) : null;
-    const ready = equityReading(state, result || prepared);
+    const ready = equityReading(state, result || prepared, {beforeDecision});
     if (ready && (result || engine === this.engine)) {
       if (this.engine.active || this.engine.initializing) this.stop();
       this.paint("ready", ready);
@@ -209,7 +210,7 @@ export class EquityBar {
       );
       return;
     }
-    const key = positionKey(state) + JSON.stringify([preset, submitted]);
+    const key = positionKey(state) + JSON.stringify([preset, submitted, beforeDecision]);
     if (this.key === key) {
       if (ready || this.reading) this.paint("ready", ready || this.reading);
       return;
@@ -220,7 +221,7 @@ export class EquityBar {
     this.paint(ready ? 'ready' : 'loading', ready, 'Evaluating the current decision');
     const publish = result => {
       if (token !== this.token || this.key !== key || !this.enabled) return;
-      const reading = equityReading(state, result);
+      const reading = equityReading(state, result, {beforeDecision});
       if (reading) this.paint('ready', reading);
     };
     engine
@@ -229,7 +230,7 @@ export class EquityBar {
       .then((result) => {
         if (token !== this.token || this.key !== key || !this.enabled)
           return;
-        const reading = equityReading(state, result);
+        const reading = equityReading(state, result, {beforeDecision});
         if (!reading)
           throw new Error(
             "No valid equity is available for this position.",

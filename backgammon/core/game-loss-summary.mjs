@@ -16,7 +16,7 @@ export function gameLossSummary(rows, gameNumber, matchLength = 0) {
         else pending++;
         continue;
       }
-      total += feedback.loss * (money ? row.source.cube.value : 1);
+      total += feedback.loss;
       evaluated++;
       if (needsRevisionWarning(feedback.loss)) mistakes++;
     }

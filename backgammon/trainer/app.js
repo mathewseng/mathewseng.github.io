@@ -19,6 +19,7 @@ import {
 } from "../core/rules.mjs";
 import {
   all,
+  practiceItems,
   put,
   get,
   itemRecord,
@@ -152,8 +153,7 @@ async function begin() {
   count = 0;
   sessionLog = [];
   summaryCard.hidden = true;
-  const mistakes = (await all())
-    .filter((i) => i.kind === "mistake" || i.tags.includes("exercise"))
+  const mistakes = (await practiceItems())
     .map((i) => ({ ...i, topic: "mistakes" }));
   const progress = new Map((await all("progress")).map((p) => [p.id, p]));
   pool = (

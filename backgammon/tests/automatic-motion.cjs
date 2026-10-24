@@ -16,7 +16,7 @@ module.exports=async function automaticMotion(browser,base){
     const dice=await seededLocalRoll(localRolls);
     if(dice.includes(6)&&dice[0]!==dice[1])break;
    }
-   st.saveSettings({equityBar:false,analysisAhead:false,motion:'full'});
+   st.saveSettings({equityBar:false,analysisAhead:false,motionScale:1,motion:'full'});
    await st.put('work',{id:'play',game:{id:'forced-animation',state:s,initial:s,events:[],started:true,names:['You','GNUbg'],
     config:localConfig({mode:'local',tutor:false,warning:false}),localRolls},draft:[]});
   });

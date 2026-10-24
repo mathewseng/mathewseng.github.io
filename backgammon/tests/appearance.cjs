@@ -291,7 +291,7 @@ module.exports = async function appearanceUX(browser, base, out, browserName) {
     await page
       .getByLabel("Board orientation", { exact: true })
       .selectOption("1");
-    await page.getByLabel("Motion", { exact: true }).selectOption("reduce");
+    await page.getByLabel("Animation speed", { exact: true }).press("Home");
     await close();
     assert.equal(await frame(), "rgb(39, 60, 74)");
     assert.deepEqual(await work(), before);

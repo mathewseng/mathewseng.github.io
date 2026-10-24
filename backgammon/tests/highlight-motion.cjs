@@ -30,7 +30,7 @@ module.exports = async function highlightMotion(browser, base, out, name) {
       await page.evaluate(async () => {
         const {shell,DraftBoard} = await import('/backgammon/ui/shell.mjs');
         const r = await import('/backgammon/core/rules.mjs'), st = await import('/backgammon/core/storage.mjs');
-        st.saveSettings({interactionMode:'beginner',motion:'system',moveHints:true});
+        st.saveSettings({interactionMode:'beginner',motionScale:1,motion:'system',moveHints:true});
         const d = new DraftBoard(shell('trainer','Practice').board); d.shortcutsEnabled = true;
         const {installPlayShortcuts} = await import('/backgammon/ui/shortcuts.mjs');
         installPlayShortcuts({phase:()=>d.state.phase,point:p=>d.point(p),run:action=>{

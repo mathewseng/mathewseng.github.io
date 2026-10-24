@@ -4,7 +4,7 @@
 // requestAnimationFrame at the skin's fps, paused while hidden, one still
 // frame under reduced motion, removed when WebGL is unavailable. Nothing here
 // throws: every failure removes the canvas and the page shows --page.
-import { reducedMotion } from "./motion.mjs";
+import { reducedMotion, motionScale } from "./motion.mjs";
 
 const VERTEX =
   "attribute vec2 a_position;void main(){gl_Position=vec4(a_position,0.0,1.0);}";
@@ -306,7 +306,7 @@ function schedule(l) {
   const tick = (now) => {
     if (layer !== l || !l.running) return;
     l.raf = requestAnimationFrame(tick);
-    l.elapsed += (now - l.lastTick) / 1000;
+    l.elapsed += (now - l.lastTick) / (1000 * motionScale());
     l.lastTick = now;
     if (now - l.lastFrame < interval - 1) return;
     l.lastFrame = now;

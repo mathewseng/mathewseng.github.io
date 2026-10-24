@@ -268,8 +268,8 @@ module.exports = async function directPlay(browser, base, out, name) {
       [1440, 900],
     ]) {
       await page.setViewportSize({ width, height });
-      for (const view of ["decision", "board", "notes"]) {
-        await page.locator(`.decision-tabs [data-view="${view}"]`).click();
+      for (const view of ["decision", "notes"]) {
+        if (await page.locator(".decision-dialog").getAttribute("data-review-view") !== view) await page.locator(".decision-details-toggle").click();
         const geometry = await page
           .locator(".decision-dialog")
           .evaluate((d) => ({
@@ -284,10 +284,12 @@ module.exports = async function directPlay(browser, base, out, name) {
             ]
               .filter((n) => n.getClientRects().length)
               .map((n) => ({
+                class: n.className,
                 w: n.clientWidth,
                 sw: n.scrollWidth,
                 h: n.clientHeight,
                 sh: n.scrollHeight,
+                children: [...n.children].map(c => ({class: c.className, height: c.getBoundingClientRect().height})),
               })),
             rect: d.getBoundingClientRect().toJSON(),
           }));
@@ -305,7 +307,7 @@ module.exports = async function directPlay(browser, base, out, name) {
           geometry.rect.top >= 0 && geometry.rect.bottom <= height + 1,
         );
       }
-      await page.locator('.decision-tabs [data-view="decision"]').click();
+      await page.locator(".decision-details-toggle").click();
       await shot(`modal-${width}x${height}`);
     }
     await page.keyboard.press("Escape");
@@ -371,8 +373,11 @@ module.exports = async function directPlay(browser, base, out, name) {
       } else {
         await page.locator("#confirm").waitFor();
         await page.keyboard.press("u"); // point 6
-        await page.keyboard.press("i"); // selected 6/5 uses 1; the remaining 2 is forced
-        // Remaining 2 fills the preview, but the original roll had choices.
+        await page.keyboard.press("i"); // selected 6/5 uses 1
+        await page.waitForFunction(() => document.querySelectorAll('.board-die.consumed').length === 1);
+        assert.ok(await page.locator('#confirm').isDisabled(), 'remaining die never auto-plays after a choice');
+        await page.keyboard.press("i"); // select point 5
+        await page.keyboard.press("p"); // explicitly play 5/3 with the remaining 2
         await page.waitForFunction(
           () => !document.querySelector("#confirm")?.disabled,
         );

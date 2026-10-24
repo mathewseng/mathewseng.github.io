@@ -159,7 +159,16 @@ test('cancelling between native scores stops work and allows the next full evalu
   await assert.rejects(f.engine.analyzeAsync(f.state,'research','checker',null,{},async()=>{
     if(++checkpoints===3)throw new DOMException('cancelled','AbortError');
   }),{name:'AbortError'});
-  assert.equal(f.calls.length,3,'nothing else is evaluated after cancellation');
+  assert.equal(f.calls.length,2,'nothing else is evaluated after cancellation');
   const result=await f.engine.analyzeAsync(f.state,'research','checker',null,{},async()=>{});
   assert.deepEqual(result.candidates,fixture().engine.analyze(f.state,'research').candidates);
+});
+
+test('fixed-depth progress counts completed positions without changing scores',async()=>{
+ const f=fixture(),updates=[];
+ const result=await f.engine.analyzeAsync(f.state,'research','checker',null,{},async checkpoint=>{if(checkpoint)updates.push(checkpoint);});
+ assert.ok(updates.some(p=>p.plies===2&&p.completed===0));
+ assert.ok(updates.some(p=>p.plies===4&&p.completed===p.total));
+ for(const p of updates)assert.ok(p.total>0&&p.completed>=0&&p.completed<=p.total);
+ assert.deepEqual(result.candidates,fixture().engine.analyze(f.state,'research').candidates);
 });

@@ -100,9 +100,9 @@ module.exports = async function cubeOptions(browser, base, out, name) {
         const option = page.getByRole("button", {name: `${c.label}: preview decision`, exact: true});
         await option.click();
         assert.equal(await option.getAttribute("aria-pressed"), "true");
-        const selected=page.locator('.decision-choices button[aria-pressed="true"]');
+        const selected=page.locator('.review-cube-choice[aria-pressed="true"]');
         const action=await option.getAttribute("data-action");
-        const hasButton=await page.locator(`.decision-choices button[data-action="${action}"]`).count();
+        const hasButton=await page.locator(`.review-cube-choice[data-action="${action}"]`).count();
         assert.equal(await selected.count(),hasButton,"cube table selection also highlights the matching preview button");
         if(hasButton) assert.equal(await selected.getAttribute("data-action"),action);
         assert.ok((await page.locator(".decision-caption").innerText()).includes(c.label));
@@ -123,23 +123,43 @@ module.exports = async function cubeOptions(browser, base, out, name) {
         await page.waitForTimeout(30);
         const fit = await page.getByRole("dialog").evaluate((d) => {
           const r = d.getBoundingClientRect(),
-            t = d.querySelector("table").getBoundingClientRect();
+            t = d.querySelector("table").getBoundingClientRect(),
+            c = d.querySelector(".decision-content");
           return {
             scroll:
               d.scrollHeight <= d.clientHeight + 1 &&
               d.scrollWidth <= d.clientWidth + 1,
-            bottom: t.bottom,
+            size: [d.clientWidth, d.scrollWidth, d.clientHeight, d.scrollHeight],
+            bottom: c.getBoundingClientRect().bottom,
             right: t.right,
             edge: r.right,
             footer: d.querySelector("footer").getBoundingClientRect().top,
+            contentWidth: c.clientWidth,
+            contentScrollWidth: c.scrollWidth,
           };
         });
+        if (!fit.scroll) await page.screenshot({path:path.join(out, `${name}-cube-options-overflow-${scenario}-${width}.png`)});
         assert.ok(
           fit.scroll &&
+            fit.contentScrollWidth <= fit.contentWidth + 1 &&
             fit.right <= fit.edge &&
             fit.bottom <= fit.footer + 1,
           JSON.stringify({ scenario, width, height, fit }),
         );
+        // Long cube lists scroll inside their column, while the board and
+        // footer remain fixed. Every choice must still be reachable by touch.
+        const boardBox = await page.locator('.decision-board').boundingBox();
+        for (const c of expected.choices) {
+          const choice = page.getByRole('button', {name:`${c.label}: preview decision`, exact:true});
+          await choice.click();
+          assert.equal(await choice.getAttribute('aria-pressed'), 'true');
+          const visible = await choice.evaluate(n => {
+            const r=n.getBoundingClientRect(), parent=n.closest('.decision-content').getBoundingClientRect();
+            return r.top >= parent.top-1 && r.bottom <= parent.bottom+1;
+          });
+          assert.ok(visible, `${scenario} ${width}: chosen option remains visible`);
+        }
+        assert.deepEqual(await page.locator('.decision-board').boundingBox(), boardBox);
         if ([320, 375, 844, 1366].includes(width))
           await page.screenshot({
             path: path.join(
@@ -156,7 +176,7 @@ module.exports = async function cubeOptions(browser, base, out, name) {
       browser: name,
       cases: [
         "real cube offer, take/pass/beaver, take/pass/raccoon and match alternatives; equity and original-cube EV",
-        "every option in Comparison without modal scrolling at nine viewports",
+        "every option accessible in a bounded comparison beside or below the board at nine viewports",
       ],
     };
   } finally {

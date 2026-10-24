@@ -123,6 +123,7 @@ async function fullGame(browser, base, out, name, {games=1, contextOptions={}, o
     for(gameIndex=1;gameIndex<=games;gameIndex++){
     completed=false;
     if(gameIndex>1){
+      const previousGame = await page.evaluate(()=>mobileGame.d.state.gameNumber);
       await page.evaluate(()=>{
         const p=mobileGame;
         // The diagnostic must not retain old evaluations/DOM/controllers itself.
@@ -130,6 +131,9 @@ async function fullGame(browser, base, out, name, {games=1, contextOptions={}, o
         p.results.clear();
       });
       await tap('next-game',page.locator('#next-game'));
+      // The old result remains visible until its archive is safely committed.
+      // Do not mistake that finished game for the next game's result.
+      await page.waitForFunction(previous=>mobileGame.d.state.gameNumber>previous,previousGame,{timeout:30000});
     } else
     await tap('start',page.locator('#start-match'));
     const deadline=Date.now()+Number(process.env.BG_GAME_TIMEOUT_MS||1200000);
@@ -150,7 +154,7 @@ async function fullGame(browser, base, out, name, {games=1, contextOptions={}, o
         return {state:d?.state,enabled:d?.enabled,draft:d?.draft,complete:d?.complete(),
           opening:!!document.querySelector('.opening-roll'),moving:!!d?.board.playbackTimer||!!document.querySelector('.moving-checker'),
           over:d?.state?.phase==='over',
-          warning:!![...document.querySelectorAll('dialog[open] button')].find(n=>n.textContent.trim()==='Confirm anyway'),
+          warning:!![...document.querySelectorAll('dialog[open] button')].find(n=>/^(Confirm anyway|Play Best|Confirm without feedback)$/.test(n.textContent.trim())),
           dialog:document.querySelector('dialog[open]')?.textContent.slice(0,350),
           roll:!!document.querySelector('#roll:not(:disabled)')&&document.querySelector('#board').classList.contains('roll-ready'),
           confirm:visible(document.querySelector('#confirm')),
@@ -164,7 +168,7 @@ async function fullGame(browser, base, out, name, {games=1, contextOptions={}, o
       if(state.over){completed=true;break;}
       if(state.warning){
         try {
-          await tap('accept-warning',page.locator('dialog[open]').getByRole('button',{name:'Confirm anyway',exact:true}),null,{timeout:1000});
+          await tap('accept-warning',page.locator('dialog[open]').getByRole('button',{name:/^(Confirm anyway|Play Best|Confirm without feedback)$/}),null,{timeout:1000});
         } catch(error) {
           // A pending grade can become known-good and close itself between the
           // poll and the real tap. Accept only a verified forward transition;

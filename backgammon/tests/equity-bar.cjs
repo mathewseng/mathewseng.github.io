@@ -176,7 +176,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
         assert.ok(geometry.bottom <= geometry.nextTop + 1, 'equity stays clear of the player strip');
         assert.equal(geometry.height, 44);
         if (height > 740) assert.ok(geometry.boardRight - geometry.boardLeft >= width - 20, 'tall portrait board uses the full phone width');
-        else assert.ok(geometry.expected >= 140, 'short portrait board fits above its controls without distortion');
+        else assert.ok(geometry.expected >= 140, `short portrait board fits above its controls without distortion: ${JSON.stringify({width,height,geometry})}`);
       } else {
         assert.ok(geometry.right <= geometry.boardLeft + 1);
         assert.ok(Math.abs(geometry.height - geometry.expected) < 2);
@@ -240,18 +240,21 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     });
     await page.keyboard.press("1");
     await page.keyboard.press("e");
-    await page.locator('#equity-bar[data-state="unavailable"]').waitFor();
+    assert.equal(await page.locator('#equity-bar').getAttribute('data-state'),'ready','partial draft keeps pre-decision equity');
+    assert.equal(await readEquity(),initialValue);
     await page.keyboard.press("r");
     await page.locator('#equity-bar[data-state="ready"]').waitFor();
     assert.match(
       await page.locator("#equity-bar").getAttribute("title"),
-      /Your choice/,
+      /Before decision/,
     );
+    assert.equal(await readEquity(),initialValue,"completed draft keeps pre-decision equity");
     await page.waitForTimeout(100);
     assert.equal(await page.evaluate(()=>equityPositionReads),0,'moves and equity updates do not remeasure an unchanged board');
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("x");
     await page.locator('#equity-bar[data-state="ready"]').waitFor();
+    assert.equal(await readEquity(),initialValue,"undo restores checkers without changing pre-decision equity");
     await clickTool(page, "#equity-toggle");
     await page.waitForTimeout(50);
     assert.equal(engineWorkers().length, 0, "hiding equity releases its engine; saving stays independent");

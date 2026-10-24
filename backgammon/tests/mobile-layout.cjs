@@ -23,6 +23,14 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       await page.setViewportSize({width,height:width===320?568:844});
       assert.ok(await page.getByLabel("Match length",{exact:true}).isVisible(), "phone setup is inline");
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      const crowdedLabels = await page.locator('.tool-nav').evaluate(nav => [...nav.querySelectorAll('a')].flatMap(a => {
+        const text = document.createRange(); text.selectNodeContents(a);
+        const label = text.getBoundingClientRect(), box = a.getBoundingClientRect();
+        return label.left < box.left + 3 || label.right > box.right - 3 || box.width < 44
+          ? [{label:a.textContent,width:box.width,textWidth:label.width}] : [];
+      }));
+      assert.deepEqual(crowdedLabels, [], `navigation labels have room inside their touch targets at ${width}px`);
+      assert.ok(await page.locator('.tool-nav').evaluate(nav => nav.scrollWidth <= nav.clientWidth + 1), `all navigation labels fit at ${width}px`);
       await shot(`setup-${width}`);
     }
     await page.getByRole("button", {name:"Online",exact:true}).tap();

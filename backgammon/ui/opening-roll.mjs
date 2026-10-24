@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { el, dieFace } from "./shell.mjs";
-import { reducedMotion } from "./motion.mjs";
+import { reducedMotion, motionDuration } from "./motion.mjs";
 import { sound } from "./sound.mjs";
 
 // Presentation only. Values always come from the committed opening event;
@@ -95,9 +95,9 @@ export class OpeningRoll {
     this.container.append(this.node);
     if (this.dice) {
       if (this.busy) {
-        this.timers.push(setTimeout(() => this.reveal(0), 280));
-        this.timers.push(setTimeout(() => this.reveal(1), 1000));
-        this.timers.push(setTimeout(() => this.finish(), 1600));
+        this.timers.push(setTimeout(() => this.reveal(0), motionDuration(280)));
+        this.timers.push(setTimeout(() => this.reveal(1), motionDuration(1000)));
+        this.timers.push(setTimeout(() => this.finish(), motionDuration(1600)));
       } else this.finish(false);
     }
   }

@@ -17,7 +17,7 @@ test("every registered skin satisfies the contract", () => {
 });
 test("classic comes first, ids and names are unique, and the registry resolves them", () => {
   assert.equal(SKINS[0], classic);
-  assert.equal(DEFAULT_SKIN, "tidal");
+  assert.equal(DEFAULT_SKIN, "liquid-chrome");
   assert.ok(SKIN_IDS.includes(DEFAULT_SKIN));
   assert.equal(new Set(SKIN_IDS).size, SKINS.length);
   assert.equal(new Set(SKINS.map((s) => s.name.toLowerCase())).size, SKINS.length);
@@ -74,6 +74,7 @@ test("the skin setting is allow-listed and the boot cache falls back to the defa
   try {
     const { settings, saveSettings, normalizeSkin, PREFIX } = await import("../core/storage.mjs");
     assert.equal(settings().skin, DEFAULT_SKIN);
+    assert.equal(settings().boardTheme.preset, "plum");
     for (const junk of [null, 42, "", "nope", "Classic", "../classic", { id: "classic" }])
       assert.equal(normalizeSkin(junk), DEFAULT_SKIN, String(junk));
     for (const id of SKIN_IDS) assert.equal(normalizeSkin(id), id);
@@ -84,6 +85,10 @@ test("the skin setting is allow-listed and the boot cache falls back to the defa
     memory.set(PREFIX + "settings", JSON.stringify({ skin: SKIN_IDS.at(-1), extra: true }));
     assert.equal(settings().skin, SKIN_IDS.at(-1));
     assert.equal(settings().extra, true, "unknown keys still pass through");
+    saveSettings({skin:"tidal",boardTheme:{version:1,preset:"linen",colors:{frame:"#123456"}}});
+    assert.equal(settings().skin,"tidal","a chosen skin survives the new default");
+    assert.equal(settings().boardTheme.preset,"linen");
+    assert.equal(settings().boardTheme.colors.frame,"#123456");
   } finally {
     if (previous === undefined) delete globalThis.localStorage;
     else globalThis.localStorage = previous;

@@ -21,45 +21,38 @@ module.exports = async function reviewSelection(browser, base, out, name) {
         window.openReview();
       } finally {engine.destroy();}
     });
-    const active=page.locator('.decision-choices button[aria-pressed="true"]');
-    assert.equal(await active.textContent(),"Best move");
-    await page.getByRole("button",{name:"Your move",exact:true}).click();
-    assert.equal(await active.textContent(),"Your move");
+    const active=page.locator('.review-move[aria-pressed="true"]');
+    assert.equal(await active.getAttribute("data-rank"),"1");
+    await page.locator('.review-move[data-rank="3"]').click();
+    assert.equal(await active.getAttribute("data-rank"),"3");
     assert.equal(await page.locator('.review-move[aria-pressed="true"]').getAttribute("data-rank"),"3");
     await page.getByRole("button",{name:"Position",exact:true}).click();
-    assert.equal(await active.textContent(),"Position");
-    assert.equal(await page.locator('.review-move[aria-pressed="true"]').count(),0);
+    assert.equal(await active.getAttribute("data-preview"),"position");
+    assert.equal(await page.locator('.review-move[data-rank][aria-pressed="true"]').count(),0);
     await page.locator('.review-move[data-rank="3"]').click();
-    assert.equal(await active.textContent(),"Your move","candidate identity, not its display label, determines selected control");
+    assert.equal(await active.getAttribute("data-rank"),"3");
     await page.locator('.review-move[data-rank="2"]').click();
-    assert.equal(await active.count(),0,"an unrelated alternative must not claim to be best or played");
+    assert.equal(await active.getAttribute("data-rank"),"2");
     await page.locator('.review-move[data-rank="1"]').click();
-    assert.equal(await active.textContent(),"Best move");
-    const colors=await page.locator('.decision-choices button').evaluateAll(es=>es.map(e=>({active:e.getAttribute("aria-pressed"),bg:getComputedStyle(e).backgroundColor})));
+    assert.equal(await active.getAttribute("data-rank"),"1");
+    const colors=await page.locator('.review-move').evaluateAll(es=>es.map(e=>({active:e.getAttribute("aria-pressed"),bg:getComputedStyle(e).backgroundColor})));
     assert.notEqual(colors.find(c=>c.active==="true").bg,colors.find(c=>c.active==="false").bg,"active preview has an unmistakable filled surface");
     for(const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1024,768],[1366,768],[1440,900]]) {
       await page.setViewportSize({width,height});
-      await page.getByRole("tab",{name:"Comparison",exact:true}).click();
+
       if([390,1366].includes(width)) await page.screenshot({path:path.join(out,`${name}-review-selection-comparison-${width}.png`)});
-      await page.getByRole("tab",{name:"Board",exact:true}).click();
+
       await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
-      const picker=page.getByLabel("Preview evaluated move",{exact:true});
-      if(await picker.isVisible()) {
-        await picker.selectOption("2");
-        assert.equal(await active.textContent(),"Your move");
-        assert.match(await page.locator('.review-preview-strip .study-strip-heading').textContent(),/^Your move · /);
-        assert.equal(await picker.inputValue(),"2");
-        await picker.selectOption("-1");
-        assert.equal(await active.textContent(),"Position");
-        assert.match(await page.locator('.review-preview-strip .study-strip-heading').textContent(),/^Position · /);
-        await picker.selectOption("0");
-        assert.match(await picker.locator("option:checked").textContent(),/Best/);
-        assert.match(await page.locator('.review-preview-strip .study-strip-heading').textContent(),/^Best move · /);
-      }
-      assert.equal(await active.textContent(),"Best move");
+      assert.equal(await page.locator('.decision-dialog select').count(),0);
+      await page.locator('.review-move[data-rank="3"]').click();
+      assert.equal(await active.getAttribute("data-rank"),"3");
+      await page.getByRole('button',{name:'Position',exact:true}).click();
+      assert.equal(await active.getAttribute("data-preview"),"position");
+      await page.locator('.review-move[data-rank="1"]').click();
+      assert.equal(await active.getAttribute("data-rank"),"1");
       const fits=await page.locator('.decision-dialog').evaluate(d=>({
         x:d.scrollWidth<=d.clientWidth+1, y:d.scrollHeight<=d.clientHeight+1,
-        controls:[...d.querySelectorAll('.decision-choices button, .study-preview-controls select')]
+        controls:[...d.querySelectorAll('.review-position, .review-depth-options button')]
           .filter(b=>b.getBoundingClientRect().height).every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1}),
       }));
       assert.deepEqual(fits,{x:true,y:true,controls:true},`${width}×${height}`);
@@ -69,14 +62,14 @@ module.exports = async function reviewSelection(browser, base, out, name) {
     await page.locator(".decision-dialog").waitFor({state:"detached"});
     for(const [opponent,same,label] of [[true,false,"Opponent’s move"],[false,true,"Best/your move"],[true,true,"Best/their move"]]) {
       await page.evaluate(([opponent,same])=>window.openReview(opponent,same),[opponent,same]);
-      if(!same) await page.getByRole("button",{name:label,exact:true}).click();
-      assert.equal(await active.textContent(),label);
+      if(!same) await page.locator('.review-move[data-rank="3"]').click();
+      assert.match(await active.textContent(),same?new RegExp(label):/Opponent’s choice/);
       assert.equal(await active.count(),1);
-      assert.equal(await page.locator('.decision-choices button').count(),same?2:3);
+      assert.equal(await page.locator('.decision-choices button').count(),0);
       await page.keyboard.press("Escape");
     await page.locator(".decision-dialog").waitFor({state:"detached"});
     }
     assert.deepEqual(errors,[]);
-    return {browser:name,realEngine:true,viewports:9,buttons:true,rankedRows:true,mobilePicker:true,sharedBest:true};
+    return {browser:name,realEngine:true,viewports:9,buttons:true,rankedRows:true,directMoveButtons:true,sharedBest:true};
   } finally {await context.close();}
 };

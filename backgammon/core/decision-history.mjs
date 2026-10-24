@@ -135,11 +135,12 @@ export function decisionTotals(rows, player) {
   const money = own.every((r) => !r.source.matchLength);
   return {
     money,
+    lossUnits: "normalized-equity",
     evaluated: graded.length,
     pending: own.filter((r) => r.status === "pending").length,
     forced: own.filter((r) => r.forced).length,
     loss: graded.reduce(
-      (n, r) => n + r.feedback.loss * (money ? r.source.cube.value : 1),
+      (n, r) => n + r.feedback.loss,
       0,
     ),
   };

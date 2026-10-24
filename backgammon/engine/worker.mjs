@@ -106,7 +106,12 @@ self.onmessage = async ({ data }) => {
     if (!evaluator) throw new Error("Engine is not initialized.");
     const job = current = {id, readyOnly:request.readyOnly};
     let yieldedAt = performance.now();
-    const yieldWork = async () => {
+    let progressAt = -Infinity, progressDepth = null;
+    const yieldWork = async checkpoint => {
+      if (checkpoint?.total && (checkpoint.plies !== progressDepth || checkpoint.completed === checkpoint.total || performance.now()-progressAt >= 100)) {
+        postMessage({id,type:"progress",checkpoint});
+        progressAt=performance.now();progressDepth=checkpoint.plies;
+      }
       // Batch cheap native calls; expensive candidates and cube branches yield
       // individually so a superseded search can release its warm engine.
       if (performance.now() - yieldedAt >= 8) {

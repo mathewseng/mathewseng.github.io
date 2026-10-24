@@ -21,7 +21,7 @@
     "sha256": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49"
   },
   "compatibleApplicationModules": {
-    "core/rules.mjs": "faaf3648760784f338841ae723c5e78666a39a10d5f9d7ba8732da03da57d972",
+    "core/rules.mjs": "0a3e1ae31817eb1c01cfaa497925fb701d9e53f5cae75c288e623994fbfa4470",
     "core/xgid.mjs": "dbece95af56ab80ad6db24f31003b8a236bee4bf152f762d5bc26864bf69b622"
   }
 }

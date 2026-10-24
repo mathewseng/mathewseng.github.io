@@ -63,7 +63,7 @@ module.exports=async function confirmReadiness(browser,base,out,name){
      await page.evaluate(fail=>finishCheck(.05,fail),mode==='failed');
      await page.waitForFunction(()=>!document.querySelector('#pending-move-loss').textContent.includes('Still calculating'));
      assert.match(await page.locator('#pending-move-loss').textContent(),mode==='failed'?/EV unavailable/:/0.050/);
-     await page.getByRole('button',{name:'Confirm anyway',exact:true}).tap();await waitWork(page,w=>w.game.events.length>0);
+     await page.getByRole('button',{name:mode==='failed'?'Confirm without feedback':'Play Best',exact:true}).tap();await waitWork(page,w=>w.game.events.length>0);
     }
    }
    const timing=await page.evaluate(()=>confirmTiming);

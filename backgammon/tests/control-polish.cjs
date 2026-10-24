@@ -12,7 +12,7 @@ module.exports = async function controlPolish(browser, base, out, name) {
       const {initialState}=await import('/backgammon/core/rules.mjs');
       const {localConfig}=await import('/backgammon/core/play-session.mjs');
       const s=initialState({phase:'move',dice:[4,1]});
-      saveSettings({interactionMode:'advanced',motion:'system'});
+      saveSettings({interactionMode:'advanced',motionScale:1,motion:'system'});
       await put('work',{id:'play',game:{id:'control-polish',initial:s,state:s,events:[],started:true,names:['You','Friend'],config:localConfig({mode:'local'})},draft:[]});
     });
     await page.reload();await ready();await page.locator('#resume-match').click();

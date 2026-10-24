@@ -633,6 +633,8 @@ const server = http.createServer((req, res) => {
         );
         (report.gameLossSummary ||= []).push(
           await run("game-loss-summary", browser, base, out, browserName),
+          await run("mobile-summary", browser, base, out, browserName),
+          await run("board-cube-replies", browser, base, out, browserName),
         );
         (report.diceSwitchMotion ||= []).push(
           await run("dice-switch-motion", browser, base, out, browserName),
@@ -767,6 +769,7 @@ const server = http.createServer((req, res) => {
         );
         (report.historyRetention ||= []).push(
           await run("history-retention", browser, base, out, browserName),
+          await run("paged-history", browser, base, out, browserName),
         );
         (report.practiceUX ||= []).push(
           await run("practice", browser, base, out, browserName),
@@ -802,7 +805,7 @@ const server = http.createServer((req, res) => {
           await run("refresh", browser, out, browserName),
         );
         // The focused Play command is also part of the full regression run.
-        for (const moduleName of ["roll-prompt", "closed-opponent-roll", "hint-play-best", "initial-forced-only", "forced-roll-presentation", "control-polish", "advanced-ui", "dice-order", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
+        for (const moduleName of ["review-search", "animation-speed", "return-destinations", "roll-prompt", "closed-opponent-roll", "hint-play-best", "initial-forced-only", "forced-roll-presentation", "control-polish", "play-footer", "advanced-ui", "dice-order", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
           (report.playControls ||= []).push({module: moduleName, browser: browserName,
             result: await run(moduleName, browser, base, out, browserName)});
         }

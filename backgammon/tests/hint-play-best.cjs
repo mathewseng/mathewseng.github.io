@@ -14,7 +14,7 @@ module.exports=async(browser,base,out,name)=>{
         const {put,saveSettings}=await import('/backgammon/core/storage.mjs');
         const {localConfig}=await import('/backgammon/core/play-session.mjs');
         const s=initialState({phase:'move',dice:[4,1],matchLength:0});
-        saveSettings({motion:'full',analysisAhead:false,equityBar:false,moveFeedback:false});
+        saveSettings({motion:'full',motionScale:1,analysisAhead:false,equityBar:false,moveFeedback:false});
         await put('work',{id:'play',positionKey:positionKey(s),draft:[legalPaths(s)[0].steps[0]],game:{id:'hint-return',started:true,state:s,initial:s,events:[],names:['You','Black'],config:localConfig({mode:'computer',humanSide:0,strength:'quick',reviewStrength:'quick',warning:false,tutor:false})}});
         return boardKey(s);
       });

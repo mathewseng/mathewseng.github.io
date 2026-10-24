@@ -27,15 +27,14 @@ export class BarAutoRoll {
     return record && model?.started && record.id === model.id &&
       record.game === current.gameNumber && current.phase !== 'over' &&
       !model.reviewingTurn && !model.undoRequest && canAutoRollFromBar(current, record.player) &&
-      current.sequence >= record.sequence && current.bar[record.player] >= record.bar;
+      current.sequence >= record.sequence;
   }
   sync(model, current = model?.state) {
     if (!this.valid(this.active, model, current)) this.active = null;
     if (!this.valid(this.gesture, model, current)) this.gesture = null;
     for (const record of [this.active,this.gesture].filter(Boolean)) {
-      // Another checker may be hit while waiting. Stop on the next entry,
-      // even when the remaining bar count equals the original count.
-      record.bar = current.bar[record.player];
+      // Partial entries keep the intent. canAutoRollFromBar stops it when the
+      // final checker enters (including an unconfirmed draft).
       record.sequence = current.sequence;
     }
     return this.active;
@@ -44,7 +43,7 @@ export class BarAutoRoll {
     const s = model?.state;
     this.gesture = s?.phase === 'roll' && canAutoRollFromBar(s) ? {
       id:model.id, game:s.gameNumber, sequence:s.sequence, player:s.turn,
-      bar:s.bar[s.turn], x, y, at,
+      x, y, at,
     } : null;
   }
   repeat(model, {x = 0, y = 0, at = performance.now()} = {}) {

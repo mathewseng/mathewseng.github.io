@@ -52,15 +52,23 @@ module.exports=async function confirmLatency(browser,base,out,name){
    if(profile)require('node:fs').writeFileSync(path.join(out,'confirm-mobile.cpuprofile'),JSON.stringify((await profile.send('Profiler.stop')).profile));
    const measured=await page.evaluate(()=>{confirmPerf.active=false;return {...confirmPerf,trace:confirmTrace};});
    const committed=await page.evaluate(async()=>{
-    const {get}=await import('/backgammon/core/storage.mjs'),{replay}=await import('/backgammon/core/rules.mjs');
+    const {get,listItemSummaries}=await import('/backgammon/core/storage.mjs'),{replay,decisionPlayer}=await import('/backgammon/core/rules.mjs');
     const saved=await get('work','play'),g=saved.game;
-    return {events:g.events,sequence:g.state.sequence,replayed:JSON.stringify(replay(g.initial,g.events).at(-1))===JSON.stringify(g.state)};
+    const headers=(await listItemSummaries({sessionId:g.id,limit:24})).items;
+    const older=await Promise.all(headers.filter(h=>h.id!==g.archiveId).map(h=>get('items',h.id)));
+    const games=[...older,g].sort((a,b)=>a.initial.gameNumber-b.initial.gameNumber),events=[];
+    games.forEach((game,i)=>{
+      if(i)events.push({actor:decisionPlayer(games[i-1].state),action:{type:'next'}});
+      events.push(...game.events);
+    });
+    return {events,activeEvents:g.events.length,savedGames:headers.length,initialGame:g.initial.gameNumber,
+      sequence:g.state.sequence,replayed:games.every(game=>JSON.stringify(replay(game.initial,game.events).at(-1))===JSON.stringify(game.state))};
    });
    const report={touch,throttle,historyEvents:fixture.events.length,firstPaintMs:measured.firstPaintMs,
     longestTaskMs:Math.max(0,...measured.tasks.map(t=>t.ms)),longestFrameMs:Math.max(...measured.frames),
     preparedGrade:measured.trace.some(r=>r.sequence===fixture.state.sequence&&r.submitted&&r.result?.actual),
     foregroundGrades:measured.trace.filter(r=>r.sequence===fixture.state.sequence&&r.priority===20&&r.submitted).length,
-    replayed:committed.replayed};
+    activeEvents:committed.activeEvents,savedGames:committed.savedGames,replayed:committed.replayed};
    assert.equal(report.preparedGrade,true,'benchmark has a real prepared GNUbg grade');
    assert.equal(report.foregroundGrades,0,'warnings-off Confirm never waits for a foreground grade');
    assert.ok(report.firstPaintMs!==null&&report.firstPaintMs<250,JSON.stringify(report));
@@ -68,10 +76,13 @@ module.exports=async function confirmLatency(browser,base,out,name){
    assert.ok(committed.sequence>fixture.state.sequence);
    assert.deepEqual(committed.events.slice(0,fixture.events.length).map(e=>[e.actor,e.action]),fixture.events.map(e=>[e.actor,e.action]),'existing game is preserved');
    assert.ok(committed.replayed,'saved game independently replays exactly');
+   assert.equal(committed.savedGames,12,'every previous game remains saved');
+   assert.equal(committed.initialGame,12,'only the current game is hydrated');
    if(touch)await page.locator('#analysis-jump').click();
    else await page.locator('.history-turn').first().scrollIntoViewIfNeeded();
    await page.locator('.history-turn').first().waitFor({state:'visible'});
-   assert.deepEqual(await page.locator('.history-game-divider').allTextContents(),Array.from({length:12},(_,i)=>`Game ${12-i}`),'each game has a clear boundary in newest-first history');
+   assert.deepEqual(await page.locator('.history-game-divider').allTextContents(),['Game 12'],'the active history does not render old games');
+   assert.ok(await page.locator('#saved-games').isVisible(),'older games remain accessible on demand');
    assert.match(await page.locator('.history-turn').first().innerText(),/You|Opponent/,'history remains readable after scrolling');
    assert.ok(await page.locator('.history-turn').first().locator('.history-played').first().innerText(),'the move text is rendered');
    await page.evaluate(()=>{
@@ -79,7 +90,8 @@ module.exports=async function confirmLatency(browser,base,out,name){
     window.reviewUpdates=0;
     new MutationObserver(()=>reviewUpdates++).observe(document.querySelector('#move-feedback'),{childList:true,subtree:true});
    });
-   await page.waitForFunction(()=>reviewUpdates>0);
+   if(await page.locator('.feedback-pending').count())await page.waitForFunction(()=>reviewUpdates>0);
+   else await page.waitForTimeout(300);
    assert.ok(await page.evaluate(()=>stableReview===document.querySelector('.history-turn')),'background analysis keeps the unchanged visible turn in place');
    await page.screenshot({path:path.join(out,`${name}-confirm-history-${touch?'phone':'desktop'}.png`)});
    assert.deepEqual(errors,[]);reports.push(report);

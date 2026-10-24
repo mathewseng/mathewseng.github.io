@@ -216,7 +216,11 @@ module.exports = async function turnPolicy(
           s.points[17] = -3;
         }
         if (type === "already-rolled") s.dice = [2, 1];
+        // A blocked roll skips automatically only when no cube decision is
+        // available. Leave cube ownership with the opponent for this fixture.
+        if (type === "pass") { s.cube.owner = 1; s.cube.value = 2; }
         const id = crypto.randomUUID();
+        store.saveSettings({closedOutPassing:'forced'});
         await store.put("work", {
           id: "play",
           game: {

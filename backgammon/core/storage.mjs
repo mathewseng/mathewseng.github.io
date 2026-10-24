@@ -2,7 +2,9 @@
 import { assertState, replay, clone } from "./rules.mjs";
 import { DEFAULT_BOARD_THEME, normalizeBoardTheme } from "./appearance.mjs";
 import { DEFAULT_SOUND, normalizeSound } from "./sound.mjs";
-import { mergeEvaluations } from "./decision-history.mjs";
+import { DEFAULT_MOTION_SCALE, normalizeMotionScale } from "./motion.mjs";
+import { mergeEvaluations, decisionHistory, decisionTotals } from "./decision-history.mjs";
+import { splitGameHistory } from "./game-archive.mjs";
 import { validateTakebacks } from "./table.mjs";
 import { normalizeShortcuts, DEFAULT_SHORTCUTS } from "./shortcuts.mjs";
 import { DEFAULT_SKIN, DEFAULT_SKIN_BOARD_THEME, SKIN_IDS } from "../skins/index.mjs";
@@ -18,6 +20,7 @@ export const settingsDefaults = {
   moveHints: true,
   interactionMode: "advanced",
   motion: "system",
+  motionScale: DEFAULT_MOTION_SCALE,
   appearance: "dark",
   preset: "quick",
   moveFeedback: true,
@@ -76,6 +79,7 @@ export function readSettings() {
       interactionMode: saved?.interactionMode === "beginner" ? "beginner" : "advanced",
       moveHints: saved?.moveHints !== false,
       cubeOneAsOne: saved?.cubeOneAsOne === true,
+      motionScale: normalizeMotionScale(saved?.motionScale, saved?.motion),
       sound: normalizeSound(saved?.sound),
     };
     settingsText = text;
@@ -88,6 +92,10 @@ export function readSettings() {
 export function settings() { return clone(readSettings()); }
 export function saveSettings(value) {
   const next = { ...settings(), ...value };
+  // Keep older callers/backup settings that set only reduced motion compatible.
+  if (Object.hasOwn(value, "motion") && !Object.hasOwn(value, "motionScale"))
+    next.motionScale = value.motion === "reduce" ? 0 : next.motionScale || DEFAULT_MOTION_SCALE;
+  next.motionScale = normalizeMotionScale(next.motionScale, next.motion);
   next.boardTheme = normalizeBoardTheme(next.boardTheme);
   next.skin = normalizeSkin(next.skin);
   next.shortcuts = normalizeShortcuts(next.shortcuts);
@@ -97,13 +105,37 @@ export function saveSettings(value) {
 let dbPromise;
 export function database() {
   return (dbPromise ??= new Promise((resolve, reject) => {
-    const request = indexedDB.open("backgammon-local", 1);
-    request.onupgradeneeded = () => {
-      for (const s of ["items", "work", "progress", "cache"])
-        request.result.createObjectStore(s, { keyPath: "id" });
+    const request = indexedDB.open("backgammon-local", 2);
+    let blockedTimer, failed = false;
+    request.onblocked = () => {
+      blockedTimer = setTimeout(() => {
+        failed = true; dbPromise = null;
+        reject(Error('Close older Backgammon tabs, then reopen this page to update storage. Your saved games are unchanged.'));
+      }, 2000);
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = () => {
+      clearTimeout(blockedTimer);
+      for (const s of ["items", "work", "progress", "cache"])
+        if (!request.result.objectStoreNames.contains(s)) request.result.createObjectStore(s, { keyPath: "id" });
+      const summaries = request.result.createObjectStore('summaries', {keyPath:'id'});
+      summaries.createIndex('recent', ['updatedAt', 'id']);
+      summaries.createIndex('session', ['sessionId', 'gameNumber', 'createdAt', 'id']);
+      // One record at a time; never hydrate the whole Library to build its index.
+      const cursor = request.transaction.objectStore('items').openCursor();
+      cursor.onsuccess = () => {
+        if (!cursor.result) return;
+        summaries.put(itemSummary(cursor.result.value));
+        cursor.result.continue();
+      };
+    };
+    request.onsuccess = () => {
+      clearTimeout(blockedTimer);
+      if (failed) { request.result.close(); return; }
+      request.result.onversionchange = () => { request.result.close(); dbPromise = null; };
+      resolve(request.result);
+    };
     request.onerror = () => {
+      clearTimeout(blockedTimer);
       dbPromise = null;
       reject(
         new Error(
@@ -127,8 +159,68 @@ async function transact(store, mode, fn) {
 export const get = (store, id) => transact(store, "readonly", (s) => s.get(id));
 export const all = (store = "items") =>
   transact(store, "readonly", (s) => s.getAll());
-export const remove = (store, id) =>
-  transact(store, "readwrite", (s) => s.delete(id));
+export async function remove(store, id) {
+  if (store !== 'items') return transact(store, 'readwrite', s => s.delete(id));
+  const db = await database();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['items','summaries'], 'readwrite');
+    tx.objectStore('items').delete(id); tx.objectStore('summaries').delete(id);
+    tx.oncomplete = resolve; tx.onabort = tx.onerror = () => reject(tx.error);
+  });
+}
+
+export function itemSummary(item) {
+  const {id,kind,title,notes,tags,collection,createdAt,updatedAt,status,names,gameCount,decisionSummary} = item;
+  return {id,kind,title,notes,tags,collection,createdAt,updatedAt,status,names,gameCount,decisionSummary,
+    sessionId:item.sessionId || id, gameNumber:item.gameNumber || item.initial?.gameNumber || 1,
+    eventCount:item.events?.length || 0, variations:item.undoLog?.length || 0,
+    scores:item.state?.scores, archivedVariation:item.archivedVariation === true};
+}
+
+// Keyset pagination reads only small metadata. The full game is read by get()
+// only after a person opens it; changing page releases the previous page.
+export async function listItemSummaries({sessionId, cursor, limit = 12, kind, collection, query = ''} = {}) {
+  const db = await database();
+  limit = Math.max(1, Math.min(24, limit));
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('summaries', 'readonly');
+    const index = tx.objectStore('summaries').index(sessionId ? 'session' : 'recent');
+    const range = sessionId ? IDBKeyRange.bound([sessionId], cursor || [sessionId, []], false, !!cursor)
+      : cursor ? IDBKeyRange.upperBound(cursor, true) : undefined;
+    const request = index.openCursor(range, 'prev'), items = [];
+    let next = null, more = false;
+    request.onsuccess = () => {
+      const c = request.result;
+      if (!c) return;
+      const item = c.value;
+      if ((!kind || item.kind === kind) && (!collection || item.collection === collection) &&
+          [item.title,item.notes,...item.tags].join(' ').toLowerCase().includes(query.toLowerCase())) {
+        if (items.length === limit) { more = true; return; }
+        items.push(item); next = c.key;
+      }
+      c.continue();
+    };
+    tx.oncomplete = () => resolve({items, cursor:more ? next : null});
+    tx.onabort = tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function practiceItems() {
+  const db = await database(), ids = [];
+  await new Promise((resolve,reject) => {
+    const tx = db.transaction('summaries','readonly');
+    const request = tx.objectStore('summaries').openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      const item = cursor.value;
+      if (item.kind === 'mistake' || (item.kind === 'position' && item.tags.includes('exercise'))) ids.push(item.id);
+      cursor.continue();
+    };
+    tx.oncomplete=resolve; tx.onabort=tx.onerror=()=>reject(tx.error);
+  });
+  return (await Promise.all(ids.map(id=>get('items',id)))).filter(Boolean);
+}
 export function validateItem(item) {
   if (
     !item ||
@@ -267,8 +359,19 @@ export function validateItem(item) {
   return item;
 }
 export async function put(store, item) {
-  if (store === "items") validateItem(item);
-  return transact(store, "readwrite", (s) => s.put(clone(item)));
+  if (store !== 'items') return transact(store, "readwrite", (s) => s.put(clone(item)));
+  validateItem(item);
+  if (item.kind === 'match') {
+    const rows = decisionHistory(item);
+    item = {...item, decisionSummary:[0,1].map(player => decisionTotals(rows,player))};
+  }
+  const db = await database();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['items','summaries'], 'readwrite');
+    tx.objectStore('items').put(clone(item));
+    tx.objectStore('summaries').put(itemSummary(item));
+    tx.oncomplete = () => resolve(item.id); tx.onabort = tx.onerror = () => reject(tx.error);
+  });
 }
 export function itemRecord(kind, fields) {
   return {
@@ -304,9 +407,61 @@ export async function backup(gamesOnly = false) {
 // These snapshots come only from the validated local/protocol transition layer;
 // imported records still undergo full replay in validateItem above.
 const archives = new Map();
+function matchRecord(snapshot, names, mode, previous) {
+  mergeEvaluations(snapshot, previous);
+  const rows = decisionHistory(snapshot);
+  return {
+    ...(previous || itemRecord('match', {id:snapshot.archiveId || snapshot.id,
+      title:names.join(' vs ').slice(0,160), tags:['played',mode]})),
+    initial:snapshot.initial, events:snapshot.events, state:snapshot.state,
+    undoLog:snapshot.undoLog || [], names:[...names],
+    sessionId:snapshot.id, previousGameId:snapshot.previousGameId,
+    gameNumber:snapshot.state.gameNumber, archivedVariation:snapshot.archivedVariation === true,
+    tableContext:{config:snapshot.config, humanNames:snapshot.humanNames, localRolls:snapshot.localRolls},
+    status:snapshot.state.result?.matchOver ? 'match-complete' : snapshot.state.phase === 'over' ? 'game-complete' : 'in-progress',
+    gameCount:snapshot.historyVersion === 2 ? 1 : snapshot.state.gameNumber,
+    decisionSummary:[0,1].map(player => decisionTotals(rows, player)),
+    updatedAt:Date.now(),
+  };
+}
+
+// Conversion and the new live pointer share one transaction: a quota failure,
+// tab close or crash leaves the old complete save intact, never half migrated.
+export async function migratePlayHistory(work) {
+  if (!work?.game?.started || work.game.config?.mode === 'online') return work;
+  if (work.game.historyVersion === 2 && !work.game.events.some(e => e.action.type === 'next')) return work;
+  let next;
+  const db = await database();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(['items','summaries','work'], 'readwrite');
+    const items = tx.objectStore('items');
+    const previous = items.get(work.game.archiveId || work.game.id);
+    previous.onsuccess = () => {
+      try {
+        // Review may have added grades to the archive since Play last saved.
+        // Merge before splitting, so grades in later games survive too.
+        const table = mergeEvaluations(clone(work.game), previous.result);
+        const {current, games} = splitGameHistory(table);
+        next = {...work, id:work.id || 'play', game:current};
+        for (const game of games) {
+          const request = items.get(game.archiveId);
+          request.onsuccess = () => {
+            try {
+              const item = matchRecord(game, game.names, game.config.mode, request.result);
+              items.put(item); tx.objectStore('summaries').put(itemSummary(item));
+            } catch (error) { tx.abort(); reject(error); }
+          };
+        }
+        tx.objectStore('work').put(next);
+      } catch (error) { tx.abort(); reject(error); }
+    };
+    tx.oncomplete = resolve; tx.onabort = tx.onerror = () => reject(tx.error || Error('Game history migration was not saved.'));
+  });
+  return next;
+}
 export function saveMatchHistory(model, names, mode = "local") {
   if (!model?.started) return Promise.resolve();
-  const id = model.id;
+  const id = model.archiveId || model.id;
   const key = JSON.stringify([
     model.state.sequence,
     model.events.length,
@@ -324,31 +479,15 @@ export function saveMatchHistory(model, names, mode = "local") {
       validateTakebacks(snapshot);
       const db = await database();
       await new Promise((resolve, reject) => {
-        const tx = db.transaction("items", "readwrite"),
+        const tx = db.transaction(["items", "summaries"], "readwrite"),
           store = tx.objectStore("items"),
           request = store.get(id);
         request.onsuccess = () => {
-          mergeEvaluations(snapshot, request.result);
-          const item = {
-            ...(request.result ||
-              itemRecord("match", {
-                id,
-                title: names.join(" vs ").slice(0, 160),
-                tags: ["played", mode],
-              })),
-            initial: snapshot.initial,
-            events: snapshot.events,
-            undoLog: snapshot.undoLog || [],
-            names: [...names],
-            status: snapshot.state.result?.matchOver
-              ? "match-complete"
-              : snapshot.state.phase === "over"
-                ? "game-complete"
-                : "in-progress",
-            gameCount: snapshot.state.gameNumber,
-            updatedAt: Date.now(),
-          };
-          store.put(item);
+          try {
+            const item = matchRecord(snapshot, names, mode, request.result);
+            store.put(item);
+            tx.objectStore('summaries').put(itemSummary(item));
+          } catch (error) { tx.abort(); reject(error); }
         };
         tx.oncomplete = resolve;
         tx.onerror = () => reject(tx.error);
@@ -358,7 +497,7 @@ export function saveMatchHistory(model, names, mode = "local") {
     });
   archives.set(id, { key, promise });
   // Bound bookkeeping only; stored games are never evicted automatically.
-  if (archives.size > 32) archives.delete(archives.keys().next().value);
+  if (archives.size > 2) archives.delete(archives.keys().next().value);
   promise.catch(() => {
     if (archives.get(id)?.promise === promise) archives.delete(id);
   });
@@ -404,12 +543,16 @@ export async function importBackup(text, replace = false) {
   const b = parseBackup(text),
     db = await database();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(["items", "progress"], "readwrite");
+    const tx = db.transaction(["items", "progress", "summaries"], "readwrite");
     if (replace) {
       tx.objectStore("items").clear();
+      tx.objectStore("summaries").clear();
       tx.objectStore("progress").clear();
     }
-    for (const item of b.items) tx.objectStore("items").put(item);
+    for (const item of b.items) {
+      tx.objectStore("items").put(item);
+      tx.objectStore('summaries').put(itemSummary(item));
+    }
     for (const p of b.progress) tx.objectStore("progress").put(p);
     tx.oncomplete = () => resolve(b.items.length);
     tx.onerror = () => reject(tx.error);

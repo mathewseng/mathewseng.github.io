@@ -4,7 +4,7 @@ import { equity, percentage } from "./analysis.mjs";
 export function decisionValues(
   f,
   compact = false,
-  { opponent = false, onChoice } = {},
+  { opponent = false, onChoice, onPosition } = {},
 ) {
   const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
   const rows = [
@@ -113,19 +113,19 @@ export function decisionValues(
             el(
               "th",
               { scope: "row" },
-              onChoice && kind !== "before"
+              onChoice && (kind !== "before" || onPosition)
                 ? (() => {
                     const b = button(
                       "",
-                      () => onChoice(c),
+                      () => kind === "before" ? onPosition() : onChoice(c),
                       "review-cube-choice",
                       {
-                        "aria-label": `${c.notation}: preview decision`,
-                        "data-action": c.action,
+                        "aria-label": kind === "before" ? "Position" : `${c.notation}: preview decision`,
+                        "data-action": kind === "before" ? "position" : c.action,
                         "aria-pressed": false,
                       },
                     );
-                    b.append(label);
+                    b.append(kind === "before" ? "Position" : label);
                     return b;
                   })()
                 : label,

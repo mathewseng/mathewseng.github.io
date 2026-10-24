@@ -24,6 +24,10 @@ test("equity readings reject stale results and preserve actual choice, player an
     actual: { equity: 0.2 },
   };
   assert.equal(equityReading(source, result).ivory, -0.2);
+  const before = equityReading(source, result, {beforeDecision:true});
+  assert.equal(before.ivory, -0.4, "Play displays equity before the submitted choice");
+  assert.equal(before.choice, "Before decision");
+  assert.equal(result.actual.equity, .2, "review's actual grade is preserved");
   assert.equal(
     equityReading(source, { ...result, actual: null }).ivory,
     -0.4,

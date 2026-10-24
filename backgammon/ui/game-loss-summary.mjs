@@ -22,7 +22,7 @@ export function gameLossTable(rows, state, names, visiblePlayers = [0, 1]) {
   };
   return el("section", { class: "game-loss-summary", "aria-label": "Game decision losses" },
     el("table", {},
-      el("caption", {}, `EV loss · ${summary.money ? "points" : "normalized equity"}`),
+      el("caption", {}, summary.money ? "EV loss" : "EV loss · normalized equity"),
       el("thead", {}, el("tr", {},
         el("th", { scope: "col" }, "Total loss"),
         el("th", { scope: "col" }, "Initial"),
@@ -42,7 +42,7 @@ export function gameLossTable(rows, state, names, visiblePlayers = [0, 1]) {
     el("details", { class: "loss-summary-help" },
       el("summary", {}, "How losses are counted"),
       el("p", {}, "Initial is your first submitted choice, before any revision. Accepted is the final played choice. Totals include evaluated decisions only; pending values update here automatically in computer games. Older first choices may be unrecorded."),
-      el("p", {}, `Checker averages are per evaluated turn, including forced turns at zero loss and excluding passes. Cube mistakes exceed 0.002 ${summary.money ? "current-cube points before weighting" : "normalized equity"}. ${summary.money ? "Loss totals use each decision’s cube value, in game points." : "Losses use normalized match equity, not PR."}`),
+      el("p", {}, `Checker averages are per evaluated turn, including forced turns at zero loss and excluding passes. Cube mistakes exceed 0.002 ${summary.money ? "equity" : "normalized equity"}. ${summary.money ? "Loss totals and averages exclude the cube multiplier." : "Losses use normalized match equity, not PR."}`),
     ),
   );
 }

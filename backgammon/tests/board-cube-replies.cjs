@@ -1,0 +1,61 @@
+const assert=require('node:assert/strict'),path=require('node:path');
+const {waitWork}=require('./play-helpers.cjs');
+module.exports=async(browser,base,out,name)=>{
+ const ctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce',serviceWorkers:'block'});
+ const page=await ctx.newPage(),errors=[],report=[];page.on('pageerror',e=>errors.push(e.message));
+ const ready=()=>page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
+ try{
+  for(const action of ['take','pass','beaver','match']){
+   await page.goto(base+'/backgammon/');await ready();
+   await page.evaluate(async action=>{
+    const r=await import('/backgammon/core/rules.mjs'),st=await import('/backgammon/core/storage.mjs');
+    const {localConfig}=await import('/backgammon/core/play-session.mjs');
+    const s=r.transition(r.initialState({turn:1,phase:'roll',matchLength:action==='match'?7:0,rules:{immediateRedoubles:action==='match'?0:2}}),{type:'double'},1);
+    st.saveSettings({motion:'reduce',analysisAhead:false,equityBar:false});
+    await st.put('work',{id:'play',game:{id:'cube-'+action,started:true,state:s,initial:s,events:[],names:['You','Black'],
+      config:localConfig({mode:'computer',humanSide:0,matchLength:s.matchLength,rules:s.rules,tutor:false,warning:false})},draft:[]});
+   },action);
+   await page.goto(base+'/backgammon/play/');await ready();
+   await page.evaluate(async()=>{(await import('/backgammon/engine/client.mjs')).EngineClient.prototype.analyze=()=>new Promise(()=>{});});
+   await page.locator('#resume-match').tap();await page.locator('#take-cube').waitFor();
+   assert.equal((await page.locator('#drop-cube').innerText()).trim(),'Drop');
+   assert.equal(await page.locator('#confirm').count(),0);
+   assert.equal(await page.locator('#immediate-redouble').count(),action==='match'?0:1);
+   for(const [width,height] of [[320,568],[390,844],[667,260],[844,390],[1366,768]]){
+    await page.setViewportSize({width,height});
+    await page.waitForFunction(()=>{
+      const board=document.querySelector('#board .bg-board').getBoundingClientRect(),drop=document.querySelector('#drop-cube').getBoundingClientRect(),take=document.querySelector('#take-cube').getBoundingClientRect();
+      const svg=document.querySelector('#board .bg-board'), m=svg.getScreenCTM();
+      const target=new DOMPoint(54,330).matrixTransform(m),right=new DOMPoint(762,330).matrixTransform(m);
+      return Math.abs(drop.left-target.x)<1&&Math.abs(take.right-right.x)<1&&Math.abs(drop.top+drop.height/2-target.y)<1&&drop.top>=board.top&&take.bottom<=board.bottom;
+    });
+    const boxes=await page.evaluate(()=>Object.fromEntries(['drop-cube','take-cube','immediate-redouble'].map(id=>{
+     const n=document.getElementById(id);if(!n)return[id,null];const r=n.getBoundingClientRect();
+     return[id,{x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom,home:n.parentElement.id||n.parentElement.className}];
+    })));
+    assert.ok(boxes['drop-cube'].x+boxes['drop-cube'].width<boxes['take-cube'].x);
+    for(const b of Object.values(boxes).filter(Boolean))assert.ok(b.height>=44&&b.y>=0&&b.bottom<=height+1,JSON.stringify({width,height,boxes}));
+    if(action!=='match')assert.match(boxes['immediate-redouble'].home,width>1024&&height>500?/actions/:/board-actions/);
+    const collisions=await page.evaluate(()=>{
+      const circles=[...document.querySelectorAll('#board .checker > circle:first-child')].map(n=>n.getBoundingClientRect());
+      return ['drop-cube','take-cube'].flatMap(id=>{
+        const b=document.getElementById(id).querySelector(".cube-reply-face").getBoundingClientRect();
+        return circles.filter(c=>Math.min(b.right,c.right)-Math.max(b.left,c.left)>1&&Math.min(b.bottom,c.bottom)-Math.max(b.top,c.top)>1).map(c=>({id,checker:{x:c.x,y:c.y,width:c.width,height:c.height},button:{x:b.x,y:b.y,width:b.width,height:b.height}}));
+      });
+    });
+    assert.deepEqual(collisions,[],`cube controls never cover checkers at ${width}×${height}`);
+
+    if(action==='take')await page.screenshot({path:path.join(out,`${name}-cube-replies-${width}.png`)});
+   }
+   if(action!=='match'){
+    await page.setViewportSize({width:390,height:844});
+    await page.locator(action==='take'?'#take-cube':action==='pass'?'#drop-cube':'#immediate-redouble').tap();
+    const saved=await waitWork(page,w=>w?.game.events.some(e=>e.action.type===action));
+    assert.equal(saved.game.events[0].action.type,action);
+    assert.equal(saved.game.events[0].actor,0);
+   }
+   report.push({action});
+  }
+  assert.deepEqual(errors,[]);return report;
+ }finally{await ctx.close();}
+};

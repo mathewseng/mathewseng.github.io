@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { presentAnalysis, compactNotation } from "../core/move-presentation.mjs";
-import { el, button, dialog, saveDialog, tabBar } from "./shell.mjs";
+import { el, button, dialog, saveDialog, dieFace } from "./shell.mjs";
 import { Board } from "./board.mjs";
 import { moveTrace } from "../core/move-trace.mjs";
 import { settings } from "../core/storage.mjs";
@@ -14,9 +14,7 @@ import {
 import { decisionFeedback, lossTone } from "../core/decision-feedback.mjs";
 import { decisionValues, lossLegend } from "./decision-values.mjs";
 import { equity, percentage } from "./analysis.mjs";
-import { EngineClient } from "../engine/client.mjs";
-import { PRESETS } from "../engine/metadata.mjs";
-import { StudyStrip } from "./study-strip.mjs";
+import { reviewSearch } from "./review-search.mjs";
 
 function lossSummary(feedback) {
   const units = feedback.label === "EV lost" ? feedback.units : "normalized match equity";
@@ -35,6 +33,7 @@ export function decisionReview(
   {
     title = "Move hint",
     opponent = false,
+    beforeRoll = null,
     onClose = () => {},
     replayLabel = "Undo & play best",
     onReplay,
@@ -44,15 +43,13 @@ export function decisionReview(
 ) {
   const slot = el("div", { class: "decision-board" });
   const body = el("div", { class: "decision-content" });
-  const previewControls = el("div", { class: "review-preview-controls" });
-  const controls = el("div", { class: "row wrap decision-choices", role: "group", "aria-label": "Board preview" });
-  const caption = el("p", { class: "decision-caption", role: "status" });
+  const caption = el("p", { class: "decision-caption sr-only", role: "status" });
   const d = dialog(
     title,
     el(
       "div",
       { class: "decision-layout" },
-      el("div", { class: "decision-position" }, slot, controls, previewControls, caption),
+      el("div", { class: "decision-position" }, slot, caption),
       body,
     ),
   );
@@ -83,7 +80,6 @@ export function decisionReview(
   };
   appendReturn();
 
-  const views = el("div", { class: "row decision-tabs" });
   const notes = el("div", { class: "decision-notes", hidden: true });
   const layout = d.querySelector(".decision-layout");
   layout.append(notes);
@@ -95,54 +91,22 @@ export function decisionReview(
     () => window.removeEventListener("resize", resizeMoves),
     { once: true },
   );
-  let explicitView = false,
-    hintResult = false;
-  const narrow = matchMedia("(max-width: 700px)");
+  const detailToggle = button("Details", () => {
+    setView(d.dataset.reviewView === "notes" ? "decision" : "notes");
+  }, "ghost decision-details-toggle", {disabled:true, "aria-expanded":false});
+  d.querySelector(".dialog-header .close").before(detailToggle);
   const setView = (view) => {
     d.dataset.reviewView = view;
-    if (view === "decision") queueMicrotask(() => {
-      moveListResize();
-      revealSelectedMove();
-    });
     notes.hidden = view !== "notes";
-    selectView(views.querySelector(`[data-view="${view}"]`));
+    detailToggle.textContent = view === "notes" ? "Review" : "Details";
+    detailToggle.setAttribute("aria-expanded", String(view === "notes"));
+    if (view === "decision") queueMicrotask(() => revealSelectedMove());
   };
-  for (const [view, label] of [
-    ["board", "Board"],
-    ["decision", "Comparison"],
-    ["notes", "Details"],
-  ])
-    views.append(
-      button(
-        label,
-        () => {
-          explicitView = true;
-          setView(view);
-        },
-        "",
-        {
-          role: "tab",
-          "data-view": view,
-          disabled: view === "notes",
-        },
-      ),
-    );
-  const selectView = tabBar(views, "Review view", layout);
-  d.querySelector(".dialog-header").after(views);
   setView("decision");
-  const defaultView = () => {
-    if (!explicitView)
-      setView(narrow.matches && hintResult ? "board" : "decision");
-  };
-  narrow.addEventListener("change", defaultView);
-  d.addEventListener(
-    "close",
-    () => narrow.removeEventListener("change", defaultView),
-    { once: true },
-  );
   const paginateNotes = () => {
-    views.querySelector('[data-view="notes"]').disabled = false;
+    detailToggle.disabled = false;
     const pages = [...body.querySelectorAll(".decision-values > p")];
+    if (previewResult) pages.unshift(...body.querySelectorAll(".decision-values-compact"));
     pages.push(
       ...[...body.children].filter(
         (n) =>
@@ -186,19 +150,11 @@ export function decisionReview(
     update();
   };
 
-  let savedEngine = null,
-    selectPreview = () => {},
+  let selectPreview = () => {},
     previewResult = null,
     bestPreviewLabel = "Best move";
   const board = new Board(slot);
-  const strip = new StudyStrip((candidate) => {
-    const rank = previewResult?.candidates.indexOf(candidate) ?? -1;
-    show(candidate?.steps || [], candidate
-      ? rank === 0 ? bestPreviewLabel : rank > 0 ? `Move ${rank + 1}` : opponent ? "Opponent’s move" : "Your move"
-      : "Position");
-  }, { container: previewControls, playedLabel: opponent ? "Opponent’s move" : "Your move" });
-  strip.bestPlayedLabel = opponent ? "Best/their move" : "Best/your move";
-  strip.node.classList.add("review-preview-strip");
+  board.svg.setAttribute("preserveAspectRatio", "xMidYMin meet");
   const show = (steps, label) => {
     const after = steps.reduce((s, step) => applyStep(s, step), source);
     board.showPreview(after, {
@@ -209,34 +165,23 @@ export function decisionReview(
       lastMove: label === "Position" ? null : moveTrace(after, source.turn, steps, source.dice),
     });
     selectPreview(steps, label);
-    strip.set(previewResult, label === "Position" ? null : after);
     caption.textContent = `${label} · ${steps.length ? compactNotation(source, steps).notation : label === "Position" ? "original roll" : "Pass"}`;
-    controls.querySelectorAll("button").forEach((b) =>
-      b.setAttribute("aria-pressed", label === "Position"
-        ? b.dataset.preview === "position"
-        : b.dataset.preview === "move" && b.dataset.positionKey === boardKey(after)),
-    );
-    // The native picker can truncate long notation in phone landscape. Keep
-    // the current view's identity visible outside that field as well.
-    if (previewResult) strip.heading.textContent =
-      `${controls.querySelector('[aria-pressed="true"]')?.textContent || label} · ${previewResult.settings.name}`;
+
   };
   show([], "Position");
   d.addEventListener(
     "close",
     () => {
-      savedEngine?.destroy();
       board.destroy();
       onClose();
     },
     { once: true },
   );
+  const search = reviewSearch(source, d, (...args) => api.result(...args), beforeRoll);
   const api = {
     dialog: d,
     loading(status, preset) {
       previewResult = null;
-      strip.set(null);
-      controls.replaceChildren();
       show([], "Position");
       body.replaceChildren(
         el("h3", {}, "Finding the best turn…"),
@@ -251,7 +196,6 @@ export function decisionReview(
     },
     error(error, retry) {
       previewResult = null;
-      strip.set(null);
       body.replaceChildren(
         el("p", { class: "notice", role: "alert" }, error.message),
         el(
@@ -266,11 +210,9 @@ export function decisionReview(
       result = presentAnalysis(source, result);
       moveListResize = () => {};
       revealSelectedMove = () => {};
+      d.dataset.decisionKind = result.type;
       selectPreview = () => {};
       previewResult = result.type === "cube" ? null : result;
-      strip.set(null);
-      hintResult = result.type !== "cube" && !result.actual;
-      defaultView();
       if (result.type === "cube") {
         const f = decisionFeedback(result, source);
         const showCube = (choice, label) => {
@@ -292,32 +234,16 @@ export function decisionReview(
             .forEach((b) =>
               b.setAttribute(
                 "aria-pressed",
-                b.dataset.action === choice?.action,
+                b.dataset.action === (choice?.action || "position"),
               ),
             );
           caption.textContent = `${label}${choice ? ` · ${choice.notation}` : " · original cube position"}`;
-          controls
-            .querySelectorAll("button")
-            .forEach((b) =>
-              b.setAttribute("aria-pressed", b.dataset.action === (choice?.action || "position")),
-            );
+
         };
         const sameDecision = f.actual?.action === f.best.action;
         const bestDecisionLabel = sameDecision
           ? opponent ? "Best/their decision" : "Best/your decision"
           : "Best decision";
-        controls.replaceChildren(
-          ...[
-            ["Position", null],
-            [bestDecisionLabel, f.best],
-            ...(!sameDecision && f.actual ? [[opponent ? "Opponent’s decision" : "Your decision", f.actual]] : []),
-          ].map(([label, c]) =>
-            button(label, () => showCube(c, label), "", {
-              "aria-pressed": false,
-              "data-action": c?.action || "position",
-            }),
-          ),
-        );
         body.replaceChildren(
           el("h3", {}, "Best evaluated decision"),
           el(
@@ -333,9 +259,9 @@ export function decisionReview(
           lossSummary(f),
           decisionValues(f, false, {
             opponent,
+            onPosition: () => showCube(null, "Position"),
             onChoice: (choice) => {
               showCube(choice, choice.notation);
-              if (narrow.matches) setView("board");
             },
           }),
           lossLegend(),
@@ -352,6 +278,7 @@ export function decisionReview(
         );
         paginateNotes();
         showCube(f.best, bestDecisionLabel);
+        body.append(search.node);search.setResult(result);
         return;
       }
       const best = result.candidates[0];
@@ -361,24 +288,6 @@ export function decisionReview(
       bestPreviewLabel = sameMove
         ? opponent ? "Best/their move" : "Best/your move"
         : "Best move";
-      const choices = [
-        ["Position", null],
-        [bestPreviewLabel, best],
-      ];
-      if (result.actual && !sameMove)
-        choices.push([
-          opponent ? "Opponent’s move" : "Your move",
-          result.actual,
-        ]);
-      controls.replaceChildren(
-        ...choices.map(([label, c]) =>
-          button(label, () => show(c?.steps || [], label), "", {
-            "aria-pressed": false,
-            "data-preview": c ? "move" : "position",
-            ...(c ? { "data-position-key": boardKey(c.steps.reduce((s, step) => applyStep(s, step), source)) } : {}),
-          }),
-        ),
-      );
       body.replaceChildren(
         el("h3", {}, "Best evaluated move"),
         el(
@@ -455,25 +364,32 @@ export function decisionReview(
           ),
         ),
       );
-      // Ten real engine candidates, with pagination only when the viewport
-      // cannot fit them. Selection previews this isolated board, never live play.
+      // All ten evaluated alternatives stay available in a scrolling list.
+      // Selection previews this isolated board, never live play.
       const candidates = result.candidates.slice(0, 10);
+      const keyOf = c => boardKey(c.steps.reduce((s, st) => applyStep(s, st), source));
+      // The played choice stays reachable even when it falls outside the top ten.
+      if (result.actual && !candidates.some(c => keyOf(c) === keyOf(result.actual))) {
+        candidates.push(result.actual);candidates.sort((a,b) => b.equity-a.equity);
+      }
       const ranked = el("section", {
         class: "review-moves",
         "aria-label": "Ranked moves",
       });
       const rows = el("div", { class: "review-move-rows" });
-      const count = el("span", { class: "muted small", "aria-live": "polite" });
-      let page = 0,
-        selected = 0,
-        pageSize = 10;
+      let selected = 0;
+      const position = button('', () => {show([], 'Position');search.loadPosition();}, 'review-move review-position', {
+        'aria-label':'Position', 'aria-pressed':false, 'data-preview':'position',
+      });
+      position.append(el('span',{class:'review-rank','aria-hidden':'true'},'↶'),
+        el('span',{class:'review-notation'},'Position',el('small',{},'Before roll')),
+        search.positionEquity,
+        el('span',{class:'review-position-dice','aria-label':`Rolled ${source.dice.join('–')}`},...source.dice.map(value=>dieFace(value,{player:source.turn}))));
       const redraw = () => {
-        const size = pageSize,
-          pages = Math.ceil(candidates.length / size);
-        page = Math.min(page, Math.max(0, pages - 1));
+        position.setAttribute("aria-pressed",String(selected === -1));
+        const scrollTop = rows.scrollTop;
         rows.replaceChildren(
-          ...candidates.slice(page * size, (page + 1) * size).map((c, i) => {
-            const rank = page * size + i;
+          ...candidates.map((c, rank) => {
             const played =
               result.actual &&
               boardKey(c.steps.reduce((s, st) => applyStep(s, st), source)) ===
@@ -490,13 +406,7 @@ export function decisionReview(
                 selected = rank;
                 show(c.steps, rank === 0 ? bestPreviewLabel : `Move ${rank + 1}`);
                 redraw();
-                if (narrow.matches || innerHeight < 500) {
-                  setView("board");
-                  strip.select.focus({ preventScroll: true });
-                } else
-                  rows
-                    .querySelector(`[data-rank="${rank + 1}"]`)
-                    ?.focus({ preventScroll: true });
+                rows.querySelector(`[data-rank="${rank + 1}"]`)?.focus({ preventScroll: true });
               },
               "review-move",
               {
@@ -535,67 +445,28 @@ export function decisionReview(
             return row;
           }),
         );
-        count.textContent = `${page * size + 1}–${Math.min((page + 1) * size, candidates.length)} of ${candidates.length}`;
-        prev.disabled = page === 0;
-        next.disabled = page === pages - 1;
-        pager.hidden = pages <= 1;
-        if (
-          d.dataset.reviewView === "decision" &&
-          pageSize > 1 &&
-          ranked.getBoundingClientRect().bottom >
-            (footer.clientHeight
-              ? footer.getBoundingClientRect().top
-              : layout.getBoundingClientRect().bottom) -
-              8
-        ) {
-          pageSize--;
-          redraw();
-        }
+        rows.scrollTop = scrollTop;
       };
-      const prev = button("‹", () => {
-        page--;
-        redraw();
-      }, "", {"aria-label": "Previous moves", title: "Previous moves"});
-      const next = button("›", () => {
-        page++;
-        redraw();
-      }, "", {"aria-label": "Next moves", title: "Next moves"});
-      const pager = el(
-        "div",
-        { class: "row spread review-move-pages" },
-        prev,
-        count,
-        next,
-      );
       ranked.append(
         el(
           "div",
           { class: "review-move-heading" },
-          el("strong", {}, `Top ${candidates.length} moves`),
+          el("strong", {}, `Top ${Math.min(10,candidates.length)} moves`),
           el("span", {}, "Equity"),
           el("span", {}, "Loss"),
         ),
-        rows,
-        pager,
+        position, rows,
       );
-      body.append(ranked);
-      moveListResize = () => {
-        const anchor = page * pageSize;
-        pageSize = 10;
-        redraw();
-        page = Math.floor(anchor / pageSize);
-        redraw();
-      };
+      body.append(ranked,search.node);
       revealSelectedMove = () => {
-        // A long move or a "Your choice" label can reduce the fitted page
-        // size. Re-anchor after fitting so the selected move stays visible.
-        for (let i = 0; i < candidates.length; i++) {
-          if (selected >= 0) page = Math.floor(selected / pageSize);
-          const size = pageSize;
-          redraw();
-          if (pageSize === size) break;
-        }
+        const row = rows.querySelector('[aria-pressed="true"]');
+        if (!row || !rows.clientHeight) return;
+        const top = row.getBoundingClientRect().top - rows.getBoundingClientRect().top;
+        if (top < 0) rows.scrollTop += top;
+        else if (top + row.offsetHeight > rows.clientHeight)
+          rows.scrollTop += top + row.offsetHeight - rows.clientHeight;
       };
+      moveListResize = revealSelectedMove;
       selectPreview = (steps, label) => {
         const key = boardKey(steps.reduce((s, st) => applyStep(s, st), source));
         const next =
@@ -611,47 +482,18 @@ export function decisionReview(
           selected = next;
           redraw();
         }
+        revealSelectedMove();
       };
       paginateNotes();
       redraw();
       show(best.steps, bestPreviewLabel);
+      search.setResult(result);
       // Older saved reviews retained only one candidate. Re-evaluate the entire
       // comparison together; never mix old equities with new candidate scores.
-      const preset = Object.keys(PRESETS).find(
-        (k) => PRESETS[k].name === result.settings.name,
-      );
-      if (
-        expandSaved &&
-        preset &&
-        result.candidates.length < Math.min(10, result.evaluatedCount || 0)
-      ) {
-        const heading = ranked.querySelector("strong");
-        const expand = async () => {
-          heading.textContent = "Loading top moves…";
-          ranked.setAttribute("aria-busy", "true");
-          savedEngine?.destroy();
-          const engine = (savedEngine = new EngineClient());
-          try {
-            const fresh = await engine.analyze(source, {
-              preset,
-              submitted: result.actual?.steps || null,
-            });
-            if (!d.open || savedEngine !== engine) return;
-            api.result(fresh, false, true);
-          } catch (error) {
-            if (!d.open || savedEngine !== engine) return;
-            heading.replaceChildren(
-              button("Retry loading moves", expand, "", {
-                title: error.message,
-              }),
-            );
-            ranked.removeAttribute("aria-busy");
-          } finally {
-            engine.destroy();
-            if (savedEngine === engine) savedEngine = null;
-          }
-        };
-        expand();
+      const preset = ({0:'quick',1:'standard',2:'deep',3:'expert',4:'research'})[result.settings.plies];
+      if (expandSaved && preset && !result.book && result.method !== 'reference' &&
+          result.candidates.length < Math.min(10, result.evaluatedCount || 0)) {
+        search.run(preset, {expand:true});
       }
     },
   };

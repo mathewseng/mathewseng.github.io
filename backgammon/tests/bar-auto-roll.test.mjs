@@ -19,11 +19,21 @@ test('single roll never arms automation; a nearby second gesture does, even afte
   }
 });
 
-test('auto rolling ends when any checker enters, including a draft with checkers still on the bar',()=>{
-  const a=new BarAutoRoll(),m=model();a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});
-  const draft={...m.state,phase:'move',bar:[1,0]};
-  a.sync(m,draft);assert.equal(a.active,null);
-  a.sync(m);assert.equal(a.active,null,'undoing entry does not rearm without consent');
+test('partial entries keep auto rolling until the last checker leaves the bar',()=>{
+  for (const player of [0,1]) {
+    const a=new BarAutoRoll(),m=model(player);a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});
+    const bar=[...m.state.bar];bar[player]=1;
+    const draft={...m.state,phase:'move',bar};
+    assert.ok(a.sync(m,draft),'partial draft entry keeps auto roll');
+    m.state={...draft,sequence:11};
+    assert.equal(a.canRoll(m),false,'does not reroll during a draft');
+    m.state={...m.state,phase:'roll',turn:1-player,sequence:12};
+    assert.equal(a.canRoll(m),false,'never rolls for the opponent');
+    m.state={...m.state,turn:player,sequence:13};
+    assert.equal(a.canRoll(m),true,'continues automatically on the next turn');
+    a.sync(m,{...m.state,phase:'move',bar:[0,0]});assert.equal(a.active,null);
+    a.sync(m);assert.equal(a.active,null,'undoing the final entry does not rearm without consent');
+  }
 });
 
 test('new games, takebacks, game over and explicit stop clear automatic intent',()=>{
@@ -36,11 +46,13 @@ test('new games, takebacks, game over and explicit stop clear automatic intent',
   a.reset();assert.equal(a.canRoll(m),false);assert.equal(a.gesture,null);
 });
 
-test('another hit while waiting does not hide the first successful entry',()=>{
+test('another hit and partial re-entry still leave auto roll enabled',()=>{
   const a=new BarAutoRoll(),m=model();a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});
   m.state={...m.state,bar:[3,0],sequence:12};a.sync(m);
   assert.ok(a.active);
-  a.sync(m,{...m.state,bar:[2,0]});assert.equal(a.active,null);
+  assert.ok(a.sync(m,{...m.state,bar:[2,0]}));
+  assert.ok(a.sync(m,{...m.state,bar:[1,0]}));
+  assert.equal(a.sync(m,{...m.state,bar:[0,0]}),null);
 });
 
 test('unrelated clicks and non-bar rolls cannot enable automation',()=>{

@@ -28,7 +28,7 @@ module.exports=async function revisionWarning(browser,base){
         AnalysisPanel.prototype.run=async function(s,options){
           const candidate=(steps,equity)=>({steps,equity,notation:notation(steps,s.turn),probabilities:[.5,.1,.01,.1,.01]});
           return {type:'checker',status:'complete',engine:ENGINE_VERSION,positionKey:positionKey(s),requestId:'threshold-test',settings:{name:'Test',plies:0},units:'current-cube-points',perspective:s.turn,
-            candidates:[candidate(legalTurns(s)[1].steps,.1)],actual:candidate(options.submitted,.1-loss),error:loss};
+            candidates:[candidate(legalTurns(s)[1].steps,.1)],actual:candidate(options.submitted || legalTurns(s)[0].steps,.1-loss),error:loss};
         };
       },loss);
       await page.locator('#resume-match').click();
@@ -38,6 +38,7 @@ module.exports=async function revisionWarning(browser,base){
         // The pending warning opens before grading. This case tests revising a
         // completed grade; the unlisted cases below cover revision while pending.
         await waitWork(page,w=>w?.game.initialDecision?.evaluation?.result?.error===loss);
+        assert.deepEqual(await page.locator('.checker-warning .dialog-foot button').allTextContents(),['Revise','Hint','Play Best']);
         assert.equal((await read()).game.events.length,0,'warning leaves turn uncommitted');
         await page.getByRole('button',{name:'Revise',exact:true}).click();
         assert.equal((await read()).game.events.length,0);
@@ -46,7 +47,7 @@ module.exports=async function revisionWarning(browser,base){
         assert.equal(first.evaluation.result.error,loss,'the first grade is saved before acceptance');
         assert.equal(await page.locator('#confirm').isEnabled(),true);
         await page.locator('#confirm').click();
-        await page.getByRole('button',{name:'Confirm anyway',exact:true}).click();
+        await page.getByRole('button',{name:'Play Best',exact:true}).click();
       }
       await waitWork(page,w=>w?.game.id==='warning-boundary'&&w.game.events.length>0);
       assert.equal((await read()).game.events[0]?.action.type,'move');
@@ -55,7 +56,7 @@ module.exports=async function revisionWarning(browser,base){
       cases.push({loss,warned:loss>.002,committedOnlyOnConfirmation:true});
     }
     // An unlisted candidate opens immediately, before its exact grade exists.
-    for(const response of ['revise','confirm','complete','fail']) {
+    for(const response of ['revise','hint','best','complete','fail']) {
       await page.goto(base+'/backgammon/');await ready();
       await page.evaluate(async()=>{
         const r=await import('/backgammon/core/rules.mjs'),st=await import('/backgammon/core/storage.mjs');
@@ -68,12 +69,12 @@ module.exports=async function revisionWarning(browser,base){
         const {AnalysisPanel}=await import('/backgammon/ui/analysis.mjs'),{EngineClient}=await import('/backgammon/engine/client.mjs');
         EngineClient.prototype.analyze=()=>new Promise(()=>{});
         AnalysisPanel.prototype.run=function(s,options){
-          options.onUnlisted();
+          options.onUnlisted?.();
           return new Promise((resolve,reject)=>{window.finishPending=async(fail=false)=>{
             if(fail){reject(new Error('Test worker failure'));return;}
             const r=await import('/backgammon/core/rules.mjs');
             const candidate=(steps,equity)=>({steps,equity,notation:r.notation(steps,s.turn),probabilities:[.5,.1,.01,.1,.01]});
-            resolve({type:'checker',status:'complete',engine:'Test',positionKey:r.positionKey(s),settings:{name:'Test 2 ply',plies:2},units:'current-cube-points',perspective:s.turn,candidates:[candidate(r.legalTurns(s)[1].steps,.1)],actual:candidate(options.submitted,.08),error:.02});
+            resolve({type:'checker',status:'complete',engine:'Test',positionKey:r.positionKey(s),settings:{name:'Test 2 ply',plies:2},units:'current-cube-points',perspective:s.turn,candidates:[candidate(r.legalTurns(s)[1].steps,.1)],actual:candidate(options.submitted || r.legalTurns(s)[0].steps,.08),error:.02});
           };});
         };
       });
@@ -99,7 +100,16 @@ module.exports=async function revisionWarning(browser,base){
           assert.equal((await read()).game.events.length,0,'completion alone cannot commit');
           assert.match(await page.locator('#pending-move-loss').textContent(),response==='fail'?/EV unavailable/:/0.020/);
         }
-        await page.getByRole('button',{name:'Confirm anyway',exact:true}).click();
+        if(response==='hint'||response==='best') {
+          await page.getByRole('button',{name:response==='hint'?'Hint':'Play Best',exact:true}).click();
+          await page.getByRole('dialog',{name:'Move hint',exact:true}).waitFor();
+          await page.evaluate(()=>window.finishPending());
+          if(response==='hint') {
+            await page.locator('.review-move[data-rank="1"]').waitFor();
+            assert.equal((await read()).game.events.length,0,'opening a hint never commits the drafted move');
+            await page.getByRole('button',{name:'Play best',exact:true}).click();
+          }
+        } else await page.getByRole('button',{name:response==='fail'?'Confirm without feedback':'Play Best',exact:true}).click();
         await waitWork(page,w=>w?.game.id==='pending-warning'&&w.game.events.length>0);
         assert.equal((await read()).game.events[0]?.action.type,'move');
       }

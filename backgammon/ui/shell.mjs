@@ -40,7 +40,8 @@ import {
   soundPreferences,
   setSoundPreferences,
 } from "./sound.mjs";
-import { reducedMotion } from "./motion.mjs";
+import { reducedMotion, motionDuration, applyMotionSettings } from "./motion.mjs";
+import { MOTION_SPEED_OPTIONS } from "../core/motion.mjs";
 
 import { releaseStatus } from "./release-status.mjs";
 import { TouchMoves } from "./touch-moves.mjs";
@@ -69,7 +70,7 @@ const KIT_VARIANTS = { primary: "btn--primary", ghost: "btn--ghost", danger: "bt
 const CUSTOM_CONTROLS = new Set([
   "list-row", "review-move", "review-cube-choice", "feedback-review",
   "history-evaluation", "history-node-toggle", "theme-preset", "skin-choice",
-  "history-game-toggle",
+  "cube-reply",
 ]);
 export function buttonClasses(cls = "") {
   const tokens = String(cls).split(/\s+/).filter(Boolean);
@@ -331,14 +332,13 @@ export function shell(page, title, subtitle = "") {
   activeEquity?.destroy();
   activeEquity = null;
   activeBoard?.destroy();
-  document.documentElement.dataset.motion = settings().motion;
+  applyMotionSettings(settings());
   installSound();
   addEventListener("storage", (e) => {
     if (e.key === "backgammon.v1.settings" || e.key === null) {
       applySkin(settings().skin);
       applyBoardTheme(settings().boardTheme);
-      document.documentElement.dataset.motion = settings().motion;
-      dispatchEvent(new Event("bg-motion"));
+      applyMotionSettings(settings());
       dispatchEvent(new Event("bg-settings"));
     }
   });
@@ -487,18 +487,23 @@ export async function preferences() {
       dispatchEvent(new Event("bg-settings"));
     },
   });
-  const motion = select(
-    [
-      ["system", "Follow device"],
-      ["reduce", "Reduce motion"],
-    ],
-    s.motion,
-    (v) => {
-      saveSettings({ motion: v });
-      document.documentElement.dataset.motion = v;
-      dispatchEvent(new Event("bg-motion"));
-    },
-  );
+  const motionValue = el("output", {for:"animation-speed"});
+  const motion = el("input", {id:"animation-speed", type:"range", min:0, max:MOTION_SPEED_OPTIONS.length - 1, step:1,
+    onInput:e => {
+      const motionScale = MOTION_SPEED_OPTIONS[Number(e.target.value)].scale;
+      saveSettings({motionScale, motion:motionScale === 0 ? "reduce" : "system"});
+      applyMotionSettings(settings());
+      updateMotion();
+    }});
+  const updateMotion = () => {
+    const value = settings().motionScale;
+    const index = MOTION_SPEED_OPTIONS.findIndex(option => option.scale === value);
+    motion.value = index;
+    const {label} = MOTION_SPEED_OPTIONS[index];
+    motionValue.textContent = label;
+    motion.setAttribute("aria-valuetext", label);
+  };
+  updateMotion();
   const sounds = el("input", {
     type: "checkbox",
     checked: s.sound.enabled,
@@ -530,6 +535,8 @@ export async function preferences() {
   const display = el(
     "div",
     { class: "stack settings-display" },
+    el("div", {class:"motion-settings"}, field("Animation speed", motion),
+      el("div", {class:"row spread small muted"}, el("span", {}, "Instant"), motionValue, el("span", {}, "0.25×"))),
     field("Playing style", interaction),
     el("p", { class: "muted small" }, "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
@@ -561,7 +568,6 @@ export async function preferences() {
     el("label", {class:"check"}, el("input", {type:"checkbox", checked:s.analysisAhead,
       onChange: e => { saveSettings({analysisAhead:e.target.checked}); dispatchEvent(new Event("bg-settings")); }}), "Analyze ahead in computer games"),
     el("p", {class:"muted small"}, "Prepare feedback while you choose, then explore likely replies using spare engine time. Future work is limited to 24 positions or 20 seconds between decisions and pauses when this tab is hidden. Uses more battery; never predicts or changes your actual dice."),
-    field("Motion", motion),
     el(
       "div",
       { class: "sound-settings stack" },
@@ -726,7 +732,7 @@ export function players(s, names = ["White", "Black"]) {
           { backgroundColor: "color-mix(in oklab, var(--accent) 18%, transparent)" },
           { backgroundColor: "transparent" },
         ],
-        { duration: 420, easing: "ease-out" },
+        { duration: motionDuration(420), easing: "ease-out" },
       );
     row.classList.toggle("active", active);
     row.replaceChildren(
@@ -980,7 +986,7 @@ export class DraftBoard {
       if (point === null) return this.clearSelection();
       const checker = options.checkerTap || (!options.quick && this.sources().includes(point));
       const action = advancedAction({ point, checker, candidates: this.candidates(),
-        returns: this.reverseMoves(), checkerReturns: this.checkerUndos(), routes: checker ? [] : nearestRoutes(this.paths, this.draft, point, this.state.turn), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
+        returns: this.reverseMoves(), checkerReturns: this.checkerUndos(), revisions: checker ? [] : this.entrySwitches(), routes: checker ? [] : nearestRoutes(this.paths, this.draft, point, this.state.turn), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
       if (action?.type === "move") this.move(action.step);
       else if (action?.type === "undo") this.moveRoute(action.route);
       else if (action?.type === "routes") this.chooseRoutes(action.routes);

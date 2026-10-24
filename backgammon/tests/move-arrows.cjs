@@ -59,12 +59,12 @@ module.exports = async function moveArrows(browser, base, out, name) {
         } finally {engine.destroy();}
       });
       assert.match(await page.locator('.decision-caption').textContent(),/^Best\/your move ·/);
-      assert.equal(await page.locator('.decision-choices button').count(),2);
+      assert.equal(await page.locator('.decision-choices button').count(),0);
       const ids=await page.locator('.last-move-arrows mask').evaluateAll(ns=>ns.map(n=>n.id));
       assert.ok(ids.length>=2);assert.equal(new Set(ids).size,ids.length);
       for(const [width,height] of [[390,844],[1366,768]]) {
         await page.setViewportSize({width,height});
-        await page.getByRole('tab',{name:'Board',exact:true}).click();
+
         const file=`${name}-move-arrows-review-${preset}-${width}.png`;
         await page.screenshot({path:path.join(out,file),animations:'disabled'});screenshots.push(file);
       }

@@ -181,3 +181,13 @@ test("opening ties, pending rolls, and forced passes do not blur turn boundaries
   assert.equal(passed[0].decisions[0].forced, true);
   assert.equal(passed[1].turn, 2);
 });
+
+test('session totals are cube-independent for each player and mixed cube values',()=>{
+  const rows=[1,2,16,64].flatMap(value=>[0,1].map(player=>({player,source:{matchLength:0,cube:{value}},feedback:{loss:.01},status:'complete'})));
+  for(const player of [0,1]) {
+    const totals=decisionTotals(rows,player);
+    assert.equal(totals.loss,.04);
+    assert.equal(totals.evaluated,4);
+    assert.equal(totals.lossUnits,'normalized-equity');
+  }
+});

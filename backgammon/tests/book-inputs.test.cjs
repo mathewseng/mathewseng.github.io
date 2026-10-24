@@ -31,6 +31,12 @@ test('current rule extensions preserve historical book boards, legal turns and X
   const rules=await import('../core/rules.mjs'), xgid=await import('../core/xgid.mjs');
   let s=rules.initialState({phase:'move',dice:[3,1],matchLength:0,rules:{cube:true,jacoby:true}});
   for(let n=0;n<32;n++) {
+    for(let high=1;high<=6;high++)for(let low=1;low<=high;low++) {
+      const rolled={...s,dice:[high,low]};
+      assert.equal(xgid.toXGID(rolled,{engine:true}),oldXgid.toXGID(rolled,{engine:true}));
+      assert.deepEqual(rules.legalTurns(rolled).map(t=>t.key).sort(),oldRules.legalTurns(rolled).map(t=>t.key).sort(),
+        `historical boards agree at position ${n}, roll ${high}-${low}`);
+    }
     assert.equal(xgid.toXGID(s,{engine:true}),oldXgid.toXGID(s,{engine:true}));
     const a=rules.legalTurns(s),b=oldRules.legalTurns(s);
     assert.deepEqual(a.map(t=>t.key).sort(),b.map(t=>t.key).sort());

@@ -50,16 +50,16 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       const card = page.getByRole("region", { name: "Game result", exact: true });
       await card.waitFor();
       const value = (player, kind, stage) => card.locator(`[data-summary-player="${player}"] [data-loss-kind="${kind}"] [data-stage="${stage}"]`);
-      assert.equal((await value(0, "checker", "initial").innerText()).trim(), "0.120\n0.120 / move");
-      assert.equal((await value(0, "checker", "accepted").innerText()).trim(), "0.020\n0.020 / move");
-      assert.equal((await value(0, "cube", "initial").innerText()).trim(), "0.060\n1 mistake");
+      assert.equal((await value(0, "checker", "initial").innerText()).trim(), "0.060\n0.060 / move");
+      assert.equal((await value(0, "checker", "accepted").innerText()).trim(), "0.010\n0.010 / move");
+      assert.equal((await value(0, "cube", "initial").innerText()).trim(), "0.030\n1 mistake");
       assert.equal((await value(0, "cube", "accepted").innerText()).trim(), "0.000\n0 mistakes");
       assert.equal(await card.locator('[data-summary-player="1"]').count(), 0, "bot losses are hidden");
       assert.equal(await card.locator('[data-summary-player]').count(), 1);
       assert.ok(!(await card.locator('.game-loss-summary').innerText()).includes('GNUbg'));
-      for (const [kind,stage,tone] of [["checker","initial","large"],["checker","accepted","small"],["cube","initial","medium"],["cube","accepted","perfect"]])
+      for (const [kind,stage,tone] of [["checker","initial","medium"],["checker","accepted","close"],["cube","initial","small"],["cube","accepted","perfect"]])
         assert.equal(await value(0,kind,stage).locator('strong').getAttribute('data-loss-tone'),tone);
-      assert.equal(await value(0,"checker","initial").locator('small span').getAttribute('data-loss-tone'),'large');
+      assert.equal(await value(0,"checker","initial").locator('small span').getAttribute('data-loss-tone'),'medium');
       const colors = await card.locator('[data-loss-tone]').evaluateAll(nodes => [...new Set(nodes.map(node => getComputedStyle(node).color))]);
       assert.equal(colors.length,4,'EV totals and averages use the existing loss colors');
       const bounds = await card.evaluate(node => {
@@ -102,11 +102,12 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       assert.match(await value(0, "checker", "initial").innerText(), /1 pending/);
       assert.equal(await value(0,"checker","initial").locator('strong').getAttribute('data-loss-tone'),null,'unknown loss stays ungraded');
       await page.evaluate(() => window.completeSummaryGrade());
-      await page.waitForFunction(() => document.querySelector('[data-summary-player="0"] [data-loss-kind="checker"] [data-stage="initial"] strong')?.textContent === "0.120");
-      assert.equal(await value(0, "checker", "accepted").locator("strong").innerText(), "0.020");
+      await page.waitForFunction(() => document.querySelector('[data-summary-player="0"] [data-loss-kind="checker"] [data-stage="initial"] strong')?.textContent === "0.060");
+      assert.equal(await value(0, "checker", "accepted").locator("strong").innerText(), "0.010");
       const archived = await page.evaluate(async () => (await (await import("/backgammon/core/storage.mjs")).get("items", "loss-summary")));
+      assert.ok(Math.abs(archived.decisionSummary[0].loss-.01)<1e-7,"saved totals exclude cube multiplier");
       assert.ok(archived.events[1].initialDecision.evaluation, "background initial grade is archived as well as saved to play");
-      assert.equal(await value(0,"checker","initial").locator('strong').getAttribute('data-loss-tone'),'large');
+      assert.equal(await value(0,"checker","initial").locator('strong').getAttribute('data-loss-tone'),'medium');
       // Human control can be either color. Local/online summaries retain both humans.
       for (const [mode,humanSide,expected] of [["computer",1,["1"]],["local",0,["0","1"]]]) {
         await page.goto(base + '/backgammon/');
