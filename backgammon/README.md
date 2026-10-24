@@ -574,3 +574,18 @@ the short phone layout; `BG_BROWSERS=webkit` covers WebKit without CPU throttlin
 `tests/checker-animation-cleanup.cjs` covers chained moves, intervening renders and
 cancellation; the full-game runner preserves diagnostic state and a screenshot if
 a playthrough stalls.
+
+
+Before an automatic or requested roll, Play checks whether both the winner and
+single/gammon award are already certain under every legal continuation. Such a
+position ends without drawing dice, including immediately after a cube is taken.
+Positions whose result depends on the next roll still show that roll before ending.
+The exact proof never uses a rounded engine equity or future seeded dice.
+
+After the opponent fails to enter from the bar, or when all their entries are
+blocked, Play rolls automatically if the player on turn has no legal double.
+It waits for the previous animation. A legal cube choice, an open entry without
+a previous pass, review/undo, or an open dialog keeps that action manual
+(or pauses it until the dialog closes). Live roll prompts stay in the right dice
+area in both orientations. `closed-opponent-roll`, `roll-prompt`, `certain-bearoff`,
+and `sealed-roll` browser checks cover these boundaries and saved-game replay.

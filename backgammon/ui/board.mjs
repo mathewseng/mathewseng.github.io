@@ -2227,7 +2227,11 @@ export class Board {
       active ? 'Auto roll on' : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
     const detail = active ? `${touch ? 'Tap' : 'Click'} to stop` :
       ready && prompt.canAutoRoll ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
-    const key = JSON.stringify([main,detail,active,ready,node.dataset.x]);
+    // Roll instructions stay with the local player’s dice even without a
+    // previous roll. While dice are visible, keep the auto-roll stop label
+    // in the unused lane so it never overlaps the rolling dice.
+    const x = ready || (active && this.state?.phase === 'roll') ? 610 : +node.dataset.x;
+    const key = JSON.stringify([main,detail,active,ready,x]);
     if (node.dataset.caption === key) return;
     node.dataset.caption = key;
     node.replaceChildren();
@@ -2236,7 +2240,6 @@ export class Board {
     node.setAttribute('tabindex', active || ready ? '0' : '-1');
     node.setAttribute('aria-label', [main,detail].filter(Boolean).join('. '));
     if (!main) return;
-    const x = +node.dataset.x;
     if (active || ready) node.append(svg('rect', {class:'board-caption-hit',x:x-174,y:291,width:348,height:80,rx:12,fill:'transparent'}));
     node.append(svg('text', {class:'board-caption-main',x,y:detail ? 318 : 337,'text-anchor':'middle',fill:boardColor('caption'),
       'font-size':active || ready ? 26 : 14}, main));

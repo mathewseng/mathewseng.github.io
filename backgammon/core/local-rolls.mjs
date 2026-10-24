@@ -3,6 +3,7 @@
 // request. GNUbg still evaluates unknown future rolls normally; only the job
 // scheduler knows which exact future positions are useful to cache.
 import { playAction, tableDice } from './table.mjs';
+import { certainBearoff } from './certain-bearoff.mjs';
 import { cryptoDice, decisionPlayer, blockedBarRoll } from './rules.mjs';
 
 export function ensureLocalRolls(table) {
@@ -68,6 +69,9 @@ export async function futureLocalRoll(table, offset = 0, actor = null) {
 // another indexed roll. Presentation, settings and speculation consume none.
 export async function localPlayAction(source, action, options = {}) {
   ensureLocalRolls(source);
+  // Resolve a sealed result before drawing or consuming a saved die. This
+  // also covers a roll queued just before the automatic finish was scheduled.
+  if (action.type === 'roll' && source.state.phase === 'roll' && certainBearoff(source.state)) action = {type:'finish-race'};
   if (action.type === 'roll' && blockedBarRoll(source.state)) action = {type:'skip-roll'};
   const actor = decisionPlayer(source.state);
   const rolling = ['opening', 'roll'].includes(action.type);

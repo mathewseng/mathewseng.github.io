@@ -1,4 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { blockedBarRoll, canDouble } from './rules.mjs';
+
+// Roll after an opponent's failed entry, or when every entry is blocked.
+// Keep every legal cube choice and pending response manual.
+export function canAutoRollAfterBarPass(state, lastEvent = null) {
+  if (!state || state.phase !== 'roll' || state.pending || canDouble(state) || blockedBarRoll(state)) return false;
+  const opponent = 1-state.turn;
+  const missedEntry = state.bar[opponent] > 0 && lastEvent?.actor === opponent &&
+    lastEvent.action?.type === 'move' && lastEvent.action.steps?.length === 0;
+  return missedEntry || blockedBarRoll({...state, turn:opponent});
+}
+
 // A single opposing checker can be hit, so only made points block entry.
 export function canAutoRollFromBar(state, player = state?.turn) {
   if (!state?.bar[player]) return false;

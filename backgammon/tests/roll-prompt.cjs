@@ -28,7 +28,7 @@ module.exports=async(browser,base,out,name)=>{
             for(let i=18;i<24;i++)points[i]=entry==='blots'?-1:0;
             points[17]=entry==='blots'?-8:-14;
           }
-          const s=initialState({phase:'roll',points,bar:[1,1],matchLength:0,rules:{cube:false}});
+          const s=initialState({phase:'roll',points,bar:[1,1],matchLength:0,cube:{value:2,owner:0}});
           saveSettings({motion:'full',analysisAhead:false,equityBar:false,moveFeedback:false});
           await put('work',{id:'play',draft:[],game:{id:'auto-bar-fixture',started:true,state:s,initial:s,events:[],
             names:['You','Black'],config:localConfig({mode:'computer',humanSide:0,tutor:false,warning:false,strength:'quick'})}});
@@ -38,7 +38,7 @@ module.exports=async(browser,base,out,name)=>{
       };
       const tap=async(times=1)=>{
         const box=await page.locator('#board .bg-board').boundingBox();
-        const pos={x:box.x+box.width*196/876,y:box.y+box.height*330/660};
+        const pos={x:box.x+box.width*610/876,y:box.y+box.height*330/660};
         for(let i=0;i<times;i++) {
           if(touch)await page.touchscreen.tap(pos.x,pos.y);else await page.mouse.click(pos.x,pos.y);
         }
@@ -46,6 +46,7 @@ module.exports=async(browser,base,out,name)=>{
       await load();
       assert.equal(await caption.locator('text').nth(0).textContent(),`${verb} to roll`);
       assert.equal(await caption.locator('text').nth(1).textContent(),`Double ${verb.toLowerCase()} to auto roll`);
+      assert.equal(await caption.locator('text').nth(0).getAttribute('x'),'610','roll prompt stays in the right dice area');
       await page.screenshot({path:path.join(out,`${name}-roll-prompt-${touch?'phone':'desktop'}.png`)});
       await tap();
       await waitWork(page,w=>w?.game.localRolls?.cursor===1&&w.game.state.turn===0&&w.game.state.phase==='roll');
@@ -69,7 +70,7 @@ module.exports=async(browser,base,out,name)=>{
       await load();await tap(2);
       await page.waitForFunction(()=>document.querySelector('#board .board-caption')?.textContent.includes('Auto roll on'));
       // Tap the explicit stop control even while the failed dice are showing.
-      await tap();
+      await caption.locator('.board-caption-hit')[touch?'tap':'click']();
       await waitWork(page,w=>w?.game.localRolls?.cursor===1&&w.game.state.phase==='roll'&&w.game.state.turn===0);
       await page.waitForTimeout(350);
       assert.equal((await waitWork(page,w=>!!w?.game)).game.localRolls.cursor,1,'manual stop cancels the next automatic roll');

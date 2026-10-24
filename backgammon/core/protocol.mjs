@@ -233,9 +233,10 @@ export function accept(
       if (!s.started) throw new Error("The room has not started.");
       if (action.type === "practice-roll")
         throw new Error("Practice dice are not permitted in online rooms.");
-      if (action.type === 'roll' && blockedBarRoll(s.state)) {
+      if (action.type === 'roll') {
         if (action.dice) throw new Error("Only the host supplies dice.");
-        action.type = 'skip-roll';
+        if (s.state.phase === 'roll' && certainBearoff(s.state)) action.type = 'finish-race';
+        else if (blockedBarRoll(s.state)) action.type = 'skip-roll';
       }
       if (["opening", "roll"].includes(action.type)) {
         if (action.dice) throw new Error("Only the host supplies dice.");

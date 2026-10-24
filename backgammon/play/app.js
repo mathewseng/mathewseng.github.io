@@ -79,7 +79,7 @@ import { historyExplorer } from "../ui/history-tree.mjs";
 import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
-import { BarAutoRoll, canAutoRollFromBar } from "../core/bar-auto-roll.mjs";
+import { BarAutoRoll, canAutoRollFromBar, canAutoRollAfterBarPass } from "../core/bar-auto-roll.mjs";
 import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
@@ -563,7 +563,7 @@ addEventListener("visibilitychange", () => {
     autoReview.pause();
     prethink.pause();
     analysis.engine.cancelWhere(job => job.priority < 0);
-  } else { advanceOpening(); if (!advanceAcceptedCube()) autoPlay(); scheduleBarAutoRoll(); prethink.update(); autoReview.update(); }
+  } else { advanceOpening(); if (!autoPlay()) advanceAcceptedCube(); scheduleBarAutoRoll(); prethink.update(); autoReview.update(); }
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -731,7 +731,9 @@ function myTurn(s) {
 }
 function scheduleBarAutoRoll() {
   const m = model(), s = state();
-  const ready = () => barAutoRoll.canRoll(model()) && myTurn(state()) &&
+  const ready = () => (barAutoRoll.canRoll(model()) ||
+      (!model()?.reviewingTurn && canAutoRollAfterBarPass(state(), model()?.events.at(-1)))) &&
+    !certainBearoff(state()) && myTurn(state()) &&
     !document.hidden && !leaving && !committing && !botBusy && !assistanceJob &&
     !opening.active && !document.querySelector('dialog[open]') &&
     !!$('roll') && !$('roll').disabled;
@@ -843,7 +845,7 @@ function render() {
   actions();
   panel();
   advanceOpening();
-  if (!opening.active && !advanceAcceptedCube() && !autoPlay()) {
+  if (!opening.active && !autoPlay() && !advanceAcceptedCube()) {
     autoDraft();
     if (m?.started && config.mode === "computer") computerTurn();
   }

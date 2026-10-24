@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BarAutoRoll,canAutoRollFromBar} from '../core/bar-auto-roll.mjs';
+import {BarAutoRoll,canAutoRollFromBar,canAutoRollAfterBarPass} from '../core/bar-auto-roll.mjs';
 const model = (player=0) => ({id:'game',started:true,state:{phase:'roll',turn:player,
   gameNumber:1,sequence:10,points:Array.from({length:24},(_,i)=>i===(player?0:23)?(player?2:-2):0),bar:player ? [0,2] : [2,0]}});
 const gesture = {x:100,y:100,at:1000};
@@ -82,5 +82,33 @@ test('all-open entries hide and disable auto roll, including when the last block
     m.state.points[player?0:23]=player?1:-1;
     assert.equal(a.sync(m),null,'opening the last made point cancels existing auto roll');
     assert.equal(a.canRoll(m),false);
+  }
+});
+
+
+test('a closed-out opponent allows automatic rolling only without a cube choice',async()=>{
+  const {initialState}=await import('../core/rules.mjs');
+  for (const turn of [0,1]) {
+    const points=Array(24).fill(0);for(let i=0;i<6;i++)points[i]=2;points[5]=5;points[17]=-14;
+    const base=initialState({phase:'roll',points,bar:[0,1],matchLength:0,cube:{value:2,owner:1}});
+    const s=turn?{...base,turn:1,points:points.toReversed().map(n=>-n),bar:[1,0],cube:{value:2,owner:0}}:base;
+    assert.equal(canAutoRollAfterBarPass(s),true);
+    for(const owner of [null,turn]) assert.equal(canAutoRollAfterBarPass({...s,cube:{value:2,owner}}),false,'keep every legal cube choice');
+    assert.equal(canAutoRollAfterBarPass({...s,cube:{value:2,owner:turn},crawford:true}),true);
+    for(const phase of ['opening','move','double','resign','over']) assert.equal(canAutoRollAfterBarPass({...s,phase}),false);
+    assert.equal(canAutoRollAfterBarPass({...s,pending:{type:'double',by:turn}}),false);
+    assert.equal(canAutoRollAfterBarPass({...s,bar:[0,0]}),false);
+    for(let i=0;i<6;i++){
+      const open=structuredClone(s);open.points[turn?23-i:i]=turn?-1:1;
+      assert.equal(canAutoRollAfterBarPass(open),false,'an open entry without a previous pass stays manual');
+      const pass={actor:1-turn,action:{type:'move',steps:[]}};
+      assert.equal(canAutoRollAfterBarPass(open,pass),true,'also roll after the opponent failed to enter on their actual dice');
+      assert.equal(canAutoRollAfterBarPass(open,{...pass,actor:turn}),false);
+      assert.equal(canAutoRollAfterBarPass(open,{...pass,action:{type:'move',steps:[{from:'bar',to:0,die:1}]}}),false);
+      assert.equal(canAutoRollAfterBarPass({...open,cube:{value:2,owner:turn}},pass),false);
+    }
+    const mutual=structuredClone(s);mutual.bar=[1,1];
+    for(let i=0;i<6;i++)mutual.points[turn?i:23-i]=turn?2:-2;
+    assert.equal(canAutoRollAfterBarPass(mutual),false,'do not spin through mutual closed-out passes');
   }
 });
