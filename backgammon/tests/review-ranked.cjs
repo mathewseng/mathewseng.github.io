@@ -70,20 +70,27 @@ module.exports = async function reviewRanked(browser, base, out, name) {
         await page.locator(`.review-move[data-rank="${rank}"]`).click();
         assert.equal(await page.locator('.review-move[data-rank][aria-pressed="true"]').getAttribute('data-rank'),String(rank));
         assert.ok((await page.locator('.decision-caption').textContent()).includes(expected[rank-1].notation));
-        assert.deepEqual(await page.locator('.decision-board').boundingBox(),boardBox,'changing move preserves board size');
+        const after=await page.locator('.decision-board').boundingBox();
+        assert.equal(after.width,boardBox.width,'changing move preserves board width');
+        assert.equal(after.height,boardBox.height,'changing move preserves board height');
       }
       const fit=await page.locator('.decision-dialog').evaluate(d=>({
         overflow:d.scrollHeight>d.clientHeight+1 || d.scrollWidth>d.clientWidth+1,
         list:d.querySelector('.review-move-rows').getBoundingClientRect().toJSON(),
         position:d.querySelector('.decision-position').getBoundingClientRect().toJSON(),
         footer:d.querySelector('footer').getBoundingClientRect().toJSON(),
+        modal:d.getBoundingClientRect().toJSON(),
+        header:d.querySelector('.dialog-head').getBoundingClientRect().toJSON(),
+        six:[...d.querySelector('.review-move-rows').children].slice(0,6).reduce((sum,r)=>sum+r.getBoundingClientRect().height,0)+4,
       }));
-      assert.ok(!fit.overflow && fit.list.height>=44 && fit.list.bottom<=fit.footer.top+1,JSON.stringify({width,height,fit}));
+      assert.ok(!fit.overflow && fit.modal.top>=20 && fit.modal.bottom<=height-12+1 && fit.header.top>=fit.modal.top && fit.footer.bottom<=fit.modal.bottom,JSON.stringify({width,height,fit}));
+      assert.ok(Math.abs(fit.list.height-fit.six)<1,'list is exactly six rows tall');
       if(width<=700 && height>500) assert.ok(fit.position.bottom<=fit.list.top,'portrait puts choices under board');
       else assert.ok(fit.position.right<=fit.list.x,'wide views put choices beside board');
       await page.getByRole('button',{name:'Position',exact:true}).click();
       assert.equal(await page.locator('.review-move[data-rank][aria-pressed="true"]').count(),0);
       await page.locator('.review-move[data-rank="1"]').click();
+      await page.locator('.dialog-body').evaluate(n=>n.scrollTop=0);
       await page.screenshot({path:path.join(out,`${name}-ranked-review-${width}.png`)});
     }
     await page.setViewportSize({width:390,height:844});
@@ -92,6 +99,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       await (await import('/backgammon/ui/skin.mjs')).applySkin('liquid-chrome');
     });
     await page.waitForFunction(()=>document.documentElement.dataset.skin==='liquid-chrome');
+    await page.locator('.dialog-body').evaluate(n=>n.scrollTop=0);
     await page.screenshot({path:path.join(out,`${name}-ranked-metallic-phone.png`)});
     await page.locator('.review-move[data-rank="1"]').click();
     assert.equal(
@@ -155,9 +163,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
         .evaluate(
           (d) =>
             d.scrollHeight <= d.clientHeight + 1 &&
-            d.querySelector(".review-moves").getBoundingClientRect().bottom <=
-              d.querySelector(".decision-layout").getBoundingClientRect()
-                .bottom,
+            d.getBoundingClientRect().bottom <= innerHeight - 12 + 1,
         ),
     );
     await page.keyboard.press("Escape");

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { fitDialogViewport } from "./dialog-viewport.mjs";
 // A page-load gate: a known update must finish before the tool starts. Active
 // games may download the next release, but are only replaced on navigation.
 let started, reloading = false;
@@ -58,13 +59,13 @@ export function startUpdates({ onStatus = () => {} } = {}) {
       retries = 0,
       retryTimer,
       stallTimer,
-      notice;
+      notice, releaseViewport;
     const watched = new WeakSet();
     const status = (state, message) => onStatus({ state, message });
     function screen(message, completed, total) {
       if (!notice) {
         notice = document.createElement("dialog");
-        notice.className = "dialog app-update-dialog";
+        notice.className = "dialog bg-dialog app-update-dialog";
         notice.setAttribute("aria-labelledby", "update-title");
         // The failed state is not a dead end: Retry stays first (tests select
         // the dialog's first button), then "Continue with the installed
@@ -83,6 +84,7 @@ export function startUpdates({ onStatus = () => {} } = {}) {
           finish();
         };
         document.body.append(notice);
+        releaseViewport = fitDialogViewport(notice);
         notice.showModal();
       }
       notice.querySelector(".update-message").textContent = message;
@@ -101,6 +103,8 @@ export function startUpdates({ onStatus = () => {} } = {}) {
       gate = false;
       clearTimeout(retryTimer);
       clearTimeout(stallTimer);
+      releaseViewport?.();
+      releaseViewport = null;
       notice?.close();
       notice?.remove();
       notice = null;

@@ -136,9 +136,11 @@ module.exports = async function cubeOptions(browser, base, out, name) {
             footer: d.querySelector("footer").getBoundingClientRect().top,
             contentWidth: c.clientWidth,
             contentScrollWidth: c.scrollWidth,
+            wide: [...c.querySelectorAll('*')].filter(n=>n.getBoundingClientRect().right>c.getBoundingClientRect().right+1).slice(0,8).map(n=>({tag:n.tagName,cls:n.className,text:n.textContent.slice(0,80),width:n.getBoundingClientRect().width})),
           };
         });
-        if (!fit.scroll) await page.screenshot({path:path.join(out, `${name}-cube-options-overflow-${scenario}-${width}.png`)});
+        if (!fit.scroll || fit.contentScrollWidth > fit.contentWidth + 1 || fit.right > fit.edge || fit.bottom > fit.footer + 1)
+          await page.screenshot({path:path.join(out, `${name}-cube-options-overflow-${scenario}-${width}.png`)});
         assert.ok(
           fit.scroll &&
             fit.contentScrollWidth <= fit.contentWidth + 1 &&

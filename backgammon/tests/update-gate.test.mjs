@@ -11,7 +11,7 @@ function harness({activeVersion='old', pageVersion='old', published='new'}={}) {
   const document=Object.assign(new EventTarget(),{
     hidden:false,body:{append(){}},
     querySelector:()=>({src:`https://site.example/backgammon/app.js?bgv=${pageVersion}`}),
-    createElement(){return {setAttribute(){},addEventListener(){},showModal(){},close(){},remove(){},
+    createElement(){return {setAttribute(){},addEventListener(){},removeEventListener(){},showModal(){},close(){},remove(){},
       querySelector(selector){if(!nodes.has(selector))nodes.set(selector,node());return nodes.get(selector);}};},
   });
   class Channel {
@@ -26,10 +26,10 @@ function harness({activeVersion='old', pageVersion='old', published='new'}={}) {
   });
   const serviceWorker=Object.assign(new EventTarget(),{getRegistration:async()=>registration});
   const memory=new Map();
-  const source=readFileSync(new URL('../ui/updates.mjs',import.meta.url),'utf8').replace(/export /g,'');
+  const source=(readFileSync(new URL('../ui/dialog-viewport.mjs',import.meta.url),'utf8')+'\n'+readFileSync(new URL('../ui/updates.mjs',import.meta.url),'utf8').replace(/^import .*;$/gm,'')).replace(/export /g,'');
   const scope={document,navigator:{serviceWorker},location:{href:'https://site.example/backgammon/',reload(){reloads++;}},
     sessionStorage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)},
-    URL,MessageChannel:Channel,AbortSignal,Date:{now:()=>clock},
+    window:events,URL,MessageChannel:Channel,AbortSignal,Date:{now:()=>clock},
     fetch:async()=>({ok:true,text:async()=>`importScripts('./offline-manifest.js?v=${published}');`}),
     setTimeout(fn,ms){const id=++next;timers.set(id,{fn,at:clock+ms});return id;},clearTimeout:id=>timers.delete(id),
     addEventListener:events.addEventListener.bind(events),

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { fitDialogViewport } from "./dialog-viewport.mjs";
 import { installInputBehavior } from "./input-behavior.mjs";
 import { advancedAction, selectedDie } from "../core/advanced-input.mjs";
 import { EquityBar } from "./equity-bar.mjs";
@@ -207,24 +208,8 @@ export function dialog(title, content, actions = [], options = {}) {
     el("footer", { class: "dialog-foot" }, ...actions),
   );
   document.body.append(d);
-  // Safari's on-screen keyboard can shrink the visual viewport without
-  // changing dvh. Keep form actions inside that visible region; pinch zoom
-  // remains browser-controlled rather than triggering a layout change.
-  const viewport = window.visualViewport;
-  const fitViewport = () => {
-    if (!viewport || viewport.scale !== 1) return;
-    d.style.setProperty("--dialog-visible-height", `${viewport.height}px`);
-    d.style.setProperty("--dialog-visible-top", `${viewport.offsetTop}px`);
-    d.toggleAttribute("data-keyboard", innerHeight - viewport.height > 100);
-  };
-  viewport?.addEventListener("resize", fitViewport);
-  viewport?.addEventListener("scroll", fitViewport);
-  fitViewport();
-  d.addEventListener("close", () => {
-    viewport?.removeEventListener("resize", fitViewport);
-    viewport?.removeEventListener("scroll", fitViewport);
-    d.remove();
-  });
+  fitDialogViewport(d);
+  d.addEventListener("close", () => d.remove(), { once: true });
   d.showModal();
   return d;
 }
