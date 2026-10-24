@@ -10,14 +10,14 @@ const stats = values => {
   return {count:sorted.length,median:sorted[Math.floor(sorted.length*.5)],p95:sorted[Math.floor(sorted.length*.95)],max:sorted.at(-1)};
 };
 
-async function fullGame(browser, base, out, name) {
+async function fullGame(browser, base, out, name, {games=1, contextOptions={}, onPage=async()=>{}, onReady=async()=>{}, onGame=async()=>{}}={}) {
   fs.mkdirSync(out,{recursive:true});
   const viewport=process.env.BG_GAME_ORIENTATION==='landscape'?{width:844,height:390}:{width:390,height:844};
   const context = await browser.newContext({viewport,hasTouch:true,
-    isMobile:name!=='firefox',deviceScaleFactor:2,reducedMotion:'no-preference'});
+    isMobile:name!=='firefox',deviceScaleFactor:2,reducedMotion:'no-preference',...contextOptions});
   const page=await context.newPage(), errors=[], turns=[];
   page.on('pageerror',error=>errors.push(error.message));
-  let cdp, latest, completed=false;
+  let cdp, latest, completed=false, gameIndex=0;
   const dump=async()=>{
     const timing=await page.evaluate(()=>{
       const p=window.mobileGame;
@@ -27,7 +27,7 @@ async function fullGame(browser, base, out, name) {
     }).catch(()=>null);
     const report={recordedAt:new Date().toISOString(),base,browser:`${name} ${browser.version()}`,
       viewport,cpuSlowdown:name==='chromium'?Number(process.env.BG_CPU_RATE||1):1,
-      completed,turns,game:latest,errors,timing};
+      completed,gameIndex,turns,game:latest,errors,timing};
     if(timing)report.summary={
       tapToFrame:stats(timing.actions.map(a=>a.frameMs)),
       byAction:Object.fromEntries([...new Set(timing.actions.map(a=>a.kind))].map(kind=>
@@ -38,7 +38,7 @@ async function fullGame(browser, base, out, name) {
       stalls:stats(timing.frames.map(f=>f.ms)),longTasks:stats(timing.tasks.map(t=>t.ms)),
       renders:stats(timing.renders.map(r=>r.ms)),
       slowestFrames:[...timing.frames].sort((a,b)=>b.ms-a.ms).slice(0,20)};
-    fs.writeFileSync(path.join(out,`${name}-mobile-fullgame.json`),JSON.stringify(report,null,2));
+    fs.writeFileSync(path.join(out,`${name}-mobile-fullgame${games>1?`-${gameIndex}`:''}.json`),JSON.stringify(report,null,2));
     return report;
   };
   const tap=async(kind,locator,point,options={})=>{
@@ -47,6 +47,7 @@ async function fullGame(browser, base, out, name) {
     else await locator.tap(options);
   };
   try {
+    await onPage({page,context});
     await seedOpening(page,[6,1]);
     await page.goto(base+'/backgammon/play/');
     await page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
@@ -118,6 +119,18 @@ async function fullGame(browser, base, out, name) {
       await cdp.send('Emulation.setCPUThrottlingRate',{rate:Number(process.env.BG_CPU_RATE||1)});
       if(process.env.BG_PROFILE){await cdp.send('Profiler.enable');await cdp.send('Profiler.start');}
     }
+    await onReady({page,context,cdp});
+    for(gameIndex=1;gameIndex<=games;gameIndex++){
+    completed=false;
+    if(gameIndex>1){
+      await page.evaluate(()=>{
+        const p=mobileGame;
+        // The diagnostic must not retain old evaluations/DOM/controllers itself.
+        p.actions.length=p.frames.length=p.tasks.length=p.renders.length=p.calls.length=0;
+        p.results.clear();
+      });
+      await tap('next-game',page.locator('#next-game'));
+    } else
     await tap('start',page.locator('#start-match'));
     const deadline=Date.now()+Number(process.env.BG_GAME_TIMEOUT_MS||1200000);
     let lastSequence=-1, chosenAt=0, lastActionAt=Date.now(), rollTapped=-1;
@@ -126,7 +139,7 @@ async function fullGame(browser, base, out, name) {
       if(!process.env.BG_GAME_SCREENSHOTS||captured.has(stage))return;
       captured.add(stage);
       await page.evaluate(()=>{mobileGame.capture=true;});
-      await page.screenshot({path:path.join(out,`${name}-${stage}.png`)});
+      await page.screenshot({path:path.join(out,`${name}${games>1?`-${gameIndex}`:''}-${stage}.png`)});
       await page.evaluate(()=>{mobileGame.capture=false;mobileGame.pauseUntil=performance.now()+150;});
       await page.waitForTimeout(160);
     };
@@ -146,7 +159,7 @@ async function fullGame(browser, base, out, name) {
       if(state.state?.sequence!==lastSequence){
         lastSequence=state.state?.sequence;chosenAt=Date.now();
         turns.push({at:Date.now(),sequence:lastSequence,phase:state.state?.phase,player:state.state?.turn,off:state.state?.off});
-        console.log(`${name}: ${lastSequence} ${state.state?.phase} player ${state.state?.turn}, off ${state.state?.off}`);
+        console.log(`${name} game ${gameIndex}: ${lastSequence} ${state.state?.phase} player ${state.state?.turn}, off ${state.state?.off}`);
       }
       if(state.over){completed=true;break;}
       if(state.warning){
@@ -211,7 +224,7 @@ async function fullGame(browser, base, out, name) {
     // Export/replay the growing saved game only after the timed run. Sending
     // its full history through the automation protocol each turn would itself
     // block the page and misreport test overhead as application jank.
-    await page.evaluate(()=>{mobileGame.endAt=performance.now()});
+    await page.evaluate(()=>{mobileGame.capture=true;});
     latest=await page.evaluate(async()=> (await mobileGame.st.get('work','play')).game);
     assert.equal(latest.state.phase,'over');
     assert.ok(await page.evaluate(async()=>{
@@ -219,11 +232,15 @@ async function fullGame(browser, base, out, name) {
       return JSON.stringify(rules.replay(g.initial,g.events).at(-1))===JSON.stringify(g.state);
     }),'the complete game independently replays');
     await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
-    await page.screenshot({path:path.join(out,`${name}-mobile-fullgame-result.png`)});
+    await page.screenshot({path:path.join(out,`${name}-mobile-fullgame${games>1?`-${gameIndex}`:''}-result.png`)});
     assert.deepEqual(errors,[]);
-    const report=await dump();console.log(JSON.stringify(report.summary));return report;
+    const report=await dump();console.log(JSON.stringify(report.summary));
+    await onGame({page,context,cdp,gameIndex,report});
+    if(gameIndex===games)return report;
+    await page.evaluate(()=>{mobileGame.capture=false;mobileGame.pauseUntil=performance.now()+150;});
+    }
   } finally {
-    await dump();
+    if(!completed)await dump();
     if(cdp&&process.env.BG_PROFILE)fs.writeFileSync(path.join(out,`${name}-mobile-fullgame.cpuprofile`),JSON.stringify((await cdp.send('Profiler.stop')).profile));
     await context.close();
   }

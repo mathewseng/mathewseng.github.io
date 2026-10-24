@@ -221,6 +221,24 @@ test('foreground work bounds an unresponsive cooperative cancellation',async()=>
   } finally {h.client.destroy();}
 });
 
+test('a slow background checkpoint keeps its heap when no foreground decision is waiting',async()=>{
+  const h=harness(),s=source();
+  try {
+    const old=h.client.analyze(s,{preset:'auto',priority:-20});
+    const rejected=assert.rejects(old,{name:'AbortError'});
+    const id=await h.start(),w=h.workers[0];h.client.startup.cooperativeCancellation=true;
+    h.client.cancelWhere(job=>job.priority<0);await rejected;
+    await new Promise(resolve=>setTimeout(resolve,1150));
+    assert.equal(w.terminated,undefined,'background-only work can reach a slow native checkpoint');
+    w.reply({id,type:'cancelled'});
+    const next=h.client.analyze({...s,dice:[5,2]},{preset:'auto',priority:20});
+    await tick();
+    assert.equal(h.workers.length,1,'the already initialized engine is reused');
+    w.reply({id:h.client.active.id,type:'result',result:result({...s,dice:[5,2]},3)});
+    assert.equal((await next).settings.plies,3);
+  } finally {h.client.destroy();}
+});
+
 test('destroy releases a retiring worker and never revives queued work',async()=>{
   const h=harness(),s=source();
   const old=h.client.analyze(s,{preset:'auto',priority:-20});

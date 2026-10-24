@@ -334,11 +334,12 @@ export class AnalysisPanel {
     this.onResult(result);
     return result;
   }
-  cancel() {
+  cancel({releaseWorker = true} = {}) {
     this.token++;
-    this.engine.cancel();
-    this.moneyEngine.cancel();
-    this.wideMoneyEngine.cancel();
+    for (const engine of [this.engine, this.moneyEngine, this.wideMoneyEngine]) {
+      if (releaseWorker) engine.cancel();
+      else engine.cancelWhere(() => true);
+    }
   }
   analyzeRaw(state, options = {}) {
     const learned = ['puretd', 'puretd-wide'].includes(this.preset);

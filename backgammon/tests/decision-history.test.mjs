@@ -102,6 +102,23 @@ test("saved checker reviews retain ten ranked candidates and the actual submitte
   assert.equal(original.candidates[0].steps[0].to, 4);
 });
 
+test("saved reviews drop discarded search paths but retain screening facts and the submitted move", () => {
+  const original = {type:'checker', candidates:[{key:'best',equity:.4}],
+    actual:{key:'submitted',equity:.2}, error:.2,
+    screening:{plies:2,finalists:8,total:1200,retainedLeader:true,
+      excluded:Array.from({length:1192},(_,i)=>({key:String(i),steps:[{from:23,to:22,die:1}]})),
+      initial:{plies:0,finalists:32,total:1200,excluded:[{key:'discarded'}]}}};
+  const saved=compactEvaluation(null,original).result;
+  assert.deepEqual(saved.screening,{plies:2,finalists:8,total:1200,retainedLeader:true,
+    initial:{plies:0,finalists:32,total:1200}});
+  assert.deepEqual(saved.actual,original.actual);
+  assert.equal(saved.error,.2);
+  assert.equal(original.screening.excluded.length,1192);
+  assert.ok(JSON.stringify(saved).length<500);
+  saved.screening.initial.finalists=1;
+  assert.equal(original.screening.initial.finalists,32);
+});
+
 function turnFixture(initial = initialState({phase: "roll", matchLength: 0})) {
   const model = {initial, events: [], state: initial};
   return {

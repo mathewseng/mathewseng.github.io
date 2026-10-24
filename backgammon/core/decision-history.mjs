@@ -11,13 +11,20 @@ import { decisionFeedback } from "./decision-feedback.mjs";
 import { CUBE_LABELS, gradeCube } from "../engine/cube-grade.mjs";
 import { sameDecisionAction } from "./decision-attempt.mjs";
 export function compactEvaluation(source, result) {
-  const compact = clone(result);
-  if (compact.type === "checker") {
-    compact.evaluatedCount =
-      compact.evaluatedCount ?? compact.candidates.length;
-    compact.candidates = compact.candidates.slice(0, 10);
-  }
-  return { result: compact };
+  // A saved review needs the ranked moves, submitted move and screening
+  // summary, not thousands of discarded search paths. Compact before cloning:
+  // every later turn copies this history, including initial/accepted grades.
+  const screen = value => {
+    const {excluded, initial, ...summary} = value;
+    return {...summary, ...(initial ? {initial:screen(initial)} : {})};
+  };
+  return { result: clone({ ...result,
+    ...(result.type === "checker" ? {
+      evaluatedCount: result.evaluatedCount ?? result.candidates.length,
+      candidates: result.candidates.slice(0, 10),
+    } : {}),
+    ...(result.screening ? {screening:screen(result.screening)} : {}),
+  }) };
 }
 export function gradeDecision(source, result, action) {
   return action.type === "move"

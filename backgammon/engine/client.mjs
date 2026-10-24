@@ -515,7 +515,11 @@ export class EngineClient {
   retireWorker(job) {
     if (job && this.ready && this.startup?.cooperativeCancellation) {
       this.retiring = {id:job.id, urgent:this.queue.some(pending => pending.priority >= 0)};
-      this.armRetirement(this.retiring.urgent ? 100 : 1000);
+      // On a slow phone one native candidate may exceed a second. If nobody
+      // needs the engine yet, let it reach its cancellation checkpoint rather
+      // than repeatedly allocate another WASM heap. Foreground work still
+      // shortens this to 100 ms in pump(). The fallback remains bounded.
+      this.armRetirement(this.retiring.urgent ? 100 : 5000);
       try { this.worker.postMessage({type:"cancel", id:job.id}); }
       catch { this.releaseWorker(); }
     } else this.releaseWorker();

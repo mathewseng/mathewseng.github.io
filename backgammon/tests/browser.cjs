@@ -761,6 +761,9 @@ const server = http.createServer((req, res) => {
             browserName,
           ),
         );
+        (report.historyRetention ||= []).push(
+          await run("history-retention", browser, base, out, browserName),
+        );
         (report.practiceUX ||= []).push(
           await run("practice", browser, base, out, browserName),
         );

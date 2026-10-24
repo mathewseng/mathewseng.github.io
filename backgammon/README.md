@@ -21,13 +21,26 @@ node backgammon/scripts/benchmark.cjs
 # Complete live game with real touch input, GNUbg, full motion and timing:
 BG_CPU_RATE=4 node backgammon/tests/mobile-fullgame.cjs
 BG_BROWSER=webkit BG_GAME_ORIENTATION=landscape node backgammon/tests/mobile-fullgame.cjs
+# Consecutive games in one mobile document (serve _site at this URL first):
+BG_BASE_URL=http://127.0.0.1:8767 BG_SESSION_GAMES=6 BG_CPU_RATE=4 node backgammon/tests/mobile-session.cjs
 ```
 
 The full-game check uses isolated storage and independently replays the saved result.
 `BG_GAME_SCREENSHOTS=1` captures play and bearing-off layouts; capture pauses are
 excluded from frame-stall measurements. Reports separate first-frame response,
 position updates, and confirmation-to-decision time (including revision warnings).
-Chromium's optional CPU slowdown is a stress test, not a physical-phone benchmark.
+Chromium's optional CPU slowdown is a stress test, not a physical-phone benchmark. The session
+check uses Next game without reloading or clearing storage. It records collected
+JavaScript heap, DOM/listener counts, native WASM allocation, worker lifetimes,
+shutdown reasons and renderer/GPU RSS after each game. Service workers are blocked
+only in this diagnostic so its memory probe reaches the real engine script;
+ordinary full-game and update tests retain the service worker. RSS includes shared and
+browser-managed memory; it is not an iPhone memory measurement. Diagnostic arrays
+and cached test evaluations clear between games so the test does not create its
+own apparent leak. The separate `history-retention` check uses weak references
+and explicit collection to ensure old review buttons do not retain whole match
+snapshots. Saved reviews retain their top ten moves, actual move and screening
+summary, while discarding unused screened-out paths.
 Initial compulsory checker playback waits for the rolled dice to settle; taps during
 that presentation cannot consume a different die. Equity updates reuse the rail's
 geometry until a resize or settings change instead of forcing SVG layout on each tap.
@@ -64,7 +77,7 @@ Roll buttons also list **every close alternative** beneath the best move, in fai
 - `core/protocol.mjs` and `play/network.mjs`: host-authoritative protocol over the unchanged `shared/peer-room.js`.
 - `ui/board.mjs`, `ui/shell.mjs`, `ui/analysis.mjs`, `styles.css`: one SVG board, shared draft controller, semantic controls, dialogs, settings and analysis display.
 - `core/appearance.mjs`, `ui/appearance.mjs`: validated board palettes and the live color editor. One allowlist of color roles drives SVG pieces, move affordances, dice and player markers; game state and engine cache keys are independent of appearance.
-- `engine/`: pinned GNUbg, dedicated module worker, full-context adapter and a single-worker priority queue. Worker termination implements actual cancellation. Pending work is rejected; stale UI results are discarded. LRU cache is limited to 64 complete results; queue to 32 jobs. No unbounded persistent evaluation cache.
+- `engine/`: pinned GNUbg, dedicated module worker, full-context adapter and a single-worker priority queue. Superseded jobs cancel cooperatively between native scores, with a bounded termination fallback. Pending work is rejected; stale UI results are discarded. LRU cache is limited to 64 complete results; queue to 32 jobs. No unbounded persistent evaluation cache.
 - `core/storage.mjs`: version-1 IndexedDB for items, recoverable work and spaced-review progress. Small display preferences use `backgammon.v1.*` localStorage. Notes/names are text, never HTML.
 
 Bar entry clears checker selection and shows all remaining legal moves (when hints are enabled), including after combined-dice entries and revisions. Checkers still on the bar retain entry priority. Tap the entered checker again to inspect its continuations or revise its entry die. `tests/bar-entry.cjs` checks the shared behavior across both players, orientations, desktop and touch input.
@@ -173,7 +186,8 @@ Move arrows use a tangent graph around 44px clearance discs: twice the 22px chec
 
 Older versions could remain cached because they served the offline shell first, never checked on the hub, and left new workers waiting for every old window to close. An ordinary refresh does not guarantee that those old clients disappear. If that version still hides the new updater, use **Refresh app** on the hub, or open <https://mathewseng.github.io/backgammon/refresh/> once in the affected browser and tap **Refresh Backgammon**, then **Open the updated app**. This standalone, network-only page is also linked from Settings → Display & controls. It downloads a complete fresh shell and activates it after an explicit request and a check that no other Backgammon windows are open. Failed downloads keep the working shell; busy windows receive an actionable message. Neither update path clears IndexedDB, localStorage, or other-family caches. Close other Backgammon tabs and Home Screen windows first; finish online games before refreshing. Saved games, drafts, Library, progress and colors remain available. A recovered first-turn draft also retains its opening acknowledgement when the previous tab has closed.
 
-Solver workers yield between native candidate scores and cube branches. Superseded background jobs acknowledge cancellation and retain the warm WASM heap, instead of repeatedly loading its 64 MB allocation. A stuck native call still falls back to termination after at most 100 ms when foreground analysis is queued (1 s for background-only work). Closing the page releases workers immediately; incomplete depths never become completed results. `engine-lifecycle` exercises repeated real-worker cancellations, and live decisions still require at least three ply.
+Solver workers yield between native candidate scores and cube branches. Superseded background jobs acknowledge cancellation and retain the warm WASM heap, instead of repeatedly loading its 64 MB allocation. A stuck native call still falls back to termination after at most 100 ms when foreground analysis is queued (5 s for background-only work). Dismissing an unfinished hint/warning cancels its result but preserves the warm
+engine; closing the page releases workers immediately; incomplete depths never become completed results. `engine-lifecycle` exercises repeated real-worker cancellations, and live decisions still require at least three ply.
 
 Offline availability requires successful initial setup and engine caching. The refresh page itself requires a network connection. Multiplayer needs a network. Mobile browsers may suspend workers; completed work is saved, but background analysis after suspension/closure is not promised.
 

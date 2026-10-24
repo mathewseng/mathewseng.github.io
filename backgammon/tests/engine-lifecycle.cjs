@@ -11,6 +11,7 @@ module.exports = async function engineLifecycle(browser, base) {
     await page.goto(base+'/backgammon/');
     const report = await page.evaluate(async()=>{
       const {EngineClient}=await import('/backgammon/engine/client.mjs');
+      const {AnalysisPanel}=await import('/backgammon/ui/analysis.mjs');
       const {initialState,positionKey}=await import('/backgammon/core/rules.mjs');
       let workers=0, cancellations=0;
       const client=new EngineClient({openingBook:null,workerFactory:()=>{
@@ -40,6 +41,26 @@ module.exports = async function engineLifecycle(browser, base) {
         check(result.positionKey===positionKey(state),'result belongs to the requested position');
         const next=await client.analyze(state,{preset:'auto',readyOnly:true});
         check(next.cached&&next.candidates[0].key===result.candidates[0].key,'completed answer remains reusable');
+        const panel=new AnalysisPanel();
+        // Exercise the same policy used when dismissing a pending hint/warning.
+        panel.engine=client;
+        const warm=client.worker;
+        try {
+          let interrupted=false;
+          const pending=panel.run({...state,dice:[6,6]}, {preset:'auto',priority:20,onEvaluation:()=>{
+            if(!interrupted){interrupted=true;panel.cancel({releaseWorker:false});}
+          }});
+          await pending.then(()=>{throw Error('cancelled panel result escaped');},error=>check(error.name==='AbortError','panel search cancels'));
+          const deadline=performance.now()+2000;
+          while(client.retiring&&performance.now()<deadline)await new Promise(r=>setTimeout(r,10));
+          check(client.worker===warm&&!client.retiring,'closing a warning reuses the warm engine');
+          panel.cancel({releaseWorker:false});
+          check(client.worker===warm,'an idle engine is also retained');
+          const live=await panel.run(state,{preset:'auto',readyOnly:true});
+          check(live.settings.plies>=3,'next action retains its completed depth');
+          panel.cancel();
+          check(client.worker===null,'page teardown still releases workers');
+        } finally {panel.cancel();}
         return {cancellations,workers,plies:result.settings.plies,backend:result.backend};
       } finally {client.destroy();}
     });

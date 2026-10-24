@@ -2272,6 +2272,26 @@ function showSessionReview() {
     },
   );
 }
+// Keep event handlers outside renderFeedback's scope. A retained row must not
+// close over that render's entire match snapshot: every commit clones it, so
+// older buttons otherwise keep an ever-growing series of histories alive.
+function historyDecisionActions(entry, index, gameId, opponent) {
+  const currentRow = () => entry.group.decisions.find(row => row.index === index);
+  return {
+    restore: () => restoreDecision(currentRow(), gameId),
+    review: () => {
+      const current = currentRow();
+      return decisionReview(current.source, {
+        opponent,
+        title: current.result.type === "cube" ? "Cube decision" : "Checker decision",
+        onReturn: canReturnToDecision(current, gameId)
+          ? () => restoreDecision(current, gameId) : undefined,
+        onReplay: canReplayBest(current, gameId)
+          ? (steps, result) => replayBest(current, gameId, steps, result) : undefined,
+      }).result(current.result);
+    },
+  };
+}
 function renderFeedback() {
   const m = model();
   feedbackStrip.hidden = !(
@@ -2358,7 +2378,7 @@ function renderFeedback() {
     }, identity, decisions);
     children.push(entry.node);
     for (const row of group.decisions) {
-      const currentRow = () => entry.group.decisions.find(item => item.index === row.index);
+      const handlers = historyDecisionActions(entry, row.index, m.id, side === "opponent");
       const kind = row.action.type === "move" ? "Move" : "Cube";
       const cube = kind === "Cube" ? presentCubeAction(row.source, row.action.type) : null;
       const played = () => {
@@ -2392,7 +2412,7 @@ function renderFeedback() {
               ? [
                   button(
                     "Return",
-                    () => restoreDecision(currentRow(), m.id),
+                    handlers.restore,
                     "ghost",
                     { "aria-label": "Return to this position", title: "Return to this position" },
                   ),
@@ -2412,22 +2432,7 @@ function renderFeedback() {
       const f = row.feedback;
       const review = button(
         "",
-        () => {
-          const current = currentRow();
-          return decisionReview(current.source, {
-            opponent: side === "opponent",
-            title:
-              current.result.type === "cube"
-                ? "Cube decision"
-                : "Checker decision",
-            onReturn: canReturnToDecision(current, m.id)
-              ? () => restoreDecision(current, m.id)
-              : undefined,
-            onReplay: canReplayBest(current, m.id)
-              ? (steps, result) => replayBest(current, m.id, steps, result)
-              : undefined,
-          }).result(current.result);
-        },
+        handlers.review,
         "feedback-review",
         {
           ...(row.index === reviewIndex
@@ -2554,7 +2559,9 @@ function releaseAssistance() {
   const job = assistanceJob;
   if (!job) return;
   assistanceJob = null;
-  if (!job.done) analysis.cancel();
+  // Closing/revising a warning still leaves the table in use. Cancel obsolete
+  // answers without throwing away a warm engine needed by the next action.
+  if (!job.done) analysis.cancel({releaseWorker:false});
   if (job.dialog?.open) job.dialog.close();
 }
 function unlockDraft() {
