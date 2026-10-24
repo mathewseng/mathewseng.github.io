@@ -61,7 +61,7 @@ export function sessionReview(
           el(
             "p",
             {},
-            `${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV points lost" : "normalized equity lost"}`,
+            `${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV lost" : "normalized equity lost"}`,
           ),
           el(
             "span",
@@ -147,6 +147,7 @@ export function sessionReview(
                 `${r.feedback.label} ${r.feedback.value} · ${r.result.settings.name}`,
                 () =>
                   decisionReview(r.source, {
+                    beforeRoll: shown.find(other => other.game === r.game && other.turn === r.turn && other.player === r.player && other.result?.type === "cube" && other.source.phase === "roll" && other.source.cube.value === r.source.cube.value)?.result,
                     title: "Decision review",
                     opponent: [0, 1].includes(model.config?.humanSide) && r.player !== model.config.humanSide,
                   }).result(r.result),

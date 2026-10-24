@@ -111,7 +111,7 @@ module.exports = async function assistanceUX(
       .getByRole("button", { name: "Position", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Best move", exact: true })
+      .locator('.review-move[data-rank="1"]')
       .click();
     await page.keyboard.press("Escape");
     assert.deepEqual((await saved()).draft, partial.draft);
@@ -368,7 +368,7 @@ module.exports = async function assistanceUX(
     const reviewed = page.locator('[data-decision-type="checker"]').first();
     const opponent = await reviewed.getAttribute("data-history-side") === "opponent";
     await reviewed.click();
-    const played = page.locator('.decision-choices button').filter({hasText:opponent ? /Opponent’s move|Best\/their move/ : /Your move|Best\/your move/});
+    const played = page.locator('.review-move[data-rank]').filter({hasText:opponent ? /Opponent’s choice|Best\/their move/ : /Your choice|Best\/your move/});
     assert.equal(await played.count(),1,'review labels the actual player’s move');
     await played.click();
     await shot("review-phone");
@@ -519,7 +519,7 @@ module.exports = async function assistanceUX(
       await page.waitForFunction(() => document.querySelector('#pending-move-loss')?.textContent.includes('EV unavailable'));
       assert.deepEqual((await saved()).game.state, pending.game.state);
       await shot("feedback-error");
-      await pendingReview.getByRole('button',{name:'Confirm anyway',exact:true}).click();
+      await pendingReview.getByRole('button',{name:'Confirm without feedback',exact:true}).click();
       await waitSaved(
         (s) => s?.game.events.length === pending.game.events.length + 1,
       );
@@ -618,7 +618,7 @@ module.exports = async function assistanceUX(
         else await edge.locator("#undo-play-best").click();
         if (scenario === "warning")
           await edge
-            .getByRole("button", { name: "Confirm anyway", exact: true })
+            .getByRole("button", { name: "Play Best", exact: true })
             .click();
         await edge.locator("#review-feedback").waitFor({ timeout: 60000 });
         // Inspect the rendered review after scrolling, including WebKit on phones.
@@ -628,8 +628,7 @@ module.exports = async function assistanceUX(
           e.actor === work.game.config.humanSide && e.action.type === 'move').at(-1);
         const result = latestHumanMove(await waitWork(edge, work =>
           latestHumanMove(work)?.evaluation?.result)).evaluation.result;
-        if (scenario === "warning") assert.ok(result.error > 0.04);
-        else assert.equal(result.error, 0);
+        assert.equal(result.error, 0);
         assert.equal(result.perspective, scenario === "match-teal" ? 1 : 0);
         assert.match(
           (await edge.locator("#move-feedback").innerText()).replace(/\s+/g, " "),

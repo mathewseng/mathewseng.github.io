@@ -61,14 +61,14 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       assert.equal(await page.getByRole('tab',{name:'Comparison',exact:true}).count(),0);
       assert.ok(await page.locator('.decision-board').isVisible());
       assert.ok(await page.locator('.review-moves').isVisible(),'comparison and board share the review');
-      assert.equal(await page.locator('.review-move').count(),10);
+      assert.equal(await page.locator('.review-move[data-rank]').count(),11);
       await page.locator('.decision-details-toggle').click();
       assert.ok(await page.locator('.decision-notes').isVisible());
       await page.locator('.decision-details-toggle').click();
       const boardBox=await page.locator('.decision-board').boundingBox();
       for (const rank of [10,2,1]) {
         await page.locator(`.review-move[data-rank="${rank}"]`).click();
-        assert.equal(await page.locator('.review-move[aria-pressed="true"]').getAttribute('data-rank'),String(rank));
+        assert.equal(await page.locator('.review-move[data-rank][aria-pressed="true"]').getAttribute('data-rank'),String(rank));
         assert.ok((await page.locator('.decision-caption').textContent()).includes(expected[rank-1].notation));
         assert.deepEqual(await page.locator('.decision-board').boundingBox(),boardBox,'changing move preserves board size');
       }
@@ -82,8 +82,8 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       if(width<=700 && height>500) assert.ok(fit.position.bottom<=fit.list.top,'portrait puts choices under board');
       else assert.ok(fit.position.right<=fit.list.x,'wide views put choices beside board');
       await page.getByRole('button',{name:'Position',exact:true}).click();
-      assert.equal(await page.locator('.review-move[aria-pressed="true"]').count(),0);
-      await page.getByRole('button',{name:'Best move',exact:true}).click();
+      assert.equal(await page.locator('.review-move[data-rank][aria-pressed="true"]').count(),0);
+      await page.locator('.review-move[data-rank="1"]').click();
       await page.screenshot({path:path.join(out,`${name}-ranked-review-${width}.png`)});
     }
     await page.setViewportSize({width:390,height:844});
@@ -93,15 +93,15 @@ module.exports = async function reviewRanked(browser, base, out, name) {
     });
     await page.waitForFunction(()=>document.documentElement.dataset.skin==='liquid-chrome');
     await page.screenshot({path:path.join(out,`${name}-ranked-metallic-phone.png`)});
-    await page.getByRole("button", { name: "Best move", exact: true }).click();
+    await page.locator('.review-move[data-rank="1"]').click();
     assert.equal(
-      await page.locator('.review-move[aria-pressed="true"]').count(),
+      await page.locator('.review-move[data-rank][aria-pressed="true"]').count(),
       1,
     );
     await page.getByRole("button", { name: "Position", exact: true }).click();
     assert.equal(await page.locator(".decision-board .last-move-arrow").count(), 0);
     assert.equal(
-      await page.locator('.review-move[aria-pressed="true"]').count(),
+      await page.locator('.review-move[data-rank][aria-pressed="true"]').count(),
       0,
     );
     await page.keyboard.press("Escape");
@@ -119,9 +119,9 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       "best played needs no corrective action",
     );
     assert.match(await page.locator(".decision-caption").textContent(), /^Best\/your move ·/);
-    assert.equal(await page.locator(".decision-choices button").count(), 2);
+    assert.equal(await page.locator(".decision-choices button").count(), 0);
     assert.equal(await page.getByRole("button", {name: "Your move", exact:true}).count(), 0);
-    assert.ok(await page.getByRole("button", {name: "Best/your move",exact:true}).getAttribute("aria-pressed") === "true");
+    assert.ok(await page.locator('.review-move[data-rank="1"]').getAttribute("aria-pressed") === "true");
     await page.keyboard.press("Escape");
     await page.locator(".decision-dialog").waitFor({ state: "detached" });
     await page.evaluate(() => {
@@ -129,7 +129,7 @@ module.exports = async function reviewRanked(browser, base, out, name) {
       decisionReview(source, { opponent: true }).result({...result, actual: result.candidates[0]});
     });
     assert.match(await page.locator(".decision-caption").textContent(), /^Best\/their move ·/);
-    assert.equal(await page.locator(".decision-choices button").count(), 2);
+    assert.equal(await page.locator(".decision-choices button").count(), 0);
     assert.ok(await page.locator(".decision-board .last-move-arrow").count() > 0);
     await page.keyboard.press("Escape");
     await page.locator(".decision-dialog").waitFor({ state: "detached" });

@@ -17,7 +17,7 @@ module.exports = async function playLatency(browser, base, out, name) {
     while(Date.now()<deadline){const game=await saved();if(await predicate(game))return game;await page.waitForTimeout(25);}
     throw new Error('Timed out waiting for a committed decision');
   };
-  const warning=()=>page.locator('dialog[open]').getByRole('button',{name:'Confirm anyway',exact:true});
+  const warning=()=>page.locator('dialog[open]').getByRole('button',{name:/^(Confirm anyway|Play Best|Confirm without feedback)$/});
   const rows=[]; let windowProfile;
   try {
     await page.goto(base+'/backgammon/play/'); await ready();

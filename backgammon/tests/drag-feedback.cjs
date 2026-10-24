@@ -5,13 +5,13 @@ module.exports = async function dragFeedback(browser, base, out, name) {
   const page = await ctx.newPage(), errors=[], shots=[];
   page.on('pageerror', e=>errors.push(e.message));
   const snapshot=()=>page.evaluate(()=>({draft:dragTest.d.draft, selected:dragTest.d.selected, state:dragTest.d.current()}));
-  const fixture=async({mode='advanced',turn=0,orientation=0,kind='opening',motion='reduce'}={})=>page.evaluate(async options=>{
+  const fixture=async({mode='advanced',turn=0,orientation=0,kind='opening',motion='reduce',count=8}={})=>page.evaluate(async options=>{
     const {d,r,st}=dragTest;
-    st.saveSettings({interactionMode:options.mode,orientation:options.orientation,motion:options.motion,equityBar:false,boardTheme:{preset:'plum'}});
-    document.documentElement.dataset.motion=options.motion;
+    st.saveSettings({interactionMode:options.mode,orientation:options.orientation,motion:options.motion,motionScale:1,equityBar:false,boardTheme:{preset:'plum'}});
+    (await import('/backgammon/ui/motion.mjs')).applyMotionSettings(st.settings());
     (await import('/backgammon/core/appearance.mjs')).applyBoardTheme({preset:'plum'});
     let s=r.initialState({phase:'move',dice:[4,1]});
-    if(options.kind==='stack') {const points=Array(24).fill(0);points[12]=8;points[5]=7;points[23]=-15;s=r.initialState({points,phase:'move',dice:[4,1]});}
+    if(options.kind==='stack') {const points=Array(24).fill(0);points[12]=options.count;points[5]=15-options.count;points[23]=-15;s=r.initialState({points,phase:'move',dice:[4,1]});}
     if(options.kind==='bar') {const points=Array(24).fill(0);points[5]=13;points[11]=-15;s=r.initialState({points,bar:[2,0],phase:'move',dice:[4,1]});}
     if(options.kind==='off') {const points=Array(24).fill(0);points[0]=2;points[23]=-15;s=r.initialState({points,off:[13,0],phase:'move',dice:[1,2]});}
     if(['hit','landing-stack','doubles'].includes(options.kind)) {const points=Array(24).fill(0);points[12]=15;points[23]=-15;
@@ -21,7 +21,7 @@ module.exports = async function dragFeedback(browser, base, out, name) {
     if(options.kind==='revision') {const points=Array(24).fill(0);points[5]=14;points[11]=-15;s=r.initialState({points,bar:[1,0],phase:'move',dice:[4,1]});}
     if(options.turn) s={...s,turn:1,points:s.points.toReversed().map(n=>-n),bar:s.bar.toReversed(),off:s.off.toReversed()};
     d.set(s,r.legalPaths(s)); d.board.suppressClickUntil=0; window.sourceJSON=JSON.stringify(s);
-  },{mode,turn,orientation,kind,motion});
+  },{mode,turn,orientation,kind,motion,count});
   const coord=async(point,disc=false,index=-1)=>page.evaluate(({point,disc,index})=>{
     const node=document.querySelector(`[data-point="${point}"]`);
     const c=disc?[...node.querySelectorAll(':scope > .checker > circle:first-child')].at(index):node.querySelector('.point-hit');
@@ -111,8 +111,44 @@ module.exports = async function dragFeedback(browser, base, out, name) {
     await fixture();
     await page.evaluate(()=>{const d=dragTest.d;d.move({from:12,to:8,die:4});d.move({from:5,to:4,die:1});d.preview=d.current();d.render();});
     assert.equal(await page.locator('.draft-undo-checker').count(),0,'previews never advertise undo');
-    // Every visible stack disc can be picked up; compressed stacks show an
-    // accurate remaining count while retaining five visible discs.
+    // Every visible disc is a hitbox for the top checker. Lower discs stay
+    // painted, including across a redraw, cancellation, and compressed stacks.
+    for(const turn of [0,1]) for(const orientation of [0,1]) for(const count of [3,5,6,8]) for(const index of [0,1,-1]) {
+      const from=turn?11:12,to=turn?15:8;
+      await fixture({kind:'stack',turn,orientation,count});
+      await lift(from,to,{index});
+      const checkTop=()=>page.locator(`[data-point="${from}"]`).evaluate(n=>{
+        const pieces=[...n.querySelectorAll(':scope > .checker:not(.drag-remainder)')];
+        return {hidden:pieces.map(p=>getComputedStyle(p).visibility==='hidden'),text:n.querySelector('.drag-remainder text')?.textContent??null};
+      });
+      for(const redraw of [false,true]) {
+        if(redraw) await page.evaluate(()=>dragTest.d.render());
+        const actual=await checkTop();
+        assert.deepEqual(actual.hidden,Array.from({length:Math.min(count,5)},(_,i)=>i===Math.min(count,5)-1));
+        assert.equal(actual.text,count>6?String(count-1):null,'six becomes five without a count label');
+      }
+      await page.keyboard.press('Escape');await page.mouse.up();
+      assert.equal((await snapshot()).draft.length,0);
+      assert.equal(await page.locator('.drag-origin,.drag-remainder').count(),0);
+    }
+    // Empty point tips are also pickup space, in either direction/orientation.
+    // Stationary taps retain their destination behavior in the existing cases above.
+    for(const turn of [0,1]) for(const orientation of [0,1]) for(const mode of ['advanced','beginner']) {
+      await fixture({kind:'stack',count:3,turn,orientation,mode});
+      const from=turn?11:12,to=turn?15:8;
+      const a=await page.locator(`[data-point="${from}"] .point-hit`).evaluate(n=>{
+        const y=+n.getAttribute('y'),h=+n.getAttribute('height');
+        const p=new DOMPoint(+n.getAttribute('x')+25,y+(y<300?h-20:20)).matrixTransform(n.getScreenCTM());
+        return {x:p.x,y:p.y};
+      });
+      const b=await coord(to);
+      await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:6});
+      assert.equal(await page.locator('.drag-checker').count(),1,'open point lane picks up its stack');
+      assert.deepEqual(await page.locator(`[data-point="${from}"] > .checker`).evaluateAll(ns=>ns.map(n=>n.classList.contains('drag-origin'))),[false,false,true]);
+      await release();
+      assert.deepEqual((await snapshot()).draft,[{from,to,die:4}]);
+    }
+    // Compressed stacks keep an accurate remaining count during pickup.
     await fixture({kind:'stack'});await lift(12,8,{index:0});
     assert.equal(await page.locator('[data-point="12"] > .checker:not(.drag-origin)').count(),5);
     assert.equal(await page.locator('[data-point="12"] > .checker:not(.drag-origin) text').textContent(),'7');
@@ -259,10 +295,10 @@ module.exports = async function dragFeedback(browser, base, out, name) {
       await t.evaluate(async()=>{
         const {shell,DraftBoard}=await import('/backgammon/ui/shell.mjs');
         const r=await import('/backgammon/core/rules.mjs');const st=await import('/backgammon/core/storage.mjs');
-        st.saveSettings({interactionMode:'advanced',motion:'full',equityBar:false,boardTheme:{preset:'plum'}});
+        st.saveSettings({interactionMode:'advanced',motion:'full',motionScale:1,equityBar:false,boardTheme:{preset:'plum'}});
         const d=new DraftBoard(shell('trainer','Touch drag').board),s=r.initialState({phase:'move',dice:[4,1]});d.set(s,r.legalPaths(s));window.touchDraft=d;
       });
-      const coords=await t.evaluate(()=>{const b=touchDraft.board,cv=(x,y)=>{const p=new DOMPoint(x,y).matrixTransform(b.svg.getScreenCTM());return{x:p.x,y:p.y};};return{a:cv(81,242),b:cv(234,460)};});
+      const coords=await t.evaluate(()=>{const b=touchDraft.board,cv=(x,y)=>{const p=new DOMPoint(x,y).matrixTransform(b.svg.getScreenCTM());return{x:p.x,y:p.y};};return{a:cv(54,282),b:cv(234,460)};});
       const cdp=await touchContext.newCDPSession(t);
       await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...coords.a,id:1}]});
       for(let i=1;i<=10;i++) await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:coords.a.x+(coords.b.x-coords.a.x)*i/10,y:coords.a.y+(coords.b.y-coords.a.y)*i/10,id:1}]});
@@ -309,6 +345,7 @@ module.exports = async function dragFeedback(browser, base, out, name) {
         await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:reduced.x+(coords.b.x-reduced.x)*i/10,y:reduced.y+(coords.b.y-reduced.y)*i/10,id:3}]});
         await t.waitForTimeout(20);
       }
+      assert.deepEqual(await t.locator('[data-point="12"] > .checker').evaluateAll(ns=>ns.map(n=>n.classList.contains('drag-origin'))),[false,false,false,false,true],'touching bottom disc lifts top');
       await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
       await t.waitForFunction(()=>touchDraft.draft.length===1);
       assert.deepEqual(await t.evaluate(()=>touchDraft.draft),[{from:12,to:8,die:4}]);
@@ -322,7 +359,7 @@ module.exports = async function dragFeedback(browser, base, out, name) {
         const st=await import('/backgammon/core/storage.mjs'),r=await import('/backgammon/core/rules.mjs');
         const {localConfig}=await import('/backgammon/core/play-session.mjs');
         const state=r.initialState({phase:'move',dice:[4,1],matchLength:0});
-        st.saveSettings({interactionMode:'advanced',motion:'system',equityBar:false,boardTheme:{preset:'plum'}});
+        st.saveSettings({interactionMode:'advanced',motion:'system',motionScale:1,equityBar:false,boardTheme:{preset:'plum'}});
         await st.put('work',{id:'play',game:{id:'drag-live',initial:state,state,events:[],started:true,names:['You','Friend'],config:localConfig({mode:'local'})},draft:[]});
       });
       await page.goto(base+'/backgammon/play/#resume=drag-live');

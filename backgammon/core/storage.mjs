@@ -2,7 +2,7 @@
 import { assertState, replay, clone } from "./rules.mjs";
 import { DEFAULT_BOARD_THEME, normalizeBoardTheme } from "./appearance.mjs";
 import { DEFAULT_SOUND, normalizeSound } from "./sound.mjs";
-import { normalizeMotionScale } from "./motion.mjs";
+import { DEFAULT_MOTION_SCALE, normalizeMotionScale } from "./motion.mjs";
 import { mergeEvaluations, decisionHistory, decisionTotals } from "./decision-history.mjs";
 import { splitGameHistory } from "./game-archive.mjs";
 import { validateTakebacks } from "./table.mjs";
@@ -20,7 +20,7 @@ export const settingsDefaults = {
   moveHints: true,
   interactionMode: "advanced",
   motion: "system",
-  motionScale: 1,
+  motionScale: DEFAULT_MOTION_SCALE,
   appearance: "dark",
   preset: "quick",
   moveFeedback: true,
@@ -94,7 +94,7 @@ export function saveSettings(value) {
   const next = { ...settings(), ...value };
   // Keep older callers/backup settings that set only reduced motion compatible.
   if (Object.hasOwn(value, "motion") && !Object.hasOwn(value, "motionScale"))
-    next.motionScale = value.motion === "reduce" ? 0 : next.motionScale || 1;
+    next.motionScale = value.motion === "reduce" ? 0 : next.motionScale || DEFAULT_MOTION_SCALE;
   next.motionScale = normalizeMotionScale(next.motionScale, next.motion);
   next.boardTheme = normalizeBoardTheme(next.boardTheme);
   next.skin = normalizeSkin(next.skin);

@@ -41,6 +41,7 @@ import {
   setSoundPreferences,
 } from "./sound.mjs";
 import { reducedMotion, motionDuration, applyMotionSettings } from "./motion.mjs";
+import { MOTION_SPEED_OPTIONS } from "../core/motion.mjs";
 
 import { releaseStatus } from "./release-status.mjs";
 import { TouchMoves } from "./touch-moves.mjs";
@@ -69,7 +70,7 @@ const KIT_VARIANTS = { primary: "btn--primary", ghost: "btn--ghost", danger: "bt
 const CUSTOM_CONTROLS = new Set([
   "list-row", "review-move", "review-cube-choice", "feedback-review",
   "history-evaluation", "history-node-toggle", "theme-preset", "skin-choice",
-  "history-game-toggle",
+  "cube-reply",
 ]);
 export function buttonClasses(cls = "") {
   const tokens = String(cls).split(/\s+/).filter(Boolean);
@@ -487,18 +488,18 @@ export async function preferences() {
     },
   });
   const motionValue = el("output", {for:"animation-speed"});
-  const motion = el("input", {id:"animation-speed", type:"range", min:0, max:3, step:.25,
-    value:s.motionScale, onInput:e => {
-      const motionScale = Number(e.target.value);
+  const motion = el("input", {id:"animation-speed", type:"range", min:0, max:MOTION_SPEED_OPTIONS.length - 1, step:1,
+    onInput:e => {
+      const motionScale = MOTION_SPEED_OPTIONS[Number(e.target.value)].scale;
       saveSettings({motionScale, motion:motionScale === 0 ? "reduce" : "system"});
       applyMotionSettings(settings());
       updateMotion();
     }});
   const updateMotion = () => {
     const value = settings().motionScale;
-    motion.value = value;
-    const label = value === 0 ? "Instant" : value === 1 ? "Normal"
-      : value < 1 ? `${+(1/value).toFixed(2)}× faster` : `${value}× slower`;
+    const index = MOTION_SPEED_OPTIONS.findIndex(option => option.scale === value);
+    motion.value = index;
+    const {label} = MOTION_SPEED_OPTIONS[index];
     motionValue.textContent = label;
     motion.setAttribute("aria-valuetext", label);
   };
@@ -535,7 +536,7 @@ export async function preferences() {
     "div",
     { class: "stack settings-display" },
     el("div", {class:"motion-settings"}, field("Animation speed", motion),
-      el("div", {class:"row spread small muted"}, el("span", {}, "Instant"), motionValue, el("span", {}, "Slower"))),
+      el("div", {class:"row spread small muted"}, el("span", {}, "Instant"), motionValue, el("span", {}, "0.25×"))),
     field("Playing style", interaction),
     el("p", { class: "muted small" }, "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
@@ -985,7 +986,7 @@ export class DraftBoard {
       if (point === null) return this.clearSelection();
       const checker = options.checkerTap || (!options.quick && this.sources().includes(point));
       const action = advancedAction({ point, checker, candidates: this.candidates(),
-        returns: this.reverseMoves(), checkerReturns: this.checkerUndos(), routes: checker ? [] : nearestRoutes(this.paths, this.draft, point, this.state.turn), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
+        returns: this.reverseMoves(), checkerReturns: this.checkerUndos(), revisions: checker ? [] : this.entrySwitches(), routes: checker ? [] : nearestRoutes(this.paths, this.draft, point, this.state.turn), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
       if (action?.type === "move") this.move(action.step);
       else if (action?.type === "undo") this.moveRoute(action.route);
       else if (action?.type === "routes") this.chooseRoutes(action.routes);

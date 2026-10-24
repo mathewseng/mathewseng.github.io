@@ -17,8 +17,8 @@ const STACK_LIMIT = 5,
 const stackY = (top, slot) =>
   top ? 54 + slot * CHECKER_RADIUS * 2 : 606 - slot * CHECKER_RADIUS * 2;
 // Fill the corners around each visible disc, within its own point lane.
-// One shared test keeps a near-edge tap and a drag pickup identical. The open
-// point tip stays destination space; neighboring point targets never overlap.
+// Taps distinguish a checker from open destination space. Dragging can start
+// anywhere on an occupied point, using the same non-overlapping point lanes.
 function checkerHit(group, position) {
   const hit = group.querySelector('.checker-hit');
   if (!hit) return -1;
@@ -471,20 +471,16 @@ export class Board {
       // Empty tray-side space is a bear-off shortcut, never a pickup of an
       // already borne-off checker. The count disc keeps its own undo/drag hitbox.
       if (e.target.classList.contains("bearoff-hit")) return;
-      const pos = this.coordinates(e.clientX, e.clientY);
-      const pickIndex = checkerHit(p, pos);
-      if (
-        !p.dataset.point.startsWith("off") &&
-        pickIndex < 0
-      )
-        return;
+      // A pointer moving beyond the drag threshold picks up the top checker
+      // even from the empty part of its point. A stationary tap still follows
+      // the point/destination action, so this does not steal tap-to-move.
+      if (!p.querySelector(":scope > .checker")) return;
       this.pointer = {
         id: e.pointerId,
         raw: this.decode(p.dataset.point),
         x: e.clientX,
         y: e.clientY,
         touch: e.pointerType === "touch",
-        pickIndex: Math.max(0, pickIndex),
         dragging: false,
       };
       if (e.pointerType === "touch") {
@@ -880,7 +876,8 @@ export class Board {
     const p = this.pointer, group = this.svg.querySelector(`[data-point="${p.raw}"]`);
     if (!group) return;
     const pieces = [...group.querySelectorAll(":scope > .checker")];
-    const top = pieces[p.pickIndex] || pieces.at(-1);
+    // Every disc is a pickup hitbox for the top checker, never a hole in the stack.
+    const top = pieces.at(-1);
     if (!top) return;
     const face = top.firstChild, x = +face.getAttribute("cx"), y = +face.getAttribute("cy");
     // Counts represent hidden checkers: show one fewer, not a translucent copy.
@@ -890,14 +887,8 @@ export class Board {
     group.classList.add("drag-source");
     if ((typeof point === "number" && count > STACK_LIMIT) || (typeof point === "string" && count > 1)) {
       const remainder = checker(x, y, this.state.turn,
-        typeof point === "number" && (count === STACK_LIMIT + 1 || p.pickIndex < STACK_LIMIT - 1) ? 1 : count - 1, this.container.clientWidth < 600);
+        typeof point === "number" && count === STACK_LIMIT + 1 ? 1 : count - 1, this.container.clientWidth < 600);
       remainder.classList.add("drag-remainder"); group.append(remainder);
-      if (typeof point === "number" && p.pickIndex < STACK_LIMIT - 1) {
-        const cap = pieces.at(-1); cap.classList.add("drag-origin");
-        const replacement = checker(+cap.firstChild.getAttribute("cx"), +cap.firstChild.getAttribute("cy"), this.state.turn,
-          count === STACK_LIMIT + 1 ? 1 : count - 1, this.container.clientWidth < 600);
-        replacement.classList.add("drag-remainder"); group.append(replacement);
-      }
     }
     if (point === "off") [...group.querySelectorAll(".off-checker")].at(-1)?.classList.add("drag-origin");
     this.dragGhost = svg("g", { class:"drag-checker", "pointer-events":"none", "aria-hidden":"true" });

@@ -50,7 +50,7 @@ module.exports = async function skinsUX(browser, base, out, browserName) {
     await page.getByRole("tab", { name: "Display & controls", exact: true }).click();
     const speed = page.getByLabel("Animation speed", { exact: true });
     await speed.press("Home");
-    if (value !== "reduce") for (let i=0;i<4;i++) await speed.press("ArrowRight");
+    if (value !== "reduce") for (let i=0;i<8;i++) await speed.press("ArrowRight");
     await page.getByRole("tab", { name: "Board colors", exact: true }).click();
   };
   const frames = () => page.evaluate(() => window.__bgShader?.frames ?? 0);
@@ -80,7 +80,7 @@ module.exports = async function skinsUX(browser, base, out, browserName) {
     );
     assert.ok(skins.length >= 1 && skins[0].id === "classic");
     const initial = await state();
-    assert.equal(initial.skin, "tidal"); // the default skin (skins/index.mjs DEFAULT_SKIN)
+    assert.equal(initial.skin, "liquid-chrome"); // the default skin (skins/index.mjs DEFAULT_SKIN)
     await openColors();
     const section = page.locator('section[aria-label="Style"] .skin-grid');
     assert.equal(await section.locator(".skin-choice").count(), skins.length);

@@ -29,8 +29,8 @@ module.exports = async function mobileLibrary(browser, base, out, name) {
     });
     await page.reload();
     await page.locator(".library-session-players").waitFor();
-    assert.match(await page.locator('.library-session-player[data-player="0"]').textContent(), /0\.000 EV points lost/);
-    assert.match(await page.locator('.library-session-player[data-player="1"]').textContent(), /— EV points lost/);
+    assert.match(await page.locator('.library-session-player[data-player="0"]').textContent(), /0\.000 EV lost/);
+    assert.match(await page.locator('.library-session-player[data-player="1"]').textContent(), /— EV lost/);
     assert.match(await page.locator(".library-session-count").textContent(), /1 game · 1 evaluated · 2 unreviewed/);
     for (const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1366,768]]) {
       await page.setViewportSize({width,height});

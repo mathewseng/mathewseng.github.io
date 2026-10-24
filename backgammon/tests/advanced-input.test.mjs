@@ -181,3 +181,40 @@ test('point fallback preserves destination priority and cannot bypass bar priori
   for(const point of [12,23,7,'bar','off'])
     assert.equal(advancedAction({...options,point,candidates:[],routes:[]}),null,'no remaining move stays a quiet no-op');
 });
+
+test('spent 6–5 checker can return to either 9 or 10 without a selection, in both directions', async()=>{
+  const {dieSwitchRoutes} = await import('../core/draft.mjs');
+  for(const turn of [0,1]) for(const first of [6,5]) {
+    const p=n=>turn?24-n:n-1, points=Array(24).fill(0);
+    for(const [n,count] of [[4,2],[5,3],[6,3],[7,2],[8,2],[11,1],[13,1],[15,1],[2,-1],[3,-4],[19,-1],[20,-2],[21,-2],[23,-3],[24,-2]]) points[p(n)]=count*(turn?-1:1);
+    const s=initialState({phase:'move',dice:[6,5],turn,points}),paths=legalPaths(s);
+    const draft=[{from:p(15),to:p(15-first),die:first},{from:p(15-first),to:p(4),die:11-first}];
+    assert.ok(matchingPaths(paths,draft).length);
+    for(const target of [9,10]) {
+      const options={point:p(target),checker:false,candidates:nextSteps(paths,draft),returns:originalReturnRoutes(s,paths,draft),
+        revisions:dieSwitchRoutes(s,paths,draft),preferred:6,dice:s.dice,turn};
+      const action=advancedAction(options);
+      assert.equal(action.type,'routes');
+      for(const route of action.routes) {
+        assert.deepEqual(route.remaining,[{from:p(15),to:p(target),die:15-target}]);
+        assert.ok(matchingPaths(paths,route.remaining).length);
+      }
+      const locked=advancedAction({...options,revisions:dieSwitchRoutes(s,paths,draft,2)});
+      assert.equal(locked,null,'forced moves cannot be revised');
+      const partlyLocked=advancedAction({...options,revisions:dieSwitchRoutes(s,paths,draft,1)});
+      if(target===15-first) assert.deepEqual(partlyLocked.routes[0].remaining,[draft[0]]);
+      else assert.equal(partlyLocked,null,'cannot replace a forced first die');
+    }
+  }
+});
+
+test('return targets preserve moves made by a different checker',async()=>{
+  const {dieSwitchRoutes}=await import('../core/draft.mjs');
+  const s=initialState({phase:'move',dice:[4,1]}), paths=legalPaths(s);
+  const draft=[{from:12,to:8,die:4},{from:5,to:4,die:1}];
+  const options={point:11,checker:false,candidates:[],returns:originalReturnRoutes(s,paths,draft),revisions:dieSwitchRoutes(s,paths,draft),preferred:1,dice:s.dice,turn:0};
+  assert.equal(advancedAction(options),null,'cannot steal the one used by a different checker');
+  assert.deepEqual(advancedAction({...options,point:12}).route.remaining,[draft[1]],'original return leaves the other checker alone');
+  const incoming={from:15,to:12,die:3};
+  assert.deepEqual(advancedAction({...options,point:12,candidates:[incoming],dice:[3,1]}),{type:'move',step:incoming},'direct arrival wins over a return');
+});

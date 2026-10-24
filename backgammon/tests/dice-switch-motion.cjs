@@ -60,7 +60,7 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
         const { put, saveSettings } = await import("/backgammon/core/storage.mjs");
         const { initialState } = await import("/backgammon/core/rules.mjs");
         const { localConfig } = await import("/backgammon/core/play-session.mjs");
-        saveSettings({ interactionMode: mode, motion: "system" });
+        saveSettings({ interactionMode: mode, motionScale: 1, motion: "system" });
         const s = initialState({ phase: "move", dice });
         await put("work", { id: "play", game: { id: "dice-motion", state: s, initial: s,
           events: [], started: true, names: ["You", "Friend"], config: localConfig({ mode: "local" }) }, draft: [] });

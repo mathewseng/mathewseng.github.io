@@ -17,7 +17,7 @@ import {
 } from "../core/storage.mjs";
 import { shareURL } from "../core/xgid.mjs";
 import { replay } from "../core/rules.mjs";
-import { sameDecisionPrefix } from "../core/decision-history.mjs";
+import { sameDecisionPrefix, decisionHistory, decisionTotals } from "../core/decision-history.mjs";
 import { sessionReview } from "../ui/session-review.mjs";
 import { Board } from "../ui/board.mjs";
 import {
@@ -227,7 +227,7 @@ function renderList() {
       ),
     );
     if (item.kind === "match") {
-      const totals = item.decisionSummary;
+      const totals = selected?.id === item.id ? selected.decisionSummary : item.decisionSummary;
       const summary = el("span", { class: "library-session-summary" });
       if (totals) {
         const games = item.gameCount || 1;
@@ -235,7 +235,7 @@ function renderList() {
           el("span", { class: "library-session-players" }, ...totals.map((t, player) =>
             el("span", { class: "library-session-player", "data-player": player },
               el("strong", {}, item.names?.[player] || (player ? "Black" : "White")),
-              el("span", {}, `${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV points lost" : "equity lost"}`),
+              el("span", {}, t.money && t.lossUnits !== "normalized-equity" ? "Open to see EV loss" : `${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV lost" : "equity lost"}`),
             ))),
           el("span", { class: "library-session-count" },
             `${games} ${games === 1 ? "game" : "games"} · ${totals.reduce((n, t) => n + t.evaluated, 0)} evaluated · ${totals.reduce((n, t) => n + t.pending, 0)} unreviewed`),
@@ -257,6 +257,12 @@ async function choose(item) {
   const loaded = await get('items',item.id);
   if (token !== selectionGeneration) return;
   selected = loaded;
+  // Recompute legacy weighted totals only for the game being opened. Older
+  // game bodies remain unloaded while browsing the paginated library.
+  if (selected?.kind === "match") {
+    const rows = decisionHistory(selected);
+    selected.decisionSummary = [0, 1].map(player => decisionTotals(rows, player));
+  }
   renderList();
   inspector();
   if (getComputedStyle($("inspector")).display === "none") openPanel();

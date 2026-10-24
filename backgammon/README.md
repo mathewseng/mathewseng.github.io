@@ -91,7 +91,7 @@ In Beginner mode, ringed checkers identify legal sources. Tap/click a source and
 In Beginner mode, selecting a checker limits move highlights to its forward routes, alternate first-die moves and undo destinations. A movable checker disc selects (or deselects if already selected), without auto-moving or undoing. An immovable disc passes through to its point’s highlighted destination, if any. Open point space plays a selected legal route; without selection, a previous origin returns its moved checker first, otherwise it uses the nearest legal incoming checker. Otherwise it selects a movable resident or quietly clears selection. No unavailable click changes status text. Repeated point-area clicks can build a point while the arrival remains legal, including doubles. There is no timed double-click mode: fast and slow clicks follow identical rules. After a forward move completes the draft, its reversible landing remains selected so the next tap deselects; bar entries clear selection instead. Shift+point keys explicitly request destination input; ordinary keys retain source selection and the unambiguous undo-only shortcut. Holding a key does not count as repeated presses. The [public controls guide](https://mathewseng.github.io/backgammon/controls/#cases) lists 31 interaction cases alongside click and highlight flowcharts.
 
 
-Settings → Board colors opens with the **skin picker** (`backgammon/skins/`): Classic plus **24 skins** (twelve material themes such as Tidal, the default, Gloaming, Phosphor Terminal, Chrysler Lacquer, Obsidian, Baize & Mahogany, Woodblock Indigo, Carrara Verde, One-Bit Dither, Dessau Primary, Dune and Nacre Shell, and twelve shader-forward modern themes: Mesh Gradient, Liquid Chrome, Aurora, Halftone, Frosted Glass, Neon Grid, Ink Flow, Cells, Flow Field, Prism, Topography and Nebula), each restyling the page chrome, the board and a WebGL shader behind the page. Below it are **48 board palettes**: the 24 house presets (Slate, Midnight, Forest, Linen, Plum, Graphite, Ocean, Navy, Spruce, Olive, Walnut, Copper, Claret, Indigo, Steel, Carbon, Paper, Sand, Glacier, Mist, Sage, Rose, Chalk and Amber) and one per skin. Themes, Colors and Patterns have separate compact tabs with a live preview. All **34 color roles** retain hex inputs and native color pickers. Inputs accept three- or six-digit hex, with or without `#`; invalid text retains the last valid value. Individual reset, Reset colors and Undo style change are available. Choosing a preset clears custom colors and patterns and can be undone while the editor is open.
+Settings → Board colors opens with the **skin picker** (`backgammon/skins/`): Classic plus **24 skins** (twelve material themes such as Tidal, Gloaming, Phosphor Terminal, Chrysler Lacquer, Obsidian, Baize & Mahogany, Woodblock Indigo, Carrara Verde, One-Bit Dither, Dessau Primary, Dune and Nacre Shell, and twelve shader-forward modern themes: Mesh Gradient, Liquid Chrome, Aurora, Halftone, Frosted Glass, Neon Grid, Ink Flow, Cells, Flow Field, Prism, Topography and Nebula), each restyling the page chrome, the board and a WebGL shader behind the page. Below it are **48 board palettes**: the 24 house presets (Slate, Midnight, Forest, Linen, Plum, Graphite, Ocean, Navy, Spruce, Olive, Walnut, Copper, Claret, Indigo, Steel, Carbon, Paper, Sand, Glacier, Mist, Sage, Rose, Chalk and Amber) and one per skin. Themes, Colors and Patterns have separate compact tabs with a live preview. All **34 color roles** retain hex inputs and native color pickers. Inputs accept three- or six-digit hex, with or without `#`; invalid text retains the last valid value. Individual reset, Reset colors and Undo style change are available. Choosing a preset clears custom colors and patterns and can be undone while the editor is open.
 
 **11 surface roles** can be patterned independently: frame, playing surface, bar, trays, each point color, each checker side, each die side, and cube. Choose solid, lines, dots, crosshatch or waves; edit ink hex, spacing, strength and angle. Pattern values are bounded and validated; arbitrary CSS/SVG cannot be injected. Patterns remain beneath labels, counts and pips. The exact same tile drives on-board SVG dice and HTML opening dice. Presets use solid surfaces for maximum clarity. Basic contrast feedback checks text, pips, counts, checker/point differentiation and highlights; this is not a full WCAG audit or a restriction on custom choices.
 
@@ -634,6 +634,31 @@ Browser coverage: `play-footer`, `review-ranked`, `review-selection`, `review-mo
 
 ### Animation speed
 
-Settings → Display & controls includes an Animation speed slider. Instant disables motion and finishes active animations; Normal retains the existing pacing; moving farther right slows checker flights, dice, highlights, previews, opening reveals and automatic-turn pauses together. The setting persists across pages and reloads. Device reduced-motion preferences still disable animations. Changing speed does not change game state or solver timing.
+Settings → Display & controls includes an Animation speed slider. The stops are Instant, 4×, 3×, 2.5×, 2× (default), 1.75×, 1.5×, 1.25×, 1×, 0.75×, 0.5× and 0.25×. Instant disables motion and finishes active animations; 1× retains the original pacing. Moving farther right slows checker flights, dice, highlights, previews, opening reveals and automatic-turn pauses together. Previously saved speeds migrate to the closest stop. The setting persists across pages and reloads. Device reduced-motion preferences still disable animations. Changing speed does not change game state or solver timing.
 
 Bar auto-roll survives partial entries and remains active on later turns while that player has checkers on the bar and blocked entry points remain. The final entry, explicit stop, takeback or game end clears it. Regression coverage: `motion-speed.test.mjs`, `bar-auto-roll.test.mjs`, `animation-speed.cjs`, and `roll-prompt.cjs`.
+
+
+### Review and summary units
+
+Game and session EV-loss totals/averages sum the raw decision-equity losses, without multiplying by cube value. Initial and accepted checker/cube decisions remain separate, with the same 0.002 cube-mistake threshold. Old saved Library totals are recomputed only when that game is opened; browsing still reads metadata only.
+
+Review uses one ranked preview list, opening on the best move. The Position row above it includes the rolled dice and the no-double equity before seeing those dice, reusing a saved pre-roll evaluation when available or requesting a separate 2-ply evaluation. It never substitutes the post-roll best move’s equity. The played move remains accessible even outside the first ten alternatives.
+
+Depth buttons request fixed local GNUbg searches up to the engine’s supported 4 ply. Estimates use Auto’s forecast when available, otherwise approximate growth from measured computation. Cached/book retrieval times cannot estimate this device’s search speed and show “Time unknown.” Progress counts completed positions at the displayed search stage; cube native calls remain indeterminate. A cancelled, failed or closed search cannot replace the last complete comparison. The modal owns at most one worker and releases it on close.
+
+Game summaries in history are always expanded. Portrait phones also have a
+collapsible current-game summary below the play controls; it does not reduce
+board space. The costly-checker warning offers Revise, Hint and Play Best.
+Hint preserves the draft; Play Best returns drafted checkers before replaying.
+A drag can start anywhere in an occupied movable point and lifts its top checker.
+New installs default to Liquid Chrome styling with the Plum board palette;
+existing saved theme choices are preserved.
+
+Cube offers put Drop on the board's left and Take on its right. A legal Beaver
+(or subsequent Raccoon) occupies the primary confirm-action area; match play
+and rule limits hide illegal immediate redoubles.
+
+During play the equity bar evaluates the current decision before any draft
+moves. Selection, moving, undoing and completing a draft leave that reading
+visible; the next committed decision supplies the next equity.

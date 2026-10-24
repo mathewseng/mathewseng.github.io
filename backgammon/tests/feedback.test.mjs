@@ -206,7 +206,7 @@ test("checker flight contacts every route waypoint, ends exactly, and stays boun
   for (let n = 2; n <= 5; n++) {
     const route = points.slice(0, n),
       path = checkerFlight(route);
-    assert.ok(path.duration >= 460 && path.duration <= 1080);
+    assert.ok(path.duration >= 230 && path.duration <= 540);
     assert.equal(path.landings.length, route.length - 1);
     assert.equal(path.frames[0].offset, 0);
     assert.equal(path.frames.at(-1).offset, 1);
@@ -245,7 +245,7 @@ test("checker flight has continuous progress through the middle and gentle depar
 test("drag release lowers smoothly from the exact held pose without a second hop", () => {
   const origin={x:100,y:200,scale:1.1},dest={x:250,y:400};
   const flight=checkerDrop(origin,dest);
-  assert.ok(flight.duration>=150 && flight.duration<=300);
+  assert.ok(flight.duration>=75 && flight.duration<=150);
   assert.equal(flight.frames[0].transform,'translate(100px, 200px) scale(1.1)');
   assert.equal(flight.frames.at(-1).transform,'translate(250px, 400px) scale(1)');
   const values=flight.frames.map(f=>f.transform.match(/[-\d.]+/g).map(Number));

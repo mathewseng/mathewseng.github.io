@@ -94,7 +94,7 @@ test("pending first attempts and their grades cannot leak to another position or
   assert.deepEqual(current.events[0].initialDecision, saved.events[0].initialDecision);
 });
 
-test("totals separate games/players, weight each cube, use evaluated turns for averages and exclude passes", () => {
+test("totals separate games/players, ignore cube multipliers, use evaluated turns for averages and exclude passes", () => {
   const row = (player, kind, initial, accepted, cube = 1, extra = {}) => ({
     player, game: 2, forced: false, action: { type: kind, steps: [{}] },
     source: { cube: { value: cube } }, initialAction: { type: kind },
@@ -109,15 +109,15 @@ test("totals separate games/players, weight each cube, use evaluated turns for a
     row(1, "take", .3, .2, 2), row(1, "move", .2, .1),
     row(0, "move", 99, 99, 1, { game: 1 })];
   const money = gameLossSummary(rows, 2), own = money.players[0];
-  near(own.checker.initial.total, .32);
-  near(own.checker.accepted.total, .1);
-  near(own.checker.initial.average, .32 / 3);
+  near(own.checker.initial.total, .1);
+  near(own.checker.accepted.total, .03);
+  near(own.checker.initial.average, .1 / 3);
   assert.equal(own.checker.initial.pending, 1);
   assert.equal(own.checker.initial.count, 4);
-  near(own.cube.initial.total, .328);
-  assert.equal(own.cube.initial.mistakes, 1, "mistake threshold applies before weighting");
+  near(own.cube.initial.total, .102);
+  assert.equal(own.cube.initial.mistakes, 1, "mistake threshold applies independent of cube value");
   assert.equal(own.cube.accepted.mistakes, 1);
-  near(money.players[1].cube.accepted.total, .4);
+  near(money.players[1].cube.accepted.total, .2);
   const match = gameLossSummary(rows, 2, 7);
   near(match.players[0].checker.initial.total, .1);
   near(match.players[0].cube.initial.total, .102);

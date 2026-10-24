@@ -160,6 +160,26 @@ boardWorkspace.append(ui.board.container, boardActions);
 // naming the result level, the score change and the cube.
 const resultCard = el("section", { class: "bg-result-card game-over-card", hidden: true, "aria-label": "Game result" });
 ui.board.container.append(resultCard);
+const cubeReplies = el("div", { class: "board-cube-replies", hidden: true, "aria-label": "Respond to cube offer" });
+ui.board.container.append(cubeReplies);
+function placeCubeReplies() {
+  if (cubeReplies.hidden) return;
+  const matrix = ui.board.svg.getScreenCTM();
+  if (!matrix) return;
+  const box = ui.board.container.getBoundingClientRect();
+  const left = new DOMPoint(54, 330).matrixTransform(matrix);
+  const right = new DOMPoint(762, 330).matrixTransform(matrix);
+  cubeReplies.style.left = `${left.x - box.left}px`;
+  cubeReplies.style.top = `${left.y - box.top}px`;
+  cubeReplies.style.width = `${right.x - left.x}px`;
+  // The centre lane gets shorter with a height-limited board. Scale only the
+  // visible face; keep a full touch target while checker input is locked.
+  cubeReplies.style.setProperty("--cube-reply-face-height", `${Math.max(24, Math.min(48, 144 * matrix.d - 6))}px`);
+}
+const cubeReplyResize = new ResizeObserver(placeCubeReplies);
+cubeReplyResize.observe(ui.board.container);
+cubeReplyResize.observe(ui.board.svg);
+
 let hiddenResult = "";
 let resultSignature = "";
 function renderResultCard(s) {
@@ -204,6 +224,7 @@ const autoReview = new AutoReview({
   idle: () => !document.hidden && !leaving && !botBusy && !committing && !assistanceJob && !opening.active,
   save: () => persist(),
   changed: () => {
+    renderMobileSummary(model(), true);
     renderedFeedback = null;
     renderFeedback();
     renderReviewStatus();
@@ -218,17 +239,15 @@ const feedbackStrip = el("div", {
   hidden: true,
 });
 // Below each game divider in the decision history: a card with each player's
-// accepted EV loss for that game. Tapping it opens the full per-game table.
+// accepted EV loss and the full per-game table, always expanded.
 function gameSummaryCard(game, rows, viewer) {
   const s = state();
   const visible = config.mode === "computer" ? [config.humanSide] : [0, 1];
   const summary = gameLossSummary(rows, game, s.matchLength);
-  const unit = summary.money ? "pts" : "";
   const players = summary.players.filter(player => visible.includes(player.player));
   const signature = JSON.stringify([game, s.matchLength, names(), players]);
   let card = feedbackView.cards.get(game);
   if (card?.dataset.signature === signature) return card;
-  const open = feedbackView.openGames.has(game);
   const label = player => config.mode === "local" ? names()[player.player]
     : player.player === viewer ? "You" : "Opponent";
   const total = player => {
@@ -243,30 +262,17 @@ function gameSummaryCard(game, rows, viewer) {
     return el("span", { class: "history-game-stat", "data-history-player": player.player },
       el("span", { class: "history-game-name" }, label(player)),
       el("strong", t.known ? { "data-loss-tone": lossTone(t.loss).tone } : {},
-        t.known ? `−${t.loss.toFixed(3)}${unit ? " " + unit : ""}` : "—"),
+        t.known ? `−${t.loss.toFixed(3)} EV` : "—"),
       el("span", { class: "muted" },
         t.known ? `${t.mistakes} mistake${t.mistakes === 1 ? "" : "s"}` : "not analyzed",
         ...(t.pending ? [` · ${t.pending} pending`] : [])),
     );
   });
-  const panel = el("div", { class: "history-game-detail", hidden: !open });
-  if (open) panel.append(gameLossTable(rows, { gameNumber: game, matchLength: s.matchLength }, names(), visible));
-  const toggle = button("", () => {
-    const next = panel.hidden;
-    panel.hidden = !next;
-    toggle.setAttribute("aria-expanded", String(next));
-    if (next) {
-      feedbackView.openGames.add(game);
-      if (!panel.childElementCount)
-        panel.append(gameLossTable(rows, { gameNumber: game, matchLength: s.matchLength }, names(), visible));
-    } else feedbackView.openGames.delete(game);
-  }, "history-game-toggle", {
-    "aria-expanded": String(open),
-    "aria-label": `Game ${game} summary`,
-  });
-  toggle.append(el("span", { class: "history-game-title" }, "Game summary"), ...chips,
-    el("span", { class: "history-game-chevron", "aria-hidden": "true" }));
-  card = el("section", { class: "history-game-card", "data-game": game, "aria-label": `Game ${game} summary` }, toggle, panel);
+  const panel = el("div", { class: "history-game-detail" },
+    gameLossTable(rows, { gameNumber: game, matchLength: s.matchLength }, names(), visible));
+  const heading = el("div", { class: "history-game-heading" },
+    el("span", { class: "history-game-title" }, "Game summary"), ...chips);
+  card = el("section", { class: "history-game-card", "data-game": game, "aria-label": `Game ${game} summary` }, heading, panel);
   card.dataset.signature = signature;
   feedbackView.cards.set(game, card);
   return card;
@@ -276,7 +282,6 @@ const feedbackView = {
   turns: new Map(),
   games: new Map(),
   cards: new Map(),
-  openGames: new Set(),
   heading: el("h2", { class: "sr-only" }, "Decision history"),
   caption: el("p", { class: "history-context muted" }),
   empty: el("p", { class: "history-empty muted", role: "status" }),
@@ -302,7 +307,53 @@ reviewArea.append(el("header", { class: "review-header" },
     $("panel-toggle").focus({ preventScroll: true });
   }, "ghost"),
 ));
-document.querySelector(".app").after(reviewArea);
+// A separate portrait-only disclosure follows the table. It stays out of the
+// board's height calculation, and builds its detail only when opened.
+const phonePortrait = matchMedia("(max-width: 600px) and (orientation: portrait)");
+const mobileSummary = el("details", { id: "mobile-game-summary", class: "mobile-game-summary", hidden: true });
+const mobileSummaryHeading = el("summary", {});
+const mobileSummaryBody = el("div", { class: "history-game-detail" });
+mobileSummary.append(mobileSummaryHeading, mobileSummaryBody);
+document.querySelector(".app").after(mobileSummary, reviewArea);
+let mobileSummaryData = null;
+function fillMobileSummary() {
+  if (!mobileSummary.open || !mobileSummaryData || mobileSummaryBody.childElementCount) return;
+  const { rows, state: source, labels, visible } = mobileSummaryData;
+  mobileSummaryBody.append(gameLossTable(rows, source, labels, visible));
+}
+mobileSummary.addEventListener("toggle", fillMobileSummary);
+phonePortrait.addEventListener("change", () => renderMobileSummary(model(), true));
+function renderMobileSummary(m, force = false) {
+  mobileSummary.hidden = !m?.started || !phonePortrait.matches;
+  if (mobileSummary.hidden) {
+    mobileSummaryData = null;
+    mobileSummaryBody.replaceChildren();
+    return;
+  }
+  const source = state(), labels = names();
+  const visible = config.mode === "computer" ? [config.humanSide] : [0, 1];
+  const key = JSON.stringify([m.id, source.gameNumber, source.matchLength, labels, visible]);
+  if (!force && mobileSummaryData?.events === m.events && mobileSummaryData.key === key) return;
+  const rows = decisionHistory(m).filter(row => row.game === source.gameNumber);
+  const summary = gameLossSummary(rows, source.gameNumber, source.matchLength);
+  mobileSummaryData = { key, rows, state: source, labels, visible, events: m.events };
+  mobileSummaryHeading.replaceChildren(
+    el("span", {}, `Game ${source.gameNumber} summary`),
+    ...summary.players.filter(player => visible.includes(player.player)).map(player => {
+      const {checker, cube} = player;
+      const loss = checker.accepted.total + cube.accepted.total;
+      const pending = checker.accepted.pending + cube.accepted.pending;
+      const known = checker.accepted.evaluated + cube.accepted.evaluated > 0 ||
+        checker.accepted.count + cube.accepted.count === 0;
+      return el("span", { class: "mobile-summary-loss" },
+        ...(visible.length > 1 ? [el("span", {}, labels[player.player])] : []),
+        el("strong", known ? {"data-loss-tone":lossTone(loss).tone} : {}, known ? loss.toFixed(3) : "—"),
+        el("small", {}, pending ? "EV · pending" : "EV lost"));
+    }),
+    el("span", {class:"history-game-chevron", "aria-hidden":true}));
+  mobileSummaryBody.replaceChildren();
+  fillMobileSummary();
+}
 const analysisJump = button("Analysis ↓", () => {
   reviewHeading.scrollIntoView({ block: "start" });
   reviewHeading.focus({ preventScroll: true });
@@ -361,7 +412,7 @@ desktopTable.addEventListener("change", () => {
 // landscape dock). Only #confirm moves: the help buttons may be inside the
 // open practice sheet when the layout changes.
 function placeConfirm() {
-  const confirm = $("confirm");
+  const confirm = $("confirm") || $("immediate-redouble");
   if (!confirm) return;
   const home = desktopTable.matches ? $("actions") : boardActions;
   if (confirm.parentElement !== home) home.append(confirm);
@@ -1308,22 +1359,19 @@ function start() {
 }
 function actions() {
   const table = model();
-  const hasDraft = draft.draft.length > 0;
   const ahead = readSettings().analysisAhead;
   ui.equityBar.set({
     state: state(),
     engine: ahead ? analysis.engine : undefined,
     preset: ahead ? config.reviewStrength || 'auto' : 'quick',
     auto: true,
-    submitted: hasDraft && draft.complete() ? draft.draft : null,
+    beforeDecision: true,
     blocked:
       config.mode !== "computer"
         ? "Live equity is available against the computer; online and same-device games stay unassisted."
         : !table?.started || opening.active
           ? "Start a game and finish the opening roll to see equity."
-          : hasDraft && !draft.complete()
-            ? "Complete the draft to evaluate your choice."
-            : "",
+          : "",
   });
   renderActions();
   try {
@@ -1353,6 +1401,7 @@ function actions() {
     );
   } finally {
     arrangeActions();
+    placeCubeReplies();
     decorateShortcuts(document.querySelector(".stage"));
     ui.board.cubeEnabled = !!$("double-cube") && !$("double-cube").disabled;
     const cube = ui.board.svg.querySelector(".board-cube");
@@ -1581,6 +1630,8 @@ async function respondTakeback(type, request) {
   }
 }
 function renderActions() {
+  cubeReplies.hidden = true;
+  cubeReplies.replaceChildren();
   boardActions.replaceChildren();
   helpActions.replaceChildren();
   const s = state(),
@@ -1795,15 +1846,16 @@ function renderActions() {
   } else if (s.phase === "double") {
     $("message").textContent =
       `${offerName(s)} to ${s.cube.value * 2} from ${names()[s.pending.by]}. ${names()[decisionPlayer(s)]} to decide.`;
-    a.append(
-      button("Pass", () => submitCube({ type: "pass" }), "", {
+    cubeReplies.hidden = false;
+    cubeReplies.append(
+      button(el("span", {class:"cube-reply-face"}, "Drop"), () => submitCube({ type: "pass" }), "cube-reply", {
         id: "drop-cube",
         disabled: !mine,
       }),
       button(
-        `Take ${s.cube.value * 2}`,
+        el("span", {class:"cube-reply-face"}, `Take ${s.cube.value * 2}`),
         () => submitCube({ type: "take" }),
-        "primary",
+        "cube-reply cube-reply-take",
         { disabled: !mine, id: "take-cube" },
       ),
     );
@@ -1812,7 +1864,7 @@ function renderActions() {
         button(
           `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}`,
           () => submitCube({ type: offerDepth(s) ? "raccoon" : "beaver" }),
-          "",
+          "primary",
           { disabled: !mine, id: "immediate-redouble" },
         ),
       );
@@ -2373,6 +2425,7 @@ function historyDecisionActions(entry, index, gameId, opponent) {
     review: () => {
       const current = currentRow();
       return decisionReview(current.source, {
+        beforeRoll: entry.group.decisions.find(row => row.result?.type === "cube" && row.source.phase === "roll" && row.source.cube.value === current.source.cube.value)?.result,
         opponent,
         title: current.result.type === "cube" ? "Cube decision" : "Checker decision",
         onReturn: canReturnToDecision(current, gameId)
@@ -2385,6 +2438,7 @@ function historyDecisionActions(entry, index, gameId, opponent) {
 }
 function renderFeedback() {
   const m = model();
+  renderMobileSummary(m);
   feedbackStrip.hidden = !(
     m?.started &&
     ((config.mode === "computer" && config.tutor) ||
@@ -2393,7 +2447,7 @@ function renderFeedback() {
   feedbackFilters.hidden = feedbackStrip.hidden;
   if (feedbackStrip.hidden) {
     feedbackView.turns.clear(); feedbackView.games.clear();
-    feedbackView.cards.clear(); feedbackView.openGames.clear();
+    feedbackView.cards.clear();
     feedbackStrip.replaceChildren(); renderedFeedback = null;
     return;
   }
@@ -2569,7 +2623,6 @@ function renderFeedback() {
   for (const key of feedbackView.turns.keys()) if (!retained.has(key)) feedbackView.turns.delete(key);
   for (const game of feedbackView.games.keys()) if (!retainedGames.has(game)) feedbackView.games.delete(game);
   for (const game of feedbackView.cards.keys()) if (!retainedGames.has(game)) feedbackView.cards.delete(game);
-  for (const game of feedbackView.openGames) if (!retainedGames.has(game)) feedbackView.openGames.delete(game);
   children.push(feedbackView.footer);
   const wanted = new Set(children);
   for (const child of [...feedbackStrip.children]) if (!wanted.has(child)) child.remove();
@@ -2705,7 +2758,7 @@ function assistance(kind) {
   actions();
   return job;
 }
-function showHint() {
+function showHint({ result: prepared = null, playBest = false } = {}) {
   if (
     assistanceJob ||
     committing ||
@@ -2716,7 +2769,20 @@ function showHint() {
   )
     return;
   const job = assistance("hint");
+  const play = async (steps, result) => {
+    if (!activeAssistance(job))
+      throw new Error("This hint is no longer current.");
+    committing = true;
+    releaseAssistance();
+    await presentBestSource(job.source);
+    feedback = {
+      source: job.source,
+      result: { ...result, actual: result.candidates[0], error: 0 },
+    };
+    await commit({ type: "move", steps }, feedback);
+  };
   const review = decisionReview(job.source, {
+    beforeRoll: analysis.engine.peek({...job.source,phase:"roll",dice:[],pending:null},{preset:config.reviewStrength || "auto"}),
     replayLabel: "Play best",
     onClose: () => {
       if (assistanceJob !== job) return;
@@ -2727,18 +2793,7 @@ function showHint() {
     },
     replayDescription:
       "Returns your checkers, then plays the best move using this roll.",
-    onReplay: async (steps, result) => {
-      if (!activeAssistance(job))
-        throw new Error("This hint is no longer current.");
-      committing = true;
-      releaseAssistance();
-      await presentBestSource(job.source);
-      feedback = {
-        source: job.source,
-        result: { ...result, actual: result.candidates[0], error: 0 },
-      };
-      await commit({ type: "move", steps }, feedback);
-    },
+    onReplay: play,
   });
   job.dialog = review.dialog;
   const run = async () => {
@@ -2749,13 +2804,14 @@ function showHint() {
       searchName(config.reviewStrength || "auto"),
     );
     try {
-      const result = await analysis.run(job.source, {
+      const result = prepared || await analysis.run(job.source, {
         preset: config.reviewStrength || "auto",
         priority: 20,
       });
       if (!activeAssistance(job)) return;
       job.done = true;
-      review.result(result);
+      if (playBest && result.candidates?.[0]) await play(result.candidates[0].steps, result);
+      else review.result(result);
     } catch (error) {
       if (!activeAssistance(job)) return;
       job.done = true;
@@ -2838,16 +2894,30 @@ async function evaluateDecision(action) {
     ($("confirm") || $("roll"))?.focus();
   };
   let warningCopy = null, completedResult = null, unlisted = false;
+  const openHint = (playBest = false) => {
+    if (!activeAssistance(job)) return;
+    const result = completedResult;
+    releaseAssistance();
+    // The old dialog's delayed close event cannot unlock this new hint job.
+    showHint({ result, playBest });
+  };
+  const warningActions = () => checker ? [
+    button("Revise", () => job.dialog.close()),
+    button("Hint", () => openHint()),
+    button("Play Best", () => openHint(true), "primary"),
+  ] : [
+    button("Revise", () => job.dialog.close()),
+    button("Confirm anyway", () => finish(completedResult), "primary"),
+  ];
   const showPendingWarning = (outside = false) => {
     if (!config.warning || !activeAssistance(job)) return;
     unlisted ||= outside;
     if (job.dialog) return;
     warningCopy = el("p", { role: "status", id: "pending-move-loss" },
-      "Still calculating EV. You can revise or confirm now; the loss is not known yet.");
-    job.dialog = dialog("Review before confirming?", warningCopy, [
-      button("Revise", () => job.dialog.close()),
-      button("Confirm anyway", () => finish(completedResult), "primary"),
-    ]);
+      checker ? "Still calculating EV. Revise your move, open a hint, or play the best move."
+        : "Still calculating EV. You can revise or confirm now; the loss is not known yet.");
+    job.dialog = dialog("Review before confirming?", warningCopy, warningActions());
+    if (checker) job.dialog.classList.add("checker-warning");
     job.dialog.addEventListener("close", onClose, { once: true });
   };
   try {
@@ -2894,13 +2964,11 @@ async function evaluateDecision(action) {
         el(
           "p",
           {},
-          `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate. Revise your decision or confirm it.`,
+          `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate.`,
         ),
-        [
-          button("Revise", () => job.dialog.close()),
-          button("Confirm anyway", () => finish(result), "primary"),
-        ],
+        warningActions(),
       );
+      if (checker) job.dialog.classList.add("checker-warning");
       job.dialog.addEventListener("close", onClose, { once: true });
     } else await finish(result);
   } catch (error) {
@@ -2911,7 +2979,9 @@ async function evaluateDecision(action) {
       return;
     }
     if (warningCopy) {
-      warningCopy.textContent = `EV unavailable: ${error.message}. Revise or confirm without feedback.`;
+      warningCopy.textContent = `EV unavailable: ${error.message}. Revise or continue without feedback.`;
+      const best = job.dialog.querySelector(".primary");
+      best.replaceWith(button("Confirm without feedback", () => finish(), "primary"));
       return;
     }
     job.dialog = dialog(

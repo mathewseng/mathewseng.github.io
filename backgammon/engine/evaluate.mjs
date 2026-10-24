@@ -138,7 +138,7 @@ export function createEvaluator(module) {
       const work = this.analyzeSteps(s, preset, kind, submitted, options);
       try {
         let step;
-        while (!(step = work.next()).done) await yieldWork();
+        while (!(step = work.next()).done) await yieldWork(step.value);
         return step.value;
       } finally { work.return(); }
     },
@@ -245,11 +245,12 @@ export function createEvaluator(module) {
       const submittedKey = submitted ? boardKey(commitTurn(s, submitted)) : null;
       const scoreTurns = function* (choices, plies) {
         const scores = [];
+        yield {phase:'checker',plies,completed:0,total:choices.length};
         for (const turn of choices) {
           // Preserve the original player, cube and match context in after-XGID.
           const after = { ...turn.state, dice: [], phase: "roll" };
           const value = call(score, [xgid, toXGID(after), plies, beavers]);
-          yield;
+          yield {phase: 'checker',plies,completed:scores.length+1,total:choices.length};
           scores.push({...value, steps:turn.steps, key:turn.key, notation:notation(turn.steps, s.turn)});
         }
         return scores.sort((a,b) => b.equity-a.equity);
@@ -289,6 +290,7 @@ export function createEvaluator(module) {
             finalistCaches.set(cacheId, cache);
           }
           const scores = [];
+          yield {phase:'checker',plies,completed:0,total:choices.length};
           for (const c of choices) {
             const cached = cache.rows.get(c.key);
             if (cached) { scores.push({ ...c, ...structuredClone(cached) }); continue; }
@@ -300,8 +302,9 @@ export function createEvaluator(module) {
             cache.rows.set(c.key, structuredClone(scored));
             if (cache.rows.size > 32) cache.rows.delete(cache.rows.keys().next().value);
             scores.push({ ...c, ...scored });
-            yield;
+            yield {phase:'checker',plies,completed:scores.length,total:choices.length};
           }
+          yield {phase:'checker',plies,completed:scores.length,total:choices.length};
           return scores.sort((a, b) => b.equity - a.equity);
         };
         const finalists = original.filter(

@@ -67,12 +67,12 @@ export const SKINS = Object.freeze([
   nebula,
 ]);
 export const SKIN_IDS = Object.freeze(SKINS.map((skin) => skin.id));
-export const DEFAULT_SKIN = "tidal";
+export const DEFAULT_SKIN = "liquid-chrome";
 // The board preset a skin carries (classic keeps the house slate palette).
 export const skinPreset = (id) => (id === "classic" ? "slate" : id);
 export const DEFAULT_SKIN_BOARD_THEME = Object.freeze({
   version: 1,
-  preset: skinPreset(DEFAULT_SKIN),
+  preset: "plum",
   colors: Object.freeze({}),
 });
 export function skinById(id) {

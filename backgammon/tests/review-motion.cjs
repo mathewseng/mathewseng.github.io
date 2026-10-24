@@ -24,6 +24,7 @@ module.exports = async function reviewMotion(browser, base, out, name) {
         const { EngineClient } = await import('/backgammon/engine/client.mjs');
         const { decisionReview } = await import('/backgammon/ui/decision-review.mjs');
         const { capturePreview } = await import('/backgammon/ui/preview-motion.mjs');
+        (await import('/backgammon/ui/motion.mjs')).applyMotionSettings({motion:'system',motionScale:1});
         const source = initialState({ phase: 'move', dice: [4, 3] });
         const engine = new EngineClient();
         try {
@@ -47,7 +48,7 @@ module.exports = async function reviewMotion(browser, base, out, name) {
       });
 
       const choose = async label => {
-        const button = page.getByRole('button', { name: label, exact: true });
+        const button = label==='Position' ? page.getByRole('button', { name: label, exact: true }) : page.locator(`.review-move[data-rank="${label==='Your move'?3:1}"]`);
         if (await button.isVisible()) { if (width === 1366) await button.click(); else await button.tap(); }
         else throw new Error('Preview button should be visible: '+label);
       };
@@ -66,8 +67,8 @@ module.exports = async function reviewMotion(browser, base, out, name) {
       await page.screenshot({ path: path.join(out, `${name}-review-motion-return-${width}.png`) });
       await choose('Your move');
       assert.deepEqual(await pose(), middle, 'rapid switch continues from current checker positions');
-      const pressed = page.locator('.decision-choices [aria-pressed="true"]');
-      assert.equal(await pressed.textContent(), 'Your move');
+      const pressed = page.locator('.review-move[aria-pressed="true"]');
+      assert.equal(await pressed.getAttribute('data-rank'), '3');
       await page.evaluate(() => window.seekReview(240));
       const incoming = await page.locator('.decision-board .last-move-ghost,.decision-board .last-move-arrows')
         .evaluateAll(ns => ns.filter(n => !n.closest('.preview-motion-layer')).map(n => +getComputedStyle(n).opacity));

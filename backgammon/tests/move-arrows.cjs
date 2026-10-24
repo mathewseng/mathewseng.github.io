@@ -59,7 +59,7 @@ module.exports = async function moveArrows(browser, base, out, name) {
         } finally {engine.destroy();}
       });
       assert.match(await page.locator('.decision-caption').textContent(),/^Best\/your move ·/);
-      assert.equal(await page.locator('.decision-choices button').count(),2);
+      assert.equal(await page.locator('.decision-choices button').count(),0);
       const ids=await page.locator('.last-move-arrows mask').evaluateAll(ns=>ns.map(n=>n.id));
       assert.ok(ids.length>=2);assert.equal(new Set(ids).size,ids.length);
       for(const [width,height] of [[390,844],[1366,768]]) {

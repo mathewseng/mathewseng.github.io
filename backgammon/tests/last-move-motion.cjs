@@ -64,7 +64,7 @@ module.exports = async function lastMoveMotion(browser, base, out, name) {
         const game = playAction({ id: 'last-move-fade', initial, state: initial, events: [], started: true,
           names: ['You', 'Friend'], config: localConfig({ mode: 'local', tutor: false }) }, { type: 'move', steps });
         await st.put('work', { id: 'play', game, draft: [], positionKey: r.positionKey(game.state) });
-        st.saveSettings({ motion: 'system', interactionMode: 'advanced', equityBar: false, boardTheme: { preset: 'plum' } });
+        st.saveSettings({ motionScale: 1, motion: 'system', interactionMode: 'advanced', equityBar: false, boardTheme: { preset: 'plum' } });
       });
       await resume();
       assert.ok(await page.locator('#board .last-move-ghost').count());
@@ -124,7 +124,7 @@ module.exports = async function lastMoveMotion(browser, base, out, name) {
       const { lastMove } = await import('/backgammon/core/play-session.mjs');
       const { Board } = await import('/backgammon/ui/board.mjs');
       const { saveSettings } = await import('/backgammon/core/storage.mjs');
-      saveSettings({ motion: 'system' });
+      saveSettings({ motionScale: 1, motion: 'system' });
       const host = document.createElement('div'); document.body.replaceChildren(host);
       const board = new Board(host), results = [];
       const exits = () => [...host.querySelectorAll('[data-last-move-exit]')];

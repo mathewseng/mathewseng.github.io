@@ -41,7 +41,7 @@ module.exports = async function lastMoveEntry(browser, base, out, name) {
         await st.put('work', { id: 'play', game: { id: 'trace-entry', state: initial, initial,
           events: [], started: true, names: ['You', 'GNUbg'], config: localConfig({ mode: 'computer',
             matchLength: 0, humanSide: 0, strength: 'quick', reviewStrength: 'quick', tutor: false, warning: false }) }, draft: [] });
-        st.saveSettings({ motion: 'system', interactionMode: 'advanced', equityBar: false, boardTheme: { preset: 'plum' } });
+        st.saveSettings({ motionScale: 1, motion: 'system', interactionMode: 'advanced', equityBar: false, boardTheme: { preset: 'plum' } });
       });
       await page.goto(base + '/backgammon/play/#resume=trace-entry');
       await page.locator('#board .moving-checker').first().waitFor({ timeout: 60000 });

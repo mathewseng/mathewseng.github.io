@@ -6,7 +6,7 @@ export function selectedDie(candidates, preferred, dice = []) {
   return [preferred, ...[...dice].sort((a, b) => b - a)].find(die => available.has(die)) ?? null;
 }
 
-export function advancedAction({ point, checker, candidates, returns, checkerReturns = [], routes = [], preferred, dice, turn }) {
+export function advancedAction({ point, checker, candidates, returns, checkerReturns = [], routes = [], revisions = [], preferred, dice, turn }) {
   const die = selectedDie(candidates, preferred, dice);
   const forward = candidates.filter(step => step.die === die);
   const residentStep = forward.find(step => step.from === point) || candidates.find(step => step.from === point);
@@ -35,6 +35,10 @@ export function advancedAction({ point, checker, candidates, returns, checkerRet
   const nearest = Math.min(...combined.map(route => distance(route.from)));
   const choices = combined.filter(route => distance(route.from) === nearest);
   if (choices.length) return { type: "routes", routes: choices };
+  // A spent checker can be placed at any legal intermediate destination by
+  // reclaiming its own dice. These routes preserve every other checker’s moves.
+  const revised = revisions.filter(route => route.to === point);
+  if (revised.length) return { type: "routes", routes: revised };
   // With no destination/return action, the rest of an occupied point extends
   // its checker's tap target. Use the same single-die preference as a disc tap.
   return residentStep ? { type: "move", step: residentStep } : null;
