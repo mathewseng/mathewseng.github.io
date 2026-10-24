@@ -86,7 +86,7 @@
 }
 .opening-roll-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; }
 .opening-alternative-colors { position: absolute; inset-inline: 0; bottom: 0; height: 33.333333%; display: flex; pointer-events: none; z-index: 0; border-top: 1px solid var(--line-strong); }
-.opening-alternative-colors > span { flex: 1; min-width: 0; background: color-mix(in oklab,var(--opening-color) 44%,var(--surface)); }
+.opening-alternative-colors > span { flex: 1; min-width: 0; background: color-mix(in oklab,var(--opening-color) 40%,var(--surface)); }
 .opening-alternative-colors > span + span { border-left: 1px solid var(--line-strong); }
 .opening-roll-alternatives { display: grid; gap: 3px; width: 100%; border-top: 1px solid var(--line-strong); padding-top: 5px; margin-top: 2px; }
 .opening-roll-alternative { display: flex; align-items: baseline; justify-content: center; gap: 4px; min-width: 0; color: var(--opening-secondary); font-size: var(--t-xs); font-weight: 400; line-height: 1.25; }

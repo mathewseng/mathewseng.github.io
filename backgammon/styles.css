@@ -1349,7 +1349,7 @@ html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-ca
 .point .source-ring {
   fill: none;
   stroke: var(--board-source, var(--accent));
-  stroke-width: 1.5;
+  stroke-width: calc(1.5 * var(--ring-scale, 1));
   stroke-dasharray: 4 6;
   stroke-dashoffset: 2;
   stroke-linecap: round;
@@ -1359,14 +1359,14 @@ html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-ca
 
 .point.selected .source-ring {
   stroke: var(--board-selection);
-  stroke-width: 2.5;
+  stroke-width: calc(2.5 * var(--ring-scale, 1));
   stroke-dasharray: none;
 }
 
 .point .ring-halo {
   fill: none;
   stroke: var(--board-surface);
-  stroke-width: 4;
+  stroke-width: calc(4 * var(--ring-scale, 1));
   vector-effect: non-scaling-stroke;
 }
 
@@ -1379,14 +1379,14 @@ html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-ca
 .point .landing-ring {
   fill: color-mix(in srgb, var(--board-destination) 14%, transparent);
   stroke: var(--board-destination);
-  stroke-width: 2;
+  stroke-width: calc(2 * var(--ring-scale, 1));
   stroke-dasharray: none;
   vector-effect: none;
 }
 
 .point.drop-hover .landing-ring {
   fill: color-mix(in srgb, var(--board-destination) 33%, transparent);
-  stroke-width: 5;
+  stroke-width: calc(5 * var(--ring-scale, 1));
 }
 
 .point.return-destination .landing-ring {
@@ -1408,7 +1408,7 @@ html[data-focus-navigation="true"] .bg-board.no-move-hints .point:focus-visible 
   vector-effect: non-scaling-stroke;
 }
 
-html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > .die-ink > rect:first-child {
+html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > rect:first-child {
   stroke: var(--board-focus, var(--accent));
   stroke-width: 4;
   vector-effect: non-scaling-stroke;
@@ -2004,6 +2004,24 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > .d
 .play-page.live-table .panel-toggle,
 .app .panel-toggle {
   display: inline-flex;
+}
+
+/* A checkbox explanation sits under its label instead of beside it, where it
+   squeezed the label into two lines. */
+.play-page .panel-body .check {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+
+.play-page .panel-body .check > .muted.small {
+  flex-basis: 100%;
+  margin-left: 28px;
+}
+
+/* Before a match exists there is nothing to undo or draft: only the status
+   and the Start action remain. */
+.play-page.setup-table .help-cluster {
+  display: none;
 }
 
 /* Board state carries routine guidance visually; keep the live descriptions
@@ -4145,7 +4163,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > .d
   overflow-wrap: anywhere;
 }
 
-.trainer-result-rows .list-row:last-child .list-row-value,
 .trainer-summary-rows .list-row .list-row-value {
   color: var(--loss-color, var(--ink));
 }
@@ -4683,11 +4700,18 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
 }
 
 .hub-feature > .tile {
+  justify-content: center;
   padding: 0;
   border: 0;
   border-radius: var(--r-md);
   background: none;
   box-shadow: none;
+}
+
+/* Beside the live board the copy is short: tags follow the description and
+   the group centres instead of leaving a tall empty card. */
+.hub-feature > .tile .tile-foot {
+  margin-top: 4px;
 }
 
 .hub-feature > .tile:hover,
@@ -4713,6 +4737,7 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
 
 .hub-board-frame .board-slot {
   width: 100%;
+  max-width: 420px;
   aspect-ratio: 876 / 660;
 }
 
@@ -4995,10 +5020,6 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.setup-table .game-rules {
     margin-top: 0;
     padding-top: 0;
-  }
-
-  .play-page.setup-table .setup-note {
-    margin: 0;
   }
 
   .play-page.setup-table .panel-body > .stack > h2 {
@@ -5406,6 +5427,21 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     scrollbar-gutter: auto;
   }
 
+  /* Four skin columns at 390px, three at 320px: the preview below the picker
+     comes into view after fewer rows. */
+  .settings-dialog .skin-grid {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 4px 6px;
+  }
+
+  .settings-dialog .skin-choice {
+    padding: 4px 2px 6px;
+  }
+
+  .settings-dialog .skin-thumb {
+    max-width: 72px;
+  }
+
   .theme-layout {
     display: block;
   }
@@ -5633,6 +5669,21 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     line-height: 1.4;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  /* Routine guidance ("Use all playable dice, then confirm.") takes the slot
+     beside the analysis jump instead of leaving that row half empty; the
+     one-tap move list keeps the slot on tall phones. */
+  .play-page.live-table .action-area:not(:has(.touch-moves:not([hidden]))) .action-message.routine-status {
+    position: static;
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    width: auto;
+    height: auto;
+    margin: 0;
+    clip-path: none;
+    color: var(--muted);
   }
 
   .play-page.live-table .action-main {
@@ -6176,6 +6227,32 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
     visibility: hidden;
   }
 
+  /* Setup on a landscape phone: the dock shows the form itself instead of
+     an empty column, with Start pinned at its foot by the action area. */
+  .play-page.setup-table .inspector {
+    visibility: visible;
+    overflow-y: auto;
+  }
+
+  .play-page.setup-table .action-area {
+    height: auto;
+    max-height: none;
+  }
+
+  /* The three modes stack in the narrow dock instead of scrolling out of
+     view with no sign that a third option exists. */
+  .play-page.setup-table .inspector .segmented {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    border-radius: var(--r-md);
+  }
+
+  .play-page.setup-table .inspector .segmented .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
   .cube-option-status {
     display: inline;
     margin: 0 0 0 8px;
@@ -6209,7 +6286,9 @@ html[data-motion="reduce"] body:not(#bg-motion) *::after {
   .play-page.live-table .tool-head,
   .app:is([data-page="trainer"], [data-page="solver"]) .tool-head {
     position: absolute;
-    top: calc(46px + env(safe-area-inset-top));
+    /* Below the 46px topbar row plus the shell's 6px top inset, so the
+       Details/Tools pair never overlaps the mute and Settings buttons. */
+    top: calc(52px + env(safe-area-inset-top));
     right: max(8px, env(safe-area-inset-right));
     z-index: 2;
     width: 164px;
@@ -6847,14 +6926,32 @@ html.skin-shader .docs-toc--sticky {
 
 .skin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px 8px;
+  align-items: start;
+}
+
+/* Group headings (Dark, Light) span the grid so 25 tiles scan as two lists. */
+.skin-group {
+  grid-column: 1 / -1;
+  margin: 10px 0 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.skin-group:first-child {
+  margin-top: 0;
 }
 
 .skin-choice {
   display: grid;
   justify-items: center;
+  align-content: start;
   gap: 6px;
+  width: 100%;
   min-width: 0;
   min-height: 44px;
   padding: 6px 4px 7px;
@@ -6864,6 +6961,8 @@ html.skin-shader .docs-toc--sticky {
   color: var(--muted);
   font-size: var(--t-sm);
   font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -6871,24 +6970,65 @@ html.skin-shader .docs-toc--sticky {
   color: var(--ink);
 }
 
-.skin-choice[aria-pressed="true"] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-  background: var(--surface-2);
-  color: var(--ink);
+.skin-choice:hover .skin-thumb {
+  border-color: var(--control-border, var(--line-strong));
 }
 
+.skin-choice:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.skin-choice[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.skin-choice[aria-pressed="true"] .skin-thumb {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft, transparent);
+}
+
+/* A check badge on the selected tile: the ring alone is lost against bright
+   previews. */
+.skin-choice {
+  position: relative;
+}
+
+.skin-choice[aria-pressed="true"]::after {
+  content: "\2713";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent, var(--page));
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Names wrap to two lines instead of truncating ("Phosphor Te…"). */
 .skin-choice > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .skin-thumb {
   position: relative;
-  width: 64px;
-  height: 40px;
+  width: 100%;
+  max-width: 96px;
+  aspect-ratio: 8 / 5;
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);

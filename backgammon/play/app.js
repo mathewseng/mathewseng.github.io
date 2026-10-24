@@ -1170,14 +1170,7 @@ function setupFields() {
         "Undo requests need the opponent's approval. Keep this page open; some networks block peer connections.",
       ),
     );
-  } else
-    fields.append(
-      el(
-        "p",
-        { class: "muted small setup-note" },
-        "You can revise your moves until you confirm.",
-      ),
-    );
+  }
   fields.append(
     ruleControls(config.matchLength, config.rules, (rules) => {
       config.rules = rules;

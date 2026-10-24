@@ -271,12 +271,7 @@ function inspector() {
       el(
         "p",
         { class: "muted" },
-        "Select an item to open it, add a note, or organize it.",
-      ),
-      el(
-        "p",
-        { class: "notice" },
-        "Browser storage is not a cross-device backup. Export your Library regularly.",
+        "Saved in this browser only. Export to keep a copy elsewhere.",
       ),
       button("Review due items", showDue),
     );
@@ -299,11 +294,13 @@ function inspector() {
   }
   // The inspector is grouped: Open, Edit, Export, then a separated Danger
   // zone; the opening action stays the first reachable control.
-  const section = (name, title) =>
-    el("section", { class: `library-group library-group--${name}`, "aria-labelledby": `library-${name}-title` },
-      el("h3", { class: "library-group-title", id: `library-${name}-title` }, title));
-  const openGroup = section("open", "Open"),
-    editGroup = section("edit", "Edit"),
+  const section = (name, title, heading = true) =>
+    heading
+      ? el("section", { class: `library-group library-group--${name}`, "aria-labelledby": `library-${name}-title` },
+          el("h3", { class: "library-group-title", id: `library-${name}-title` }, title))
+      : el("section", { class: `library-group library-group--${name}`, "aria-label": title });
+  const openGroup = section("open", "Open", false),
+    editGroup = section("edit", "Edit", false),
     exportGroup = section("export", "Export"),
     dangerGroup = section("danger", "Danger zone");
   p.append(

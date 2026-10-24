@@ -37,18 +37,29 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
     await page.addInitScript(() => {
       // Capture the real WAAPI animation at creation, before a busy CI runner
       // can miss its 340 ms lifetime. Historical dice already exist before Roll.
-      const animate = Element.prototype.animate;
-      Element.prototype.animate = function (...args) {
-        const animation = animate.apply(this, args);
+      const holdDieFace = (node, animation) => {
         if (
           window.holdRollFrame &&
-          this.matches(".board-die-face") &&
-          this.closest("#board")
+          node?.matches?.(".board-die-face") &&
+          node.closest("#board")
         ) {
           animation.pause();
           animation.currentTime = 110;
         }
+      };
+      const animate = Element.prototype.animate;
+      Element.prototype.animate = function (...args) {
+        const animation = animate.apply(this, args);
+        holdDieFace(this, animation);
         return animation;
+      };
+      // Board transitions are batched: built as Animation objects and started
+      // together with play() after every resting pose has been read.
+      const play = Animation.prototype.play;
+      Animation.prototype.play = function () {
+        const result = play.call(this);
+        holdDieFace(this.effect?.target, this);
+        return result;
       };
       const random = crypto.getRandomValues.bind(crypto),
         dice = [2, 0, 3, 1];

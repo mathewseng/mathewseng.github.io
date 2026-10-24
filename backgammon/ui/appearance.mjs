@@ -88,33 +88,43 @@ export function appearanceControls() {
   // palette, then the editor follows so #theme-name, the pressed preset and the
   // sample board agree.
   const skinGrid = el("div", { class: "skin-grid" });
-  for (const skin of SKINS) {
-    const thumb = el("div", {
-      class: "skin-thumb",
-      "aria-hidden": "true",
-      style: `--skin-preview:${skin.preview};--skin-c0:${skin.board.checker0};--skin-c1:${skin.board.checker1};--skin-point:${skin.board.pointA}`,
-    });
-    const choice = button(
-      "",
-      () => {
-        selectSkin(skin.id);
-        change({
-          version: 1,
-          preset: skin.id === "classic" ? "slate" : skin.id,
-          colors: {},
-        });
-      },
-      "skin-choice",
-      {
-        "aria-label": `${skin.name}: ${skin.description}`,
-        "aria-pressed": false,
-        "data-skin": skin.id,
-        title: skin.description,
-      },
-    );
-    choice.append(thumb, el("span", {}, skin.name));
-    skins.set(skin.id, choice);
-    skinGrid.append(choice);
+  // Grouped by scheme so 25 tiles scan as two short lists; registry order
+  // within each group.
+  const groups = [
+    ["Dark", SKINS.filter((skin) => skin.scheme !== "light")],
+    ["Light", SKINS.filter((skin) => skin.scheme === "light")],
+  ];
+  for (const [groupName, groupSkins] of groups) {
+    if (!groupSkins.length) continue;
+    skinGrid.append(el("h3", { class: "skin-group" }, groupName));
+    for (const skin of groupSkins) {
+      const thumb = el("div", {
+        class: "skin-thumb",
+        "aria-hidden": "true",
+        style: `--skin-preview:${skin.preview};--skin-c0:${skin.board.checker0};--skin-c1:${skin.board.checker1};--skin-point:${skin.board.pointA}`,
+      });
+      const choice = button(
+        "",
+        () => {
+          selectSkin(skin.id);
+          change({
+            version: 1,
+            preset: skin.id === "classic" ? "slate" : skin.id,
+            colors: {},
+          });
+        },
+        "skin-choice",
+        {
+          "aria-label": `${skin.name}: ${skin.description}`,
+          "aria-pressed": false,
+          "data-skin": skin.id,
+          title: skin.description,
+        },
+      );
+      choice.append(thumb, el("span", {}, skin.name));
+      skins.set(skin.id, choice);
+      skinGrid.append(choice);
+    }
   }
   const stylePanel = el(
     "section",

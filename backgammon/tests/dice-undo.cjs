@@ -53,7 +53,7 @@ module.exports = async function diceUndo(browser, base, out, name) {
         if (slot === 3) {
           const clear = await page.evaluate(() => {
             const icon = document.querySelector('#board .dice-switch-surface').getBoundingClientRect();
-            return [...document.querySelectorAll('#board .board-die-face > .die-ink > rect:first-child')].every(n => {
+            return [...document.querySelectorAll('#board .board-die-face > rect:first-child')].every(n => {
               const r = n.getBoundingClientRect(); return r.right < icon.left || r.left > icon.right;
             });
           });
@@ -172,7 +172,7 @@ module.exports = async function diceUndo(browser, base, out, name) {
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         const geometry = await page.evaluate(() => {
           const rect = s => document.querySelector(s).getBoundingClientRect().toJSON();
-          const dice = [...document.querySelectorAll('#board .board-die-face > .die-ink > rect:first-child')].map(n=>n.getBoundingClientRect().toJSON());
+          const dice = [...document.querySelectorAll('#board .board-die-face > rect:first-child')].map(n=>n.getBoundingClientRect().toJSON());
           return {board:rect('#board .bg-board'),confirm:rect('#confirm'),swap:rect('#board .dice-switch-surface'),dice,overflow:document.documentElement.scrollWidth > innerWidth+1};
         });
         assert.equal(geometry.overflow,false);

@@ -375,17 +375,12 @@ function panel() {
     ),
   );
   if (!revealed) {
-    p.append(
-      el(
-        "p",
-        { class: "muted" },
-        "Choose on the board. The answer stays hidden until you submit.",
-      ),
-      el("div", { id: "draft-controls" }),
-    );
+    p.append(el("div", { id: "draft-controls" }));
     draftControls();
   }
-  p.append(analysis.status);
+  // The engine status matters while it runs or once a result is shown; before
+  // a submission it would only echo a cancelled prefetch.
+  if (busy || revealed) p.append(analysis.status);
   if (!(result && revealed)) resultSlot.remove();
   if (result && revealed) {
     const f = decisionFeedback(result, exercise.state);
@@ -407,7 +402,7 @@ function panel() {
         el(
           "p",
           { class: "decision-loss", "data-loss-tone": f.tone },
-          `${f.label} ${f.value} · ${f.quality}`,
+          `${f.label} ${f.value} · ${f.quality}${hinted ? " · with a hint" : ""}`,
         ),
         el(
           "div",
@@ -418,7 +413,6 @@ function panel() {
             bestPlayed ? "Same as the best evaluated decision" : f.actual.notation || "",
             equity(f.actual.equity),
           ),
-          row("Loss", hinted ? `${f.quality} · studied with a hint` : f.quality, f.value),
         ),
         el(
           "details",

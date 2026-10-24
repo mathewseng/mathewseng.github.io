@@ -366,6 +366,13 @@ export class Board {
       "aria-label": "Backgammon board",
     });
     container.replaceChildren(this.svg);
+    // Ring strokes are user units, so a phone board (under half scale)
+    // would paint them below a pixel; expose the render scale to the CSS.
+    this.strokeScale =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(() => this.scaleStrokes())
+        : null;
+    this.strokeScale?.observe(container);
     this.motion = true;
     this.animations = [];
     this.feedbackTimers = [];
@@ -722,19 +729,19 @@ export class Board {
       // the center lane so its padding never steals a point-space tap.
       die.append(svg("rect", { class: "board-die-hit", x: -34, y: -36,
         width: 68, height: 72, fill: "transparent", "aria-hidden": "true" }));
+      // The face rect stays the first child of .board-die-face: focus strokes,
+      // skins and tests style `.board-die-face > rect:first-child` directly.
       const body = svg("g", { class: "board-die-face", "pointer-events": "none" });
-      const ink = svg("g", {class:"die-ink"});
-      ink.append(face, patternOverlay(face, `die${s.turn}`));
-      body.append(ink);
+      body.append(face, patternOverlay(face, `die${s.turn}`));
       // A restrained colored rim reinforces size/shadow. Keep it mounted so
       // switching, using and undoing can reverse its fade from the visible frame.
-      ink.append(svg("rect", { class: "die-status-mark die-selection-accent",
+      body.append(svg("rect", { class: "die-status-mark die-selection-accent",
         "data-die-mark": "selected", x: -31, y: -31, width: 62, height: 62, rx: 11,
         fill: "color-mix(in srgb, var(--board-selection) 35%, transparent)",
         stroke: boardColor("selection"), "stroke-width": 2.4,
         opacity: active && clickable ? 1 : 0, "aria-hidden": "true" }));
       for (const pip of pips[value])
-        ink.append(
+        body.append(
           svg("circle", {
             cx: ((pip % 3) - 1) * 18,
             cy: (Math.floor(pip / 3) - 1) * 18,
@@ -964,7 +971,14 @@ export class Board {
   reducedMotion() {
     return !this.motion || reducedMotion();
   }
+  scaleStrokes() {
+    const rect = this.svg.getBoundingClientRect(),
+      width = Math.min(rect.width, (rect.height * 876) / 660),
+      scale = width > 0 ? Math.min(2.5, Math.max(1, 876 / width)) : 1;
+    this.svg.style.setProperty("--ring-scale", scale.toFixed(2));
+  }
   destroy() {
+    this.strokeScale?.disconnect();
     this.lifecycle.abort();
     this.endDrag();
     clearTimeout(this.playbackTimer);
