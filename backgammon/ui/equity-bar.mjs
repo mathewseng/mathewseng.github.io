@@ -40,7 +40,7 @@ export class EquityBar {
     this.retry.type = "button";
     this.retry.textContent = "Retry";
     this.retry.onclick = () => {
-      this.key = null;
+      this.stop();
       this.refresh();
     };
     this.hide.append(this.topLabel, this.meter, this.label);
@@ -70,6 +70,10 @@ export class EquityBar {
       options,
     );
     addEventListener("pageshow", () => this.refresh(), options);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.stop();
+      else this.refresh();
+    }, options);
     this.observer = new ResizeObserver(() => this.schedulePosition());
     this.observer.observe(board.container);
     this.observer.observe(board.svg);
@@ -91,9 +95,15 @@ export class EquityBar {
     // Keep keyboard navigation in place when its current control is hidden.
     if (railFocused) (enabled ? this.hide : this.reveal).focus({ preventScroll: true });
   }
-  stop() {
+  stop({release = true} = {}) {
     this.token++;
-    this.engine.destroy();
+    clearTimeout(this.retryTimer);
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    this.cancelPreview?.();
+    this.cancelPreview = null;
+    this.observedEngine = null;
+    if (release) this.engine.destroy();
     this.key = null;
     this.reading = null;
   }
@@ -167,7 +177,7 @@ export class EquityBar {
     // Reserve the same strip for the reveal handle so taps never shift the board.
     this.board.container.classList.add("has-equity-bar");
     if (!this.positioned) this.schedulePosition();
-    if (!this.enabled) {
+    if (!this.enabled || document.hidden) {
       if (this.key || this.engine.worker) this.stop();
       return;
     }
@@ -178,7 +188,6 @@ export class EquityBar {
       blocked = "",
       submitted = null,
       engine = this.engine,
-      preset = 'quick',
       beforeDecision = false,
     } = this.context;
     if (
@@ -194,10 +203,12 @@ export class EquityBar {
       );
       return;
     }
-    const prepared = auto ? engine.peek(state, {preset, submitted}) : null;
+    // Display quality is independent of the configured playing/review depth.
+    // Reuse the deepest available reading, including another preset or a book.
+    const prepared = auto ? engine.peek(state, {preset:null, submitted}) : null;
     const ready = equityReading(state, result || prepared, {beforeDecision});
-    if (ready && (result || engine === this.engine)) {
-      if (this.engine.active || this.engine.initializing) this.stop();
+    if (ready && result) {
+      if (this.key || this.engine.worker) this.stop();
       this.paint("ready", ready);
       return;
     }
@@ -210,41 +221,49 @@ export class EquityBar {
       );
       return;
     }
-    const key = positionKey(state) + JSON.stringify([preset, submitted, beforeDecision]);
-    if (this.key === key) {
+    const key = positionKey(state) + JSON.stringify([submitted, beforeDecision]);
+    if (this.key === key && this.observedEngine === engine) {
       if (ready || this.reading) this.paint("ready", ready || this.reading);
       return;
     }
-    if (this.engine.active || this.engine.initializing) this.stop();
+    this.stop({release: engine !== this.engine});
     this.key = key;
+    this.observedEngine = engine;
     const token = ++this.token;
+    const current = () => token === this.token && this.key === key && this.enabled && !document.hidden;
+    const position = engine.normalizedPosition(state);
+    // Only retire work owned solely by this display. A real hint or bot caller
+    // joining the same quick request makes it non-display work in EngineClient.
+    this.cancelPreview = () => engine.cancelWhere(job => job.displayOnly && engine.normalizedPosition(job.state) === position);
     this.paint(ready ? 'ready' : 'loading', ready, 'Evaluating the current decision');
     const publish = result => {
-      if (token !== this.token || this.key !== key || !this.enabled) return;
+      if (!current()) return;
       const reading = equityReading(state, result, {beforeDecision});
-      if (reading) this.paint('ready', reading);
+      if (reading) {
+        clearTimeout(this.retryTimer);
+        this.paint('ready', reading);
+        this.cancelPreview?.();
+      }
     };
-    engine
-      .analyze(state, { preset, submitted, priority: engine === this.engine ? 0 : submitted ? -4 : -5,
-        onEvaluation: publish })
-      .then((result) => {
-        if (token !== this.token || this.key !== key || !this.enabled)
-          return;
-        const reading = equityReading(state, result, {beforeDecision});
-        if (!reading)
-          throw new Error(
-            "No valid equity is available for this position.",
-          );
-        this.paint("ready", reading);
-      })
-      .catch((error) => {
-        if (error.name === 'AbortError') {
-          if (token === this.token) this.key = null;
-          return;
-        }
-        if (token === this.token && this.enabled)
-          this.paint("error", null, error.message);
-      });
+    this.unsubscribe = engine.subscribeReading(state, publish, {submitted});
+    const request = (attempt = 0) => {
+      if (!current() || this.reading) return;
+      engine.analyze(state, {preset:'quick', submitted, useBook:false, priority:0, displayOnly:true})
+        .then(result => {
+          if (!current()) return;
+          // A deeper stage may have arrived while this quick job was queued.
+          publish(engine.peek(state, {preset:null, submitted}) || result);
+          if (!this.reading) throw new Error('No valid equity is available for this position.');
+        })
+        .catch(error => {
+          if (!current() || this.reading) return;
+          // Retry transient failures/cancellation, but never create an endless
+          // worker/reload loop when assets are unavailable or a device is offline.
+          if (attempt < 2) this.retryTimer = setTimeout(() => request(attempt + 1), attempt ? 1000 : 250);
+          else this.paint('error', null, error.message);
+        });
+    };
+    request();
   }
   destroy() {
     cancelAnimationFrame(this.positionFrame);
