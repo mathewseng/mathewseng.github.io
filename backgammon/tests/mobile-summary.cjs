@@ -27,16 +27,25 @@ module.exports=async(browser,base,out,name)=>{
   const summary=page.locator('#mobile-game-summary'),history=page.locator('.history-game-card').first();
   await summary.waitFor();
   assert.equal(await summary.evaluate(n=>n.open),false);
-  for(const [width,height] of [[320,568],[375,667],[390,744],[390,844],[430,932]]) {
-   await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));
-   await page.waitForTimeout(50);
-   const visible=await summary.evaluate(n=>{const r=n.querySelector('summary').getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,viewport:innerHeight};});
-   assert.ok(visible.top>=0&&visible.bottom<=height&&visible.height>=44,JSON.stringify({width,height,visible}));
-   const boardBottom=await page.locator('#board').evaluate(n=>n.getBoundingClientRect().bottom);
-   assert.ok(boardBottom<=visible.top,`summary overlaps the board at ${width}x${height}: ${boardBottom} > ${visible.top}`);
-   if(width===390&&height===744) await page.screenshot({path:path.join(out,`${name}-mobile-summary-collapsed.png`)});
-  }
-  await page.setViewportSize({width:390,height:844});
+  const checkFlow=async()=>{
+   for(const [width,height] of [[320,568],[375,667],[390,744],[390,844],[430,932]]) {
+    await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));
+    await page.waitForTimeout(50);
+    const flow=await summary.evaluate(n=>{
+     const r=n.getBoundingClientRect(),buttons=[...document.querySelectorAll('.help-cluster button')].filter(b=>b.getClientRects().length);
+     return {top:r.top,height:r.height,position:getComputedStyle(n).position,
+      controlsBottom:Math.max(...buttons.map(b=>b.getBoundingClientRect().bottom))};
+    });
+    assert.ok(!['fixed','sticky','absolute'].includes(flow.position),'summary belongs to page flow');
+    assert.ok(flow.top>=flow.controlsBottom&&flow.top-flow.controlsBottom<=40,`summary immediately follows controls: ${JSON.stringify({width,height,flow})}`);
+    await page.evaluate(()=>scrollTo(0,100));
+    const moved=await summary.evaluate(n=>({top:n.getBoundingClientRect().top,scroll:scrollY}));
+    assert.ok(moved.scroll>0&&Math.abs(flow.top-moved.top-moved.scroll)<1,'summary scrolls with the page');
+    if(width===390&&height===744) await page.screenshot({path:path.join(out,`${name}-mobile-summary-collapsed.png`)});
+   }
+   await page.setViewportSize({width:390,height:844});
+  };
+  await checkFlow();
 
   assert.equal(await summary.locator('table').count(),0,'collapsed summary lazily mounts its detail');
   assert.match(await summary.locator(':scope > summary').innerText(),/0.010/);
@@ -49,6 +58,8 @@ module.exports=async(browser,base,out,name)=>{
   assert.equal(await summary.locator('[data-loss-kind="checker"] [data-stage="accepted"] strong').innerText(),'0.010');
   assert.deepEqual(await box(),before,'expanding summary never resizes the board');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
+  assert.ok(await page.evaluate(()=>document.querySelector('#play-review').getBoundingClientRect().top>=document.querySelector('#mobile-game-summary').getBoundingClientRect().bottom),
+   'expanded summary pushes history down instead of covering it');
   await summary.screenshot({path:path.join(out,`${name}-mobile-summary-expanded.png`)});
   await page.screenshot({path:path.join(out,`${name}-mobile-summary-page.png`),fullPage:true});
   for(const viewport of [{width:844,height:390},{width:1366,height:768}]){
@@ -60,18 +71,9 @@ module.exports=async(browser,base,out,name)=>{
   await summary.locator('table').waitFor();
   await summary.locator(':scope > summary').tap();
   assert.equal(await summary.evaluate(n=>n.open),false);
-  for(const [width,height] of [[320,568],[375,667],[390,744],[390,844],[430,932]]) {
-   await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));
-   await page.waitForTimeout(50);
-   const visible=await summary.evaluate(n=>{const r=n.querySelector('summary').getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,viewport:innerHeight};});
-   assert.ok(visible.top>=0&&visible.bottom<=height&&visible.height>=44,JSON.stringify({width,height,visible}));
-   const boardBottom=await page.locator('#board').evaluate(n=>n.getBoundingClientRect().bottom);
-   assert.ok(boardBottom<=visible.top,`summary overlaps the board at ${width}x${height}: ${boardBottom} > ${visible.top}`);
-   if(width===390&&height===744) await page.screenshot({path:path.join(out,`${name}-mobile-summary-collapsed.png`)});
-  }
-  await page.setViewportSize({width:390,height:844});
+  await checkFlow();
 
   assert.deepEqual(errors,[]);
-  return {alwaysExpandedHistory:true,portraitDisclosure:true,boardUnchanged:true};
+  return {alwaysExpandedHistory:true,portraitDisclosure:true,normalPageFlow:true,boardUnchanged:true};
  }finally{await ctx.close();}
 };

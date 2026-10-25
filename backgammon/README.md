@@ -652,8 +652,8 @@ Review uses one ranked preview list, opening on the best move. The Position row 
 Depth buttons request fixed local GNUbg searches up to 6 ply. Manual 5- and 6-ply searches extend the screened Research comparison, retaining its finalists through each intervening depth; automatic play remains 3–4 ply. Estimates use Auto’s forecast when available, otherwise approximate growth from measured computation. Without local timing, a rough prior starts at 1.5 seconds for 2 ply and grows ×8 per additional ply; measured timings replace it. Cached/book retrieval times are never treated as search speed. Every button shows an approximate duration, not a deadline. See `docs/bg10-release.json` for the rebuilt scalar/SIMD bindings and corresponding source. Progress counts completed positions at the displayed search stage; cube native calls remain indeterminate. A cancelled, failed or closed search cannot replace the last complete comparison. The modal owns at most one worker and releases it on close.
 
 Game summaries in history are always expanded. Portrait phones also have a
-collapsible current-game summary pinned within the viewport, with scroll clearance
-so the controls remain reachable. The costly-checker warning offers Hint and Play Best above Reset and Play Anyway. Its close icon returns to revising; Play Anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
+collapsible current-game summary directly below the play controls. It scrolls with
+the page; expanding it pushes the history down without covering controls or resizing the board. The costly-checker warning offers Hint and Play Best above Reset and Play Anyway. Its close icon returns to revising; Play Anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
 Hint preserves the draft; Play Best returns drafted checkers before replaying.
 A drag can start anywhere in an occupied movable point and lifts its top checker.
 New installs default to Liquid Chrome styling with the Plum board palette;
