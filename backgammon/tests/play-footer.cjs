@@ -46,17 +46,17 @@ module.exports = async function playFooter(browser, base, out, name) {
     const geometry = await page.evaluate(() => {
       const rect = n => {const r=n.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
       const area=document.querySelector('.action-area');
-      const buttons=[...area.querySelectorAll('button')].filter(n=>n.getClientRects().length && getComputedStyle(n).visibility!=='hidden');
+      const buttons=[...document.querySelectorAll('.turn-tools button')].filter(n=>n.getClientRects().length && getComputedStyle(n).visibility!=='hidden');
       return {area:rect(area),overflow:document.documentElement.scrollWidth>innerWidth+1,
-        utilities:buttons.filter(n=>n.closest('.help-cluster')).map(n=>({id:n.id,...rect(n)})),
+        utilities:buttons.filter(n=>n.closest('.turn-tools')).map(n=>({id:n.id,...rect(n)})),
         buttons:buttons.map(n=>({id:n.id,...rect(n)})),
         message:rect(document.querySelector('#message'))};
     });
     assert.ok(!geometry.overflow,label+' does not scroll horizontally');
     for (const button of geometry.buttons) {
       assert.ok(button.height >=44,label+' touch target '+button.id);
-      assert.ok(button.x>=geometry.area.x+3 && button.right<=geometry.area.right-3,
-        label+' button has room inside footer border: '+JSON.stringify(button));
+      assert.ok(button.x>=0 && button.right<=page.viewportSize().width,
+        label+' tool fits on screen: '+JSON.stringify(button));
     }
     if (uniform) {
       const first=geometry.utilities[0];
@@ -76,6 +76,7 @@ module.exports = async function playFooter(browser, base, out, name) {
       assert.ok(await page.locator('#message').evaluate(n=>getComputedStyle(n).clipPath==='inset(50%)'),
         'routine roll guidance stays accessible without repeating the board prompt');
     }
+    await page.locator('#all-controls').tap();
     await page.locator('#analysis-jump').tap();
     assert.ok(await page.locator('#review-heading').evaluate(n=>document.activeElement===n));
     await page.getByRole('button',{name:'Back to board ↑',exact:true}).tap();
@@ -92,10 +93,12 @@ module.exports = async function playFooter(browser, base, out, name) {
       await page.setViewportSize({width:390,height:844});
       await load(phase);
       await check(phase+'-390');
-      if (phase !== 'move') {
-        assert.equal(await page.locator('#message').evaluate(n=>getComputedStyle(n).textAlign),'center');
-        const primary=await page.locator(phase==='double'?'.board-cube-replies':'#actions').boundingBox(), utility=await page.locator('.help-cluster').boundingBox();
-        assert.ok(primary.y+primary.height<=utility.y,'primary decision precedes secondary tools');
+      if (phase === 'move') {
+        const bounds=await page.locator('#confirm').boundingBox();
+        const board=await page.locator('#board').boundingBox();
+        assert.ok(bounds.width>=64 && bounds.height>=64,'large touch target');
+        assert.ok(bounds.y>=board.y && bounds.y+bounds.height<=board.y+board.height,'Confirm is inside board');
+        assert.equal(await page.locator('#confirm .confirm-copy').count(),0,'icon-only confirmation');
       }
     }
     await load('roll','classic');

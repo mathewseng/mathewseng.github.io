@@ -153,10 +153,11 @@ let barRollTimer = null, barRollSchedule = '', barRollAttempt = '', barTapTimer 
 const presentationWaits = new Set();
 const boardWorkspace = el("div", { class: "board-workspace" });
 const draftKeys = el("div", { class: "draft-shortcuts", "aria-label": "Draft keyboard shortcuts" });
-// The confirm stage: a full-width row under the board on stacked layouts and
-// the landscape dock; on wide tables #confirm sits bottom-right in the action
-// row instead (arrangeActions), so the primary action has one home per layout.
+// Secondary tools keep a stable rail; the primary turn action sits on the board.
 const boardActions = el("div", { class: "board-actions action-stage bg-action-stage", "aria-label": "Turn confirmation" });
+const turnTools = el("div", { class: "turn-tools", "aria-label": "Play tools" });
+const boardConfirm = el("div", { class: "board-confirm" });
+ui.board.container.append(boardConfirm);
 ui.board.container.before(boardWorkspace);
 boardWorkspace.append(ui.board.container, boardActions);
 // Game result card: an overlay in the board slot (like the opening roll)
@@ -166,15 +167,19 @@ ui.board.container.append(resultCard);
 const cubeReplies = el("div", { class: "board-cube-replies", hidden: true, "aria-label": "Respond to cube offer" });
 ui.board.container.append(cubeReplies);
 function placeCubeReplies() {
-  if (cubeReplies.hidden) return;
   const matrix = ui.board.svg.getScreenCTM();
   if (!matrix) return;
   const box = ui.board.container.getBoundingClientRect();
+  const center = new DOMPoint(414, 330).matrixTransform(matrix);
+  boardConfirm.style.left = `${center.x - box.left}px`;
+  boardConfirm.style.top = `${center.y - box.top}px`;
+  if (cubeReplies.hidden) return;
   const left = new DOMPoint(54, 330).matrixTransform(matrix);
-  const right = new DOMPoint(762, 330).matrixTransform(matrix);
+  const right = new DOMPoint(774, 330).matrixTransform(matrix);
   cubeReplies.style.left = `${left.x - box.left}px`;
   cubeReplies.style.top = `${left.y - box.top}px`;
   cubeReplies.style.width = `${right.x - left.x}px`;
+  cubeReplies.style.setProperty("--cube-reply-font-size", `${Math.max(10, Math.min(16, 28 * matrix.a))}px`);
   // The centre lane gets shorter with a height-limited board. Scale only the
   // visible face; keep a full touch target while checker input is locked.
   cubeReplies.style.setProperty("--cube-reply-face-height", `${Math.max(24, Math.min(48, 144 * matrix.d - 6))}px`);
@@ -327,20 +332,14 @@ reviewArea.append(el("header", { class: "review-header" },
     $("panel-toggle").focus({ preventScroll: true });
   }, "ghost"),
 ));
-// Portrait shares one footer between the running summary and secondary tools.
-// Keeping it inside the stage lets the board use the remaining visible height.
+// Portrait reserves the same footer height whether its summary is open or closed.
 const phonePortrait = matchMedia("(max-width: 600px) and (orientation: portrait)");
 const mobileSummary = el("details", { id: "mobile-game-summary", class: "mobile-game-summary", hidden: true, open: true });
-const mobileSummaryHeading = el("summary", { "aria-label": "Game summary · show controls" });
+const mobileSummaryHeading = el("summary", { "aria-label": "Game summary" });
 const mobileSummaryBody = el("div", { class: "history-game-detail" });
 mobileSummary.append(mobileSummaryHeading, mobileSummaryBody);
 document.querySelector(".app").after(reviewArea);
 document.querySelector(".action-main").before(mobileSummary);
-const summaryToggle = button("Game summary", () => {
-  mobileSummary.open = true;
-  fillMobileSummary();
-  mobileSummaryHeading.focus({ preventScroll: true });
-}, "ghost", { id: "game-summary-toggle", "aria-controls": "mobile-game-summary", "aria-expanded": true });
 let mobileSummaryData = null;
 let mobileSummaryPlayer = null;
 function fillMobileSummary() {
@@ -356,10 +355,12 @@ function fillMobileSummary() {
   mobileSummaryBody.append(table);
 }
 mobileSummary.addEventListener("toggle", () => {
-  summaryToggle.setAttribute("aria-expanded", String(mobileSummary.open));
   fillMobileSummary();
 });
-phonePortrait.addEventListener("change", () => renderMobileSummary(model(), true));
+phonePortrait.addEventListener("change", () => {
+  renderMobileSummary(model(), true);
+  placeConfirm();
+});
 function renderMobileSummary(m, force = false) {
   mobileSummary.hidden = !m?.started || !phonePortrait.matches;
   if (mobileSummary.hidden) {
@@ -387,7 +388,7 @@ function renderMobileSummary(m, force = false) {
         el("strong", known ? {"data-loss-tone":lossTone(loss).tone} : {}, known ? loss.toFixed(3) : "—"),
         el("small", {}, pending ? "EV · pending" : "EV lost"));
     }),
-    el("span", {class:"mobile-summary-controls"}, "Controls", el("span", {class:"history-game-chevron", "aria-hidden":true})));
+    el("span", {class:"mobile-summary-controls"}, el("span", {class:"history-game-chevron", "aria-hidden":true})));
   mobileSummaryBody.replaceChildren();
   fillMobileSummary();
 }
@@ -447,15 +448,24 @@ desktopTable.addEventListener("change", () => {
   placeReview();
   placeConfirm();
 });
-// One home for #confirm per layout: the end of the action row on wide tables,
-// the full-width stage under the board when the table stacks (and in the
-// landscape dock). Only #confirm moves: the help buttons may be inside the
-// open practice sheet when the layout changes.
+// Confirmation is always on the board. Hint and Controls share its old rail;
+// exceptional actions still have a visible home without changing rail height.
 function placeConfirm() {
-  const confirm = $("confirm") || $("immediate-redouble");
-  if (!confirm) return;
-  const home = desktopTable.matches ? $("actions") : boardActions;
-  if (confirm.parentElement !== home) home.append(confirm);
+  const actions = $("actions");
+  for (const child of [...boardActions.children])
+    if (child !== turnTools) actions.append(child);
+  const confirm = $("confirm");
+  boardConfirm.replaceChildren(...(confirm ? [confirm] : []));
+  if (!model()?.started) { turnTools.remove(); return; }
+  const hint = $("hint") || button("Hint", showHint, "", {id:"hint", disabled:!myTurn(state()) || botBusy || committing || !!assistanceJob || !["roll","move","double"].includes(state().phase)});
+  turnTools.replaceChildren(hint, allControls);
+  helpActions.append(analysisJump, draftKeys);
+  if (desktopTable.matches) actions.append(turnTools);
+  else {
+    boardActions.append(turnTools);
+    if (phonePortrait.matches && actions.childElementCount) boardActions.prepend(...actions.children);
+  }
+  placeCubeReplies();
 }
 
 
@@ -486,7 +496,7 @@ const allControls = button("Controls", () => {
     helpCluster.prepend(helpActions);
   }, { once: true });
 }, "ghost", { id: "all-controls", hidden: true, "aria-label": "All controls", "aria-haspopup": "dialog" });
-const helpCluster = el("div", { class: "help-cluster" }, helpActions, analysisJump, summaryToggle, allControls);
+const helpCluster = el("div", { class: "help-cluster" }, helpActions, analysisJump, allControls);
 document.querySelector(".action-main").prepend(helpCluster);
 helpCluster.insertBefore(draftKeys, allControls);
 const draft = new DraftBoard(ui.board, () => {
@@ -1771,6 +1781,8 @@ function renderActions() {
   cubeReplies.hidden = true;
   cubeReplies.replaceChildren();
   boardActions.replaceChildren();
+  boardConfirm.replaceChildren();
+  turnTools.replaceChildren();
   helpActions.replaceChildren();
   const s = state(),
     m = model(),
@@ -1972,13 +1984,10 @@ function renderActions() {
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
     if (myTurn(s)) a.append(
       button(
-        el("span", {class:"confirm-content"},
-          el("span", {class:"confirm-check", "aria-hidden":"true"}, "✓"),
-          el("span", {class:"confirm-copy"},
-            el("strong", {}, "Confirm"))),
+        el("span", {class:"confirm-check", "aria-hidden":"true"}, "✓"),
         submit,
         `primary${draft.complete() && mine ? " turn-ready" : ""}`,
-        { disabled: !mine || !draft.complete(), id: "confirm", "aria-label":"Confirm turn" },
+        { disabled: !mine || !draft.complete(), id: "confirm", "aria-label":"Confirm turn", title:"Confirm turn (C)" },
       ),
     );
   } else if (s.phase === "double") {
@@ -1991,19 +2000,21 @@ function renderActions() {
         disabled: !mine,
       }),
       button(
-        el("span", {class:"cube-reply-face"}, `Take ${s.cube.value * 2}`),
+        el("span", {class:"cube-reply-face"}, el("span", {}, "Take"), " ",
+          el("span", {class:"cube-reply-value"}, String(s.cube.value * 2))),
         () => submitCube({ type: "take" }),
         "cube-reply cube-reply-take",
-        { disabled: !mine, id: "take-cube" },
+        { disabled: !mine, id: "take-cube", "aria-label": `Take ${s.cube.value * 2}` },
       ),
     );
     if (canImmediateRedouble(s))
-      a.append(
+      cubeReplies.append(
         button(
-          `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}`,
+          el("span", {class:"cube-reply-face"}, el("span", {}, offerDepth(s) ? "Raccoon" : "Beaver"), " ",
+            el("span", {class:"cube-reply-value"}, String(s.cube.value * 4))),
           () => submitCube({ type: offerDepth(s) ? "raccoon" : "beaver" }),
-          "primary",
-          { disabled: !mine, id: "immediate-redouble" },
+          "cube-reply cube-reply-redouble",
+          { disabled: !mine, id: "immediate-redouble", "aria-label": `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}` },
         ),
       );
   } else if (s.phase === "resign") {
@@ -2906,6 +2917,7 @@ async function evaluateDecision(action) {
   // This is metadata only; the legal game history remains uncommitted.
   const finish = async (result = null) => {
     if (!activeAssistance(job)) return;
+    if (!checker && !result && !job.done) return;
     releaseAssistance();
     feedback = result ? { source: job.source, result } : null;
     await commit(action, feedback);
@@ -2956,7 +2968,7 @@ async function evaluateDecision(action) {
     button("Play Anyway", () => finish(completedResult), "primary"),
   ] : [
     button("Revise", () => job.dialog.close()),
-    button("Confirm anyway", () => finish(completedResult), "primary"),
+    button("Confirm anyway", () => finish(completedResult), "primary", {disabled: !completedResult}),
   ];
   const configureWarning = () => {
     if (checker) {
@@ -2975,7 +2987,7 @@ async function evaluateDecision(action) {
     if (job.dialog) return;
     warningCopy = el("p", { role: "status", id: "pending-move-loss" },
       checker ? "Still calculating EV. Review your move or play it now."
-        : "Still calculating EV. You can revise or confirm now; the loss is not known yet.");
+        : "Checking the cube decision before rolling…");
     job.dialog = dialog("Review before confirming?", warningCopy, warningActions());
     configureWarning();
   };
@@ -3015,6 +3027,7 @@ async function evaluateDecision(action) {
       }
       const f = decisionFeedback(result, job.source);
       warningCopy.textContent = `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate.`;
+      if (!checker) job.dialog.querySelector(".primary").disabled = false;
       return; // Keep the player's review open; never confirm behind the dialog.
     }
     if (config.warning && needsRevisionWarning(result.error)) {

@@ -26,8 +26,8 @@ module.exports=async(browser,base,out,name)=>{
     await page.waitForFunction(()=>{
       const board=document.querySelector('#board .bg-board').getBoundingClientRect(),drop=document.querySelector('#drop-cube').getBoundingClientRect(),take=document.querySelector('#take-cube').getBoundingClientRect();
       const svg=document.querySelector('#board .bg-board'), m=svg.getScreenCTM();
-      const target=new DOMPoint(54,330).matrixTransform(m),right=new DOMPoint(762,330).matrixTransform(m);
-      return Math.abs(drop.left-target.x)<1&&Math.abs(take.right-right.x)<1&&Math.abs(drop.top+drop.height/2-target.y)<1&&drop.top>=board.top&&take.bottom<=board.bottom;
+      const target=new DOMPoint(54,330).matrixTransform(m),center=new DOMPoint(414,330).matrixTransform(m);
+      return Math.abs(drop.left-target.x)<1&&Math.abs(take.left+take.width/2-center.x)<1&&Math.abs(drop.top+drop.height/2-target.y)<1&&drop.top>=board.top&&take.bottom<=board.bottom;
     });
     const boxes=await page.evaluate(()=>Object.fromEntries(['drop-cube','take-cube','immediate-redouble'].map(id=>{
      const n=document.getElementById(id);if(!n)return[id,null];const r=n.getBoundingClientRect();
@@ -35,10 +35,14 @@ module.exports=async(browser,base,out,name)=>{
     })));
     assert.ok(boxes['drop-cube'].x+boxes['drop-cube'].width<boxes['take-cube'].x);
     for(const b of Object.values(boxes).filter(Boolean))assert.ok(b.height>=44&&b.y>=0&&b.bottom<=height+1,JSON.stringify({width,height,boxes}));
-    if(action!=='match')assert.match(boxes['immediate-redouble'].home,width>1024&&height>500?/actions/:/board-actions/);
+    if(action!=='match'){
+      assert.match(boxes['immediate-redouble'].home,/board-cube-replies/);
+      assert.ok(boxes['take-cube'].x+boxes['take-cube'].width<boxes['immediate-redouble'].x,'Beaver is to the right of Take');
+      assert.ok(Math.abs(boxes['drop-cube'].y-boxes['immediate-redouble'].y)<1,'all cube actions align');
+    }
     const collisions=await page.evaluate(()=>{
       const circles=[...document.querySelectorAll('#board .checker > circle:first-child')].map(n=>n.getBoundingClientRect());
-      return ['drop-cube','take-cube'].flatMap(id=>{
+      return ['drop-cube','take-cube','immediate-redouble'].filter(id=>document.getElementById(id)).flatMap(id=>{
         const b=document.getElementById(id).querySelector(".cube-reply-face").getBoundingClientRect();
         return circles.filter(c=>Math.min(b.right,c.right)-Math.max(b.left,c.left)>1&&Math.min(b.bottom,c.bottom)-Math.max(b.top,c.top)>1).map(c=>({id,checker:{x:c.x,y:c.y,width:c.width,height:c.height},button:{x:b.x,y:b.y,width:b.width,height:b.height}}));
       });

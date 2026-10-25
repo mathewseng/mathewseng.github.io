@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { initialState, legalTurns, transition, assertState, positionKey, boardKey, commitTurn } from '../core/rules.mjs';
 import { localConfig } from '../core/play-session.mjs';
-import { Prethink, PRETHINK, chanceRolls, continuations } from '../core/prethink.mjs';
+import { Prethink, PRETHINK, NEXT_CUBE_PRIORITY, chanceRolls, continuations } from '../core/prethink.mjs';
 import { futureLocalRoll } from '../core/local-rolls.mjs';
 
 const evaluate = state => state.phase === 'move' ? {
@@ -81,7 +81,7 @@ test('prepare current decision, then actual draft before bounded future work at 
     for(let i=0;i<8;i++) await h.tick();
     assert.equal(h.calls.filter(c=>c.priority===-20).length,2);
     const before=h.calls.length; await h.tick(); assert.equal(h.calls.length,before);
-    assert.ok(h.calls.every(c=>c.preset==='auto'));
+    assert.ok(h.calls.every(c=>c.preset===(c.priority===-20&&c.state.phase!=='move'?'quick':'auto')),'only hypothetical cube routing uses a quick score');
     assert.equal(h.view.game.events,undefined,'no game mutation / speculative event history');
   } finally {h.p.pause();}
 });
@@ -99,16 +99,79 @@ test('completed actual draft prepares its own next decision ahead of hypothetica
   }finally{h.p.pause();}
 });
 
+test('cold engine loading does not consume the bounded speculative search budget',async()=>{
+  const h=harness();let time=0,starts=0;
+  h.p.now=()=>time;
+  try {
+    await h.tick();
+    h.p.engine.start=async()=>{starts++;time+=8000;h.p.engine.ready=true;};
+    await h.tick();
+    assert.equal(starts,1);
+    assert.equal(h.calls.at(-1).priority,-20);
+    assert.equal(h.p.scope.spent,0,'eight seconds of cold compilation is separate from search time');
+    await h.tick();
+    assert.equal(h.p.scope.nodes,2,'the next known roll still gets prepared');
+    assert.equal(starts,1,'the warm worker is reused');
+  }finally{h.p.pause();}
+});
+test('opening-book play warms one shared worker and respects the analysis-ahead opt-out',async()=>{
+  const h=harness();let starts=0;
+  h.p.engine.start=async()=>{starts++;};
+  h.view.game.state=initialState();
+  try {
+    h.view.enabled=false;h.p.update();assert.equal(starts,0);
+    h.view.enabled=true;h.p.update();h.p.update();
+    assert.equal(starts,1,'opening animation warms the engine once per game');
+    assert.equal(h.calls.length,0,'warming itself does not evaluate speculative positions');
+  }finally{h.p.pause();}
+});
+
 test('a chosen bot move prepares the next cube decision during animation and respects opt-out',async()=>{
   const h=harness();
   try {
+    h.view.game.config.humanSide=1;
     const source=structuredClone(h.view.game.state),action={type:'move',steps:legalTurns(source)[0].steps};
     h.view.idle=false;h.p.prepareAfter(source,action);await Promise.resolve();
-    assert.equal(h.calls.length,1);assert.equal(h.calls[0].priority,-20);
+    assert.equal(h.calls.length,1);assert.equal(h.calls[0].priority,NEXT_CUBE_PRIORITY);
+    assert.ok(h.calls[0].priority>0 && h.calls[0].priority<10,'display and old grades cannot interrupt the next cube; real actions can');
+    assert.equal(h.calls[0].readyOnly,true,'Auto prepares the playable minimum first');
     assert.deepEqual(h.calls[0].state,transition(source,action));
     assert.deepEqual(h.view.game.state,source);
     h.view.enabled=false;h.p.prepareAfter(source,action);assert.equal(h.calls.length,1);
   }finally{h.p.pause();}
+});
+test('current human cube starts immediately, reuses the active preparation and preserves fixed depth',async()=>{
+  const h=harness();
+  try {
+    h.view.game.state=initialState({phase:'roll',matchLength:0});
+    h.view.game.config.reviewStrength='research';
+    h.p.update();
+    await new Promise(resolve=>setTimeout(resolve,20));
+    assert.equal(h.calls[0].priority,NEXT_CUBE_PRIORITY);
+    assert.equal(h.calls[0].preset,'research','explicit depth is never reduced');
+    assert.equal(h.calls[0].readyOnly,true);
+    const cancel=h.cancelled[0];
+    assert.equal(cancel({priority:NEXT_CUBE_PRIORITY,state:h.view.game.state}),false,'entering the turn keeps its in-flight cube check');
+    h.p.pause();
+    assert.equal(h.cancelled.at(-1)({priority:NEXT_CUBE_PRIORITY}),true,'opt-out cancels owned work');
+    assert.equal(h.cancelled.at(-1)({priority:10}),false,'opt-out leaves foreground work alone');
+  }finally{h.p.pause();}
+});
+test('the speculative deadline cannot discard a cube check after its turn has begun',async()=>{
+ for (const sameGame of [true,false]) {
+  const h=harness({deferred:true,limits:{...PRETHINK,milliseconds:20}});
+  try {
+    h.view.game.config.humanSide=1;h.view.idle=false;
+    const source=h.view.game.state,action={type:'move',steps:legalTurns(source)[0].steps};
+    h.p.prepareAfter(source,action);
+    const pending=h.calls[0];
+    h.view.game={...h.view.game,id:sameGame ? h.view.game.id : 'different-game',state:transition(source,action)};
+    await new Promise(resolve=>setTimeout(resolve,30));
+    const cancel=h.cancelled.at(-1);
+    assert.equal(cancel(pending),!sameGame,'only the current game’s cube check survives the speculative deadline');
+    assert.equal(cancel({...pending,priority:20}),false);
+  }finally{h.p.pause();h.resolve();}
+ }
 });
 test('opt-out, hidden/inactive views, human games and foreground work do not start speculation',async()=>{
   for(const mode of ['local','online']) {
