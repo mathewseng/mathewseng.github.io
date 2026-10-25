@@ -2,11 +2,11 @@
 import { ProgressWriter } from "../core/progress-writer.mjs";
 import { nextGameTable, archivedTable } from '../core/game-archive.mjs';
 import { clearHistoryStates } from '../core/history-states.mjs';
+import { historyTurn } from "../ui/history-turn.mjs";
+import { archivedGames } from "../ui/archived-games.mjs";
 import { savedGames } from '../ui/saved-games.mjs';
 import { presentMove } from "../core/move-presentation.mjs";
-import { presentCubeAction } from "../core/cube-presentation.mjs";
 import { analysisDepthLabel } from "../core/analysis-insight.mjs";
-import { cubeActionIcon } from "../ui/cube-action-icon.mjs";
 import { keycap as shortcutBadge } from "../ui/keycap.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
 import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
@@ -88,7 +88,6 @@ import { RaceAutoPlay, bearingOffRace, clearRaceCubeAction } from "../core/race-
 import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
-import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback, needsRevisionWarning, lossTone } from "../core/decision-feedback.mjs";
 import { beginDecisionAttempt, recordInitialEvaluation } from "../core/decision-attempt.mjs";
 import { gameLossTable } from "../ui/game-loss-summary.mjs";
@@ -291,6 +290,23 @@ const feedbackView = {
   empty: el("p", { class: "history-empty muted", role: "status" }),
   footer: button("Review session", showSessionReview, "ghost", { id: "review-session" }),
 };
+const previousGames = archivedGames({onReturn: async (item, row) => {
+  if (committing || assistanceJob || game?.id !== (item.sessionId || item.id))
+    throw Error('The table changed. Reopen this game.');
+  await persist(true, true);
+  const saved = await get('items', item.id);
+  if (!saved) throw Error('This saved game is no longer available.');
+  const source = archivedTable(saved, config);
+  const restored = returnToDecision(source, row.index, row.source);
+  stopComputer();
+  game = config.mode === 'computer' ? changeControl(restored, row.player) : restored;
+  config = {...game.config};
+  feedback = null; draft.draft = []; boardKey = '';
+  clearHistoryStates();
+  if (opening.active) opening.dismiss();
+  await persist(); render();
+  window.scrollTo({top:0, behavior:'instant'});
+}});
 document.querySelector(".action-area").append(feedbackStrip);
 const desktopTable = matchMedia(
   "(min-width: 1025px) and (min-height: 501px)",
@@ -415,6 +431,9 @@ function placeReview() {
   app.classList.toggle("desktop-table", desktopTable.matches && started);
   app.classList.toggle("live-table", started);
   app.classList.toggle("setup-table", !started);
+  // Keep the visible board anchored to its top edge when turn controls change
+  // the available height. Review boards retain their centered presentation.
+  ui.board.svg.setAttribute('preserveAspectRatio', started ? 'xMidYMin meet' : 'xMidYMid meet');
   app.dataset.mode = config.mode;
   reviewArea.hidden = !started;
   const feedbackHome = started ? reviewArea : document.querySelector(".action-area");
@@ -2540,7 +2559,7 @@ function showSessionReview() {
 function historyDecisionActions(entry, index, gameId, opponent) {
   const currentRow = () => entry.group.decisions.find(row => row.index === index);
   return {
-    restore: () => restoreDecision(currentRow(), gameId),
+    restore: canReturnToDecision(currentRow(), gameId) ? () => restoreDecision(currentRow(), gameId) : undefined,
     review: () => {
       const current = currentRow();
       return decisionReview(current.source, {
@@ -2558,13 +2577,12 @@ function historyDecisionActions(entry, index, gameId, opponent) {
 function renderFeedback() {
   const m = model();
   renderMobileSummary(m);
-  feedbackStrip.hidden = !(
-    m?.started &&
-    ((config.mode === "computer" && config.tutor) ||
-      state().phase === "over")
-  );
+  // Explicit history remains available in every mode, even when automatic
+  // feedback is disabled. This does not start any additional analysis jobs.
+  feedbackStrip.hidden = !m?.started;
   feedbackFilters.hidden = feedbackStrip.hidden;
   if (feedbackStrip.hidden) {
+    previousGames.update(null);
     feedbackView.turns.clear(); feedbackView.games.clear();
     feedbackView.cards.clear();
     feedbackStrip.replaceChildren(); renderedFeedback = null;
@@ -2574,6 +2592,8 @@ function renderFeedback() {
   renderedFeedback = m.events;
   const rows = decisionHistory(m);
   const viewer = config.mode === "online" ? online.seat : config.humanSide;
+  previousGames.update({sessionId:m.id, currentId:m.archiveId || m.id,
+    filter:feedbackFilter, viewer, mode:config.mode, names:names()});
   const sideOf = row => row.player === viewer ? "self" : "opponent";
   for (const [value, control] of feedbackFilterButtons) {
     const player = value === "self" ? viewer : 1 - viewer;
@@ -2633,121 +2653,19 @@ function renderFeedback() {
       continue;
     }
     entry.signature = signature;
-    const side = sideOf(group);
-    const playerLabel = config.mode === "local" ? names()[group.player]
-      : side === "self" ? "You" : "Opponent";
-    const cubeCount = group.decisions.filter(row => row.action.type !== "move").length;
-    const decisions = el("div", {
-      class: "history-turn-decisions",
-      "data-paired": cubeCount > 0 && group.decisions.some(row => row.action.type === "move") ? "true" : "false",
+    entry.node = historyTurn(group, {
+      names: names(), viewer, local: config.mode === "local", reviewIndex,
+      actions: row => historyDecisionActions(entry, row.index, m.id, sideOf(group) === "opponent"),
+      pending: row => config.mode === "computer"
+        ? (autoReview.job?.row.index === row.index ? "Analyzing…" : autoReview.error ? "Analysis paused" : "Analysis queued")
+        : row.forced ? "Forced · no choice" : "Not analyzed",
     });
-    decisions.style.setProperty("--cube-decisions", cubeCount);
-    const identity = el("div", { class: "history-identity" },
-      el("span", { class: "history-player" }, playerLabel),
-      ...(config.mode !== "local" && names()[group.player] !== playerLabel
-        ? [el("span", { class: "history-detail muted" }, names()[group.player])] : []),
-      el("span", { class: "history-turn-label muted" },
-        `Game ${group.game} · Turn ${group.turn}${group.response ? " · Response" : ""}`),
-    );
-    entry.node = el("section", {
-      class: "history-turn",
-      "data-history-player": group.player,
-      "data-history-side": side,
-      "data-turn-key": group.key,
-      "aria-label": `${playerLabel} · Game ${group.game} · Turn ${group.turn}${group.response ? " · Cube response" : ""}`,
-    }, identity, decisions);
     children.push(entry.node);
-    for (const row of group.decisions) {
-      const handlers = historyDecisionActions(entry, row.index, m.id, side === "opponent");
-      const kind = row.action.type === "move" ? "Move" : "Cube";
-      const cube = kind === "Cube" ? presentCubeAction(row.source, row.action.type) : null;
-      const played = () => {
-        if (!cube) return el("span", { class: "history-played" }, row.label);
-        if (!cube.displayLabel) return null;
-        return el("span", { class: "history-played history-cube-action", title: cube.description },
-          ...(cube.icon ? [cubeActionIcon(cube.icon)] : []), el("span", {}, cube.displayLabel));
-      };
-      const detail = () => el("span", { class: "history-kind muted" },
-        el("span", { class: "history-kind-label" },
-          ...(cube ? [el("span", { class: "history-cube-icon", role: "img",
-            "aria-label": `Current cube ${cube.cubeValue}`, title: `Current cube: ${cube.cubeValue}` }, cube.cubeValue)] : []),
-          kind,
-        ),
-        ...(row.result ? [" · ", el("span", {
-          class: "history-depth", title: `Completed analysis · ${analysisDepthLabel(row.result)}`,
-        }, analysisDepthLabel(row.result))] : []),
-      );
-      if (!row.feedback) {
-        decisions.append(
-          el(
-            "div",
-            {
-              class: "feedback-pending",
-              "data-history-side": side,
-              "data-history-player": row.player,
-              "data-decision-type": row.action.type === "move" ? "checker" : "cube",
-            },
-            el("span", { class: "history-move" }, detail(), played()),
-            ...(canReturnToDecision(row, m.id)
-              ? [
-                  button(
-                    "Return",
-                    handlers.restore,
-                    "ghost",
-                    { "aria-label": "Return to this position", title: "Return to this position" },
-                  ),
-                ]
-              : []),
-            el(
-              "span",
-              { class: "history-pending-status muted small" },
-              config.mode === "computer"
-                ? (autoReview.job?.row.index === row.index ? "Analyzing…" : autoReview.error ? "Analysis paused" : "Analysis queued")
-                : row.forced ? "Forced · no choice" : "Not analyzed",
-            ),
-          ),
-        );
-        continue;
-      }
-      const f = row.feedback;
-      const review = button(
-        "",
-        handlers.review,
-        "feedback-review",
-        {
-          ...(row.index === reviewIndex
-            ? { id: "review-feedback" }
-            : {}),
-          "data-loss-tone": f.tone,
-          "data-history-side": side,
-          "data-history-player": row.player,
-          "data-decision-type": row.result.type,
-          title: `${playerLabel} · ${kind}: ${cube?.label || row.label}. ${f.quality}. ${f.units}. Open equity and EV comparison.`,
-        },
-      );
-      const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
-      review.append(
-        el("span", { class: "history-move" },
-          detail(),
-          played(),
-          ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
-            el("span", { class: "history-best-label" }, "Best "),
-            row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : presentCubeAction(row.source, f.best.action).label,
-          )] : []),
-        ),
-        decisionValues(f, true, { opponent: side === "opponent" }),
-        el("span", { class: "history-loss" },
-          el("span", { class: "muted" }, f.label),
-          el("strong", { class: "value" }, f.value),
-        ),
-      );
-      decisions.append(review);
-    }
   }
   for (const key of feedbackView.turns.keys()) if (!retained.has(key)) feedbackView.turns.delete(key);
   for (const game of feedbackView.games.keys()) if (!retainedGames.has(game)) feedbackView.games.delete(game);
   for (const game of feedbackView.cards.keys()) if (!retainedGames.has(game)) feedbackView.cards.delete(game);
-  children.push(feedbackView.footer);
+  children.push(previousGames.node, feedbackView.footer);
   const wanted = new Set(children);
   for (const child of [...feedbackStrip.children]) if (!wanted.has(child)) child.remove();
   let cursor = feedbackStrip.firstChild;

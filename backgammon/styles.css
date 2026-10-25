@@ -2571,6 +2571,26 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: var(--surface-2);
 }
 
+.archived-games { margin-top: 24px; }
+.history-moves-disclosure { border-top: 1px solid var(--line); }
+.history-moves-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+.history-moves-disclosure > summary::-webkit-details-marker,
+.history-moves-disclosure > summary::before { display: none; }
+.history-moves-disclosure > summary .history-game-chevron { margin-left: auto; }
+.history-moves-disclosure[open] > summary .history-game-chevron { transform: rotate(225deg); }
+.archived-game-moves { padding: 0 8px 8px; }
+.archived-game-moves > .history-turn:last-child { margin-bottom: 0; }
+.history-archive-total { display: flex; justify-content: space-between; gap: 12px; }
+
 .history-game-heading {
   display: flex;
   flex-wrap: wrap;
@@ -7248,7 +7268,9 @@ html.skin-shader .docs-toc--sticky {
     max-height: 100%;
     aspect-ratio: auto;
   }
-  .play-page.live-table:has(.mobile-game-summary[open]) .board-actions { height: auto; }
+  /* Keep the confirmation row reserved on both players' turns, so showing
+     Confirm/Beaver or hiding it does not resize or shift the board. */
+  .play-page.live-table:has(.mobile-game-summary[open]) .board-actions { display: flex; height: 52px; padding-block: 0; }
   .play-page.live-table .game-over-card { max-height: calc(100% - 12px); }
   .play-page.live-table:has(.mobile-game-summary[open]) .game-over-card {
     width: calc(100% - 16px);

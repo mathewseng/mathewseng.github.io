@@ -3,8 +3,8 @@ import { el } from "./shell.mjs";
 import { gameLossSummary } from "../core/game-loss-summary.mjs";
 import { lossTone } from "../core/decision-feedback.mjs";
 
-export function gameLossTable(rows, state, names, visiblePlayers = [0, 1], { compact = false } = {}) {
-  const summary = gameLossSummary(rows, state.gameNumber, state.matchLength);
+export function gameLossTable(rows, state, names, visiblePlayers = [0, 1], { compact = false,
+  summary = gameLossSummary(rows, state.gameNumber, state.matchLength) } = {}) {
   const number = value => value === null ? "—" : value.toFixed(3);
   const value = (tag, amount) => el(tag,
     amount === null ? {} : { "data-loss-tone": lossTone(amount).tone }, number(amount));

@@ -622,7 +622,9 @@ and `sealed-roll` browser checks cover these boundaries and saved-game replay.
 
 Local and computer tables keep only the current game's events, grades and variations in the live model. Before starting another game, Play waits for the completed game's archive transaction to commit, then keeps its score/Crawford context and private dice cursor while releasing its history. A failed save leaves the completed game on the table. Online protocol logs remain unchanged.
 
-**Saved games** below the board pages through eight metadata records at a time. Opening Review or History tree loads that game alone; returning to a position keeps later games and the original line saved. Library similarly pages through twelve headers, loading a body only when selected, and destroys the previous preview board. The hub and Trainer no longer read every archived match just to find a recent item or practice position. Explicit exports still include the saved records.
+**Analysis & history** shows previous games beneath the current game. Each summary stays visible, with its moves collapsed underneath. Opening Moves reads that game from disk; opening another or collapsing it releases its move rows and replay cache. The You/Opponent/All filters also apply to expanded games. Eight summaries are shown per page, with Older/Newer navigation; the index stores small initial/accepted loss totals so closed games do not hydrate their histories.
+
+**Saved games** below the board also pages through eight metadata records at a time. Opening Review or History tree loads that game alone; returning to a position keeps later games and the original line saved. Library similarly pages through twelve headers, loading a body only when selected, and destroys the previous preview board. The hub and Trainer no longer read every archived match just to find a recent item or practice position. Explicit exports still include the saved records.
 
 IndexedDB version 2 adds a summary index updated transactionally with each archive, edit, delete or import. Legacy active multi-game saves are split into independently replayable games in the same transaction as their new live pointer, preserving notes, evaluations, score context and variations. This does not clear browser storage. Current game histories may vary in size, but completing more games no longer adds their events or DOM rows to the live page.
 
@@ -671,7 +673,7 @@ Game summaries in history are always expanded. Portrait phones open the current-
 summary in the table footer by default, showing initial/accepted checker totals and
 averages plus cube totals and mistake counts. Tap its Controls heading to replace it
 with Undo turn, Hint, Analysis, Game summary and Controls; Game summary reopens it.
-The board fits the remaining visual viewport height, so the entire summary stays in
+The live board is top-aligned and reserves the confirmation row between turns, so rolling, moving, and confirming do not change its vertical position. The equity rail follows the actual board alignment. The board fits the remaining visual viewport height, so the entire summary stays in
 view without floating over content. Same-device games have a player switch in the
 summary so either player's figures fit in full. Scrolling below the table reaches analysis.
 Short portrait screens keep Settings but tuck navigation into Controls.
