@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import {assertState,boardKey,commitTurn,notation,positionKey,initialState} from '../core/rules.mjs';
+import {assertState,boardKey,commitTurn,notation,positionKey,initialState,MAX_CUBE} from '../core/rules.mjs';
 import {bookBoardKey,bookContext,bookEligible} from './opening-book.mjs';
 import {RolloutOpeningBook} from './rollout-book.mjs';
 export const XG_BOOK_ID='xg-public-opening-3.70-v1';
@@ -7,7 +7,10 @@ export const XG_BOOK_ENGINE='eXtreme Gammon · published opening book 3.70 (2013
 const validHeader=index=>index?.schema===1&&index.id===XG_BOOK_ID&&index.engine===XG_BOOK_ENGINE&&index.context?.matchLength===0&&index.context.jacoby===true&&index.context.beavers===true&&index.context.immediateRedoubles===2&&index.context.cube===1&&index.context.cubeOwner===null;
 const START=bookBoardKey(initialState({matchLength:0}));
 const URL_INDEX=new URL('./opening-book-data/xg/index.json',import.meta.url);
-export const referenceContext=state=>state?.rules?.immediateRedoubles===2&&state.cube?.value===1&&bookContext({...state,rules:{...state.rules,immediateRedoubles:0}});
+// Opening ties raise the centered money cube without changing cube ownership
+// or Jacoby status. These equities are in current-cube units, so scaling that
+// stake does not change the opening/reply ranking (including immediate redoubles).
+export const referenceContext=state=>state?.rules?.immediateRedoubles===2&&state.cube?.value*8<=MAX_CUBE&&bookContext({...state,rules:{...state.rules,immediateRedoubles:0}});
 export const referenceEligible=(state,options)=>referenceContext(state)&&bookEligible({...state,rules:{...state.rules,immediateRedoubles:0}},options);
 export function referenceResult(state,entry,index,preset='auto',submitted=null){
  assertState(state);
@@ -46,7 +49,8 @@ export class XGReferenceBook{
 export class PreferredOpeningBook{
  constructor({fetcher=(...args)=>fetch(...args)}={}){this.reference=new XGReferenceBook({fetcher});this.fallback=new RolloutOpeningBook({fetcher});}
  eligible(state,options){return referenceEligible(state,options)||bookEligible(state,options);}
- mayHave(state){return referenceContext(state)||this.fallback.mayHave(state);}
+ mayHave(state){return referenceContext(state)?(!this.reference.index||!!this.reference.index.entries[bookBoardKey(state)]):this.fallback.mayHave(state);}
+ hasEntry(state){return referenceContext(state)&&!!this.reference.index?.entries[bookBoardKey(state)]?.[[...state.dice].sort((a,b)=>b-a).join('')];}
  async lookup(state,options){if(referenceEligible(state,options)){const result=await this.reference.lookup(state,options);if(result)return result;return null;}return this.fallback.lookup(state,options);}
  prepare(state){return referenceContext(state)?this.reference.load():this.fallback.prepare(state);}
 }

@@ -10,7 +10,8 @@ import {
   boardKey,
   commitTurn,
 } from "../core/rules.mjs";
-import { ENGINE_VERSION } from "../engine/metadata.mjs";
+// Published exercises keep the engine that actually generated their scores.
+const FIXTURE_ENGINE = JSON.parse(readFileSync(new URL("../docs/bg9-release.json", import.meta.url))).engine;
 test("all study fixtures are valid, genuinely scored, and seeded provenance replays", () => {
   const { items } = JSON.parse(
     readFileSync(new URL("../data/exercises.json", import.meta.url)),
@@ -25,7 +26,7 @@ test("all study fixtures are valid, genuinely scored, and seeded provenance repl
       ).at(-1);
       assert.equal(positionKey(state), positionKey(item.state));
     }
-    assert.equal(item.analysis.engine, ENGINE_VERSION);
+    assert.equal(item.analysis.engine, FIXTURE_ENGINE);
     assert.equal(item.analysis.status, "complete");
     assert.equal(item.analysis.positionKey, positionKey(item.state));
     if (item.state.phase === "move") {

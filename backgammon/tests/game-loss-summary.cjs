@@ -1,5 +1,6 @@
 // Scripted grades isolate summary arithmetic/persistence from engine accuracy.
 const assert = require("node:assert/strict"), path = require("node:path");
+const {showPlayControls} = require('./play-helpers.cjs');
 module.exports = async function gameLossSummary(browser, base, out, name) {
   const report = [];
   for (const [layout, viewport] of Object.entries({ desktop: { width: 1440, height: 900 }, phone: { width: 390, height: 844 }, landscape: { width: 844, height: 390 } })) {
@@ -12,6 +13,7 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       await page.locator("#resume-match").click();
       const drawer = page.locator("#details-dialog[open]");
       if (await drawer.count()) await page.keyboard.press("Escape");
+      await showPlayControls(page);
     };
     try {
       await page.goto(base + "/backgammon/play/"); await ready();

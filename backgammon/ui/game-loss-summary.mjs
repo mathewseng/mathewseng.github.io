@@ -3,7 +3,7 @@ import { el } from "./shell.mjs";
 import { gameLossSummary } from "../core/game-loss-summary.mjs";
 import { lossTone } from "../core/decision-feedback.mjs";
 
-export function gameLossTable(rows, state, names, visiblePlayers = [0, 1]) {
+export function gameLossTable(rows, state, names, visiblePlayers = [0, 1], { compact = false } = {}) {
   const summary = gameLossSummary(rows, state.gameNumber, state.matchLength);
   const number = value => value === null ? "—" : value.toFixed(3);
   const value = (tag, amount) => el(tag,
@@ -20,17 +20,17 @@ export function gameLossTable(rows, state, names, visiblePlayers = [0, 1]) {
           stats.unavailable ? `${stats.unavailable} unrecorded` : ""].filter(Boolean).join(" · "))] : []),
     );
   };
-  return el("section", { class: "game-loss-summary", "aria-label": "Game decision losses" },
+  return el("section", { class: `game-loss-summary${compact ? " compact-loss-summary" : ""}`, "aria-label": "Game decision losses" },
     el("table", {},
-      el("caption", {}, summary.money ? "EV loss" : "EV loss · normalized equity"),
+      ...(!compact ? [el("caption", {}, summary.money ? "EV loss" : "EV loss · normalized equity")] : []),
       el("thead", {}, el("tr", {},
-        el("th", { scope: "col" }, "Total loss"),
+        el("th", { scope: "col" }, compact ? "EV loss" : "Total loss"),
         el("th", { scope: "col" }, "Initial"),
         el("th", { scope: "col" }, "Accepted"),
       )),
       ...summary.players.filter(player => visiblePlayers.includes(player.player)).map(player => el("tbody", { "data-summary-player": player.player },
-        el("tr", { class: "loss-summary-player" },
-          el("th", { colspan: 3, scope: "rowgroup" }, names[player.player])),
+        ...(!compact || visiblePlayers.length > 1 ? [el("tr", { class: "loss-summary-player" },
+          el("th", { colspan: 3, scope: "rowgroup" }, names[player.player]))] : []),
         ...["checker", "cube"].map(kind => el("tr", { "data-loss-kind": kind },
           el("th", { scope: "row" }, kind === "checker" ? "Checkers" : "Cube",
             el("small", {}, `${player[kind].accepted.count} ${kind === "checker" ? "move" : "decision"}${player[kind].accepted.count === 1 ? "" : "s"}`)),
@@ -39,10 +39,10 @@ export function gameLossTable(rows, state, names, visiblePlayers = [0, 1]) {
         )),
       )),
     ),
-    el("details", { class: "loss-summary-help" },
+    ...(!compact ? [el("details", { class: "loss-summary-help" },
       el("summary", {}, "How losses are counted"),
       el("p", {}, "Initial is your first submitted choice, before any revision. Accepted is the final played choice. Totals include evaluated decisions only; pending values update here automatically in computer games. Older first choices may be unrecorded."),
       el("p", {}, `Checker averages are per evaluated turn, including forced turns at zero loss and excluding passes. Cube mistakes exceed 0.002 ${summary.money ? "equity" : "normalized equity"}. ${summary.money ? "Loss totals and averages exclude the cube multiplier." : "Losses use normalized match equity, not PR."}`),
-    ),
+    )] : []),
   );
 }

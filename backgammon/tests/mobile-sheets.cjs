@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict"), path = require("node:path");
 
 module.exports = async function mobileSheets(browser, base, out, name) {
@@ -26,6 +27,7 @@ module.exports = async function mobileSheets(browser, base, out, name) {
     await page.goto(base+`/backgammon/play/#resume=${id}`);
     await page.reload();
     await page.locator("#confirm").waitFor();
+    await showPlayControls(page);
     await page.getByLabel("Select a checker",{exact:true}).selectOption("12");
     await page.getByLabel("Move selected checker",{exact:true}).selectOption("8");
     // The draft is saved after a paint (play/app.js saveDraftAfterPaint); wait for it.

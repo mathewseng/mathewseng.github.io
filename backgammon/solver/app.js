@@ -128,7 +128,8 @@ const setupTools = el('div', {class:'solver-setup-tools'},
   button('Flip board', () => changeView('orientation'), '', {id:'editor-flip'}),
   button('Direction', () => changeView('mirrored'), '', {id:'editor-direction','aria-pressed':false}),
   editorContext);
-const setupDisclosure = el('details', {id:'editor-tools',open:innerWidth>700},
+const wideSetup = matchMedia('(min-width: 1025px) and (min-height: 501px)');
+const setupDisclosure = el('details', {id:'editor-tools',open:wideSetup.matches},
   el('summary',{},'Board tools'),setupTools);
 editor.node.append(setupDisclosure);
 function changeView(key) {
@@ -148,9 +149,11 @@ editor.node.append(el('span',{class:'solver-control-label'},'Decision to analyze
 study.node.after(editor.node);
 // The same controls live beside the board on desktop, and below it on phones.
 const contextStrip = el("section", { class: "solver-context", "aria-label": "Position context" });
-const setupDock = el('section',{class:'solver-setup-dock','aria-label':'Position setup'},sectionTitle('Position setup','position'),contextStrip,editor.node);
+// Keep checker supplies nearest the board; context and less frequent tools
+// follow them in the same order in the phone stack and landscape rail.
+editor.node.querySelector('.editor-actions').after(contextStrip);
+const setupDock = el('section',{class:'solver-setup-dock','aria-label':'Position setup'},sectionTitle('Position setup','position'),editor.node);
 study.node.after(setupDock);
-const wideSetup = matchMedia('(min-width: 1025px) and (min-height: 501px)');
 wideSetup.addEventListener('change',()=>{setupDisclosure.open=wideSetup.matches;render();});
 // One progress component for analysis: indeterminate while GNUbg searches,
 // determinate for rollouts and match review. The text stays in #message and
@@ -247,8 +250,9 @@ actionArea.classList.add('solver-controls');
 const actionsAnchor = document.createComment('Solver controls below the board on phones');
 actionArea.before(actionsAnchor);
 const analysisControls = el('section', {class:'solver-analysis-controls', 'aria-label':'Analyze position'},
-  sectionTitle('Analyze position','analysis'), document.querySelector('.action-main'), $('message'), progress, study.node);
-actionArea.prepend(analysisControls);
+  sectionTitle('Analyze position','analysis'), quickAnalysis, $('message'), progress, study.node);
+const primaryControls = document.querySelector('.action-main');
+actionArea.prepend(primaryControls, setupDock, analysisControls);
 analysis.preset = "auto";
 const hash = new URLSearchParams(location.hash.slice(1)),
   params = new URLSearchParams(location.search);
@@ -423,6 +427,7 @@ function render() {
   if (editControl.textContent !== editLabel)
     editControl.textContent = editLabel;
   editControl.disabled = !!review;
+  editControl.setAttribute('aria-pressed', String(editing));
   const analyzeLabel = busy ? "Cancel" : "Analyze";
   if (analyzeControl.textContent !== analyzeLabel)
     analyzeControl.textContent = analyzeLabel;

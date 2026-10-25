@@ -12,6 +12,21 @@
   gap: 16px;
   align-content: start;
 }
+.app[data-page="solver"] .solver-controls > .action-main {
+  order: -2;
+  grid-template-columns: minmax(0, 1fr);
+}
+.app[data-page="solver"]:not(.editing-position) .solver-setup-dock { display: none; }
+.solver-controls > .solver-setup-dock { order: -1; }
+.solver-controls > .action-main,
+.solver-controls > .solver-analysis-controls { min-width: 0; }
+.solver-controls #edit-position[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.app[data-page="solver"].editing-position #board > .bg-board { outline: none; }
+.solver-setup-dock .solver-context { grid-column: 1 / -1; }
 .solver-setup-dock,
 .solver-analysis-controls {
   display: grid;
@@ -106,7 +121,7 @@
 
 @media (min-width: 1025px) and (min-height: 501px) {
   .app[data-page="solver"] .stage {
-    grid-template-rows: 28px minmax(0, 1fr) 28px;
+    grid-template-rows: 36px minmax(0, 1fr) 36px;
     height: 100%;
   }
   .app[data-page="solver"] .inspector {
@@ -119,7 +134,7 @@
     padding-top: 0;
   }
   .app[data-page="solver"] .inspector > .solver-controls {
-    padding: 0 14px;
+    padding: 14px;
   }
   .solver-controls .action-main {
     display: grid;
@@ -144,29 +159,161 @@
   .app[data-page="solver"]:not(.editing-position) .stage {
     height: auto;
     min-height: 0;
-    grid-template-rows: 24px auto 24px auto;
+    grid-template-rows: 32px auto 32px auto;
+    row-gap: 6px;
     align-content: start;
   }
+  .app[data-page="solver"] .player-strip { min-height: 32px; }
   .app[data-page="solver"] #board {
+    display: block;
+    box-sizing: content-box;
     height: min(calc((100cqw - var(--bg-equity-width) - 6px) * 660 / 876), calc(100dvh - 250px));
     max-height: none;
     aspect-ratio: auto;
   }
-  .app[data-page="solver"]:not(.editing-position) .solver-setup-dock { display: none; }
-  /* Tapping "Edit position" puts the editor directly under the board. */
-  .app[data-page="solver"].editing-position .solver-setup-dock { order: -1; }
-  .solver-controls { padding-top: 0; }
+  .app[data-page="solver"] .solver-controls {
+    padding: 10px;
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+  .app[data-page="solver"] .solver-controls > * { grid-column: auto; grid-row: auto; }
+  .solver-setup-dock { padding-top: 0; }
   .solver-analysis-controls { padding-top: 8px; }
   .solver-controls .action-main { gap: 8px; }
   .solver-controls #message { font-size: var(--t-sm); }
 }
 
-@media (max-height: 500px) and (min-width: 650px) {
-  .app[data-page="solver"].editing-position .solver-setup-dock { order: -1; }
+/* Portrait equity lives below the board. Never reserve a second, vertical
+   rail or subtract that space twice on short phones. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .app[data-page="solver"] #board {
+    box-sizing: content-box;
+    height: auto;
+    aspect-ratio: 876 / 660;
+    padding-bottom: 48px;
+    max-height: none;
+  }
+  .app[data-page="solver"] #board > .bg-board {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    aspect-ratio: 876 / 660;
+    margin-left: 0;
+  }
+  .app[data-page="solver"] #subtitle { min-height: 0; }
+}
+
+@media (max-width: 1024px), (max-height: 500px) {
+  .app[data-page="solver"] .source-preview-control { display: none; }
+  .app[data-page="solver"] .solver-analysis-controls > .study-strip { order: -1; }
+  .solver-analysis-controls:has(.study-strip:not([hidden])) > .solver-group-title { display: none; }
+  .solver-controls .position-editor:not([hidden]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .solver-controls .editor-supplies,
+  .solver-controls .editor-actions,
+  .solver-controls #editor-tools,
+  .solver-controls #editor-decision { grid-column: 1 / -1; }
+  .solver-controls .editor-actions .btn { flex: 1; }
+  .solver-controls .editor-supply { min-width: 0; }
+  .solver-controls .solver-context { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .solver-controls .solver-context-item { min-height: 52px; padding: 7px 10px; }
+  .solver-controls .solver-context-item strong { font-size: var(--t-sm); }
+  .solver-controls .solver-quick-analysis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .solver-controls .solver-quick-analysis .btn { padding-inline: 4px; font-size: var(--t-sm); }
+  .solver-controls .solver-setup-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .solver-controls #editor-decision { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .solver-controls #editor-decision .btn { white-space: normal; padding-inline: 4px; }
+  .solver-controls .solver-group-title { font-size: var(--t-sm); }
+}
+
+@media (max-height: 500px) and (min-width: 500px) {
+  .app[data-page="solver"] {
+    --solver-rail-width: clamp(240px, 32vw, 300px);
+    position: relative;
+    height: 100dvh;
+    min-height: 0;
+    grid-template-rows: 46px 0 minmax(0, 1fr);
+    padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+  .app[data-page="solver"] > .topbar { flex-wrap: nowrap; min-height: 46px; padding: 0; }
+  .app[data-page="solver"] .crumbs { display: none; }
+  .app[data-page="solver"] .tool-nav { order: 0; width: auto; flex: 1; }
+  .app[data-page="solver"] .header-tools { order: 1; flex: none; }
+  .app[data-page="solver"] .app-main { grid-row: 3; }
+  .app[data-page="solver"] .inspector { display: none; }
+  .app[data-page="solver"] .workspace {
+    grid-template-columns: minmax(0, 1fr) var(--solver-rail-width);
+    gap: 8px;
+  }
+  .app[data-page="solver"] .tool-head {
+    position: absolute;
+    top: calc(52px + env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    z-index: 2;
+    width: var(--solver-rail-width);
+    min-height: 44px;
+    padding: 0;
+  }
+  .app[data-page="solver"] .tool-head > div:first-child { display: none; }
+  .app[data-page="solver"] #toolbar { width: 100%; justify-content: flex-end; gap: 6px; }
+  .app[data-page="solver"] #toolbar > :not(#mobile-tools):not(#panel-toggle) { display: none; }
+  .app[data-page="solver"] #toolbar > :is(#mobile-tools, #panel-toggle) { display: inline-flex; min-height: 44px; }
+  .app[data-page="solver"] .stage {
+    position: relative;
+    height: 100%;
+    grid-template-rows: 32px minmax(0, 1fr) 32px;
+    row-gap: 4px;
+  }
+  .app[data-page="solver"] .player-strip { min-height: 32px; }
+  .app[data-page="solver"] #board {
+    display: flex;
+    height: 100%;
+    aspect-ratio: auto;
+    justify-content: center;
+    container-type: size;
+  }
+  .app[data-page="solver"] #board > .bg-board {
+    flex: none;
+    width: min(calc(100% - var(--bg-equity-width) - 6px), calc(100cqh * 876 / 660));
+    height: auto;
+    max-height: 100%;
+    aspect-ratio: 876 / 660;
+  }
+  .app[data-page="solver"] .solver-controls {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    left: calc(100% + 8px);
+    top: 52px;
+    bottom: 0;
+    width: var(--solver-rail-width);
+    height: auto;
+    max-height: none;
+    padding: 8px;
+    gap: 12px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .app[data-page="solver"] .solver-controls > * { flex: none; }
+  .app[data-page="solver"] #draft-line { display: none; }
+  .app[data-page="solver"] .solver-controls > .action-main {
+    position: sticky;
+    top: -8px;
+    z-index: 1;
+    padding-block: 8px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
   .solver-controls .solver-setup-dock,
   .solver-controls .solver-analysis-controls { padding-block: 8px; }
   .solver-controls .solver-group-title { font-size: var(--t-sm); }
-  .solver-controls .solver-context { grid-template-columns: 1fr; }
   .solver-controls .action-main { display: grid; gap: 6px; }
   .solver-controls .solver-quick-analysis {
     display: grid;

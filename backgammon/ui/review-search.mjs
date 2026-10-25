@@ -18,7 +18,7 @@ export function reviewSearch(source,dialog,onResult,beforeRoll=null) {
   const notice=el('p',{class:'review-search-notice small muted',hidden:true});
   node.append(options,working,notice);
   const positionEquity=el('span',{class:'review-number review-preroll-equity'},'…');
-  let engine=null,result=null,serial=0,timer=null,busy=false,loadingPosition=false,positionLoaded=false;
+  let engine=null,result=null,calibration=null,serial=0,timer=null,busy=false,loadingPosition=false,positionLoaded=false;
   const client=()=>engine || (engine=new EngineClient());
   const paintPosition=value=>{
     if (!Number.isFinite(value?.outcomes?.[0])) return false;
@@ -44,13 +44,15 @@ export function reviewSearch(source,dialog,onResult,beforeRoll=null) {
   }
   function setResult(next) {
     result=next;options.hidden=false;options.replaceChildren();
+    if (reviewDepthEstimate(next,next.settings.plies).source === 'measured') calibration=next;
     const depth=next.method==='reference'?0:next.settings.plies;
     const presets=Object.entries(PRESETS).filter(([key,value])=>key!=='verify' && value.plies>depth && value.plies>=2);
     node.hidden=presets.length===0 && !busy;
     for(const [preset,settings] of presets) {
-      const estimate=reviewDepthEstimate(next,settings.plies);
+      const estimate=reviewDepthEstimate(next,settings.plies,calibration);
       const b=button('',()=>run(preset),'review-depth',{'aria-label':`Analyze at ${settings.plies} ply`,title:'Estimated time is approximate; position, device and cache affect the actual search. Runs a fresh local GNUbg comparison.'});
-      b.append(el('strong',{},`${settings.plies} ply`),el('small',{},estimate?`~${reviewTime(estimate.ms)}`:'Time unknown'));
+      b.append(el('strong',{},`${settings.plies} ply`),el('small',{},`~${reviewTime(estimate.ms)}`));
+      if (estimate.source === 'prior') b.title='Rough initial estimate; actual time depends on this device and position. Updated after a measured search.';
       options.append(b);
     }
     loadPosition();
@@ -60,18 +62,20 @@ export function reviewSearch(source,dialog,onResult,beforeRoll=null) {
     const basis=result,token=++serial,plies=PRESETS[preset].plies,started=performance.now();
     busy=true;notice.hidden=true;working.hidden=false;options.hidden=true;node.hidden=false;
     options.querySelectorAll('button').forEach(b=>b.disabled=true);
-    progress.removeAttribute('value');status.textContent=`Starting ${plies}-ply analysis…`;
-    const estimate=reviewDepthEstimate(basis,plies);let checkpoint=null;
+    const estimate=reviewDepthEstimate(basis,plies,calibration);let checkpoint=null,estimatedMs=estimate.ms;
+    progress.removeAttribute('value');status.textContent=`Starting ${plies}-ply analysis · ~${reviewTime(estimatedMs)}`;
     const update=()=>{
       const elapsed=performance.now()-started;
-      status.textContent=checkpoint?.total ? `${checkpoint.plies} ply · ${checkpoint.completed}/${checkpoint.total} positions · ${reviewTime(elapsed)}`
-        : `${plies} ply · ${reviewTime(elapsed)} elapsed${estimate?` · ~${reviewTime(Math.max(0,estimate.ms-elapsed))} remaining`:''}`;
+      const remaining=elapsed<estimatedMs?` · ~${reviewTime(estimatedMs-elapsed)} remaining`:' · estimate exceeded';
+      status.textContent=checkpoint?.total ? `${checkpoint.plies} ply · ${checkpoint.completed}/${checkpoint.total} positions · ${reviewTime(elapsed)}${remaining}`
+        : `${plies} ply · ${reviewTime(elapsed)} elapsed${remaining}`;
     };
     timer=setInterval(update,500);
     const worker=client();worker.cancelWhere(job=>job.priority<20);
     try {
       let fresh=await worker.analyze(source,{preset,useBook:false,priority:20,submitted:basis.actual?.steps || null,
         onProgress:value=>{if(token!==serial || !dialog.open)return;checkpoint=value;
+          if(value.plies===plies && value.completed>0) estimatedMs=(performance.now()-started)*value.total/value.completed;
           if(value.total)progress.value=value.completed/value.total;else progress.removeAttribute('value');update();}});
       if(token!==serial || !dialog.open)return;
       if(fresh.type==='cube')fresh=gradeCube(source,fresh,basis.actualDecision || basis.decision?.actual?.action || fresh.action);

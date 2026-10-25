@@ -21,7 +21,7 @@ static void output(StringBuffer *b, float *v, cubeinfo *ci, float eq) {
 }
 const char *bg_score(const char *original, const char *after, int depth, int beavers) {
     matchstate ms, post; cubeinfo ci; move m; memset(&m,0,sizeof(m));
-    if(depth<0||depth>4||parseXgid(&ms,original)<0||parseXgid(&post,after)<0)return failure();
+    if(depth<0||depth>6||parseXgid(&ms,original)<0||parseXgid(&post,after)<0)return failure();
     if(!CheckPosition(ms.anBoard)||!CheckPosition(post.anBoard)||ms.fMove!=post.fMove)return failure();
     if(getCubeInfoFromMatchStateWithBeavers(&ci,&ms,beavers != 0)<0)return failure();
     PositionKey(post.anBoard,&m.key);
@@ -31,7 +31,7 @@ const char *bg_score(const char *original, const char *after, int depth, int bea
 }
 const char *bg_cube(const char *xgid,int depth,int beavers) {
     matchstate ms;cubeinfo ci;cubedecision cd;float equity[NUM_CUBEFUL_OUTPUTS],v[2][NUM_ROLLOUT_OUTPUTS];
-    if(depth<0||depth>4||parseXgid(&ms,xgid)<0||!CheckPosition(ms.anBoard))return failure();
+    if(depth<0||depth>6||parseXgid(&ms,xgid)<0||!CheckPosition(ms.anBoard))return failure();
     if(getCubeInfoFromMatchStateWithBeavers(&ci,&ms,beavers != 0)<0)return failure();
     evalcontext ec={ms.fCubeUse,depth,TRUE,TRUE,0.0f};
     if(!ms.fCubeUse) {
@@ -53,7 +53,7 @@ const char *bg_cube(const char *xgid,int depth,int beavers) {
  * cube unit. This is a GNUbg evaluation, not a pip-count heuristic. */
 const char *bg_value(const char *xgid,int depth,int beavers) {
     matchstate ms;cubeinfo ci;float v[NUM_ROLLOUT_OUTPUTS];
-    if(depth<0||depth>4||parseXgid(&ms,xgid)<0||ms.nMatchTo||!CheckPosition(ms.anBoard))return failure();
+    if(depth<0||depth>6||parseXgid(&ms,xgid)<0||ms.nMatchTo||!CheckPosition(ms.anBoard))return failure();
     if(getCubeInfoFromMatchStateWithBeavers(&ci,&ms,beavers != 0)<0)return failure();
     evalcontext ec={ms.fCubeUse,depth,TRUE,TRUE,0.0f};
     if(GeneralEvaluationE(v,ms.anBoard,&ci,&ec)<0)return failure();

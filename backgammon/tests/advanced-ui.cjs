@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert = require('node:assert/strict'), path = require('node:path');
 module.exports = async function advancedUI(browser,base,out,name='browser') {
   const report={cases:[],screenshots:[]};
@@ -93,13 +94,14 @@ module.exports = async function advancedUI(browser,base,out,name='browser') {
       const dims=await page.evaluate(()=>{const c=document.querySelector('#confirm').getBoundingClientRect(),b=document.querySelector('#board svg').getBoundingClientRect();return{overflow:document.documentElement.scrollWidth>innerWidth+1,confirm:c.toJSON(),board:b.toJSON()};});
       assert.equal(dims.overflow,false,`overflow at ${width}`);
       assert.ok(dims.confirm.top>=0&&dims.confirm.bottom<=height+2,`confirmation visible at ${width}: ${JSON.stringify(dims.confirm)}`);
-      // Short portrait layouts reserve the action row and use a 140 px minimum board track.
-      const minBoardHeight=width<=700&&height<=740?140:200;
+      // The expanded footer reserves the summary and Confirm; short phones
+      // scale the board into the remaining space without cropping it.
+      const minBoardHeight=width<=600&&height<=740?100:200;
       assert.ok(dims.board.top>=0&&dims.board.bottom<=height+2&&dims.board.height>=minBoardHeight&&dims.board.width>260,`board visible at ${width}: ${JSON.stringify(dims.board)}`);
       if(width>height&&height<=500)assert.ok(dims.board.height>height*.85,'landscape board uses almost all height');
       const shot=`${name}-advanced-${width}x${height}.png`;await page.screenshot({path:path.join(out,shot)});report.screenshots.push(shot);
     }
-    await page.setViewportSize({width:390,height:844});await page.locator('#analysis-jump').click();assert.ok(await page.locator('#review-heading').isVisible());
+    await page.setViewportSize({width:390,height:844});await showPlayControls(page);await page.locator('#analysis-jump').click();assert.ok(await page.locator('#review-heading').isVisible());
     assert.deepEqual(errors,[]);return report;
   } finally {await ctx.close();}
 };

@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert=require('node:assert/strict'),path=require('node:path');
 const { waitWork }=require('./play-helpers.cjs');
 module.exports=async function endedUndo(browser,base,out,name){
@@ -23,6 +24,7 @@ module.exports=async function endedUndo(browser,base,out,name){
         await page.goto(base+'/backgammon/play/');await ready();await tap(page.locator('#resume-match'));
         const won=(await read()).game;
         assert.equal(won.state.phase,'over');assert.equal(await page.locator('#undo-turn').isEnabled(),true);
+        await showPlayControls(page);
         await tap(page.locator('#undo-turn'));
         if(mode==='local'){
           assert.equal((await read()).game.state.phase,'over','opponent has not yet agreed');

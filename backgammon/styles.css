@@ -2703,6 +2703,19 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   min-width: 0;
 }
 
+/* A turn is one row, including on a phone. Cube exchanges stay in the left
+   column; the checker decision spans that exchange on the right. */
+.history-turn-decisions[data-paired="true"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.history-turn-decisions[data-paired="true"] > [data-decision-type="cube"] {
+  grid-column: 1;
+}
+.history-turn-decisions[data-paired="true"] > [data-decision-type="checker"] {
+  grid-column: 2;
+  grid-row: 1 / span var(--cube-decisions);
+}
+
 .play-feedback .history-turn :is(.feedback-review, .feedback-pending) {
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -2870,6 +2883,41 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   grid-area: return;
   justify-self: end;
   padding-inline: 10px;
+}
+
+@container (max-width: 599px) {
+  .play-feedback .history-turn-decisions[data-paired="true"] > :is(.feedback-review, .feedback-pending) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "move" "equity" "loss";
+    gap: 7px;
+    padding: 10px;
+    align-content: start;
+    text-align: left;
+  }
+  .play-feedback .history-turn-decisions[data-paired="true"] > .feedback-pending {
+    grid-template-areas: "move" "status" "return";
+  }
+  .play-feedback .history-turn-decisions[data-paired="true"] > [data-decision-type="checker"] {
+    border-left: 1px solid color-mix(in srgb, var(--history-color) 15%, transparent);
+  }
+  .history-turn-decisions[data-paired="true"] .history-loss {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    text-align: left;
+  }
+  .history-turn-decisions[data-paired="true"] .history-loss .value,
+  .history-turn-decisions[data-paired="true"] .decision-value strong {
+    font-size: var(--t-sm);
+  }
+  .history-turn-decisions[data-paired="true"] .decision-value-grid {
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    gap: 6px;
+  }
+  .play-feedback .history-turn-decisions[data-paired="true"] .decision-value {
+    padding: 0;
+    border: 0;
+  }
 }
 
 @container (min-width: 900px) {
@@ -7159,7 +7207,7 @@ html.skin-shader .docs-toc--sticky {
 .review-position-dice .die { width: 23px; height: 23px; min-width: 0; min-height: 0; padding: 3px; gap: 2px; border-radius: 5px; }
 .review-position-dice .die i { width: 4px; height: 4px; }
 .review-search { flex-shrink: 0; border-top: 1px solid var(--line); padding-top: 6px; }
-.review-depth-options { display: flex; gap: 6px; }
+.review-depth-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 6px; }
 .review-depth-options .review-depth { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 44px; padding: 4px 8px; white-space: normal; }
 .review-depth small { color: var(--muted); font-size: var(--t-xs); font-weight: 400; }
 .review-search-working { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 8px; align-items: center; font-size: var(--t-xs); }
@@ -7169,37 +7217,109 @@ html.skin-shader .docs-toc--sticky {
 .review-search-notice .btn { padding-block: 2px; }
 .review-depth-options:empty { display:none; }
 
-/* A compact running summary below the controls on portrait phones. */
-.mobile-game-summary { display: none; }
+/* One portrait footer switches between the running summary and utility tools.
+   It participates in the viewport grid; nothing floats over the board/history. */
+.mobile-game-summary,
+#game-summary-toggle { display: none; }
+/* At high browser zoom a paired history row no longer has room for even one
+   full equity value per half. Keep both decisions together, stacked in the row. */
+@media (max-width: 300px) {
+  .play-feedback .history-turn-decisions[data-paired="true"] { grid-template-columns: minmax(0, 1fr); }
+  .play-feedback .history-turn-decisions[data-paired="true"] > [data-decision-type] { grid-column: 1; grid-row: auto; border-left: 0; }
+  .play-feedback .history-turn-decisions .decision-value-grid { grid-template-columns: minmax(0, 1fr); }
+  .play-feedback .history-turn-decisions .decision-value { overflow-wrap: anywhere; }
+}
 @media (max-width: 600px) and (orientation: portrait) {
-  .mobile-game-summary:not([hidden]) {
+  .play-page.live-table:has(.mobile-game-summary[open]),
+  .play-page.live-table:has(.board-slot.has-equity-bar):has(.mobile-game-summary[open]) {
+    height: var(--play-visible-height, 100dvh);
+    min-height: 0;
+  }
+  .play-page.live-table:has(.mobile-game-summary[open]) .stage,
+  .play-page.live-table:has(.board-slot.has-equity-bar):has(.mobile-game-summary[open]) .stage {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  }
+  .play-page.live-table:has(.mobile-game-summary[open]) .board-workspace > .board-slot {
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    aspect-ratio: auto;
+  }
+  .play-page.live-table:has(.mobile-game-summary[open]) .board-actions { height: auto; }
+  .play-page.live-table .game-over-card { max-height: calc(100% - 12px); }
+  .play-page.live-table:has(.mobile-game-summary[open]) .game-over-card {
+    width: calc(100% - 16px);
+    padding: 12px;
+    gap: 6px;
+  }
+  /* The full loss table is already in the footer; keep the result overlay
+     inside the smaller board so it cannot cover the disclosure or controls. */
+  .play-page.live-table:has(.mobile-game-summary[open]) .game-over-card .game-loss-summary { display: none; }
+  .play-page.live-table .action-area { gap: 4px; padding: 4px; }
+  .play-page.live-table #game-summary-toggle { display: inline-flex; }
+  .mobile-game-summary:not([hidden])[open] {
     display: block;
-    margin: 12px 6px 0;
-    border: 1px solid var(--line);
-    border-radius: var(--r-md);
-    background: var(--surface-2);
+    width: 100%;
+    margin: 0;
+  }
+  .action-area:has(.mobile-game-summary:not([hidden])[open]) .help-cluster,
+  .action-area:has(.mobile-game-summary:not([hidden])[open]) .action-main:has(#actions:empty),
+  .play-page.live-table .action-area:has(.mobile-game-summary:not([hidden])[open]) :is(.touch-moves, .touch-destinations) {
+    display: none;
+  }
+  .action-area:has(.mobile-game-summary:not([hidden])[open]) :is(.action-message.routine-status, .action-message:has(.draft-progress), #draft-line) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
   .mobile-game-summary > summary {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    min-height: 52px;
-    padding: 12px;
+    gap: 6px 10px;
+    min-height: 44px;
+    padding: 4px 6px;
     list-style: none;
     font-size: var(--t-sm);
     cursor: pointer;
   }
+  .mobile-game-summary > summary > span:first-child { font-weight: 600; }
   .mobile-game-summary > summary::-webkit-details-marker,
   .mobile-game-summary > summary::before { display: none; }
   .mobile-summary-loss { display: inline-flex; gap: 5px; align-items: baseline; font-variant-numeric: tabular-nums; }
-  .mobile-summary-loss small { color: var(--muted); }
-  .mobile-game-summary .history-game-chevron { flex-shrink: 0; }
+  .mobile-summary-loss small { color: var(--muted); font-size: var(--t-xs); }
+  .mobile-summary-controls { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; color: var(--muted); font-size: var(--t-xs); }
+  .mobile-game-summary .history-game-chevron { flex-shrink: 0; margin: 0 2px 0 0; }
+  .mobile-game-summary .history-game-detail { padding: 0 4px 4px; }
+  .compact-loss-summary { font-size: var(--t-xs); line-height: 1.25; }
+  .compact-loss-summary :is(th, td) { padding: 4px; }
+  .compact-loss-summary small { margin-top: 1px; font-size: var(--t-xs); }
+  .compact-loss-summary strong { font-size: var(--t-sm); font-weight: 600; }
+  .compact-loss-summary .loss-summary-player th { padding-top: 4px; }
+  .compact-loss-summary thead th { vertical-align: middle; }
+  .mobile-summary-player.btn { width: 100%; min-width: 0; min-height: 44px; padding: 4px; font-size: var(--t-xs); color: var(--accent); }
+  .mobile-summary-player > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 360px) {
+    .mobile-summary-loss small { display: none; }
+  }
+  @media (max-height: 740px) {
+    /* Keep the active table usable when Safari leaves little vertical space.
+       Navigation is also available from Controls; Settings stays in reach. */
+    .play-page.live-table > .topbar { min-height: 48px; }
+    .play-page.live-table .tool-nav { display: none; }
+    .play-page.live-table .tool-head { min-height: 52px; }
+  }
 }
 
+.checker-warning .dialog-body { flex-basis: auto; }
 .checker-warning .dialog-foot {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .checker-warning .dialog-foot > button { min-width: 0; padding-inline: 10px; }
@@ -7250,12 +7370,6 @@ html.skin-shader .docs-toc--sticky {
 }
 @media (max-width: 600px), (max-height: 500px) {
   .board-cube-replies .cube-reply { font-size: var(--t-sm); }
-}
-
-@media (max-width: 600px) and (orientation: portrait) and (min-height: 741px) {
-  .play-page.live-table:has(+ .mobile-game-summary:not([hidden])) {
-    min-height: calc(100dvh - 64px);
-  }
 }
 
 /* Even the short Play label retains a complete touch target in every skin. */

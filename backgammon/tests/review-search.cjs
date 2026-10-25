@@ -19,6 +19,7 @@ module.exports=async(browser,base,out,name)=>{
   assert.equal(await page.locator('.review-preroll-equity').textContent(),'+0.123','pre-roll number is independent of rolled best equity');
   assert.equal(await page.locator('.review-position-dice').getAttribute('aria-label'),'Rolled 4–2');
   assert.equal(await page.locator('.decision-choices button').count(),0);
+  assert.deepEqual(await page.locator('.review-depth strong').allTextContents(),['2 ply','3 ply','4 ply','5 ply','6 ply']);
   const three=()=>page.getByRole('button',{name:'Analyze at 3 ply',exact:true});
   assert.match(await three().textContent(),/~\d/);
   const before=await page.locator('.review-move[data-rank="1"]').textContent();
@@ -56,7 +57,20 @@ module.exports=async(browser,base,out,name)=>{
   await page.waitForFunction(()=>document.querySelector('.review-search-notice').textContent.includes('3 ply complete'),null,{timeout:120000});
   await four().click();
   await page.waitForFunction(()=>document.querySelector('.review-search-notice').textContent.includes('4 ply complete'),null,{timeout:120000});
+  for(const depth of [5,6]) {
+   await page.getByRole('button',{name:`Analyze at ${depth} ply`,exact:true}).click();
+   await page.waitForFunction(depth=>document.querySelector('.review-search-notice').textContent.includes(`${depth} ply complete`),depth,{timeout:120000});
+  }
   await page.keyboard.press('Escape');
-  assert.deepEqual(errors,[]);return {preRoll:true,realDepths:[3,4],progress:true,retry:true,cancel:true,layouts:4};
+  // A published reference has no usable local timing, but all buttons still
+  // expose a rough duration before any new search starts.
+  await page.evaluate(()=>{
+   const f=searchFixture;
+   f.decisionReview(f.source,{beforeRoll:{outcomes:[0,0,0]}}).result({...f.result,method:'reference',book:{},elapsedMs:1},false);
+  });
+  const estimates=await page.locator('.review-depth small').allTextContents();
+  assert.equal(estimates.length,5);assert.ok(estimates.every(s=>s.startsWith('~')&&!/unknown|unavailable/i.test(s)));
+  await page.keyboard.press('Escape');
+  assert.deepEqual(errors,[]);return {preRoll:true,realDepths:[3,4,5,6],alwaysEstimated:true,progress:true,retry:true,cancel:true,layouts:4};
  }finally{await ctx.close();}
 };

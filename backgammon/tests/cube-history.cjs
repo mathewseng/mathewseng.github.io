@@ -73,6 +73,18 @@ module.exports = async function cubeHistory(browser, base, out, name) {
       const clipped = await page.locator(".history-turn, .history-played, .history-kind").evaluateAll(
         nodes => nodes.filter(n => n.scrollWidth > n.clientWidth + 1).map(n => n.textContent));
       assert.deepEqual(clipped, [], `cube actions fit at ${width}px`);
+      const paired = await page.locator('.history-turn-decisions[data-paired="true"]').evaluateAll(groups => groups.map(group => {
+        const cubes = [...group.querySelectorAll('[data-decision-type="cube"]')].map(n => n.getBoundingClientRect());
+        const move = group.querySelector('[data-decision-type="checker"]').getBoundingClientRect();
+        return {sameRow: move.y === cubes[0].y, sideBySide: cubes.every(c => c.right <= move.x + 1),
+          spansExchange: move.bottom >= cubes.at(-1).bottom - 1};
+      }));
+      assert.equal(paired.length, 2);
+      assert.ok(paired.every(g => g.sameRow && g.sideBySide && g.spansExchange), `checker stays beside its entire cube exchange at ${width}px`);
+      assert.ok(await page.locator('.decision-value-grid').evaluateAll(groups => groups.every(group => {
+        const values = [...group.querySelectorAll('strong')].map(n => n.textContent);
+        return new Set(values).size === values.length;
+      })), 'summary equities never repeat');
       await page.locator("#move-feedback").screenshot({ path: path.join(out, `${name}-cube-history-${width}.png`) });
     }
     await page.locator('.feedback-review[data-decision-type="cube"]').filter({ hasText: "Take 16" }).tap();

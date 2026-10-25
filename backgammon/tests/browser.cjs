@@ -708,6 +708,9 @@ const server = http.createServer((req, res) => {
         (report.solverEditor ||= []).push(
           await run("solver-editor", browser, base, out, browserName),
         );
+        (report.solverMobile ||= []).push(
+          await run("solver-mobile", browser, base, out, browserName),
+        );
         (report.mobileLibrary ||= []).push(
           await run("mobile-library", browser, base, out, browserName),
         );
@@ -811,7 +814,7 @@ const server = http.createServer((req, res) => {
           await run("refresh", browser, out, browserName),
         );
         // The focused Play command is also part of the full regression run.
-        for (const moduleName of ["review-search", "animation-speed", "return-destinations", "roll-prompt", "closed-opponent-roll", "hint-play-best", "initial-forced-only", "forced-roll-presentation", "control-polish", "play-footer", "advanced-ui", "dice-order", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
+        for (const moduleName of ["review-search", "animation-speed", "return-destinations", "roll-prompt", "closed-opponent-roll", "hint-play-best", "initial-forced-only", "forced-roll-presentation", "control-polish", "play-footer", "advanced-ui", "bot-opening-parity", "dice-order", "destination-priority", "touch-advanced", "adaptive-play", "prethink-ui"]) {
           (report.playControls ||= []).push({module: moduleName, browser: browserName,
             result: await run(moduleName, browser, base, out, browserName)});
         }

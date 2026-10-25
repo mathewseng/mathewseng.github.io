@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict");
 const path = require("node:path");
 module.exports = async function parity(browser, base, out, name) {
@@ -225,7 +226,8 @@ module.exports = async function parity(browser, base, out, name) {
       [1366, 768],
     ]) {
       await page.setViewportSize({ width, height });
-      await page.locator("#all-controls").click();
+      await showPlayControls(page);
+    await page.locator("#all-controls").click();
       assert.deepEqual(
         await page
           .locator(".practice-controls-dialog button[id]")
@@ -253,6 +255,7 @@ module.exports = async function parity(browser, base, out, name) {
       );
     }
     await page.setViewportSize({ width: 390, height: 844 });
+    await showPlayControls(page);
     await page.locator("#all-controls").click();
     await page.locator("#set-bot-roll").click();
     await page.waitForFunction(

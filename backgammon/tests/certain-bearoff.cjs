@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert=require('node:assert/strict');
 const {waitWork,work}=require('./play-helpers.cjs');
 module.exports=async function certainBearoff(browser,base){
@@ -39,6 +40,7 @@ module.exports=async function certainBearoff(browser,base){
      await page.reload();await ready();
      await page.locator('#next-game').waitFor();
      assert.deepEqual((await work(page)).game.state,ended.state,'reload cannot award twice');
+     await showPlayControls(page);
      await tap(page.locator('#undo-turn'));
      const restored=(await waitWork(page,w=>w?.game.reviewingTurn)).game;
      assert.deepEqual(restored.state,kind==='taken'?original.state:original.initial);

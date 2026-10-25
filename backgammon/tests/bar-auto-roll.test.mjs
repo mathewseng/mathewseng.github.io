@@ -124,3 +124,42 @@ test('a closed-out opponent allows automatic rolling only without a cube choice'
     assert.equal(canAutoRollAfterBarPass(mutual),false,'do not spin through mutual closed-out passes');
   }
 });
+
+test('a second double tap skips, while its first tap suspends automatic rolling',()=>{
+  const a=new BarAutoRoll(),m=model();a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});
+  assert.equal(a.skipping,false,'enabling auto roll alone keeps animations');
+  a.noteSkip(m,{...gesture,at:2000});
+  assert.equal(a.canRoll(m),false,'the first stop tap cannot race the next roll');
+  assert.equal(a.repeat(m,{...gesture,at:2100}),true);
+  assert.equal(a.skipping,true);assert.equal(a.canRoll(m),true);
+  m.state={...m.state,phase:'move',bar:[1,0],sequence:11};
+  a.sync(m);assert.equal(a.skipping,true,'a forced partial entry can be skipped');
+  a.sync(m,m.state,true);assert.equal(a.skipping,false,'a checker/cube choice stops skipping');
+  assert.ok(a.active,'normal auto roll survives a choice with checkers still on the bar');
+});
+
+test('skip can finish a forced entry and opponent turn, but never survive a new decision/session',()=>{
+  for(const change of [m=>m.id='new',m=>m.state.gameNumber++,m=>m.state.sequence--,
+    m=>m.state.phase='over',m=>m.reviewingTurn=true,m=>m.undoRequest={}]) {
+    const a=new BarAutoRoll(),m=model();a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});
+    a.noteSkip(m,gesture);a.repeat(m,{...gesture,at:1200});
+    change(m);a.sync(m);assert.equal(a.skipping,false);
+  }
+  const a=new BarAutoRoll(),m=model();a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});
+  a.noteSkip(m,gesture);a.repeat(m,{...gesture,at:1200});
+  m.state={...m.state,bar:[0,0],turn:1,sequence:12};
+  assert.equal(a.sync(m),null);assert.equal(a.skipping,true,'finish the opponent turn after a fully forced entry');
+  m.state={...m.state,turn:0,sequence:13};a.sync(m,m.state,true);
+  assert.equal(a.skipping,false,'the next manual roll is a decision');
+  assert.equal(a.canRoll(m),false,'never roll after leaving the bar');
+});
+
+test('unrelated/late second taps never skip, and explicit stop clears the pending gesture',()=>{
+  for(const second of [{...gesture,at:1451},{...gesture,x:160,at:1100}]) {
+    const a=new BarAutoRoll(),m=model();a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});
+    a.noteSkip(m,gesture);assert.equal(a.repeat(m,second),false);
+    assert.equal(a.skipping,false);a.reset();
+    assert.equal(a.repeat(m,{...gesture,at:1200}),false);
+    assert.equal(a.waitingForRepeat,false);
+  }
+});

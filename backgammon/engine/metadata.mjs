@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 export const ENGINE_VERSION =
-  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg9";
+  "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg10";
 export const PRESETS = Object.freeze({
   quick: {
     name: "Quick",
@@ -46,6 +46,28 @@ export const PRESETS = Object.freeze({
     finalists: 4,
     threshold: 0.04,
   },
+  extended5: {
+    name: "Extended 5",
+    plies: 5,
+    cubeful: true,
+    pruning: true,
+    deterministic: true,
+    noise: 0,
+    finalists: 4,
+    threshold: 0.04,
+    reviewOnly: true,
+  },
+  extended6: {
+    name: "Extended 6",
+    plies: 6,
+    cubeful: true,
+    pruning: true,
+    deterministic: true,
+    noise: 0,
+    finalists: 4,
+    threshold: 0.04,
+    reviewOnly: true,
+  },
   verify: {
     name: "Verify · unpruned",
     plies: 4,
@@ -70,13 +92,13 @@ export const CAPABILITIES = {
   rollouts: true,
   rolloutPolicies: ["basic", "balanced", "strong", "short-deep"],
   threads: 1,
-  maximumPlies: 4,
+  maximumPlies: 6,
 };
 
 // Shared labels keep Play, hints and Solver explicit about fixed vs adaptive work.
 export const SEARCH_OPTIONS = Object.freeze([
   ["auto", "Auto · adaptive, 3–4 ply"],
-  ...Object.entries(PRESETS).map(([key, value]) => [key,
+  ...Object.entries(PRESETS).filter(([,value]) => !value.reviewOnly).map(([key, value]) => [key,
     `Fixed ${value.plies} ply · ${value.name}`]),
 ]);
 export const searchName = key => key === "auto" ? "Auto · adaptive" : PRESETS[key]?.name || "Auto";

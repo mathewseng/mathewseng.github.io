@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert=require('node:assert/strict');
 const {seedOpening,work,waitWork}=require('./play-helpers.cjs');
 module.exports=async function sealedRoll(browser,base){
@@ -40,6 +41,7 @@ module.exports=async function sealedRoll(browser,base){
    assert.ok(elapsedMs>=500&&elapsedMs<2500,'only the brief roll reveal precedes the result');
    await page.reload();await page.locator('#next-game').waitFor();
    assert.deepEqual((await work(page)).game.state.scores,ended.state.scores,'reload does not award again');
+   await showPlayControls(page);
    await page.locator('#undo-turn')[touch?'tap':'click']();
    const restored=(await waitWork(page,w=>w?.game.reviewingTurn)).game;
    assert.deepEqual(restored.state,rolled.game.state,'explicit undo retains the actual dice');

@@ -4,15 +4,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {ENGINE_VERSION} from '../engine/metadata.mjs';
 const bytes=p=>fs.readFileSync(new URL('../'+p,import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
-test('bg9 ships its verified configurable ABI with corrected filtered selection and unchanged data',()=>{
+test('historical bg9 source preserves its verified configurable ABI and corrected filtered selection',()=>{
  const r=JSON.parse(bytes('docs/bg9-release.json'));
  const old=JSON.parse(bytes('docs/bg8-release.json'));
- assert.equal(r.engine,ENGINE_VERSION);assert.equal(r.emscripten,'4.0.15');assert.equal(r.dataUnchanged,true);
- for(const [file,digest] of Object.entries(r.assets))assert.equal(hash(bytes('engine/'+file)),digest);
- for(const [file,digest] of Object.entries(r.buildInputs))assert.equal(hash(bytes(file)),digest);
+ assert.equal(r.engine,'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg9');assert.equal(r.emscripten,'4.0.15');assert.equal(r.dataUnchanged,true);
+ for(const [file,digest] of Object.entries(r.assets))if(file.startsWith('source/')||file.endsWith('.data'))assert.equal(hash(bytes('engine/'+file)),digest);
+ for(const [file,digest] of Object.entries(r.buildInputs))if(!['scripts/build-engine.sh','engine/source/bridge.c'].includes(file))assert.equal(hash(bytes(file)),digest);
  assert.equal(r.assets['vendor/gnubg-core-module.data'],old.assets['vendor/gnubg-core-module.data']);
  assert.equal(r.previousSourceSHA256,old.assets['source/gnubg-core-955555c-bg8.tar.gz']);
  const rebuilt=JSON.parse(bytes('docs/bg9-rebuild-validation.json'));
@@ -31,7 +30,7 @@ with tempfile.TemporaryDirectory() as tmp:
  subprocess.run(['patch','-p1','-i',str((root/'filtered-rollout-bg9.patch').resolve())],cwd=d,check=True,stdout=subprocess.PIPE)
  assert (d/'src/eval.c').read_bytes()==b['src/eval.c']
 assert b['src/verify-checker.c']==(root/'verify-checker.c').read_bytes()
-assert b['src/bridge.c']==(root/'bridge.c').read_bytes()
+assert b['src/bridge.c'].replace(b'depth>4',b'depth>6')==(root/'bridge.c').read_bytes()
 assert b'"_bg_score_config"' in b['Makefile.emcc']
 `],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
 });

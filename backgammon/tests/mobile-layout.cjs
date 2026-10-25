@@ -46,6 +46,7 @@ module.exports = async function mobileLayout(browser, base, out, name) {
     await page.locator("#start-match").click();
     await page.waitForFunction(() => scrollY === 0);
     await page.locator("#confirm").waitFor();
+    await page.locator('#mobile-game-summary > summary').tap();
     for (const [width,height] of sizes) {
       await page.setViewportSize({width,height});
       await page.evaluate(() => scrollTo(0,0));

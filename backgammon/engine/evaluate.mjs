@@ -80,7 +80,7 @@ export function createEvaluator(module) {
       assertState(s);
       if (prepared?.engine!==ENGINE_VERSION || prepared.type!=='checker' ||
           prepared.status!=='complete' || prepared.positionKey!==positionKey(s) ||
-          ![2,3,4].includes(prepared.settings?.plies) || !prepared.candidates?.length)
+          ![2,3,4,5,6].includes(prepared.settings?.plies) || !prepared.candidates?.length)
         throw new Error('Prepared analysis does not match this decision.');
       const start=performance.now(), after=commitTurn(s,submitted), key=boardKey(after);
       const result=structuredClone(prepared);
@@ -313,7 +313,7 @@ export function createEvaluator(module) {
             c.key === submittedKey || (automatic && retainKeys.includes(c.key)),
         );
         let retainedLeader = null;
-        if (settings.plies === 4) {
+        if (settings.plies >= 4) {
           base.settings.screeningPolicy = 'retain-expert-leader-v1';
           const expertChoices = original.filter((c, i) => inFilter(c, i, PRESETS.expert));
           const keys = new Set(finalists.map(c => c.key));
@@ -327,6 +327,16 @@ export function createEvaluator(module) {
             if (added) finalists.push(original.find(c => c.key === leader.key));
             retainedLeader = { plies: 3, candidates: expertChoices.length, key: leader.key,
               equity: leader.equity, added, reason: 'expert-leader-retained' };
+          }
+        }
+        if (settings.plies > 4) {
+          base.settings.screeningPolicy = 'retain-deeper-leaders-v1';
+          // Keep the whole Research shortlist through successive depths. No
+          // discarded shallow score can outrank an actually evaluated finalist.
+          for (let depth = 4; depth < settings.plies; depth++) {
+            const leader = (yield* scoreFinalists(finalists, depth))[0];
+            retainedLeader = {plies:depth, candidates:finalists.length, key:leader.key,
+              equity:leader.equity, added:false, reason:'all-previous-finalists-retained'};
           }
         }
         candidates = yield* scoreFinalists(finalists, settings.plies, settings.pruning);

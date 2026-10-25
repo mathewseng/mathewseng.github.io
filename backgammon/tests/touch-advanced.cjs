@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
@@ -63,6 +64,7 @@ module.exports = async function touchAdvanced(browser, base, out, name) {
     });
     await page.keyboard.press('c');
     await page.waitForSelector('#confirm');
+    await showPlayControls(page);
     await page.locator('#all-controls').tap();
     assert.equal(await page.locator('.practice-controls-dialog .controls-nav a').count(),4);
     await page.locator('dialog .close').tap();
