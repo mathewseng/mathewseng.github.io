@@ -1743,9 +1743,11 @@ export class Board {
       );
       g.append(
         svg("path", {
+          // Points rise from the surface edge (y 28 / 632) and sit flush
+          // against their neighbours; the hit rect keeps its own inset.
           d: top
-            ? `M${x + 3} 38 L${x + 57} 38 L${x + 30} 262 Z`
-            : `M${x + 3} 622 L${x + 57} 622 L${x + 30} 398 Z`,
+            ? `M${x} 28 L${x + 60} 28 L${x + 30} 262 Z`
+            : `M${x} 632 L${x + 60} 632 L${x + 30} 398 Z`,
           class: "point-shape",
           fill: boardColor(p % 2 ? "pointB" : "pointA"),
           "pointer-events": "none",

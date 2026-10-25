@@ -350,7 +350,7 @@ html[data-skin="obsidian"] .bg-board .board-cube text {
   <stop offset=".513" stop-color="#FF6A2A" stop-opacity=".45"/>
   <stop offset=".54" stop-color="#FF6A2A" stop-opacity="0"/>
 </linearGradient>
-<linearGradient id="skin-obsidian-point" gradientUnits="userSpaceOnUse" x1="0" y1="38" x2="0" y2="622">
+<linearGradient id="skin-obsidian-point" gradientUnits="userSpaceOnUse" x1="0" y1="28" x2="0" y2="632">
   <stop offset="0" stop-color="#FFD9C4" stop-opacity="0"/>
   <stop offset=".383" stop-color="#FFD9C4" stop-opacity=".16"/>
   <stop offset=".617" stop-color="#FFD9C4" stop-opacity=".16"/>
