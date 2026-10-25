@@ -14,9 +14,11 @@ const NS = "http://www.w3.org/2000/svg";
 let boardSerial = 0;
 const STACK_LIMIT = 5,
   CHECKER_RADIUS = 22;
-// Five touching discs fit between the frame and the destination-label lane.
+// The first disc touches the surface edge (y 28 / 632); five touching discs
+// still fit between the frame and the destination-label lane.
 const stackY = (top, slot) =>
-  top ? 54 + slot * CHECKER_RADIUS * 2 : 606 - slot * CHECKER_RADIUS * 2;
+  top ? 28 + CHECKER_RADIUS + slot * CHECKER_RADIUS * 2
+      : 632 - CHECKER_RADIUS - slot * CHECKER_RADIUS * 2;
 // Fill the corners around each visible disc, within its own point lane.
 // Taps distinguish a checker from open destination space. Dragging can start
 // anywhere on an occupied point, using the same non-overlapping point lanes.
@@ -269,6 +271,51 @@ function returnIcon(x, y) {
     fill: "none", stroke: boardColor("undoText"), "stroke-width": 3,
     "stroke-linecap": "round", "stroke-linejoin": "round", "pointer-events": "none" });
 }
+// Liquid chrome: the icon's checker treatment, in luminance only so it sits
+// on any palette colour and under any skin overlay. Gradients live in
+// liquidChromeDefs(), appended to each board.
+const CHROME_IDS = {
+  face: "bg-chrome-face",
+  edge: "bg-chrome-edge",
+  rim: "bg-chrome-rim",
+  gloss: "bg-chrome-gloss",
+};
+function liquidChrome(x, y, r) {
+  return [
+    svg("circle", { cx: x, cy: y, r, fill: `url(#${CHROME_IDS.face})` }),
+    svg("circle", { cx: x, cy: y, r, fill: `url(#${CHROME_IDS.edge})` }),
+    svg("circle", {
+      cx: x,
+      cy: y,
+      r: r - r * 0.08,
+      fill: "none",
+      stroke: `url(#${CHROME_IDS.rim})`,
+      "stroke-width": r * 0.08,
+    }),
+    svg("ellipse", {
+      cx: x - r * 0.18,
+      cy: y - r * 0.52,
+      rx: r * 0.4,
+      ry: r * 0.17,
+      fill: `url(#${CHROME_IDS.gloss})`,
+    }),
+  ];
+}
+function liquidChromeDefs() {
+  const defs = svg("defs");
+  const stop = (offset, color, opacity) =>
+    svg("stop", { offset, "stop-color": color, "stop-opacity": opacity });
+  const face = svg("linearGradient", { id: CHROME_IDS.face, x1: 0, y1: 0, x2: 0, y2: 1 });
+  face.append(stop(0, "#fff", 0.62), stop(0.46, "#fff", 0.06), stop(0.54, "#000", 0.36), stop(1, "#fff", 0.22));
+  const edge = svg("radialGradient", { id: CHROME_IDS.edge, cx: "50%", cy: "50%", r: "50%" });
+  edge.append(stop(0.62, "#000", 0), stop(0.95, "#000", 0.16), stop(1, "#000", 0.3));
+  const rim = svg("linearGradient", { id: CHROME_IDS.rim, x1: 0, y1: 0, x2: 0.6, y2: 1 });
+  rim.append(stop(0, "#fff", 0.95), stop(0.45, "#fff", 0.12), stop(1, "#fff", 0.55));
+  const gloss = svg("radialGradient", { id: CHROME_IDS.gloss, cx: "50%", cy: "50%", r: "50%" });
+  gloss.append(stop(0, "#fff", 0.8), stop(0.55, "#fff", 0.55), stop(1, "#fff", 0));
+  defs.append(face, edge, rim, gloss);
+  return defs;
+}
 function checker(x, y, p, count = 1, compact = false, moved = false, undoable = false, showCount = false) {
   const g = svg("g", {
     class: "checker",
@@ -287,6 +334,7 @@ function checker(x, y, p, count = 1, compact = false, moved = false, undoable = 
     }),
   );
   g.append(patternOverlay(g.firstChild, `checker${p}`));
+  g.append(...liquidChrome(x, y, CHECKER_RADIUS));
   if (undoable) {
     g.classList.add("draft-undo-checker");
     g.append(svg("circle", { cx:x, cy:y, r:CHECKER_RADIUS,
@@ -297,10 +345,11 @@ function checker(x, y, p, count = 1, compact = false, moved = false, undoable = 
     svg("circle", {
       cx: x,
       cy: y,
-      r: CHECKER_RADIUS - 6,
+      r: CHECKER_RADIUS * 0.5,
       fill: "none",
       stroke: boardColor(`detail${p}`),
-      "stroke-width": 1.5,
+      "stroke-opacity": 0.4,
+      "stroke-width": CHECKER_RADIUS * 0.05,
     }),
   );
   if (undoable && count === 1 && !showCount)
@@ -366,6 +415,8 @@ export class Board {
       role: "group",
       "aria-label": "Backgammon board",
     });
+    this.chromeDefs = liquidChromeDefs();
+    this.svg.append(this.chromeDefs);
     container.replaceChildren(this.svg);
     // Ring strokes are user units, so a phone board (under half scale)
     // would paint them below a pixel; expose the render scale to the CSS.
@@ -1506,7 +1557,8 @@ export class Board {
     // only two points changed. Compare the last *rendered description*, not
     // live markup that animation/focus has decorated in the meantime.
     const counts = new Map(), next = new Map();
-    let cursor = this.svg.firstChild;
+    // The chrome gradient defs stay first and outside the reconciled run.
+    let cursor = this.chromeDefs.nextSibling;
     for (let node of children) {
       const base = node.dataset.point !== undefined ? `point:${node.dataset.point}`
         : `${node.tagName}:${node.classList[0] || ''}`;
