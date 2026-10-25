@@ -2949,14 +2949,14 @@ async function evaluateDecision(action) {
   };
   const warningActions = () => checker ? [
     button("Hint", () => openHint()),
-    button("Play Best", () => openHint(true), "primary"),
+    button("Play Best", () => openHint(true)),
     button("Reset", () => {
       if (!activeAssistance(job)) return;
       releaseAssistance();
       unlockDraft();
       draft.reset();
     }),
-    button("Play Anyway", () => finish(completedResult)),
+    button("Play Anyway", () => finish(completedResult), "primary"),
   ] : [
     button("Revise", () => job.dialog.close()),
     button("Confirm anyway", () => finish(completedResult), "primary"),

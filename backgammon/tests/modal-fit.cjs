@@ -35,7 +35,7 @@ module.exports = async (browser, base, out, name) => {
         if(kind === 'settings') await shell.preferences();
         if(kind === 'history') historyExplorer({id:'fit',initial:source,state:source,events:[],started:true,names:['White','Black']},{onReturn:()=>{}});
         if(kind === 'warning') shell.dialog('Revise this move?',shell.el('p',{},'This move gives up equity. You can revise it, look at the hint, or play the best move.'),[
-          shell.button('Hint',()=>{}),shell.button('Play Best',()=>{},'primary'),shell.button('Reset',()=>{}),shell.button('Play Anyway',()=>{})]).classList.add('checker-warning');
+          shell.button('Hint',()=>{}),shell.button('Play Best',()=>{}),shell.button('Reset',()=>{}),shell.button('Play Anyway',()=>{},'primary')]).classList.add('checker-warning');
         if(kind === 'sheet') shell.dialog('Controls',shell.el('div',{class:'grid'},...Array.from({length:8},(_,i)=>shell.button(`Control ${i+1}`,()=>{}))),[],{sheet:true});
       };
     });
