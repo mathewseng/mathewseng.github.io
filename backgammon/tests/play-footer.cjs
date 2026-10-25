@@ -80,7 +80,7 @@ module.exports = async function playFooter(browser, base, out, name) {
       await check(phase+'-390');
       if (phase !== 'move') {
         assert.equal(await page.locator('#message').evaluate(n=>getComputedStyle(n).textAlign),'center');
-        const primary=await page.locator('#actions').boundingBox(), utility=await page.locator('.help-cluster').boundingBox();
+        const primary=await page.locator(phase==='double'?'.board-cube-replies':'#actions').boundingBox(), utility=await page.locator('.help-cluster').boundingBox();
         assert.ok(primary.y+primary.height<=utility.y,'primary decision precedes secondary tools');
       }
     }

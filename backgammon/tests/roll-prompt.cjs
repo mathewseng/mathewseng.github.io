@@ -8,6 +8,7 @@ module.exports=async(browser,base,out,name)=>{
     const context=await browser.newContext({viewport:touch?{width:390,height:844}:{width:1366,height:768},
       hasTouch:touch,serviceWorkers:'block',reducedMotion:'no-preference'});
     const page=await context.newPage(),errors=[];
+    if(touch && name==='chromium') await (await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate',{rate:4});
     page.on('pageerror',e=>errors.push(e.message));
     const ready=()=>page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
     const caption=page.locator('#board .board-caption');
@@ -16,9 +17,9 @@ module.exports=async(browser,base,out,name)=>{
       // Two failed rolls, then an entry. Black is closed out and passes without
       // consuming dice. Every action uses real Play controls and saved history.
       await seedOpening(page,[2,3,4,5,1,2]);
-      const load=async(entry='blocked')=>{
+      const load=async(entry='blocked',motionScale=.5)=>{
         await page.goto(base+'/backgammon/play/');await ready();
-        await page.evaluate(async entry=>{
+        await page.evaluate(async ({entry,motionScale})=>{
           const {put,saveSettings}=await import('/backgammon/core/storage.mjs');
           const {initialState}=await import('/backgammon/core/rules.mjs');
           const {localConfig}=await import('/backgammon/core/play-session.mjs');
@@ -30,10 +31,10 @@ module.exports=async(browser,base,out,name)=>{
             points[17]=entry==='blots'?-8:-14;
           }
           const s=initialState({phase:'roll',points,bar:[entry==='partial'?3:1,1],matchLength:0,cube:{value:2,owner:0}});
-          saveSettings({motion:'full',analysisAhead:false,equityBar:false,moveFeedback:false});
+          saveSettings({motion:'full',motionScale,analysisAhead:false,equityBar:false,moveFeedback:false});
           await put('work',{id:'play',draft:[],game:{id:'auto-bar-fixture',started:true,state:s,initial:s,events:[],
             names:['You','Black'],config:localConfig({mode:'computer',humanSide:0,tutor:false,warning:false,strength:'quick'})}});
-        },entry);
+        },{entry,motionScale});
         await page.reload();await ready();await page.locator('#resume-match').click();
         await page.locator('#board.roll-ready').waitFor();
       };
@@ -68,6 +69,37 @@ module.exports=async(browser,base,out,name)=>{
       await page.waitForTimeout(350);
       assert.equal((await waitWork(page,w=>!!w?.game)).game.localRolls.cursor,3,'the final entry stops automatic rolling');
 
+      // At the slowest speed, a second double tap bypasses failed-roll and
+      // opponent-pass waits; it still presents the next real choice normally.
+      await load('blocked',4);await tap(2);
+      await page.waitForFunction(()=>document.querySelector('#board .board-caption')?.textContent.includes('Auto roll on'));
+      assert.ok((await caption.textContent()).includes(`Double ${verb.toLowerCase()} to skip`));
+      await caption.locator('.board-caption-hit').waitFor({state:'visible'});
+      const skipHit=await caption.locator('.board-caption-hit').boundingBox();
+      await page.evaluate(()=>{
+        window.skipSeen=false;
+        window.skipObserver=new MutationObserver(()=>{
+          if(document.querySelector('#board .board-caption[data-skipping="true"]')) window.skipSeen=true;
+        });
+        window.skipObserver.observe(document.querySelector('#board'),{subtree:true,childList:true,attributes:true,attributeFilter:['data-skipping']});
+      });
+      const skipStarted=Date.now();
+      for(let i=0;i<2;i++) {
+        if(touch)await page.touchscreen.tap(skipHit.x+skipHit.width/2,skipHit.y+skipHit.height/2);
+        else await page.mouse.click(skipHit.x+skipHit.width/2,skipHit.y+skipHit.height/2);
+      }
+      await page.waitForFunction(()=>window.skipSeen);
+      const skipped=await waitWork(page,w=>w?.game.localRolls?.cursor===3&&w.draft.some(step=>step.from==='bar'));
+      const skipElapsed=Date.now()-skipStarted;
+      assert.deepEqual(skipped.game.events.filter(e=>e.action.type==='roll').map(e=>[e.actor,e.action.dice]),[[0,[2,3]],[0,[4,5]],[0,[1,2]]]);
+      assert.deepEqual(skipped.draft,[{from:'bar',to:23,die:1}],'skip never chooses the remaining checker move');
+      assert.equal(await caption.getAttribute('data-skipping'),'false');
+      assert.equal(await page.evaluate(()=>document.documentElement.dataset.motionScale),'4','skip does not change saved animation speed');
+      await page.waitForTimeout(500);
+      assert.equal((await waitWork(page,w=>!!w?.game)).game.localRolls.cursor,3);
+      await page.screenshot({path:path.join(out,`${name}-skip-choice-${touch?'phone':'desktop'}.png`)});
+      await page.evaluate(()=>window.skipObserver.disconnect());
+
       await load('partial');await tap(2);
       const partial=await waitWork(page,w=>w?.game.localRolls?.cursor===3&&w.game.state.bar[0]===2);
       assert.ok(partial.game.events.some(e=>e.action.steps?.some(st=>st.from==='bar')));
@@ -101,7 +133,7 @@ module.exports=async(browser,base,out,name)=>{
         b.destroy();return labels;
       }),['','Move preview','Position editor']);
       assert.deepEqual(errors,[]);
-      report.push({touch,singleRoll:true,repeatedUntilAllEntered:true,partialEntryContinues:true,dialogPauseAndResume:true,manualStop:true,requiresBlockedEntry:true});
+      report.push({touch,cpuSlowdown:touch&&name==='chromium'?4:1,skipToChoice:true,skipElapsed,singleRoll:true,repeatedUntilAllEntered:true,partialEntryContinues:true,dialogPauseAndResume:true,manualStop:true,requiresBlockedEntry:true});
     } finally {await context.close();}
   }
   return report;

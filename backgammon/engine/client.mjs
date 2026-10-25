@@ -529,8 +529,8 @@ export class EngineClient {
             ),
           ),
         job.displayOnly && job.preset === 'quick' ? 5000 :
-        job.rollout || ["expert", "research", "verify"].includes(job.preset)
-          ? 1800000
+        job.rollout || PRESETS[job.preset]?.plies >= 3
+          ? (PRESETS[job.preset]?.plies >= 5 ? 86400000 : 1800000)
           : 300000,
       );
     } catch (e) {

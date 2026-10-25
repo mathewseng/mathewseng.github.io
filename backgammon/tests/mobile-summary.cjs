@@ -27,6 +27,17 @@ module.exports=async(browser,base,out,name)=>{
   const summary=page.locator('#mobile-game-summary'),history=page.locator('.history-game-card').first();
   await summary.waitFor();
   assert.equal(await summary.evaluate(n=>n.open),false);
+  for(const [width,height] of [[320,568],[375,667],[390,744],[390,844],[430,932]]) {
+   await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));
+   await page.waitForTimeout(50);
+   const visible=await summary.evaluate(n=>{const r=n.querySelector('summary').getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,viewport:innerHeight};});
+   assert.ok(visible.top>=0&&visible.bottom<=height&&visible.height>=44,JSON.stringify({width,height,visible}));
+   const boardBottom=await page.locator('#board').evaluate(n=>n.getBoundingClientRect().bottom);
+   assert.ok(boardBottom<=visible.top,`summary overlaps the board at ${width}x${height}: ${boardBottom} > ${visible.top}`);
+   if(width===390&&height===744) await page.screenshot({path:path.join(out,`${name}-mobile-summary-collapsed.png`)});
+  }
+  await page.setViewportSize({width:390,height:844});
+
   assert.equal(await summary.locator('table').count(),0,'collapsed summary lazily mounts its detail');
   assert.match(await summary.locator(':scope > summary').innerText(),/0.010/);
   assert.equal(await history.locator('button[aria-expanded]').count(),0,'history summary has no collapse button');
@@ -49,6 +60,17 @@ module.exports=async(browser,base,out,name)=>{
   await summary.locator('table').waitFor();
   await summary.locator(':scope > summary').tap();
   assert.equal(await summary.evaluate(n=>n.open),false);
+  for(const [width,height] of [[320,568],[375,667],[390,744],[390,844],[430,932]]) {
+   await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));
+   await page.waitForTimeout(50);
+   const visible=await summary.evaluate(n=>{const r=n.querySelector('summary').getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,viewport:innerHeight};});
+   assert.ok(visible.top>=0&&visible.bottom<=height&&visible.height>=44,JSON.stringify({width,height,visible}));
+   const boardBottom=await page.locator('#board').evaluate(n=>n.getBoundingClientRect().bottom);
+   assert.ok(boardBottom<=visible.top,`summary overlaps the board at ${width}x${height}: ${boardBottom} > ${visible.top}`);
+   if(width===390&&height===744) await page.screenshot({path:path.join(out,`${name}-mobile-summary-collapsed.png`)});
+  }
+  await page.setViewportSize({width:390,height:844});
+
   assert.deepEqual(errors,[]);
   return {alwaysExpandedHistory:true,portraitDisclosure:true,boardUnchanged:true};
  }finally{await ctx.close();}

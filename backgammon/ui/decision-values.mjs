@@ -7,13 +7,21 @@ export function decisionValues(
   { opponent = false, onChoice, onPosition } = {},
 ) {
   const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
+  const seen = new Set();
   const rows = [
     ["Before", f.before, "before"],
     ...(!bestPlayed
       ? [[opponent ? "Opponent’s choice" : "Your choice", f.actual, "actual"]]
       : []),
     ["Best choice", f.best, "best"],
-  ];
+  ].filter(([, choice]) => {
+    // Compare the visible precision, not raw engine floats: two evaluations
+    // that both print +0.123 should never occupy duplicate summary columns.
+    const value = equity(choice.equity);
+    if (seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  });
   if (compact) {
     const grid = el(
       "span",
@@ -154,7 +162,7 @@ export function decisionValues(
     el(
       "p",
       { class: "muted small" },
-      "Before assumes the best continuation with the known dice/cube decision, so it equals Best choice. All values use the same player, settings and original cube context.",
+      "Before assumes the best continuation with the known dice/cube decision. Repeated summary values are shown once. All values use the same player, settings and original cube context.",
     ),
   );
 }

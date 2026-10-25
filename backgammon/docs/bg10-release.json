@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "engine": "gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg10",
+  "builtAt": "2026-10-25T00:06:26.994669+00:00",
+  "emscripten": "4.0.15",
+  "assets": {
+    "vendor/gnubg-core-module.js": "dcbbc729055d5475df97f0199e087b4f410a6d5f819b13329e3acb8338b05858",
+    "vendor/gnubg-core-module.wasm": "99f04ce6dd583809b603bfa72b749a297889beca99f66d17bc95460b8d47b8f3",
+    "vendor/simd/gnubg-core-module.js": "39c0393c2058053143e658c5c14a28069b72a60e1db3b1387e98394d48833898",
+    "vendor/simd/gnubg-core-module.wasm": "bf869a9aacf4989e9828c7ec89ceaf1e0ea9f268cb2cef26555999f955992d15",
+    "vendor/gnubg-core-module.data": "f20103e6bc35ca631aad74e3bc6d3ff58316fd5fd277e362a232108f2c898d49",
+    "source/gnubg-core-955555c-bg10.tar.gz": "f8ee4ea48025b477912303d53c78b05d4ef85d37cc09a0ba04aeeb2473a0dcea"
+  },
+  "buildInputs": {
+    "scripts/build-engine.sh": "098ba8d2acca4df9870c2921bd414413d86fcf210f58fa1122a97a24ab75204d",
+    "scripts/patch-engine.py": "1d8ba1dd85a965908de1c3e3e0441f886a82c40a2a27a8f8edbee40bcc997823",
+    "scripts/archive-engine.py": "2485cea6751fb0c456471ae098aebdee3ec56f31b88ea9eff2f02cc25d65aba8",
+    "engine/source/bridge.c": "376ff757503d84a6107b74e975983a0faa72c4ed21a8c7724b37011e9761b573",
+    "engine/source/verify-checker.c": "d0ab4142ca398fa707a39e02e38955d5c21c431764dceacb690650ceb6ab72a8",
+    "engine/source/filtered-rollout-bg9.patch": "b576617ea939b99ed9f9ead9b3c1a35b61479b902e549a42718f641678532fa3"
+  },
+  "previousSourceSHA256": "559cd43de37b6194d28fdf66ef74f287bcef13552c9b48ef6c476be73b55e7dd",
+  "sourceDelta": {
+    "changed": [
+      "src/bridge.c"
+    ],
+    "added": []
+  },
+  "dataUnchanged": true,
+  "policy": "Extend the three pruned checker/cube/value ABI depth guards from 4 to 6 for explicit review searches. Native search, cache limits, weights, pruning, rollout policy and automatic 3\u20134 ply policy are unchanged. Manual extended searches retain the Research finalist set at each depth; they are screened comparisons, not exhaustive searches or exact answers."
+}

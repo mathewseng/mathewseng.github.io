@@ -147,7 +147,8 @@ let config = {
   lastUndoNotice = null,
   epoch = 0;
 const barAutoRoll = new BarAutoRoll();
-let barRollTimer = null, barRollSchedule = '', barRollAttempt = '';
+let barRollTimer = null, barRollSchedule = '', barRollAttempt = '', barTapTimer = null;
+const presentationWaits = new Set();
 const boardWorkspace = el("div", { class: "board-workspace" });
 const draftKeys = el("div", { class: "draft-shortcuts", "aria-label": "Draft keyboard shortcuts" });
 // The confirm stage: a full-width row under the board on stacked layouts and
@@ -476,14 +477,34 @@ const opening = new OpeningRoll(ui.board.container, () => {
   boardKey = "";
   render();
 });
+function repeatBarRoll(point) {
+  if (!barAutoRoll.repeat(model(), point)) return false;
+  clearTimeout(barTapTimer);
+  clearTimeout(barRollTimer); barRollSchedule = ''; barRollAttempt = '';
+  actions();
+  if (barAutoRoll.skipping) {
+    ui.board.finishPresentation();
+    for (const finish of presentationWaits) finish();
+  }
+  return true;
+}
 ui.board.onRoll = (event = {}) => {
   const point = {x:event.clientX || 0,y:event.clientY || 0};
-  if (barAutoRoll.active && (event.target?.closest('.board-caption') ||
-      (state().phase === 'roll' && state().turn === barAutoRoll.active.player))) {
-    barAutoRoll.reset(); actions(); return true;
-  }
-  if (barAutoRoll.repeat(model(), point)) {
-    barRollAttempt = ''; actions(); return true;
+  if (repeatBarRoll(point)) return true;
+  if ((barAutoRoll.active || barAutoRoll.skipping) && (event.target?.closest('.board-caption') ||
+      (state().phase === 'roll' && state().turn === (barAutoRoll.active || barAutoRoll.skip).player))) {
+    if (barAutoRoll.skipping || event.clientX === undefined) {
+      barAutoRoll.reset(); actions(); return true;
+    }
+    // Suspend the next roll immediately, but leave time for a second tap to
+    // request skipping. A lone tap retains the existing stop behaviour.
+    const gesture = barAutoRoll.noteSkip(model(), point);
+    clearTimeout(barTapTimer);
+    barTapTimer = setTimeout(() => {
+      if (barAutoRoll.gesture !== gesture) return;
+      barAutoRoll.reset(); actions();
+    }, 450);
+    actions(); return true;
   }
   const control = $("roll");
   if (state().phase !== "roll" || opening.active || !control || control.disabled || ui.board.playbackTimer) return false;
@@ -501,7 +522,7 @@ ui.board.container.addEventListener("click", e => {
 // the dice redraw or a pending cube-warning dialog has replaced the target.
 // Consume that one click so it cannot also activate a newly exposed control.
 addEventListener('pointerdown', event => {
-  if (event.button !== 0 || !event.isPrimary || !barAutoRoll.repeat(model(), {x:event.clientX,y:event.clientY})) return;
+  if (event.button !== 0 || !event.isPrimary || !repeatBarRoll({x:event.clientX,y:event.clientY})) return;
   event.preventDefault(); event.stopImmediatePropagation();
   const consume = new AbortController();
   const cleanup = setTimeout(() => consume.abort(), 600);
@@ -514,7 +535,6 @@ addEventListener('pointerdown', event => {
     click.preventDefault(); click.stopImmediatePropagation();
     clearTimeout(cleanup); consume.abort();
   }, {capture:true,signal:consume.signal});
-  barRollAttempt = ''; actions();
 }, true);
 document.addEventListener('close', () => scheduleBarAutoRoll(), true);
 const online = new Online({
@@ -670,6 +690,7 @@ addEventListener("pagehide", () => {
 });
 addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    barAutoRoll.skip = null; ui.board.motion = true;
     clearTimeout(barRollTimer); barRollSchedule = '';
     if (draftSaveFrame !== null || draftSaveTimer !== null) persist(false);
     autoReview.pause();
@@ -845,11 +866,31 @@ function myTurn(s) {
     return online.ready && !online.pending && online.seat === decisionPlayer(s);
   return humanControls(config, s);
 }
+// Skipping only removes presentation waits. Rules, saved dice, engine depth
+// and cube responses still follow the ordinary turn pipeline.
+function syncBarAutoRoll(current = state()) {
+  const m = model(), s = state();
+  barAutoRoll.sync(m, current);
+  const choice = document.querySelector('dialog[open]') || (myTurn(s) &&
+    (s.pending || (s.phase === 'roll' && !barAutoRoll.active) ||
+      (s.phase === 'move' && !forcedTurn(s))));
+  const active = barAutoRoll.sync(m, current, !!choice);
+  ui.board.motion = !barAutoRoll.skipping;
+  return active;
+}
+function presentationPause(milliseconds) {
+  if (barAutoRoll.skipping) return Promise.resolve();
+  return new Promise(resolve => {
+    const finish = () => { clearTimeout(timer); presentationWaits.delete(finish); resolve(); };
+    const timer = setTimeout(finish, motionDuration(milliseconds));
+    presentationWaits.add(finish);
+  });
+}
 function scheduleBarAutoRoll() {
   const m = model(), s = state();
   const ready = () => (barAutoRoll.canRoll(model()) ||
       (!model()?.reviewingTurn && canAutoRollAfterBarPass(state(), model()?.events.at(-1)))) &&
-    !certainBearoff(state()) && myTurn(state()) &&
+    !barAutoRoll.waitingForRepeat && !certainBearoff(state()) && myTurn(state()) &&
     !document.hidden && !leaving && !committing && !botBusy && !assistanceJob &&
     !opening.active && !document.querySelector('dialog[open]') &&
     !!$('roll') && !$('roll').disabled;
@@ -866,7 +907,7 @@ function scheduleBarAutoRoll() {
     barRollAttempt = key;
     try { await submitCube({type:'roll'}); }
     catch (error) { barAutoRoll.reset(); actions(); showError(error); }
-  }, motionDuration(900));
+  }, barAutoRoll.skipping ? 0 : motionDuration(900));
 }
 function render() {
   if (game && config.mode !== "online") ensureLocalRolls(game);
@@ -874,6 +915,7 @@ function render() {
   const m = model(),
     s = state();
   if (config.mode !== "online") analysis.engine.book?.prepare(s);
+  syncBarAutoRoll();
   playersButton.hidden = !m?.started || config.mode === "online";
   playersButton.disabled = committing;
   draft.lastMove = lastMove(m);
@@ -1126,7 +1168,7 @@ function autoPlay() {
       });
   } else if (forcedSchedule !== `${id}:${key}`) {
     forcedSchedule = `${id}:${key}`;
-    setTimeout(async () => {
+    presentationPause(certain || blocked ? 0 : 650).then(async () => {
       await ui.board.waitForPresentation();
       forcedSchedule = "";
       if (
@@ -1140,7 +1182,7 @@ function autoPlay() {
         commit(certain ? {type:"finish-race"} : blocked ? { type: "skip-roll" } : { type: "move", steps: forced.steps },
           null, blocked ? {autoPass:true,cubeEvaluation:result} : {}).catch(showError);
       }
-    }, certain || blocked ? 0 : motionDuration(650));
+    });
   }
   return true;
 }
@@ -1412,8 +1454,8 @@ function actions() {
     }
     const s = state(), rollReady = !!$("roll") && !$("roll").disabled && s.phase === "roll" && !opening.active;
     const current = draft.state === s && !draft.preview ? draft.current() : s;
-    const active = barAutoRoll.sync(model(), current);
-    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,auto:!!active});
+    const active = syncBarAutoRoll(current);
+    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,auto:!!active,skipping:barAutoRoll.skipping});
     ui.board.container.classList.toggle("roll-ready", rollReady);
     scheduleBarAutoRoll();
   }
@@ -2516,7 +2558,12 @@ function renderFeedback() {
     const side = sideOf(group);
     const playerLabel = config.mode === "local" ? names()[group.player]
       : side === "self" ? "You" : "Opponent";
-    const decisions = el("div", { class: "history-turn-decisions" });
+    const cubeCount = group.decisions.filter(row => row.action.type !== "move").length;
+    const decisions = el("div", {
+      class: "history-turn-decisions",
+      "data-paired": cubeCount > 0 && group.decisions.some(row => row.action.type === "move") ? "true" : "false",
+    });
+    decisions.style.setProperty("--cube-decisions", cubeCount);
     const identity = el("div", { class: "history-identity" },
       el("span", { class: "history-player" }, playerLabel),
       ...(config.mode !== "local" && names()[group.player] !== playerLabel
@@ -2892,7 +2939,7 @@ async function evaluateDecision(action) {
     unlockDraft();
     ($("confirm") || $("roll"))?.focus();
   };
-  let warningCopy = null, completedResult = null, unlisted = false;
+  let warningCopy = null, completedResult = null;
   const openHint = (playBest = false) => {
     if (!activeAssistance(job)) return;
     const result = completedResult;
@@ -2901,23 +2948,39 @@ async function evaluateDecision(action) {
     showHint({ result, playBest });
   };
   const warningActions = () => checker ? [
-    button("Revise", () => job.dialog.close()),
     button("Hint", () => openHint()),
     button("Play Best", () => openHint(true), "primary"),
+    button("Reset", () => {
+      if (!activeAssistance(job)) return;
+      releaseAssistance();
+      unlockDraft();
+      draft.reset();
+    }),
+    button("Play Anyway", () => finish(completedResult)),
   ] : [
     button("Revise", () => job.dialog.close()),
     button("Confirm anyway", () => finish(completedResult), "primary"),
   ];
-  const showPendingWarning = (outside = false) => {
+  const configureWarning = () => {
+    if (checker) {
+      job.dialog.classList.add("checker-warning");
+      const close = job.dialog.querySelector(".close");
+      close.setAttribute("aria-label", "Revise");
+      close.title = "Revise your move";
+      // Native dialog close events are queued. Cancel on this click so an
+      // evaluation completing in the same task cannot accept after Revise.
+      close.addEventListener("click", onClose);
+    }
+    job.dialog.addEventListener("close", onClose, { once: true });
+  };
+  const showPendingWarning = () => {
     if (!config.warning || !activeAssistance(job)) return;
-    unlisted ||= outside;
     if (job.dialog) return;
     warningCopy = el("p", { role: "status", id: "pending-move-loss" },
-      checker ? "Still calculating EV. Revise your move, open a hint, or play the best move."
+      checker ? "Still calculating EV. Review your move or play it now."
         : "Still calculating EV. You can revise or confirm now; the loss is not known yet.");
     job.dialog = dialog("Review before confirming?", warningCopy, warningActions());
-    if (checker) job.dialog.classList.add("checker-warning");
-    job.dialog.addEventListener("close", onClose, { once: true });
+    configureWarning();
   };
   try {
     const preset = config.reviewStrength || 'auto';
@@ -2936,19 +2999,20 @@ async function evaluateDecision(action) {
       preset,
       priority: 20,
       readyOnly: true,
-      onUnlisted: () => showPendingWarning(true),
+      onUnlisted: () => showPendingWarning(),
     });
     let [result] = await Promise.all([evaluation, painted]);
-    if (!activeAssistance(job)) return;
+    if (!activeAssistance(job) || (job.dialog && !job.dialog.open)) return;
     if (!checker) result = gradeCube(job.source, result, action.type);
     recordInitialEvaluation(game, action, compactEvaluation(job.source, result));
     persist(false);
     job.done = true;
     completedResult = result;
     if (warningCopy) {
-      // A generic pending check can continue automatically once known good.
-      // An unlisted-move warning stays open as an explicit review choice.
-      if (!unlisted && !needsRevisionWarning(result.error)) {
+      // Being outside the shortlist is not evidence of a mistake. Once the
+      // same-depth grade arrives, only a real loss above the warning threshold
+      // can keep this dialog open (including equal cube/drop outcomes).
+      if (!needsRevisionWarning(result.error)) {
         await finish(result);
         return;
       }
@@ -2967,8 +3031,7 @@ async function evaluateDecision(action) {
         ),
         warningActions(),
       );
-      if (checker) job.dialog.classList.add("checker-warning");
-      job.dialog.addEventListener("close", onClose, { once: true });
+      configureWarning();
     } else await finish(result);
   } catch (error) {
     if (!activeAssistance(job)) return;
@@ -2978,9 +3041,11 @@ async function evaluateDecision(action) {
       return;
     }
     if (warningCopy) {
-      warningCopy.textContent = `EV unavailable: ${error.message}. Revise or continue without feedback.`;
-      const best = job.dialog.querySelector(".primary");
-      best.replaceWith(button("Confirm without feedback", () => finish(), "primary"));
+      warningCopy.textContent = `EV unavailable: ${error.message}. ${checker ? "Play Anyway continues without feedback. Hint retries analysis." : "Revise or continue without feedback."}`;
+      if (!checker) {
+        const best = job.dialog.querySelector(".primary");
+        best.replaceWith(button("Confirm without feedback", () => finish(), "primary"));
+      }
       return;
     }
     job.dialog = dialog(
@@ -3089,7 +3154,7 @@ async function computerTurn() {
     prethink.prepareAfter(s,action.type === 'roll'
       ? {...action,dice:await futureLocalRoll(game) || cryptoDice()} : action);
     if (!reducedMotion()) {
-      await new Promise(resolve => setTimeout(resolve, motionDuration(s.phase === "move" ? 650 : 300)));
+      await presentationPause(s.phase === "move" ? 650 : 300);
       await ui.board.waitForPresentation();
     }
     if (token !== epoch || key !== positionKey(state())) return;

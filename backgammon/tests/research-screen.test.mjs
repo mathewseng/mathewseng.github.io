@@ -112,3 +112,15 @@ test('repeated out-of-shortlist grading evicts old scores without losing submitt
   assert.equal(research.actual.key, first.key);
   assert.equal(research.actual.equity, result.actual.equity);
 });
+
+test('manual 5/6-ply comparisons score every retained finalist at their actual requested depth',()=>{
+ for(const [preset,depth] of [['extended5',5],['extended6',6]]) {
+  const {engine,calls,wanted}=fixture();
+  const result=engine.analyze(state(),preset);
+  assert.equal(result.settings.plies,depth);
+  assert.equal(result.candidates[0].key,wanted,'the Expert winner remains included at every depth');
+  assert.equal(result.screening.retainedLeader.plies,depth-1);
+  assert.equal(new Set(calls.filter(c=>c.depth===depth).map(c=>c.after)).size,result.candidates.length);
+  for(let previous=4;previous<depth;previous++)assert.ok(calls.some(c=>c.depth===previous));
+ }
+});

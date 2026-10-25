@@ -94,8 +94,8 @@ module.exports = async function mobileHistory(browser, base, out, name) {
       for(const g of groups) {
         assert.ok(g.scrollWidth<=g.width+1,"turn content does not overflow");
         assert.ok(g.buttons.every(b=>b.height>=44 && b.x>=0 && b.x+b.width<=width+1));
+        assert.equal(g.buttons[0].y,g.buttons[1].y,"cube and move share one row at every viewport");
         if(width===1366) {
-          assert.equal(g.buttons[0].y,g.buttons[1].y,"cube and move share one desktop row");
           assert.ok(g.height<135,"a combined turn is shorter than two separate cards");
         }
       }

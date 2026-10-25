@@ -22,17 +22,23 @@ export function canAutoRollFromBar(state, player = state?.turn) {
 export class BarAutoRoll {
   active = null;
   gesture = null;
-  reset() { this.active = null; this.gesture = null; }
-  valid(record, model, current = model?.state) {
+  skip = null;
+  get skipping() { return !!this.skip; }
+  get waitingForRepeat() { return this.gesture?.action === 'skip'; }
+  reset() { this.active = null; this.gesture = null; this.skip = null; }
+  validSession(record, model, current = model?.state) {
     return record && model?.started && record.id === model.id &&
       record.game === current.gameNumber && current.phase !== 'over' &&
-      !model.reviewingTurn && !model.undoRequest && canAutoRollFromBar(current, record.player) &&
-      current.sequence >= record.sequence;
+      !model.reviewingTurn && !model.undoRequest && current.sequence >= record.sequence;
   }
-  sync(model, current = model?.state) {
+  valid(record, model, current = model?.state) {
+    return this.validSession(record, model, current) && canAutoRollFromBar(current, record.player);
+  }
+  sync(model, current = model?.state, choice = false) {
+    if (!this.validSession(this.skip, model, current) || choice) this.skip = null;
     if (!this.valid(this.active, model, current)) this.active = null;
     if (!this.valid(this.gesture, model, current)) this.gesture = null;
-    for (const record of [this.active,this.gesture].filter(Boolean)) {
+    for (const record of [this.active,this.gesture,this.skip].filter(Boolean)) {
       // Partial entries keep the intent. canAutoRollFromBar stops it when the
       // final checker enters (including an unconfirmed draft).
       record.sequence = current.sequence;
@@ -46,16 +52,22 @@ export class BarAutoRoll {
       x, y, at,
     } : null;
   }
+  noteSkip(model, {x = 0, y = 0, at = performance.now()} = {}) {
+    this.sync(model);
+    this.gesture = this.active ? {...this.active, action:'skip', x, y, at} : null;
+    return this.gesture;
+  }
   repeat(model, {x = 0, y = 0, at = performance.now()} = {}) {
     const g = this.gesture;
     if (!this.valid(g, model) || at < g.at || at - g.at > 450 ||
         Math.hypot(x-g.x,y-g.y) > 44) return false;
-    this.active = g;
+    if (g.action === 'skip') this.skip = {...g};
+    else this.active = {...g};
     this.gesture = null;
     return true;
   }
   canRoll(model) {
     const a = this.sync(model), s = model?.state;
-    return !!a && s.turn === a.player && s.phase === 'roll';
+    return !!a && !this.waitingForRepeat && s.turn === a.player && s.phase === 'roll';
   }
 }

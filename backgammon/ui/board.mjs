@@ -386,10 +386,7 @@ export class Board {
     this.touchInput = matchMedia('(pointer: coarse)');
     this.touchInput.addEventListener('change', () => this.updateCaption(), listen);
     const settle = () => {
-      if (this.playbackTimer && this.playbackFinal) {
-        const { state, options } = this.playbackFinal;
-        this.render(state, options);
-      } else this.cancelAnimations();
+      this.finishPresentation();
       if (this.pointer?.dragging) {
         this.dragLandingContext = null;
         this.showDragLanding(this.dragLandingTarget);
@@ -994,6 +991,13 @@ export class Board {
     this.flyChecker(this.dropOrigin || checkerPosition(before, from, player, this.options.orientation),
       checkerPosition(after, to, player, this.options.orientation), player, to,
       {drop:!!this.dropOrigin, residentCount:typeof to === 'number' ? Math.max(0, before.points[to] * (player ? -1 : 1)) : 0});
+  }
+  finishPresentation() {
+    if (this.playbackTimer && this.playbackFinal) {
+      const {state, options} = this.playbackFinal;
+      this.render(state, options);
+    } else this.cancelAnimations();
+    this.diceSettledAt = 0;
   }
   async waitForPresentation() {
     while (!this.reducedMotion() && !document.hidden &&
@@ -2236,11 +2240,11 @@ export class Board {
     if (!node) return;
     const {preview,editor,hideDice} = this.renderOptions || {};
     const prompt = this.rollPrompt || {}, touch = this.touchInput.matches;
-    const active = !preview && !editor && !hideDice && prompt.auto;
+    const active = !preview && !editor && !hideDice && (prompt.auto || prompt.skipping);
     const ready = !preview && !editor && !hideDice && prompt.ready && this.state?.phase === 'roll';
     const main = preview ? 'Move preview' : editor ? 'Position editor' :
-      active ? 'Auto roll on' : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
-    const detail = active ? `${touch ? 'Tap' : 'Click'} to stop` :
+      active ? (prompt.skipping ? 'Skipping to your choice' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
+    const detail = active ? (prompt.skipping ? `${touch ? 'Tap' : 'Click'} to stop` : `Double ${touch ? 'tap' : 'click'} to skip`) :
       ready && prompt.canAutoRoll ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
     // Roll instructions stay with the local player’s dice even without a
     // previous roll. While dice are visible, keep the auto-roll stop label
@@ -2251,9 +2255,10 @@ export class Board {
     node.dataset.caption = key;
     node.replaceChildren();
     node.dataset.auto = String(!!active);
+    node.dataset.skipping = String(!!prompt.skipping);
     node.setAttribute('role', active || ready ? 'button' : 'img');
     node.setAttribute('tabindex', active || ready ? '0' : '-1');
-    node.setAttribute('aria-label', [main,detail].filter(Boolean).join('. '));
+    node.setAttribute('aria-label', [main,detail,active && !prompt.skipping ? `${touch ? 'Tap' : 'Click'} once to stop` : ''].filter(Boolean).join('. '));
     if (!main) return;
     if (active || ready) node.append(svg('rect', {class:'board-caption-hit',x:x-174,y:291,width:348,height:80,rx:12,fill:'transparent'}));
     node.append(svg('text', {class:'board-caption-main',x,y:detail ? 318 : 337,'text-anchor':'middle',fill:boardColor('caption'),
