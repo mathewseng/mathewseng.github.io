@@ -644,6 +644,20 @@ Settings → Display & controls includes an Animation speed slider. The stops ar
 
 Bar auto-roll survives partial entries and remains active on later turns while that player has checkers on the bar and blocked entry points remain. The final entry, explicit stop, takeback or game end clears it. Regression coverage: `motion-speed.test.mjs`, `bar-auto-roll.test.mjs`, `animation-speed.cjs`, and `roll-prompt.cjs`.
 
+In computer games, a contact-free race with all your checkers home offers **Double
+tap/click to auto play** in the dice lane. It rolls and lets fully forced turns
+continue, then stops at the first distinct checker choice. Cube choices use a
+completed, noiseless, context-matched cubeful search of at least 3 ply; auto play
+continues only when the best legal action leads the next by more than 0.05 equity
+(current-cube units for money play, normalized equity for matches). Close,
+unavailable or failed analysis stops before acting. This includes take/drop and
+immediate redoubles. Tap/click the caption to stop; dialogs and background tabs
+pause the run. Intent is local to this player/game and clears on takeback, review,
+control changes, game end or reload. It uses the existing engine and seeded rolls,
+keeps normal animations, and never overrides a manual checker choice. Coverage:
+`race-auto-play.test.mjs` and `race-auto-play.cjs` (desktop and both phone layouts,
+with 4× CPU slowdown in Chromium).
+
 
 ### Review and summary units
 

@@ -2240,12 +2240,13 @@ export class Board {
     if (!node) return;
     const {preview,editor,hideDice} = this.renderOptions || {};
     const prompt = this.rollPrompt || {}, touch = this.touchInput.matches;
-    const active = !preview && !editor && !hideDice && (prompt.auto || prompt.skipping);
+    const active = !preview && !editor && !hideDice && (prompt.auto || prompt.skipping || prompt.raceAuto);
     const ready = !preview && !editor && !hideDice && prompt.ready && this.state?.phase === 'roll';
     const main = preview ? 'Move preview' : editor ? 'Position editor' :
-      active ? (prompt.skipping ? 'Skipping to your choice' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
-    const detail = active ? (prompt.skipping ? `${touch ? 'Tap' : 'Click'} to stop` : `Double ${touch ? 'tap' : 'click'} to skip`) :
-      ready && prompt.canAutoRoll ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
+      active ? (prompt.raceAuto ? 'Auto play on' : prompt.skipping ? 'Skipping to your choice' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
+    const detail = active ? (prompt.skipping || prompt.raceAuto ? `${touch ? 'Tap' : 'Click'} to stop` : `Double ${touch ? 'tap' : 'click'} to skip`) :
+      ready && prompt.canAutoPlay ? `Double ${touch ? 'tap' : 'click'} to auto play` :
+        ready && prompt.canAutoRoll ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
     // Roll instructions stay with the local player’s dice even without a
     // previous roll. While dice are visible, keep the auto-roll stop label
     // in the unused lane so it never overlaps the rolling dice.
@@ -2258,7 +2259,7 @@ export class Board {
     node.dataset.skipping = String(!!prompt.skipping);
     node.setAttribute('role', active || ready ? 'button' : 'img');
     node.setAttribute('tabindex', active || ready ? '0' : '-1');
-    node.setAttribute('aria-label', [main,detail,active && !prompt.skipping ? `${touch ? 'Tap' : 'Click'} once to stop` : ''].filter(Boolean).join('. '));
+    node.setAttribute('aria-label', [main,detail,active && !prompt.skipping && !prompt.raceAuto ? `${touch ? 'Tap' : 'Click'} once to stop` : ''].filter(Boolean).join('. '));
     if (!main) return;
     if (active || ready) node.append(svg('rect', {class:'board-caption-hit',x:x-174,y:291,width:348,height:80,rx:12,fill:'transparent'}));
     node.append(svg('text', {class:'board-caption-main',x,y:detail ? 318 : 337,'text-anchor':'middle',fill:boardColor('caption'),

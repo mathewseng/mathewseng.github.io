@@ -84,6 +84,7 @@ import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
 import { BarAutoRoll, canAutoRollFromBar, canAutoRollAfterBarPass } from "../core/bar-auto-roll.mjs";
+import { RaceAutoPlay, bearingOffRace, clearRaceCubeAction } from "../core/race-auto-play.mjs";
 import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
@@ -147,6 +148,8 @@ let config = {
   lastUndoNotice = null,
   epoch = 0;
 const barAutoRoll = new BarAutoRoll();
+const raceAutoPlay = new RaceAutoPlay();
+let raceAutoJob = null;
 let barRollTimer = null, barRollSchedule = '', barRollAttempt = '', barTapTimer = null;
 const presentationWaits = new Set();
 const boardWorkspace = el("div", { class: "board-workspace" });
@@ -495,7 +498,7 @@ const opening = new OpeningRoll(ui.board.container, () => {
   render();
 });
 function repeatBarRoll(point) {
-  if (!barAutoRoll.repeat(model(), point)) return false;
+  if (!barAutoRoll.repeat(model(), point) && !raceAutoPlay.repeat(model(), point)) return false;
   clearTimeout(barTapTimer);
   clearTimeout(barRollTimer); barRollSchedule = ''; barRollAttempt = '';
   actions();
@@ -508,6 +511,10 @@ function repeatBarRoll(point) {
 ui.board.onRoll = (event = {}) => {
   const point = {x:event.clientX || 0,y:event.clientY || 0};
   if (repeatBarRoll(point)) return true;
+  if (raceAutoPlay.active && (event.target?.closest('.board-caption') ||
+      (state().phase === 'roll' && state().turn === raceAutoPlay.active.player))) {
+    raceAutoPlay.reset(); actions(); return true;
+  }
   if ((barAutoRoll.active || barAutoRoll.skipping) && (event.target?.closest('.board-caption') ||
       (state().phase === 'roll' && state().turn === (barAutoRoll.active || barAutoRoll.skip).player))) {
     if (barAutoRoll.skipping || event.clientX === undefined) {
@@ -526,9 +533,11 @@ ui.board.onRoll = (event = {}) => {
   const control = $("roll");
   if (state().phase !== "roll" || opening.active || !control || control.disabled || ui.board.playbackTimer) return false;
   barAutoRoll.noteRoll(model(), point);
+  if (config.mode === 'computer') raceAutoPlay.noteRoll(model(), point);
   control.click(); return true;
 };
 ui.board.onCube = () => {
+  raceAutoPlay.reset();
   const control = $("double-cube");
   if (control && !control.disabled && !opening.active && !ui.board.playbackTimer) control.click();
 };
@@ -553,7 +562,7 @@ addEventListener('pointerdown', event => {
     clearTimeout(cleanup); consume.abort();
   }, {capture:true,signal:consume.signal});
 }, true);
-document.addEventListener('close', () => scheduleBarAutoRoll(), true);
+document.addEventListener('close', () => { scheduleBarAutoRoll(); scheduleRaceAutoPlay(); }, true);
 const online = new Online({
   onChange: () => {
     if (config.mode === "online") {
@@ -700,6 +709,7 @@ addEventListener("beforeunload", (e) => {
 });
 addEventListener("pagehide", () => {
   barAutoRoll.reset(); clearTimeout(barRollTimer);
+  raceAutoPlay.reset();
   autoReview.pause();
   prethink.pause();
   stopComputer();
@@ -713,7 +723,7 @@ addEventListener("visibilitychange", () => {
     autoReview.pause();
     prethink.pause();
     analysis.engine.cancelWhere(job => job.priority < 0);
-  } else { advanceOpening(); if (!autoPlay()) advanceAcceptedCube(); scheduleBarAutoRoll(); prethink.update(); autoReview.update(); }
+  } else { advanceOpening(); if (!autoPlay()) advanceAcceptedCube(); scheduleBarAutoRoll(); scheduleRaceAutoPlay(); prethink.update(); autoReview.update(); }
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -840,6 +850,7 @@ function restore(recovery) {
   }
 }
 function stopComputer() {
+  raceAutoPlay.reset();
   prethink.pause();
   epoch++;
   releaseAssistance();
@@ -925,6 +936,49 @@ function scheduleBarAutoRoll() {
     try { await submitCube({type:'roll'}); }
     catch (error) { barAutoRoll.reset(); actions(); showError(error); }
   }, barAutoRoll.skipping ? 0 : motionDuration(900));
+}
+function syncRaceAutoPlay(current = state()) {
+  const s = state();
+  if (config.mode !== 'computer') raceAutoPlay.reset();
+  return raceAutoPlay.sync(model(), current, myTurn(s) && s.phase === 'move' && !forcedTurn(s));
+}
+function scheduleRaceAutoPlay() {
+  const active = raceAutoPlay.active, s = state(), token = epoch;
+  const ready = () => raceAutoPlay.active === active && raceAutoPlay.valid(active,model()) &&
+    state() === s && epoch === token && myTurn(s) && config.mode === 'computer' &&
+    ['roll','double'].includes(s.phase) && !certainBearoff(s) &&
+    !document.hidden && !leaving && !committing && !botBusy && !assistanceJob &&
+    !opening.active && !document.querySelector('dialog[open]');
+  if (raceAutoJob || !ready()) return;
+  const job = raceAutoJob = {source:s};
+  (async () => {
+    try {
+      await presentationPause(900);
+      await ui.board.waitForPresentation();
+      if (!ready()) return;
+      let action = {type:'roll'}, evaluation = null;
+      if (s.phase === 'double' || canDouble(s)) {
+        let result = analysis.engine.peek(s,{preset:null});
+        // Reuse warm analysis. A missing, shallow or noisy reading must finish
+        // a real 3-ply cube search before it can authorize automatic play.
+        if (result?.settings?.plies < 3 || result?.settings?.noise !== 0 || result?.settings?.cubeful !== true)
+          result = await analysis.engine.analyze(s,{preset:'expert',priority:5});
+        if (!ready()) return;
+        action = clearRaceCubeAction(s,result);
+        if (!action) { raceAutoPlay.reset(); return; }
+        evaluation = {source:clone(s),result:gradeCube(s,result,action.type)};
+      }
+      if (ready()) await commit(action,evaluation);
+    } catch (error) {
+      if (raceAutoPlay.active === active) {
+        raceAutoPlay.reset();
+        if (error.name !== 'AbortError') toast('Auto play stopped. Choose your cube action.');
+      }
+    } finally {
+      if (raceAutoJob === job) raceAutoJob = null;
+      if (!leaving) actions();
+    }
+  })();
 }
 function render() {
   if (game && config.mode !== "online") ensureLocalRolls(game);
@@ -1472,9 +1526,16 @@ function actions() {
     const s = state(), rollReady = !!$("roll") && !$("roll").disabled && s.phase === "roll" && !opening.active;
     const current = draft.state === s && !draft.preview ? draft.current() : s;
     const active = syncBarAutoRoll(current);
-    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,auto:!!active,skipping:barAutoRoll.skipping});
+    const race = syncRaceAutoPlay(current);
+    // During automatic cube checking, the caption is the stop control. The
+    // manual Take/Drop faces return as soon as it stops, without covering it.
+    if (race && s.phase === 'double') cubeReplies.hidden = true;
+    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,
+      canAutoPlay:config.mode === 'computer' && bearingOffRace(s) && !model().reviewingTurn,
+      auto:!!active,skipping:barAutoRoll.skipping,raceAuto:!!race});
     ui.board.container.classList.toggle("roll-ready", rollReady);
     scheduleBarAutoRoll();
+    scheduleRaceAutoPlay();
   }
 }
 function arrangeActions() {
@@ -2897,6 +2958,7 @@ async function submit() {
 }
 async function submitCube(action) {
   if (committing || assistanceJob || botBusy || !myTurn(state())) return;
+  if (raceAutoPlay.active) raceAutoPlay.reset();
   if (action.type === 'roll' && blockedBarRoll(state())) action = {type:'skip-roll'};
   if (
     config.mode !== "computer" ||
