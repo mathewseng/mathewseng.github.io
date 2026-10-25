@@ -708,6 +708,9 @@ const server = http.createServer((req, res) => {
         (report.solverEditor ||= []).push(
           await run("solver-editor", browser, base, out, browserName),
         );
+        (report.solverMobile ||= []).push(
+          await run("solver-mobile", browser, base, out, browserName),
+        );
         (report.mobileLibrary ||= []).push(
           await run("mobile-library", browser, base, out, browserName),
         );

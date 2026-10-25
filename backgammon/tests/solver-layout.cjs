@@ -39,8 +39,15 @@ module.exports = async function solverLayout(browser, base, out, name) {
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => {scrollTo(0,0);resolve();})));
       console.log(`Solver geometry ${name}: ${width}×${height}`);
       const board = await geometry();
+      assert.ok(await page.evaluate(() => {
+        const board = document.querySelector('#board').getBoundingClientRect();
+        return document.querySelector('#opponent').getBoundingClientRect().bottom <= board.top + 1 &&
+          document.querySelector('#player').getBoundingClientRect().top >= board.bottom - 1;
+      }), `${width}: player strips do not overlap the board`);
       if (width >= 1025) {
-        assert.ok(board.height > height - 190,`${width}: board uses the available height`);
+        const available = await page.evaluate(() => document.querySelector('.stage').getBoundingClientRect().height -
+          document.querySelector('#opponent').getBoundingClientRect().height - document.querySelector('#player').getBoundingClientRect().height);
+        assert.ok(Math.abs(board.height-available)<1,`${width}: board uses all height remaining between player labels`);
         assert.ok(await page.locator('#inspector .solver-controls').count(), 'desktop controls share the scrolling inspector');
       }
       await page.locator('#edit-position').click();
