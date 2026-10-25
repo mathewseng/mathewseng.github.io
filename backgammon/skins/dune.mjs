@@ -321,10 +321,10 @@ html[data-skin="dune"] .bg-board [data-pattern="bar"] { fill: url(#skin-dune-bar
 /* Points: sharp triangles, no outline, a thin shadow band along the right
    flank so they read as low relief under raking light. */
 html[data-skin="dune"] .bg-board .point-shape { stroke: none; }
-html[data-skin="dune"] .bg-board [data-pattern="pointA"][d*=" 28 L"] { fill: url(#skin-dune-relief-top); }
-html[data-skin="dune"] .bg-board [data-pattern="pointB"][d*=" 28 L"] { fill: url(#skin-dune-relief-top); }
-html[data-skin="dune"] .bg-board [data-pattern="pointA"][d*=" 632 L"] { fill: url(#skin-dune-relief-bottom); }
-html[data-skin="dune"] .bg-board [data-pattern="pointB"][d*=" 632 L"] { fill: url(#skin-dune-relief-bottom); }
+html[data-skin="dune"] .bg-board [data-pattern="pointA"][d*=" 38 L"] { fill: url(#skin-dune-relief-top); }
+html[data-skin="dune"] .bg-board [data-pattern="pointB"][d*=" 38 L"] { fill: url(#skin-dune-relief-top); }
+html[data-skin="dune"] .bg-board [data-pattern="pointA"][d*=" 622 L"] { fill: url(#skin-dune-relief-bottom); }
+html[data-skin="dune"] .bg-board [data-pattern="pointB"][d*=" 622 L"] { fill: url(#skin-dune-relief-bottom); }
 
 /* Checkers: flat face, 2px edge, and a hard offset shadow drawn as a crescent
    by the pattern overlay (enlarged, shifted 2px, transparent over the face). */

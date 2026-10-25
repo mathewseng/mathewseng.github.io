@@ -102,8 +102,8 @@ ${S} .bg-board [data-pattern="surface"] { fill: var(--board-surface); filter: ur
 ${S} .bg-board [data-pattern="bar"] { fill: url(#skin-${ID}-bar); }
 ${S} .bg-board [data-pattern="tray"] { stroke: var(--board-border); stroke-width: 1.2; }
 ${S} .bg-board .point-shape { stroke: var(--board-border); stroke-width: 1.2; stroke-linejoin: round; }
-${S} .bg-board [data-pattern="pointA"][d*=" 28 L"], ${S} .bg-board [data-pattern="pointB"][d*=" 28 L"] { fill: url(#skin-${ID}-tip-down); }
-${S} .bg-board [data-pattern="pointA"][d*=" 632 L"], ${S} .bg-board [data-pattern="pointB"][d*=" 632 L"] { fill: url(#skin-${ID}-tip-up); }
+${S} .bg-board [data-pattern="pointA"][d*=" 38 L"], ${S} .bg-board [data-pattern="pointB"][d*=" 38 L"] { fill: url(#skin-${ID}-tip-down); }
+${S} .bg-board [data-pattern="pointA"][d*=" 622 L"], ${S} .bg-board [data-pattern="pointB"][d*=" 622 L"] { fill: url(#skin-${ID}-tip-up); }
 ${S} .bg-board .checker > circle:first-child { stroke-width: 2; }
 ${S} .bg-board .checker [data-pattern="checker0"] { fill: url(#skin-${ID}-chk0); }
 ${S} .bg-board .checker [data-pattern="checker1"] { fill: url(#skin-${ID}-chk1); }

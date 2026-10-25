@@ -497,14 +497,14 @@ ${P} .bg-board .point-shape {
   stroke-width: 1;
   stroke-linejoin: round;
 }
-/* Top points have their base at y=28 and bottom points at y=632; the path
+/* Top points have their base at y=38 and bottom points at y=622; the path
    data tells them apart so one gradient can run base to tip on both. */
-${P} .bg-board [data-pattern="pointA"][d*=" 28 L"],
-${P} .bg-board [data-pattern="pointB"][d*=" 28 L"] {
+${P} .bg-board [data-pattern="pointA"][d*=" 38 L"],
+${P} .bg-board [data-pattern="pointB"][d*=" 38 L"] {
   fill: url(#${ID}-tip-down);
 }
-${P} .bg-board [data-pattern="pointA"][d*=" 632 L"],
-${P} .bg-board [data-pattern="pointB"][d*=" 632 L"] {
+${P} .bg-board [data-pattern="pointA"][d*=" 622 L"],
+${P} .bg-board [data-pattern="pointB"][d*=" 622 L"] {
   fill: url(#${ID}-tip-up);
 }
 /* Flat faces; the 3-unit rim is about 2.7 px on a desktop board and 1.3 px
