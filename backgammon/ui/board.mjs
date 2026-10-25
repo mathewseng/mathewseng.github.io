@@ -14,9 +14,11 @@ const NS = "http://www.w3.org/2000/svg";
 let boardSerial = 0;
 const STACK_LIMIT = 5,
   CHECKER_RADIUS = 22;
-// Five touching discs fit between the frame and the destination-label lane.
+// The first disc touches the surface edge (y 28 / 632); five touching discs
+// still fit between the frame and the destination-label lane.
 const stackY = (top, slot) =>
-  top ? 54 + slot * CHECKER_RADIUS * 2 : 606 - slot * CHECKER_RADIUS * 2;
+  top ? 28 + CHECKER_RADIUS + slot * CHECKER_RADIUS * 2
+      : 632 - CHECKER_RADIUS - slot * CHECKER_RADIUS * 2;
 // Fill the corners around each visible disc, within its own point lane.
 // Taps distinguish a checker from open destination space. Dragging can start
 // anywhere on an occupied point, using the same non-overlapping point lanes.
@@ -1743,9 +1745,11 @@ export class Board {
       );
       g.append(
         svg("path", {
+          // Points rise from the surface edge (y 28 / 632) and sit flush
+          // against their neighbours; the hit rect keeps its own inset.
           d: top
-            ? `M${x + 3} 38 L${x + 57} 38 L${x + 30} 262 Z`
-            : `M${x + 3} 622 L${x + 57} 622 L${x + 30} 398 Z`,
+            ? `M${x} 28 L${x + 60} 28 L${x + 30} 262 Z`
+            : `M${x} 632 L${x + 60} 632 L${x + 30} 398 Z`,
           class: "point-shape",
           fill: boardColor(p % 2 ? "pointB" : "pointA"),
           "pointer-events": "none",

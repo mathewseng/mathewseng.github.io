@@ -389,7 +389,7 @@ html[data-skin="nebula"] .bg-board .board-cube .cube-face {
   <stop offset=".5" stop-color="#000000" stop-opacity="0"/>
   <stop offset="1" stop-color="#F6F4FF" stop-opacity=".03"/>
 </linearGradient>
-<linearGradient id="skin-nebula-point" gradientUnits="userSpaceOnUse" x1="0" y1="38" x2="0" y2="622">
+<linearGradient id="skin-nebula-point" gradientUnits="userSpaceOnUse" x1="0" y1="28" x2="0" y2="632">
   <stop offset="0" stop-color="#000000" stop-opacity=".42"/>
   <stop offset=".2" stop-color="#000000" stop-opacity=".1"/>
   <stop offset=".383" stop-color="#F6F4FF" stop-opacity=".14"/>
