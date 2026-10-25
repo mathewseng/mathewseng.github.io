@@ -48,7 +48,17 @@ module.exports=async(browser,base,out,name)=>{
     assert.ok(flow.board.height>=100,'board keeps usable space');
     assert.ok(!flow.overflow,'no sideways scrolling');
     assert.ok(flow.review.top>=flow.app.bottom-1,'analysis begins below the first screen');
-    assert.ok(await page.locator('.help-cluster').isHidden(),'summary replaces utility row');
+    assert.ok(await page.locator('.help-cluster').isHidden(),'secondary actions live in Controls');
+    assert.ok(await page.locator('.turn-tools #all-controls').isVisible(),'Controls remains visible above the summary');
+    assert.ok(await page.locator('.turn-tools #hint').isVisible(),'Hint remains visible above the summary');
+    const geometry=()=>page.locator('#opponent,#player,#board,.board-actions').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return [r.x,r.y,r.width,r.height];}));
+    const expanded=await geometry();
+    await summary.locator(':scope > summary').tap();
+    await page.waitForTimeout(80);
+    assert.deepEqual(await geometry(),expanded,'collapse does not move or resize any table element');
+    await summary.locator(':scope > summary').tap();
+    await page.waitForTimeout(80);
+    assert.deepEqual(await geometry(),expanded,'expand does not move or resize any table element');
     await page.screenshot({path:path.join(out,`${name}-summary-${label}-${width}-${height}.png`)});
     await page.evaluate(()=>scrollTo(0,100));
     const moved=await summary.evaluate(n=>({top:n.getBoundingClientRect().top,scroll:scrollY}));
@@ -62,22 +72,20 @@ module.exports=async(browser,base,out,name)=>{
   await checkFit('equity');
   await summary.locator(':scope > summary').tap();
   assert.equal(await summary.evaluate(n=>n.open),false);
-  await page.locator('#game-summary-toggle').waitFor();
-  await page.waitForFunction(()=>document.querySelector('#game-summary-toggle').getAttribute('aria-expanded')==='false');
-  for(const id of ['undo-turn','analysis-jump','all-controls','game-summary-toggle']) {
-   const button=page.locator('#'+id);assert.ok(await button.isVisible(),id+' is available when collapsed');
+  for(const id of ['hint','all-controls']) {
+   const button=page.locator('#'+id);assert.ok(await button.isVisible(),id+' is always available');
    const r=await button.boundingBox();assert.ok(r.height>=44&&r.y+r.height<=844+1,id+' fits with a touch target');
   }
   await page.screenshot({path:path.join(out,`${name}-mobile-summary-controls.png`)});
+  await page.locator('#all-controls').tap();
   await page.locator('#analysis-jump').tap();
   assert.ok(await page.locator('#review-heading').evaluate(n=>document.activeElement===n),'analysis jump works');
   await page.getByRole('button',{name:'Back to board ↑',exact:true}).tap();
-  await page.locator('#game-summary-toggle').tap();
+  await summary.locator(':scope > summary').tap();
   assert.ok(await summary.evaluate(n=>n.open),'Game summary reopens the panel');
   for(const viewport of [{width:844,height:390},{width:1366,height:768}]){
    await page.setViewportSize(viewport);await summary.waitFor({state:'hidden'});
-   assert.ok(await page.locator('.help-cluster').isVisible(),'landscape/desktop keep normal tools');
-   assert.ok(await page.locator('#game-summary-toggle').isHidden());
+   assert.ok(await page.locator('.turn-tools').isVisible(),'landscape/desktop keep Hint and Controls');
    assert.ok(await history.locator('table').isVisible());
   }
   await page.setViewportSize({width:390,height:844});await summary.waitFor();

@@ -2571,6 +2571,26 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   background: var(--surface-2);
 }
 
+.archived-games { margin-top: 24px; }
+.history-moves-disclosure { border-top: 1px solid var(--line); }
+.history-moves-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+.history-moves-disclosure > summary::-webkit-details-marker,
+.history-moves-disclosure > summary::before { display: none; }
+.history-moves-disclosure > summary .history-game-chevron { margin-left: auto; }
+.history-moves-disclosure[open] > summary .history-game-chevron { transform: rotate(225deg); }
+.archived-game-moves { padding: 0 8px 8px; }
+.archived-game-moves > .history-turn:last-child { margin-bottom: 0; }
+.history-archive-total { display: flex; justify-content: space-between; gap: 12px; }
+
 .history-game-heading {
   display: flex;
   flex-wrap: wrap;
@@ -4587,6 +4607,8 @@ button.library-item {
   overflow: visible;
 }
 
+.practice-controls-dialog #analysis-jump { display: inline-flex; }
+
 .practice-controls-dialog .action-help .btn {
   min-height: 48px;
 }
@@ -5103,6 +5125,7 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     grid-column: 1 / -1;
     grid-row: 2;
     align-self: end;
+    min-height: 48px;
     padding: 0;
   }
 
@@ -5174,6 +5197,18 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
   .play-page .board-workspace {
     height: auto;
     container-type: inline-size;
+  }
+
+  /* Tablet confirmation lives below the board, never beside it where its
+     appearance would take width from the checker surface. Reserve its row. */
+  .play-page.live-table .board-workspace {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .play-page.live-table .board-workspace > .board-actions {
+    display: flex;
+    flex: 0 0 52px;
+    height: 52px;
   }
 
   .play-page .board-workspace > .board-slot {
@@ -7217,10 +7252,8 @@ html.skin-shader .docs-toc--sticky {
 .review-search-notice .btn { padding-block: 2px; }
 .review-depth-options:empty { display:none; }
 
-/* One portrait footer switches between the running summary and utility tools.
-   It participates in the viewport grid; nothing floats over the board/history. */
-.mobile-game-summary,
-#game-summary-toggle { display: none; }
+/* The summary owns a fixed footer slot. Closing it never shifts the board. */
+.mobile-game-summary { display: none; }
 /* At high browser zoom a paired history row no longer has room for even one
    full equity value per half. Keep both decisions together, stacked in the row. */
 @media (max-width: 300px) {
@@ -7230,47 +7263,54 @@ html.skin-shader .docs-toc--sticky {
   .play-feedback .history-turn-decisions .decision-value { overflow-wrap: anywhere; }
 }
 @media (max-width: 600px) and (orientation: portrait) {
-  .play-page.live-table:has(.mobile-game-summary[open]),
-  .play-page.live-table:has(.board-slot.has-equity-bar):has(.mobile-game-summary[open]) {
+  .play-page.live-table,
+  .play-page.live-table:has(.board-slot.has-equity-bar) {
     height: var(--play-visible-height, 100dvh);
     min-height: 0;
   }
-  .play-page.live-table:has(.mobile-game-summary[open]) .stage,
-  .play-page.live-table:has(.board-slot.has-equity-bar):has(.mobile-game-summary[open]) .stage {
+  .play-page.live-table .stage,
+  .play-page.live-table:has(.board-slot.has-equity-bar) .stage {
     height: 100%;
     min-height: 0;
     grid-template-rows: auto minmax(0, 1fr) auto auto auto;
   }
-  .play-page.live-table:has(.mobile-game-summary[open]) .board-workspace > .board-slot {
+  .play-page.live-table .board-workspace > .board-slot {
     box-sizing: border-box;
     height: 100%;
     min-height: 0;
     max-height: 100%;
     aspect-ratio: auto;
   }
-  .play-page.live-table:has(.mobile-game-summary[open]) .board-actions { height: auto; }
+  /* Hint and Controls keep the same rail on both players’ turns. */
+  .play-page.live-table .board-actions { display: flex; height: 52px; padding-block: 0; }
   .play-page.live-table .game-over-card { max-height: calc(100% - 12px); }
-  .play-page.live-table:has(.mobile-game-summary[open]) .game-over-card {
+  .play-page.live-table .game-over-card {
     width: calc(100% - 16px);
     padding: 12px;
     gap: 6px;
   }
   /* The full loss table is already in the footer; keep the result overlay
      inside the smaller board so it cannot cover the disclosure or controls. */
-  .play-page.live-table:has(.mobile-game-summary[open]) .game-over-card .game-loss-summary { display: none; }
-  .play-page.live-table .action-area { gap: 4px; padding: 4px; }
-  .play-page.live-table #game-summary-toggle { display: inline-flex; }
-  .mobile-game-summary:not([hidden])[open] {
+  .play-page.live-table .game-over-card .game-loss-summary { display: none; }
+  .play-page.live-table .action-area {
+    --summary-height: clamp(160px, 23dvh, 192px);
+    height: var(--summary-height);
+    min-height: var(--summary-height);
+    gap: 0;
+    padding: 4px;
+    justify-content: flex-end;
+  }
+  .mobile-game-summary:not([hidden]) {
     display: block;
     width: 100%;
     margin: 0;
   }
-  .action-area:has(.mobile-game-summary:not([hidden])[open]) .help-cluster,
-  .action-area:has(.mobile-game-summary:not([hidden])[open]) .action-main:has(#actions:empty),
-  .play-page.live-table .action-area:has(.mobile-game-summary:not([hidden])[open]) :is(.touch-moves, .touch-destinations) {
+  .action-area:has(.mobile-game-summary:not([hidden])) .help-cluster,
+  .action-area:has(.mobile-game-summary:not([hidden])) .action-main,
+  .play-page.live-table .action-area:has(.mobile-game-summary:not([hidden])) :is(.touch-moves, .touch-destinations) {
     display: none;
   }
-  .action-area:has(.mobile-game-summary:not([hidden])[open]) :is(.action-message.routine-status, .action-message:has(.draft-progress), #draft-line) {
+  .play-page.live-table .action-area :is(.action-message, #draft-line) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -7295,7 +7335,12 @@ html.skin-shader .docs-toc--sticky {
   .mobile-summary-loss small { color: var(--muted); font-size: var(--t-xs); }
   .mobile-summary-controls { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; color: var(--muted); font-size: var(--t-xs); }
   .mobile-game-summary .history-game-chevron { flex-shrink: 0; margin: 0 2px 0 0; }
-  .mobile-game-summary .history-game-detail { padding: 0 4px 4px; }
+  .mobile-game-summary .history-game-detail {
+    padding: 0 4px 4px;
+    max-height: calc(var(--summary-height) - 54px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
   .compact-loss-summary { font-size: var(--t-xs); line-height: 1.25; }
   .compact-loss-summary :is(th, td) { padding: 4px; }
   .compact-loss-summary small { margin-top: 1px; font-size: var(--t-xs); }
@@ -7304,8 +7349,24 @@ html.skin-shader .docs-toc--sticky {
   .compact-loss-summary thead th { vertical-align: middle; }
   .mobile-summary-player.btn { width: 100%; min-width: 0; min-height: 44px; padding: 4px; font-size: var(--t-xs); color: var(--accent); }
   .mobile-summary-player > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .play-page.live-table .board-actions { gap: 8px; }
+  .play-page.live-table .board-actions > :is(button, a) {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 52px;
+    height: 52px;
+    padding: 4px 8px;
+    font-size: var(--t-sm);
+  }
+  .mobile-game-summary > summary { height: 44px; }
+  .mobile-summary-loss { white-space: nowrap; }
+  .compact-loss-summary :is(strong, small:not(.sr-only)) { white-space: nowrap; }
   @media (max-width: 360px) {
     .mobile-summary-loss small { display: none; }
+    .compact-loss-summary { font-size: 11px; }
+    .compact-loss-summary :is(th, td) { padding: 2px 4px; }
+    .compact-loss-summary small { font-size: 10px; }
+    .compact-loss-summary strong { font-size: 12px; }
   }
   @media (max-height: 740px) {
     /* Keep the active table usable when Safari leaves little vertical space.
@@ -7327,8 +7388,9 @@ html.skin-shader .docs-toc--sticky {
 .board-cube-replies {
   position: absolute;
   z-index: 5;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
   align-items: center;
   transform: translateY(-50%);
   pointer-events: none;
@@ -7339,15 +7401,16 @@ html.skin-shader .docs-toc--sticky {
   position: relative;
   display: flex;
   align-items: center;
-  width: 40%;
-  max-width: 220px;
+  width: 100%;
+  max-width: 180px;
+  justify-self: center;
   min-width: 0;
   min-height: 48px;
   padding: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
-  font-size: var(--t-md);
+  font-size: var(--cube-reply-font-size, 16px);
 }
 .cube-reply-face {
   display: flex;
@@ -7355,7 +7418,8 @@ html.skin-shader .docs-toc--sticky {
   justify-content: center;
   width: 100%;
   height: var(--cube-reply-face-height, 48px);
-  padding: 0 6px;
+  padding: 0 4px;
+  white-space: nowrap;
   border: 1px solid var(--control-border);
   border-radius: var(--r-sm);
   background: var(--surface-2);
@@ -7363,13 +7427,28 @@ html.skin-shader .docs-toc--sticky {
   font-weight: 650;
   line-height: 1;
 }
+.cube-reply-face { gap: 4px; }
+.cube-reply-value { font-variant-numeric: tabular-nums; }
+@media (max-width: 600px), (max-height: 500px) {
+  .cube-reply-face:has(.cube-reply-value) { flex-direction: column; gap: 1px; }
+  .cube-reply-value { font-size: .85em; }
+}
 .cube-reply-take .cube-reply-face { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .cube-reply > kbd { position: absolute; right: 8px; margin: 0; }
 @media (min-width: 1025px) and (min-height: 501px) {
   .cube-reply:has(> kbd) .cube-reply-face { padding-right: 34px; }
 }
-@media (max-width: 600px), (max-height: 500px) {
-  .board-cube-replies .cube-reply { font-size: var(--t-sm); }
+.board-cube-replies #drop-cube { justify-self: start; }
+.board-cube-replies #immediate-redouble {
+  justify-self: end;
+  padding: 0;
+  gap: 0;
+  min-height: 48px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--cube-reply-font-size, 16px);
 }
 
 /* Even the short Play label retains a complete touch target in every skin. */
@@ -7384,6 +7463,104 @@ html.skin-shader .docs-toc--sticky {
    checker space and the primary action separate instead of squeezing the board. */
 @media (max-width: 380px) and (orientation: portrait) and (max-height: 640px) {
   .play-page.live-table .player-strip { min-height: 26px; padding-block: 2px; font-size: var(--t-xs); }
+  .play-page.live-table .player-status { min-height: 20px; }
   .play-page.live-table .tool-head { min-height: 48px; padding-block: 2px; }
   .play-page.live-table .tool-head .subtitle { display: none; }
+}
+
+/* Direct board confirmation with a stable, compact secondary tool rail. */
+.play-page.live-table .help-cluster { display: none; }
+.turn-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+.turn-tools > .btn { width: 100%; min-width: 0; min-height: 48px; justify-content: center; }
+.play-page.desktop-table .turn-tools { flex: 0 1 320px; }
+.board-confirm {
+  pointer-events: none;
+  position: absolute;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.board-confirm:empty { display: none; }
+.board-confirm > button { pointer-events: auto; }
+.board-confirm #confirm {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 84%, var(--on-accent));
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--on-accent);
+  gap: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  translate: none;
+  transition: opacity calc(160ms * var(--bg-motion-scale, 1)) ease,
+    transform calc(140ms * var(--bg-motion-scale, 1)) ease,
+    background-color calc(140ms * var(--bg-motion-scale, 1)) ease,
+    box-shadow calc(140ms * var(--bg-motion-scale, 1)) ease;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 20%, transparent),
+    0 2px 6px color-mix(in srgb, var(--bg) 30%, transparent);
+}
+.board-confirm #confirm .confirm-check {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 0;
+  pointer-events: none;
+}
+.board-confirm #confirm .confirm-check svg { display: block; width: 28px; height: 28px; }
+.board-confirm #confirm kbd { display: none; }
+.board-confirm #confirm:disabled { opacity: 0; pointer-events: none; box-shadow: none; }
+.board-confirm #confirm:disabled .confirm-check { opacity: 1; }
+.board-confirm #confirm:focus { outline: none; }
+html[data-focus-navigation="true"] .board-confirm #confirm:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .board-confirm #confirm:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 88%, var(--ink));
+    transform: scale(1.04);
+  }
+}
+.board-confirm #confirm:active:not(:disabled) {
+  transform: scale(.96);
+  background: color-mix(in srgb, var(--accent) 94%, var(--on-accent));
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--on-accent) 16%, transparent);
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .play-page.live-table .turn-tools > .btn { height: 48px; padding: 6px 10px; }
+  .play-page.live-table .board-actions { gap: 8px; }
+}
+
+.play-page.live-table .turn-tools > :is(#hint, #all-controls) { grid-column: auto; grid-row: auto; }
+/* Empty landscape action panels must not cover the tools above them. */
+.play-page.live-table .action-area:has(.mobile-game-summary[hidden]):has(#actions:empty) { visibility: hidden; }
+@media (max-width: 600px) and (orientation: portrait) {
+  .play-page.live-table .action-area {
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .play-page.live-table .mobile-game-summary {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+  }
 }

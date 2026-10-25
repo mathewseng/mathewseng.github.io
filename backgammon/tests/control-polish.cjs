@@ -59,7 +59,7 @@ module.exports = async function controlPolish(browser, base, out, name) {
         assert.ok(layout[key].width>=44&&layout[key].height>=44,`touch target ${key} ${width}`);
         assert.ok(layout[key].bottom<=height+2,`visible ${key} ${width}: ${JSON.stringify(layout)}`);
       }
-      if(width<=700 && height>500) assert.ok(layout.confirm.top>=layout.board.bottom-2,'portrait confirmation follows full-width board');
+      assert.ok(layout.confirm.top>=layout.board.top && layout.confirm.bottom<=layout.board.bottom,'confirmation sits inside the board');
       const size = () => page.locator('#board > svg').evaluate(n => {
         const r=n.getBoundingClientRect();return {width:r.width,height:r.height};
       });

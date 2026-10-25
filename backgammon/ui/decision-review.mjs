@@ -185,6 +185,10 @@ export function decisionReview(
   const search = reviewSearch(source, d, (...args) => api.result(...args), beforeRoll);
   const api = {
     dialog: d,
+    preview(steps = [], label = "Played move") {
+      show(steps, label);
+      body.replaceChildren(el("p", {class:"muted"}, "This decision has not been analyzed."), search.node);
+    },
     loading(status, preset) {
       previewResult = null;
       show([], "Position");

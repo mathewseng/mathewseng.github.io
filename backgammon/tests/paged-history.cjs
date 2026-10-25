@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const path=require('node:path');
 const {waitForAsync}=require('./play-helpers.cjs');
 module.exports=async(browser,base,out,name)=>{
- const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,reducedMotion:'reduce',serviceWorkers:'block'});
+ const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:name!=='firefox',reducedMotion:'reduce',serviceWorkers:'block'});
  const page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  try{

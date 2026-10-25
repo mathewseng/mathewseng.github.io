@@ -147,7 +147,7 @@ module.exports=async function revisionWarning(browser,base,out,name){
           assert.match(await page.locator('#pending-move-loss').textContent(),response==='fail'?/EV unavailable/:/0.020/);
         }
         if(response==='hint'||response==='best') {
-          await page.getByRole('button',{name:response==='hint'?'Hint':'Play Best',exact:true}).click();
+          await page.locator('.checker-warning').getByRole('button',{name:response==='hint'?'Hint':'Play Best',exact:true}).click();
           await page.getByRole('dialog',{name:'Move hint',exact:true}).waitFor();
           await page.evaluate(()=>window.finishPending());
           if(response==='hint') {

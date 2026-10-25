@@ -26,9 +26,9 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     await page.locator("#confirm").waitFor();
     await page.locator('#mobile-game-summary > summary').tap();
     const board = await page.locator("#board").boundingBox();
-    const sourcePicker = page.getByLabel("Select a checker",{exact:true});
-    if (!await sourcePicker.inputValue()) await sourcePicker.selectOption({index:1});
-    await page.getByLabel("Move selected checker",{exact:true}).selectOption({index:1});
+    await page.locator("#panel-toggle").tap();
+    await page.getByLabel("Accessible move selection",{exact:true}).selectOption({index:1});
+    await page.locator("#details-dialog .close").tap();
     await page.locator(".draft-progress").waitFor();
     assert.match(await page.locator(".draft-progress-moves").textContent(), /(\d+|bar)\//);
     assert.match(await page.locator(".draft-progress-status").textContent(), /1 move left|Ready to confirm/);
@@ -66,6 +66,7 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     assert.deepEqual(await page.locator(".history-turn").evaluateAll(es=>es.map(e=>[...e.querySelectorAll(".feedback-review")].map(b=>b.dataset.decisionType))),
       [["cube"],["cube","checker"]]);
     const original=await saved();
+    await page.locator("#all-controls").tap();
     await page.locator("#analysis-jump").tap();
     assert.equal(await page.locator(".feedback-review").count(),3);
     assert.equal(await page.locator(".history-turn").count(),2);

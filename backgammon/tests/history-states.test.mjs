@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { initialState, transition, replay, clone, legalTurns } from "../core/rules.mjs";
-import { historyStates } from "../core/history-states.mjs";
+import { historyStates, releaseHistoryStates } from "../core/history-states.mjs";
 import { decisionHistory } from "../core/decision-history.mjs";
 import { takebackTarget } from "../core/table.mjs";
 
@@ -17,6 +17,14 @@ function fixture(id) {
   add({ type: "move", steps: legalTurns(model.state)[0].steps });
   return { model, add };
 }
+test("closing an archived game releases only that replay cache", () => {
+  const live = fixture('live').model, archive = fixture('archive').model;
+  const liveStates = historyStates(live), oldStates = historyStates(archive);
+  releaseHistoryStates(archive);
+  assert.equal(historyStates(live)[1], liveStates[1], 'live game keeps its validated states');
+  assert.notEqual(historyStates(archive)[1], oldStates[1], 'closed archive is replayed only when reopened');
+  assert.deepEqual(historyStates(archive), oldStates);
+});
 test("review and undo reuse a validated prefix through cloned commits and new grades", () => {
   const { model, add } = fixture("history-prefix");
   const before = historyStates(model), rows = decisionHistory(model);

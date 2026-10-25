@@ -28,13 +28,13 @@ module.exports = async function equityBarUX(browser, base, out, name) {
   const assertPortraitBar = async () => {
     const geometry = await page.locator('#equity-bar').evaluate(n => {
       const bar = n.getBoundingClientRect(),
-        board = n.parentElement.querySelector('.bg-board').getBoundingClientRect(),
+        board = n.parentElement.querySelector('.bg-board'),
         slot = n.parentElement.getBoundingClientRect(),
         meter = n.querySelector('.equity-meter').getBoundingClientRect(),
         fill = n.querySelector('.equity-fill'),
         filled = fill.getBoundingClientRect();
       return {
-        below: bar.top >= board.top + (board.height + Math.min(board.height, board.width * 660 / 876)) / 2 - 1,
+        below: bar.top >= new DOMPoint(876,660).matrixTransform(board.getScreenCTM()).y - 1,
         contained: bar.bottom <= slot.bottom + 1,
         horizontal: bar.width > bar.height * 3,
         // The bottom player's share fills from the right in portrait.
@@ -136,10 +136,11 @@ module.exports = async function equityBarUX(browser, base, out, name) {
       const geometry = await page.evaluate(() => {
         const e = document
             .querySelector("#equity-bar")
-            .getBoundingClientRect(),
-          b = document.querySelector(".bg-board").getBoundingClientRect();
-        const w = Math.min(b.width, (b.height * 876) / 660),
-          left = b.left + (b.width - w) / 2;
+            .getBoundingClientRect();
+        const matrix = document.querySelector('.bg-board').getScreenCTM();
+        const topLeft = new DOMPoint(0, 0).matrixTransform(matrix);
+        const bottomRight = new DOMPoint(876, 660).matrixTransform(matrix);
+        const w = bottomRight.x - topLeft.x, left = topLeft.x;
         const primary = document
           .querySelector("#confirm")
           .getBoundingClientRect();
@@ -154,7 +155,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
           barWidth: e.width,
           boardLeft: left,
           boardRight: left + w,
-          boardBottom: b.top + (b.height + (w * 660) / 876) / 2,
+          boardBottom: bottomRight.y,
           nextTop: document.querySelector('#player').getBoundingClientRect().top,
           height: e.height,
           expected: (w * 660) / 876,
@@ -406,7 +407,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     await page.locator('#equity-bar[data-state="ready"]').waitFor();
     assert.deepEqual(
       await page.locator("#panel .decision-value .muted").allTextContents(),
-      ["Before", "Best choice"],
+      ["Before"], 'the best-played equity is shown once',
     );
     await page.setViewportSize({width:390, height:844});
     await page.waitForTimeout(80);

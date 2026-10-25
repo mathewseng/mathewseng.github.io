@@ -7,6 +7,7 @@ import { assertState, clone, transition } from "./rules.mjs";
 // cannot identify a prefix. Compare actual actions, including actor and dice.
 const histories = new Map();
 export function clearHistoryStates() { histories.clear(); }
+export function releaseHistoryStates(model) { histories.delete(JSON.stringify([model.id ?? null, model.initial])); }
 function immutable(value) {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     for (const child of Object.values(value)) immutable(child);

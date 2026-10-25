@@ -113,11 +113,13 @@ export class EquityBar {
       c = this.board.container.getBoundingClientRect();
     const width = Math.min(r.width, (r.height * 876) / 660),
       height = (width * 660) / 876;
+    const top = r.top - c.top + (this.board.svg.getAttribute('preserveAspectRatio')?.includes('YMin')
+      ? 0 : (r.height - height) / 2);
     let geometry;
     if (this.portrait.matches) {
       geometry = {
         left: `${r.left - c.left + (r.width - width) / 2}px`,
-        top: `${r.top - c.top + (r.height + height) / 2 + 4}px`,
+        top: `${top + height + 4}px`,
         width: `${width}px`,
         height: "",
       };
@@ -126,7 +128,7 @@ export class EquityBar {
       geometry = {
         width: "",
         left: `${r.left - c.left + (r.width - width) / 2 - rail.offsetWidth - 4}px`,
-        top: `${r.top - c.top + (r.height - height) / 2}px`,
+        top: `${top}px`,
         height: `${height}px`,
       };
     }

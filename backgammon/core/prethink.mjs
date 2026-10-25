@@ -4,6 +4,17 @@ import { forcedTurn } from './table.mjs';
 import { futureLocalRoll } from './local-rolls.mjs';
 
 export const PRETHINK = Object.freeze({ nodes: 8, milliseconds: 4000, turns: 2, branches: 3, margin: 0.020 });
+// The real next human cube decision outranks display-only equity (0) and
+// historical grading (-10), but yields to explicit play/hints (10+).
+export const NEXT_CUBE_PRIORITY = 3;
+const ownedPriority = priority => [-20,-5,-4,NEXT_CUBE_PRIORITY].includes(priority);
+const humanCube = (state, model) => state.phase === 'roll' &&
+  state.turn === model.config.humanSide && canDouble(state);
+// Hypothetical cube nodes only route the bounded lookahead. Spending its whole
+// budget on a deep cube score prevents preparing the known next checker roll.
+// Quick stays in its own cache; actual Auto decisions still require 3+ plies.
+const planningPreset = (state, preset, priority) => priority === -20 &&
+  preset === 'auto' && state.phase !== 'move' ? 'quick' : preset;
 export const analysisKey = state => positionKey({ ...state, dice: [...state.dice].sort((a,b) => b-a) });
 const nodeKey = node => `${analysisKey(node.state)}:${node.rolls || 0}`;
 const contextKey = model => JSON.stringify([model.id, analysisKey(model.state), model.config.humanSide, model.config.strength, model.config.reviewStrength, model.localRolls, model.replayDice]);
@@ -72,7 +83,9 @@ export class Prethink {
     this.planTimer = setTimeout(() => {
       if (this.plan !== plan) return;
       this.plan = null;
-      this.engine.cancelWhere(job => job.priority === -20 && plan.keys.has(analysisKey(job.state)));
+      const current = this.view()?.game;
+      this.engine.cancelWhere(job => [-20,NEXT_CUBE_PRIORITY].includes(job.priority) && plan.keys.has(analysisKey(job.state)) &&
+        !(job.priority === NEXT_CUBE_PRIORITY && current?.id === model.id && analysisKey(current.state) === analysisKey(job.state)));
     }, this.limits.milliseconds);
     // Follow the chosen action through the next cube decision AND its known
     // roll during playback. Previously this stopped at the cube, leaving the
@@ -87,7 +100,8 @@ export class Prethink {
       const skip = node.state.phase === 'move' ? forcedTurn(node.state) : node.state.phase === 'roll' && !canDouble(node.state);
       const deepen = !skip && preset === 'auto' && node.state.phase === 'move' && !plan.deepened;
       if (deepen) plan.deepened = true;
-      const result=skip ? null : await this.engine.analyze(node.state,{preset,priority:-20,readyOnly:!deepen});
+      const priority = remaining === 3 && humanCube(node.state,model) ? NEXT_CUBE_PRIORITY : -20;
+      const result=skip ? null : await this.engine.analyze(node.state,{preset:planningPreset(node.state,preset,priority),priority,readyOnly:!deepen});
       if (this.plan !== plan) return;
       const dice=node.state.phase === 'roll' && !blockedBarRoll(node.state)
         ? await futureLocalRoll(model,node.rolls || 0,node.state.turn) : null;
@@ -104,11 +118,18 @@ export class Prethink {
     clearTimeout(this.planTimer);
     this.scope = null; this.job = null;
     this.plan = null;
-    this.engine.cancelWhere(job => [-20,-5,-4].includes(job.priority));
+    this.engine.cancelWhere(job => ownedPriority(job.priority));
   }
   update() {
     clearTimeout(this.timer);
     const view = this.view(), model = view?.game;
+    // Published openings need no WASM, but the next cube decision will. Warm
+    // this same worker during opening/playback instead of loading it at Roll.
+    if (view?.enabled && model?.started && model.config?.mode === 'computer' &&
+        ['opening','roll','double','move'].includes(model.state.phase) && this.warmGame !== model.id) {
+      this.warmGame = model.id;
+      this.engine.start?.().catch(()=>{});
+    }
     if (!view?.enabled || !model?.started || model.config?.mode !== 'computer' ||
         !['roll','double','move'].includes(model.state.phase) || model.state.pending?.type === 'resign') {
       if (this.scope || this.plan || this.job) this.pause();
@@ -117,7 +138,7 @@ export class Prethink {
     const key = contextKey(model);
     if (this.scope?.key !== key) {
       const position = analysisKey(model.state);
-      this.engine.cancelWhere(job => [-20,-5,-4].includes(job.priority) && analysisKey(job.state) !== position &&
+      this.engine.cancelWhere(job => ownedPriority(job.priority) && analysisKey(job.state) !== position &&
         !(this.plan?.gameId === model.id && this.plan.keys.has(analysisKey(job.state))));
       this.scope = {key, state:structuredClone(model.state), root:null, done:new Set(), queue:[], seen:new Set(), nodes:0, spent:0, deepened:false};
       this.job = null;
@@ -131,7 +152,7 @@ export class Prethink {
         this.job = null;
       }
     }
-    if (view.idle && !this.job) this.timer = setTimeout(() => this.run(), 120);
+    if (view.idle && !this.job) this.timer = setTimeout(() => this.run(), humanCube(model.state,model) ? 0 : 120);
   }
   async run() {
     const view = this.view(), scope = this.scope;
@@ -144,7 +165,8 @@ export class Prethink {
     const draftKey = submitted ? boardKey(commitTurn(scope.state,submitted)) : null;
     let node, preset, priority, jobKey;
     if (!scope.root) {
-      node = {state:scope.state,turns:0,weight:1}; preset=presetFor(node.state); priority=-5; jobKey='root';
+      node = {state:scope.state,turns:0,weight:1}; preset=presetFor(node.state);
+      priority=humanCube(node.state,model) ? NEXT_CUBE_PRIORITY : -5; jobKey='root';
     } else if (draftKey && !scope.done.has(draftKey)) {
       node = {state:scope.state,turns:0,weight:1}; preset=presetFor(node.state); priority=-4; jobKey=draftKey;
     } else {
@@ -153,13 +175,21 @@ export class Prethink {
       preset=presetFor(node.state); priority=-20; jobKey=analysisKey(node.state);
     }
     const job = {scope,jobKey,priority}; this.job=job; this.changed();
-    const began=this.now();
-    const deadline = priority === -20 ? setTimeout(() => {
-      if (this.job !== job) return;
-      scope.spent = this.limits.milliseconds;
-      this.engine.cancelWhere(pending => pending.priority === -20 && analysisKey(pending.state) === jobKey);
-    }, Math.max(1,this.limits.milliseconds-scope.spent)) : null;
+    let began=this.now(), deadline=null;
     try {
+      if (priority === -20 && this.engine.start && !this.engine.ready) {
+        await this.engine.start();
+        if (this.scope !== scope || this.job !== job || !this.view()?.enabled) return;
+        began=this.now();
+      }
+      // The client separately bounds engine loading. Compiling WASM is not
+      // speculative search: cancelling it at four seconds wastes the entire
+      // first lookahead window on cold/slow browsers.
+      if (priority === -20) deadline=setTimeout(() => {
+        if (this.job !== job) return;
+        scope.spent = this.limits.milliseconds;
+        this.engine.cancelWhere(pending => pending.priority === -20 && analysisKey(pending.state) === jobKey);
+      }, Math.max(1,this.limits.milliseconds-scope.spent));
       const forced = node.state.phase === 'move' && forcedTurn(node.state);
       const cubeUnavailable = node.state.phase === 'roll' && !canDouble(node.state);
       // Give the first (highest-priority) future checker position one chance
@@ -168,7 +198,7 @@ export class Prethink {
       const deepenFuture = priority === -20 && preset === 'auto' && node.state.phase === 'move' && !forced && !scope.deepened;
       if (deepenFuture) scope.deepened = true;
       const result = forced || cubeUnavailable ? {skipped:true} : await this.engine.analyze(node.state, {
-        preset, priority, submitted:priority === -4 ? submitted : null,
+        preset:planningPreset(node.state,preset,priority), priority, submitted:priority === -4 ? submitted : null,
         readyOnly: priority !== -5 && !deepenFuture,
       });
       if (this.scope !== scope || this.job !== job) return;

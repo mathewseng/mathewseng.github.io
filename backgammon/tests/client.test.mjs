@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { EngineClient } from "../engine/client.mjs";
+import { NEXT_CUBE_PRIORITY } from "../core/prethink.mjs";
 import { initialState, legalTurns, legalPaths, boardKey } from "../core/rules.mjs";
 class WorkerMock {
   constructor() {
@@ -22,6 +23,48 @@ class WorkerMock {
   }
 }
 const wait = () => new Promise((r) => setTimeout(r, 0));
+test("a quick hypothetical cube score cannot satisfy the real Auto decision", async () => {
+  const worker = new WorkerMock(), client = new EngineClient({workerFactory: () => worker, openingBook:null});
+  const state = initialState({phase:'roll',matchLength:7});
+  try {
+    const planning = client.analyze(state,{preset:'quick',priority:-20});
+    await wait();
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result:{type:'cube',settings:{plies:0},equity:.1}});
+    await planning;
+    assert.equal(client.readyResult(state,{preset:'auto'}),null);
+    const actual = client.analyze(state,{preset:'auto',readyOnly:true,priority:NEXT_CUBE_PRIORITY});
+    await wait();
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,2);
+    assert.equal(worker.messages.at(-1).preset,'auto');
+    worker.reply({id:worker.messages.at(-1).id,type:'result',result:{type:'cube',settings:{plies:3},equity:.12}});
+    assert.equal((await actual).settings.plies,3);
+  } finally {client.destroy();}
+});
+test("next-turn cube preparation survives background grades and equity, and Roll shares its worker", async () => {
+  const worker = new WorkerMock(), client = new EngineClient({workerFactory: () => worker, openingBook:null});
+  const state = initialState({phase:'roll',matchLength:7});
+  const pending = [];
+  try {
+    const prepared = client.analyze(state,{preset:'auto',priority:NEXT_CUBE_PRIORITY,readyOnly:true});
+    pending.push(prepared); prepared.catch(()=>{});
+    await wait();
+    const id = worker.messages.at(-1).id;
+    for (const options of [{preset:'auto',priority:-10}, {preset:'quick',priority:0,displayOnly:true}]) {
+      const work = client.analyze({...state,turn:1},options);
+      work.catch(()=>{}); pending.push(work);
+    }
+    const rolled = client.analyze(state,{preset:'auto',priority:20,readyOnly:true});
+    pending.push(rolled); rolled.catch(()=>{});
+    await wait();
+    assert.equal(worker.terminated,false,'no unnecessary worker restart');
+    assert.equal(worker.messages.filter(m=>m.type==='analyze').length,1,'foreground roll reuses the running cube check');
+    assert.equal(client.active.id,id);
+    assert.equal(client.active.priority,20);
+    worker.reply({id,type:'result',result:{type:'cube',settings:{plies:3},action:'roll',equity:.05}});
+    assert.equal((await prepared).equity,.05);
+    assert.equal((await rolled).equity,.05);
+  } finally {client.destroy(); await Promise.allSettled(pending);}
+});
 test("queued grades and rollout options retain the exact request despite caller edits", async () => {
   const worker = new WorkerMock(), client = new EngineClient({ workerFactory: () => worker, openingBook: null });
   const state = initialState({ phase: "move", dice: [3, 1] });

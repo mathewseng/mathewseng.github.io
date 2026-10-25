@@ -5,6 +5,7 @@ import { DEFAULT_SOUND, normalizeSound } from "./sound.mjs";
 import { DEFAULT_MOTION_SCALE, normalizeMotionScale } from "./motion.mjs";
 import { mergeEvaluations, decisionHistory, decisionTotals } from "./decision-history.mjs";
 import { splitGameHistory } from "./game-archive.mjs";
+import { gameLossSummary } from "./game-loss-summary.mjs";
 import { validateTakebacks } from "./table.mjs";
 import { normalizeShortcuts, DEFAULT_SHORTCUTS } from "./shortcuts.mjs";
 import { DEFAULT_SKIN, DEFAULT_SKIN_BOARD_THEME, SKIN_IDS } from "../skins/index.mjs";
@@ -174,12 +175,13 @@ export function itemSummary(item) {
   return {id,kind,title,notes,tags,collection,createdAt,updatedAt,status,names,gameCount,decisionSummary,
     sessionId:item.sessionId || id, gameNumber:item.gameNumber || item.initial?.gameNumber || 1,
     eventCount:item.events?.length || 0, variations:item.undoLog?.length || 0,
-    scores:item.state?.scores, archivedVariation:item.archivedVariation === true};
+    scores:item.state?.scores, matchLength:item.state?.matchLength,
+    lossSummary:item.lossSummary, archivedVariation:item.archivedVariation === true};
 }
 
 // Keyset pagination reads only small metadata. The full game is read by get()
 // only after a person opens it; changing page releases the previous page.
-export async function listItemSummaries({sessionId, cursor, limit = 12, kind, collection, query = ''} = {}) {
+export async function listItemSummaries({sessionId, cursor, limit = 12, kind, collection, query = '', excludeId} = {}) {
   const db = await database();
   limit = Math.max(1, Math.min(24, limit));
   return new Promise((resolve, reject) => {
@@ -193,7 +195,7 @@ export async function listItemSummaries({sessionId, cursor, limit = 12, kind, co
       const c = request.result;
       if (!c) return;
       const item = c.value;
-      if ((!kind || item.kind === kind) && (!collection || item.collection === collection) &&
+      if (item.id !== excludeId && (!kind || item.kind === kind) && (!collection || item.collection === collection) &&
           [item.title,item.notes,...item.tags].join(' ').toLowerCase().includes(query.toLowerCase())) {
         if (items.length === limit) { more = true; return; }
         items.push(item); next = c.key;
@@ -363,7 +365,9 @@ export async function put(store, item) {
   validateItem(item);
   if (item.kind === 'match') {
     const rows = decisionHistory(item);
-    item = {...item, decisionSummary:[0,1].map(player => decisionTotals(rows,player))};
+    item = {...item, decisionSummary:[0,1].map(player => decisionTotals(rows,player)),
+      lossSummary:gameLossSummary(rows, item.gameNumber || item.state?.gameNumber || item.initial.gameNumber,
+        item.state?.matchLength ?? item.initial.matchLength)};
   }
   const db = await database();
   return new Promise((resolve, reject) => {
@@ -421,6 +425,7 @@ function matchRecord(snapshot, names, mode, previous) {
     status:snapshot.state.result?.matchOver ? 'match-complete' : snapshot.state.phase === 'over' ? 'game-complete' : 'in-progress',
     gameCount:snapshot.historyVersion === 2 ? 1 : snapshot.state.gameNumber,
     decisionSummary:[0,1].map(player => decisionTotals(rows, player)),
+    lossSummary:gameLossSummary(rows, snapshot.state.gameNumber, snapshot.state.matchLength),
     updatedAt:Date.now(),
   };
 }

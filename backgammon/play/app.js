@@ -2,11 +2,11 @@
 import { ProgressWriter } from "../core/progress-writer.mjs";
 import { nextGameTable, archivedTable } from '../core/game-archive.mjs';
 import { clearHistoryStates } from '../core/history-states.mjs';
+import { historyTurn } from "../ui/history-turn.mjs";
+import { archivedGames } from "../ui/archived-games.mjs";
 import { savedGames } from '../ui/saved-games.mjs';
 import { presentMove } from "../core/move-presentation.mjs";
-import { presentCubeAction } from "../core/cube-presentation.mjs";
 import { analysisDepthLabel } from "../core/analysis-insight.mjs";
-import { cubeActionIcon } from "../ui/cube-action-icon.mjs";
 import { keycap as shortcutBadge } from "../ui/keycap.mjs";
 import { startUpdates, resumedAfterUpdate, isUpdateReload } from "../ui/updates.mjs";
 import { readPageProgress, keepPageProgress } from "../ui/page-progress.mjs";
@@ -84,10 +84,10 @@ import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
 import { BarAutoRoll, canAutoRollFromBar, canAutoRollAfterBarPass } from "../core/bar-auto-roll.mjs";
+import { RaceAutoPlay, bearingOffRace, clearRaceCubeAction } from "../core/race-auto-play.mjs";
 import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
-import { decisionValues } from "../ui/decision-values.mjs";
 import { decisionFeedback, needsRevisionWarning, lossTone } from "../core/decision-feedback.mjs";
 import { beginDecisionAttempt, recordInitialEvaluation } from "../core/decision-attempt.mjs";
 import { gameLossTable } from "../ui/game-loss-summary.mjs";
@@ -147,14 +147,22 @@ let config = {
   lastUndoNotice = null,
   epoch = 0;
 const barAutoRoll = new BarAutoRoll();
+const raceAutoPlay = new RaceAutoPlay();
+let raceAutoJob = null;
 let barRollTimer = null, barRollSchedule = '', barRollAttempt = '', barTapTimer = null;
 const presentationWaits = new Set();
 const boardWorkspace = el("div", { class: "board-workspace" });
 const draftKeys = el("div", { class: "draft-shortcuts", "aria-label": "Draft keyboard shortcuts" });
-// The confirm stage: a full-width row under the board on stacked layouts and
-// the landscape dock; on wide tables #confirm sits bottom-right in the action
-// row instead (arrangeActions), so the primary action has one home per layout.
+// Secondary tools keep a stable rail; the primary turn action sits on the board.
 const boardActions = el("div", { class: "board-actions action-stage bg-action-stage", "aria-label": "Turn confirmation" });
+const turnTools = el("div", { class: "turn-tools", "aria-label": "Play tools" });
+const boardConfirm = el("div", { class: "board-confirm" });
+function confirmIcon() {
+  const icon = el("span", { class: "confirm-check", "aria-hidden": "true" });
+  icon.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m5 12 5 5 9-10"/></svg>';
+  return icon;
+}
+ui.board.container.append(boardConfirm);
 ui.board.container.before(boardWorkspace);
 boardWorkspace.append(ui.board.container, boardActions);
 // Game result card: an overlay in the board slot (like the opening roll)
@@ -164,15 +172,20 @@ ui.board.container.append(resultCard);
 const cubeReplies = el("div", { class: "board-cube-replies", hidden: true, "aria-label": "Respond to cube offer" });
 ui.board.container.append(cubeReplies);
 function placeCubeReplies() {
-  if (cubeReplies.hidden) return;
   const matrix = ui.board.svg.getScreenCTM();
   if (!matrix) return;
   const box = ui.board.container.getBoundingClientRect();
+  // The play surface and central bar share x=408; the cube tray is separate.
+  const center = new DOMPoint(408, 330).matrixTransform(matrix);
+  boardConfirm.style.left = `${center.x - box.left}px`;
+  boardConfirm.style.top = `${center.y - box.top}px`;
+  if (cubeReplies.hidden) return;
   const left = new DOMPoint(54, 330).matrixTransform(matrix);
-  const right = new DOMPoint(762, 330).matrixTransform(matrix);
+  const right = new DOMPoint(774, 330).matrixTransform(matrix);
   cubeReplies.style.left = `${left.x - box.left}px`;
   cubeReplies.style.top = `${left.y - box.top}px`;
   cubeReplies.style.width = `${right.x - left.x}px`;
+  cubeReplies.style.setProperty("--cube-reply-font-size", `${Math.max(10, Math.min(16, 28 * matrix.a))}px`);
   // The centre lane gets shorter with a height-limited board. Scale only the
   // visible face; keep a full touch target while checker input is locked.
   cubeReplies.style.setProperty("--cube-reply-face-height", `${Math.max(24, Math.min(48, 144 * matrix.d - 6))}px`);
@@ -288,6 +301,23 @@ const feedbackView = {
   empty: el("p", { class: "history-empty muted", role: "status" }),
   footer: button("Review session", showSessionReview, "ghost", { id: "review-session" }),
 };
+const previousGames = archivedGames({onReturn: async (item, row) => {
+  if (committing || assistanceJob || game?.id !== (item.sessionId || item.id))
+    throw Error('The table changed. Reopen this game.');
+  await persist(true, true);
+  const saved = await get('items', item.id);
+  if (!saved) throw Error('This saved game is no longer available.');
+  const source = archivedTable(saved, config);
+  const restored = returnToDecision(source, row.index, row.source);
+  stopComputer();
+  game = config.mode === 'computer' ? changeControl(restored, row.player) : restored;
+  config = {...game.config};
+  feedback = null; draft.draft = []; boardKey = '';
+  clearHistoryStates();
+  if (opening.active) opening.dismiss();
+  await persist(); render();
+  window.scrollTo({top:0, behavior:'instant'});
+}});
 document.querySelector(".action-area").append(feedbackStrip);
 const desktopTable = matchMedia(
   "(min-width: 1025px) and (min-height: 501px)",
@@ -308,20 +338,14 @@ reviewArea.append(el("header", { class: "review-header" },
     $("panel-toggle").focus({ preventScroll: true });
   }, "ghost"),
 ));
-// Portrait shares one footer between the running summary and secondary tools.
-// Keeping it inside the stage lets the board use the remaining visible height.
+// Portrait reserves the same footer height whether its summary is open or closed.
 const phonePortrait = matchMedia("(max-width: 600px) and (orientation: portrait)");
 const mobileSummary = el("details", { id: "mobile-game-summary", class: "mobile-game-summary", hidden: true, open: true });
-const mobileSummaryHeading = el("summary", { "aria-label": "Game summary · show controls" });
+const mobileSummaryHeading = el("summary", { "aria-label": "Game summary" });
 const mobileSummaryBody = el("div", { class: "history-game-detail" });
 mobileSummary.append(mobileSummaryHeading, mobileSummaryBody);
 document.querySelector(".app").after(reviewArea);
 document.querySelector(".action-main").before(mobileSummary);
-const summaryToggle = button("Game summary", () => {
-  mobileSummary.open = true;
-  fillMobileSummary();
-  mobileSummaryHeading.focus({ preventScroll: true });
-}, "ghost", { id: "game-summary-toggle", "aria-controls": "mobile-game-summary", "aria-expanded": true });
 let mobileSummaryData = null;
 let mobileSummaryPlayer = null;
 function fillMobileSummary() {
@@ -337,10 +361,12 @@ function fillMobileSummary() {
   mobileSummaryBody.append(table);
 }
 mobileSummary.addEventListener("toggle", () => {
-  summaryToggle.setAttribute("aria-expanded", String(mobileSummary.open));
   fillMobileSummary();
 });
-phonePortrait.addEventListener("change", () => renderMobileSummary(model(), true));
+phonePortrait.addEventListener("change", () => {
+  renderMobileSummary(model(), true);
+  placeConfirm();
+});
 function renderMobileSummary(m, force = false) {
   mobileSummary.hidden = !m?.started || !phonePortrait.matches;
   if (mobileSummary.hidden) {
@@ -368,7 +394,7 @@ function renderMobileSummary(m, force = false) {
         el("strong", known ? {"data-loss-tone":lossTone(loss).tone} : {}, known ? loss.toFixed(3) : "—"),
         el("small", {}, pending ? "EV · pending" : "EV lost"));
     }),
-    el("span", {class:"mobile-summary-controls"}, "Controls", el("span", {class:"history-game-chevron", "aria-hidden":true})));
+    el("span", {class:"mobile-summary-controls"}, el("span", {class:"history-game-chevron", "aria-hidden":true})));
   mobileSummaryBody.replaceChildren();
   fillMobileSummary();
 }
@@ -412,6 +438,9 @@ function placeReview() {
   app.classList.toggle("desktop-table", desktopTable.matches && started);
   app.classList.toggle("live-table", started);
   app.classList.toggle("setup-table", !started);
+  // Keep the visible board anchored to its top edge when turn controls change
+  // the available height. Review boards retain their centered presentation.
+  ui.board.svg.setAttribute('preserveAspectRatio', started ? 'xMidYMin meet' : 'xMidYMid meet');
   app.dataset.mode = config.mode;
   reviewArea.hidden = !started;
   const feedbackHome = started ? reviewArea : document.querySelector(".action-area");
@@ -425,15 +454,24 @@ desktopTable.addEventListener("change", () => {
   placeReview();
   placeConfirm();
 });
-// One home for #confirm per layout: the end of the action row on wide tables,
-// the full-width stage under the board when the table stacks (and in the
-// landscape dock). Only #confirm moves: the help buttons may be inside the
-// open practice sheet when the layout changes.
+// Confirmation is always on the board. Hint and Controls share its old rail;
+// exceptional actions still have a visible home without changing rail height.
 function placeConfirm() {
-  const confirm = $("confirm") || $("immediate-redouble");
-  if (!confirm) return;
-  const home = desktopTable.matches ? $("actions") : boardActions;
-  if (confirm.parentElement !== home) home.append(confirm);
+  const actions = $("actions");
+  for (const child of [...boardActions.children])
+    if (child !== turnTools) actions.append(child);
+  const confirm = $("confirm");
+  boardConfirm.replaceChildren(...(confirm ? [confirm] : []));
+  if (!model()?.started) { turnTools.remove(); return; }
+  const hint = $("hint") || button("Hint", showHint, "", {id:"hint", disabled:!myTurn(state()) || botBusy || committing || !!assistanceJob || !["roll","move","double"].includes(state().phase)});
+  turnTools.replaceChildren(hint, allControls);
+  helpActions.append(analysisJump, draftKeys);
+  if (desktopTable.matches) actions.append(turnTools);
+  else {
+    boardActions.append(turnTools);
+    if (phonePortrait.matches && actions.childElementCount) boardActions.prepend(...actions.children);
+  }
+  placeCubeReplies();
 }
 
 
@@ -464,7 +502,7 @@ const allControls = button("Controls", () => {
     helpCluster.prepend(helpActions);
   }, { once: true });
 }, "ghost", { id: "all-controls", hidden: true, "aria-label": "All controls", "aria-haspopup": "dialog" });
-const helpCluster = el("div", { class: "help-cluster" }, helpActions, analysisJump, summaryToggle, allControls);
+const helpCluster = el("div", { class: "help-cluster" }, helpActions, analysisJump, allControls);
 document.querySelector(".action-main").prepend(helpCluster);
 helpCluster.insertBefore(draftKeys, allControls);
 const draft = new DraftBoard(ui.board, () => {
@@ -495,7 +533,7 @@ const opening = new OpeningRoll(ui.board.container, () => {
   render();
 });
 function repeatBarRoll(point) {
-  if (!barAutoRoll.repeat(model(), point)) return false;
+  if (!barAutoRoll.repeat(model(), point) && !raceAutoPlay.repeat(model(), point)) return false;
   clearTimeout(barTapTimer);
   clearTimeout(barRollTimer); barRollSchedule = ''; barRollAttempt = '';
   actions();
@@ -508,6 +546,10 @@ function repeatBarRoll(point) {
 ui.board.onRoll = (event = {}) => {
   const point = {x:event.clientX || 0,y:event.clientY || 0};
   if (repeatBarRoll(point)) return true;
+  if (raceAutoPlay.active && (event.target?.closest('.board-caption') ||
+      (state().phase === 'roll' && state().turn === raceAutoPlay.active.player))) {
+    raceAutoPlay.reset(); actions(); return true;
+  }
   if ((barAutoRoll.active || barAutoRoll.skipping) && (event.target?.closest('.board-caption') ||
       (state().phase === 'roll' && state().turn === (barAutoRoll.active || barAutoRoll.skip).player))) {
     if (barAutoRoll.skipping || event.clientX === undefined) {
@@ -526,9 +568,11 @@ ui.board.onRoll = (event = {}) => {
   const control = $("roll");
   if (state().phase !== "roll" || opening.active || !control || control.disabled || ui.board.playbackTimer) return false;
   barAutoRoll.noteRoll(model(), point);
+  if (config.mode === 'computer') raceAutoPlay.noteRoll(model(), point);
   control.click(); return true;
 };
 ui.board.onCube = () => {
+  raceAutoPlay.reset();
   const control = $("double-cube");
   if (control && !control.disabled && !opening.active && !ui.board.playbackTimer) control.click();
 };
@@ -553,7 +597,7 @@ addEventListener('pointerdown', event => {
     clearTimeout(cleanup); consume.abort();
   }, {capture:true,signal:consume.signal});
 }, true);
-document.addEventListener('close', () => scheduleBarAutoRoll(), true);
+document.addEventListener('close', () => { scheduleBarAutoRoll(); scheduleRaceAutoPlay(); }, true);
 const online = new Online({
   onChange: () => {
     if (config.mode === "online") {
@@ -700,6 +744,7 @@ addEventListener("beforeunload", (e) => {
 });
 addEventListener("pagehide", () => {
   barAutoRoll.reset(); clearTimeout(barRollTimer);
+  raceAutoPlay.reset();
   autoReview.pause();
   prethink.pause();
   stopComputer();
@@ -713,7 +758,7 @@ addEventListener("visibilitychange", () => {
     autoReview.pause();
     prethink.pause();
     analysis.engine.cancelWhere(job => job.priority < 0);
-  } else { advanceOpening(); if (!autoPlay()) advanceAcceptedCube(); scheduleBarAutoRoll(); prethink.update(); autoReview.update(); }
+  } else { advanceOpening(); if (!autoPlay()) advanceAcceptedCube(); scheduleBarAutoRoll(); scheduleRaceAutoPlay(); prethink.update(); autoReview.update(); }
 });
 addEventListener("pageshow", (e) => {
   if (e.persisted) {
@@ -840,6 +885,7 @@ function restore(recovery) {
   }
 }
 function stopComputer() {
+  raceAutoPlay.reset();
   prethink.pause();
   epoch++;
   releaseAssistance();
@@ -925,6 +971,49 @@ function scheduleBarAutoRoll() {
     try { await submitCube({type:'roll'}); }
     catch (error) { barAutoRoll.reset(); actions(); showError(error); }
   }, barAutoRoll.skipping ? 0 : motionDuration(900));
+}
+function syncRaceAutoPlay(current = state()) {
+  const s = state();
+  if (config.mode !== 'computer') raceAutoPlay.reset();
+  return raceAutoPlay.sync(model(), current, myTurn(s) && s.phase === 'move' && !forcedTurn(s));
+}
+function scheduleRaceAutoPlay() {
+  const active = raceAutoPlay.active, s = state(), token = epoch;
+  const ready = () => raceAutoPlay.active === active && raceAutoPlay.valid(active,model()) &&
+    state() === s && epoch === token && myTurn(s) && config.mode === 'computer' &&
+    ['roll','double'].includes(s.phase) && !certainBearoff(s) &&
+    !document.hidden && !leaving && !committing && !botBusy && !assistanceJob &&
+    !opening.active && !document.querySelector('dialog[open]');
+  if (raceAutoJob || !ready()) return;
+  const job = raceAutoJob = {source:s};
+  (async () => {
+    try {
+      await presentationPause(900);
+      await ui.board.waitForPresentation();
+      if (!ready()) return;
+      let action = {type:'roll'}, evaluation = null;
+      if (s.phase === 'double' || canDouble(s)) {
+        let result = analysis.engine.peek(s,{preset:null});
+        // Reuse warm analysis. A missing, shallow or noisy reading must finish
+        // a real 3-ply cube search before it can authorize automatic play.
+        if (result?.settings?.plies < 3 || result?.settings?.noise !== 0 || result?.settings?.cubeful !== true)
+          result = await analysis.engine.analyze(s,{preset:'expert',priority:5});
+        if (!ready()) return;
+        action = clearRaceCubeAction(s,result);
+        if (!action) { raceAutoPlay.reset(); return; }
+        evaluation = {source:clone(s),result:gradeCube(s,result,action.type)};
+      }
+      if (ready()) await commit(action,evaluation);
+    } catch (error) {
+      if (raceAutoPlay.active === active) {
+        raceAutoPlay.reset();
+        if (error.name !== 'AbortError') toast('Auto play stopped. Choose your cube action.');
+      }
+    } finally {
+      if (raceAutoJob === job) raceAutoJob = null;
+      if (!leaving) actions();
+    }
+  })();
 }
 function render() {
   if (game && config.mode !== "online") ensureLocalRolls(game);
@@ -1472,9 +1561,16 @@ function actions() {
     const s = state(), rollReady = !!$("roll") && !$("roll").disabled && s.phase === "roll" && !opening.active;
     const current = draft.state === s && !draft.preview ? draft.current() : s;
     const active = syncBarAutoRoll(current);
-    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,auto:!!active,skipping:barAutoRoll.skipping});
+    const race = syncRaceAutoPlay(current);
+    // During automatic cube checking, the caption is the stop control. The
+    // manual Take/Drop faces return as soon as it stops, without covering it.
+    if (race && s.phase === 'double') cubeReplies.hidden = true;
+    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,
+      canAutoPlay:config.mode === 'computer' && bearingOffRace(s) && !model().reviewingTurn,
+      auto:!!active,skipping:barAutoRoll.skipping,raceAuto:!!race});
     ui.board.container.classList.toggle("roll-ready", rollReady);
     scheduleBarAutoRoll();
+    scheduleRaceAutoPlay();
   }
 }
 function arrangeActions() {
@@ -1691,6 +1787,8 @@ function renderActions() {
   cubeReplies.hidden = true;
   cubeReplies.replaceChildren();
   boardActions.replaceChildren();
+  boardConfirm.replaceChildren();
+  turnTools.replaceChildren();
   helpActions.replaceChildren();
   const s = state(),
     m = model(),
@@ -1892,13 +1990,10 @@ function renderActions() {
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
     if (myTurn(s)) a.append(
       button(
-        el("span", {class:"confirm-content"},
-          el("span", {class:"confirm-check", "aria-hidden":"true"}, "✓"),
-          el("span", {class:"confirm-copy"},
-            el("strong", {}, "Confirm"))),
+        confirmIcon(),
         submit,
         `primary${draft.complete() && mine ? " turn-ready" : ""}`,
-        { disabled: !mine || !draft.complete(), id: "confirm", "aria-label":"Confirm turn" },
+        { disabled: !mine || !draft.complete(), id: "confirm", "aria-label":"Confirm turn", title:"Confirm turn (C)" },
       ),
     );
   } else if (s.phase === "double") {
@@ -1911,19 +2006,21 @@ function renderActions() {
         disabled: !mine,
       }),
       button(
-        el("span", {class:"cube-reply-face"}, `Take ${s.cube.value * 2}`),
+        el("span", {class:"cube-reply-face"}, el("span", {}, "Take"), " ",
+          el("span", {class:"cube-reply-value"}, String(s.cube.value * 2))),
         () => submitCube({ type: "take" }),
         "cube-reply cube-reply-take",
-        { disabled: !mine, id: "take-cube" },
+        { disabled: !mine, id: "take-cube", "aria-label": `Take ${s.cube.value * 2}` },
       ),
     );
     if (canImmediateRedouble(s))
-      a.append(
+      cubeReplies.append(
         button(
-          `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}`,
+          el("span", {class:"cube-reply-face"}, el("span", {}, offerDepth(s) ? "Raccoon" : "Beaver"), " ",
+            el("span", {class:"cube-reply-value"}, String(s.cube.value * 4))),
           () => submitCube({ type: offerDepth(s) ? "raccoon" : "beaver" }),
-          "primary",
-          { disabled: !mine, id: "immediate-redouble" },
+          "cube-reply cube-reply-redouble",
+          { disabled: !mine, id: "immediate-redouble", "aria-label": `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}` },
         ),
       );
   } else if (s.phase === "resign") {
@@ -2479,7 +2576,7 @@ function showSessionReview() {
 function historyDecisionActions(entry, index, gameId, opponent) {
   const currentRow = () => entry.group.decisions.find(row => row.index === index);
   return {
-    restore: () => restoreDecision(currentRow(), gameId),
+    restore: canReturnToDecision(currentRow(), gameId) ? () => restoreDecision(currentRow(), gameId) : undefined,
     review: () => {
       const current = currentRow();
       return decisionReview(current.source, {
@@ -2497,13 +2594,12 @@ function historyDecisionActions(entry, index, gameId, opponent) {
 function renderFeedback() {
   const m = model();
   renderMobileSummary(m);
-  feedbackStrip.hidden = !(
-    m?.started &&
-    ((config.mode === "computer" && config.tutor) ||
-      state().phase === "over")
-  );
+  // Explicit history remains available in every mode, even when automatic
+  // feedback is disabled. This does not start any additional analysis jobs.
+  feedbackStrip.hidden = !m?.started;
   feedbackFilters.hidden = feedbackStrip.hidden;
   if (feedbackStrip.hidden) {
+    previousGames.update(null);
     feedbackView.turns.clear(); feedbackView.games.clear();
     feedbackView.cards.clear();
     feedbackStrip.replaceChildren(); renderedFeedback = null;
@@ -2513,6 +2609,8 @@ function renderFeedback() {
   renderedFeedback = m.events;
   const rows = decisionHistory(m);
   const viewer = config.mode === "online" ? online.seat : config.humanSide;
+  previousGames.update({sessionId:m.id, currentId:m.archiveId || m.id,
+    filter:feedbackFilter, viewer, mode:config.mode, names:names()});
   const sideOf = row => row.player === viewer ? "self" : "opponent";
   for (const [value, control] of feedbackFilterButtons) {
     const player = value === "self" ? viewer : 1 - viewer;
@@ -2572,121 +2670,19 @@ function renderFeedback() {
       continue;
     }
     entry.signature = signature;
-    const side = sideOf(group);
-    const playerLabel = config.mode === "local" ? names()[group.player]
-      : side === "self" ? "You" : "Opponent";
-    const cubeCount = group.decisions.filter(row => row.action.type !== "move").length;
-    const decisions = el("div", {
-      class: "history-turn-decisions",
-      "data-paired": cubeCount > 0 && group.decisions.some(row => row.action.type === "move") ? "true" : "false",
+    entry.node = historyTurn(group, {
+      names: names(), viewer, local: config.mode === "local", reviewIndex,
+      actions: row => historyDecisionActions(entry, row.index, m.id, sideOf(group) === "opponent"),
+      pending: row => config.mode === "computer"
+        ? (autoReview.job?.row.index === row.index ? "Analyzing…" : autoReview.error ? "Analysis paused" : "Analysis queued")
+        : row.forced ? "Forced · no choice" : "Not analyzed",
     });
-    decisions.style.setProperty("--cube-decisions", cubeCount);
-    const identity = el("div", { class: "history-identity" },
-      el("span", { class: "history-player" }, playerLabel),
-      ...(config.mode !== "local" && names()[group.player] !== playerLabel
-        ? [el("span", { class: "history-detail muted" }, names()[group.player])] : []),
-      el("span", { class: "history-turn-label muted" },
-        `Game ${group.game} · Turn ${group.turn}${group.response ? " · Response" : ""}`),
-    );
-    entry.node = el("section", {
-      class: "history-turn",
-      "data-history-player": group.player,
-      "data-history-side": side,
-      "data-turn-key": group.key,
-      "aria-label": `${playerLabel} · Game ${group.game} · Turn ${group.turn}${group.response ? " · Cube response" : ""}`,
-    }, identity, decisions);
     children.push(entry.node);
-    for (const row of group.decisions) {
-      const handlers = historyDecisionActions(entry, row.index, m.id, side === "opponent");
-      const kind = row.action.type === "move" ? "Move" : "Cube";
-      const cube = kind === "Cube" ? presentCubeAction(row.source, row.action.type) : null;
-      const played = () => {
-        if (!cube) return el("span", { class: "history-played" }, row.label);
-        if (!cube.displayLabel) return null;
-        return el("span", { class: "history-played history-cube-action", title: cube.description },
-          ...(cube.icon ? [cubeActionIcon(cube.icon)] : []), el("span", {}, cube.displayLabel));
-      };
-      const detail = () => el("span", { class: "history-kind muted" },
-        el("span", { class: "history-kind-label" },
-          ...(cube ? [el("span", { class: "history-cube-icon", role: "img",
-            "aria-label": `Current cube ${cube.cubeValue}`, title: `Current cube: ${cube.cubeValue}` }, cube.cubeValue)] : []),
-          kind,
-        ),
-        ...(row.result ? [" · ", el("span", {
-          class: "history-depth", title: `Completed analysis · ${analysisDepthLabel(row.result)}`,
-        }, analysisDepthLabel(row.result))] : []),
-      );
-      if (!row.feedback) {
-        decisions.append(
-          el(
-            "div",
-            {
-              class: "feedback-pending",
-              "data-history-side": side,
-              "data-history-player": row.player,
-              "data-decision-type": row.action.type === "move" ? "checker" : "cube",
-            },
-            el("span", { class: "history-move" }, detail(), played()),
-            ...(canReturnToDecision(row, m.id)
-              ? [
-                  button(
-                    "Return",
-                    handlers.restore,
-                    "ghost",
-                    { "aria-label": "Return to this position", title: "Return to this position" },
-                  ),
-                ]
-              : []),
-            el(
-              "span",
-              { class: "history-pending-status muted small" },
-              config.mode === "computer"
-                ? (autoReview.job?.row.index === row.index ? "Analyzing…" : autoReview.error ? "Analysis paused" : "Analysis queued")
-                : row.forced ? "Forced · no choice" : "Not analyzed",
-            ),
-          ),
-        );
-        continue;
-      }
-      const f = row.feedback;
-      const review = button(
-        "",
-        handlers.review,
-        "feedback-review",
-        {
-          ...(row.index === reviewIndex
-            ? { id: "review-feedback" }
-            : {}),
-          "data-loss-tone": f.tone,
-          "data-history-side": side,
-          "data-history-player": row.player,
-          "data-decision-type": row.result.type,
-          title: `${playerLabel} · ${kind}: ${cube?.label || row.label}. ${f.quality}. ${f.units}. Open equity and EV comparison.`,
-        },
-      );
-      const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
-      review.append(
-        el("span", { class: "history-move" },
-          detail(),
-          played(),
-          ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
-            el("span", { class: "history-best-label" }, "Best "),
-            row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : presentCubeAction(row.source, f.best.action).label,
-          )] : []),
-        ),
-        decisionValues(f, true, { opponent: side === "opponent" }),
-        el("span", { class: "history-loss" },
-          el("span", { class: "muted" }, f.label),
-          el("strong", { class: "value" }, f.value),
-        ),
-      );
-      decisions.append(review);
-    }
   }
   for (const key of feedbackView.turns.keys()) if (!retained.has(key)) feedbackView.turns.delete(key);
   for (const game of feedbackView.games.keys()) if (!retainedGames.has(game)) feedbackView.games.delete(game);
   for (const game of feedbackView.cards.keys()) if (!retainedGames.has(game)) feedbackView.cards.delete(game);
-  children.push(feedbackView.footer);
+  children.push(previousGames.node, feedbackView.footer);
   const wanted = new Set(children);
   for (const child of [...feedbackStrip.children]) if (!wanted.has(child)) child.remove();
   let cursor = feedbackStrip.firstChild;
@@ -2897,6 +2893,7 @@ async function submit() {
 }
 async function submitCube(action) {
   if (committing || assistanceJob || botBusy || !myTurn(state())) return;
+  if (raceAutoPlay.active) raceAutoPlay.reset();
   if (action.type === 'roll' && blockedBarRoll(state())) action = {type:'skip-roll'};
   if (
     config.mode !== "computer" ||
@@ -2926,6 +2923,7 @@ async function evaluateDecision(action) {
   // This is metadata only; the legal game history remains uncommitted.
   const finish = async (result = null) => {
     if (!activeAssistance(job)) return;
+    if (!checker && !result && !job.done) return;
     releaseAssistance();
     feedback = result ? { source: job.source, result } : null;
     await commit(action, feedback);
@@ -2976,7 +2974,7 @@ async function evaluateDecision(action) {
     button("Play Anyway", () => finish(completedResult), "primary"),
   ] : [
     button("Revise", () => job.dialog.close()),
-    button("Confirm anyway", () => finish(completedResult), "primary"),
+    button("Confirm anyway", () => finish(completedResult), "primary", {disabled: !completedResult}),
   ];
   const configureWarning = () => {
     if (checker) {
@@ -2995,7 +2993,7 @@ async function evaluateDecision(action) {
     if (job.dialog) return;
     warningCopy = el("p", { role: "status", id: "pending-move-loss" },
       checker ? "Still calculating EV. Review your move or play it now."
-        : "Still calculating EV. You can revise or confirm now; the loss is not known yet.");
+        : "Checking the cube decision before rolling…");
     job.dialog = dialog("Review before confirming?", warningCopy, warningActions());
     configureWarning();
   };
@@ -3035,6 +3033,7 @@ async function evaluateDecision(action) {
       }
       const f = decisionFeedback(result, job.source);
       warningCopy.textContent = `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate.`;
+      if (!checker) job.dialog.querySelector(".primary").disabled = false;
       return; // Keep the player's review open; never confirm behind the dialog.
     }
     if (config.warning && needsRevisionWarning(result.error)) {

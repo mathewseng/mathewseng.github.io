@@ -3,21 +3,23 @@ import { el } from "./shell.mjs";
 import { gameLossSummary } from "../core/game-loss-summary.mjs";
 import { lossTone } from "../core/decision-feedback.mjs";
 
-export function gameLossTable(rows, state, names, visiblePlayers = [0, 1], { compact = false } = {}) {
-  const summary = gameLossSummary(rows, state.gameNumber, state.matchLength);
+export function gameLossTable(rows, state, names, visiblePlayers = [0, 1], { compact = false,
+  summary = gameLossSummary(rows, state.gameNumber, state.matchLength) } = {}) {
   const number = value => value === null ? "—" : value.toFixed(3);
   const value = (tag, amount) => el(tag,
     amount === null ? {} : { "data-loss-tone": lossTone(amount).tone }, number(amount));
   const cell = (stats, checker, stage) => {
     const known = stats.evaluated > 0 || stats.count === 0;
-    return el("td", { "data-stage": stage },
+    const pending = [stats.pending ? `${stats.pending} pending` : "",
+      stats.unavailable ? `${stats.unavailable} unrecorded` : ""].filter(Boolean).join(" · ");
+    return el("td", { "data-stage": stage, ...(compact && pending ? { title: pending } : {}) },
       value("strong", known ? stats.total : null),
       checker ? el("small", {}, value("span", stats.average), " / move")
         : el("small", {},
           known ? `${stats.mistakes} mistake${stats.mistakes === 1 ? "" : "s"}` : "— mistakes"),
-      ...(stats.pending + stats.unavailable ? [el("small", { class: "loss-summary-pending" },
-        [stats.pending ? `${stats.pending} pending` : "",
-          stats.unavailable ? `${stats.unavailable} unrecorded` : ""].filter(Boolean).join(" · "))] : []),
+      // The compact heading already shows pending status. Keep detailed counts
+      // accessible without inserting/removing a line that resizes the board.
+      ...(pending ? [el("small", { class: `loss-summary-pending${compact ? " sr-only" : ""}` }, pending)] : []),
     );
   };
   return el("section", { class: `game-loss-summary${compact ? " compact-loss-summary" : ""}`, "aria-label": "Game decision losses" },

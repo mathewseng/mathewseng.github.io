@@ -346,7 +346,7 @@ Regression coverage: `advanced-input.test.mjs` checks selected-die actions for e
 
 Computer games start analysis while the player is deciding. The shared worker first prepares the current checker/cube decision, then grades a complete draft. Completed results and matching in-flight requests are reused by hints, confirmation and the bot. Live Auto decisions use the deepest completed result with at least 3 ply; full reviews retain the adaptive timing/accuracy gates. Already-scored finalists are graded immediately, and an unlisted move adds one native score at the prepared depth, retaining the same-depth alternatives and full original decision context. Confirmation does not restart Auto and escalate depth merely because its caches are now warm. Reversed dice orders share computation with per-caller position metadata.
 
-When idle, `core/prethink.mjs` explores up to three legal near-best continuations (within 0.020 equity), uses the private indexed roll sequence to prepare the actual upcoming rolls, and prioritizes near-best branches, including legal cube responses. Completing a draft interrupts speculative work so its actual move is graded first; the next decision after that actual draft takes priority over hypothetical best lines. Once the bot chooses its move, the next position starts evaluating during its animation hold. The moving horizon includes the current checker turn and the next one. Each current position permits at most eight speculative evaluations and a four-second hard background budget. One highest-priority future Auto checker position may deepen to four plies within that budget; other future decisions stop at three. Live requests can promote work and are exempt from the background deadline. Candidate/roll weights only prioritize work, not assess winning probability. Committed-history analysis takes priority over speculation. The shared completed cache is capped at 64 results and 4,096 candidate rows, playable checkpoints at 16 results and 2,048 finalist rows, and the plan at 96 pending positions. All work shares one engine worker. Disable **Analyze ahead in computer games** in Settings to save battery. Hidden tabs stop background work. Online and same-device games never speculate. A 256-bit Web Crypto seed defines computer-table dice independently of moves or engine results. Each roll is HMAC-SHA-256(seed, versioned roll index); bytes 252–255 are rejected before mapping to 1–6. Preparation only peeks: the cursor advances atomically with a committed opening/normal roll, never with analysis. Takebacks replay their recorded dice before consuming the next index. GNUbg receives only the position being analyzed, never a seed or future dice, so its current decision still evaluates normal dice probabilities. Online sessions reject private dice plans and keep host-generated cryptographic rolls. This is bounded preparation, not exhaustive solving of the entire game tree or a guarantee of zero latency. See [real Play latency measurements](docs/PLAY-LATENCY.md) for the before/after trace, preparation coverage and remaining limits.
+When idle, `core/prethink.mjs` explores up to three legal near-best continuations (within 0.020 equity), uses the private indexed roll sequence to prepare the actual upcoming rolls, and prioritizes near-best branches, including legal cube responses. Completing a draft interrupts speculative work so its actual move is graded first; the next decision after that actual draft takes priority over hypothetical best lines. Once the bot chooses its move, the next position starts evaluating during its animation hold. The real next human cube check outranks display-only equity and historical grading, so those jobs cannot discard its work. Entering that turn immediately reuses the check; its speculative deadline no longer cancels a decision that is now current. With costly-move warnings enabled, rolling waits for this result, and the pending cube dialog cannot bypass the check. Fixed search-depth preferences remain honored. Hypothetical Auto cube nodes use Quick only to route future branches, leaving time for the known next checker roll; their separate cache cannot satisfy a real Auto cube decision. The moving horizon includes the current checker turn and the next one. The shared engine starts warming during opening playback. Cold WASM loading has its own client timeout and does not consume speculative search time. Each current position permits at most eight speculative evaluations and a four-second hard search budget. One highest-priority future Auto checker position may deepen to four plies within that budget; other future checker decisions stop at three. Live requests can promote work and are exempt from the background deadline. Candidate/roll weights only prioritize work, not assess winning probability. Committed-history analysis takes priority over hypothetical branches, but yields to the real next human cube check. The shared completed cache is capped at 64 results and 4,096 candidate rows, playable checkpoints at 16 results and 2,048 finalist rows, and the plan at 96 pending positions. All work shares one engine worker. Disable **Analyze ahead in computer games** in Settings to save battery. Hidden tabs stop background work. Online and same-device games never speculate. A 256-bit Web Crypto seed defines computer-table dice independently of moves or engine results. Each roll is HMAC-SHA-256(seed, versioned roll index); bytes 252–255 are rejected before mapping to 1–6. Preparation only peeks: the cursor advances atomically with a committed opening/normal roll, never with analysis. Takebacks replay their recorded dice before consuming the next index. GNUbg receives only the position being analyzed, never a seed or future dice, so its current decision still evaluates normal dice probabilities. Online sessions reject private dice plans and keep host-generated cryptographic rolls. This is bounded preparation, not exhaustive solving of the entire game tree or a guarantee of zero latency. See [real Play latency measurements](docs/PLAY-LATENCY.md) for the before/after trace, preparation coverage and remaining limits.
 
 Cube speed uses an exact rule gate: when doubling is unavailable, the bot rolls without searching for a nonexistent cube decision. Real decisions, including Jacoby/beaver/raccoon continuations and match context, continue through GNUbg. Pip-count/win-percentage rules of thumb do not replace that evaluation.
 
@@ -622,7 +622,9 @@ and `sealed-roll` browser checks cover these boundaries and saved-game replay.
 
 Local and computer tables keep only the current game's events, grades and variations in the live model. Before starting another game, Play waits for the completed game's archive transaction to commit, then keeps its score/Crawford context and private dice cursor while releasing its history. A failed save leaves the completed game on the table. Online protocol logs remain unchanged.
 
-**Saved games** below the board pages through eight metadata records at a time. Opening Review or History tree loads that game alone; returning to a position keeps later games and the original line saved. Library similarly pages through twelve headers, loading a body only when selected, and destroys the previous preview board. The hub and Trainer no longer read every archived match just to find a recent item or practice position. Explicit exports still include the saved records.
+**Analysis & history** shows previous games beneath the current game. Each summary stays visible, with its moves collapsed underneath. Opening Moves reads that game from disk; opening another or collapsing it releases its move rows and replay cache. The You/Opponent/All filters also apply to expanded games. Eight summaries are shown per page, with Older/Newer navigation; the index stores small initial/accepted loss totals so closed games do not hydrate their histories.
+
+**Saved games** below the board also pages through eight metadata records at a time. Opening Review or History tree loads that game alone; returning to a position keeps later games and the original line saved. Library similarly pages through twelve headers, loading a body only when selected, and destroys the previous preview board. The hub and Trainer no longer read every archived match just to find a recent item or practice position. Explicit exports still include the saved records.
 
 IndexedDB version 2 adds a summary index updated transactionally with each archive, edit, delete or import. Legacy active multi-game saves are split into independently replayable games in the same transaction as their new live pointer, preserving notes, evaluations, score context and variations. This does not clear browser storage. Current game histories may vary in size, but completing more games no longer adds their events or DOM rows to the live page.
 
@@ -644,6 +646,20 @@ Settings → Display & controls includes an Animation speed slider. The stops ar
 
 Bar auto-roll survives partial entries and remains active on later turns while that player has checkers on the bar and blocked entry points remain. The final entry, explicit stop, takeback or game end clears it. Regression coverage: `motion-speed.test.mjs`, `bar-auto-roll.test.mjs`, `animation-speed.cjs`, and `roll-prompt.cjs`.
 
+In computer games, a contact-free race with all your checkers home offers **Double
+tap/click to auto play** in the dice lane. It rolls and lets fully forced turns
+continue, then stops at the first distinct checker choice. Cube choices use a
+completed, noiseless, context-matched cubeful search of at least 3 ply; auto play
+continues only when the best legal action leads the next by more than 0.05 equity
+(current-cube units for money play, normalized equity for matches). Close,
+unavailable or failed analysis stops before acting. This includes take/drop and
+immediate redoubles. Tap/click the caption to stop; dialogs and background tabs
+pause the run. Intent is local to this player/game and clears on takeback, review,
+control changes, game end or reload. It uses the existing engine and seeded rolls,
+keeps normal animations, and never overrides a manual checker choice. Coverage:
+`race-auto-play.test.mjs` and `race-auto-play.cjs` (desktop and both phone layouts,
+with 4× CPU slowdown in Chromium).
+
 
 ### Review and summary units
 
@@ -655,11 +671,24 @@ Depth buttons request fixed local GNUbg searches up to 6 ply. Manual 5- and 6-pl
 
 Game summaries in history are always expanded. Portrait phones open the current-game
 summary in the table footer by default, showing initial/accepted checker totals and
-averages plus cube totals and mistake counts. Tap its Controls heading to replace it
-with Undo turn, Hint, Analysis, Game summary and Controls; Game summary reopens it.
-The board fits the remaining visual viewport height, so the entire summary stays in
-view without floating over content. Same-device games have a player switch in the
-summary so either player's figures fit in full. Scrolling below the table reaches analysis.
+averages plus cube totals and mistake counts. Its disclosure stays at the bottom;
+the footer reserves the same height when collapsed, so the board, player names and
+pip counts never move. Very short screens scroll the summary internally as needed.
+Hint and Controls remain available in the rail above it. Undo turn, analysis/history
+and other secondary actions live in Controls. Confirm is a compact 48px rounded-square
+button with an SVG tick, aligned to the board’s central bar when ready. It has an
+accessible name and the C shortcut; only keyboard navigation draws a focus ring.
+Cube offers put Drop on the board’s left, Take at its center, and Beaver/Raccoon on
+the right when permitted; match games leave that third position empty.
+The live board keeps its size and position throughout rolling, checker flights, undo,
+cube offers and confirmation. Compact summary pending counts stay accessible without
+adding/removing table lines. Tablets reserve their tool rail below the board; desktop
+reserves its action row. `board-position.cjs` samples all four rendered SVG bounds on
+every animation frame across phone portrait, landscape, tablets and desktop, including
+doubles and bearing off (Chromium phones use 4× CPU slowdown). The equity rail follows
+the actual board alignment. The table fits the visible viewport without floating the
+summary over content. Same-device games have a player switch in the summary. Scrolling
+below the table reaches analysis.
 Short portrait screens keep Settings but tuck navigation into Controls.
 The costly-checker warning offers Hint and Play Best above Reset and Play Anyway. Its close icon returns to revising; Play Anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
 Hint preserves the draft; Play Best returns drafted checkers before replaying.

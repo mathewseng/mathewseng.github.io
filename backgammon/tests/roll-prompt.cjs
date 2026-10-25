@@ -74,8 +74,13 @@ module.exports=async(browser,base,out,name)=>{
       await load('blocked',4);await tap(2);
       await page.waitForFunction(()=>document.querySelector('#board .board-caption')?.textContent.includes('Auto roll on'));
       assert.ok((await caption.textContent()).includes(`Double ${verb.toLowerCase()} to skip`));
-      await caption.locator('.board-caption-hit').waitFor({state:'visible'});
-      const skipHit=await caption.locator('.board-caption-hit').boundingBox();
+      // Rolling can replace the SVG between waitFor and boundingBox. Read the
+      // live hitbox atomically instead of dereferencing a detached caption.
+      const hit=await page.waitForFunction(()=>{
+        const r=document.querySelector('#board .board-caption-hit')?.getBoundingClientRect();
+        return r?.width>0&&r.height>0?{x:r.x,y:r.y,width:r.width,height:r.height}:null;
+      });
+      const skipHit=await hit.jsonValue();await hit.dispose();
       await page.evaluate(()=>{
         window.skipSeen=false;
         window.skipObserver=new MutationObserver(()=>{
