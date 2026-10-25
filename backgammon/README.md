@@ -675,8 +675,9 @@ averages plus cube totals and mistake counts. Its disclosure stays at the bottom
 the footer reserves the same height when collapsed, so the board, player names and
 pip counts never move. Very short screens scroll the summary internally as needed.
 Hint and Controls remain available in the rail above it. Undo turn, analysis/history
-and other secondary actions live in Controls. Confirm is a large, icon-only circle
-check in the middle of the board when ready, with an accessible name and the C shortcut.
+and other secondary actions live in Controls. Confirm is a compact 48px rounded-square
+button with an SVG tick, aligned to the board’s central bar when ready. It has an
+accessible name and the C shortcut; only keyboard navigation draws a focus ring.
 Cube offers put Drop on the board’s left, Take at its center, and Beaver/Raccoon on
 the right when permitted; match games leave that third position empty.
 The live board keeps its size and position throughout rolling, checker flights, undo,

@@ -157,6 +157,11 @@ const draftKeys = el("div", { class: "draft-shortcuts", "aria-label": "Draft key
 const boardActions = el("div", { class: "board-actions action-stage bg-action-stage", "aria-label": "Turn confirmation" });
 const turnTools = el("div", { class: "turn-tools", "aria-label": "Play tools" });
 const boardConfirm = el("div", { class: "board-confirm" });
+function confirmIcon() {
+  const icon = el("span", { class: "confirm-check", "aria-hidden": "true" });
+  icon.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m5 12 5 5 9-10"/></svg>';
+  return icon;
+}
 ui.board.container.append(boardConfirm);
 ui.board.container.before(boardWorkspace);
 boardWorkspace.append(ui.board.container, boardActions);
@@ -170,7 +175,8 @@ function placeCubeReplies() {
   const matrix = ui.board.svg.getScreenCTM();
   if (!matrix) return;
   const box = ui.board.container.getBoundingClientRect();
-  const center = new DOMPoint(414, 330).matrixTransform(matrix);
+  // The play surface and central bar share x=408; the cube tray is separate.
+  const center = new DOMPoint(408, 330).matrixTransform(matrix);
   boardConfirm.style.left = `${center.x - box.left}px`;
   boardConfirm.style.top = `${center.y - box.top}px`;
   if (cubeReplies.hidden) return;
@@ -1984,7 +1990,7 @@ function renderActions() {
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
     if (myTurn(s)) a.append(
       button(
-        el("span", {class:"confirm-check", "aria-hidden":"true"}, "✓"),
+        confirmIcon(),
         submit,
         `primary${draft.complete() && mine ? " turn-ready" : ""}`,
         { disabled: !mine || !draft.complete(), id: "confirm", "aria-label":"Confirm turn", title:"Confirm turn (C)" },
