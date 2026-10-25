@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const { openingComplete, seedOpening, roll } = require("./play-helpers.cjs");
 // Real browser controls, IndexedDB, exports, and real GNUbg opponent.
 const assert = require("node:assert/strict");
@@ -81,6 +82,7 @@ module.exports = async function turnPolicy(
     await page.locator("#accept-undo").click();
     await wait((s) => s?.game.undoLog?.length === 1 && !s.game.undoRequest);
     assert.deepEqual((await saved()).game.state, original.state);
+    await showPlayControls(page);
     assert.equal(await page.locator("#undo-turn").isVisible(), true);
     assert.equal(await page.locator("#undo-turn").isDisabled(), true);
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -251,7 +253,8 @@ module.exports = async function turnPolicy(
         type === "bearoff" ? "over" : "roll",
       );
       assert.equal(await page.locator("#confirm").count(), 0);
-      assert.equal(await page.locator("#undo-turn").isVisible(), true);
+      await showPlayControls(page);
+    assert.equal(await page.locator("#undo-turn").isVisible(), true);
       assert.equal(await page.locator("#undo-turn").isDisabled(), type !== "bearoff", "finished games can be reopened; a forced pass has no player choice to undo");
       assert.equal(await page.locator("#hint").count(), 0);
       await shot(type);

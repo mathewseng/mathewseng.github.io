@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const { waitForAsync } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -23,6 +24,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
   try {
     await page.goto(base + "/backgammon/play/");
     await page.locator("#start-match").waitFor();
+    await showPlayControls(page);
     assert.equal(await page.locator("#undo-turn").isVisible(), true);
     assert.equal(await page.locator("#undo-turn").isDisabled(), true);
     await page.goto(base + "/backgammon/");
@@ -141,6 +143,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
       side: row.dataset.historySide,
       count: row.querySelectorAll('.decision-values-compact').length,
       labels: [...row.querySelectorAll('.decision-value .muted')].map(n=>n.textContent),
+      values: [...row.querySelectorAll('.decision-value strong')].map(n=>n.textContent),
       best: row.querySelector('.decision-values-compact').dataset.bestPlayed === 'true',
       duplicatedMove: !!row.querySelector('.feedback-best'),
       identity: row.closest('.history-turn').querySelector('.history-player').textContent,
@@ -149,7 +152,9 @@ module.exports = async function historyReturn(browser, base, out, name) {
     assert.ok(comparisons.some(row => row.best), "best-played row is tested");
     for(const row of comparisons) {
       assert.equal(row.count,1);
-      assert.deepEqual(row.labels,['Before',...(!row.best ? [row.side === 'opponent' ? 'Opponent’s choice' : 'Your choice'] : []),'Best choice']);
+      assert.equal(row.labels[0],'Before');
+      assert.equal(new Set(row.values).size,row.values.length,'equal displayed equities appear only once');
+      assert.ok(row.labels.every(label=>['Before','Best choice',...(row.best?[]:[row.side==='opponent'?'Opponent’s choice':'Your choice'])].includes(label)));
       assert.equal(row.duplicatedMove,!row.best,"only show a best alternative when it differs");
       assert.equal(row.identity,row.side === 'opponent' ? 'Opponent' : 'You');
     }
@@ -278,8 +283,10 @@ module.exports = async function historyReturn(browser, base, out, name) {
       .click();
     await page.locator("#return-position").waitFor();
     assert.ok((await page.getByRole("dialog").innerText()).includes("Opponent’s choice"));
-    assert.equal(await page.getByRole("button", {name:"Opponent’s move",exact:true}).count(),1);
-    assert.equal(await page.getByRole("button", {name:"Your move",exact:true}).count(),0);
+    const moves = page.locator('.review-move-rows');
+    assert.equal(await moves.getByRole('button', {name:/opponent’s choice/}).count(),1);
+    assert.equal(await moves.getByRole('button', {name:/your choice/}).count(),0);
+    assert.equal(await moves.locator('[data-rank="1"]').getAttribute('aria-pressed'),'true');
     await page.screenshot({
       path: path.join(out, `${name}-history-return-desktop.png`),
     });
@@ -296,6 +303,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
     await checkColors();
     assert.equal(game.undoLog.at(-1).reason, "history-return");
     assert.deepEqual(game.undoLog.at(-1).events, fixture.events.slice(3));
+    await showPlayControls(page);
     assert.equal(await page.locator("#undo-turn").isVisible(), true);
     await page.reload();
     await page.locator("#confirm").waitFor();

@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert=require('node:assert/strict'),path=require('node:path');
 const {waitWork}=require('./play-helpers.cjs');
 module.exports=async(browser,base,out,name)=>{
@@ -35,6 +36,7 @@ module.exports=async(browser,base,out,name)=>{
       });
       await page.locator('#resume-match').click();
       await waitWork(page,w=>w?.draft.length===1);
+      await showPlayControls(page);
       await page.locator('#hint').click();
       await page.getByRole('button',{name:'Play best',exact:true}).waitFor({timeout:60000});
       assert.equal(await page.getByRole('button',{name:'Use best move',exact:true}).count(),0);

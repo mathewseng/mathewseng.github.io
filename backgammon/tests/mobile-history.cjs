@@ -24,6 +24,7 @@ module.exports = async function mobileHistory(browser, base, out, name) {
     await page.goto(base + "/backgammon/play/#resume=mobile-history");
     await page.reload();
     await page.locator("#confirm").waitFor();
+    await page.locator('#mobile-game-summary > summary').tap();
     const board = await page.locator("#board").boundingBox();
     const sourcePicker = page.getByLabel("Select a checker",{exact:true});
     if (!await sourcePicker.inputValue()) await sourcePicker.selectOption({index:1});

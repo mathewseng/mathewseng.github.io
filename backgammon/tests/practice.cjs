@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict");
 const path = require("node:path");
 module.exports = async function practiceUX(browser, base, out, name) {
@@ -178,6 +179,7 @@ module.exports = async function practiceUX(browser, base, out, name) {
         ),
         `${width} document overflow`,
       );
+      await showPlayControls(page);
       const box = await page.locator("#all-controls").boundingBox();
       if (width > 360 && box.y + box.height > height + 1) {
         console.log('Practice viewport geometry', JSON.stringify(await page.evaluate(() => ({

@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict"), path = require("node:path");
 
 module.exports = async function mobileQuick(browser, base, out, name) {
@@ -133,6 +134,7 @@ module.exports = async function mobileQuick(browser, base, out, name) {
     await shot("hub-resume");
     await resume.tap();
     await page.locator("#confirm").waitFor();
+    await showPlayControls(page);
     const board=await page.locator("#board").boundingBox(), confirm=await page.locator("#confirm").boundingBox();
     await select(12);await tap(7);
     assert.ok(await page.locator("#confirm").isEnabled(),"a chosen complete turn still waits for confirmation");
@@ -161,6 +163,7 @@ module.exports = async function mobileQuick(browser, base, out, name) {
     await page.locator("#confirm").scrollIntoViewIfNeeded();
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"enlarged text reflows without sideways scrolling");
     await shot("play-enlarged");
+    await showPlayControls(page);
     await page.locator("#all-controls").tap();
     await page.locator(".practice-controls-dialog .close").tap();
     await page.evaluate(()=>document.documentElement.style.zoom="");

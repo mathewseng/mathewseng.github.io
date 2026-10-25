@@ -2,6 +2,12 @@
 // Computer games use HMAC-indexed dice; same-device games draw individual bytes.
 const { createHmac } = require('node:crypto');
 const assert = require('node:assert/strict');
+// Portrait opens the running game summary instead of secondary utilities.
+// Reveal the real controls before exercising Undo, Hint, Analysis or practice.
+exports.showPlayControls = async page => {
+  const summary = page.locator('#mobile-game-summary[open]:not([hidden]) > summary');
+  if (await summary.isVisible()) await summary.click();
+};
 // Playwright's in-page poll treats an async predicate's Promise as truthy,
 // even when that Promise resolves to false. Await the actual result in Node.
 exports.waitForAsync = async (page, predicate, argument, {timeout = 30000} = {}) => {

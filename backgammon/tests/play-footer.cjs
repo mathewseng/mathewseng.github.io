@@ -27,6 +27,20 @@ module.exports = async function playFooter(browser, base, out, name) {
     await page.goto(base + '/backgammon/play/#resume=footer-'+phase);
     await page.locator('.live-table').waitFor();
     await page.waitForFunction(skin => document.documentElement.dataset.skin===skin, skin);
+    const summary=page.locator('#mobile-game-summary');
+    if(await summary.isVisible()) {
+      assert.ok(await summary.evaluate(n=>n.open),'summary defaults open in '+phase);
+      const bounds=await summary.boundingBox();
+      assert.ok(bounds.y+bounds.height<=page.viewportSize().height+1,'summary fits in '+phase+' / '+mode);
+      if(mode==='local') {
+        const current=await summary.locator('[data-summary-player]').getAttribute('data-summary-player');
+        await summary.locator('.mobile-summary-player').tap();
+        assert.equal(await summary.locator('[data-summary-player]').getAttribute('data-summary-player'),String(1-Number(current)));
+        assert.ok(await summary.locator('.mobile-summary-player').evaluate(n=>document.activeElement===n),'player switch keeps keyboard focus');
+      }
+      await page.screenshot({path:path.join(out,`${name}-summary-${phase}-${mode}.png`)});
+      await summary.locator(':scope > summary').tap();
+    }
   }
   async function check(label, uniform = true) {
     const geometry = await page.evaluate(() => {

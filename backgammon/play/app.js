@@ -308,21 +308,38 @@ reviewArea.append(el("header", { class: "review-header" },
     $("panel-toggle").focus({ preventScroll: true });
   }, "ghost"),
 ));
-// A separate portrait-only disclosure follows the table. It stays out of the
-// board's height calculation, and builds its detail only when opened.
+// Portrait shares one footer between the running summary and secondary tools.
+// Keeping it inside the stage lets the board use the remaining visible height.
 const phonePortrait = matchMedia("(max-width: 600px) and (orientation: portrait)");
-const mobileSummary = el("details", { id: "mobile-game-summary", class: "mobile-game-summary", hidden: true });
-const mobileSummaryHeading = el("summary", {});
+const mobileSummary = el("details", { id: "mobile-game-summary", class: "mobile-game-summary", hidden: true, open: true });
+const mobileSummaryHeading = el("summary", { "aria-label": "Game summary · show controls" });
 const mobileSummaryBody = el("div", { class: "history-game-detail" });
 mobileSummary.append(mobileSummaryHeading, mobileSummaryBody);
-document.querySelector(".app").after(mobileSummary, reviewArea);
+document.querySelector(".app").after(reviewArea);
+document.querySelector(".action-main").before(mobileSummary);
+const summaryToggle = button("Game summary", () => {
+  mobileSummary.open = true;
+  fillMobileSummary();
+  mobileSummaryHeading.focus({ preventScroll: true });
+}, "ghost", { id: "game-summary-toggle", "aria-controls": "mobile-game-summary", "aria-expanded": true });
 let mobileSummaryData = null;
+let mobileSummaryPlayer = null;
 function fillMobileSummary() {
   if (!mobileSummary.open || !mobileSummaryData || mobileSummaryBody.childElementCount) return;
   const { rows, state: source, labels, visible } = mobileSummaryData;
-  mobileSummaryBody.append(gameLossTable(rows, source, labels, visible));
+  const table = gameLossTable(rows, source, labels, visible, { compact: true });
+  if (config.mode !== "computer") table.querySelector("thead th").replaceChildren(button(
+    el("span", {}, labels[visible[0]], el("span", { "aria-hidden": true }, " ↔")), () => {
+    mobileSummaryPlayer = 1 - visible[0];
+    renderMobileSummary(model(), true);
+    mobileSummaryBody.querySelector(".mobile-summary-player").focus({ preventScroll: true });
+  }, "ghost mobile-summary-player", { "aria-label": `Show ${labels[1-visible[0]]}’s game summary` }));
+  mobileSummaryBody.append(table);
 }
-mobileSummary.addEventListener("toggle", fillMobileSummary);
+mobileSummary.addEventListener("toggle", () => {
+  summaryToggle.setAttribute("aria-expanded", String(mobileSummary.open));
+  fillMobileSummary();
+});
 phonePortrait.addEventListener("change", () => renderMobileSummary(model(), true));
 function renderMobileSummary(m, force = false) {
   mobileSummary.hidden = !m?.started || !phonePortrait.matches;
@@ -332,7 +349,7 @@ function renderMobileSummary(m, force = false) {
     return;
   }
   const source = state(), labels = names();
-  const visible = config.mode === "computer" ? [config.humanSide] : [0, 1];
+  const visible = [config.mode === "computer" ? config.humanSide : mobileSummaryPlayer ?? source.turn];
   const key = JSON.stringify([m.id, source.gameNumber, source.matchLength, labels, visible]);
   if (!force && mobileSummaryData?.events === m.events && mobileSummaryData.key === key) return;
   const rows = decisionHistory(m).filter(row => row.game === source.gameNumber);
@@ -351,7 +368,7 @@ function renderMobileSummary(m, force = false) {
         el("strong", known ? {"data-loss-tone":lossTone(loss).tone} : {}, known ? loss.toFixed(3) : "—"),
         el("small", {}, pending ? "EV · pending" : "EV lost"));
     }),
-    el("span", {class:"history-game-chevron", "aria-hidden":true}));
+    el("span", {class:"mobile-summary-controls"}, "Controls", el("span", {class:"history-game-chevron", "aria-hidden":true})));
   mobileSummaryBody.replaceChildren();
   fillMobileSummary();
 }
@@ -447,7 +464,7 @@ const allControls = button("Controls", () => {
     helpCluster.prepend(helpActions);
   }, { once: true });
 }, "ghost", { id: "all-controls", hidden: true, "aria-label": "All controls", "aria-haspopup": "dialog" });
-const helpCluster = el("div", { class: "help-cluster" }, helpActions, analysisJump, allControls);
+const helpCluster = el("div", { class: "help-cluster" }, helpActions, analysisJump, summaryToggle, allControls);
 document.querySelector(".action-main").prepend(helpCluster);
 helpCluster.insertBefore(draftKeys, allControls);
 const draft = new DraftBoard(ui.board, () => {

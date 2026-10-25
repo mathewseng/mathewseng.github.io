@@ -163,11 +163,17 @@ export class EngineClient {
     } = {},
   ) {
     readyOnly = readyOnly && preset === 'auto' && !rollout;
+    const tryBook = !!this.book && (this.book.eligible?.(state, { preset, kind, rollout, useBook }) ?? bookEligible(state, { preset, kind, rollout, useBook })) &&
+      (this.book.mayHave?.(state) ?? true);
+    // A reference loaded after an earlier offline/live search takes precedence
+    // for the next bot/hint choice. Submitted grades still keep one consistent
+    // method and candidate set when their move is absent from the reference.
+    const preferBook = !submitted && tryBook && this.book.hasEntry?.(state);
     if (readyOnly) {
       let ready;
       try { ready = this.readyResult(state, {preset, submitted, useBook}); }
       catch (error) { return Promise.reject(error); }
-      if (ready) {
+      if (ready && (!preferBook || ready.book)) {
         const active = this.active;
         // If an optional deeper stage is already inside synchronous WASM,
         // take its completed answer now. Ignore late messages after stopping.
@@ -187,8 +193,6 @@ export class EngineClient {
     // Grading a move is a projection of that same result, not another WASM job.
     // Screened searches/rollouts still depend on the submitted move because
     // they must explicitly add it to their finalist set.
-    const tryBook = !!this.book && (this.book.eligible?.(state, { preset, kind, rollout, useBook }) ?? bookEligible(state, { preset, kind, rollout, useBook })) &&
-      (this.book.mayHave?.(state) ?? true);
     const sharedChecker =
       !tryBook && kind === "checker" && !rollout && PRESETS[preset]?.plies <= 2;
     let submittedKey = null;
@@ -231,8 +235,10 @@ export class EngineClient {
     if (this.cache.has(key)) {
       const result = this.cache.get(key);
       this.cache.delete(key);
-      this.cache.set(key, result);
-      return forCaller(Promise.resolve({ ...structuredClone(result), cached: true }));
+      if (!preferBook || result.book) {
+        this.cache.set(key, result);
+        return forCaller(Promise.resolve({ ...structuredClone(result), cached: true }));
+      }
     }
     const hint = this.cache.get(keyFor(null));
     if (submittedKey && hint?.status === "complete" && hint.type === "checker" &&

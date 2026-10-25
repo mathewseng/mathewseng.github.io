@@ -9,7 +9,8 @@ import {referenceResult,XGReferenceBook,PreferredOpeningBook,referenceEligible} 
 import {normalizeReference} from '../scripts/deep-book-comparison.mjs';
 import {stateForBoard,nextBoard} from '../scripts/book-branches.mjs';
 import {bookBoardKey} from '../engine/opening-book.mjs';
-import {legalTurns} from '../core/rules.mjs';
+import {legalTurns, initialState, MAX_CUBE} from '../core/rules.mjs';
+import {EngineClient} from '../engine/client.mjs';
 import {OpeningGuideData} from '../ui/opening-guide-data.mjs';
 const bytes=fs.readFileSync(new URL('../docs/deep-book-xg-reference.json',import.meta.url)),source=JSON.parse(bytes),refs=normalizeReference(source);
 const index=JSON.parse(fs.readFileSync(new URL('../engine/opening-book-data/xg/index.json',import.meta.url)));
@@ -50,6 +51,9 @@ test('reference lookup rejects incompatible rules and never grades an unlisted m
  assert.equal(await book.lookup(state,{...options,submitted:missing.steps}),null);
  for(const immediateRedoubles of [0,1])assert.equal(referenceEligible({...state,rules:{...state.rules,immediateRedoubles}},options),false);
  assert.equal(referenceEligible({...state,matchLength:7},options),false);
+ assert.equal(referenceEligible({...state,cube:{value:2,owner:0}},options),false);
+ assert.equal(referenceEligible({...state,cube:{value:MAX_CUBE/4,owner:null}},options),false,'numeric ceiling changes available immediate redoubles');
+ assert.equal(referenceEligible({...state,rules:{...state.rules,jacoby:false}},options),false);
  assert.equal(referenceEligible(state,{...options,rollout:{}}),false);
  const ordinary={...state,rules:{...state.rules,immediateRedoubles:0}};
  const fallback=await book.lookup(ordinary,options);
@@ -98,4 +102,59 @@ test('reference provenance and five-ply books survive saved-position validation'
  }
  const ordinary={...state,rules:{...state.rules,immediateRedoubles:0}},deep=await new OpeningBook({preferDeep:true,fetcher}).lookup(ordinary,{kind:'checker',preset:'auto'});
  assert.equal(deep.settings.plies,5);assert.equal(validateItem({...record(deep),state:ordinary}).analysis,deep);
+});
+
+test('bot opening and reply choices match the guide after automatic opening doubles',async()=>{
+ const book=new PreferredOpeningBook({fetcher});
+ const client=new EngineClient({openingBook:book,workerFactory:()=>{throw Error('Covered opening/reply started a worker');}});
+ const guide=new OpeningGuideData(fetcher,{referenceBook:new XGReferenceBook({fetcher})});
+ try {
+  const openings=await guide.openings();
+  const sixFour=openings.get('64');
+  assert.equal(sixFour.moves[0].notation,'24/18 13/9');
+  assert.equal(sixFour.moves[1].notation,'8/2 6/2');
+  assert.ok(Math.abs(sixFour.moves[1].loss-.0017)<1e-10);
+  let replies=0;
+  for(const opening of openings.values()){
+   if(opening.state.dice[0]===opening.state.dice[1])continue;
+   for(const cube of [1,2,4,64]){
+    const state={...opening.state,cube:{value:cube,owner:null}};
+    const result=await client.analyze(state,{preset:'auto',readyOnly:true});
+    assert.equal(result.candidates[0].key,opening.moves[0].key);
+    assert.equal(result.candidates[0].equity,opening.moves[0].equity);
+    assert.equal(result.method,opening.method);
+   }
+   for(let choice=0;choice<opening.moves.length;choice++){
+    for(const reply of (await guide.replies(opening,choice)).values()){
+     const state={...reply.state,cube:{value:2,owner:null}};
+     const result=await client.analyze(state,{preset:'auto',readyOnly:true});
+     assert.equal(result.candidates[0].key,reply.moves[0].key);
+     assert.equal(result.candidates[0].equity,reply.moves[0].equity);
+     assert.equal(result.method||'tree',reply.method);
+     replies++;
+    }
+   }
+  }
+  assert.equal(replies,32*21);
+ } finally {client.destroy();}
+});
+
+test('a loaded reference replaces a cached live choice, including ready-only bot decisions',async()=>{
+ const book=new PreferredOpeningBook({fetcher});
+ const client=new EngineClient({openingBook:book,workerFactory:()=>{throw Error('Reference should answer without WASM');}});
+ const state=initialState({phase:'move',dice:[6,4],matchLength:0,rules:{cube:true,jacoby:true,immediateRedoubles:2}});
+ const reference=await book.lookup(state,{preset:'auto',kind:'checker'});
+ const key='cached-live-choice';
+ const fallback={...reference,method:'tree',book:undefined,settings:{plies:3},candidates:[reference.candidates[1],reference.candidates[0]]};
+ client.rememberDecision({state,key,preset:'auto',kind:'checker'},fallback);
+ try {
+  assert.equal(client.readyResult(state).candidates[0].notation,'8/2 6/2');
+  const result=await client.analyze(state,{preset:'auto',readyOnly:true});
+  assert.equal(result.method,'reference');
+  assert.equal(result.candidates[0].notation,'24/18 13/9');
+  // Even a cache entry from a failed reference download must be superseded.
+  const cacheKey=[...client.cache.keys()][0];
+  client.cache.set(cacheKey,fallback);client.decisions.clear();
+  assert.equal((await client.analyze(state,{preset:'auto'})).method,'reference');
+ } finally {client.destroy();}
 });

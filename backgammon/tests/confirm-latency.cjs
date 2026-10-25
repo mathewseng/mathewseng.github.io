@@ -1,3 +1,4 @@
+const { showPlayControls } = require("./play-helpers.cjs");
 // Real Play, GNUbg and storage. Quick isolates UI/history cost from search
 // depth; separate adaptive/prethink tests cover Auto and prepared grading.
 const assert=require('node:assert/strict'),path=require('node:path');
@@ -78,7 +79,7 @@ module.exports=async function confirmLatency(browser,base,out,name){
    assert.ok(committed.replayed,'saved game independently replays exactly');
    assert.equal(committed.savedGames,12,'every previous game remains saved');
    assert.equal(committed.initialGame,12,'only the current game is hydrated');
-   if(touch)await page.locator('#analysis-jump').click();
+   if(touch){await showPlayControls(page);await page.locator('#analysis-jump').click();}
    else await page.locator('.history-turn').first().scrollIntoViewIfNeeded();
    await page.locator('.history-turn').first().waitFor({state:'visible'});
    assert.deepEqual(await page.locator('.history-game-divider').allTextContents(),['Game 12'],'the active history does not render old games');
