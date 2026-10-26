@@ -686,8 +686,10 @@ adding/removing table lines. Tablets reserve their tool rail below the board; de
 reserves its action row. `board-position.cjs` samples all four rendered SVG bounds on
 every animation frame across phone portrait, landscape, tablets and desktop, including
 doubles and bearing off (Chromium phones use 4× CPU slowdown). The equity rail follows
-the actual board alignment. The table fits the visible viewport without floating the
-summary over content. Same-device games have a player switch in the summary. Scrolling
+the actual board alignment. In phone portrait, the board always fills the available
+screen width, preserving its aspect ratio and safe outer gutter. Short screens scroll
+the controls and summary below it instead of shrinking the board; taller phones still
+keep the summary at the bottom of the viewport. Same-device games have a player switch in the summary. Scrolling
 below the table reaches analysis.
 Short portrait screens keep Settings but tuck navigation into Controls.
 The costly-checker warning offers Hint and Play Best above Reset and Play Anyway. Its close icon returns to revising; Play Anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.

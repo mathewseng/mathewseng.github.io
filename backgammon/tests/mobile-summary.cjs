@@ -32,18 +32,23 @@ module.exports=async(browser,base,out,name)=>{
   assert.ok(await history.locator('table').isVisible(),'history summary is expanded initially');
   const layouts=[];
   const checkFit=async(label)=>{
-   for(const [width,height] of [[320,568],[375,667],[390,744],[390,844],[430,932]]) {
+   for(const [width,height] of [[320,480],[320,568],[375,667],[390,600],[390,744],[390,844],[430,932],[600,800]]) {
     await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));
     await page.waitForTimeout(80);
     const flow=await summary.evaluate(n=>{
      const rect=e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+     const matrix=document.querySelector('#board > svg').getScreenCTM();
      return {summary:rect(n),body:rect(n.querySelector('.history-game-detail')),board:rect(document.querySelector('#board')),
+      renderedBoard:{width:876*matrix.a,height:660*matrix.d},stage:rect(document.querySelector('.stage')),
       player:rect(document.querySelector('#player')),app:rect(document.querySelector('.app')),review:rect(document.querySelector('#play-review')),
       position:getComputedStyle(n).position,overflow:document.documentElement.scrollWidth>innerWidth+1};
     });
     layouts.push({label,width,height,...flow});
     assert.ok(!['fixed','sticky','absolute'].includes(flow.position),'summary belongs to page flow');
-    assert.ok(flow.summary.bottom<=height+1 && flow.body.bottom<=height+1,`whole summary fits ${JSON.stringify({label,width,height,flow})}`);
+    assert.ok(flow.summary.bottom<=flow.app.bottom+1&&flow.body.bottom<=flow.summary.bottom+1,`summary stays inside page flow ${JSON.stringify({label,width,height,flow})}`);
+    if(height>=844&&width<=430)assert.ok(flow.summary.bottom<=height+1,'tall phones still fit the summary without scrolling');
+    assert.ok(Math.abs(flow.renderedBoard.width-flow.stage.width)<1,'rendered board fills the available width, even on short phones');
+    assert.ok(Math.abs(flow.stage.width-(width-8))<1,'only the safe outer gutter reduces phone width');
     assert.ok(flow.summary.top>=flow.player.bottom-1,'summary follows the board and player');
     assert.ok(flow.board.height>=100,'board keeps usable space');
     assert.ok(!flow.overflow,'no sideways scrolling');
@@ -51,14 +56,18 @@ module.exports=async(browser,base,out,name)=>{
     assert.ok(await page.locator('.help-cluster').isHidden(),'secondary actions live in Controls');
     assert.ok(await page.locator('.turn-tools #all-controls').isVisible(),'Controls remains visible above the summary');
     assert.ok(await page.locator('.turn-tools #hint').isVisible(),'Hint remains visible above the summary');
-    const geometry=()=>page.locator('#opponent,#player,#board,.board-actions').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return [r.x,r.y,r.width,r.height];}));
+    const geometry=()=>page.locator('#opponent,#player,#board,.board-actions').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return [r.x+scrollX,r.y+scrollY,r.width,r.height];}));
+    // Firefox rounds client coordinates differently after scrolling to the
+    // disclosure. Compare document geometry within subpixel precision.
+    const assertStable=(actual,expected,label)=>assert.ok(actual.every((bounds,i)=>bounds.every((v,j)=>Math.abs(v-expected[i][j])<.05)),label);
     const expanded=await geometry();
     await summary.locator(':scope > summary').tap();
     await page.waitForTimeout(80);
-    assert.deepEqual(await geometry(),expanded,'collapse does not move or resize any table element');
+    assertStable(await geometry(),expanded,'collapse does not move or resize any table element');
     await summary.locator(':scope > summary').tap();
     await page.waitForTimeout(80);
-    assert.deepEqual(await geometry(),expanded,'expand does not move or resize any table element');
+    assertStable(await geometry(),expanded,'expand does not move or resize any table element');
+    await page.evaluate(()=>scrollTo(0,0));
     await page.screenshot({path:path.join(out,`${name}-summary-${label}-${width}-${height}.png`)});
     await page.evaluate(()=>scrollTo(0,100));
     const moved=await summary.evaluate(n=>({top:n.getBoundingClientRect().top,scroll:scrollY}));
@@ -91,8 +100,13 @@ module.exports=async(browser,base,out,name)=>{
   await page.setViewportSize({width:390,height:844});await summary.waitFor();
   assert.ok(await summary.evaluate(n=>n.open),'rotation preserves disclosure preference');
   await summary.locator('table').waitFor();
+  for(const width of [640,700]){
+   await page.setViewportSize({width,height:900});await page.waitForTimeout(80);
+   const boardWidth=await page.locator('#board > svg').evaluate(n=>n.getScreenCTM().a*876);
+   assert.ok(Math.abs(boardWidth-(width-8))<1,'wide portrait phones also fill available width');
+  }
 
   assert.deepEqual(errors,[]);
-  return {alwaysExpandedHistory:true,defaultExpanded:true,utilityToggle:true,viewportFit:true,normalPageFlow:true,layouts};
+  return {alwaysExpandedHistory:true,defaultExpanded:true,utilityToggle:true,widthFirstPortrait:true,normalPageFlow:true,layouts};
  }finally{await ctx.close();}
 };

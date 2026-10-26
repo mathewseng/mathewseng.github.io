@@ -7262,25 +7262,50 @@ html.skin-shader .docs-toc--sticky {
   .play-feedback .history-turn-decisions .decision-value-grid { grid-template-columns: minmax(0, 1fr); }
   .play-feedback .history-turn-decisions .decision-value { overflow-wrap: anywhere; }
 }
-@media (max-width: 600px) and (orientation: portrait) {
+/* Portrait play sizes the board from width, never from the height left after
+   the controls. Short viewports scroll the footer rather than letterbox it. */
+@media (max-width: 700px) and (orientation: portrait) {
   .play-page.live-table,
   .play-page.live-table:has(.board-slot.has-equity-bar) {
-    height: var(--play-visible-height, 100dvh);
-    min-height: 0;
+    height: auto;
+    min-height: var(--play-visible-height, 100dvh);
+    grid-template-rows: auto auto minmax(min-content, 1fr);
+    padding-inline: max(4px, env(safe-area-inset-left)) max(4px, env(safe-area-inset-right));
   }
+  .play-page.live-table .workspace { display: block; }
+  .play-page.live-table .inspector { display: none; }
   .play-page.live-table .stage,
   .play-page.live-table:has(.board-slot.has-equity-bar) .stage {
-    height: 100%;
-    min-height: 0;
-    grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+    height: auto;
+    min-height: 100%;
+    grid-template-rows: auto max-content auto 52px minmax(max-content, 1fr);
   }
+  .play-page.live-table .board-workspace { display: contents; }
+  .play-page.live-table #opponent { grid-row: 1; }
   .play-page.live-table .board-workspace > .board-slot {
-    box-sizing: border-box;
-    height: 100%;
+    grid-row: 2;
+    box-sizing: content-box;
+    width: 100%;
+    max-width: none;
+    height: auto;
     min-height: 0;
-    max-height: 100%;
-    aspect-ratio: auto;
+    max-height: none;
+    aspect-ratio: 876 / 660;
+    padding: 0 0 48px;
+    align-self: start;
   }
+  .play-page.live-table .board-slot > .bg-board {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    aspect-ratio: 876 / 660;
+  }
+  .play-page.live-table #player { grid-row: 3; }
+  .play-page.live-table .board-actions { grid-row: 4; width: 100%; }
+  .play-page.live-table .action-area { grid-row: 5; align-self: end; }
+}
+@media (max-width: 600px) and (orientation: portrait) {
   /* Hint and Controls keep the same rail on both players’ turns. */
   .play-page.live-table .board-actions { display: flex; height: 52px; padding-block: 0; }
   .play-page.live-table .game-over-card { max-height: calc(100% - 12px); }

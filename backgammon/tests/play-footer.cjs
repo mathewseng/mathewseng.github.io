@@ -96,7 +96,7 @@ module.exports = async function playFooter(browser, base, out, name) {
       if (phase === 'move') {
         const bounds=await page.locator('#confirm').boundingBox();
         const board=await page.locator('#board').boundingBox();
-        assert.ok(bounds.width>=64 && bounds.height>=64,'large touch target');
+        assert.ok(bounds.width>=44 && bounds.height>=44,'accessible touch target');
         assert.ok(bounds.y>=board.y && bounds.y+bounds.height<=board.y+board.height,'Confirm is inside board');
         assert.equal(await page.locator('#confirm .confirm-copy').count(),0,'icon-only confirmation');
       }

@@ -28,7 +28,7 @@ module.exports=async(browser,base,out,name)=>{
     const mark=button.querySelector('.confirm-check svg').getBoundingClientRect(),style=getComputedStyle(button);
     const tools=[...document.querySelectorAll('.turn-tools > button')].map(n=>({id:n.id,text:n.textContent,color:getComputedStyle(n).color,opacity:getComputedStyle(n).opacity,rect:n.getBoundingClientRect().toJSON()}));
     const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('button')?.id;
-    return {center,button:b.toJSON(),mark:mark.toJSON(),radius:style.borderRadius,backgroundImage:style.backgroundImage,userSelect:style.getPropertyValue('user-select')||style.getPropertyValue('-webkit-user-select'),tools,hit,opacity:style.opacity};
+    return {center,button:b.toJSON(),mark:mark.toJSON(),appBottom:document.querySelector('.app').getBoundingClientRect().bottom,radius:style.borderRadius,backgroundImage:style.backgroundImage,userSelect:style.getPropertyValue('user-select')||style.getPropertyValue('-webkit-user-select'),tools,hit,opacity:style.opacity};
    });
    assert.ok(Math.abs(layout.button.x+layout.button.width/2-layout.center.x)<1&&Math.abs(layout.button.y+layout.button.height/2-layout.center.y)<1,'Confirm is centered on the board');
    assert.equal(layout.button.width,48,'compact but accessible touch target');
@@ -42,7 +42,7 @@ module.exports=async(browser,base,out,name)=>{
    assert.equal(layout.tools.length,2);assert.match(layout.tools[0].text,/Hint/);assert.match(layout.tools[1].text,/Controls/);
    assert.ok(Math.abs(layout.tools[0].rect.y-layout.tools[1].rect.y)<1,'Hint and Controls form one row');
    for(const tool of layout.tools) {
-    assert.ok(tool.rect.height>=44&&tool.rect.bottom<=height,'tool fits viewport');
+    assert.ok(tool.rect.height>=44&&tool.rect.bottom<=Math.max(height,layout.appBottom),'tool fits page flow without shrinking the portrait board');
     assert.ok(tool.rect.width>=44,'tool touch width');
    }
    layouts.push({width,height,...layout});
