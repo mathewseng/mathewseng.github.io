@@ -676,7 +676,8 @@ the footer reserves the same height when collapsed, so the board, player names a
 pip counts never move. Very short screens scroll the summary internally as needed.
 Hint and Controls remain available in the rail above it. Undo turn, analysis/history
 and other secondary actions live in Controls. Confirm sits in the left-hand open
-lane, opposite the local dice, and scales from 48px to 60px with the board. It uses an
+lane, opposite the local dice, at 1.5 times a die’s width and height, with an invisible
+44px minimum touch target on small screens. It uses an
 SVG tick and the current theme’s button surface and corners. It has an accessible name
 and the C shortcut; only keyboard navigation draws a focus ring. Confirm and cube
 responses appear only when the local player can act, never during opponent decisions.

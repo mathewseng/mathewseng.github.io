@@ -26,15 +26,21 @@ module.exports=async(browser,base,out,name)=>{
     const bar=document.querySelector('#board [data-pattern="bar"]').getBoundingClientRect(),surface=document.querySelector('#board [data-pattern="surface"]').getBoundingClientRect(),center={x:(surface.left+bar.left)/2,y:surface.y+surface.height/2};
     const button=document.querySelector('#confirm'),b=button.getBoundingClientRect();
     const mark=button.querySelector('.confirm-check svg').getBoundingClientRect(),style=getComputedStyle(button);
+    const die=document.querySelector('#board .board-die-face > rect'),faceMatrix=die.getScreenCTM(),touch=getComputedStyle(button,'::before');
+    // Firefox includes the painted stroke in SVG rect bounds. Compare the same
+    // face edges across browsers, including the face's actual transform.
+    const dieLeft=new DOMPoint(die.x.baseVal.value,0).matrixTransform(faceMatrix),dieRight=new DOMPoint(die.x.baseVal.value+die.width.baseVal.value,0).matrixTransform(faceMatrix);
+    const dieWidth=Math.hypot(dieRight.x-dieLeft.x,dieRight.y-dieLeft.y);
     const tools=[...document.querySelectorAll('.turn-tools > button')].map(n=>({id:n.id,text:n.textContent,color:getComputedStyle(n).color,opacity:getComputedStyle(n).opacity,rect:n.getBoundingClientRect().toJSON()}));
     const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('button')?.id;
     const collisions=[...document.querySelectorAll('#board .checker > circle:first-child,#board .board-die')].filter(n=>{
      const r=n.getBoundingClientRect();return r.width&&r.height&&Math.min(r.right,b.right)-Math.max(r.left,b.left)>1&&Math.min(r.bottom,b.bottom)-Math.max(r.top,b.top)>1;
     }).length;
-    return {center,barLeft:bar.left,collisions,button:b.toJSON(),mark:mark.toJSON(),appBottom:document.querySelector('.app').getBoundingClientRect().bottom,userSelect:style.getPropertyValue('user-select')||style.getPropertyValue('-webkit-user-select'),tools,hit,opacity:style.opacity};
+    return {center,barLeft:bar.left,collisions,button:b.toJSON(),dieWidth,touch:{width:parseFloat(touch.width),height:parseFloat(touch.height)},mark:mark.toJSON(),appBottom:document.querySelector('.app').getBoundingClientRect().bottom,userSelect:style.getPropertyValue('user-select')||style.getPropertyValue('-webkit-user-select'),tools,hit,opacity:style.opacity};
    });
    assert.ok(Math.abs(layout.button.x+layout.button.width/2-layout.center.x)<1&&Math.abs(layout.button.y+layout.button.height/2-layout.center.y)<1,'Confirm is centered in the left open lane');
-   assert.ok(layout.button.width>=48&&layout.button.width<=60,'scales with the board while keeping a comfortable touch target');
+   assert.ok(Math.abs(layout.button.width-1.5*layout.dieWidth)<1,`Confirm is 1.5 times the rendered die size at ${width}×${height}`);
+   assert.ok(layout.touch.width>=44&&layout.touch.height>=44,'small boards retain a comfortable touch target');
    assert.equal(layout.button.height,layout.button.width);
    assert.ok(layout.button.right<layout.barLeft,'entire button stays on the left half');
    assert.equal(layout.collisions,0,'button does not cover checkers or dice');

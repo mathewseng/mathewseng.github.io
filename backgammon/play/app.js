@@ -179,7 +179,8 @@ function placeCubeReplies() {
   const center = new DOMPoint(203, 330).matrixTransform(matrix);
   boardConfirm.style.left = `${center.x - box.left}px`;
   boardConfirm.style.top = `${center.y - box.top}px`;
-  boardConfirm.style.setProperty('--confirm-size', `${Math.max(48, Math.min(60, 84 * matrix.a))}px`);
+  const dieWidth = ui.board.svg.querySelector('.board-die-face > rect')?.width.baseVal.value ?? 62;
+  boardConfirm.style.setProperty('--confirm-size', `${1.5 * dieWidth * Math.hypot(matrix.a, matrix.b)}px`);
   if (cubeReplies.hidden) return;
   const left = new DOMPoint(54, 330).matrixTransform(matrix);
   const right = new DOMPoint(774, 330).matrixTransform(matrix);

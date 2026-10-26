@@ -7517,12 +7517,13 @@ html.skin-shader .docs-toc--sticky {
 .board-confirm:empty { display: none; }
 .board-confirm > button { pointer-events: auto; }
 .board-confirm #confirm {
+  position: relative;
   display: grid;
   place-items: center;
   width: var(--confirm-size, 48px);
   height: var(--confirm-size, 48px);
-  min-width: 48px;
-  min-height: 48px;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   border-color: var(--control-border);
   border-radius: var(--r-sm);
@@ -7538,6 +7539,15 @@ html.skin-shader .docs-toc--sticky {
     transform calc(140ms * var(--bg-motion-scale, 1)) ease,
     background-color calc(140ms * var(--bg-motion-scale, 1)) ease,
     box-shadow calc(140ms * var(--bg-motion-scale, 1)) ease;
+}
+.board-confirm #confirm::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
 }
 .board-confirm #confirm .confirm-check {
   width: calc(var(--confirm-size, 48px) / 2);
