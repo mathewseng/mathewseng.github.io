@@ -2,7 +2,9 @@ const assert=require('node:assert/strict'),path=require('node:path');
 const {waitWork}=require('./play-helpers.cjs');
 module.exports=async(browser,base,out,name)=>{
  const ctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce',serviceWorkers:'block'});
- const page=await ctx.newPage(),errors=[],report=[];page.on('pageerror',e=>errors.push(e.message));
+ const page=await ctx.newPage(),errors=[],failedRequests=[],report=[];
+ page.on('pageerror',e=>errors.push({message:e.message,stack:e.stack,url:page.url()}));
+ page.on('requestfailed',r=>failedRequests.push({url:r.url(),failure:r.failure()?.errorText}));
  const ready=()=>page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
  try{
   for(const action of ['take','pass','beaver','match']){
@@ -60,6 +62,40 @@ module.exports=async(browser,base,out,name)=>{
    }
    report.push({action});
   }
-  assert.deepEqual(errors,[]);return report;
+  // Opponent decisions must never briefly mount the local player's controls,
+  // including the render before the computer's pending search starts.
+  for(const phase of ['double','move','roll']){
+   await page.setViewportSize({width:390,height:844});
+   await page.goto(base+'/backgammon/');await ready();
+   await page.evaluate(async phase=>{
+    const r=await import('/backgammon/core/rules.mjs'),st=await import('/backgammon/core/storage.mjs');
+    const {localConfig}=await import('/backgammon/core/play-session.mjs');
+    const s=phase==='double'
+     ?r.transition(r.initialState({turn:0,phase:'roll',matchLength:0,rules:{immediateRedoubles:2}}),{type:'double'},0)
+     :r.initialState({turn:1,phase,dice:phase==='move'?[4,1]:[],matchLength:0});
+    st.saveSettings({motion:'reduce',analysisAhead:false,equityBar:false});
+    await st.put('work',{id:'play',game:{id:'opponent-'+phase,started:true,state:s,initial:s,events:[],names:['You','Black'],
+     config:localConfig({mode:'computer',humanSide:0,matchLength:0,rules:s.rules,tutor:false,warning:false})},draft:[]});
+   },phase);
+   await page.goto(base+'/backgammon/play/');await ready();
+   await page.evaluate(async()=>{
+    (await import('/backgammon/engine/client.mjs')).EngineClient.prototype.analyze=()=>{
+     window.opponentAnalysisStarted=true;return new Promise(()=>{});
+    };
+    window.foreignBoardActions=[];
+    const selector='#confirm,#drop-cube,#take-cube,#immediate-redouble';
+    new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{
+     if(node.nodeType!==1)return;
+     if(node.matches(selector))foreignBoardActions.push(node.id);
+     foreignBoardActions.push(...[...node.querySelectorAll(selector)].map(n=>n.id));
+    }))).observe(document.querySelector('#board'),{childList:true,subtree:true});
+   });
+   await page.locator('#resume-match').tap();
+   await page.waitForFunction(()=>window.opponentAnalysisStarted);
+   assert.equal(await page.locator('#confirm,#drop-cube,#take-cube,#immediate-redouble').count(),0,`${phase}: no player actions during opponent search`);
+   assert.deepEqual(await page.evaluate(()=>foreignBoardActions),[],`${phase}: no momentary opponent action buttons`);
+   report.push({opponentPhase:phase,controlsHidden:true});
+  }
+  assert.deepEqual(errors,[],JSON.stringify({errors,failedRequests}));return report;
  }finally{await ctx.close();}
 };

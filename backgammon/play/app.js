@@ -175,10 +175,11 @@ function placeCubeReplies() {
   const matrix = ui.board.svg.getScreenCTM();
   if (!matrix) return;
   const box = ui.board.container.getBoundingClientRect();
-  // The play surface and central bar share x=408; the cube tray is separate.
-  const center = new DOMPoint(408, 330).matrixTransform(matrix);
+  // Center the action in the left-hand open lane, opposite the local dice.
+  const center = new DOMPoint(203, 330).matrixTransform(matrix);
   boardConfirm.style.left = `${center.x - box.left}px`;
   boardConfirm.style.top = `${center.y - box.top}px`;
+  boardConfirm.style.setProperty('--confirm-size', `${Math.max(48, Math.min(60, 84 * matrix.a))}px`);
   if (cubeReplies.hidden) return;
   const left = new DOMPoint(54, 330).matrixTransform(matrix);
   const right = new DOMPoint(774, 330).matrixTransform(matrix);
@@ -1988,17 +1989,18 @@ function renderActions() {
     $("message").replaceChildren(mine ? draft.progressMessage(instruction) : instruction);
     if (config.mode === "computer" && myTurn(s))
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
-    if (myTurn(s)) a.append(
+    if (mine) a.append(
       button(
         confirmIcon(),
         submit,
-        `primary${draft.complete() && mine ? " turn-ready" : ""}`,
+        draft.complete() ? "turn-ready" : "",
         { disabled: !mine || !draft.complete(), id: "confirm", "aria-label":"Confirm turn", title:"Confirm turn (C)" },
       ),
     );
   } else if (s.phase === "double") {
     $("message").textContent =
       `${offerName(s)} to ${s.cube.value * 2} from ${names()[s.pending.by]}. ${names()[decisionPlayer(s)]} to decide.`;
+    if (!mine) return;
     cubeReplies.hidden = false;
     cubeReplies.append(
       button(el("span", {class:"cube-reply-face"}, "Drop"), () => submitCube({ type: "pass" }), "cube-reply", {
