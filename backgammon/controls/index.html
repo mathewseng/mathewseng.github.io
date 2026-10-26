@@ -18,13 +18,13 @@
     <meta name="apple-mobile-web-app-title" content="Backgammon" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=6e765ac066a4e818" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=6e765ac066a4e818" />
-    <link rel="stylesheet" href="../styles.css?bgv=6e765ac066a4e818" />
-    <link rel="stylesheet" href="../docs.css?bgv=6e765ac066a4e818" />
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=502c3bcb79323801" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=502c3bcb79323801" />
+    <link rel="stylesheet" href="../styles.css?bgv=502c3bcb79323801" />
+    <link rel="stylesheet" href="../docs.css?bgv=502c3bcb79323801" />
     <script>document.documentElement.classList.add("is-ready");</script>
     <script>(function(){try{var c=JSON.parse(localStorage.getItem("backgammon.v1.skin-boot")||"null"),x=/^#[0-9A-Fa-f]{6}$/;if(c&&/^[a-z][a-z0-9-]{1,23}$/.test(c.id)&&x.test(c.page)){var h=document.documentElement,s=h.style;h.dataset.skin=c.id;s.setProperty("--page",c.page);if(x.test(c.surface))s.setProperty("--surface",c.surface);if(x.test(c.ink))s.setProperty("--ink",c.ink);if(x.test(c.muted))s.setProperty("--muted",c.muted);s.colorScheme=c.scheme==="light"?"light":"dark";}}catch(e){}})();</script>
-    <script type="module" src="../ui/update-page.mjs?bgv=6e765ac066a4e818"></script>
+    <script type="module" src="../ui/update-page.mjs?bgv=502c3bcb79323801"></script>
   </head>
   <body class="docs-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -70,7 +70,7 @@
             <figure class="docs-flow">
               <ol class="click-flow">
               <li><div class="flow-question"><span class="flow-number" aria-hidden="true">1</span><h3>Is it your turn to roll?</h3></div>
-                <div class="flow-answer"><span class="flow-yes">Yes <span aria-hidden="true">→</span></span><p>Tap the board or press C to roll; tap the cube or press D to offer a legal double. D also beavers/raccoons, P passes and T takes. Opening rolls happen automatically. With a checker on the bar and at least one entry point blocked by two or more opposing checkers, double tap/click the board to keep rolling on your turns until all your checkers enter. Double tap/click “Auto roll on” again to skip ahead to your next choice. Tap/click once to stop; entry and cube-response choices remain yours. If all six bar entries are blocked, no dice are rolled: choose Double or No double · pass. Settings → Display &amp; controls → Closed-out passing defaults to Off. Forced passes only skips when doubling is unavailable; Skip clearly bad doubles also skips doubles at least 0.25 equity worse in computer games. Any open entry keeps normal rolling.</p></div>
+                <div class="flow-answer"><span class="flow-yes">Yes <span aria-hidden="true">→</span></span><p>Tap the board or press C to roll; tap the cube or press D to offer a legal double. When answering a cube offer, D drops, T takes, B beavers and R raccoons. Opening rolls happen automatically. With a checker on the bar and at least one entry point blocked by two or more opposing checkers, double tap/click the board to keep rolling on your turns until all your checkers enter. Double tap/click “Auto roll on” again to skip ahead to your next choice. Tap/click once to stop; entry and cube-response choices remain yours. If all six bar entries are blocked, no dice are rolled: choose Double or No double · pass. Settings → Display &amp; controls → Closed-out passing defaults to Off. Forced passes only skips when doubling is unavailable; Skip clearly bad doubles also skips doubles at least 0.25 equity worse in computer games. Any open entry keeps normal rolling.</p></div>
                 <p class="flow-next"><span class="flow-next-label">Dice rolled · continue <span aria-hidden="true">↓</span></span></p></li>
               <li><div class="flow-question"><span class="flow-number" aria-hidden="true">2</span><h3>Which die is selected?</h3></div>
                 <div class="flow-answer"><p>The larger, tinted face marks it. Before moving, tap a die or press <kbd>S</kbd> to switch. After playing, tap a used die to undo its move (and any continuation that depends on it); tap an unused die, the surrounding lane or press <kbd>S</kbd> to undo the latest editable step. An unusable die shows a red ×; an automatically played die shows an orange forward arrow. Regular moves show a green check.</p></div></li>

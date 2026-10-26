@@ -208,7 +208,7 @@ module.exports = async function keyboardUX(
     });
     await page.goto(base + "/backgammon/play/#resume=" + pendingId);
     await page.locator("#drop-cube").waitFor();
-    await page.keyboard.press("p");
+    await page.keyboard.press("d");
     await wait((s) => s.game.state.phase === "over");
     await page.locator("#next-game").waitFor();
     await page.evaluate(() => {

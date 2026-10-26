@@ -18,7 +18,7 @@ test("default keys cover visible points and context-dependent cube actions witho
       `bottom${i}`,
     );
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "d", "roll"), "double");
-  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "p", "double"), "drop");
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "d", "double"), "drop");
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "t", "double"), "take");
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "t", "move"), "bottom4");
   for (const orientation of [0, 1])
@@ -61,7 +61,7 @@ test("shifted point keys retain quick-play mapping and preserve help, named keys
 
 test("revised defaults migrate untouched bindings and retain user customizations", () => {
   assert.equal(
-    shortcutAction(DEFAULT_SHORTCUTS, "d", "double"),
+    shortcutAction(DEFAULT_SHORTCUTS, "b", "double"),
     "redouble",
   );
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS, "Enter", "roll"), "roll");
@@ -91,16 +91,30 @@ test("undo shortcut is draft-only, including remapped keys", () => {
 });
 
 
-test("C never touches the cube; D never drops; previous untouched defaults migrate", () => {
+test("C never touches the cube; D doubles or drops by phase; previous untouched defaults migrate", () => {
   for(const phase of ["setup","opening","roll","move","over"])
     assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"c",phase),["opening","roll"].includes(phase)?"roll":"confirm");
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"c","double"),null);
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"d","roll"),"double");
-  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"d","double"),"redouble");
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,"d","double"),"drop");
   for(const confirm of [["c","Enter"],["Enter"]]) {
     const old={...structuredClone(DEFAULT_SHORTCUTS),double:["c"],redouble:["c"],drop:["d"],roll:["Space","Enter"],confirm};
     assert.deepEqual(normalizeShortcuts(old),DEFAULT_SHORTCUTS);
     old.hint=["j"];
     assert.deepEqual(normalizeShortcuts(old),old);
   }
+});
+
+
+test("cube replies have separate mnemonics and migrate the previous complete default map", () => {
+  for (const [key, action] of [['d','drop'],['t','take'],['b','redouble'],['r','raccoon']])
+    assert.equal(shortcutAction(DEFAULT_SHORTCUTS,key,'double'),action);
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'p','double'),null);
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'b','move'),'bar');
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'r','move'),'bottom3');
+  const old={...structuredClone(DEFAULT_SHORTCUTS),drop:['p'],redouble:['d']};
+  delete old.raccoon;
+  assert.deepEqual(normalizeShortcuts(old),DEFAULT_SHORTCUTS);
+  old.drop=['r'];old.redouble=['v'];old.undo=['j'];
+  assert.deepEqual(normalizeShortcuts(old),{...old,raccoon:[]},'new R binding never overwrites a custom cube action');
 });

@@ -68,7 +68,7 @@ test('new tables default to adaptive bot and reviews, visible feedback, warnings
   } finally { globalThis.localStorage=previous; }
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'c','move'),'confirm');
   assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'c','roll'),'roll');
-  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'d','double'),'redouble');
+  assert.equal(shortcutAction(DEFAULT_SHORTCUTS,'d','double'),'drop');
 });
 test('unlimited opening doubles exceed old ten-tie limit, finite limits and match rules stay explicit', () => {
   const rules=defaultPlayRules(0); assert.equal(rules.automaticDoubles,-1); assert.equal(rules.immediateRedoubles,2);

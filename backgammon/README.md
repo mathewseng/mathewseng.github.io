@@ -227,7 +227,7 @@ Settings → **Keyboard** edits every binding, supports up to three comma-separa
 - Top row, left to right: `1 2 3 4 5 6 7 8 9 0 - =`. Bottom row: `Q W E R T Y U I O P [ ]`. These track the displayed orientation. Select a checker, then its destination; Shift + point uses nearest-checker quick play.
 - `B`: bar when occupied, otherwise bear off; `A`: bear-off alias; `Z`: undo an unconfirmed draft step only (never a committed turn); `X`: reset draft; `S`: prefer the other remaining die; `Escape`: clear selection.
 - `Space` or `Enter`: roll in the rolling/opening phase. `Enter` also confirms a complete turn, acknowledges the opening roll, starts a match or continues to the next game.
-- `C`: continue, roll or confirm. `D`: offer a double before rolling, or beaver/raccoon when answering an offer and permitted. `P` passes/drops; `T` takes. Untouched older default bindings migrate automatically; customized maps remain yours.
+- `C`: continue, roll or confirm. `D`: offer a double before rolling. When answering an offer, `D` drops, `T` takes, `B` beavers and `R` raccoons. Untouched older default bindings migrate automatically; customized maps remain yours.
 - `H`: hint against the bot; `F`: flip orientation; `?`: keyboard settings/help. Native Tab navigation reaches all other controls. Shortcuts obey the same turn ownership, disabled controls and confirmation policies as pointer input.
 
 
@@ -350,7 +350,7 @@ When idle, `core/prethink.mjs` explores up to three legal near-best continuation
 
 Cube speed uses an exact rule gate: when doubling is unavailable, the bot rolls without searching for a nonexistent cube decision. Real decisions, including Jacoby/beaver/raccoon continuations and match context, continue through GNUbg. Pip-count/win-percentage rules of thumb do not replace that evaluation.
 
-In Advanced mode, point-space clicks prioritize a direct move (selected die first), then a legal multi-die journey by the closest checker. This includes both dice, bar entry and doubles. Checker-disc clicks prefer the selected die, using the other when necessary; the route chooser only appears for genuinely different hitting outcomes or dice usage. C continues/rolls/confirms; D doubles/beavers/raccoons; P passes/drops. The on-board cube and action controls show the configured keycaps. Existing customized bindings remain editable in Settings.
+In Advanced mode, point-space clicks prioritize a direct move (selected die first), then a legal multi-die journey by the closest checker. This includes both dice, bar entry and doubles. Checker-disc clicks prefer the selected die, using the other when necessary; the route chooser only appears for genuinely different hitting outcomes or dice usage. C continues/rolls/confirms; D doubles before rolling; cube replies use D to drop, T to take, B to beaver and R to raccoon. The on-board cube and action controls show the configured keycaps. Existing customized bindings remain editable in Settings.
 
 See [analysis-ahead implementation and measured integration timings](docs/PRETHINK.md) for cancellation, budgets and validation.
 

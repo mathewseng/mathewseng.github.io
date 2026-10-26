@@ -20,7 +20,8 @@ export function decorateShortcuts(root) {
     const control = root.querySelector(`#${id}`);
     if (!control) continue;
     control.querySelectorAll("kbd").forEach(node => node.remove());
-    const key = prefs.keyboardEnabled && prefs.shortcuts[action]?.[0];
+    const binding = id === "immediate-redouble" && control.dataset.cubeAction === "raccoon" ? "raccoon" : action;
+    const key = prefs.keyboardEnabled && prefs.shortcuts[binding]?.[0];
     if (key) control.append(keycap(key));
   }
 }
@@ -38,7 +39,7 @@ export function shortcutControls() {
     el(
       "p",
       { class: "muted small" },
-      "Point keys follow the visible rows, left to right. Shift + point moves the nearest legal checker. C continues, rolls or confirms. D uses the cube: double, beaver or raccoon. P passes/drops; T takes. B selects the bar first, otherwise bears off. Enter or Space rolls. S switches dice before moving, or undoes the latest editable draft step. Z undoes one unconfirmed step; X clears the editable draft. Committed takebacks require the Undo last turn button. Shortcuts pause in forms and dialogs. Tab, arrows, Enter and Escape still operate ordinary controls.",
+      "Point keys follow the visible rows, left to right. Shift + point moves the nearest legal checker. C continues, rolls or confirms. D doubles before rolling; when replying to a cube offer, D drops, T takes, B beavers and R raccoons. During checker play, B selects the bar first, otherwise bears off. Enter or Space rolls. S switches dice before moving, or undoes the latest editable draft step. Z undoes one unconfirmed step; X clears the editable draft. Committed takebacks require the Undo last turn button. Shortcuts pause in forms and dialogs. Tab, arrows, Enter and Escape still operate ordinary controls.",
     ),
   );
   for (const [label, defs] of [

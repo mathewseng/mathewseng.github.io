@@ -36,14 +36,15 @@ export const SHORTCUTS = [
     keys: ["d"],
     phases: ["roll"],
   },
-  { id: "drop", label: "Pass / drop cube offer", keys: ["p"], phases: ["double"] },
+  { id: "drop", label: "Pass / drop cube offer", keys: ["d"], phases: ["double"] },
   { id: "take", label: "Take cube offer", keys: ["t"], phases: ["double"] },
   {
     id: "redouble",
-    label: "Beaver / raccoon",
-    keys: ["d"],
+    label: "Beaver",
+    keys: ["b"],
     phases: ["double"],
   },
+  { id: "raccoon", label: "Raccoon", keys: ["r"], phases: ["double"] },
   {
     id: "roll",
     label: "Roll dice",
@@ -113,12 +114,14 @@ export function normalizeShortcuts(value) {
   // Migrate complete untouched historical maps only. Explicit custom bindings
   // retain their meaning; the Keyboard screen offers Restore defaults.
   const older = [
+    { redouble: ["d"], drop: ["p"] },
     { double: ["c"], redouble: ["c"], drop: ["d"], roll: ["Space", "Enter"] },
     { double: ["c"], redouble: ["c"], drop: ["d"], roll: ["Space", "Enter"], confirm: ["Enter"] },
     { double: ["c", "d"], redouble: ["v"], drop: ["d"], roll: ["Space"], confirm: ["Enter"] },
     { double: ["c", "d"], redouble: ["v"], drop: ["d"], roll: ["Space"] },
   ];
   if (value && older.some(old => SHORTCUTS.every(d =>
+      (d.id === "raccoon" && !Object.hasOwn(value, d.id)) ||
       JSON.stringify(value[d.id]) === JSON.stringify(old[d.id] || d.keys)))) value = null;
   const bindings = Object.fromEntries(
     SHORTCUTS.map((d) => [
@@ -126,6 +129,10 @@ export function normalizeShortcuts(value) {
       Array.isArray(value?.[d.id]) ? value[d.id] : [...d.keys],
     ]),
   );
+  // A new default must not overwrite a custom cube binding already using R.
+  if (value && !Object.hasOwn(value, "raccoon") && SHORTCUTS.some(d =>
+      d.id !== "raccoon" && d.phases.includes("double") && bindings[d.id]?.includes("r")))
+    bindings.raccoon = [];
   return shortcutErrors(bindings).length
     ? structuredClone(DEFAULT_SHORTCUTS)
     : bindings;

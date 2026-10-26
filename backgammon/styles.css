@@ -7466,6 +7466,7 @@ html.skin-shader .docs-toc--sticky {
 }
 .cube-reply-take .cube-reply-face { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .cube-reply > kbd { position: absolute; right: 8px; margin: 0; }
+.board-cube-replies .cube-reply-take > kbd.keycap { color: var(--on-accent); }
 @media (min-width: 1025px) and (min-height: 501px) {
   .cube-reply:has(> kbd) .cube-reply-face { padding-inline: 34px; }
 }

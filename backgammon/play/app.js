@@ -651,7 +651,8 @@ installPlayShortcuts({
       double: "#double-cube",
       drop: "#drop-cube",
       take: "#take-cube",
-      redouble: "#immediate-redouble",
+      redouble: '#immediate-redouble[data-cube-action="beaver"]',
+      raccoon: '#immediate-redouble[data-cube-action="raccoon"]',
       hint: "#hint",
     };
     if (selectors[action]) {
@@ -2029,7 +2030,7 @@ function renderActions() {
           cubeReplyFace(offerDepth(s) ? "Raccoon" : "Beaver", s.cube.value * 4),
           () => submitCube({ type: offerDepth(s) ? "raccoon" : "beaver" }),
           "cube-reply cube-reply-redouble",
-          { disabled: !mine, id: "immediate-redouble", "aria-label": `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}` },
+          { disabled: !mine, id: "immediate-redouble", "data-cube-action": offerDepth(s) ? "raccoon" : "beaver", "aria-label": `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}` },
         ),
       );
   } else if (s.phase === "resign") {
