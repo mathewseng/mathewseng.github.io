@@ -22,6 +22,7 @@ export function ruleControls(matchLength, initial, change = () => {}, choice = s
       [0, "Off"],
       [1, "Beavers"],
       [2, "Beavers and raccoons"],
+      [-1, "Beavers and raccoons · no limit"],
     ],
     rules.immediateRedoubles,
   );
@@ -45,7 +46,7 @@ export function ruleControls(matchLength, initial, change = () => {}, choice = s
       el(
         "p",
         { class: "muted small" },
-        "A beaver accepts and immediately redoubles, retaining the cube. A raccoon is the original doubler's immediate redouble; the beaverer keeps ownership. Declining costs the stake already accepted.",
+        "A beaver accepts and immediately redoubles. A raccoon redoubles again. With no limit, they alternate until someone takes or drops; the first beaverer keeps the cube. Dropping loses the stake already accepted.",
       ),
     ),
   );

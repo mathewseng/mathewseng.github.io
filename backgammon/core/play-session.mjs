@@ -14,7 +14,7 @@ export function defaultPlayRules(matchLength) {
     ...STANDARD_RULES,
     jacoby: matchLength === 0,
     automaticDoubles: matchLength === 0 ? -1 : 0,
-    immediateRedoubles: matchLength === 0 ? 2 : 0,
+    immediateRedoubles: matchLength === 0 ? -1 : 0,
   };
 }
 export function localConfig(value = {}) {

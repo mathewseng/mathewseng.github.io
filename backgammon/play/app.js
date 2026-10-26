@@ -24,7 +24,7 @@ import {
   decisionPlayer,
   ruleSummary,
   canImmediateRedouble,
-  offerDepth,
+  immediateRedoubleAction,
   offerName,
 } from "../core/rules.mjs";
 import {
@@ -2027,10 +2027,10 @@ function renderActions() {
     if (canImmediateRedouble(s))
       cubeReplies.append(
         button(
-          cubeReplyFace(offerDepth(s) ? "Raccoon" : "Beaver", s.cube.value * 4),
-          () => submitCube({ type: offerDepth(s) ? "raccoon" : "beaver" }),
+          cubeReplyFace(immediateRedoubleAction(s) === "raccoon" ? "Raccoon" : "Beaver", s.cube.value * 4),
+          () => submitCube({ type: immediateRedoubleAction(s) }),
           "cube-reply cube-reply-redouble",
-          { disabled: !mine, id: "immediate-redouble", "data-cube-action": offerDepth(s) ? "raccoon" : "beaver", "aria-label": `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}` },
+          { disabled: !mine, id: "immediate-redouble", "data-cube-action": immediateRedoubleAction(s), "aria-label": `${immediateRedoubleAction(s) === "raccoon" ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}` },
         ),
       );
   } else if (s.phase === "resign") {

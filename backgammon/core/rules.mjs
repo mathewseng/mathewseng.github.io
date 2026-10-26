@@ -25,12 +25,14 @@ export const decisionPlayer = (s) =>
 export const offerDepth = (s) =>
   s.pending?.depth === undefined ? 0 : s.pending.depth;
 export const offerName = (s) =>
-  ["Double", "Beaver", "Raccoon"][offerDepth(s)];
+  offerDepth(s) === 0 ? "Double" : offerDepth(s) % 2 ? "Beaver" : "Raccoon";
+export const immediateRedoubleAction = (s) =>
+  offerDepth(s) % 2 ? "raccoon" : "beaver";
 export function canImmediateRedouble(s) {
   return (
     s.phase === "double" &&
     !s.matchLength &&
-    offerDepth(s) < rulesOf(s).immediateRedoubles &&
+    (rulesOf(s).immediateRedoubles === -1 || offerDepth(s) < rulesOf(s).immediateRedoubles) &&
     s.cube.value * 4 <= MAX_CUBE
   );
 }
@@ -48,7 +50,9 @@ export function ruleSummary(s) {
         ? "Every opening tie doubles"
         : `Opening doubles · limit ${r.automaticDoubles}`
       : null,
-    r.immediateRedoubles === 1
+    r.immediateRedoubles === -1
+      ? "Beavers + raccoons · no limit"
+      : r.immediateRedoubles === 1
       ? "Beavers"
       : r.immediateRedoubles === 2
         ? "Beavers + raccoons"
@@ -166,11 +170,11 @@ export function errors(s) {
     typeof s.rules.cube !== "boolean" ||
     typeof s.rules.jacoby !== "boolean" ||
     !whole(s.rules.automaticDoubles ?? 0, -1, 10) ||
-    !whole(s.rules.immediateRedoubles ?? 0, 0, 2) ||
+    !whole(s.rules.immediateRedoubles ?? 0, -1, 2) ||
     Object.keys(s.rules).some((k) => !Object.hasOwn(STANDARD_RULES, k))
   )
     e.push(
-      "Invalid rules: opening doubles must be -1 (no limit) or 0–10 and immediate redoubles 0–2.",
+      "Invalid rules: opening doubles must be -1 (no limit) or 0–10 and immediate redoubles -1 (no limit) or 0–2.",
     );
   else if (
     (s.matchLength || !s.rules.cube) &&
@@ -216,9 +220,9 @@ export function errors(s) {
     s.phase === "double" &&
     (!s.pending ||
       s.pending.type !== "double" ||
-      !whole(offerDepth(s), 0, 2) ||
-      s.pending.by !== (offerDepth(s) === 1 ? 1 - s.turn : s.turn) ||
-      offerDepth(s) > rulesOf(s).immediateRedoubles ||
+      !whole(offerDepth(s), 0, Math.log2(MAX_CUBE) - 1) ||
+      s.pending.by !== (offerDepth(s) % 2 ? 1 - s.turn : s.turn) ||
+      (rulesOf(s).immediateRedoubles !== -1 && offerDepth(s) > rulesOf(s).immediateRedoubles) ||
       (offerDepth(s) === 0 && ![null, s.turn].includes(s.cube?.owner)) ||
       (offerDepth(s) > 0 &&
         (s.matchLength ||
@@ -560,7 +564,7 @@ export function transition(source, action, actor = source.turn) {
     case "raccoon":
       if (
         !canImmediateRedouble(s) ||
-        action.type !== (offerDepth(s) ? "raccoon" : "beaver")
+        action.type !== immediateRedoubleAction(s)
       )
         throw new Error(
           "That immediate redouble is not available under this game's rules.",

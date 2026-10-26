@@ -13,7 +13,7 @@ export function toXGID(s, { engine = false } = {}) {
     );
   if (
     !engine &&
-    (rulesOf(s).automaticDoubles || rulesOf(s).immediateRedoubles > 1)
+    (rulesOf(s).automaticDoubles || ![0, 1].includes(rulesOf(s).immediateRedoubles))
   )
     throw new Error(
       "Use a full position link or Library JSON to preserve the opening-double limit and raccoon setting.",

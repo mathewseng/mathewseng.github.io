@@ -11,7 +11,7 @@ import {
   commitTurn,
   canDouble,
   canImmediateRedouble,
-  offerDepth,
+  immediateRedoubleAction,
   offerName,
   decisionPlayer,
   playerName,
@@ -313,8 +313,8 @@ function actions() {
       button("Take", () => submit("take"), "primary", { id: "cube-take" }),
       ...(canImmediateRedouble(s)
         ? [
-            button(offerDepth(s) ? "Raccoon" : "Beaver", () =>
-              submit(offerDepth(s) ? "raccoon" : "beaver"),
+            button(immediateRedoubleAction(s) === "raccoon" ? "Raccoon" : "Beaver", () =>
+              submit(immediateRedoubleAction(s)),
             ),
           ]
         : []),

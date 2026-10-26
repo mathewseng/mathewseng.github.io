@@ -51,7 +51,7 @@ function commit(game, action) {
 test("new money sessions double every opening tie; matches keep Crawford rules", () => {
   let s = initialState({ matchLength: 0, rules: defaultPlayRules(0) });
   assert.equal(s.rules.jacoby, true);
-  assert.equal(s.rules.immediateRedoubles, 2);
+  assert.equal(s.rules.immediateRedoubles, -1);
   s = transition(s, { type: "opening", dice: [3, 3] });
   assert.deepEqual(s.cube, { value: 2, owner: null });
   s = transition(s, { type: "opening", dice: [6, 6] });

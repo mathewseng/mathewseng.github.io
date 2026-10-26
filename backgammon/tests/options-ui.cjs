@@ -1,6 +1,7 @@
 // Optional rules through the actual Play UI, persisted state, Solver and real WASM.
 const assert = require("node:assert/strict");
 const path = require("node:path");
+const { waitWork } = require('./play-helpers.cjs');
 module.exports = async function optionsUX(browser, base, out, browserName) {
   const context = await browser.newContext({
     viewport: { width: 1366, height: 768 },
@@ -65,7 +66,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
       await page
         .getByLabel("Immediate redoubles", { exact: true })
         .inputValue(),
-      "2",
+      "-1",
     );
     await page
       .getByLabel("Automatic opening doubles", { exact: true })
@@ -91,7 +92,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
     await page
       .getByRole("button", { name: "Beaver to 8", exact: true })
       .click();
-    assert.equal((await state()).pending.depth, 1);
+    await waitWork(page, w => w?.game.state.pending?.depth === 1);
     await shot("beaver");
     await page.reload();
     await page.locator("#resume-match").click();
@@ -99,10 +100,10 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
     await page
       .getByRole("button", { name: "Raccoon to 16", exact: true })
       .click();
-    assert.equal((await state()).pending.depth, 2);
+    await waitWork(page, w => w?.game.state.pending?.depth === 2);
     await shot("raccoon");
     await page.getByRole("button", { name: "Take 16", exact: true }).click();
-    const s = await state();
+    const s = (await waitWork(page, w => w?.game.events.at(-1)?.action.type === 'take')).game.state;
     assert.deepEqual(s.cube, { value: 16, owner: 0 });
     assert.equal(s.turn, 1);
     assert.equal(s.phase, "roll");
@@ -196,7 +197,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
         const points = Array(24).fill(0);
         points[5] = 15;
         points[20] = -15;
-        for (const depth of [1, 2])
+        for (const depth of [1, 2, -1])
           for (const turn of [0, 1]) {
             let p = initialState({
               matchLength: 0,
@@ -216,7 +217,7 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
             });
             p = transition(p, { type: "double" }, turn);
             let first;
-            for (const choice of ["beaver", "raccoon", "take"]) {
+            for (const choice of ["beaver", "raccoon", "beaver", "raccoon", "beaver", "take"]) {
               const r = await e.analyze(p),
                 who = decisionPlayer(p);
               if (!r.decisionOptions?.length)
@@ -252,6 +253,11 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
                 ms: r.elapsedMs,
               });
               first ||= r;
+              if (depth === -1 && !p.pending.depth) {
+                const finite = rows.find(x => x.depth === 2 && x.stage === 0 && x.turn === turn);
+                near(r.equity, finite.equity);
+                if (r.action !== finite.action) throw new Error("Unlimited ordinary-offer policy differs from the reference context");
+              }
               if (!r.decisionOptions.some((c) => c.action === choice)) break;
               p = transition(p, { type: choice }, who);
               if (p.phase !== "double") break;

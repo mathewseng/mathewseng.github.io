@@ -10,7 +10,11 @@ const URL_INDEX=new URL('./opening-book-data/xg/index.json',import.meta.url);
 // Opening ties raise the centered money cube without changing cube ownership
 // or Jacoby status. These equities are in current-cube units, so scaling that
 // stake does not change the opening/reply ranking (including immediate redoubles).
-export const referenceContext=state=>state?.rules?.immediateRedoubles===2&&state.cube?.value*8<=MAX_CUBE&&bookContext({...state,rules:{...state.rules,immediateRedoubles:0}});
+// Further alternating replies change off-policy raccoon decisions, but not an
+// optimal ordinary double response: the advantaged side never drops and the
+// disadvantaged side never benefits from accepting and redoubling again.
+// cube-yield.test.mjs checks finite/unlimited root values across both signs.
+export const referenceContext=state=>[-1,2].includes(state?.rules?.immediateRedoubles)&&state.cube?.value*8<=MAX_CUBE&&bookContext({...state,rules:{...state.rules,immediateRedoubles:0}});
 export const referenceEligible=(state,options)=>referenceContext(state)&&bookEligible({...state,rules:{...state.rules,immediateRedoubles:0}},options);
 export function referenceResult(state,entry,index,preset='auto',submitted=null){
  assertState(state);
@@ -44,7 +48,7 @@ export class XGReferenceBook{
  }
  async lookup(state,{preset='auto',submitted=null}={}){if(!referenceContext(state))return null;const index=await this.load(),roll=[...state.dice].sort((a,b)=>b-a).join(''),entry=index?.entries[bookBoardKey(state)]?.[roll];if(!entry)return null;try{return referenceResult(state,entry,index,preset,submitted);}catch{return null;}}
 }
-// Live analysis uses references only under their actual rule context. An
+// Live analysis uses references under their source or equivalent optimal-play rule context. An
 // unlisted submitted move falls back as a whole comparison, never mixed EVs.
 export class PreferredOpeningBook{
  constructor({fetcher=(...args)=>fetch(...args)}={}){this.reference=new XGReferenceBook({fetcher});this.fallback=new RolloutOpeningBook({fetcher});}

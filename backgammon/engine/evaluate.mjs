@@ -12,6 +12,7 @@ import {
   decisionPlayer,
   canImmediateRedouble,
   offerDepth,
+  immediateRedoubleAction,
 } from "../core/rules.mjs";
 import { toXGID as exportXGID } from "../core/xgid.mjs";
 import { ENGINE_VERSION, PRESETS, CAPABILITIES } from "./metadata.mjs";
@@ -87,7 +88,7 @@ export function createEvaluator(module) {
       let actual=result.candidates.find(c=>c.key===key);
       if (!actual) {
         const scored=scoreChecker([toXGID(s),toXGID({...after,phase:'roll',dice:[]}),
-          prepared.settings.plies,Number(rulesOf(s).immediateRedoubles>0)], prepared.settings.pruning !== false);
+          prepared.settings.plies,Number(rulesOf(s).immediateRedoubles!==0)], prepared.settings.pruning !== false);
         actual={...scored,key,steps:structuredClone(submitted),notation:notation(submitted,s.turn)};
         result.candidates.push(actual);
         result.candidates.sort((a,b)=>b.equity-a.equity);
@@ -158,7 +159,7 @@ export function createEvaluator(module) {
         xgid = toXGID(
           offerDepth(s) ? { ...s, phase: "roll", pending: null } : s,
         ),
-        beavers = Number(rulesOf(s).immediateRedoubles > 0);
+        beavers = Number(rulesOf(s).immediateRedoubles !== 0);
       const base = {
         engine: ENGINE_VERSION,
         settings: { ...settings, cubeful: s.rules.cube,
@@ -186,16 +187,22 @@ export function createEvaluator(module) {
           // Enumerate real legal cube-response branches. Values retain the
           // original roller's perspective and original cube units throughout.
           const unit = s.cube.value;
+          let acceptedEquity;
           const leaf = function* (state) {
             if (state.phase === "over")
               return ((state.result.winner === s.turn ? 1 : -1) * state.result.points) / unit;
-            const result = call(value, [toXGID(state), settings.plies, beavers]);
-            yield;
-            return result.equity * state.cube.value / unit;
+            // Every take in this money-game chain has the same board, roller,
+            // owner and Jacoby status. Only the stake changes, so evaluate its
+            // normalized equity once and rescale, even with unlimited replies.
+            if (acceptedEquity === undefined) {
+              acceptedEquity = call(value, [toXGID(state), settings.plies, beavers]).equity;
+              yield;
+            }
+            return acceptedEquity * state.cube.value / unit;
           };
           const response = function* (state) {
             const actor = decisionPlayer(state), actions = ["take", "pass"], choices = [];
-            if (canImmediateRedouble(state)) actions.push(offerDepth(state) ? "raccoon" : "beaver");
+            if (canImmediateRedouble(state)) actions.push(immediateRedoubleAction(state));
             for (const action of actions) {
               const next = transition(state, { type: action }, actor);
               choices.push({action, equity: next.phase === "double"

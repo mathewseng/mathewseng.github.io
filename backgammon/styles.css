@@ -7455,15 +7455,12 @@ html.skin-shader .docs-toc--sticky {
 }
 .cube-reply-content {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 1px;
 }
-.cube-reply-value { font-variant-numeric: tabular-nums; }
-@media (max-width: 600px), (max-height: 500px) {
-  .cube-reply-content { flex-direction: column; gap: 1px; }
-  .cube-reply-value { font-size: .85em; }
-}
+.cube-reply-value { font-variant-numeric: tabular-nums; font-size: .85em; }
 .cube-reply-take .cube-reply-face { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .cube-reply > kbd { position: absolute; right: 8px; margin: 0; }
 .board-cube-replies .cube-reply-take > kbd.keycap { color: var(--on-accent); }

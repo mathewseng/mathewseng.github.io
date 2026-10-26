@@ -733,8 +733,8 @@ function contextDialog(focus) {
         ["beaver", "Respond to beaver"],
         ["raccoon", "Respond to raccoon"],
       ],
-      source.phase === "double" && source.pending?.depth
-        ? ["double", "beaver", "raccoon"][source.pending.depth]
+      source.phase === "double"
+        ? offerName(source).toLowerCase()
         : source.phase,
     );
   const d1 = diceChoices(source.dice[0] || 3),
@@ -843,7 +843,9 @@ function contextDialog(focus) {
                       ? 1 - Number(turn.value)
                       : Number(turn.value),
                   ...(phase.value !== "double"
-                    ? { depth: phase.value === "beaver" ? 1 : 2 }
+                    ? { depth: source.phase === "double" && phase.value === offerName(source).toLowerCase()
+                        ? source.pending.depth
+                        : phase.value === "beaver" ? 1 : 2 }
                     : {}),
                 }
               : null,

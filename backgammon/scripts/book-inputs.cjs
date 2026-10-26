@@ -23,6 +23,8 @@ function resolveBookInputs() {
   // historical roll/move replay remain unchanged.
   // Direct record cloning in enumeration preserves the same boards and moves;
   // compatibility checks exercise every unordered roll, including doubles.
+  // Unlimited immediate redoubles extend optional cube responses only; the
+  // historical no-redouble board rules and engine encoding are unchanged.
   // book-inputs.test.cjs compares current legal turns and encoding to the
   // immutable bg5 snapshot. Compatible hashes do not change book provenance.
   for (const file of ['core/rules.mjs', 'core/xgid.mjs'])

@@ -44,11 +44,13 @@ module.exports=async(browser,base,out,name)=>{
     assert.ok(boxes['drop-cube'].x+boxes['drop-cube'].width<boxes['take-cube'].x);
     const labels=await page.locator('.cube-reply').evaluateAll(buttons=>buttons.map(button=>{
       const face=button.querySelector('.cube-reply-face').getBoundingClientRect(),content=button.querySelector('.cube-reply-content').getBoundingClientRect();
-      return {id:button.id,dx:content.x+content.width/2-face.x-face.width/2,dy:content.y+content.height/2-face.y-face.height/2,inside:content.left>=face.left&&content.right<=face.right&&content.top>=face.top&&content.bottom<=face.bottom};
+      const label=button.querySelector('.cube-reply-label').getBoundingClientRect(),value=button.querySelector('.cube-reply-value').getBoundingClientRect();
+      return {id:button.id,stacked:label.bottom<=value.top,dx:content.x+content.width/2-face.x-face.width/2,dy:content.y+content.height/2-face.y-face.height/2,inside:content.left>=face.left&&content.right<=face.right&&content.top>=face.top&&content.bottom<=face.bottom};
     }));
     for(const label of labels){
       assert.ok(Math.abs(label.dx)<1&&Math.abs(label.dy)<1,`label and value centered together: ${JSON.stringify(label)}`);
       assert.ok(label.inside,`label fits button: ${label.id} at ${width}×${height}`);
+      assert.ok(label.stacked,`word stays above the value at ${width}×${height}`);
     }
     for(const b of Object.values(boxes).filter(Boolean))assert.ok(b.height>=44&&b.y>=0&&b.bottom<=height+1,JSON.stringify({width,height,boxes}));
     if(action!=='match'){

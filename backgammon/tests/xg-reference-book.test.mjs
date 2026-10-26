@@ -46,6 +46,9 @@ test('reference lookup rejects incompatible rules and never grades an unlisted m
  const d=refs[0],state=stateFor(d),entry=index.entries[d.board][d.roll],book=new PreferredOpeningBook({fetcher});
  const options={preset:'auto',kind:'checker',rollout:null,useBook:true};
  assert.ok(referenceEligible(state,options));
+ const unlimited={...state,rules:{...state.rules,immediateRedoubles:-1}};
+ assert.ok(referenceEligible(unlimited,options));
+ assert.equal((await book.lookup(unlimited,options)).method,'reference','unlimited default retains presolved optimal openings');
  const result=await book.lookup(state,options);assert.equal(result.method,'reference');
  const missing=legalTurns(state).find(t=>!result.candidates.some(c=>c.key===t.key));assert.ok(missing);
  assert.equal(await book.lookup(state,{...options,submitted:missing.steps}),null);
