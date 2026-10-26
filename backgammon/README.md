@@ -681,8 +681,10 @@ lane, opposite the local dice, at 1.5 times a die’s width and height, with an 
 SVG tick and the current theme’s button surface and corners. It has an accessible name
 and the C shortcut; only keyboard navigation draws a focus ring. Confirm and cube
 responses appear only when the local player can act, never during opponent decisions.
-Cube offers put Drop on the board’s left, Take at its center, and Beaver/Raccoon on
-the right when permitted; match games leave that third position empty.
+Cube offers center Take on the bar, with Drop and Beaver/Raccoon evenly spaced on
+either side; match games leave the third position empty. Labels and values are
+centered as one group, stacked on phones. Drop shows the current cube as a loss
+(for example, −4), while Take and Beaver show the resulting cube values.
 The live board keeps its size and position throughout rolling, checker flights, undo,
 cube offers and confirmation. Compact summary pending counts stay accessible without
 adding/removing table lines. Tablets reserve their tool rail below the board; desktop

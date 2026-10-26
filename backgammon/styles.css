@@ -7426,6 +7426,7 @@ html.skin-shader .docs-toc--sticky {
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 180px;
   justify-self: center;
@@ -7438,9 +7439,8 @@ html.skin-shader .docs-toc--sticky {
   font-size: var(--cube-reply-font-size, 16px);
 }
 .cube-reply-face {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   width: 100%;
   height: var(--cube-reply-face-height, 48px);
   padding: 0 4px;
@@ -7450,18 +7450,24 @@ html.skin-shader .docs-toc--sticky {
   background: var(--surface-2);
   color: var(--ink);
   font-weight: 650;
-  line-height: 1;
+  line-height: 1.1;
+  text-align: center;
 }
-.cube-reply-face { gap: 4px; }
+.cube-reply-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
 .cube-reply-value { font-variant-numeric: tabular-nums; }
 @media (max-width: 600px), (max-height: 500px) {
-  .cube-reply-face:has(.cube-reply-value) { flex-direction: column; gap: 1px; }
+  .cube-reply-content { flex-direction: column; gap: 1px; }
   .cube-reply-value { font-size: .85em; }
 }
 .cube-reply-take .cube-reply-face { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .cube-reply > kbd { position: absolute; right: 8px; margin: 0; }
 @media (min-width: 1025px) and (min-height: 501px) {
-  .cube-reply:has(> kbd) .cube-reply-face { padding-right: 34px; }
+  .cube-reply:has(> kbd) .cube-reply-face { padding-inline: 34px; }
 }
 .board-cube-replies #drop-cube { justify-self: start; }
 .board-cube-replies #immediate-redouble {

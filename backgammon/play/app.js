@@ -171,6 +171,12 @@ const resultCard = el("section", { class: "bg-result-card game-over-card", hidde
 ui.board.container.append(resultCard);
 const cubeReplies = el("div", { class: "board-cube-replies", hidden: true, "aria-label": "Respond to cube offer" });
 ui.board.container.append(cubeReplies);
+function cubeReplyFace(label, value) {
+  return el("span", {class:"cube-reply-face"},
+    el("span", {class:"cube-reply-content"},
+      el("span", {class:"cube-reply-label"}, label),
+      el("span", {class:"cube-reply-value"}, String(value))));
+}
 function placeCubeReplies() {
   const matrix = ui.board.svg.getScreenCTM();
   if (!matrix) return;
@@ -182,8 +188,9 @@ function placeCubeReplies() {
   const dieWidth = ui.board.svg.querySelector('.board-die-face > rect')?.width.baseVal.value ?? 62;
   boardConfirm.style.setProperty('--confirm-size', `${1.5 * dieWidth * Math.hypot(matrix.a, matrix.b)}px`);
   if (cubeReplies.hidden) return;
-  const left = new DOMPoint(54, 330).matrixTransform(matrix);
-  const right = new DOMPoint(774, 330).matrixTransform(matrix);
+  // Equal insets from the playing surface; Take lines up with the central bar.
+  const left = new DOMPoint(48, 330).matrixTransform(matrix);
+  const right = new DOMPoint(768, 330).matrixTransform(matrix);
   cubeReplies.style.left = `${left.x - box.left}px`;
   cubeReplies.style.top = `${left.y - box.top}px`;
   cubeReplies.style.width = `${right.x - left.x}px`;
@@ -2004,13 +2011,13 @@ function renderActions() {
     if (!mine) return;
     cubeReplies.hidden = false;
     cubeReplies.append(
-      button(el("span", {class:"cube-reply-face"}, "Drop"), () => submitCube({ type: "pass" }), "cube-reply", {
+      button(cubeReplyFace("Drop", `−${s.cube.value}`), () => submitCube({ type: "pass" }), "cube-reply", {
         id: "drop-cube",
         disabled: !mine,
+        "aria-label": `Drop, lose ${s.cube.value} point${s.cube.value === 1 ? "" : "s"}`,
       }),
       button(
-        el("span", {class:"cube-reply-face"}, el("span", {}, "Take"), " ",
-          el("span", {class:"cube-reply-value"}, String(s.cube.value * 2))),
+        cubeReplyFace("Take", s.cube.value * 2),
         () => submitCube({ type: "take" }),
         "cube-reply cube-reply-take",
         { disabled: !mine, id: "take-cube", "aria-label": `Take ${s.cube.value * 2}` },
@@ -2019,8 +2026,7 @@ function renderActions() {
     if (canImmediateRedouble(s))
       cubeReplies.append(
         button(
-          el("span", {class:"cube-reply-face"}, el("span", {}, offerDepth(s) ? "Raccoon" : "Beaver"), " ",
-            el("span", {class:"cube-reply-value"}, String(s.cube.value * 4))),
+          cubeReplyFace(offerDepth(s) ? "Raccoon" : "Beaver", s.cube.value * 4),
           () => submitCube({ type: offerDepth(s) ? "raccoon" : "beaver" }),
           "cube-reply cube-reply-redouble",
           { disabled: !mine, id: "immediate-redouble", "aria-label": `${offerDepth(s) ? "Raccoon" : "Beaver"} to ${s.cube.value * 4}` },
