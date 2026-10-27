@@ -636,6 +636,7 @@ const server = http.createServer((req, res) => {
           await run("mobile-summary", browser, base, out, browserName),
           await run("board-cube-replies", browser, base, out, browserName),
           await run("cube-dice", browser, base, out, browserName),
+          await run("landscape-dock", browser, base, out, browserName),
           await run("cube-shortcuts", browser, base, out, browserName),
           await run("unlimited-cube", browser, base, out, browserName),
           await run("unlimited-cube-editor", browser, base, out, browserName),
@@ -700,6 +701,7 @@ const server = http.createServer((req, res) => {
         );
         (report.responsiveParity ||= []).push(
           await run("responsive-parity", browser, base, out, browserName),
+          await run("page-layout-audit", browser, base, out, browserName),
         );
         (report.mobileLayout ||= []).push(
           await run("mobile-layout", browser, base, out, browserName),

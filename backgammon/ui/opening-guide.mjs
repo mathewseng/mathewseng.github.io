@@ -217,7 +217,12 @@ export function openingGuide(root) {
       setLayout(button.dataset.layout);
       try {localStorage.setItem('backgammon:opening-guide-layout',button.dataset.layout);} catch {}
     });
-  try {if(localStorage.getItem('backgammon:opening-guide-layout')==='compact')setLayout('compact');} catch {}
+  // Start with legible dice and the board on phones. An explicitly chosen
+  // layout still wins, including Expanded when returning to the guide.
+  let savedLayout;
+  try { savedLayout=localStorage.getItem('backgammon:opening-guide-layout'); } catch {}
+  setLayout(savedLayout==='expanded'||savedLayout==='compact' ? savedLayout
+    : matchMedia('(max-width: 760px), (max-height: 500px)').matches ? 'compact' : 'expanded');
   $('opening-openings').addEventListener('click',()=>stage('opening'));
   $('opening-replies').addEventListener('click',()=>stage('reply'));
   $('opening-next').addEventListener('click',()=>stage('reply'));

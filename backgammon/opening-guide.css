@@ -188,6 +188,11 @@
   .opening-columns, .opening-move { gap: 6px; grid-template-columns: minmax(0,1fr) 4.7em 4em; padding-inline: 8px; }
 }
 @media (max-width: 760px) {
+  /* Expanded is deliberately a detailed matrix. Scroll that matrix, rather
+     than crushing full move descriptions into six 50px text columns. */
+  .opening-guide[data-layout="expanded"] .opening-picker { overflow-x: auto; padding-bottom: 8px; }
+  .opening-guide[data-layout="expanded"] .opening-rolls { min-width: 720px; }
+  .opening-guide[data-layout="expanded"] .opening-picker legend::after { content: " · Swipe for all rolls"; }
   .opening-panel { grid-template-columns: minmax(0,1fr); gap: 20px; }
   .opening-preview { max-width: 560px; width: 100%; justify-self: center; }
   .opening-rolls { gap: 3px; }
@@ -203,7 +208,7 @@
   .opening-actions .btn { flex: 1; }
   .opening-guide[data-layout="compact"] .opening-panel { grid-template-columns: minmax(0,1fr); gap: 16px; }
   .opening-guide[data-layout="compact"] .opening-preview { position: static; max-width: 560px; }
-  .opening-guide[data-layout="compact"] #opening-moves { max-height: none; }
+  .opening-guide[data-layout="compact"] #opening-moves { max-height: 320px; }
 }
 @media (max-width: 640px) {
   .hub-backgammon .hub-main > .opening-guide { order: 5; margin-top: 16px; }

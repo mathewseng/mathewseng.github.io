@@ -6304,6 +6304,11 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     min-height: 46px;
     padding: 0;
   }
+  /* The selected navigation tab already identifies the page. Keep the full
+     tool navigation reachable beside the utility icons in short viewports. */
+  .app > .topbar .crumbs { display: none; }
+  .app > .topbar .tool-nav { flex: 1; min-width: 0; order: 0; }
+  .app > .topbar .header-tools { flex: none; order: 1; }
 
   .app .tool-head {
     min-height: 40px;
@@ -7251,6 +7256,10 @@ html.skin-shader .docs-toc--sticky {
 .review-search-notice { margin: 4px 0 0; }
 .review-search-notice .btn { padding-block: 2px; }
 .review-depth-options:empty { display:none; }
+@media (min-width: 360px) and (max-width: 700px) {
+  .decision-dialog .review-depth-options { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .decision-dialog .review-depth-options .review-depth { padding-inline: 3px; }
+}
 
 /* The summary owns a fixed footer slot. Closing it never shifts the board. */
 .mobile-game-summary { display: none; }
@@ -7597,4 +7606,184 @@ html[data-focus-navigation="true"] .board-confirm #confirm:focus-visible {
     border-radius: var(--r-md);
     background: var(--surface);
   }
+}
+
+/* One flowing landscape control rail. Its real controls are rehomed here by
+   Play, so turn changes and text wrapping cannot collide with pixel offsets. */
+#landscape-pages { display: none; }
+.landscape-dock[hidden] { display: none; }
+.landscape-pages { display: grid; gap: 6px; }
+.landscape-pages a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  text-decoration: none;
+}
+.landscape-pages a[aria-current="page"] { background: var(--surface-2); color: var(--accent); }
+@media (max-height: 500px) and (min-width: 650px) {
+  .play-page.live-table.landscape-table {
+    grid-template-columns: minmax(0, 1fr) 224px;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .play-page.landscape-table .app-main { grid-column: 1; grid-row: 1; }
+  .play-page.landscape-table .workspace { display: block; height: 100%; }
+  .play-page.landscape-table .stage { display: block; height: 100%; }
+  .play-page.landscape-table .board-workspace { height: 100%; }
+  .play-page.landscape-table .landscape-dock {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    padding: 8px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface);
+  }
+  .play-page.landscape-table .landscape-dock > :is(.topbar, .tool-head, .player-strip, .board-actions, .action-area) {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    flex: none;
+  }
+  .play-page.landscape-table .landscape-dock .topbar {
+    display: block;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .landscape-dock .topbar > :not(.header-tools) { display: none; }
+  .landscape-dock .header-tools {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+  .landscape-dock .header-tools > .btn { min-width: 44px; width: 100%; height: 44px; padding: 0; }
+  .landscape-dock .topbar-label { display: none; }
+  .landscape-dock #landscape-pages { display: inline-flex; }
+  .landscape-dock .tool-head { min-height: 44px; padding: 0 0 8px; border-bottom: 1px solid var(--line); }
+  .play-page.landscape-table #toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .play-page.landscape-table #toolbar > :is(#mobile-tools, #panel-toggle) { width: 100%; justify-content: center; }
+  .play-page.landscape-table .player-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 6px 8px;
+    font-size: var(--t-sm);
+  }
+  .play-page.landscape-table .landscape-dock :is(#opponent, #player) {
+    position: static;
+    inset: auto;
+    width: 100%;
+    max-width: none;
+  }
+  .play-page.landscape-table .player-strip .player-name { gap: 6px; }
+  .play-page.landscape-table .player-strip .player-name strong { overflow: hidden; text-overflow: ellipsis; }
+  .play-page.landscape-table .player-strip .player-status { flex-shrink: 0; font-size: var(--t-xs); }
+  .play-page.landscape-table .player-strip .player-stats { display: block; padding-left: 16px; font-size: var(--t-xs); }
+  .play-page.landscape-table .board-actions { min-height: 44px; padding: 4px 0 0; }
+  .play-page.landscape-table .turn-tools { gap: 6px; }
+  .play-page.landscape-table .turn-tools > .btn { min-height: 44px; padding: 6px; }
+  .play-page.landscape-table .action-area {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .play-page.landscape-table .action-area:has(#actions:empty) { display: none; }
+  .play-page.landscape-table .action-area .action-main { display: block; }
+  .play-page.landscape-table .action-area #actions { display: grid; grid-auto-flow: row; grid-template-columns: 1fr; gap: 6px; }
+  .play-page.landscape-table .action-area #actions > .btn { min-height: 44px; }
+  .play-page.landscape-table .landscape-dock .action-area:has(#actions:not(:empty)) {
+    position: static;
+    height: auto;
+    max-height: none;
+  }
+
+  .play-page.setup-table .inspector {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .play-page.setup-table .inspector .panel-body {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 16px;
+  }
+  .play-page.setup-table .inspector .action-area {
+    position: static;
+    flex: none;
+    width: 100%;
+    height: auto;
+    padding: 8px;
+    box-shadow: none;
+  }
+  .play-page.setup-table .inspector .action-area :is(#message, .help-cluster, #draft-line) { display: none; }
+  .play-page.setup-table .inspector #actions { width: 100%; }
+  .play-page.setup-table .inspector #actions > .btn { flex: 1; }
+  .play-page.setup-table .inspector .segmented {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .play-page.setup-table .inspector .segmented .btn {
+    padding-inline: 3px;
+    white-space: normal;
+    font-size: var(--t-xs);
+  }
+
+  /* Trainer reserves actual rows for both players; the SVG must shrink into
+     the middle row instead of painting over their labels on short screens. */
+  .app[data-page="trainer"] { min-height: 0; height: 100dvh; }
+  .app[data-page="trainer"] .stage {
+    grid-template-rows: 36px minmax(0, 1fr) 36px;
+    gap: 4px;
+  }
+  .app[data-page="trainer"] .player-strip { min-height: 36px; }
+  .app[data-page="trainer"] #board {
+    display: flex;
+    height: 100%;
+    aspect-ratio: auto;
+    justify-content: center;
+    container-type: size;
+  }
+  .app[data-page="trainer"] #board > .bg-board {
+    flex: none;
+    width: min(calc(100% - var(--bg-equity-width) - 6px), calc(100cqh * 876 / 660));
+    height: auto;
+    max-height: 100%;
+    aspect-ratio: 876 / 660;
+  }
+  .app[data-page="trainer"] .action-area {
+    top: 52px;
+    bottom: 0;
+    max-height: none;
+    padding: 8px;
+  }
+}
+@media (max-height: 320px) and (min-width: 650px) {
+  .play-page.landscape-table .landscape-dock { gap: 6px; padding: 6px 8px; }
+  .play-page.landscape-table .player-strip { min-height: 30px; padding: 3px 6px; }
+  .play-page.landscape-table .player-strip .player-stats { display: none; }
 }

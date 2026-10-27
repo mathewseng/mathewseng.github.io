@@ -331,6 +331,34 @@ document.querySelector(".action-area").append(feedbackStrip);
 const desktopTable = matchMedia(
   "(min-width: 1025px) and (min-height: 501px)",
 );
+const landscapeTable = matchMedia("(max-height: 500px) and (min-width: 650px)");
+const landscapeDock = el("aside", {class:"landscape-dock", hidden:true, "aria-label":"Table controls"});
+const dockNodes = [document.querySelector('.topbar'), document.querySelector('.tool-head'),
+  $('opponent'), $('player'), boardActions, document.querySelector('.action-area')];
+const dockHomes = dockNodes.map(node => {
+  const anchor = document.createComment('landscape control home');
+  node.before(anchor); return anchor;
+});
+document.querySelector('.app').append(landscapeDock);
+const pagesButton = button('', () => {
+  const links = document.querySelector('.topbar .tool-nav').cloneNode(true);
+  links.className = 'landscape-pages';
+  dialog('Backgammon pages', links, [], {sheet:true});
+}, 'ghost btn--icon', {id:'landscape-pages', 'aria-label':'Backgammon pages', 'aria-haspopup':'dialog', title:'Pages'});
+pagesButton.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
+document.querySelector('.header-tools').prepend(pagesButton);
+function placeLandscapeDock(started) {
+  const active = started && landscapeTable.matches;
+  document.querySelector('.app').classList.toggle('landscape-table', active);
+  dockNodes.forEach((node, i) => {
+    if (active) { if (node.parentElement !== landscapeDock) landscapeDock.append(node); }
+    else if (node.parentElement !== dockHomes[i].parentElement) dockHomes[i].after(node);
+  });
+  landscapeDock.hidden = !active;
+  // Setup has a scrolling form and a separate, always-visible Start row.
+  // Keep both in the same rail instead of overlaying the form with the action.
+  if (!started && landscapeTable.matches) $('inspector').append(dockNodes.at(-1));
+}
 const reviewArea = el("section", {
   class: "play-review",
   id: "play-review",
@@ -447,6 +475,7 @@ function placeReview() {
   app.classList.toggle("desktop-table", desktopTable.matches && started);
   app.classList.toggle("live-table", started);
   app.classList.toggle("setup-table", !started);
+  placeLandscapeDock(started);
   // Keep the visible board anchored to its top edge when turn controls change
   // the available height. Review boards retain their centered presentation.
   ui.board.svg.setAttribute('preserveAspectRatio', started ? 'xMidYMin meet' : 'xMidYMid meet');
@@ -460,6 +489,10 @@ function placeReview() {
     inspectorHome.append($("inspector"));
 }
 desktopTable.addEventListener("change", () => {
+  placeReview();
+  placeConfirm();
+});
+landscapeTable.addEventListener("change", () => {
   placeReview();
   placeConfirm();
 });

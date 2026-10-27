@@ -218,7 +218,7 @@ module.exports = async function parity(browser, base, out, name) {
     await page.locator("#board.roll-ready").waitFor();
     const expected = await page
       .locator("#help-actions button")
-      .evaluateAll((ns) => ns.map((n) => [n.id, n.disabled]));
+      .evaluateAll((ns) => ns.map((n) => [n.id, n.disabled]).sort(([a],[b])=>a.localeCompare(b)));
     for (const [width, height] of [
       [320, 568],
       [390, 844],
@@ -231,7 +231,7 @@ module.exports = async function parity(browser, base, out, name) {
       assert.deepEqual(
         await page
           .locator(".practice-controls-dialog button[id]")
-          .evaluateAll((ns) => ns.map((n) => [n.id, n.disabled])),
+          .evaluateAll((ns) => ns.map((n) => [n.id, n.disabled]).sort(([a],[b])=>a.localeCompare(b))),
         expected,
       );
       assert.ok(

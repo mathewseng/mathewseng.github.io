@@ -187,7 +187,9 @@
   border-bottom: 1px solid var(--line);
   background: var(--page);
   scroll-snap-type: x proximity;
-  mask-image: linear-gradient(to right, var(--page) calc(100% - 32px), transparent);
+  /* Keep the sticky surface opaque. Masking its edge also revealed article
+     text underneath, which collided with the final visible navigation tab. */
+  mask-image: none;
 }
 
 .docs-toc--sticky::-webkit-scrollbar {
