@@ -2341,18 +2341,7 @@
   }
 
   function isTopLegalAgainstMiddle(topEval, middleEval) {
-    if (middleEval.category >= CATEGORY.STRAIGHT) return true;
-    if (middleEval.category === CATEGORY.TRIPS) {
-      return topEval.category < CATEGORY.TRIPS || topEval.mainRank <= middleEval.mainRank;
-    }
-    if (middleEval.category === CATEGORY.TWO_PAIR) {
-      return topEval.category < CATEGORY.TRIPS;
-    }
-    if (middleEval.category === CATEGORY.PAIR) {
-      if (topEval.category === CATEGORY.HIGH) return true;
-      return topEval.category === CATEGORY.PAIR && topEval.mainRank <= middleEval.mainRank;
-    }
-    return topEval.category === CATEGORY.HIGH && topEval.strength <= middleEval.strength;
+    return VariantCore.isTopLegalAgainstFive(topEval, middleEval);
   }
 
   function buildTrainerShare() {
@@ -3148,7 +3137,9 @@
     if (middleEval.category >= CATEGORY.STRAIGHT) return cache.any;
     if (middleEval.category === CATEGORY.TRIPS) return cache.tripLimit[middleEval.mainRank] || null;
     if (middleEval.category === CATEGORY.TWO_PAIR) return cache.noTrips || null;
-    if (middleEval.category === CATEGORY.PAIR) return cache.pairLimit[middleEval.mainRank] || null;
+    if (middleEval.category === CATEGORY.PAIR) {
+      return cache.pairs.find((candidate) => isTopLegalAgainstMiddle(candidate.eval, middleEval)) || cache.highs[0] || null;
+    }
 
     for (const candidate of cache.highs) {
       if (candidate.eval.strength <= middleEval.strength) return candidate;
@@ -3161,7 +3152,7 @@
     const cache = {
       any: null,
       noTrips: null,
-      pairLimit: Array(15).fill(null),
+      pairs: [],
       tripLimit: Array(15).fill(null),
       highs: [],
     };
@@ -3181,12 +3172,11 @@
           if (candidate.eval.category === CATEGORY.HIGH) {
             cache.highs.push(candidate);
             for (let rank = 2; rank <= 14; rank += 1) {
-              cache.pairLimit[rank] = betterTop(candidate, cache.pairLimit[rank]);
               cache.tripLimit[rank] = betterTop(candidate, cache.tripLimit[rank]);
             }
           } else if (candidate.eval.category === CATEGORY.PAIR) {
+            cache.pairs.push(candidate);
             for (let rank = candidate.eval.mainRank; rank <= 14; rank += 1) {
-              cache.pairLimit[rank] = betterTop(candidate, cache.pairLimit[rank]);
               cache.tripLimit[rank] = betterTop(candidate, cache.tripLimit[rank]);
             }
           } else if (candidate.eval.category === CATEGORY.TRIPS) {
@@ -3198,6 +3188,7 @@
       }
     }
 
+    cache.pairs.sort((a, b) => topSortValue(b) - topSortValue(a));
     cache.highs.sort((a, b) => topSortValue(b) - topSortValue(a));
     return cache;
   }

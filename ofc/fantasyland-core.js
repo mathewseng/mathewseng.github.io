@@ -588,11 +588,9 @@
   }
 
   function isTopLegalAgainstFive(top, five) {
-    if (five.category >= CATEGORY.STRAIGHT) return true;
-    if (five.category === CATEGORY.TRIPS) return top.category < CATEGORY.TRIPS || top.mainRank <= five.mainRank;
-    if (five.category === CATEGORY.TWO_PAIR) return top.category < CATEGORY.TRIPS;
-    if (five.category === CATEGORY.PAIR) return top.category === CATEGORY.HIGH || (top.category === CATEGORY.PAIR && top.mainRank <= five.mainRank);
-    return top.category === CATEGORY.HIGH && top.strength <= five.strength;
+    // Both strengths include kickers and pad missing top-row cards with zeroes.
+    // Equal ranks are legal; a five-card row wins an equal prefix on extra kickers.
+    return top.strength <= five.strength;
   }
 
   function lowQuality(ranks, aceLow) {
@@ -2019,7 +2017,7 @@
     if (evaluation.category >= CATEGORY.STRAIGHT) return "all";
     if (evaluation.category === CATEGORY.TRIPS) return `t${evaluation.mainRank}`;
     if (evaluation.category === CATEGORY.TWO_PAIR) return "no-trips";
-    if (evaluation.category === CATEGORY.PAIR) return `p${evaluation.mainRank}`;
+    if (evaluation.category === CATEGORY.PAIR) return `p${evaluation.mainRank}:${evaluation.ranks[1] || 0}`;
     return `h${evaluation.strength}`;
   }
 
