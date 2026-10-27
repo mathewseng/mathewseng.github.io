@@ -33,8 +33,11 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
   Run `node scripts/build-project-directory.mjs` after editing the catalog. It generates
   the homepage from `scripts/templates/home.html` and the Music, Games, and Tools hubs,
   and stamps the imported page headers. The homepage preserves the original card fan
-  and illustrated tiles, with additional projects in matching groups; `home.css` only
-  styles its date labels and added tiles. Search is available in the category hubs.
+  and illustrated tiles, with additional projects in matching groups; `home.css`
+  styles its illustrations, date labels and added tiles. The Backgammon thumbnail is
+  a static export of a legal midgame from the real board renderer; regenerate
+  `home-backgammon.svg` with `node scripts/render-home-backgammon.cjs` (Playwright required).
+  Search is available in the category hubs.
   The homepage and category directories share `shared/dither.css` and `dither.js`:
   cached sea-glass/blue dither artwork with a gentle CSS transform on desktop.
   Phones, reduced motion and data saver use a still background; the desktop footer
