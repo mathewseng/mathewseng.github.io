@@ -1,7 +1,8 @@
-import { SCORING, PAYTABLE, settings, validateDice, scoreHand, settlement, newRound, finishRound } from './engine.mjs';
+import { SCORING, PAYTABLE, settings, validateDice, scoreHand, settlement, newRound, finishRound } from './engine.mjs?v=20261027-auto-advice';
 import { bindDiceStyle, diceStyle } from '../display.js';
 import { paintDie } from '../reports/dice-view.js';
 import { showActiveRulesEV, showRulesPreview, clearRulesPreview } from './rules-preview.js';
+import { analyzeHand } from './hand-analysis.js';
 
 const $ = id => document.getElementById(id);
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -11,8 +12,19 @@ const STORAGE = 'draw-dice-v1';
 const presetKey = c => [c.scoring, c.n, c.scoring === 'poker' ? 'paytable' : c.settlement, c.doubling, c.scoring === 'cribbage' ? c.runs : 'categories'].join(':');
 const defaults = (c = {}) => settings({ ...c, fee: c.scoring === 'yahtzee' ? [0, 0, 8, 16, 24, 30, 38, 45][c.n || 5] : [0, 0, 2, 4, 7, 10, 14, 19][c.n || 5], payouts: {} });
 let config = defaults(), presets = {}, round = null, pnl = 0, hands = 0, history = [];
-let busy = false, animationTimer, worker, solverId = 0, solution = null;
+let busy = false, animationTimer, solving = false, solverId = 0, solution = null, adviceFailed = false;
 let decisionReview = null, showAllOptions = false, optionStake = 1, displayMode = diceStyle('2d');
+const historyAnalyses = new WeakMap();
+
+function readDecision(input, c, multiplier) {
+  try {
+    validateDice(input.dice, c.n);
+    if (!Number.isInteger(input.mask) || input.mask < 0 || input.mask >= 2 ** c.n || ![1, 2].includes(input.multiplier)) return null;
+    if (input.multiplier === 2 && (!c.doubling || input.mask === 2 ** c.n - 1)) return null;
+    if (multiplier !== undefined && input.multiplier !== multiplier) return null;
+    return { dice: [...input.dice], mask: input.mask, multiplier: input.multiplier };
+  } catch { return null; }
+}
 
 function restore() {
   try {
@@ -33,6 +45,7 @@ function restore() {
       if (r.phase === 'settled') {
         const score = scoreHand(r.dice, roundRules);
         savedRound.result = { ...settlement(score.points, roundRules, r.result?.multiplier), score };
+        savedRound.decision = readDecision(r.decision, roundRules, savedRound.result.multiplier);
       }
     }
     if (!Number.isSafeInteger(saved.pnl) || !Number.isSafeInteger(saved.hands) || saved.hands < 0) throw new Error('Invalid session.');
@@ -40,7 +53,7 @@ function restore() {
     presets = savedPresets; round = savedRound; pnl = saved.pnl; hands = saved.hands;
     history = Array.isArray(saved.history) ? saved.history.slice(0, 12).filter(item => {
       try { settings(item.config); validateDice(item.dice, item.config.n); return Number.isSafeInteger(item.net) && Number.isInteger(item.points) && [1, 2].includes(item.multiplier); } catch { return false; }
-    }) : [];
+    }).map(item => ({ ...item, config: settings(item.config), decision: readDecision(item.decision, settings(item.config), item.multiplier) })) : [];
   } catch { /* Invalid or inaccessible storage must never prevent play. */ }
 }
 function save() {
@@ -113,7 +126,8 @@ function renderActions() {
   $('double').disabled = busy || count === config.n;
   $('roll').disabled = busy;
   $('roll').innerHTML = `${holding ? count === config.n ? 'Score hand' : `Reroll ${config.n - count} ${config.n - count === 1 ? 'die' : 'dice'}` : round ? 'Next hand' : `Roll ${config.n} dice`} <span aria-hidden="true">↗</span>`;
-  $('solve').disabled = !holding || busy || !!worker;
+  $('solve').disabled = !holding || busy || solving;
+  $('solve').textContent = solving ? 'Solving…' : solution ? 'View EVs' : adviceFailed ? 'Retry advice' : 'Solve hand';
   $('apply-hold').hidden = !holding || !solution;
   $('apply-hold').disabled = busy;
   $('reset-session').disabled = !hands || !!holding || busy;
@@ -129,9 +143,22 @@ function renderActions() {
     }
   }
   renderStrategy();
+  renderRollAdvice();
 }
 const formatEV = value => `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(3)}`;
 const holdKey = (dice, mask) => dice.filter((_, i) => mask & (1 << i)).sort((a, b) => a - b).join(',');
+const holdLabel = (dice, mask) => mask === 2 ** dice.length - 1 ? 'Keep all' : mask ? `Hold ${holdKey(dice, mask).split(',').join(' · ')}` : 'Reroll all';
+function renderRollAdvice() {
+  $('roll-advice').hidden = !round;
+  const solved = round?.phase === 'hold' ? solution : decisionReview?.solution;
+  const dice = round?.phase === 'hold' ? round.dice : decisionReview?.dice;
+  if (!solved) {
+    $('roll-advice').textContent = adviceFailed ? round?.phase === 'hold' ? 'Advice unavailable. Try again with Retry advice.' : 'Advice unavailable. Retry in Recent hands.' : round?.phase === 'settled' && !round.decision ? 'The opening roll was not saved for this older hand.' : 'Finding the optimal hold and EV…';
+    return;
+  }
+  const best = solved.best;
+  $('roll-advice').innerHTML = `<strong>${round.phase === 'hold' ? 'Best' : 'Opening best'}: ${holdLabel(dice, best.mask)} · ${best.multiplier}×</strong><span>Exact net EV ${formatEV(best.ev)} units</span>`;
+}
 function renderStrategy() {
   const reviewing = round?.phase === 'settled' && decisionReview;
   const solved = reviewing ? decisionReview.solution : solution;
@@ -140,7 +167,7 @@ function renderStrategy() {
   $('show-options').hidden = !solved;
   $('strategy-note').hidden = !solved;
   if (!solved) {
-    $('strategy-note').textContent = worker ? 'Checking every hold and every possible replacement roll…' : 'Solve your opening roll to compare holds, standing pat, and optional doubling.';
+    $('strategy-note').textContent = solving ? 'Checking every hold and every possible replacement roll…' : 'Opening rolls are analyzed automatically.';
     $('strategy-results').innerHTML = '';
     return;
   }
@@ -167,6 +194,51 @@ function renderStrategy() {
     return `<tr class="${i === 0 ? 'best ' : ''}${chosen ? 'chosen' : ''}"><td>${reviewing ? `<span>${label}</span>` : `<button class="option-button" data-option="${d.mask}" data-stake="${d.multiplier}" aria-pressed="${chosen}" aria-label="${label}, ${d.multiplier} times stake, net EV ${formatEV(d.ev)}">${label}</button>`}<small>${i === 0 ? 'Best' : ''}${i === 0 && chosen ? ' · ' : ''}${chosen ? reviewing ? 'Played' : 'Selected' : ''}</small></td><td>${d.multiplier}×</td><td>${formatEV(d.ev)}</td><td>${Math.max(0, solved.best.ev - d.ev).toFixed(3)}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
+function renderHistory() {
+  const open = new Set([...$('history-list').querySelectorAll('details[open]')].map(el => el.dataset.hand));
+  const focused = document.activeElement?.closest('[data-history-focus]')?.dataset.historyFocus;
+  const scrollTop = $('history-list').scrollTop;
+  $('history-empty').hidden = !!history.length;
+  $('history-list').innerHTML = history.map((item, i) => {
+    const hand = hands - i, decision = item.decision, analysis = historyAnalyses.get(item);
+    let review = '<p class="muted">Opening roll not saved for this older hand.</p>';
+    if (decision) {
+      review = `<p class="history-opening">Opening roll <span>${decision.dice.join(' · ')}</span></p>`;
+      if (!analysis?.result) review += analysis?.error ? `<button class="text-action" data-retry-history="${i}" data-history-focus="retry-${hand}">Retry advice</button>` : '<p class="muted">Calculating optimal hold and EVs…</p>';
+      else {
+        const { best, decisions } = analysis.result;
+        const played = decisions.find(d => d.mask === decision.mask && d.multiplier === decision.multiplier);
+        const gap = Math.max(0, best.ev - played.ev);
+        const distinct = [...new Map(decisions.map(d => [`${holdKey(decision.dice, d.mask)}:${d.multiplier}`, d])).values()].sort((a, b) => b.ev - a.ev);
+        review += `<p class="history-best">Best: ${holdLabel(decision.dice, best.mask)} · ${best.multiplier}×</p><div class="history-evs"><span>Best EV <strong>${formatEV(best.ev)}</strong></span><span>Played EV <strong>${formatEV(played.ev)}</strong></span><span>EV given up <strong>${gap.toFixed(3)}</strong></span></div><details class="history-detail" data-hand="${hand}" ${open.has(String(hand)) ? 'open' : ''}><summary data-history-focus="review-${hand}">Decision &amp; EVs</summary><p>You played: ${holdLabel(decision.dice, decision.mask)} · ${decision.multiplier}×.</p><table><caption>Top ${Math.min(5, distinct.length)} options · opening roll</caption><thead><tr><th scope="col">Hold</th><th scope="col">Stake</th><th scope="col">Net EV</th></tr></thead><tbody>${distinct.slice(0, 5).map(d => `<tr><td>${holdLabel(decision.dice, d.mask)}</td><td>${d.multiplier}×</td><td>${formatEV(d.ev)}</td></tr>`).join('')}</tbody></table><p>Expected net units before the draw, using this hand’s rules. Final dice and actual profit are shown above.</p></details>`;
+      }
+    }
+    return `<li class="history-row" data-hand="${hand}"><div><span class="history-final-label">Final</span><span class="history-dice">${item.dice.join(' ')}</span><small>${escape(SCORING[item.config.scoring])} · ${item.points} ${item.config.scoring === 'poker' ? 'return' : 'pts'} · ${escape(labelRules(item.config))}${item.config.scoring !== 'poker' ? ` · fee ${item.config.fee}` : ''} · ${item.multiplier}×</small></div><span class="muted">#${hand}</span><strong data-sign="${sign(item.net)}">${signed(item.net)}</strong><div class="history-review">${review}</div></li>`;
+  }).join('');
+  $('history-list').scrollTop = scrollTop;
+  if (focused) $('history-list').querySelector(`[data-history-focus="${focused}"]`)?.focus({ preventScroll: true });
+}
+async function analyzeHistoryEntry(item) {
+  if (!item?.decision || historyAnalyses.has(item)) return;
+  historyAnalyses.set(item, { pending: true });
+  try {
+    const result = await analyzeHand(item.decision.dice, item.config);
+    if (!history.includes(item)) return;
+    historyAnalyses.set(item, { result });
+  } catch {
+    if (!history.includes(item)) return;
+    historyAnalyses.set(item, { error: true });
+  }
+  renderHistory();
+}
+$('history-list').addEventListener('click', event => {
+  const button = event.target.closest('[data-retry-history]');
+  if (!button) return;
+  const item = history[Number(button.dataset.retryHistory)];
+  if (!item) return;
+  historyAnalyses.delete(item); analyzeHistoryEntry(item); renderHistory();
+  if (item === history[0] && round?.phase === 'settled') solveCurrent();
+});
 function render(animate = []) {
   showActiveRulesEV(config);
   document.body.dataset.phase = round?.phase || 'ready';
@@ -176,8 +248,7 @@ function render(animate = []) {
   $('hands').textContent = hands;
   $('last-net').textContent = history.length ? signed(history[0].net) : '—';
   $('last-net').dataset.sign = history.length ? sign(history[0].net) : 'zero';
-  $('history-empty').hidden = !!history.length;
-  $('history-list').innerHTML = history.map((item, i) => `<li class="history-row"><div><span class="history-dice">${item.dice.join(' ')}</span><small>${escape(SCORING[item.config.scoring])} · ${item.points} ${item.config.scoring === 'poker' ? 'return' : 'pts'} · ${escape(labelRules(item.config))}${item.config.scoring !== 'poker' ? ` · fee ${item.config.fee}` : ''} · ${item.multiplier}×</small></div><span class="muted">#${hands - i}</span><strong data-sign="${sign(item.net)}">${signed(item.net)}</strong></li>`).join('');
+  renderHistory();
   $('round-step').textContent = !round ? 'YOUR NEXT HAND' : round.phase === 'hold' ? 'CHOOSE YOUR HOLD' : 'HAND COMPLETE';
   $('hand-status').dataset.sign = round?.result ? sign(round.result.net) : 'zero';
   if (!round) {
@@ -195,7 +266,7 @@ function render(animate = []) {
   renderDice(animate); renderScore(); renderActions();
 }
 function cancelSolver() {
-  worker?.terminate(); worker = null; solverId++; solution = null;
+  solverId++; solving = false; solution = null; adviceFailed = false;
   optionStake = 1; showAllOptions = false;
   $('advice-text').textContent = 'Roll to compare the exact EV of every hold.';
 }
@@ -211,11 +282,14 @@ function play({ stand = false, double = false } = {}) {
     const starting = !round || round.phase === 'settled';
     const animated = starting ? Array.from({ length: config.n }, (_, i) => i) : stand ? [] : round.held.flatMap((held, i) => held ? [] : [i]);
     const next = starting ? newRound(config) : finishRound(round, { stand, double });
-    decisionReview = !starting && solution ? { dice: [...round.dice], solution, mask: stand ? 2 ** config.n - 1 : round.held.reduce((mask, held, i) => mask | (held ? 1 << i : 0), 0), multiplier: double ? 2 : 1 } : null;
+    const openingSolution = !starting ? solution : null;
+    decisionReview = openingSolution ? { ...next.decision, solution: openingSolution } : null;
     cancelSolver(); round = next;
     if (round.phase === 'settled') {
       pnl += round.result.net; hands++;
-      history.unshift({ dice: [...round.dice], ...round.result, score: undefined, config: round.config });
+      const entry = { dice: [...round.dice], ...round.result, score: undefined, config: round.config, decision: round.decision };
+      if (openingSolution) historyAnalyses.set(entry, { result: openingSolution });
+      history.unshift(entry);
       history = history.slice(0, 12);
       $('advice-text').textContent = 'Next hand, another decision.';
     } else $('advice-text').textContent = 'Compare every hold and possible reroll.';
@@ -235,6 +309,8 @@ function play({ stand = false, double = false } = {}) {
       document.querySelector('.play-column').scrollTo({ top: 0, behavior: 'instant' });
       document.querySelector('.analysis-column').scrollTo({ top: 0, behavior: 'instant' });
     }
+    solveCurrent();
+    if (!starting) analyzeHistoryEntry(history[0]);
   } catch (error) { $('hand-status').textContent = error.message; }
 }
 function toggleHold(index) {
@@ -261,32 +337,43 @@ document.addEventListener('keydown', event => {
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden && busy) endAnimation(); });
 
-$('solve').addEventListener('click', () => {
-  if (round?.phase !== 'hold' || busy || worker) return;
+function revealStrategy() {
+  if (matchMedia('(max-width: 900px)').matches) document.querySelector('.strategy').scrollIntoView({ block: 'start', behavior: 'instant' });
+  else document.querySelector('.analysis-column').scrollTo({ top: 0, behavior: 'instant' });
+}
+async function solveCurrent({ reveal = false } = {}) {
+  const target = round;
+  if (!target) return;
+  const dice = target.phase === 'hold' ? target.dice : target.decision?.dice;
+  if (!dice) {
+    $('advice-text').textContent = 'This older hand has no saved opening roll to analyze.';
+    renderActions(); return;
+  }
+  if (solution || decisionReview) { if (reveal) revealStrategy(); return; }
   const id = ++solverId;
+  solving = true; adviceFailed = false;
   $('advice-text').textContent = 'Checking every hold…';
-  const failed = () => {
-    if (id !== solverId) return;
-    worker?.terminate(); worker = null;
+  renderActions();
+  try {
+    const result = await analyzeHand(dice, target.config);
+    if (id !== solverId || round !== target) return;
+    solving = false;
+    if (target.phase === 'hold') solution = result;
+    else decisionReview = { ...target.decision, solution: result };
+    const best = result.best;
+    $('advice-text').textContent = `${holdLabel(dice, best.mask)}${best.multiplier === 2 ? ' · double' : ''}. Exact net EV ${formatEV(best.ev)} units.`;
+    renderActions();
+    if (reveal) revealStrategy();
+  } catch {
+    if (id !== solverId || round !== target) return;
+    solving = false; adviceFailed = true;
     $('advice-text').textContent = 'Advice could not load. You can keep playing or try again.';
     renderActions();
-  };
-  try {
-    worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
-    worker.onerror = failed;
-    worker.onmessage = ({ data }) => {
-      if (id !== solverId || data.id !== id || round?.phase !== 'hold') return;
-      if (data.error) { failed(); return; }
-      worker.terminate(); worker = null; solution = data.result;
-      const best = solution.best, kept = round.dice.filter((_, i) => best.mask & (1 << i));
-      $('advice-text').textContent = `${kept.length === config.n ? 'Keep all' : kept.length ? `Hold ${kept.join(', ')}` : 'Reroll all'}${best.multiplier === 2 ? ' · double' : ''}. Exact net EV ${signed(Number(best.ev.toFixed(3)))} units.`;
-      renderActions();
-      if (matchMedia('(max-width: 900px)').matches) document.querySelector('.strategy').scrollIntoView({ block: 'start', behavior: 'instant' });
-      else document.querySelector('.analysis-column').scrollTo({ top: 0, behavior: 'instant' });
-    };
-    worker.postMessage({ id, dice: round.dice, config: round.config });
-    renderActions();
-  } catch { failed(); }
+  }
+}
+$('solve').addEventListener('click', () => {
+  if (round?.phase !== 'hold' || busy || solving) return;
+  solveCurrent({ reveal: true });
 });
 $('apply-hold').addEventListener('click', () => {
   if (!solution || round?.phase !== 'hold' || busy) return;
@@ -372,3 +459,5 @@ bindDiceStyle($('draw-dice-style'), { fallback: '2d', onChange(value) { displayM
 new ResizeObserver(paintCanvases).observe($('dice-tray'));
 new ResizeObserver(() => document.documentElement.style.setProperty('--draw-dock-height', `${document.querySelector('.action-dock').getBoundingClientRect().height}px`)).observe(document.querySelector('.action-dock'));
 render();
+solveCurrent();
+history.forEach(analyzeHistoryEntry);

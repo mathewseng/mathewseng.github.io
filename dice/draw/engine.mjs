@@ -131,7 +131,12 @@ export function finishRound(round, { stand = false, double = false, randomUint32
   if (double && (!round.config.doubling || stand || round.held.every(Boolean))) throw new Error('Double only when rerolling at least one die.');
   const dice = round.dice.map((face, i) => stand || round.held[i] ? face : randomFace(randomUint32));
   const score = scoreHand(dice, round.config);
-  return { ...round, dice, phase: 'settled', result: { ...settlement(score.points, round.config, double ? 2 : 1), score } };
+  const decision = {
+    dice: [...round.dice],
+    mask: stand ? 2 ** round.dice.length - 1 : round.held.reduce((mask, held, i) => mask | (held ? 1 << i : 0), 0),
+    multiplier: double ? 2 : 1,
+  };
+  return { ...round, dice, decision, phase: 'settled', result: { ...settlement(score.points, round.config, decision.multiplier), score } };
 }
 
 const factorial = [1, 1, 2, 6, 24, 120, 720, 5040], drawCache = new Map();

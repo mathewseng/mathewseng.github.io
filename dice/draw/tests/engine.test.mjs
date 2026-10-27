@@ -95,11 +95,15 @@ test('held dice survive, one draw settles once, and standing cannot double', () 
   const result = finishRound(round, { double: true, randomUint32: () => 5 });
   assert.deepEqual(result.dice, [1, 6, 3, 6, 5]);
   assert.equal(result.result.multiplier, 2);
+  assert.deepEqual(result.decision, { dice: [1, 2, 3, 4, 5], mask: 21, multiplier: 2 }, 'the opening roll and actual doubled hold survive settlement');
+  assert.notEqual(result.decision.dice, round.dice, 'the saved opening roll is an independent snapshot');
   assert.throws(() => finishRound(result));
   assert.throws(() => finishRound(round, { stand: true, double: true }));
   round.held.fill(true);
   assert.throws(() => finishRound(round, { double: true }));
   assert.deepEqual(finishRound(round, { randomUint32: () => assert.fail('Standing must not sample') }).dice, round.dice);
+  round.held.fill(false);
+  assert.deepEqual(finishRound(round, { stand: true }).decision, { dice: [1, 2, 3, 4, 5], mask: 31, multiplier: 1 }, 'Keep all records the actual stand, regardless of marked holds');
 });
 function bruteDraw(kept, count, config) {
   if (!count) return settlement(scoreHand(kept, config).points, config).net;
