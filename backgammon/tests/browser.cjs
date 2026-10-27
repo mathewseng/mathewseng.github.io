@@ -637,6 +637,7 @@ const server = http.createServer((req, res) => {
           await run("board-cube-replies", browser, base, out, browserName),
           await run("cube-dice", browser, base, out, browserName),
           await run("landscape-dock", browser, base, out, browserName),
+          await run("play-state-layout", browser, base, out, browserName),
           await run("cube-shortcuts", browser, base, out, browserName),
           await run("unlimited-cube", browser, base, out, browserName),
           await run("unlimited-cube-editor", browser, base, out, browserName),

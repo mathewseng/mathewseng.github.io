@@ -154,8 +154,11 @@ const presentationWaits = new Set();
 const boardWorkspace = el("div", { class: "board-workspace" });
 const draftKeys = el("div", { class: "draft-shortcuts", "aria-label": "Draft keyboard shortcuts" });
 // Secondary tools keep a stable rail; the primary turn action sits on the board.
-const boardActions = el("div", { class: "board-actions action-stage bg-action-stage", "aria-label": "Turn confirmation" });
+const boardActions = el("div", { class: "board-actions action-stage bg-action-stage", "aria-label": "Table actions" });
 const turnTools = el("div", { class: "turn-tools", "aria-label": "Play tools" });
+// The existing #message live region announces this; mobile also needs visible
+// context for offers and waiting states beside their actions.
+const tableActionStatus = el("p", { class: "table-action-status", "aria-hidden": "true" });
 const boardConfirm = el("div", { class: "board-confirm" });
 function confirmIcon() {
   const icon = el("span", { class: "confirm-check", "aria-hidden": "true" });
@@ -496,22 +499,35 @@ landscapeTable.addEventListener("change", () => {
   placeReview();
   placeConfirm();
 });
-// Confirmation is always on the board. Hint and Controls share its old rail;
-// exceptional actions still have a visible home without changing rail height.
+// Confirmation is always on the board. Hint and Controls share its old rail.
+// Exceptional actions get their own rows instead of shrinking the tool buttons.
 function placeConfirm() {
   const actions = $("actions");
+  tableActionStatus.remove();
   for (const child of [...boardActions.children])
     if (child !== turnTools) actions.append(child);
   const confirm = $("confirm");
   boardConfirm.replaceChildren(...(confirm ? [confirm] : []));
   if (!model()?.started) { turnTools.remove(); return; }
   const hint = $("hint") || button("Hint", showHint, "", {id:"hint", disabled:!myTurn(state()) || botBusy || committing || !!assistanceJob || !["roll","move","double"].includes(state().phase)});
-  turnTools.replaceChildren(hint, allControls);
+  const ended = state().phase === "over";
+  turnTools.classList.toggle("game-ended", ended);
+  turnTools.replaceChildren(...(ended ? [] : [hint]), allControls);
   helpActions.append(analysisJump, draftKeys);
   if (desktopTable.matches) actions.append(turnTools);
   else {
     boardActions.append(turnTools);
-    if (phonePortrait.matches && actions.childElementCount) boardActions.prepend(...actions.children);
+    if ((phonePortrait.matches || landscapeTable.matches) && actions.childElementCount)
+      boardActions.prepend(...actions.children);
+    if ((phonePortrait.matches || landscapeTable.matches) &&
+      (state().phase === "resign" || model()?.undoRequest || botBusy || assistanceJob?.kind === "submit" ||
+       (config.mode === "online" && (!online.ready || model()?.recovery)))) {
+      tableActionStatus.textContent = state().phase === "resign"
+        ? `${names()[state().turn]} offers ${state().pending.level * state().cube.value} points.`
+        : model()?.undoRequest ? `${names()[model().undoRequest.by]} requests an undo.`
+        : $("message").textContent;
+      boardActions.prepend(tableActionStatus);
+    }
   }
   placeCubeReplies();
 }

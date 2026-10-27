@@ -1774,7 +1774,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .game-over-card {
-  max-height: min(680px, 80dvh);
+  max-height: min(680px, calc(100% - 16px));
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -7287,7 +7287,7 @@ html.skin-shader .docs-toc--sticky {
   .play-page.live-table:has(.board-slot.has-equity-bar) .stage {
     height: auto;
     min-height: 100%;
-    grid-template-rows: auto max-content auto 52px minmax(max-content, 1fr);
+    grid-template-rows: auto max-content auto minmax(52px, max-content) minmax(max-content, 1fr);
   }
   .play-page.live-table .board-workspace { display: contents; }
   .play-page.live-table #opponent { grid-row: 1; }
@@ -7316,7 +7316,13 @@ html.skin-shader .docs-toc--sticky {
 }
 @media (max-width: 600px) and (orientation: portrait) {
   /* Hint and Controls keep the same rail on both players’ turns. */
-  .play-page.live-table .board-actions { display: flex; height: 52px; padding-block: 0; }
+  .play-page.live-table .board-workspace > .board-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    height: auto;
+    min-height: 52px;
+    padding-block: 0;
+  }
   .play-page.live-table .game-over-card { max-height: calc(100% - 12px); }
   .play-page.live-table .game-over-card {
     width: calc(100% - 16px);
@@ -7517,7 +7523,26 @@ html.skin-shader .docs-toc--sticky {
   width: 100%;
 }
 .turn-tools > .btn { width: 100%; min-width: 0; min-height: 48px; justify-content: center; }
+.turn-tools.game-ended { grid-template-columns: minmax(0, 1fr); }
+.play-page.live-table #actions > .btn { min-height: 48px; }
+.play-page.live-table .board-actions > .turn-tools { grid-column: 1 / -1; }
+.play-page.live-table .board-actions > .turn-tools.game-ended { grid-column: auto; }
+.play-page.live-table .board-actions:has(> .turn-tools:nth-child(2)) > .btn { grid-column: 1 / -1; }
+.play-page.live-table .table-action-status + .btn:nth-last-child(2) { grid-column: 1 / -1; }
+.table-action-status {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 4px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+  text-align: center;
+  text-wrap: pretty;
+}
 .play-page.desktop-table .turn-tools { flex: 0 1 320px; }
+.play-page.desktop-table #actions { width: 100%; }
+.play-page.desktop-table .turn-tools.game-ended { flex-basis: 160px; }
 .board-confirm {
   pointer-events: none;
   position: absolute;
@@ -7589,6 +7614,9 @@ html[data-focus-navigation="true"] .board-confirm #confirm:focus-visible {
 }
 @media (max-width: 600px) and (orientation: portrait) {
   .play-page.live-table .turn-tools > .btn { height: 48px; padding: 6px 10px; }
+  .play-page.live-table .board-actions:has(> .turn-tools.game-ended) > .btn,
+  .play-page.live-table .turn-tools.game-ended > .btn { min-height: 44px; height: 44px; }
+  .play-page.live-table:has(#next-game) .action-area { --summary-height: 180px; }
   .play-page.live-table .board-actions { gap: 8px; }
 }
 
@@ -7699,7 +7727,16 @@ html[data-focus-navigation="true"] .board-confirm #confirm:focus-visible {
   .play-page.landscape-table .player-strip .player-name strong { overflow: hidden; text-overflow: ellipsis; }
   .play-page.landscape-table .player-strip .player-status { flex-shrink: 0; font-size: var(--t-xs); }
   .play-page.landscape-table .player-strip .player-stats { display: block; padding-left: 16px; font-size: var(--t-xs); }
-  .play-page.landscape-table .board-actions { min-height: 44px; padding: 4px 0 0; }
+  .play-page.landscape-table .board-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    height: auto;
+    min-height: 44px;
+    padding: 4px 0 0;
+  }
+  .play-page.landscape-table .board-actions > .btn { min-width: 0; min-height: 44px; padding: 6px; white-space: normal; }
+  .play-page.landscape-table .landscape-dock:has(.table-action-status) { gap: 4px; }
   .play-page.landscape-table .turn-tools { gap: 6px; }
   .play-page.landscape-table .turn-tools > .btn { min-height: 44px; padding: 6px; }
   .play-page.landscape-table .action-area {
