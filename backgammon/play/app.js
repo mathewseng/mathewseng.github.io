@@ -1043,7 +1043,8 @@ function render() {
     lastMotion !== motionKey &&
     previous.sequence + 1 === s.sequence;
   opening.sync(m, names(), freshEvent);
-  draft.hideDice = opening.active;
+  // Historical dice must not sit behind the on-board cube response controls.
+  draft.hideDice = opening.active || s.phase === "double";
   const key =
     (m?.id || "setup") +
     positionKey(s) +

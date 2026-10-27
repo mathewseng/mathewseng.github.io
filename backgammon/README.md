@@ -685,6 +685,10 @@ Cube offers center Take on the bar, with Drop and Beaver/Raccoon evenly spaced o
 either side; match games leave the third position empty. Labels and values are
 centered as one group, with the word above its value on every screen. Drop shows the current cube as a loss
 (for example, −4), while Take and Beaver show the resulting cube values.
+Pending cube offers hide the previous roll's dice throughout doubles, beavers
+and raccoons. Previous-move checker traces remain visible; the next actual roll
+shows its dice normally. `cube-dice.cjs` verifies this with real move history,
+repeated redoubles, reload and Take at all three screen layouts.
 The live board keeps its size and position throughout rolling, checker flights, undo,
 cube offers and confirmation. Compact summary pending counts stay accessible without
 adding/removing table lines. Tablets reserve their tool rail below the board; desktop
