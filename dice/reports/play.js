@@ -1,6 +1,7 @@
 import { outcomes, MODES } from "./outcomes.mjs";
 import { playableSchedule, createSession } from "./game.mjs";
 import { createDiceView } from "./dice-view.js";
+import { bindDiceStyle } from '../display.js';
 import { formatPercentile } from "./percentile.mjs";
 import {
   sumPayoutGroups,
@@ -21,6 +22,7 @@ const units = (value, digits = 1) =>
 export function createPlay({ onBusy, onBrowse }) {
   const session = createSession();
   const diceView = createDiceView($("dice"));
+  bindDiceStyle($("play-dice-style"));
   let game = null,
     chosenFace = 1,
     choices = [],

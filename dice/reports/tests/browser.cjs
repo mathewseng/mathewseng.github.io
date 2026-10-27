@@ -756,6 +756,15 @@ const server = http.createServer((req, res) => {
       await page.locator(".paytable-row strong").last().textContent(),
     );
     await roll([6, 6, 6, 6, 6, 6], topPayout, "6 matches");
+    const displayedRoll = await page.locator('#dice .die-value').allTextContents();
+    const displayedPnl = await page.locator('#pnl').textContent();
+    for (const style of ['2d', '3d']) {
+      await page.locator(`#play-dice-style [data-dice-style="${style}"]`).click();
+      assert.equal(await page.locator('#dice').getAttribute('data-dice-style'), style);
+      assert.deepEqual(await page.locator('#dice .die-value').allTextContents(), displayedRoll);
+      assert.equal(await page.locator('#pnl').textContent(), displayedPnl, 'view toggle preserves the payout');
+      await fit();
+    }
     assert.ok(
       await page.locator("#play-paytable").evaluate((el) => {
         const hit = el

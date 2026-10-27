@@ -61,7 +61,9 @@ jobs:
         run: node dice/reports/tests/browser.cjs
 
       - name: Test assembled Draw Dice game
-        run: node dice/draw/tests/browser.cjs
+        run: |
+          node dice/draw/tests/browser.cjs
+          node dice/draw/tests/responsive.cjs
 
       - name: Test assembled Scoundrel game and reports
         run: |

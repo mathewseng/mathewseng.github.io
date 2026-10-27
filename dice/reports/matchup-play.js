@@ -1,4 +1,5 @@
 import { createDiceView } from "./dice-view.js";
+import { bindDiceStyle } from '../display.js';
 import { createMatchupSession } from "./matchup-game.mjs";
 import { SCORE_RULES, PLAY_RULES, scoreRule, fraction } from "./matchups.mjs";
 
@@ -21,7 +22,7 @@ export function createMatchupPlay(root, { onChange, onCompare }) {
     .map((rule) => `<option value="${rule.id}">${rule.name}</option>`)
     .join("")}</optgroup>`;
   root.innerHTML = `
-    <div class="match-section-head"><h3>Play a matchup</h3><button id="match-play-compare" class="match-text-button" type="button">Analyze this matchup</button></div>
+    <div class="match-section-head"><h3>Play a matchup</h3><div id="match-dice-style" class="dice-style"></div><button id="match-play-compare" class="match-text-button" type="button">Analyze this matchup</button></div>
     <div class="match-play-controls">
       <div class="field field--select"><label for="match-play-a">Side A</label><select id="match-play-a">${playOptions}</select></div>
       <div class="field field--select"><label for="match-play-b">Side B</label><select id="match-play-b">${playOptions}</select></div>
@@ -56,6 +57,7 @@ export function createMatchupPlay(root, { onChange, onCompare }) {
       <div class="match-play-actions"><button id="match-play-roll" class="btn btn--primary btn--lg" type="button">Roll both pairs</button><div class="field field--select"><label for="match-play-speed">Animation</label><select id="match-play-speed"><option value="normal">Normal</option><option value="instant">Instant</option></select></div></div>
     </div>`;
   const $ = (id) => root.querySelector(`#${id}`);
+  bindDiceStyle($("match-dice-style"));
   const sessions = new Map();
   const dice = [
     createDiceView($("match-play-a-dice")),

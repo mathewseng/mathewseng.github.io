@@ -6,11 +6,36 @@ import {
   orientation,
   facePoint,
 } from "./dice-geometry.mjs";
+import { diceStyle, DICE_STYLE_EVENT } from '../display.js';
 
 const LIGHT = [0.25, 0.88, 0.4];
 const mix = (a, b, p) => a.map((v, i) => v + (b[i] - v) * p);
 const color = (rgb) => `rgb(${rgb.map((v) => Math.round(v)).join(" ")})`;
 const TAU = Math.PI * 2;
+
+function paintFlat(canvas, face, { waiting, match, settled }, progress = 1) {
+  const ctx = canvas.getContext('2d'), size = canvas.width;
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate((1 - progress) ** 2 * Math.PI * 2);
+  ctx.fillStyle = match && settled ? '#f1c45c' : '#eef4ff';
+  ctx.beginPath(); ctx.roundRect(-size * .36, -size * .36, size * .72, size * .72, size * .12); ctx.fill();
+  if (!waiting) {
+    ctx.fillStyle = '#10141c';
+    for (const [u, v] of FACES[face - 1].pips) {
+      ctx.beginPath(); ctx.arc(u * size * .19, v * size * .19, size * .055, 0, TAU); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+export function paintDie(canvas, face, { yaw = -.2, progress = 1, waiting = false } = {}) {
+  const size = Math.max(1, Math.round(canvas.clientWidth * Math.min(devicePixelRatio || 1, 2)));
+  if (canvas.width !== size) canvas.width = canvas.height = size;
+  const spin = (1 - progress) ** 2;
+  paint(canvas, orientation(face, yaw, -TAU * spin, Math.PI * .8 * spin), { waiting, settled: progress === 1, match: false });
+}
 
 function paint(canvas, pose, { waiting, match, settled }) {
   const ctx = canvas.getContext("2d"),
@@ -94,11 +119,14 @@ export function createDiceView(container) {
       -TAU * spin,
       die.direction * Math.PI * 0.8 * spin,
     );
-    paint(die.canvas, pose, {
+    const state = {
       waiting: die.element.dataset.state === "waiting",
       settled: die.element.dataset.state === "settled",
       match: die.element.classList.contains("match"),
-    });
+    };
+    container.dataset.diceStyle = diceStyle();
+    if (diceStyle() === '2d') paintFlat(die.canvas, die.face, state, progress);
+    else paint(die.canvas, pose, state);
   }
   function resize() {
     for (const die of dice) {
@@ -111,6 +139,7 @@ export function createDiceView(container) {
     }
   }
   new ResizeObserver(resize).observe(container);
+  window.addEventListener(DICE_STYLE_EVENT, () => dice.forEach(die => draw(die, die.progress)));
   function settleDie(die) {
     die.progress = 1;
     die.element.classList.remove("is-rolling", "is-waiting");
@@ -138,7 +167,7 @@ export function createDiceView(container) {
         canvas: element.querySelector("canvas"),
         value: element.querySelector(".die-value"),
         shadow: element.querySelector(".die-shadow"),
-        yaw: [-0.3, 0.24, -0.12, 0.4, -0.4, 0.12][i],
+        yaw: [-0.3, 0.24, -0.12, 0.4, -0.4, 0.12][i % 6],
         direction: i % 2 ? -1 : 1,
       }));
     }
@@ -163,7 +192,7 @@ export function createDiceView(container) {
       die.face = values[i];
       die.progress = 0;
       die.yaw =
-        [-0.3, 0.24, -0.12, 0.4, -0.4, 0.12][i] + (Math.random() - 0.5) * 0.14;
+        [-0.3, 0.24, -0.12, 0.4, -0.4, 0.12][i % 6] + (Math.random() - 0.5) * 0.14;
       die.element.classList.remove("match");
       die.element.classList.add("is-waiting");
       die.element.dataset.state = "waiting";

@@ -45,6 +45,14 @@ module.exports = async function checkMatchupPlay(page, screenshotDir) {
     ["1", "1", "6", "6"],
   );
   assert.equal(await page.locator("#match-play-history li").count(), 3);
+  for (const style of ['2d', '3d']) {
+    await page.locator(`#match-dice-style [data-dice-style="${style}"]`).click();
+    assert.equal(await page.locator('#match-play-a-dice').getAttribute('data-dice-style'), style);
+    assert.equal(await page.locator('#match-play-b-dice').getAttribute('data-dice-style'), style);
+    assert.deepEqual(await counts(), ['1', '1', '1']);
+    assert.deepEqual(await page.locator('#match-play .die-value').allTextContents(), ['1', '1', '6', '6']);
+    assert.equal(await page.locator(`#play-dice-style [data-dice-style="${style}"]`).getAttribute('aria-pressed'), 'true', 'all dice views share their preference');
+  }
   // Switching rules opens a separate session and returning restores it.
   await page.locator("#match-play-a").selectOption("product");
   assert.deepEqual(await counts(), ["0", "0", "0"]);
@@ -178,6 +186,7 @@ module.exports = async function checkMatchupPlay(page, screenshotDir) {
         .evaluate((el) => el.scrollWidth <= el.clientWidth),
     );
     const rollBounds = await page.locator("#match-play-roll").boundingBox();
+    assert.ok(await page.locator('#match-dice-style').isVisible(), 'dice appearance remains available on phones');
     assert.ok(
       rollBounds.y >= 0 && rollBounds.y + rollBounds.height <= height,
       "Roll button stays visible at phone and tablet sizes",

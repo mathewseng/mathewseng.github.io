@@ -1194,6 +1194,10 @@ td.sum-rule-cell {
   height: 100%;
 }
 
+.dice-style { display: inline-flex; flex: none; margin-top: 6px; }
+.dice-style > button { min-width: 44px; min-height: 44px; padding: 6px 10px; }
+[data-dice-style="2d"] > .die > .die-shadow { display: none; }
+
 .die-shadow {
   position: absolute;
   inset: 63% 13% 2%;
@@ -2050,11 +2054,14 @@ td.sum-rule-cell {
   }
 
   .play-top h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
     overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    text-wrap: nowrap;
+    clip-path: inset(50%);
   }
+
+  .play-top .dice-style { margin-top: 0; }
 
   /* The PnL label and the paytable heading go; the select keeps its aria-label
      and the Explore tab still reaches the schedule list. */
