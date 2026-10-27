@@ -9,8 +9,8 @@
   <link rel="icon" href="./favicon.svg" />
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-  <link rel="stylesheet" href="./styles.css?v=20261027-ux" />
-  <script type="module" src="./app.js?v=20261027-ux"></script>
+  <link rel="stylesheet" href="./styles.css?v=20261027-rules-ev" />
+  <script type="module" src="./app.js?v=20261027-rules-ev"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -20,7 +20,7 @@
   </header>
   <main id="main" tabindex="-1" class="draw-app">
     <div class="page-head"><div><h1>Draw Dice<span aria-hidden="true">.</span></h1><p>Hold your dice. Compare the odds. Take one reroll.</p></div><button id="open-settings" class="btn btn--ghost" aria-haspopup="dialog">Game settings</button></div>
-    <div class="game-summary"><strong id="game-name">Dice cribbage</strong><span id="game-description">5 dice · Longest runs · Capped loss</span><button class="text-action" id="open-rules">How to play</button></div>
+    <div class="game-summary"><strong id="game-name">Dice cribbage</strong><span class="game-meta"><span id="game-description">5 dice · Longest runs · Capped loss</span><span id="game-ev" role="status">Rules EV: calculating…</span></span><button class="text-action" id="open-rules">How to play</button></div>
     <div class="workspace">
       <div class="play-column">
         <section class="table" aria-label="Dice table">
@@ -57,9 +57,11 @@
       </div>
       <p class="settings-description" id="settings-description"></p>
       <section id="paytable-editor" hidden><div class="section-heading"><h3>Return per 1-unit stake</h3><span>0 turns a category off</span></div><div id="paytable-fields"></div><p class="muted">The highest paying matching category wins. Returns include the stake; categories do not stack. Straights use distinct consecutive faces, up to six.</p></section>
-      </fieldset><p class="muted">These are editable practice presets. Rerolling changes the odds; the presets are not calibrated to a fair return.</p>
+      </fieldset>
+      <section class="rules-comparison" aria-labelledby="rules-comparison-title"><h3 id="rules-comparison-title">Compare these payout rules</h3><p class="muted">Same dice, scoring, and fee or paytable. Expected net units per hand, before the opening roll.</p><table><caption class="visually-hidden">Exact game EV with optimal play for each payout mode and doubling option</caption><thead><tr><th scope="col">Payout mode</th><th scope="col">Single stake</th><th scope="col">Double allowed</th></tr></thead><tbody id="rules-comparison-body"></tbody></table><p class="muted" id="rules-one-roll"></p></section>
+      <p class="muted">Positive EV favors the player; negative EV is an expected loss. Values use exact probabilities and are rounded for display. These presets are editable, not necessarily fair.</p>
       <p id="settings-error" role="alert"></p>
-      </div><div class="dialog-actions"><button type="button" class="btn btn--ghost" id="restore-defaults">Reset preset</button><button class="btn btn--primary" id="apply-settings" type="submit">Apply settings</button></div>
+      </div><section id="rules-ev-preview" class="rules-ev-preview" aria-label="Selected rules expected value"><div><h3>Exact rules EV</h3><p class="muted">Net units / hand · optimal play</p></div><strong id="rules-ev-value" role="status">Calculating…</strong></section><div class="dialog-actions"><button type="button" class="btn btn--ghost" id="restore-defaults">Reset preset</button><button class="btn btn--primary" id="apply-settings" type="submit">Apply settings</button></div>
     </form>
   </dialog>
   <dialog id="rules-dialog" aria-labelledby="rules-title"><div class="dialog-heading"><h2 id="rules-title">One roll. One draw.</h2><button class="btn btn--ghost" data-close="rules-dialog">Close</button></div>
@@ -70,7 +72,7 @@
       <h3>Choose how points pay</h3><p><strong>Capped loss:</strong> return = max(0, points − fee), including the 1-unit stake. Net PnL = return − 1. With fee 10, 10 points loses 1, 11 pushes, and 14 wins 3.</p><p><strong>Points − fee:</strong> net PnL = points − fee. With fee 10, 0 points loses 10, 10 pushes, and 14 wins 4.</p><p><strong>Double &amp; reroll:</strong> choose after seeing the first roll. It multiplies the entire final gain or loss by two, including the fee or stake. Capped loss can lose 2; points − fee can lose twice the fee. Keeping all dice cannot be doubled.</p>
       <h3>Dice poker</h3><p>Use the editable category paytable. Only the highest paying qualifying category pays, including when a shorter straight pays more than a longer one. Patterns can be subsets of the hand; a full house needs three of one face and two of another. Straights of 3, 4, 5, and 6 are available when you have enough dice. Set a return to 0 to disable it.</p>
       <h3>Yahtzee-style</h3><p>A single-hand variation with one reroll, not a full scorecard game. Take the best available score: Chance (sum of all dice), three or four alike (sum), full house (25), straights of 3 / 4 / 5 / 6 (20 / 30 / 40 / 50), or 5 / 6 / 7 alike (50 / 75 / 100). Apply either points payout mode and your chosen fee.</p>
-      <h3>Exact hold advice</h3><p>Solve hand ranks your choices by expected net PnL, after the fee and stake. The current hold, best option, and gap update as you change holds. Select any row to use its hold; a 2× option still requires pressing Double &amp; reroll. After drawing, the table reviews the choice using your opening roll. Equivalent holds of identical faces share a row.</p><p>The solver checks every hold against every possible replacement roll, weighted by its probability. It includes keeping all dice, and prefers a single stake on a tie. Advice is for this hand; it does not claim the whole preset is fair.</p><p>Your settings, current hand, and recent results save in this browser. All amounts are practice units. Changing a preset preserves session PnL; each history entry records its rules.</p>
+      <h3>Exact hold advice</h3><p>Solve hand ranks your choices by expected net PnL, after the fee and stake. The current hold, best option, and gap update as you change holds. Select any row to use its hold; a 2× option still requires pressing Double &amp; reroll. After drawing, the table reviews the choice using your opening roll. Equivalent holds of identical faces share a row.</p><p>The solver checks every hold against every possible replacement roll, weighted by its probability. It includes keeping all dice, and prefers a single stake on a tie. Hand advice is conditional on the dice you rolled. Rules EV, shown beside the game settings and inside the settings dialog, averages the best decision over every possible opening roll. It includes fees, stakes, and optional doubling. Positive values favor the player; negative values are expected losses.</p><p>Your settings, current hand, and recent results save in this browser. All amounts are practice units. Changing a preset preserves session PnL; each history entry records its rules.</p>
     </div>
   </dialog>
 </body>

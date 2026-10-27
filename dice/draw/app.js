@@ -1,6 +1,7 @@
 import { SCORING, PAYTABLE, settings, validateDice, scoreHand, settlement, newRound, finishRound } from './engine.mjs';
 import { bindDiceStyle, diceStyle } from '../display.js';
 import { paintDie } from '../reports/dice-view.js';
+import { showActiveRulesEV, showRulesPreview, clearRulesPreview } from './rules-preview.js';
 
 const $ = id => document.getElementById(id);
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -167,6 +168,7 @@ function renderStrategy() {
   }).join('')}</tbody></table>`;
 }
 function render(animate = []) {
+  showActiveRulesEV(config);
   document.body.dataset.phase = round?.phase || 'ready';
   $('game-name').textContent = SCORING[config.scoring];
   $('game-description').textContent = `${config.n} dice · ${config.scoring === 'cribbage' ? `${config.runs === 'longest' ? 'Longest runs' : 'All runs'} · ` : ''}${labelRules(config)}${config.doubling ? ' · 2× available' : ''}`;
@@ -304,7 +306,14 @@ $('strategy-results').addEventListener('click', event => {
   $('strategy-results').querySelector(`[data-option="${button.dataset.option}"][data-stake="${optionStake}"]`)?.focus({ preventScroll: true });
 });
 
-let draft;
+let draft, previewTimer;
+function updateRulesPreview() {
+  clearTimeout(previewTimer);
+  try {
+    if ([...$('settings-fields').querySelectorAll('input, select')].some(el => !el.validity.valid)) throw new Error('Invalid field');
+    showRulesPreview(readDraft());
+  } catch { clearRulesPreview('Enter valid values'); }
+}
 function readDraft() {
   return settings({ n: Number($('dice-count').value), scoring: $('scoring').value, settlement: $('settlement').value, fee: Number($('fee').value), doubling: $('doubling').checked, runs: $('runs').value,
     payouts: { ...draft.payouts, ...Object.fromEntries([...document.querySelectorAll('[data-payout]')].map(input => [input.dataset.payout, Number(input.value)])) },
@@ -321,11 +330,13 @@ function fillSettings(c) {
   $('paytable-fields').innerHTML = PAYTABLE.filter(row => row.minimum <= c.n).map(row => `<label class="field">${row.label}<input type="number" min="0" max="1000" step="1" value="${c.payouts[row.key]}" data-payout="${row.key}" required ${c.scoring === 'poker' ? '' : 'disabled'} /></label>`).join('');
   $('settings-description').textContent = c.scoring === 'cribbage' ? 'Add every pair, every sum of six, and your runs. Duplicate faces multiply run combinations.' : c.scoring === 'poker' ? 'Pairs, sets, full houses, and straights. Build a paytable for your selected number of dice.' : 'One hand, one reroll, best category. Chance always scores the sum. This variation uses the rules listed in How to play.';
   $('settings-error').textContent = '';
+  updateRulesPreview();
 }
 $('open-settings').addEventListener('click', () => {
   if (busy) return;
   const locked = round?.phase === 'hold';
   fillSettings(config);
+  showActiveRulesEV(config);
   $('settings-fields').disabled = !!locked;
   $('apply-settings').hidden = $('restore-defaults').hidden = !!locked;
   $('settings-note').textContent = locked ? 'This hand’s rules are locked. You can review them here; finish the hand to make changes.' : 'Choose your next game. Settings lock while a hand is in play.';
@@ -342,6 +353,11 @@ for (const id of ['scoring', 'dice-count', 'settlement', 'doubling', 'runs']) $(
   fillSettings(presets[key] || candidate);
 });
 $('restore-defaults').addEventListener('click', () => fillSettings(defaults(draft)));
+$('settings-fields').addEventListener('input', () => {
+  clearRulesPreview();
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(updateRulesPreview, 120);
+});
 $('settings-form').addEventListener('submit', event => {
   event.preventDefault();
   if (round?.phase === 'hold' || busy) return;
