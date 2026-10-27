@@ -60,6 +60,9 @@ jobs:
       - name: Test assembled Dice reports
         run: node dice/reports/tests/browser.cjs
 
+      - name: Test assembled Draw Dice game
+        run: node dice/draw/tests/browser.cjs
+
       - name: Test assembled Scoundrel game and reports
         run: |
           node scoundrel/tests/browser.cjs

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-family="dice">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Hold, reroll, and score 2–7 dice. Play dice cribbage, dice poker, or Yahtzee-style hands with custom payouts and exact hold advice." />
+  <title>Draw Dice · Dice</title>
+  <link rel="icon" href="./favicon.svg" />
+  <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+  <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+  <link rel="stylesheet" href="./styles.css?v=20261027" />
+  <script type="module" src="./app.js?v=20261027"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a><span class="crumb-sep" aria-hidden="true">/</span><a href="/dice/">Dice</a><span class="crumb-sep" aria-hidden="true">/</span><span class="crumb-current" aria-current="page">Draw Dice</span></nav>
+    <nav class="tool-nav" aria-label="Dice tools"><a href="/dice/draw/" aria-current="page">Draw Dice</a><a href="/dice/reports/">Payout explorer</a></nav>
+  </header>
+  <main id="main" tabindex="-1" class="draw-app">
+    <div class="page-head"><div><h1>Draw Dice<span aria-hidden="true">.</span></h1><p>Roll once. Keep your favorites. Take one more chance.</p></div><button id="open-settings" class="btn btn--ghost">Game settings</button></div>
+    <div class="game-summary"><strong id="game-name">Dice cribbage</strong><span id="game-description">5 dice · Longest runs · Capped loss</span><button class="text-action" id="open-rules">How to play</button></div>
+    <div class="workspace">
+      <div class="play-column">
+        <section class="table" aria-label="Dice table">
+          <div class="meters"><div><span>Session PnL</span><strong id="pnl">0</strong></div><div><span>Hands played</span><strong id="hands">0</strong></div><div><span>Last hand</span><strong id="last-net">—</strong></div></div>
+          <div class="table-center">
+            <div class="round-step" id="round-step">YOUR NEXT HAND</div>
+            <h2 id="hand-status" role="status" aria-live="polite">Find your next combination.</h2>
+            <div class="dice-tray" id="dice-tray" aria-label="Your dice"></div>
+            <p id="hold-instruction">Start with five dice and see what adds up.</p>
+          </div>
+          <div class="actions"><button class="btn btn--ghost" id="stand" hidden>Keep all</button><button class="btn btn--ghost" id="double" hidden>Double &amp; reroll</button><button class="btn btn--primary" id="roll">Roll 5 dice <span aria-hidden="true">↗</span></button></div>
+          <p id="payout-preview" class="payout-preview">Practice units · One reroll per hand</p>
+          <div class="advice"><button class="text-action" id="solve" disabled>Find best hold</button><p id="advice-text">Exact advice is available after your first roll.</p><button class="text-action" id="apply-hold" hidden>Use this hold</button></div>
+        </section>
+        <section class="history" aria-labelledby="history-title"><div class="section-heading"><h2 id="history-title">Recent hands</h2><button class="text-action" id="reset-session" disabled>Reset session</button></div><p class="muted" id="history-empty">Completed hands appear here.</p><ol id="history-list" aria-label="Recent completed hands"></ol></section>
+      </div>
+      <aside class="score-panel" aria-labelledby="score-title"><div class="section-heading"><h2 id="score-title">Hand breakdown</h2><span id="score-state">Waiting for a roll</span></div><div class="score-total"><strong id="score-total">0</strong><span id="score-unit">points</span></div><div id="score-breakdown"></div><div class="payout-rule"><h3 id="payout-title">Capped loss</h3><p id="payout-rule"></p><p id="payout-example"></p></div></aside>
+    </div>
+    <footer class="page-foot"><span>Independent d6 rolls · Practice play</span><span class="shortcut-note">Keys 1–7 hold dice · R rolls</span><a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/dice/draw">Source &amp; rules ↗</a></footer>
+    <p id="storage-note" class="muted" hidden>Browser storage is unavailable. This session will last until you close or reload the page.</p>
+    <noscript>This game needs JavaScript. Enable it to roll and score dice.</noscript>
+  </main>
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <form id="settings-form"><div class="dialog-heading"><h2 id="settings-title">Game settings</h2><button type="button" class="btn btn--ghost" data-close="settings-dialog">Close</button></div>
+      <p class="muted">Choose your next game. Settings lock while a hand is in play.</p>
+      <div class="settings-grid">
+        <label class="field">Scoring<select id="scoring"><option value="cribbage">Dice cribbage</option><option value="poker">Dice poker · paytable</option><option value="yahtzee">Yahtzee-style · best category</option></select></label>
+        <label class="field">Number of dice<select id="dice-count"><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option></select></label>
+        <label class="field" id="settlement-field">Payout mode<select id="settlement"><option value="capped">Capped loss · at most 1 unit</option><option value="net">Points − fee</option></select></label>
+        <label class="field" id="fee-field">Fee<input id="fee" type="number" min="0" max="200" step="1" value="10" required /></label>
+        <label class="field" id="runs-field">Run scoring<select id="runs"><option value="longest">Longest runs only</option><option value="all">Every run of 3 or more</option></select></label>
+        <label class="check-field"><input id="doubling" type="checkbox" /><span>Allow double &amp; reroll<small>Double the final gain or loss. Reroll at least one die.</small></span></label>
+      </div>
+      <p class="settings-description" id="settings-description"></p>
+      <section id="paytable-editor" hidden><div class="section-heading"><h3>Return per 1-unit stake</h3><span>0 turns a category off</span></div><div id="paytable-fields"></div><p class="muted">The highest paying matching category wins. Returns include the stake; categories do not stack. Straights use distinct consecutive faces, up to six.</p></section>
+      <p class="muted">These are editable practice presets. Rerolling changes the odds; the presets are not calibrated to a fair return.</p>
+      <p id="settings-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="btn btn--ghost" id="restore-defaults">Reset this preset</button><button class="btn btn--primary" type="submit">Apply settings</button></div>
+    </form>
+  </dialog>
+  <dialog id="rules-dialog" aria-labelledby="rules-title"><div class="dialog-heading"><h2 id="rules-title">One roll. One draw.</h2><button class="btn btn--ghost" data-close="rules-dialog">Close</button></div>
+    <div class="rules-copy"><p>Roll 2–7 fair six-sided dice. Tap a die to hold it, then reroll the rest once. You can change holds before drawing, or keep the whole hand. A rerolled die can show the same number again.</p>
+      <h3>Dice cribbage</h3><p>All three scoring groups add together. Each physical die is distinct, even when faces match.</p>
+      <dl><dt>Pairs · 1 point each</dt><dd>Every pair of matching dice counts: a pair scores 1, trips 3, quads 6, five alike 10, six alike 15, and seven alike 21.</dd><dt>Sums of six · 1 point each</dt><dd>Every nonempty combination totaling six counts. A lone 6 scores 1. Two 3s score 1 for the sum and 1 for the pair.</dd><dt>Runs · 3 or more consecutive faces</dt><dd>By default, only the longest runs score, once per combination. 1–2–3–4 scores 4 run points. 1–2–2–3 has two runs of three for 6, plus a pair for 1 and two sums of six for 2: 9 total. A run cannot repeat a face or wrap from 6 to 1. Runs top out at six; a seventh die can multiply a run.</dd></dl>
+      <p>The alternative “Every run” rule also counts shorter runs inside longer ones. With that setting, 1–2–3–4 scores 10 run points.</p>
+      <h3>Choose how points pay</h3><p><strong>Capped loss:</strong> return = max(0, points − fee), including the 1-unit stake. Net PnL = return − 1. With fee 10, 10 points loses 1, 11 pushes, and 14 wins 3.</p><p><strong>Points − fee:</strong> net PnL = points − fee. With fee 10, 0 points loses 10, 10 pushes, and 14 wins 4.</p><p><strong>Double &amp; reroll:</strong> choose after seeing the first roll. It multiplies the entire final gain or loss by two, including the fee or stake. Capped loss can lose 2; points − fee can lose twice the fee. Keeping all dice cannot be doubled.</p>
+      <h3>Dice poker</h3><p>Use the editable category paytable. Only the highest paying qualifying category pays, including when a shorter straight pays more than a longer one. Patterns can be subsets of the hand; a full house needs three of one face and two of another. Straights of 3, 4, 5, and 6 are available when you have enough dice. Set a return to 0 to disable it.</p>
+      <h3>Yahtzee-style</h3><p>A single-hand variation with one reroll, not a full scorecard game. Take the best available score: Chance (sum of all dice), three or four alike (sum), full house (25), straights of 3 / 4 / 5 / 6 (20 / 30 / 40 / 50), or 5 / 6 / 7 alike (50 / 75 / 100). Apply either points payout mode and your chosen fee.</p>
+      <h3>Exact hold advice</h3><p>The solver checks every hold against every possible replacement roll, weighted by its probability. It maximizes net PnL with the current fee, payouts, and doubling rule. It includes keeping all dice, and prefers a single stake on a tie. Advice is for this hand; it does not claim the whole preset is fair.</p><p>Your settings, current hand, and recent results save in this browser. All amounts are practice units. Changing a preset preserves session PnL; each history entry records its rules.</p>
+    </div>
+  </dialog>
+</body>
+</html>

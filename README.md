@@ -17,7 +17,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `ofc/` | OFC hub: `play/`, `fantasyland-trainer/`, `fantasyland-ev/` (its Overview tab replaced the old Fantasyland report); `ofc.css` is the family stylesheet |
 | `poker/` | Poker hub: `play/`, `rush/`, `ultimate-omaha/`, `edge-the-dealer/`, `222/`, `video-poker/` (35 single-draw variants and a payout lab with exact hold EVs), `dodge/`, `calculations/`; `table.css` (felt, seats, lobby, action stage) is shared by the four tables and `tools.css` by the four research tools |
 | `blackjack/` | Blackjack hub: `strategy/` |
-| `dice/` | Dice hub: `reports/` (exact fair payouts, custom checker, two-dice matchup and probability reports) |
+| `dice/` | Dice hub: `draw/` (hold and reroll 2–7 dice, cribbage/poker/Yahtzee-style scoring, custom payouts, optional doubling, exact hold advice), `reports/` (exact fair payouts, custom checker, two-dice matchup and probability reports) |
 | `backgammon/` | Backgammon hub: `play/`, `trainer/`, `solver/`, `openings/`, `library/`, plus the `controls/`, `reports/` and `refresh/` documents (styled by `docs.css`); pinned GNUbg WASM |
 | `shared/` | Code shared across project families: `tokens.css` (design tokens, loaded first on every page) and `app.css` (site chrome and the component kit), `cards.css` + `cards.js` (the one playing-card component every page uses), `peer-room.js`, `hub.css` + `hub-art.css` + `hub.js` for the landing and hub pages, `icons.svg`, and the behaviour helpers `tabs.js`, `sheet.js`, `card-drag.js`, `keycap.js`; `shared/preview/` is the kitchen-sink page for the kit and is not published |
 | `jazz-piano-ml/` | Python source project; not published |

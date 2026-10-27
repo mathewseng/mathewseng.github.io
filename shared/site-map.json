@@ -197,6 +197,16 @@
       "glyph": "pips:5",
       "groups": [
         {
+          "title": "Hold & reroll",
+          "unit": "games",
+          "tools": [
+            {
+              "name": "Draw Dice",
+              "path": "/dice/draw/"
+            }
+          ]
+        },
+        {
           "title": "Fair Dice Payout Explorer",
           "unit": "workspaces",
           "tools": [
@@ -960,14 +970,26 @@
       "name": "Dice",
       "path": "/dice/",
       "category": "games",
-      "description": "Exact fair payout schedules, every two-dice matchup, and a custom payout checker.",
+      "description": "Hold and reroll in Draw Dice, explore fair payout schedules, and compare two-dice matchups.",
       "historyPath": "dice/index.html",
       "sourcePaths": [
         "dice/"
       ],
       "kind": "hub",
-      "updated": "2026-10-21",
+      "updated": "2026-10-27",
       "created": "2026-10-07"
+    },
+    {
+      "name": "Draw Dice",
+      "path": "/dice/draw/",
+      "category": "games",
+      "description": "Hold and reroll 2–7 dice with cribbage scoring, custom paytables, optional doubling, and exact hold advice.",
+      "historyPath": "dice/draw/index.html",
+      "sourcePaths": [
+        "dice/draw/"
+      ],
+      "updated": "2026-10-27",
+      "created": "2026-10-27"
     },
     {
       "name": "Dice Payout Explorer",
