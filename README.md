@@ -23,6 +23,7 @@ Static projects published at <https://mathewseng.github.io>. Every folder path i
 | `jazz-piano-ml/` | Python source project; not published |
 | `redirects.json` | Old URL → new URL; the deploy writes a redirect page for each entry |
 | `scripts/` | Repo tooling (test runner, redirect builder); not published |
+| `ios/` | Pocket Site: SwiftUI iPhone/iPad app with the published website and backgammon engine bundled for offline play; not published to Pages. See `ios/README.md` for installation and checks. |
 
 ## Conventions
 

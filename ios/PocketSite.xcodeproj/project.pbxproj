@@ -1,0 +1,50 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+		C28BA024C09F8B8D38D5AF87 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PocketSiteApp.swift"; sourceTree = "<group>"; };
+		4733C79DEE7E2655C5766334 = { isa = PBXBuildFile; fileRef = C28BA024C09F8B8D38D5AF87; };
+		9727B9EED8ACD2EE46E136A0 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView.swift"; sourceTree = "<group>"; };
+		E11030640FCC0E9D6783BF78 = { isa = PBXBuildFile; fileRef = 9727B9EED8ACD2EE46E136A0; };
+		2F49B82E114EB43D06B9399F = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SiteBrowser.swift"; sourceTree = "<group>"; };
+		9794B33EC97D8F27B484DA41 = { isa = PBXBuildFile; fileRef = 2F49B82E114EB43D06B9399F; };
+		4C877883C604362C7AB3A40A = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LocalSiteServer.swift"; sourceTree = "<group>"; };
+		5CF51BCF3B9FB98C29302B3A = { isa = PBXBuildFile; fileRef = 4C877883C604362C7AB3A40A; };
+		7B594B6DB375E1BF3F23CDD6 = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+		26B2A637F7DC4079D5AB78A5 = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
+		4D41DD372D8E0FAD9BCA5A62 = { isa = PBXBuildFile; fileRef = 26B2A637F7DC4079D5AB78A5; };
+		28AAD1477D5182D66D4B03B3 = { isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		993A6F0DC816349E9715E5C7 = { isa = PBXBuildFile; fileRef = 28AAD1477D5182D66D4B03B3; };
+		E05FCB614AB36FDEE72EE1F2 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PocketSiteTests.swift; sourceTree = "<group>"; };
+		80FAC02A0BD5812E2A00F339 = { isa = PBXBuildFile; fileRef = E05FCB614AB36FDEE72EE1F2; };
+		38A007151ABE87CC01A5B6E9 = { isa = PBXFileReference; explicitFileType = wrapper.application; path = PocketSite.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B7480EC88B7F22D0A4757273 = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = PocketSiteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B28B7AF69320201D1CF206EB = { isa = PBXGroup; children = (3A2A88DEEFF3D1D23E496597,8B7A6DECC0651D269EA794C7,FBDC4F23F93125BBEEAE800C); sourceTree = "<group>"; };
+		3A2A88DEEFF3D1D23E496597 = { isa = PBXGroup; children = (C28BA024C09F8B8D38D5AF87,9727B9EED8ACD2EE46E136A0,2F49B82E114EB43D06B9399F,4C877883C604362C7AB3A40A,7B594B6DB375E1BF3F23CDD6,26B2A637F7DC4079D5AB78A5,28AAD1477D5182D66D4B03B3); path = PocketSite; sourceTree = "<group>"; };
+		8B7A6DECC0651D269EA794C7 = { isa = PBXGroup; children = (E05FCB614AB36FDEE72EE1F2); path = PocketSiteTests; sourceTree = "<group>"; };
+		FBDC4F23F93125BBEEAE800C = { isa = PBXGroup; children = (38A007151ABE87CC01A5B6E9,B7480EC88B7F22D0A4757273); name = Products; sourceTree = "<group>"; };
+		BCE16DD0260827ECF338C787 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (4733C79DEE7E2655C5766334,E11030640FCC0E9D6783BF78,9794B33EC97D8F27B484DA41,5CF51BCF3B9FB98C29302B3A); runOnlyForDeploymentPostprocessing = 0; };
+		0189424A5A60FED329FA868E = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (4D41DD372D8E0FAD9BCA5A62,993A6F0DC816349E9715E5C7); runOnlyForDeploymentPostprocessing = 0; };
+		7561BFB015D8F536760CB671 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		9F3002A5D69B22D357A58AA9 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (80FAC02A0BD5812E2A00F339); runOnlyForDeploymentPostprocessing = 0; };
+		99C7943D90D870A50ADE9160 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		D59795DE8A4D83834E525B58 = { isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Site/bundle-info.json"); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "sh \"$SRCROOT/scripts/prepare-site.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Site\""; };
+		89E1FD6268CC0F221A2BE178 = { isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0; ENABLE_USER_SCRIPT_SANDBOXING = NO; DEBUG_INFORMATION_FORMAT = dwarf; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; ENABLE_TESTABILITY = YES;}; name = Debug; };
+		E9B2E96ABC5F6856F2BE79CF = { isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; MARKETING_VERSION = 1.0; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = PocketSite/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = io.github.mathewseng.pocketsite; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = "1,2"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;}; name = Debug; };
+		FCB48D8F88BCDB0ED9FADFD7 = { isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = io.github.mathewseng.pocketsite.tests; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = "1,2"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PocketSite.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PocketSite"; BUNDLE_LOADER = "$(TEST_HOST)";}; name = Debug; };
+		E6DE6C99132752C914FEF632 = { isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SWIFT_VERSION = 5.0; ENABLE_USER_SCRIPT_SANDBOXING = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O";}; name = Release; };
+		5A8C91857F674E16E2724F47 = { isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; MARKETING_VERSION = 1.0; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = PocketSite/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = io.github.mathewseng.pocketsite; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = "1,2"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; SWIFT_EMIT_LOC_STRINGS = YES; }; name = Release; };
+		942EEBBACD6C88CAE7F29B29 = { isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = io.github.mathewseng.pocketsite.tests; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = "1,2"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PocketSite.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PocketSite"; BUNDLE_LOADER = "$(TEST_HOST)";}; name = Release; };
+		862894B703A6DEDF96A9DD6C = { isa = XCConfigurationList; buildConfigurations = (89E1FD6268CC0F221A2BE178,E6DE6C99132752C914FEF632); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F37922C48DA5978D02C9E50E = { isa = XCConfigurationList; buildConfigurations = (E9B2E96ABC5F6856F2BE79CF,5A8C91857F674E16E2724F47); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		BECB265224D91761C05FDA33 = { isa = XCConfigurationList; buildConfigurations = (FCB48D8F88BCDB0ED9FADFD7,942EEBBACD6C88CAE7F29B29); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		D799BAE6088A90139B415FCC = { isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = 7D1043473D55BFA90E8530D3; remoteInfo = PocketSite; };
+		DE58E2B17C19600779694943 = { isa = PBXTargetDependency; target = 7D1043473D55BFA90E8530D3; targetProxy = D799BAE6088A90139B415FCC; };
+		7D1043473D55BFA90E8530D3 = { isa = PBXNativeTarget; buildConfigurationList = F37922C48DA5978D02C9E50E; buildPhases = (BCE16DD0260827ECF338C787,7561BFB015D8F536760CB671,0189424A5A60FED329FA868E,D59795DE8A4D83834E525B58); buildRules = (); dependencies = (); name = PocketSite; productName = PocketSite; productReference = 38A007151ABE87CC01A5B6E9; productType = "com.apple.product-type.application"; };
+		A94A8FE5CCB19BA61C4C0873 = { isa = PBXNativeTarget; buildConfigurationList = BECB265224D91761C05FDA33; buildPhases = (9F3002A5D69B22D357A58AA9,99C7943D90D870A50ADE9160); buildRules = (); dependencies = (DE58E2B17C19600779694943); name = PocketSiteTests; productName = PocketSiteTests; productReference = B7480EC88B7F22D0A4757273; productType = "com.apple.product-type.bundle.unit-test"; };
+		98F54143AB4E86B28C3AFEE0 = { isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 2600; TargetAttributes = {A94A8FE5CCB19BA61C4C0873 = {TestTargetID = 7D1043473D55BFA90E8530D3;};};}; buildConfigurationList = 862894B703A6DEDF96A9DD6C; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en,Base); mainGroup = B28B7AF69320201D1CF206EB; productRefGroup = FBDC4F23F93125BBEEAE800C; projectDirPath = ""; projectRoot = ""; targets = (7D1043473D55BFA90E8530D3,A94A8FE5CCB19BA61C4C0873); };
+	};
+	rootObject = 98F54143AB4E86B28C3AFEE0;
+}

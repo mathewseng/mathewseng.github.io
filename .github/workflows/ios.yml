@@ -1,0 +1,47 @@
+name: Validate iOS app
+
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', 'scripts/assemble-site.sh', '.github/workflows/ios.yml']
+  pull_request:
+    paths: ['ios/**', 'scripts/assemble-site.sh', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gym/package-lock.json
+      - run: npm --prefix gym ci
+      - name: Check native bundle adapter
+        run: node --test ios/scripts/prepare-bundle.test.mjs
+      - name: Select an available iPhone Simulator
+        run: |
+          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for k,devices in d["devices"].items() if "iOS" in k for v in devices if "iPhone" in v["name"]))')
+          echo "IOS_TEST_DEVICE=$device_id" >> "$GITHUB_ENV"
+      - name: Test bundled engine and persistence in real iOS WebKit
+        run: |
+          xcodebuild -project ios/PocketSite.xcodeproj -scheme PocketSite \
+            -destination "platform=iOS Simulator,id=$IOS_TEST_DEVICE" \
+            -derivedDataPath ios/build -resultBundlePath ios/test-results/native-tests.xcresult \
+            CODE_SIGNING_ALLOWED=NO test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-test-results
+          path: ios/test-results
+          if-no-files-found: ignore

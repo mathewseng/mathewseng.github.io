@@ -23,6 +23,17 @@ function redirectTarget(html, search = "?room=abc%2B123&seed=42", hash = "#turn-
   return target;
 }
 
+test("assembly excludes the native project and generated app bundle", (t) => {
+  const root = fixture(t, {});
+  mkdirSync(join(root, "ios/build/PocketSite.app/Site"), { recursive: true });
+  writeFileSync(join(root, "ios/build/PocketSite.app/Site/index.html"), "nested copy");
+  writeFileSync(join(root, "ios/private-native.swift"), "native source");
+  writeFileSync(join(root, "index.html"), "website");
+  execFileSync("sh", ["scripts/assemble-site.sh", "_site"], { cwd: root, stdio: "pipe" });
+  assert.equal(existsSync(join(root, "_site/ios")), false);
+  assert.equal(readFileSync(join(root, "_site/index.html"), "utf8"), "website");
+});
+
 test("assembly preserves exact legacy filenames and their query strings and fragments", (t) => {
   const root = fixture(t, { "/Poker/ShotClock/ShotClock.html": "/poker/shot-clock/", "/PokerPreflop.html": "/poker/preflop-classic/", "/old-tool/": "/tools/new-tool/" });
   mkdirSync(join(root, "poker/shot-clock"), { recursive: true });

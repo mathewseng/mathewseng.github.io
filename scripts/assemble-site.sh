@@ -5,7 +5,7 @@ site_target=${1:-_site}
 mkdir -p "$site_target"
 rsync -a --delete \
   --exclude '.git' --exclude '.github' --exclude '.openai' \
-  --exclude '_site' --exclude 'gym' --exclude 'jazz-piano-ml' \
+  --exclude '_site' --exclude 'gym' --exclude 'jazz-piano-ml' --exclude '/ios' \
   --exclude 'node_modules' --exclude 'redirects.json' \
   --exclude 'package.json' --exclude 'package-lock.json' \
   --exclude '.gitignore' --exclude '.DS_Store' --exclude '*.md' \

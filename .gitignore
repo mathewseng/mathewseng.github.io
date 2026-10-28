@@ -11,3 +11,7 @@ _site/
 backgammon/test-results/
 scripts/screenshots/current/
 scripts/screenshots/diff/
+ios/build/
+ios/test-results/
+*.xcuserstate
+xcuserdata/
