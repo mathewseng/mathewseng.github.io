@@ -15,7 +15,7 @@
           }
           el.onload = () => finish(ready() ? null : Error("Script did not initialize"));
           el.onerror = () => finish(Error("Script could not be downloaded"));
-          el.src = path + "?v=20261028" + (attempt ? "&retry=" + Date.now() : "");
+          el.src = path + "?v=20261028-2" + (attempt ? "&retry=" + Date.now() : "");
           document.head.append(el);
         });
         return;
@@ -23,9 +23,8 @@
     }
   }
   Promise.all([
-    script("../engine.js", () => !!window.Scoundrel),
+    script("../engine.js", () => !!window.Scoundrel).then(() => script("history-codec.js", () => !!window.ScoundrelHistory)),
     script("../catalog.js", () => !!window.ScoundrelCatalog),
-    script("history-codec.js", () => !!window.ScoundrelHistory),
     script("statistics.js", () => !!window.ScoundrelStatistics),
   ]).then(() => script("app.js", () => !!window.ScoundrelReportStarted)).catch(() => {
     loading.hidden = false;

@@ -32,5 +32,14 @@ const { serveSite } = require('../../scripts/site-pages.cjs');
       }
       await page.close(); console.log(failure + ': recovery passed');
     }
+    const delayed = await browser.newPage(), errors = [];
+    delayed.on('pageerror', error => errors.push(error.message));
+    await delayed.route('**/engine.js?*', async route => { await new Promise(resolve => setTimeout(resolve, 250)); await route.continue(); });
+    await delayed.goto(server.base + '/scoundrel/reports/');
+    await delayed.locator('#report-content').waitFor({ state: 'visible' });
+    await delayed.locator('[data-solution]').first().click();
+    await delayed.locator('#solution-line li').first().waitFor();
+    assert.deepEqual(errors, []); await delayed.close();
+    console.log('delayed engine: startup order and history decoding passed');
   } finally { await browser.close(); await server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
