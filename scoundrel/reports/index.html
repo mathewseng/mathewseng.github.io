@@ -10,12 +10,8 @@
     <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../styles.css?v=20261022-ev" />
-    <link rel="stylesheet" href="styles.css?v=20261023-percentiles" />
-    <script src="../engine.js?v=20261022-slots" defer></script>
-    <script src="../catalog.js?v=20261022-ash" defer></script>
-    <script src="history-codec.js?v=20261022-7" defer></script>
-    <script src="statistics.js?v=20261023-percentiles" defer></script>
-    <script src="app.js?v=20261023-percentiles" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20261028" />
+    <script src="loader.js?v=20261028" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to report</a>
@@ -24,6 +20,8 @@
       <main id="main" tabindex="-1">
         <section class="report-intro"><div><h1>Outcome report</h1><a class="source-link" href="#method">Method &amp; rules <svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-arrow-right" /></svg></a></div></section>
         <div class="report-loading" id="loading" role="status">Loading results…</div>
+        <button id="retry-report" class="game-button secondary" type="button" hidden>Retry loading report</button>
+        <noscript><p>Enable JavaScript to view the interactive report. <a href="outcomes.json">Download the results</a>.</p></noscript>
         <div id="report-content" hidden>
           <section class="report-summary" aria-labelledby="summary-title"><h2 id="summary-title">Hidden-deck study.</h2><p id="study-summary"></p><p class="evidence-note">The unseen order stays hidden. These are measured outcomes of a simulation-guided policy, not proven optimal-play values.</p></section>
           <section class="report-metrics" aria-label="Outcome statistics">

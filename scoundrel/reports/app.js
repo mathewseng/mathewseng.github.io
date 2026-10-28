@@ -1,5 +1,6 @@
 (() => {
   "use strict";
+  if (window.ScoundrelReportStarted) return;
   const $ = id => document.getElementById(id), S = ScoundrelStatistics, E = Scoundrel;
   // Pointer selection keeps its appearance, including when arrow keys follow a click.
   document.addEventListener("pointerdown", () => { document.documentElement.dataset.focusMode = "pointer"; }, true);
@@ -74,6 +75,17 @@
     for (const score of ticks) html += `<text class="chart-label" x="${x(score)}" y="${h - bottom + 22}" text-anchor="middle">${score}</text>`;
     html += `<text class="chart-label" x="${left}" y="17">Deals</text><text class="chart-label" x="${left + plotW / 2}" y="${h - 4}" text-anchor="middle">Final score</text></svg>`;
     container.innerHTML = html;
+    selectionMarker();
+  }
+  function selectionMarker() {
+    const svg = $("histogram").querySelector("svg"), bar = svg?.querySelector(`[data-score="${activeScore}"] .chart-bar`);
+    svg?.querySelector("#chart-selection")?.remove();
+    if (!bar || activeScore == null) return;
+    const rank = rows.filter(r => r.score <= activeScore).length / rows.length * 100;
+    const x = Number(bar.getAttribute("x")) + Number(bar.getAttribute("width")) / 2;
+    const width = svg.viewBox.baseVal.width, height = svg.viewBox.baseVal.height;
+    const labelWidth = Math.min(195, width - 50), left = Math.max(38, Math.min(width - 12 - labelWidth, x - labelWidth / 2));
+    svg.insertAdjacentHTML("beforeend", `<g id="chart-selection" class="chart-selection" data-percentile="${rank}" aria-label="Score ${activeScore}, percentile ${f(rank, 2)}"><line x1="${x}" x2="${x}" y1="61" y2="${height - 50}"/><rect x="${left}" y="34" width="${labelWidth}" height="26" rx="4"/><text x="${left + labelWidth / 2}" y="51" text-anchor="middle">Score ${activeScore} · ${f(rank, 2)} percentile</text></g>`);
   }
   function renderDeals() {
     const shown = rows.filter(r => activeScore == null || r.score === activeScore);
@@ -85,10 +97,10 @@
   function chooseScore(score) {
     activeScore = score; visible = 20;
     $("score-picker").value = score == null ? "" : String(score);
-    $("chart-caption").textContent = score == null ? "Select a bar or use ← / →. Esc clears selection." : `Score ${score} · ${f(rows.filter(r => r.score === score).length)} deals. ← / → to move; Esc to clear.`;
+    $("chart-caption").textContent = score == null ? "Select a bar or use ← / →. Esc clears selection." : `Score ${score} · ${f(rows.filter(r => r.score === score).length)} deals · ${f(rows.filter(r => r.score <= score).length / rows.length * 100, 2)} percentile (scores at or below ${score}). ← / → to move; Esc to clear.`;
     // Keep the chart and its focus in place while stepping through a large study.
     for (const bar of $("histogram").querySelectorAll("[data-score]")) bar.classList.toggle("is-active", score != null && Number(bar.dataset.score) === score);
-    renderDeals();
+    selectionMarker(); renderDeals();
   }
   $("cohort").addEventListener("change", () => { activeScore = null; visible = 20; render(); chooseScore(null); });
   $("histogram").addEventListener("click", event => {
@@ -111,10 +123,12 @@
   });
   $("score-picker").addEventListener("change", event => chooseScore(event.target.value === "" ? null : Number(event.target.value)));
   $("clear-filter").addEventListener("click", () => chooseScore(null));
-  new ResizeObserver(() => {
+  const resizeChart = () => {
     cancelAnimationFrame(resizeFrame);
     resizeFrame = requestAnimationFrame(() => { if (data && Math.floor($("histogram").getBoundingClientRect().width) !== chartWidth) draw(); });
-  }).observe($("histogram"));
+  };
+  if (window.ResizeObserver) new ResizeObserver(resizeChart).observe($("histogram"));
+  else window.addEventListener("resize", resizeChart);
   $("load-more").addEventListener("click", () => { visible += 30; renderDeals(); });
   async function loadHistory(row) {
     if (row.line) return row.line;
@@ -164,10 +178,26 @@
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })), link = document.createElement("a");
     link.href = url; link.download = `scoundrel-hidden-deck-${rows.length}-deals.csv`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
-  fetch("outcomes.json?v=20261022-7", { cache: "no-cache" }).then(response => { if (!response.ok) throw Error("Study data could not be loaded"); return response.json(); }).then(S.validate).then(study => {
+  async function fetchStudy() {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch("outcomes.json?v=20261028" + (attempt ? "&retry=" + Date.now() : ""), { cache: "no-cache", signal: controller.signal });
+        if (!response.ok) throw Error("Study data could not be loaded");
+        return S.validate(await response.json());
+      } catch (error) { if (attempt) throw error; }
+      finally { clearTimeout(timer); }
+    }
+  }
+  window.ScoundrelReportStarted = true;
+  fetchStudy().then(study => {
     data = study; data.rows = S.studyRows(study);
     $("technical-method").textContent = `Seeds ${data.rows[0].seed} through ${data.rows.at(-1).seed}. The native Monte Carlo policy uses a budget of ${f(data.policy.iterations)} simulations per decision and tree depth ${data.policy.treeDepth}. A room planner guides rollouts without seeing future draws. All ${f(data.rows.length)} histories passed replay validation. Histories load on demand and are checksum-checked. Carry layout: ${data.policy.keepSlots ? "the remaining card stays in its slot" : "historical carry to the first slot"}. Policy revision ${data.policy.revision.slice(0, 12)}.`;
     $("study-date").textContent = "Computed " + new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/New_York" }).format(new Date(data.generatedAt));
     $("loading").hidden = true; $("report-content").hidden = false; render();
-  }).catch(error => { $("loading").textContent = error.message + ". Reload to try again."; });
+  }).catch(() => {
+    $("report-content").hidden = true; $("loading").hidden = false;
+    $("loading").textContent = "The report results could not load. Check your connection and retry.";
+    $("retry-report").hidden = false;
+  });
 })();

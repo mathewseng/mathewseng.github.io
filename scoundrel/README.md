@@ -159,6 +159,10 @@ with lines at every fifth percentile from 5% through 95%. Mean, median, and
 first/third quartile lines stand out. Percentiles use R-7 linear interpolation. Whole-number medians have no decimal suffix. The full plot fits
 phones; a Score control supports precise touch/keyboard filtering. Cohort filters
 affect the plot and deal list; headline statistics always describe the full study.
+The selected bar displays its empirical percentile rank: the percentage of the
+selected cohort scoring at or below that score (including ties). Startup script
+and result requests have 10-second timeouts, one automatic retry, and a visible
+retry button if both attempts fail.
 Every deal has a verified history and seeded play link. CSV export includes the
 budget. The compact JSON manifest contains every score; lossless histories live
 in checksum-indexed shards of 1,000 games and load only when opened.

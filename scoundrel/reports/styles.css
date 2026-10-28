@@ -90,3 +90,8 @@ html[data-focus-mode="pointer"] :focus { outline: none; }
   .chart-inspector .report-select { flex: 1; min-width: 0; }
   .chart-caption { min-width: 0; }
 }
+
+.chart-selection { pointer-events: none; }
+.chart-selection line { stroke: var(--ink); stroke-width: 1; }
+.chart-selection rect { fill: var(--page); stroke: var(--sc-gold); }
+.chart-selection text { fill: var(--sc-gold-bright); font-size: 12px; }

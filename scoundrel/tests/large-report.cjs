@@ -30,7 +30,11 @@ const summary = S.summarize(S.studyRows(fixture));
           assert.deepEqual(await page.locator(".chart-reference[data-percentile]").evaluateAll(es => es.map(e => ({ percentile: Number(e.dataset.percentile), value: Number(e.dataset.value) })).sort((a, b) => a.percentile - b.percentile)), summary.percentiles);
           await page.locator("#histogram").focus(); await page.keyboard.press("Home"); await page.keyboard.press("ArrowRight");
           assert.equal(await page.locator("#score-picker").inputValue(), String(summary.min + 1));
+          const percentile = fixture.scores.filter(score => score <= summary.min + 1).length / fixture.scores.length * 100;
+          assert.equal(Number(await page.locator("#chart-selection").getAttribute("data-percentile")), percentile);
+          assert.ok((await page.locator("#chart-caption").innerText()).includes("percentile"));
           await page.keyboard.press("Escape");
+          assert.equal(await page.locator("#chart-selection").count(), 0);
           if (process.env.SCOUNDREL_SCREENSHOTS) {
             const folder = process.env.SCOUNDREL_SCREENSHOTS;fs.mkdirSync(folder, { recursive: true });
             await page.locator(".distribution-section").screenshot({ path: path.join(folder, `${name}-100000-chart-${viewport.width}.png`) });
