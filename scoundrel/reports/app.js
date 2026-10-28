@@ -77,15 +77,20 @@
     container.innerHTML = html;
     selectionMarker();
   }
+  function scorePercentiles(score) {
+    let below = 0, count = 0;
+    for (const row of rows) { if (row.score < score) below++; else if (row.score === score) count++; }
+    return { low: below / rows.length * 100, high: (below + count) / rows.length * 100, count };
+  }
   function selectionMarker() {
     const svg = $("histogram").querySelector("svg"), bar = svg?.querySelector(`[data-score="${activeScore}"] .chart-bar`);
     svg?.querySelector("#chart-selection")?.remove();
     if (!bar || activeScore == null) return;
-    const rank = rows.filter(r => r.score <= activeScore).length / rows.length * 100;
+    const rank = scorePercentiles(activeScore);
     const x = Number(bar.getAttribute("x")) + Number(bar.getAttribute("width")) / 2;
     const width = svg.viewBox.baseVal.width, height = svg.viewBox.baseVal.height;
     const labelWidth = Math.min(195, width - 50), left = Math.max(38, Math.min(width - 12 - labelWidth, x - labelWidth / 2));
-    svg.insertAdjacentHTML("beforeend", `<g id="chart-selection" class="chart-selection" data-percentile="${rank}" aria-label="Score ${activeScore}, percentile ${f(rank, 2)}"><line x1="${x}" x2="${x}" y1="61" y2="${height - 50}"/><rect x="${left}" y="34" width="${labelWidth}" height="26" rx="4"/><text x="${left + labelWidth / 2}" y="51" text-anchor="middle">Score ${activeScore} · ${f(rank, 2)} percentile</text></g>`);
+    svg.insertAdjacentHTML("beforeend", `<g id="chart-selection" class="chart-selection" data-percentile-low="${rank.low}" data-percentile-high="${rank.high}" aria-label="Score ${activeScore}, percentile range ${f(rank.low)} to ${f(rank.high)}: scores below through scores at or below"><line x1="${x}" x2="${x}" y1="77" y2="${height - 50}"/><rect x="${left}" y="34" width="${labelWidth}" height="42" rx="4"/><text x="${left + labelWidth / 2}" y="50" text-anchor="middle">Score ${activeScore}</text><text x="${left + labelWidth / 2}" y="66" text-anchor="middle">Percentiles ${f(rank.low)}–${f(rank.high)}</text></g>`);
   }
   function renderDeals() {
     const shown = rows.filter(r => activeScore == null || r.score === activeScore);
@@ -97,7 +102,8 @@
   function chooseScore(score) {
     activeScore = score; visible = 20;
     $("score-picker").value = score == null ? "" : String(score);
-    $("chart-caption").textContent = score == null ? "Select a bar or use ← / →. Esc clears selection." : `Score ${score} · ${f(rows.filter(r => r.score === score).length)} deals · ${f(rows.filter(r => r.score <= score).length / rows.length * 100, 2)} percentile (scores at or below ${score}). ← / → to move; Esc to clear.`;
+    const rank = score == null ? null : scorePercentiles(score);
+    $("chart-caption").textContent = score == null ? "Select a bar or use ← / →. Esc clears selection." : `Score ${score} · ${f(rank.count)} deals · percentile range ${f(rank.low)}–${f(rank.high)}. ← / → to move; Esc to clear.`;
     // Keep the chart and its focus in place while stepping through a large study.
     for (const bar of $("histogram").querySelectorAll("[data-score]")) bar.classList.toggle("is-active", score != null && Number(bar.dataset.score) === score);
     selectionMarker(); renderDeals();

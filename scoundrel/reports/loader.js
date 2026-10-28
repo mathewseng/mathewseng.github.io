@@ -15,7 +15,7 @@
           }
           el.onload = () => finish(ready() ? null : Error("Script did not initialize"));
           el.onerror = () => finish(Error("Script could not be downloaded"));
-          el.src = path + "?v=20261028-2" + (attempt ? "&retry=" + Date.now() : "");
+          el.src = path + "?v=20261028-3" + (attempt ? "&retry=" + Date.now() : "");
           document.head.append(el);
         });
         return;
