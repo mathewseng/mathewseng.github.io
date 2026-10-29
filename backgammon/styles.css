@@ -4732,6 +4732,16 @@ button.library-item {
   translate: 0 0;
 }
 
+/* Decision checks must be visible as soon as their native backdrop blocks
+   play, including when Safari interrupts an opening opacity transition. */
+.dialog.bg-dialog.decision-warning[open] {
+  opacity: 1;
+  transition: none;
+}
+@starting-style {
+  .dialog.bg-dialog.decision-warning[open] { opacity: 1; }
+}
+
 /* Keep every modal below the status-bar fade/notch and above the home
    indicator, even when Safari's chrome or keyboard changes the viewport.
    More specific than individual dialog/sheet sizes: content scrolls, the

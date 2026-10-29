@@ -3041,18 +3041,18 @@ async function evaluateDecision(action) {
     }),
     button("Play Anyway", () => finish(completedResult), "primary"),
   ] : [
-    button("Revise", () => job.dialog.close()),
+    button("Revise", onClose),
     button("Confirm anyway", () => finish(completedResult), "primary", {disabled: !completedResult}),
   ];
   const configureWarning = () => {
+    const close = job.dialog.querySelector(".close");
+    close.setAttribute("aria-label", "Revise");
+    close.title = "Revise your decision";
+    // Native close events are queued; cancel before a late solver result can
+    // accept the decision the player just dismissed.
+    close.addEventListener("click", onClose);
     if (checker) {
       job.dialog.classList.add("checker-warning");
-      const close = job.dialog.querySelector(".close");
-      close.setAttribute("aria-label", "Revise");
-      close.title = "Revise your move";
-      // Native dialog close events are queued. Cancel on this click so an
-      // evaluation completing in the same task cannot accept after Revise.
-      close.addEventListener("click", onClose);
     }
     job.dialog.addEventListener("close", onClose, { once: true });
   };
@@ -3062,7 +3062,8 @@ async function evaluateDecision(action) {
     warningCopy = el("p", { role: "status", id: "pending-move-loss" },
       checker ? "Still calculating EV. Review your move or play it now."
         : "Checking the cube decision before rolling…");
-    job.dialog = dialog("Review before confirming?", warningCopy, warningActions());
+    job.dialog = dialog("Review before confirming?", warningCopy, warningActions(),
+      {warning:true, dismissible:true, onDismiss:onClose});
     configureWarning();
   };
   try {
@@ -3114,6 +3115,7 @@ async function evaluateDecision(action) {
           `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate.`,
         ),
         warningActions(),
+        {warning:true, dismissible:true, onDismiss:onClose},
       );
       configureWarning();
     } else await finish(result);

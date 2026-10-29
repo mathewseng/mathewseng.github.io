@@ -627,6 +627,7 @@ const server = http.createServer((req, res) => {
         );
         (report.revisionWarning ||= []).push(
           await run("revision-warning", browser, base, out, browserName),
+          await run("cube-warning", browser, base, out, browserName),
         );
         (report.endedUndo ||= []).push(
           await run("ended-undo", browser, base, out, browserName),

@@ -4,7 +4,7 @@
 const openDialogs = new Set();
 let pageHeight;
 
-export function installDialogBehavior(dialog, { dismissible = false } = {}) {
+export function installDialogBehavior(dialog, { dismissible = false, onDismiss = () => {} } = {}) {
   if (!pageHeight) {
     pageHeight = {
       value: document.body.style.getPropertyValue("min-height"),
@@ -32,6 +32,7 @@ export function installDialogBehavior(dialog, { dismissible = false } = {}) {
   }, { once: true });
 
   if (!dismissible) return;
+  dialog.addEventListener("cancel", onDismiss);
   // A genuine tap on the backdrop dismisses a tools sheet. A scroll, a drag
   // out of a control, or a tap inside empty dialog space does not. Forms and
   // confirmations opt out, so entered work cannot disappear accidentally.
@@ -55,8 +56,10 @@ export function installDialogBehavior(dialog, { dismissible = false } = {}) {
     const tap = start;
     start = null;
     if (dialog.open && tap?.id === event.pointerId && outside(event) &&
-        Math.hypot(event.clientX - tap.x, event.clientY - tap.y) < 8)
-      dialog.close();
+        Math.hypot(event.clientX - tap.x, event.clientY - tap.y) < 8) {
+      onDismiss();
+      if (dialog.open) dialog.close();
+    }
   });
   dialog.addEventListener("pointercancel", () => { start = null; });
 }

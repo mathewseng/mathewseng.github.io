@@ -196,12 +196,12 @@ export function showError(e, source) {
 // .drawer and .close hooks. options.sheet opens it as a bottom sheet on phones.
 export function dialog(title, content, actions = [], options = {}) {
   const d = el("dialog", {
-      class: `dialog bg-dialog${options.sheet ? " dialog--sheet drawer" : ""}${options.wide ? " dialog--wide" : ""}`,
+      class: `dialog bg-dialog${options.sheet ? " dialog--sheet drawer" : ""}${options.wide ? " dialog--wide" : ""}${options.warning ? " decision-warning" : ""}`,
       "aria-label": title,
     }),
     close = button("", () => d.close(), "ghost close btn--icon", { "aria-label": "Close" });
   close.innerHTML = CLOSE_ICON;
-  installDialogBehavior(d, { dismissible: options.sheet || options.dismissible });
+  installDialogBehavior(d, { dismissible: options.sheet || options.dismissible, onDismiss:options.onDismiss });
   d.append(
     el("div", { class: "dialog-head dialog-header" }, el("h2", {}, title), close),
     el("div", { class: "dialog-body" }, el("div", { class: "dialog-error", role: "alert" }), content),
