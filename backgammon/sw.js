@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later. Scope is /backgammon/ only. */
 // Release URL is generated with the manifest; keep the registration URL stable.
-importScripts("./offline-manifest.js?v=fb6a86a1811c5262");
+importScripts("./offline-manifest.js?v=c72574e597cd60d6");
 const PREFIX = "backgammon-assets-",
   CACHE = PREFIX + self.BG_CACHE_VERSION;
 async function cacheShell() {
@@ -73,6 +73,26 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(removeOldCaches());
 });
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "BACKGAMMON_PREPARE_OFFLINE" && event.ports?.[0]) {
+    const reply = value => event.ports[0].postMessage(value);
+    event.waitUntil((async () => {
+      const url = event.source?.url && new URL(event.source.url);
+      if (!url || url.origin !== location.origin || !url.pathname.startsWith("/backgammon/")) {
+        reply({status: "error", message: "Open Backgammon to download offline play."});
+        return;
+      }
+      if (event.data.version !== self.BG_CACHE_VERSION) {
+        reply({status: "error", message: "Refresh Backgammon before downloading offline play."});
+        return;
+      }
+      const cache = await caches.open(CACHE);
+      const shell = await Promise.all(self.BG_SHELL.map(path => cache.match(path)));
+      if (!shell.every(Boolean)) await cacheShell();
+      await warmEngine();
+      reply({status: "ready", version: self.BG_CACHE_VERSION});
+    })().catch(() => reply({status: "error", message: "Download didn’t finish. Stay online, keep Backgammon open and try again."})));
+    return;
+  }
   if (event.data?.type === "BACKGAMMON_VERSION" && event.ports?.[0]) {
     const sourceURL = event.source?.url && new URL(event.source.url);
     if (sourceURL?.origin === location.origin && sourceURL.pathname.startsWith("/backgammon/"))
@@ -174,7 +194,7 @@ async function warmEngine() {
         if (saved.every(Boolean)) return cache;
         const responses = await Promise.all(
           self.BG_ENGINE.map(async (path) => {
-            const response = await fetch(path, { cache: "no-store" });
+            const response = await fetch(path, { cache: "no-store", signal: AbortSignal.timeout(60000) });
             if (!response.ok)
               throw new Error(`Engine asset unavailable: ${path}`);
             const digest = await crypto.subtle.digest(
@@ -199,9 +219,8 @@ async function warmEngine() {
         );
         return cache;
       })
-      .catch((error) => {
+      .finally(() => {
         warming = null;
-        throw error;
       });
   return warming;
 }
@@ -241,9 +260,7 @@ self.addEventListener("fetch", (event) => {
   if (u.pathname.startsWith("/backgammon/refresh/")) return;
   if (
     !u.pathname.startsWith("/backgammon/") &&
-    !["/shared/hub.css", "/shared/hub.js", "/shared/peer-room.js"].includes(
-      u.pathname,
-    )
+    !self.BG_SHELL.includes(u.pathname)
   )
     return;
   const key = u.pathname.endsWith("/") ? u.pathname + "index.html" : u.pathname;
@@ -266,6 +283,8 @@ self.addEventListener("fetch", (event) => {
     caches.open(CACHE).then(async (cache) => {
       const saved = await cache.match(key);
       return fromRelease(saved || (await fetch(event.request)));
-    }),
+    }).catch(() => new Response("This file isn’t saved offline. Reconnect and download offline play.", {
+      status: 503, headers: {"Content-Type": "text/plain; charset=utf-8"},
+    })),
   );
 });

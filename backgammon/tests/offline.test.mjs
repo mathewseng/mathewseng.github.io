@@ -131,6 +131,15 @@ test("offline engine caching verifies and stores one complete matching triplet",
   assert.equal(h.fetches(), 3);
 });
 
+test("engine cache is rechecked after a previous download when a browser evicts a file", async () => {
+  const h = harness();
+  assert.equal((await h.request()).status, 200);
+  h.saved.delete(h.paths[1]);
+  assert.equal((await h.request()).status, 200);
+  assert.equal(h.saved.size, 3);
+  assert.equal(h.fetches(), 6);
+});
+
 test("app responses prevent a second HTTP cache bypassing the active offline release", async () => {
   const h = harness();
   h.saved.set(
@@ -145,6 +154,54 @@ test("app responses prevent a second HTTP cache bypassing the active offline rel
   const network = await h.request("/backgammon/uncached.mjs");
   assert.equal(network.headers.get("Cache-Control"), "no-store");
   assert.equal(await network.text(), "/backgammon/uncached.mjs");
+});
+
+test("every manifest-listed shared dependency is served offline, including typography and chrome", async () => {
+  const h = harness();
+  for (const path of ["/shared/tokens.css", "/shared/app.css", "/shared/hub-art.css", "/shared/icons.svg", "/shared/tabs.js"]) {
+    h.self.BG_SHELL.push(path);
+    h.saved.set(path, new Response(path));
+  }
+  h.offline();
+  for (const path of h.self.BG_SHELL.filter(p => p.startsWith("/shared/")))
+    assert.equal(await (await h.request(path + "?bgv=test")).text(), path);
+  assert.equal(h.request("/shared/other-app.js"), undefined);
+  assert.equal(h.fetches(), 0);
+});
+
+test("uncached update checks return an unavailable response offline instead of rejecting the worker event", async () => {
+  const h = harness();
+  h.offline();
+  const response = await h.request("/backgammon/sw.js?update-check=test");
+  assert.equal(response.status, 503);
+});
+
+test("explicit offline preparation caches the engine and shell without activation or data removal", async () => {
+  const h = harness();
+  let reply, pending;
+  const prepare = (url, version = "test") => {
+    h.handlers.message({
+      data: {type: "BACKGAMMON_PREPARE_OFFLINE", version},
+      source: {id: "hub", url},
+      ports: [{postMessage: data => { reply = data; }}],
+      waitUntil: promise => { pending = promise; },
+    });
+    return pending;
+  };
+  await prepare("https://other.example/backgammon/");
+  assert.equal(reply.status, "error");
+  assert.equal(h.fetches(), 0);
+  await prepare("https://site.example/backgammon/", "older-page");
+  assert.equal(reply.status, "error");
+  assert.equal(h.fetches(), 0);
+  await prepare("https://site.example/backgammon/");
+  assert.equal(reply.status, "ready");
+  assert.equal(h.saved.size, 5);
+  assert.equal(h.activated(), 0);
+  assert.deepEqual(h.deleted, []);
+  h.offline();
+  await prepare("https://site.example/backgammon/");
+  assert.equal(reply.status, "ready");
 });
 
 test("install bypasses the HTTP cache for every shell file without forcing activation", async () => {

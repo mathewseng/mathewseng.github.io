@@ -827,6 +827,9 @@ const server = http.createServer((req, res) => {
             result: await run(moduleName, browser, base, out, browserName)});
         }
         (report.pageProgress ||= []).push(await run("page-progress", browser, base));
+        (report.offlineDownloads ||= []).push(
+          await run("offline-download", browser, base, out, browserName),
+        );
         report.updatesUX ||= [];
         report.updatesUX.push(
           await run("updates", browser, base, out, browserName),

@@ -6,6 +6,7 @@ import { get, listItemSummaries, settings } from "./core/storage.mjs";
 import { applyBoardTheme } from "./core/appearance.mjs";
 import { applySkin } from "./ui/skin.mjs";
 import { startUpdates } from "./ui/updates.mjs";
+import { installOfflineDownload } from "./ui/offline.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
@@ -23,6 +24,7 @@ await startUpdates({
   },
 });
 applyBoardTheme(settings().boardTheme);
+installOfflineDownload();
 addEventListener("storage", (e) => {
   if (e.key === "backgammon.v1.settings" || e.key === null) {
     applySkin(settings().skin);

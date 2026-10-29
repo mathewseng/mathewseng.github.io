@@ -16,16 +16,16 @@
     <meta name="apple-mobile-web-app-title" content="Backgammon" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=fb6a86a1811c5262" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=fb6a86a1811c5262" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=fb6a86a1811c5262" />
-    <link rel="stylesheet" href="../shared/hub-art.css?bgv=fb6a86a1811c5262" />
-    <link rel="stylesheet" href="styles.css?bgv=fb6a86a1811c5262" />
-    <link rel="stylesheet" href="opening-guide.css?bgv=fb6a86a1811c5262" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=c72574e597cd60d6" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=c72574e597cd60d6" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=c72574e597cd60d6" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=c72574e597cd60d6" />
+    <link rel="stylesheet" href="styles.css?bgv=c72574e597cd60d6" />
+    <link rel="stylesheet" href="opening-guide.css?bgv=c72574e597cd60d6" />
     <script>document.documentElement.classList.add("is-ready");</script>
     <script>(function(){try{var c=JSON.parse(localStorage.getItem("backgammon.v1.skin-boot")||"null"),x=/^#[0-9A-Fa-f]{6}$/;if(c&&/^[a-z][a-z0-9-]{1,23}$/.test(c.id)&&x.test(c.page)){var h=document.documentElement,s=h.style;h.dataset.skin=c.id;s.setProperty("--page",c.page);if(x.test(c.surface))s.setProperty("--surface",c.surface);if(x.test(c.ink))s.setProperty("--ink",c.ink);if(x.test(c.muted))s.setProperty("--muted",c.muted);s.colorScheme=c.scheme==="light"?"light":"dark";}}catch(e){}})();</script>
-    <script src="../shared/hub.js?bgv=fb6a86a1811c5262" defer></script>
-    <script type="module" src="app.js?bgv=fb6a86a1811c5262"></script>
+    <script src="../shared/hub.js?bgv=c72574e597cd60d6" defer></script>
+    <script type="module" src="app.js?bgv=c72574e597cd60d6"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -88,6 +88,11 @@
             </li>
           </ul>
         </section>
+
+        <div class="hub-update">
+          <button type="button" class="btn btn--lg" id="download-offline">Download for offline play</button>
+          <span id="offline-status" role="status">Save the app and computer engine before going offline. On iPhone, download from the Home Screen app you’ll use.</span>
+        </div>
 
         <section class="group group-study" aria-labelledby="group-study">
           <div class="group-head">

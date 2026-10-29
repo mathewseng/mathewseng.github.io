@@ -171,9 +171,29 @@ After host migration the game pauses. Both original seats must agree on the last
 
 ## Offline and updates
 
+On the hub, **Download for offline play** saves and verifies the app shell and
+complete computer engine without starting GNUbg. Wait for **Ready for offline
+play**, then local/computer play, Trainer, Solver and Library work without a
+connection. On iPhone, open the installed Home Screen app while online and use
+the button there; a Safari tab’s download does not establish readiness in a
+separate installed app. Online friend rooms require internet; optional opening
+book shards are available offline only after being visited/downloaded. Browser
+storage eviction can remove downloads, so the button rechecks the actual cache
+and repairs missing files when online. It never clears saved games.
+
+After assembling `_site`, run `BG_MODULES=offline-download BG_BROWSERS=webkit,chromium,firefox node backgammon/tests/browser.cjs`
+to exercise interrupted downloads/retry, fresh hub installation, all shared
+dependencies and real GNUbg analysis with the origin switched off and the HTTP
+cache disabled. The full browser suite includes this check too.
+
+All shared dependencies listed in the release manifest, including `tokens.css`
+(system font stack), `app.css`, icons and helpers, are intercepted for controlled
+Backgammon pages. This prevents offline Safari from losing typography and chrome
+despite those files already being in CacheStorage.
+
 Settings shows the installed and published file dates in your local timezone, plus the loaded release ID. **Check for updates** compares the cached page for that release with a fresh `HEAD` response from the published site, bypassing the offline GET handler. Missing dates and offline checks are reported explicitly. These are server file timestamps, not the time you last refreshed. “Up to date” means the published site matches; an unpublished or failed build cannot appear as an available update. **Refresh app** stays visible at the top of Settings, and `/refresh/` redirects to `/backgammon/refresh/`.
 
-`sw.js` is registered by the Backgammon hub and tools and scoped to `/backgammon/`. It uses only `backgammon-assets-*` caches. Shell/data files are installed together; the complete matching engine triplet is cached when engine use first requests it. The hub never starts or preloads the engine. The small shared dependencies are cached only for controlled Backgammon pages. Other families are neither controlled nor purged.
+`sw.js` is registered by the Backgammon hub and tools and scoped to `/backgammon/`. It uses only `backgammon-assets-*` caches. Shell/data files are installed together; the complete matching engine assets are cached on first engine use or an explicit offline download. Opening the hub never starts or preloads the engine. The small shared dependencies are cached only for controlled Backgammon pages. Other families are neither controlled nor purged.
 
 Run `node backgammon/scripts/offline-manifest.mjs` after changing shipped files; commit the generated `offline-manifest.js`, `sw.js` and family entry-point HTML files. The content-derived revision versions the worker's manifest import and each page's entry scripts/styles, changing worker bytes on every release without changing its registration URL. Generated revisions are normalized before hashing, making generation idempotent. This prevents old HTTP-cached imports and decoded stylesheets from hiding releases. Worker registration uses `updateViaCache: "none"`; shell installation uses `cache: "reload"` so a new cache cannot be filled from outdated HTTP-cached scripts or styles. Controlled responses use `Cache-Control: no-store` to prevent a separate browser response cache from bypassing the active release (including WebKit module imports across tool navigation). Explicit CacheStorage still supplies offline files. SHA-256 verification of the complete engine triplet prevents mixing engine/data versions. The deployment test recomputes the release hash, so forgotten generation fails CI.
 
