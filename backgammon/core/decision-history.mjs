@@ -99,7 +99,7 @@ export function decisionHistory(model) {
       player: event.actor,
       source,
       action: a,
-      choiceMethod: ["manual", "play-best"].includes(event.choiceMethod) ? event.choiceMethod : null,
+      choiceMethod: ["manual", "hint", "play-best"].includes(event.choiceMethod) ? event.choiceMethod : null,
       label:
         a.type === "move"
           ? notation(a.steps, event.actor)

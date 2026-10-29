@@ -11,6 +11,13 @@ export function currentAttempt(table) {
   return attempt?.index === table.events.length &&
     attempt.positionKey === positionKey(table.state) ? attempt : null;
 }
+export function markHintSeen(table) {
+  table.hintDecision = {index:table.events.length, positionKey:positionKey(table.state)};
+}
+export function decisionHintSeen(table) {
+  return table.hintDecision?.index === table.events.length &&
+    table.hintDecision.positionKey === positionKey(table.state);
+}
 // Keep the first submission in the existing save format; revisions extend it
 // without changing initial-versus-accepted summary statistics.
 export function decisionAttempts(first) {

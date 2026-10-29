@@ -3,7 +3,7 @@
 import { historyStateKey } from "./history-tree.mjs";
 import { historyStates } from "./history-states.mjs";
 import { certainBearoff } from "./certain-bearoff.mjs";
-import { acceptedAttempt, beginDecisionAttempt } from "./decision-attempt.mjs";
+import { acceptedAttempt, beginDecisionAttempt, markHintSeen } from "./decision-attempt.mjs";
 import { canAutoPassClosedOut } from './closed-out.mjs';
 import {
   clone,
@@ -164,6 +164,7 @@ function append(table, action, actor, automatic = false) {
     ? acceptedAttempt(table, action) : null;
   table.state = next;
   delete table.initialDecision;
+  delete table.hintDecision;
   table.events.push({
     actor,
     action: clone(action),
@@ -288,6 +289,7 @@ export function undoTurn(source, target, by, acceptedBy = null) {
     const first = removed[0].initialDecision;
     Object.assign(beginDecisionAttempt(table, first.action), clone(first));
   }
+  if (["hint", "play-best"].includes(removed[0]?.choiceMethod)) markHintSeen(table);
   if (source.state.phase === 'over') table.reviewingTurn = true;
   table.undoRequest = null;
   return table;

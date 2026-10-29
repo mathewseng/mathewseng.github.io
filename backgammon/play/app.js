@@ -89,7 +89,7 @@ import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
 import { decisionFeedback, needsRevisionWarning, lossTone } from "../core/decision-feedback.mjs";
-import { beginDecisionAttempt, recordInitialEvaluation } from "../core/decision-attempt.mjs";
+import { beginDecisionAttempt, recordInitialEvaluation, markHintSeen, decisionHintSeen } from "../core/decision-attempt.mjs";
 import { gameLossTable } from "../ui/game-loss-summary.mjs";
 import { gameLossSummary } from "../core/game-loss-summary.mjs";
 import { PRESETS, SEARCH_OPTIONS, searchName, SEARCH_DESCRIPTION } from "../engine/metadata.mjs";
@@ -2459,9 +2459,10 @@ async function commit(action, evaluation = null, options = {}) {
     // A failed save leaves the result and its full history on the table.
     if (action.type === 'next') await persist(true, true);
     const eventIndex = game.events.length;
+    const choiceMethod = options.choiceMethod === "manual" && decisionHintSeen(game) ? "hint" : options.choiceMethod;
     game = await localPlayAction(game, action, options);
-    if (action.type === "move" && ["manual", "play-best"].includes(options.choiceMethod))
-      game.events[eventIndex].choiceMethod = options.choiceMethod;
+    if (action.type === "move" && ["manual", "hint", "play-best"].includes(choiceMethod))
+      game.events[eventIndex].choiceMethod = choiceMethod;
     if (evaluation) {
       game.events[eventIndex].evaluation = compactEvaluation(
         evaluation.source,
@@ -2933,7 +2934,11 @@ function showHint({ result: prepared = null, playBest = false } = {}) {
       if (!activeAssistance(job)) return;
       job.done = true;
       if (playBest && result.candidates?.[0]) await play(result.candidates[0].steps, result);
-      else review.result(result);
+      else {
+        review.result(result);
+        markHintSeen(game);
+        persist(false);
+      }
     } catch (error) {
       if (!activeAssistance(job)) return;
       job.done = true;

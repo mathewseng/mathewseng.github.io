@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { initialState, legalTurns, positionKey, clone } from "../core/rules.mjs";
 import { playAction, undoTurn } from "../core/table.mjs";
-import { beginDecisionAttempt, recordInitialEvaluation, currentAttempt, decisionAttempts } from "../core/decision-attempt.mjs";
+import { beginDecisionAttempt, recordInitialEvaluation, currentAttempt, decisionAttempts, markHintSeen, decisionHintSeen } from "../core/decision-attempt.mjs";
 import { decisionHistory, compactEvaluation, mergeEvaluations } from "../core/decision-history.mjs";
 import { gameLossSummary } from "../core/game-loss-summary.mjs";
 import { returnToDecision } from "../core/practice.mjs";
@@ -60,6 +60,23 @@ test("initial cube choice is independent of rolled dice and reuses all-option cu
   const rolled = playAction(fresh, { type: "roll", dice: [6, 1] });
   rolled.events[0].evaluation = game.events[0].evaluation;
   assert.equal(decisionHistory(rolled)[0].initialFeedback.loss, 0);
+});
+
+test("viewed hints survive reload only for their decision and remain known after a takeback", () => {
+  let game = fixture();
+  assert.equal(decisionHintSeen(game),false);
+  markHintSeen(game);
+  assert.equal(game.initialDecision,undefined,'viewing a hint is not a submitted attempt');
+  game = JSON.parse(JSON.stringify(game));
+  assert.equal(decisionHintSeen(game),true);
+  const different = clone(game); different.state.dice=[6,1];
+  assert.equal(decisionHintSeen(different),false,'a replaced roll never inherits a hint');
+  game=playAction(game,{type:'move',steps:legalTurns(game.state)[1].steps});
+  game.events[0].choiceMethod='hint';
+  assert.equal(game.hintDecision,undefined,'a committed decision releases its live hint marker');
+  assert.equal(decisionHintSeen(game),false);
+  const restored=undoTurn(game,0,0);
+  assert.equal(decisionHintSeen(restored),true,'returning to the hinted decision cannot claim Found');
 });
 
 test("multiple submitted choices retain ordered grades across reload, acceptance and takeback without changing initial totals", () => {

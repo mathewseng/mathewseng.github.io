@@ -72,7 +72,7 @@ module.exports = async (browser, base, out, name) => {
         assert.deepEqual(await checker.locator('.history-initial .history-played').allTextContents(),expected);
         assert.deepEqual(await checker.locator('.history-initial-loss strong').allTextContents(),['0.060','0.030']);
         assert.equal(await checker.locator('.history-accepted .history-attempt-label').innerText(),'Played best');
-        assert.equal(await checker.locator('.history-choice-method').innerText(),'Play Best');
+        assert.equal(await checker.locator('.history-choice-method').innerText(),'Hint');
         assert.equal(await checker.locator('.history-choice-method').getAttribute('data-choice-method'),'play-best');
         assert.equal(await checker.locator('.history-equity').innerText(),'+0.200');
         assert.equal(await checker.locator('.history-depth, .decision-values-compact, .history-loss').count(),0);
@@ -98,25 +98,30 @@ module.exports = async (browser, base, out, name) => {
       assert.equal(archived.events[1].initialDecision.revisions.length,1,'archived games retain all attempts');
       assert.equal(archived.events[1].choiceMethod,'play-best','the choice method survives archival');
       if (layout==='desktop') {
-        await hub();
-        await page.evaluate(async () => {
-          const st=await import('/backgammon/core/storage.mjs'), r=await import('/backgammon/core/rules.mjs');
-          const work=await st.get('work','play');
-          work.game.id='manual-best';work.game.events=work.game.events.slice(0,1);
-          work.game.state=r.transition(work.game.initial,work.game.events[0].action,0);
-          work.positionKey=r.positionKey(work.game.state);
-          work.draft=r.legalTurns(work.game.state)[1].steps;
-          await st.put('work',work);
-        });
-        await resume();
-        // Looking at a hint alone must not claim that Play Best was pressed.
-        await page.locator('#hint').click();
-        await page.locator('.review-move[data-rank="1"]').waitFor();
-        await page.locator('.decision-dialog .close').click();
-        await page.locator('#confirm').click();
-        const manual=await waitWork(page,w=>w?.game.events.some(e=>e.action.type==='move'));
-        assert.equal(manual.game.events[1].choiceMethod,'manual');
-        assert.equal(await checker.locator('.history-choice-method').innerText(),'Found');
+        for (const viewHint of [false,true]) {
+          await hub();
+          await page.evaluate(async () => {
+            const st=await import('/backgammon/core/storage.mjs'), r=await import('/backgammon/core/rules.mjs');
+            const work=await st.get('work','play');
+            work.game.id='manual-best';work.game.events=work.game.events.slice(0,1);
+            work.game.state=r.transition(work.game.initial,work.game.events[0].action,0);
+            work.positionKey=r.positionKey(work.game.state);
+            work.draft=r.legalTurns(work.game.state)[1].steps;
+            await st.put('work',work);
+          });
+          await resume();
+          if (viewHint) {
+            await page.locator('#hint').click();
+            await page.locator('.review-move[data-rank="1"]').waitFor();
+            await page.locator('.decision-dialog .close').click();
+            await waitWork(page,w=>w?.game.hintDecision);
+            await hub(); await resume(); // Reloading must not turn a seen hint into Found.
+          }
+          await page.locator('#confirm').click();
+          const manual=await waitWork(page,w=>w?.game.events.some(e=>e.action.type==='move'));
+          assert.equal(manual.game.events[1].choiceMethod,viewHint?'hint':'manual');
+          assert.equal(await checker.locator('.history-choice-method').innerText(),viewHint?'Hint':'Found');
+        }
       }
       assert.deepEqual(errors,[]);
       report.push({layout,attempts:2,reload:true,archive:true,modalDepth:true});
