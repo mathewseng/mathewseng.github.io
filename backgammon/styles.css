@@ -2853,6 +2853,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   color: var(--loss-color);
 }
 
+.history-played-best {
+  color: var(--tone-best);
+  font-weight: 600;
+}
+
 .play-feedback .feedback-best {
   font-size: var(--t-xs);
 }
@@ -3057,6 +3062,19 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
       "move"
       "status"
       "return";
+  }
+}
+
+/* Best checker play has no loss column, including in narrow paired turns. */
+.play-feedback .history-turn .feedback-review[data-played-best="true"] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "move" "equity";
+}
+
+@container (min-width: 900px) {
+  .play-feedback .history-turn .feedback-review[data-played-best="true"]:only-child {
+    grid-template-columns: minmax(180px, 1fr) minmax(280px, 1fr);
+    grid-template-areas: "move equity";
   }
 }
 

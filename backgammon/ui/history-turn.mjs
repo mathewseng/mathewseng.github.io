@@ -38,6 +38,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
     const handlers = actions(row);
     const kind = row.action.type === "move" ? "Move" : "Cube";
     const cube = kind === "Cube" ? presentCubeAction(row.source, row.action.type) : null;
+    const bestPlayed = !!row.feedback && Math.abs(row.feedback.best.equity - row.feedback.actual.equity) <= 1e-7;
     const initial = !cube && (local || side === "self") && row.initialAction?.type === "move"
       ? row.initialAction : null;
     // Equivalent move orders need only one line. Keep separate grades when
@@ -61,7 +62,9 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
     };
     const played = () => {
       if (!cube) return el("span", { class: "history-accepted" },
-        ...(initial ? [el("span", { class: "history-attempt-label muted" }, revised ? "Played" : "Initial · played")] : []),
+        ...(bestPlayed || initial ? [el("span", {
+          class: `history-attempt-label ${bestPlayed ? "history-played-best" : "muted"}`,
+        }, bestPlayed ? "Played best" : revised ? "Played" : "Initial · played")] : []),
         el("span", { class: "history-played" }, row.label));
       if (!cube.displayLabel) return null;
       return el("span", { class: "history-played history-cube-action", title: cube.description },
@@ -121,10 +124,10 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
         "data-history-side": side,
         "data-history-player": row.player,
         "data-decision-type": row.result.type,
+        "data-played-best": !cube && bestPlayed ? "true" : "false",
         title: `${playerLabel} · ${kind}: ${cube?.label || row.label}. ${f.quality}. ${f.units}. Open equity and EV comparison.`,
       },
     );
-    const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
     review.append(
       el("span", { class: "history-move" },
         detail(),
@@ -136,10 +139,10 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
         )] : []),
       ),
       decisionValues(f, true, { opponent: side === "opponent" }),
-      el("span", { class: "history-loss" },
+      ...(cube || !bestPlayed ? [el("span", { class: "history-loss" },
         el("span", { class: "muted" }, revised ? `Played ${f.label}` : f.label),
         el("strong", { class: "value" }, f.value),
-      ),
+      )] : []),
     );
     decisions.append(review);
   }

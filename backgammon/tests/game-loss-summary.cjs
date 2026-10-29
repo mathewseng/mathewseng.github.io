@@ -152,6 +152,53 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
         await page.goto(base + '/backgammon/play/'); await ready(); await resume();
         assert.deepEqual(await card.locator('[data-summary-player]').evaluateAll(nodes=>nodes.map(node=>node.dataset.summaryPlayer)),expected);
       }
+      // Correcting the original mistake to the best move keeps the original
+      // loss visible, but replaces the accepted zero-loss display with a label.
+      await page.goto(base + '/backgammon/'); await ready();
+      await page.waitForLoadState('networkidle');
+      await page.evaluate(async () => {
+        const {get,put} = await import('/backgammon/core/storage.mjs');
+        const work = await get('work','play');
+        work.game.config.mode = 'computer';
+        work.game.config.humanSide = 0;
+        const result = work.game.events[1].evaluation.result;
+        result.actual.equity = result.candidates[0].equity;
+        await put('work',work);
+      });
+      await page.goto(base + '/backgammon/play/'); await ready(); await resume();
+      await card.getByRole('button', {name:'Hide the result to see the board'}).click();
+      assert.equal(await checker.locator('.history-accepted .history-attempt-label').innerText(),'Played best');
+      assert.equal(await checker.locator('.history-loss').count(),0,'best play does not show a redundant zero loss');
+      assert.equal(await checker.locator('.history-initial-loss strong').innerText(),'0.060','initial mistake stays visible');
+      await page.locator('#review-heading').evaluate(n => n.scrollIntoView({block:'start'}));
+      if (layout === 'landscape') await checker.evaluate(n => n.closest('.history-turn').scrollIntoView({block:'center'}));
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await page.screenshot({path:path.join(out,`${name}-played-best-${layout}.png`)});
+      const boundaryCases = await page.evaluate(async () => {
+        const {get} = await import('/backgammon/core/storage.mjs');
+        const {decisionHistory,groupDecisionTurns} = await import('/backgammon/core/decision-history.mjs');
+        const {decisionFeedback} = await import('/backgammon/core/decision-feedback.mjs');
+        const {historyTurn} = await import('/backgammon/ui/history-turn.mjs');
+        const row = decisionHistory((await get('work','play')).game).find(r => r.action.type === 'move');
+        const render = overrides => {
+          const entry = {...row,...overrides};
+          const node = historyTurn(groupDecisionTurns([entry])[0],{names:['White','Black'],viewer:0,local:false,actions:()=>({})});
+          return {label:node.querySelector('.history-accepted .history-attempt-label')?.textContent,
+            loss:node.querySelector('.history-loss .value')?.textContent,initial:!!node.querySelector('.history-initial')};
+        };
+        const almost = {...row.result,actual:{...row.result.actual,equity:row.feedback.best.equity-.0001}};
+        return {
+          unchanged:render({initialAction:row.action,initialFeedback:row.feedback}),
+          legacy:render({initialAction:null,initialFeedback:null}),
+          pending:render({result:null,feedback:null}),
+          rounded:render({result:almost,feedback:decisionFeedback(almost,row.source)}),
+        };
+      });
+      assert.deepEqual(boundaryCases.unchanged,{label:'Played best',loss:undefined,initial:false});
+      assert.deepEqual(boundaryCases.legacy,{label:'Played best',loss:undefined,initial:false});
+      assert.notEqual(boundaryCases.pending.label,'Played best','pending evaluations never claim best');
+      assert.equal(boundaryCases.rounded.loss,'0.000','rounding alone does not make a move best');
+      assert.notEqual(boundaryCases.rounded.label,'Played best');
       assert.deepEqual(errors, []);
       report.push({ layout, bounds, initialAndAccepted: true, liveUpdate: true });
     } catch (error) {
