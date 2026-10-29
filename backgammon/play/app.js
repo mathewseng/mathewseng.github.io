@@ -264,8 +264,7 @@ const feedbackStrip = el("div", {
   "aria-label": "Decision history",
   hidden: true,
 });
-// Below each game divider in the decision history: a card with each player's
-// accepted EV loss and the full per-game table, always expanded.
+// Previous games retain their expanded loss summaries in the decision history.
 function gameSummaryCard(game, rows, viewer) {
   const s = state();
   const visible = config.mode === "computer" ? [config.humanSide] : [0, 1];
@@ -2697,15 +2696,16 @@ function renderFeedback() {
   if (feedbackView.caption.textContent !== contextText) feedbackView.caption.textContent = contextText;
   const children = [feedbackView.heading, feedbackView.caption];
   const retained = new Set(), retainedGames = new Set();
+  const currentGame = state().gameNumber;
   const gameHeading = game => {
     retainedGames.add(game);
     if (!feedbackView.games.has(game))
       feedbackView.games.set(game, el("h3", { class: "history-game-divider" }, `Game ${game}`));
-    children.push(feedbackView.games.get(game), gameSummaryCard(game, rows, viewer));
+    children.push(feedbackView.games.get(game));
+    if (game !== currentGame) children.push(gameSummaryCard(game, rows, viewer));
   };
-  // The current game's summary stays in view while it is played, even before
-  // its first graded decision, so the running EV loss is always a scroll away.
-  const currentGame = m?.started ? state().gameNumber : null;
+  // The playing area already shows the current summary. Analysis starts with
+  // its decisions, while older games keep their own summaries for context.
   if (currentGame && !shown.some(group => group.game === currentGame)) gameHeading(currentGame);
   if (!shown.length) {
     feedbackView.empty.textContent = rows.length ? "No decisions from this player yet." : "Decisions will appear here after play begins.";
@@ -2741,7 +2741,7 @@ function renderFeedback() {
   }
   for (const key of feedbackView.turns.keys()) if (!retained.has(key)) feedbackView.turns.delete(key);
   for (const game of feedbackView.games.keys()) if (!retainedGames.has(game)) feedbackView.games.delete(game);
-  for (const game of feedbackView.cards.keys()) if (!retainedGames.has(game)) feedbackView.cards.delete(game);
+  for (const game of feedbackView.cards.keys()) if (game === currentGame || !retainedGames.has(game)) feedbackView.cards.delete(game);
   children.push(previousGames.node, feedbackView.footer);
   const wanted = new Set(children);
   for (const child of [...feedbackStrip.children]) if (!wanted.has(child)) child.remove();

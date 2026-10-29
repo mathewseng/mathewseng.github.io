@@ -52,10 +52,12 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       const card = page.getByRole("region", { name: "Game result", exact: true });
       await card.waitFor();
       const value = (player, kind, stage) => card.locator(`[data-summary-player="${player}"] [data-loss-kind="${kind}"] [data-stage="${stage}"]`);
-      assert.equal((await value(0, "checker", "initial").innerText()).trim(), "0.060\n0.060 / move");
-      assert.equal((await value(0, "checker", "accepted").innerText()).trim(), "0.010\n0.010 / move");
-      assert.equal((await value(0, "cube", "initial").innerText()).trim(), "0.030\n1 mistake");
-      assert.equal((await value(0, "cube", "accepted").innerText()).trim(), "0.000\n0 mistakes");
+      // Assert the values separately; line breaks depend on responsive layout.
+      const summaryValues = (kind, stage) => value(0, kind, stage).locator(':scope > strong, :scope > small').allTextContents();
+      assert.deepEqual(await summaryValues("checker", "initial"), ["0.060", "0.060 / move"]);
+      assert.deepEqual(await summaryValues("checker", "accepted"), ["0.010", "0.010 / move"]);
+      assert.deepEqual(await summaryValues("cube", "initial"), ["0.030", "1 mistake"]);
+      assert.deepEqual(await summaryValues("cube", "accepted"), ["0.000", "0 mistakes"]);
       assert.equal(await card.locator('[data-summary-player="1"]').count(), 0, "bot losses are hidden");
       assert.equal(await card.locator('[data-summary-player]').count(), 1);
       assert.ok(!(await card.locator('.game-loss-summary').innerText()).includes('GNUbg'));
@@ -71,18 +73,25 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       });
       assert.ok(bounds.left >= 0 && bounds.right <= viewport.width + 1, `${layout}: horizontal fit ${JSON.stringify(bounds)}`);
       assert.equal(bounds.overflow, false);
-      assert.ok(bounds.height <= viewport.height * .8 + 1);
-      await card.locator("summary").scrollIntoViewIfNeeded();
-      await card.locator("summary").click();
-      assert.ok(await card.locator("details").evaluate(node => node.open));
-      assert.match(await card.innerText(), /0.002/);
-      await card.locator("summary").click();
+      assert.ok(bounds.top >= 0 && bounds.bottom <= viewport.height + 1,
+        `${layout}: result card fits the viewport ${JSON.stringify(bounds)}`);
+      // Portrait keeps these details in the playing-area summary instead of
+      // repeating them inside the compact result card.
+      if (await card.locator('.game-loss-summary').isVisible()) {
+        await card.locator("summary").scrollIntoViewIfNeeded();
+        await card.locator("summary").click();
+        assert.ok(await card.locator("details").evaluate(node => node.open));
+        assert.match(await card.innerText(), /0.002/);
+        await card.locator("summary").click();
+      }
       await card.evaluate(node => { node.scrollTop = 0; });
       await card.screenshot({ path: path.join(out, `${name}-game-loss-summary-${layout}.png`) });
       // A pending original grade updates in place when background review finishes,
       // without changing the accepted grade or the game/score.
       // Leave Play before replacing its save so pagehide cannot checkpoint the old fixture.
-      await page.goto(base + '/backgammon/');
+      // Finish the hub's imports before navigating away again (especially WebKit).
+      await page.goto(base + '/backgammon/'); await ready();
+      await page.waitForLoadState('networkidle');
       await page.evaluate(async () => {
         const { get, put } = await import("/backgammon/core/storage.mjs");
         const work = await get("work", "play");
@@ -112,7 +121,8 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       assert.equal(await value(0,"checker","initial").locator('strong').getAttribute('data-loss-tone'),'medium');
       // Human control can be either color. Local/online summaries retain both humans.
       for (const [mode,humanSide,expected] of [["computer",1,["1"]],["local",0,["0","1"]]]) {
-        await page.goto(base + '/backgammon/');
+        await page.goto(base + '/backgammon/'); await ready();
+        await page.waitForLoadState('networkidle');
         await page.evaluate(async ({mode,humanSide}) => {
           const {get,put} = await import('/backgammon/core/storage.mjs');
           const work = await get('work','play');

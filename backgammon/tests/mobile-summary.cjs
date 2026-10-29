@@ -24,12 +24,12 @@ module.exports=async(browser,base,out,name)=>{
   // Hold any background grading. It must not delay the existing summary.
   await page.evaluate(async()=>{(await import('/backgammon/engine/client.mjs')).EngineClient.prototype.analyze=()=>new Promise(()=>{});});
   await page.locator('#resume-match').tap();
-  const summary=page.locator('#mobile-game-summary'),history=page.locator('.history-game-card').first();
+  const summary=page.locator('#mobile-game-summary'),history=page.locator('#move-feedback .history-game-card[data-game="1"]');
   await summary.waitFor();
   assert.equal(await summary.evaluate(n=>n.open),true,'running summary opens by default');
   assert.equal(await summary.locator('[data-loss-kind="checker"] [data-stage="accepted"] strong').innerText(),'0.010');
-  assert.equal(await history.locator('button[aria-expanded]').count(),0,'history summary has no collapse button');
-  assert.ok(await history.locator('table').isVisible(),'history summary is expanded initially');
+  assert.equal(await history.count(),0,'analysis does not duplicate the current game summary');
+  assert.ok(await page.locator('#move-feedback .history-turn').count()>0,'current game decisions remain available');
   const layouts=[];
   const checkFit=async(label)=>{
    for(const [width,height] of [[320,480],[320,568],[375,667],[390,600],[390,744],[390,844],[430,932],[600,800]]) {
@@ -95,7 +95,7 @@ module.exports=async(browser,base,out,name)=>{
   for(const viewport of [{width:844,height:390},{width:1366,height:768}]){
    await page.setViewportSize(viewport);await summary.waitFor({state:'hidden'});
    assert.ok(await page.locator('.turn-tools').isVisible(),'landscape/desktop keep Hint and Controls');
-   assert.ok(await history.locator('table').isVisible());
+   assert.equal(await history.count(),0,'rotation does not restore the duplicate summary');
   }
   await page.setViewportSize({width:390,height:844});await summary.waitFor();
   assert.ok(await summary.evaluate(n=>n.open),'rotation preserves disclosure preference');
@@ -105,8 +105,16 @@ module.exports=async(browser,base,out,name)=>{
    const boardWidth=await page.locator('#board > svg').evaluate(n=>n.getScreenCTM().a*876);
    assert.ok(Math.abs(boardWidth-(width-8))<1,'wide portrait phones also fill available width');
   }
+  for(const [view,viewport] of Object.entries({desktop:{width:1440,height:900},portrait:{width:390,height:844},landscape:{width:844,height:390}})){
+   await page.setViewportSize(viewport);
+   await page.waitForTimeout(150);
+   await page.locator('#review-heading').evaluate(n=>n.scrollIntoView({block:'start'}));
+   await page.waitForTimeout(150);
+   assert.equal(await history.count(),0,'current game summary is absent in every analysis layout');
+   await page.screenshot({path:path.join(out,`${name}-analysis-${view}.png`)});
+  }
 
   assert.deepEqual(errors,[]);
-  return {alwaysExpandedHistory:true,defaultExpanded:true,utilityToggle:true,widthFirstPortrait:true,normalPageFlow:true,layouts};
+  return {noDuplicateCurrentSummary:true,defaultExpanded:true,utilityToggle:true,widthFirstPortrait:true,normalPageFlow:true,layouts};
  }finally{await ctx.close();}
 };
