@@ -2737,12 +2737,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .play-feedback .history-turn :is(.feedback-review, .feedback-pending) {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "move loss"
-    "equity equity";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "move";
   gap: 7px 14px;
   align-items: center;
+  align-content: start;
   min-height: 44px;
   padding: 8px 12px;
   border: 0;
@@ -2808,8 +2807,31 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .history-kind {
+  display: flex;
+  min-height: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
   font-size: var(--t-xs);
 }
+
+.history-roll {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+}
+
+.history-roll .die {
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 5px;
+}
+
+.history-roll .die i { width: 4px; height: 4px; }
 
 .history-depth {
   display: inline-block;
@@ -2835,9 +2857,9 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .history-initial {
-  margin-block: 4px;
-  padding-bottom: 7px;
-  border-bottom: 1px solid var(--line);
+  margin-top: 5px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
 }
 
 .history-attempt-label,
@@ -2867,11 +2889,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .history-loss {
-  display: grid;
-  grid-area: loss;
-  gap: 2px;
-  align-self: start;
-  text-align: right;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 5px;
+  text-align: left;
 }
 
 .history-loss .muted {
@@ -2880,14 +2902,13 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 
 .history-loss .value {
   color: var(--loss-color);
-  font-size: var(--t-md);
+  font-size: var(--t-xs);
   font-variant-numeric: tabular-nums;
 }
 
 .play-feedback .decision-values-compact {
-  grid-area: equity;
   min-width: 0;
-  margin: 0;
+  margin: 4px 0 7px;
   padding: 0;
   border: 0;
 }
@@ -2921,6 +2942,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .play-feedback .history-turn .feedback-pending {
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     "move return"
     "status status";
@@ -2939,7 +2961,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 @container (max-width: 599px) {
   .play-feedback .history-turn-decisions[data-paired="true"] > :is(.feedback-review, .feedback-pending) {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "move" "equity" "loss";
+    grid-template-areas: "move";
     gap: 7px;
     padding: 10px;
     align-content: start;
@@ -3000,8 +3022,8 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   }
 
   .play-feedback .history-turn .feedback-review:only-child {
-    grid-template-columns: minmax(180px, 1fr) minmax(280px, 1fr) 76px;
-    grid-template-areas: "move equity loss";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "move";
   }
 
   .play-feedback .history-turn .feedback-pending:only-child {
@@ -3024,9 +3046,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   .play-feedback .history-turn .feedback-review {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "move"
-      "equity"
-      "loss";
+      "move";
   }
 
   .play-feedback .decision-value-grid {
@@ -3062,19 +3082,6 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
       "move"
       "status"
       "return";
-  }
-}
-
-/* Best checker play has no loss column, including in narrow paired turns. */
-.play-feedback .history-turn .feedback-review[data-played-best="true"] {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "move" "equity";
-}
-
-@container (min-width: 900px) {
-  .play-feedback .history-turn .feedback-review[data-played-best="true"]:only-child {
-    grid-template-columns: minmax(180px, 1fr) minmax(280px, 1fr);
-    grid-template-areas: "move equity";
   }
 }
 

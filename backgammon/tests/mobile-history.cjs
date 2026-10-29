@@ -98,7 +98,7 @@ module.exports = async function mobileHistory(browser, base, out, name) {
         assert.ok(g.buttons.every(b=>b.height>=44 && b.x>=0 && b.x+b.width<=width+1));
         assert.equal(g.buttons[0].y,g.buttons[1].y,"cube and move share one row at every viewport");
         if(width===1366) {
-          assert.ok(g.height<135,"a combined turn is shorter than two separate cards");
+          assert.ok(g.height<220,"a combined turn stays compact with equity above the played choice");
         }
       }
       assert.ok(await page.locator('[data-history-filter="opponent"] .history-filter-label').evaluate(n=>n.scrollWidth<=n.clientWidth+1),"Opponent label is readable in full");

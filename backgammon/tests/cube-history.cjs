@@ -45,6 +45,8 @@ module.exports = async function cubeHistory(browser, base, out, name) {
     await page.locator('[data-history-filter="all"]').tap();
     assert.deepEqual(await read(), expected, "queued cube actions use their historical values and action icons");
     assert.equal(await page.locator(".feedback-pending").count(), 9);
+    assert.deepEqual(await page.locator('#move-feedback .history-roll').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label')).sort()),
+      ['Rolled 3–1','Rolled 4–2'],'rolls remain visible before move analysis completes');
     // Grade the exact stored decisions with real GNUbg, then prove the same
     // presentation survives loading evaluations and opening a review.
     await page.goto(base + "/backgammon/");
@@ -66,6 +68,7 @@ module.exports = async function cubeHistory(browser, base, out, name) {
     await page.goto(base + "/backgammon/play/#resume=cube-history");
     await page.locator('[data-history-filter="all"]').tap();
     assert.equal(await page.locator(".feedback-review").count(), 9);
+    assert.equal(await page.locator('.feedback-review[data-decision-type="cube"][data-played-best="true"] .history-loss').count(),0,'zero-loss cube decisions omit loss');
     assert.deepEqual(await read(), expected);
     for (const [width, height] of [[320, 568], [390, 844], [1366, 900]]) {
       await page.setViewportSize({ width, height });

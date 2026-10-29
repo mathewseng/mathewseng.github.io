@@ -2720,7 +2720,7 @@ function renderFeedback() {
     if (!entry) feedbackView.turns.set(group.key, entry = {});
     entry.group = group;
     const signature = JSON.stringify([group.turn, group.response, group.decisions.map(row => [
-      row.index, row.label, row.forced, row.result?.type, row.result?.positionKey,
+      row.index, row.label, row.source.dice, row.forced, row.result?.type, row.result?.positionKey,
       row.result?.settings?.name, analysisDepthLabel(row.result),
       row.feedback, row.initialAction, row.initialFeedback,
       row.index === reviewIndex, canReturnToDecision(row, m.id),

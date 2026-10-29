@@ -32,7 +32,7 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
         for (const player of [0, 1]) {
           const source = game.state;
           beginDecisionAttempt(game, { type: "double" });
-          game = playAction(game, { type: "roll", dice: [4, 1] });
+          game = playAction(game, { type: "roll", dice: [1, 4] });
           game.events.at(-1).evaluation = { result: { type: "cube", status: "complete", positionKey: r.positionKey(source),
             settings: { name: "Test", plies: 0 }, units: "current-cube-points", outcomes: [.2, player ? .19 : .17, 1] } };
           const state = game.state, turns = r.legalTurns(state);
@@ -92,6 +92,16 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       await card.screenshot({ path: path.join(out, `${name}-game-loss-summary-${layout}.png`) });
       await card.getByRole('button', { name: 'Hide the result to see the board' }).click();
       const checker = page.locator('#move-feedback .history-turn[data-history-side="self"] [data-decision-type="checker"]');
+      const cube = page.locator('#move-feedback .history-turn[data-history-side="self"] [data-decision-type="cube"]');
+      for (const decision of [cube,checker]) {
+        assert.deepEqual(await decision.locator('.history-move').evaluate(n=>[...n.children].slice(0,4).map(n=>n.classList[0])),
+          ['history-kind','decision-values-compact','history-accepted','history-initial'],'Cube and Move use heading, equity, played, initial order');
+        assert.equal(await decision.locator('.decision-value .muted').first().innerText(),'Best equity');
+      }
+      assert.deepEqual(await checker.locator('.history-roll .die').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label'))),['4','1']);
+      assert.equal(await cube.locator('.history-roll').count(),0,'pre-roll cube decisions do not imply knowledge of the next roll');
+      assert.equal(await cube.locator('.history-loss').count(),0,'best cube decisions hide zero loss');
+      assert.equal(await cube.locator('.history-initial-loss strong').innerText(),'0.030','initial cube mistakes remain visible');
       assert.equal(await checker.locator('.history-initial .history-played').innerText(), expected[0].initial);
       assert.equal(await checker.locator('.history-initial-loss strong').innerText(), '0.060', 'initial loss is not multiplied by cube 2');
       assert.equal(await checker.locator('.history-accepted .history-played').innerText(), expected[0].accepted);

@@ -407,7 +407,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     await page.locator('#equity-bar[data-state="ready"]').waitFor();
     assert.deepEqual(
       await page.locator("#panel .decision-value .muted").allTextContents(),
-      ["Before"], 'the best-played equity is shown once',
+      ["Best equity"], 'the best-played equity is shown once',
     );
     await page.setViewportSize({width:390, height:844});
     await page.waitForTimeout(80);

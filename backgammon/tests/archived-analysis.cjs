@@ -22,7 +22,7 @@ module.exports = async (browser, base, out, name) => {
         if (n < 13) {
           for (let player = 0; player < 2; player++) {
             const before = game.state;
-            game = playAction(game,{type:'roll',dice:[4,1]});
+            game = playAction(game,{type:'roll',dice:n === 9 ? [2,2] : [1,4]});
             game.events.at(-1).evaluation = {result:{type:'cube',status:'complete',positionKey:r.positionKey(before),
               settings:{name:'Test',plies:3},units:'current-cube-points',outcomes:[.2,.17,1]}};
             const s = game.state, turns = r.legalTurns(s), steps = turns[0].steps;
@@ -80,7 +80,8 @@ module.exports = async (browser, base, out, name) => {
     assert.deepEqual(await page.evaluate(()=>archiveReads),['archive-12']);
     assert.equal(await latest.locator('.feedback-review').count(),2,'cube and checker available under summary');
     assert.equal(await latest.locator('.history-turn').count(),1,'paired turn');
-    assert.equal(await latest.locator('.history-initial, .history-attempt-label').count(),0,'legacy records do not invent an initial move');
+    assert.equal(await latest.locator('.history-initial').count(),0,'legacy records do not invent an initial move');
+    assert.deepEqual(await latest.locator('.history-roll .die').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label'))),['4','1'],'saved rolls show higher die first');
     assert.equal(await latest.locator('[data-stage="accepted"] strong').first().innerText(),'0.010','legacy summary upgrades on expansion');
     assert.equal(await latest.locator('.history-turn[data-history-side="opponent"]').count(),0,'You filter applies to archives');
     await latest.locator('[data-decision-type="checker"]').tap();
@@ -112,7 +113,8 @@ module.exports = async (browser, base, out, name) => {
     await unchanged.locator('.history-moves-disclosure > summary').tap();
     await unchanged.locator('.history-turn').first().waitFor();
     assert.equal(await unchanged.locator('.history-initial').count(),0,'an unchanged initial move is not repeated');
-    assert.equal(await unchanged.locator('[data-history-side="self"] .history-attempt-label').innerText(),'Initial · played');
+    assert.equal(await unchanged.locator('[data-history-side="self"] [data-decision-type="checker"] .history-accepted .history-attempt-label').innerText(),'Played');
+    assert.deepEqual(await unchanged.locator('[data-history-side="self"] .history-roll .die').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label'))),['2','2'],'doubles show the two dice rolled');
     await unchanged.locator('.history-moves-disclosure > summary').tap();
     await page.waitForFunction(()=>!document.querySelector('.archived-game .history-turn'));
     if (name === 'chromium') {

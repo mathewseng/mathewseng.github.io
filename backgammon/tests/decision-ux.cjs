@@ -191,7 +191,7 @@ module.exports = async function decisionUX(
     });
     await page.goto(base + "/backgammon/play/#resume=" + cubeId);
     await shot("cube-response");
-    await page.getByRole("button", { name: "Pass", exact: true }).click();
+    await page.getByRole("button", { name: /^Drop, lose / }).click();
     await page.locator("#game-review").waitFor({ timeout: 60000 });
     // The game summary paints immediately; background grading is saved later.
     const persisted = (await waitWork(page, w => w?.game.events.at(-1)?.evaluation?.result)).game;
@@ -205,7 +205,7 @@ module.exports = async function decisionUX(
     await cubeTable.waitFor();
     assert.match(
       await cubeTable.innerText(),
-      /Before[\s\S]*Best choice/,
+      /Position[\s\S]*Best choice/,
     );
     assert.equal(
       (await cubeTable.innerText()).includes("Your choice"),

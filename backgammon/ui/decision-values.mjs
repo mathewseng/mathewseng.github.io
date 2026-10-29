@@ -9,7 +9,7 @@ export function decisionValues(
   const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
   const seen = new Set();
   const rows = [
-    ["Before", f.before, "before"],
+    ["Best equity", f.before, "before"],
     ...(!bestPlayed
       ? [[opponent ? "Opponent’s choice" : "Your choice", f.actual, "actual"]]
       : []),
@@ -45,7 +45,7 @@ export function decisionValues(
         "data-loss-tone": f.tone,
         "data-best-played": bestPlayed ? "true" : "false",
         title:
-          "Before assumes the best continuation with the known dice or cube decision. Values use the decision maker’s perspective and original cube.",
+          "Best equity is the best evaluated continuation with the known dice or cube decision. Values use the decision maker’s perspective and original cube.",
       },
       el(
         "span",
@@ -57,7 +57,7 @@ export function decisionValues(
   }
   const tableRows = f.choices
     ? [
-        ["Before", f.before, "before"],
+        ["Best equity", f.before, "before"],
         ...f.choices.map((c) => {
           const best = Math.abs(c.equity - f.best.equity) <= 1e-7;
           const played = c.action === f.actual.action;
@@ -162,7 +162,7 @@ export function decisionValues(
     el(
       "p",
       { class: "muted small" },
-      "Before assumes the best continuation with the known dice/cube decision. Repeated summary values are shown once. All values use the same player, settings and original cube context.",
+      "Best equity is the best evaluated continuation with the known dice or cube decision. Repeated summary values are shown once. All values use the same player, settings and original cube context.",
     ),
   );
 }

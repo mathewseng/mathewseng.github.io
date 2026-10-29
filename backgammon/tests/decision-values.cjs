@@ -18,11 +18,13 @@ module.exports = async function decisionValueSummaries(browser, base) {
         const f = {before:row(c.before),actual:row(c.actual),best:row(c.best),money:true,cube:1,tone:'close'};
         const compact = decisionValues(f,true), full = decisionValues(f);
         return {...c, kinds:[...compact.querySelectorAll('[data-value-kind]')].map(n=>n.dataset.valueKind),
+          firstLabel:compact.querySelector('.decision-value .muted').textContent,
           values:[...compact.querySelectorAll('strong')].map(n=>n.textContent),fullRows:full.querySelectorAll('tbody tr').length};
       });
     });
     for (const c of cases) {
       assert.deepEqual(c.kinds,c.expected,c.name);
+      assert.equal(c.firstLabel,'Best equity',c.name);
       assert.equal(c.values.length,new Set(c.values).size,c.name);
       assert.equal(c.fullRows,c.expected.length,c.name);
     }

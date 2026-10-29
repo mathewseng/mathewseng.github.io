@@ -117,7 +117,9 @@ module.exports = async function historyReturn(browser, base, out, name) {
       for (const row of density) {
         assert.equal(row.clipped,false,`${width}: row clips`);
         assert.equal(row.values,true,`${width}: equity clips`);
-        assert.ok(row.height <= (width >= 1366 ? row.combined ? 135 : 76 : 190),`${width}: history row too tall (${row.height})`);
+        // Equity now sits below the heading, followed by played/initial
+        // choices. Budget for that readable vertical order and dice header.
+        assert.ok(row.height <= (width >= 1366 ? 220 : 260),`${width}: history row too tall (${row.height})`);
       }
       if ([390,1366].includes(width)) console.log(`${name} ${width}: row heights ${density.map(r=>r.height).join(', ')}`);
       assert.equal(layout.home,"play-review","history always belongs below the table");
@@ -152,9 +154,9 @@ module.exports = async function historyReturn(browser, base, out, name) {
     assert.ok(comparisons.some(row => row.best), "best-played row is tested");
     for(const row of comparisons) {
       assert.equal(row.count,1);
-      assert.equal(row.labels[0],'Before');
+      assert.equal(row.labels[0],'Best equity');
       assert.equal(new Set(row.values).size,row.values.length,'equal displayed equities appear only once');
-      assert.ok(row.labels.every(label=>['Before','Best choice',...(row.best?[]:[row.side==='opponent'?'Opponent’s choice':'Your choice'])].includes(label)));
+      assert.ok(row.labels.every(label=>['Best equity','Best choice',...(row.best?[]:[row.side==='opponent'?'Opponent’s choice':'Your choice'])].includes(label)));
       assert.equal(row.duplicatedMove,!row.best,"only show a best alternative when it differs");
       assert.equal(row.identity,row.side === 'opponent' ? 'Opponent' : 'You');
     }
@@ -304,7 +306,9 @@ module.exports = async function historyReturn(browser, base, out, name) {
     assert.equal(game.undoLog.at(-1).reason, "history-return");
     assert.deepEqual(game.undoLog.at(-1).events, fixture.events.slice(3));
     await showPlayControls(page);
+    await page.locator('#all-controls').click();
     assert.equal(await page.locator("#undo-turn").isVisible(), true);
+    await page.locator('.practice-controls-dialog .close').click();
     await page.reload();
     await page.locator("#confirm").waitFor();
     assert.deepEqual((await saved()).state, fixture.sources[1]);
