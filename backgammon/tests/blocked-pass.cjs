@@ -4,17 +4,27 @@ const path = require('node:path');
 
 module.exports = async function blockedPass(browser, base, out, name) {
   const report = [];
-  for (const touch of [false,true]) {
-    const context = await browser.newContext({viewport:touch?{width:390,height:844}:{width:1366,height:768},hasTouch:touch,reducedMotion:'reduce',serviceWorkers:'block'});
+  for (const [layout,touch,viewport] of [['desktop',false,{width:1366,height:768}],['portrait',true,{width:390,height:844}],['landscape',true,{width:844,height:390}]]) {
+    const context = await browser.newContext({viewport,hasTouch:touch,reducedMotion:'reduce',serviceWorkers:'block'});
     const page = await context.newPage(), errors = [];
     let scenario='initial';
     page.on('pageerror',e=>errors.push({scenario,message:e.stack || e.message}));
     const ready = () => page.waitForFunction(()=>document.documentElement.dataset.appReady==='true');
     const read = () => page.evaluate(async()=>(await import('/backgammon/core/storage.mjs')).get('work','play'));
-    const activate = locator => touch ? locator.tap() : locator.click();
+    const activate = async locator => {
+      const id=await locator.getAttribute('id');
+      if (['roll','double-cube'].includes(id)) {
+        assert.equal(await locator.isVisible(),false,'roll/pass and double stay off the action rail');
+        return page.keyboard.press(id==='roll'?'c':'d');
+      }
+      return touch ? locator.tap() : locator.click();
+    };
     const load = async ({turn=0,mode='local',kind='closed',human=false,passing='bad-double'}={}) => {
       scenario=JSON.stringify({turn,mode,kind,human,step:'loading'});
-      await page.goto(base+'/backgammon/');await ready();
+      // Finish dynamic imports before replacing the fixture; WebKit reports
+      // cancelled module loads as page errors when navigating mid-import.
+      await page.waitForLoadState('networkidle');
+      await page.goto(base+'/backgammon/');await ready();await page.waitForLoadState('networkidle');
       await page.evaluate(async({turn,mode,kind,human,passing})=>{
         const {put,saveSettings}=await import('/backgammon/core/storage.mjs');
         const {initialState,transition}=await import('/backgammon/core/rules.mjs');
@@ -67,7 +77,7 @@ module.exports = async function blockedPass(browser, base, out, name) {
         await activate(page.locator('#preferences'));
         assert.equal(await preference.inputValue(),'off');
         await preference.selectOption('forced');
-        await page.screenshot({path:path.join(out,`${name}-closed-out-settings-${touch?'phone':'desktop'}-${mode}.png`)});
+        await page.screenshot({path:path.join(out,`${name}-closed-out-settings-${layout}-${mode}.png`)});
         await activate(page.locator('.settings-dialog .close'));
         await waitEvents(1);
         assert.deepEqual((await read()).game.events[0].action,{type:'skip-roll'},'enabling Forced passes only applies to the current turn');
@@ -98,7 +108,7 @@ module.exports = async function blockedPass(browser, base, out, name) {
         assert.equal(await page.evaluate(()=>window.rollBytes),0,'closed-out turn never draws random dice');
         if(mode==='computer')assert.equal(game.localRolls.cursor,0,'closed-out turn never consumes a seeded roll');
         assert.equal(await page.locator('#confirm').count(),0);assert.equal(await page.locator('#undo-turn').isEnabled(),false);
-        await page.screenshot({path:path.join(out,`${name}-blocked-pass-${touch?'phone':'desktop'}-${mode}-${turn}.png`)});
+        await page.screenshot({path:path.join(out,`${name}-blocked-pass-${layout}-${mode}-${turn}.png`)});
         if(mode==='local'){
           await page.reload();await ready();await activate(page.locator('#resume-match'));
           assert.deepEqual((await read()).game.events,game.events,'refresh preserves the no-dice pass');
@@ -150,7 +160,7 @@ module.exports = async function blockedPass(browser, base, out, name) {
         assert.equal(await page.locator('#double-cube').isEnabled(),true);
         assert.match(await page.locator('#roll').innerText(),/^No double · pass/);
         assert.equal((await read()).game.localRolls.cursor,0);
-        await page.screenshot({path:path.join(out,`${name}-blocked-pass-${touch?'phone':'desktop'}-${kind}.png`)});
+        await page.screenshot({path:path.join(out,`${name}-blocked-pass-${layout}-${kind}.png`)});
         report.push({touch,kind,realEngineRetainsCube:true});
         if(kind==='good-double'){
           await activate(page.locator('#roll'));await waitEvents(1);

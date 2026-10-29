@@ -1637,8 +1637,6 @@ function arrangeActions() {
   helpActions.replaceChildren();
   for (const id of ["undo-turn", "hint", "roll", "double-cube"]) {
     const b = $(id);
-    // With no roll to make, expose the remaining cube choice directly.
-    if (blockedBarRoll(state()) && ['roll','double-cube'].includes(id)) continue;
     if (b) helpActions.append(b);
   }
   const prefs = readSettings();
