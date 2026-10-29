@@ -80,10 +80,11 @@ module.exports = async function cubeHistory(browser, base, out, name) {
         const cubes = [...group.querySelectorAll('[data-decision-type="cube"]')].map(n => n.getBoundingClientRect());
         const move = group.querySelector('[data-decision-type="checker"]').getBoundingClientRect();
         return {sameRow: move.y === cubes[0].y, sideBySide: cubes.every(c => c.right <= move.x + 1),
-          spansExchange: move.bottom >= cubes.at(-1).bottom - 1};
+          spansExchange: move.bottom >= cubes.at(-1).bottom - 1,
+          proportions: cubes.every(c => Math.abs(move.width - c.width * 2) < 1)};
       }));
       assert.equal(paired.length, 2);
-      assert.ok(paired.every(g => g.sameRow && g.sideBySide && g.spansExchange), `checker stays beside its entire cube exchange at ${width}px`);
+      assert.ok(paired.every(g => g.sameRow && g.sideBySide && g.spansExchange && g.proportions), `checker stays beside its entire cube exchange with twice its width at ${width}px`);
       assert.ok(await page.locator('.decision-value-grid').evaluateAll(groups => groups.every(group => {
         const values = [...group.querySelectorAll('strong')].map(n => n.textContent);
         return new Set(values).size === values.length;

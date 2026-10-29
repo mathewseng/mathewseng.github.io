@@ -95,9 +95,16 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       const cube = page.locator('#move-feedback .history-turn[data-history-side="self"] [data-decision-type="cube"]');
       for (const decision of [cube,checker]) {
         assert.deepEqual(await decision.locator('.history-move').evaluate(n=>[...n.children].slice(0,4).map(n=>n.classList[0])),
-          ['history-kind','decision-values-compact','history-accepted','history-initial'],'Cube and Move use heading, equity, played, initial order');
+          ['history-kind','decision-values-compact',...(decision === checker ? ['history-accepted'] : []),'history-initial'],
+          'Cube and Move use heading, equity, played, initial order, omitting the empty no-double action');
         assert.equal(await decision.locator('.decision-value .muted').first().innerText(),'Best equity');
       }
+      assert.equal(await cube.locator('.history-played-best').count(),0,'correct no-double decisions omit Played best');
+      const cubeBox = await cube.boundingBox(), moveBox = await checker.boundingBox();
+      assert.ok(Math.abs(moveBox.width - cubeBox.width * 2) < 1,'Move receives twice the width of Cube');
+      const rollBox = await checker.locator('.history-roll').boundingBox();
+      const headingBox = await checker.locator('.history-kind').boundingBox();
+      assert.ok(Math.abs(rollBox.x + rollBox.width - headingBox.x - headingBox.width) < 1,'dice stay at the top right');
       assert.deepEqual(await checker.locator('.history-roll .die').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label'))),['4','1']);
       assert.equal(await cube.locator('.history-roll').count(),0,'pre-roll cube decisions do not imply knowledge of the next roll');
       assert.equal(await cube.locator('.history-loss').count(),0,'best cube decisions hide zero loss');

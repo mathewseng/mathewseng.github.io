@@ -67,7 +67,10 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
         )] : []),
       );
     };
-    const played = () => el("span", { class: "history-accepted" },
+    const played = () => {
+      // A correct no-double has no action to repeat beneath its equity.
+      if (cube && !cube.displayLabel && bestPlayed) return null;
+      return el("span", { class: "history-accepted" },
         el("span", {
           class: `history-attempt-label ${bestPlayed ? "history-played-best" : "muted"}`,
         }, bestPlayed ? "Played best" : "Played"),
@@ -77,6 +80,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
           el("span", { class: "muted" }, row.feedback.label),
         )] : []),
       );
+    };
     const detail = () => el("span", { class: "history-kind muted" },
       el("span", { class: "history-kind-text" },
         el("span", { class: "history-kind-label" },

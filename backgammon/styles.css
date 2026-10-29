@@ -2726,7 +2726,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 /* A turn is one row, including on a phone. Cube exchanges stay in the left
    column; the checker decision spans that exchange on the right. */
 .history-turn-decisions[data-paired="true"] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 }
 .history-turn-decisions[data-paired="true"] > [data-decision-type="cube"] {
   grid-column: 1;
