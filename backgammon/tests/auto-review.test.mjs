@@ -85,3 +85,28 @@ test('background jobs snapshot only their immutable action prefix, not the match
   assert.notEqual(reviewer.job.snapshot.events[0].action,model.events[0].action);
   finish();await tick();reviewer.pause();
 });
+
+test('background review fills every missing attempt independently and rejects a changed attempt', async () => {
+  const model = fixture(), turns = legalTurns(model.initial);
+  model.events[0].evaluation = {result:result(model.initial,{submitted:model.events[0].action.steps})};
+  model.events[0].initialDecision = {action:{type:'move',steps:turns[1].steps},
+    revisions:[{action:{type:'move',steps:turns[2].steps}}]};
+  const calls = []; let saves=0, finish;
+  const reviewer = new AutoReview({model:()=>model,idle:()=>true,save:async()=>saves++,
+    engine:{analyze:(state,options)=>new Promise(resolve=>{
+      calls.push(options.submitted);
+      finish=()=>{const r=result(state,options);r.actual.equity=-.05;resolve(r);};
+    })}});
+  reviewer.update(); finish(); await tick(); reviewer.pause();
+  reviewer.update();
+  model.events[0].initialDecision.revisions[0].action.steps=turns[3].steps;
+  finish(); await tick(); reviewer.pause();
+  assert.equal(saves,1,'stale revision result is discarded');
+  reviewer.update(); finish(); await tick(); reviewer.pause();
+  assert.deepEqual(calls,[turns[1].steps,turns[2].steps,turns[3].steps]);
+  assert.equal(saves,2);
+  const row=decisionHistory(model)[0];
+  assert.ok(row.attempts.every(attempt=>Math.abs(attempt.feedback.loss-.15)<1e-10));
+  assert.equal(row.feedback.loss,0,'accepted grade stays unchanged');
+  reviewer.update(); assert.equal(calls.length,3,'completed attempts are not searched again');
+});

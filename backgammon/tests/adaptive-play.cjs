@@ -29,15 +29,19 @@ module.exports=async function adaptivePlay(browser,base,out,name){
   await page.locator('#review-heading').scrollIntoViewIfNeeded();assert.ok(await page.locator('.history-turn').count());
   await page.locator('[data-history-filter="opponent"]').click();
   const botDepth = evaluations.find(e=>e.actor===1&&e.action==='move').plies;
-  const depthLabel = page.locator('.feedback-review[data-history-side="opponent"][data-decision-type="checker"] .history-depth');
-  assert.equal(await depthLabel.textContent(), `${botDepth} ply`, 'opponent history shows the actual saved Auto depth');
-  assert.equal(await depthLabel.getAttribute('title'), `Completed analysis · ${botDepth} ply`);
+  const botDecision = page.locator('.feedback-review[data-history-side="opponent"][data-decision-type="checker"]');
+  assert.equal(await botDecision.locator('.history-depth').count(),0,'history leaves solved depth in the review modal');
+  assert.match(await botDecision.locator('.history-equity').textContent(), /^[+-]\d+\.\d{3}$/);
+  await botDecision.click();
+  await page.locator('.decision-dialog').waitFor();
+  assert.ok((await page.locator('.decision-dialog').innerText()).includes(`${botDepth} ply`),'review retains the actual saved Auto depth');
+  await page.locator('.decision-dialog .close').click();
   await page.screenshot({path:path.join(out,`${name}-adaptive-feedback.png`),fullPage:true});
   for (const width of [320,390]) {
     await page.setViewportSize({width,height:844});
     await page.locator('#review-heading').scrollIntoViewIfNeeded();
-    assert.equal(await depthLabel.textContent(), `${botDepth} ply`);
-    const clipped = await page.locator('.history-turn, .history-kind, .history-depth').evaluateAll(nodes=>nodes.filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>n.textContent));
+    assert.equal(await botDecision.locator('.history-depth').count(),0);
+    const clipped = await page.locator('.history-turn, .history-kind, .history-equity').evaluateAll(nodes=>nodes.filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>n.textContent));
     assert.deepEqual(clipped, [], `analysis depth fits ${width}px`);
     await page.locator('#move-feedback').screenshot({path:path.join(out,`${name}-adaptive-feedback-phone-${width}.png`)});
   }

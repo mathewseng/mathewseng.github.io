@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { clone } from "./rules.mjs";
 import { decisionHistory, compactEvaluation, gradeDecision, sameDecisionPrefix } from "./decision-history.mjs";
-import { sameDecisionAction } from "./decision-attempt.mjs";
+import { sameDecisionAction, decisionAttempts } from "./decision-attempt.mjs";
 
 // Uses the table's existing worker at a lower priority than play and hints.
 // One committed decision at a time; never grades a draft or changes game state.
@@ -23,7 +23,7 @@ export class AutoReview {
     if (!model?.started || model.config?.mode !== "computer" || this.job || this.error || !this.idle()) return;
     const rows = decisionHistory(model).reverse();
     const row = rows.find(r => !r.feedback) ||
-      rows.find(r => r.initialAction && !r.initialFeedback && !r.forced);
+      rows.find(r => !r.forced && r.attempts.some(attempt => !attempt.feedback));
     if (!row) return;
     // Staleness checks need the action prefix, not every saved grade, takeback
     // branch and result in a long match. Keep that prefix independent so a
@@ -31,7 +31,9 @@ export class AutoReview {
     const snapshot = clone({id:model.id, initial:model.initial,
       config:{reviewStrength:model.config.reviewStrength},
       events:model.events.slice(0,row.index+1).map(({actor,action})=>({actor,action}))});
-    const job = { snapshot, row, initial: !!row.feedback };
+    const pendingAttempt = row.feedback ? row.attempts.find(attempt => !attempt.feedback) : null;
+    const job = { snapshot, row, attempt: pendingAttempt
+      ? {attemptIndex:pendingAttempt.attemptIndex, action:clone(pendingAttempt.action)} : null };
     this.job = job;
     this.changed();
     this.run(job);
@@ -39,7 +41,7 @@ export class AutoReview {
   async run(job) {
     try {
       const { row, snapshot } = job;
-      const action = job.initial ? row.initialAction : row.action;
+      const action = job.attempt?.action || row.action;
       const result = await this.engine.analyze(row.source, {
         preset: snapshot.config.reviewStrength || "auto",
         submitted: action.type === "move" ? action.steps : null,
@@ -53,10 +55,12 @@ export class AutoReview {
           !sameDecisionPrefix(current, snapshot, row.index)) return;
       // A foreground review may have finished while this job was in flight.
       const latest = decisionHistory(current).find(r => r.index === row.index);
-      if (job.initial && sameDecisionAction(latest?.initialAction, action) && !latest.initialFeedback) {
-        current.events[row.index].initialDecision.evaluation = compactEvaluation(row.source, gradeDecision(row.source, result, action));
+      const attemptIndex = job.attempt?.attemptIndex;
+      const latestAttempt = latest?.attempts[attemptIndex];
+      if (job.attempt && sameDecisionAction(latestAttempt?.action, action) && !latestAttempt.feedback) {
+        decisionAttempts(current.events[row.index].initialDecision)[attemptIndex].evaluation = compactEvaluation(row.source, gradeDecision(row.source, result, action));
         await this.save();
-      } else if (!job.initial && !latest?.feedback) {
+      } else if (!job.attempt && !latest?.feedback) {
         current.events[row.index].evaluation = compactEvaluation(row.source, gradeDecision(row.source, result, action));
         await this.save();
       }

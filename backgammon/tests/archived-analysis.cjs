@@ -33,6 +33,8 @@ module.exports = async (browser, base, out, name) => {
             if (n === 11) game.events.at(-1).initialDecision = {
               action:{type:'move',steps:turns[1].steps},
               evaluation:{result:{...game.events.at(-1).evaluation.result,actual:{equity:.14,steps:turns[1].steps}}},
+              revisions:[{action:{type:'move',steps:turns[2].steps},
+                evaluation:{result:{...game.events.at(-1).evaluation.result,actual:{equity:.17,steps:turns[2].steps}}}}],
             };
             if (n === 10) delete game.events.at(-1).evaluation;
           }
@@ -81,6 +83,7 @@ module.exports = async (browser, base, out, name) => {
     assert.equal(await latest.locator('.feedback-review').count(),2,'cube and checker available under summary');
     assert.equal(await latest.locator('.history-turn').count(),1,'paired turn');
     assert.equal(await latest.locator('.history-initial').count(),0,'legacy records do not invent an initial move');
+    assert.equal(await latest.locator('.history-choice-method').count(),0,'legacy records never guess whether Play Best was used');
     assert.deepEqual(await latest.locator('.history-roll .die').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label'))),['4','1'],'saved rolls show higher die first');
     assert.equal(await latest.locator('[data-stage="accepted"] strong').first().innerText(),'0.010','legacy summary upgrades on expansion');
     assert.equal(await latest.locator('.history-turn[data-history-side="opponent"]').count(),0,'You filter applies to archives');
@@ -105,7 +108,8 @@ module.exports = async (browser, base, out, name) => {
     assert.equal(await latest.locator('.history-turn').count(),0,'opening another game releases previous moves');
     await next.getByRole('button',{name:'Retry loading moves'}).tap();
     await next.locator('.history-turn').first().waitFor();
-    assert.equal(await next.locator('[data-history-side="self"] .history-initial-loss strong').innerText(),'0.060','archived initial attempt is preserved');
+    assert.deepEqual(await next.locator('[data-history-side="self"] .history-initial-loss strong').allTextContents(),['0.060','0.030'],'archived attempt grades are preserved');
+    assert.deepEqual(await next.locator('[data-history-side="self"] .history-initial .history-attempt-label').allTextContents(),['Attempt 1','Attempt 2']);
     assert.equal(await next.locator('[data-history-side="self"] [data-decision-type="checker"] .history-loss .value').innerText(),'0.010');
     await next.locator('.history-moves-disclosure > summary').tap();
     await page.waitForFunction(()=>!document.querySelector('.archived-game .history-turn'));

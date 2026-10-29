@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { initialState, legalTurns, positionKey, clone } from "../core/rules.mjs";
 import { playAction, undoTurn } from "../core/table.mjs";
-import { beginDecisionAttempt, recordInitialEvaluation, currentAttempt } from "../core/decision-attempt.mjs";
+import { beginDecisionAttempt, recordInitialEvaluation, currentAttempt, decisionAttempts } from "../core/decision-attempt.mjs";
 import { decisionHistory, compactEvaluation, mergeEvaluations } from "../core/decision-history.mjs";
 import { gameLossSummary } from "../core/game-loss-summary.mjs";
 import { returnToDecision } from "../core/practice.mjs";
@@ -60,6 +60,34 @@ test("initial cube choice is independent of rolled dice and reuses all-option cu
   const rolled = playAction(fresh, { type: "roll", dice: [6, 1] });
   rolled.events[0].evaluation = game.events[0].evaluation;
   assert.equal(decisionHistory(rolled)[0].initialFeedback.loss, 0);
+});
+
+test("multiple submitted choices retain ordered grades across reload, acceptance and takeback without changing initial totals", () => {
+  let game = fixture();
+  const actions = legalTurns(game.state).slice(0, 3).map(turn => ({type:'move',steps:turn.steps}));
+  for (const [index, action] of actions.entries()) {
+    beginDecisionAttempt(game, action);
+    beginDecisionAttempt(game, action); // Reconfirming an unchanged draft is not another attempt.
+    recordInitialEvaluation(game, action, grade(game.state, action.steps, [.08,.04,0][index]));
+    game = JSON.parse(JSON.stringify(game));
+  }
+  assert.equal(decisionAttempts(currentAttempt(game)).length, 3);
+  game = playAction(game, actions[2]);
+  game.events[0].evaluation = grade(game.initial, actions[2].steps, 0);
+  const row = decisionHistory(game)[0];
+  assert.deepEqual(row.attempts.map(attempt => attempt.action), actions);
+  row.attempts.forEach((attempt,index) => near(attempt.feedback.loss,[.08,.04,0][index]));
+  near(gameLossSummary([row],1).players[0].checker.initial.total,.08);
+  const saved = clone(game), ungraded = clone(game);
+  delete ungraded.events[0].initialDecision.revisions[0].evaluation;
+  mergeEvaluations(ungraded, saved);
+  near(decisionHistory(ungraded)[0].attempts[1].feedback.loss,.04);
+  ungraded.events[0].initialDecision.revisions[0].action = actions[0];
+  delete ungraded.events[0].initialDecision.revisions[0].evaluation;
+  mergeEvaluations(ungraded, saved);
+  assert.equal(ungraded.events[0].initialDecision.revisions[0].evaluation,undefined,'grades never cross a different draft revision');
+  game = undoTurn(game,0,0);
+  assert.deepEqual(decisionAttempts(currentAttempt(game)).map(attempt => attempt.action), actions);
 });
 
 test("new uncorrected choices reuse accepted grades; older first attempts are explicitly unknown", () => {

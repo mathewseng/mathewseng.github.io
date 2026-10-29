@@ -461,7 +461,7 @@ function renderReviewStatus() {
   reviewStatus.hidden = !game?.started || config.mode !== "computer";
   if (reviewStatus.hidden) return;
   const pending = decisionHistory(game).filter(r => !r.feedback ||
-    (r.initialAction && !r.initialFeedback && !r.forced)).length;
+    (!r.forced && r.attempts.some(attempt => !attempt.feedback))).length;
   reviewStatus.replaceChildren(
     el("span", {}, autoReview.error ? `Analysis paused: ${autoReview.error}` : pending
       ? `${autoReview.job ? "Analyzing" : "Queued for analysis"} · ${pending} decision${pending === 1 ? "" : "s"} remaining`
@@ -2460,6 +2460,8 @@ async function commit(action, evaluation = null, options = {}) {
     if (action.type === 'next') await persist(true, true);
     const eventIndex = game.events.length;
     game = await localPlayAction(game, action, options);
+    if (action.type === "move" && ["manual", "play-best"].includes(options.choiceMethod))
+      game.events[eventIndex].choiceMethod = options.choiceMethod;
     if (evaluation) {
       game.events[eventIndex].evaluation = compactEvaluation(
         evaluation.source,
@@ -2722,7 +2724,7 @@ function renderFeedback() {
     const signature = JSON.stringify([group.turn, group.response, group.decisions.map(row => [
       row.index, row.label, row.source.dice, row.forced, row.result?.type, row.result?.positionKey,
       row.result?.settings?.name, analysisDepthLabel(row.result),
-      row.feedback, row.initialAction, row.initialFeedback,
+      row.feedback, row.attempts, row.choiceMethod,
       row.index === reviewIndex, canReturnToDecision(row, m.id),
       !row.feedback && (autoReview.job?.row.index === row.index ? "active" : autoReview.error ? "error" : "queued"),
     ])]);
@@ -2806,7 +2808,7 @@ async function replayBest(row, id, steps, result = row.result) {
   };
   await presentBestSource(row.source);
   boardKey = "";
-  await commit({ type: "move", steps }, feedback);
+  await commit({ type: "move", steps }, feedback, {choiceMethod:"play-best"});
 }
 
 // Restore the live board before commit/render starts the best-move playback.
@@ -2899,7 +2901,7 @@ function showHint({ result: prepared = null, playBest = false } = {}) {
       source: job.source,
       result: { ...result, actual: result.candidates[0], error: 0 },
     };
-    await commit({ type: "move", steps }, feedback);
+    await commit({ type: "move", steps }, feedback, {choiceMethod:"play-best"});
   };
   const review = decisionReview(job.source, {
     beforeRoll: analysis.engine.peek({...job.source,phase:"roll",dice:[],pending:null},{preset:config.reviewStrength || "auto"}),
@@ -2968,26 +2970,26 @@ async function evaluateDecision(action) {
   const checker = action.type === "move",
     steps = checker ? action.steps : null;
   if (!config.tutor || config.mode !== "computer") {
-    await commit(action);
+    await commit(action, null, {choiceMethod:checker ? "manual" : undefined});
     return;
   }
   // Feedback is recorded by AutoReview after commit when warnings are off.
   // Never hold a legal action behind a solver whose result cannot stop it.
   if (!config.warning) {
     beginDecisionAttempt(game, action);
-    await commit(action);
+    await commit(action, null, {choiceMethod:checker ? "manual" : undefined});
     return;
   }
   const job = assistance("submit");
   beginDecisionAttempt(game, action);
-  // Persist the first submission even if the warning is revised or reloaded.
+  // Persist each submission even if the warning is revised or reloaded.
   // This is metadata only; the legal game history remains uncommitted.
   const finish = async (result = null) => {
     if (!activeAssistance(job)) return;
     if (!checker && !result && !job.done) return;
     releaseAssistance();
     feedback = result ? { source: job.source, result } : null;
-    await commit(action, feedback);
+    await commit(action, feedback, {choiceMethod:checker ? "manual" : undefined});
     // Only committed decisions enter mistake review. Storage failure must not
     // prevent a legal turn, and the full original decision context is retained.
     if (result?.error > 0.02) {

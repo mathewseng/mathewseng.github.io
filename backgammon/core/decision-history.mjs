@@ -9,7 +9,7 @@ import { forcedTurn, blockedBarRoll } from "./table.mjs";
 import { historyStates } from "./history-states.mjs";
 import { decisionFeedback } from "./decision-feedback.mjs";
 import { CUBE_LABELS, gradeCube } from "../engine/cube-grade.mjs";
-import { sameDecisionAction } from "./decision-attempt.mjs";
+import { sameDecisionAction, decisionAttempts } from "./decision-attempt.mjs";
 export function compactEvaluation(source, result) {
   // A saved review needs the ranked moves, submitted move and screening
   // summary, not thousands of discarded search paths. Compact before cloning:
@@ -73,20 +73,23 @@ export function decisionHistory(model) {
       result = null;
     }
     const forced = a.type === "move" && !!forcedTurn(source);
-    const initialAction = event.initialDecision?.action || null;
-    let initialFeedback = null;
-    if (initialAction) {
+    const attempts = decisionAttempts(event.initialDecision).map((attempt, attemptIndex) => {
+      const action = attempt.action;
+      let feedbackForAttempt = null;
       try {
-        const first = event.initialDecision.evaluation?.result;
-        if (first && first.positionKey === sourceKey(source))
-          initialFeedback = decisionFeedback(gradeDecision(source, first, initialAction), source);
-        else if (sameDecisionAction(initialAction, a)) initialFeedback = feedback;
+        const saved = attempt.evaluation?.result;
+        if (saved && saved.positionKey === sourceKey(source))
+          feedbackForAttempt = decisionFeedback(gradeDecision(source, saved, action), source);
+        else if (sameDecisionAction(action, a)) feedbackForAttempt = feedback;
         // A cube evaluation contains all options, so a revised cube decision
         // can be graded without another engine search.
         else if (result?.type === "cube")
-          initialFeedback = decisionFeedback(gradeDecision(source, result, initialAction), source);
-      } catch { /* Missing/stale first-attempt analysis remains pending. */ }
-    }
+          feedbackForAttempt = decisionFeedback(gradeDecision(source, result, action), source);
+      } catch { /* Missing/stale attempt analysis remains pending. */ }
+      return { action, feedback: feedbackForAttempt, attemptIndex };
+    });
+    const initialAction = attempts[0]?.action || null;
+    const initialFeedback = attempts[0]?.feedback || null;
     rows.push({
       index,
       game: source.gameNumber,
@@ -96,6 +99,7 @@ export function decisionHistory(model) {
       player: event.actor,
       source,
       action: a,
+      choiceMethod: ["manual", "play-best"].includes(event.choiceMethod) ? event.choiceMethod : null,
       label:
         a.type === "move"
           ? notation(a.steps, event.actor)
@@ -105,6 +109,7 @@ export function decisionHistory(model) {
       feedback,
       initialAction,
       initialFeedback,
+      attempts,
       status: feedback ? "evaluated" : forced ? "forced" : "pending",
     });
   });
@@ -177,10 +182,19 @@ export function mergeEvaluations(current, saved) {
     )
       break;
     if (!a.evaluation && b.evaluation) a.evaluation = clone(b.evaluation);
+    if (!a.choiceMethod && b.choiceMethod) a.choiceMethod = b.choiceMethod;
     if (!a.initialDecision && b.initialDecision) a.initialDecision = clone(b.initialDecision);
-    else if (sameDecisionAction(a.initialDecision?.action, b.initialDecision?.action) &&
-      !a.initialDecision.evaluation && b.initialDecision.evaluation)
-      a.initialDecision.evaluation = clone(b.initialDecision.evaluation);
+    else {
+      const savedAttempts = decisionAttempts(b.initialDecision);
+      for (const [index, attempt] of decisionAttempts(a.initialDecision).entries()) {
+        const savedAttempt = savedAttempts[index];
+        // A matching game line can still contain different draft revisions.
+        // Only merge grades across the identical attempt prefix.
+        if (!sameDecisionAction(attempt.action, savedAttempt?.action)) break;
+        if (!attempt.evaluation && savedAttempt.evaluation)
+          attempt.evaluation = clone(savedAttempt.evaluation);
+      }
+    }
   }
   return current;
 }

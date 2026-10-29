@@ -6,6 +6,7 @@ import { DEFAULT_MOTION_SCALE, normalizeMotionScale } from "./motion.mjs";
 import { mergeEvaluations, decisionHistory, decisionTotals } from "./decision-history.mjs";
 import { splitGameHistory } from "./game-archive.mjs";
 import { gameLossSummary } from "./game-loss-summary.mjs";
+import { decisionAttempts } from "./decision-attempt.mjs";
 import { validateTakebacks } from "./table.mjs";
 import { normalizeShortcuts, DEFAULT_SHORTCUTS } from "./shortcuts.mjs";
 import { DEFAULT_SKIN, DEFAULT_SKIN_BOARD_THEME, SKIN_IDS } from "../skins/index.mjs";
@@ -258,7 +259,7 @@ export function validateItem(item) {
     const validateLine = (initial, events) => {
       const states = replay(initial, events);
       for (const [index, event] of events.entries()) {
-        for (const evaluation of [event.evaluation, event.initialDecision?.evaluation]) {
+        for (const evaluation of [event.evaluation, ...decisionAttempts(event.initialDecision).map(attempt => attempt.evaluation)]) {
           if (!evaluation) continue;
           if (!evaluation.result)
             throw new Error("Missing decision evaluation.");

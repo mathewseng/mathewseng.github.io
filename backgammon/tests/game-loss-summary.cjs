@@ -94,10 +94,11 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       const checker = page.locator('#move-feedback .history-turn[data-history-side="self"] [data-decision-type="checker"]');
       const cube = page.locator('#move-feedback .history-turn[data-history-side="self"] [data-decision-type="cube"]');
       for (const decision of [cube,checker]) {
-        assert.deepEqual(await decision.locator('.history-move').evaluate(n=>[...n.children].slice(0,4).map(n=>n.classList[0])),
-          ['history-kind','decision-values-compact',...(decision === checker ? ['history-accepted'] : []),'history-initial'],
+        assert.deepEqual(await decision.locator('.history-move').evaluate(n=>[...n.children].filter(n=>!n.classList.contains('feedback-best')).map(n=>n.classList[0])),
+          ['history-kind',...(decision === checker ? ['history-accepted'] : []),'history-initial'],
           'Cube and Move use heading, equity, played, initial order, omitting the empty no-double action');
-        assert.equal(await decision.locator('.decision-value .muted').first().innerText(),'Best equity');
+        assert.equal(await decision.locator('.history-equity').innerText(),'+0.200');
+        assert.equal(await decision.locator('.history-depth, .decision-values-compact').count(),0,'depth and duplicate equity labels stay out of history');
       }
       assert.equal(await cube.locator('.history-played-best').count(),0,'correct no-double decisions omit Played best');
       const cubeBox = await cube.boundingBox(), moveBox = await checker.boundingBox();
@@ -198,7 +199,7 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
         const {historyTurn} = await import('/backgammon/ui/history-turn.mjs');
         const row = decisionHistory((await get('work','play')).game).find(r => r.action.type === 'move');
         const render = overrides => {
-          const entry = {...row,...overrides};
+          const entry = {...row,attempts:undefined,...overrides};
           const node = historyTurn(groupDecisionTurns([entry])[0],{names:['White','Black'],viewer:0,local:false,actions:()=>({})});
           return {label:node.querySelector('.history-accepted .history-attempt-label')?.textContent,
             loss:node.querySelector('.history-loss .value')?.textContent,initial:!!node.querySelector('.history-initial')};

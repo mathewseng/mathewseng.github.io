@@ -143,10 +143,9 @@ module.exports = async function historyReturn(browser, base, out, name) {
     }
     const comparisons = await page.locator('#move-feedback .feedback-review').evaluateAll(rows => rows.map(row => ({
       side: row.dataset.historySide,
-      count: row.querySelectorAll('.decision-values-compact').length,
-      labels: [...row.querySelectorAll('.decision-value .muted')].map(n=>n.textContent),
-      values: [...row.querySelectorAll('.decision-value strong')].map(n=>n.textContent),
-      best: row.querySelector('.decision-values-compact').dataset.bestPlayed === 'true',
+      count: row.querySelectorAll('.history-equity').length,
+      values: [...row.querySelectorAll('.history-equity, .history-choice-equity')].map(n=>n.textContent),
+      best: row.dataset.playedBest === 'true',
       duplicatedMove: !!row.querySelector('.feedback-best'),
       identity: row.closest('.history-turn').querySelector('.history-player').textContent,
     })));
@@ -154,9 +153,7 @@ module.exports = async function historyReturn(browser, base, out, name) {
     assert.ok(comparisons.some(row => row.best), "best-played row is tested");
     for(const row of comparisons) {
       assert.equal(row.count,1);
-      assert.equal(row.labels[0],'Best equity');
       assert.equal(new Set(row.values).size,row.values.length,'equal displayed equities appear only once');
-      assert.ok(row.labels.every(label=>['Best equity','Best choice',...(row.best?[]:[row.side==='opponent'?'Opponent’s choice':'Your choice'])].includes(label)));
       assert.equal(row.duplicatedMove,!row.best,"only show a best alternative when it differs");
       assert.equal(row.identity,row.side === 'opponent' ? 'Opponent' : 'You');
     }

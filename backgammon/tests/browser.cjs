@@ -633,6 +633,7 @@ const server = http.createServer((req, res) => {
         );
         (report.gameLossSummary ||= []).push(
           await run("game-loss-summary", browser, base, out, browserName),
+          await run("history-attempts", browser, base, out, browserName),
           await run("mobile-summary", browser, base, out, browserName),
           await run("board-cube-replies", browser, base, out, browserName),
           await run("cube-dice", browser, base, out, browserName),
