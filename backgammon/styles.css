@@ -5092,6 +5092,20 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
   font-size: var(--t-sm);
 }
 
+.offline-install {
+  margin-block: 12px 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: var(--t-sm);
+  line-height: 1.6;
+}
+.offline-install summary { cursor: pointer; font-weight: 600; min-height: 44px; }
+.offline-install ol { padding-inline-start: 24px; margin-block: 12px; }
+.offline-install li + li { margin-top: 8px; }
+.offline-install p { color: var(--muted); }
+
 .hub-update a {
   display: inline-flex;
   align-items: center;

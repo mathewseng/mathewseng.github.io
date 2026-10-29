@@ -16,16 +16,16 @@
     <meta name="apple-mobile-web-app-title" content="Backgammon" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="../shared/tokens.css?bgv=5dd3c8c28a015443" />
-    <link rel="stylesheet" href="../shared/app.css?bgv=5dd3c8c28a015443" />
-    <link rel="stylesheet" href="../shared/hub.css?bgv=5dd3c8c28a015443" />
-    <link rel="stylesheet" href="../shared/hub-art.css?bgv=5dd3c8c28a015443" />
-    <link rel="stylesheet" href="styles.css?bgv=5dd3c8c28a015443" />
-    <link rel="stylesheet" href="opening-guide.css?bgv=5dd3c8c28a015443" />
+    <link rel="stylesheet" href="../shared/tokens.css?bgv=3c48333893702c67" />
+    <link rel="stylesheet" href="../shared/app.css?bgv=3c48333893702c67" />
+    <link rel="stylesheet" href="../shared/hub.css?bgv=3c48333893702c67" />
+    <link rel="stylesheet" href="../shared/hub-art.css?bgv=3c48333893702c67" />
+    <link rel="stylesheet" href="styles.css?bgv=3c48333893702c67" />
+    <link rel="stylesheet" href="opening-guide.css?bgv=3c48333893702c67" />
     <script>document.documentElement.classList.add("is-ready");</script>
     <script>(function(){try{var c=JSON.parse(localStorage.getItem("backgammon.v1.skin-boot")||"null"),x=/^#[0-9A-Fa-f]{6}$/;if(c&&/^[a-z][a-z0-9-]{1,23}$/.test(c.id)&&x.test(c.page)){var h=document.documentElement,s=h.style;h.dataset.skin=c.id;s.setProperty("--page",c.page);if(x.test(c.surface))s.setProperty("--surface",c.surface);if(x.test(c.ink))s.setProperty("--ink",c.ink);if(x.test(c.muted))s.setProperty("--muted",c.muted);s.colorScheme=c.scheme==="light"?"light":"dark";}}catch(e){}})();</script>
-    <script src="../shared/hub.js?bgv=5dd3c8c28a015443" defer></script>
-    <script type="module" src="app.js?bgv=5dd3c8c28a015443"></script>
+    <script src="../shared/hub.js?bgv=3c48333893702c67" defer></script>
+    <script type="module" src="app.js?bgv=3c48333893702c67"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -93,6 +93,17 @@
           <button type="button" class="btn btn--lg" id="download-offline">Download for offline play</button>
           <span id="offline-status" role="status">Save the app and computer engine before going offline. On iPhone, download from the Home Screen app you’ll use.</span>
         </div>
+        <details class="offline-install">
+          <summary>Install on iPhone</summary>
+          <ol>
+            <li>Open this Backgammon page in <strong>Safari</strong>.</li>
+            <li>Tap <strong>Share</strong> (the square with an upward arrow), then <strong>Add to Home Screen</strong>. If it’s missing, scroll down and tap <strong>Edit Actions</strong>.</li>
+            <li>Turn on <strong>Open as Web App</strong> if shown, then tap <strong>Add</strong>.</li>
+            <li>Launch <strong>Backgammon</strong> from your Home Screen while online. Tap <strong>Download for offline play</strong> here and wait for <strong>Ready for offline play</strong> before going offline.</li>
+          </ol>
+          <p>Download inside the Home Screen app you plan to use. Friend rooms need internet.</p>
+          <a href="https://support.apple.com/guide/iphone/iphea86e5236/ios" target="_blank" rel="noopener">Apple’s iPhone installation guide ↗</a>
+        </details>
 
         <section class="group group-study" aria-labelledby="group-study">
           <div class="group-head">

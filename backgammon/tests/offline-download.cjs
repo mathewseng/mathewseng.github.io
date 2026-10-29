@@ -39,11 +39,13 @@ module.exports = async function offlineDownload(browser, _base, out, browserName
     await page.locator("#download-offline").click();
     await page.waitForFunction(() => document.querySelector("#offline-status").dataset.state === "error", null, {timeout: 120000});
     assert.equal(await page.locator("#download-offline").isEnabled(), true);
+    assert.equal(await page.locator("#download-offline").innerText(), "Retry offline download");
     report.cases.push("interrupted engine download reports failure and allows retry without claiming readiness");
     failEngine = false;
     await page.locator("#download-offline").click();
     await page.waitForFunction(() => document.querySelector("#offline-status").dataset.state === "ready", null, {timeout: 120000});
     report.cases.push("fresh hub install downloads shell and real engine without launching GNUbg");
+    assert.equal(await page.locator("#download-offline").innerText(), "Refresh offline files");
     const styles = await page.evaluate(() => ({
       font: getComputedStyle(document.body).fontFamily,
       color: getComputedStyle(document.body).color,
@@ -83,8 +85,11 @@ module.exports = async function offlineDownload(browser, _base, out, browserName
       const button = await page.locator("#download-offline").boundingBox();
       assert.ok(button.height >= 44 && button.width >= 44);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await page.locator('.offline-install').evaluate(n=>{n.open=true;});
+      assert.match(await page.locator('.offline-install').innerText(), /Add to Home Screen/);
+      await page.locator('#download-offline').evaluate(n=>n.scrollIntoView({block:'start'}));
       const file = `${browserName}-offline-${name}.png`;
-      await page.screenshot({path: path.join(out, file), fullPage: true, animations: "disabled"});
+      await page.screenshot({path: path.join(out, file), animations: "disabled"});
       report.screenshots.push(file);
     }
     await page.setViewportSize({width: 1440, height: 900});

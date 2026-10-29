@@ -12,6 +12,7 @@ export function installOfflineDownload() {
   }
   button.addEventListener("click", async () => {
     button.disabled = true;
+    button.textContent = "Saving offline files…";
     status.textContent = "Downloading the app and computer engine… Keep this window open.";
     status.dataset.state = "downloading";
     const channel = new MessageChannel();
@@ -36,11 +37,13 @@ export function installOfflineDownload() {
       if (result.status === "ready") {
         status.dataset.state = "ready";
         status.textContent = "Ready for offline play here. Online friend rooms need internet.";
-        button.textContent = "Check offline download";
+        button.textContent = "Refresh offline files";
+        button.title = "Verify saved app files and download anything missing.";
       }
     } catch (error) {
       status.dataset.state = "error";
       status.textContent = error.message;
+      button.textContent = "Retry offline download";
     } finally {
       clearTimeout(timer);
       channel.port1.close();
