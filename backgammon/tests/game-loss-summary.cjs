@@ -17,12 +17,14 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
     };
     try {
       await page.goto(base + "/backgammon/play/"); await ready();
-      await page.evaluate(async () => {
+      const expected = await page.evaluate(async () => {
         const r = await import("/backgammon/core/rules.mjs");
         const { playAction } = await import("/backgammon/core/table.mjs");
         const { beginDecisionAttempt, recordInitialEvaluation } = await import("/backgammon/core/decision-attempt.mjs");
         const { put, saveSettings } = await import("/backgammon/core/storage.mjs");
         const { localConfig } = await import("/backgammon/core/play-session.mjs");
+        const { presentMove } = await import("/backgammon/core/move-presentation.mjs");
+        const moves = [];
         const initial = r.initialState({ phase: "roll", matchLength: 0 });
         initial.cube.value = 2;
         let game = { id: "loss-summary", initial, state: initial, started: true, events: [],
@@ -35,6 +37,7 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
             settings: { name: "Test", plies: 0 }, units: "current-cube-points", outcomes: [.2, player ? .19 : .17, 1] } };
           const state = game.state, turns = r.legalTurns(state);
           const first = { type: "move", steps: turns[0].steps }, accepted = { type: "move", steps: turns[1].steps };
+          moves.push({ initial: presentMove(state, first.steps).notation, accepted: r.notation(accepted.steps, player) });
           const grade = (action, loss) => ({ result: { type: "checker", status: "complete", positionKey: r.positionKey(state),
             settings: { name: "Test", plies: 0 }, units: "current-cube-points",
             candidates: [{ equity: .2, steps: turns[1].steps }], actual: { equity: .2 - loss, steps: action.steps } } });
@@ -47,6 +50,7 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
         game = playAction(game, { type: "accept" });
         saveSettings({ analysisAhead: false, equityBar: false, motion: "reduce" });
         await put("work", { id: "play", game, draft: [] });
+        return moves;
       });
       await page.reload(); await ready(); await resume();
       const card = page.getByRole("region", { name: "Game result", exact: true });
@@ -86,6 +90,17 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       }
       await card.evaluate(node => { node.scrollTop = 0; });
       await card.screenshot({ path: path.join(out, `${name}-game-loss-summary-${layout}.png`) });
+      await card.getByRole('button', { name: 'Hide the result to see the board' }).click();
+      const checker = page.locator('#move-feedback .history-turn[data-history-side="self"] [data-decision-type="checker"]');
+      assert.equal(await checker.locator('.history-initial .history-played').innerText(), expected[0].initial);
+      assert.equal(await checker.locator('.history-initial-loss strong').innerText(), '0.060', 'initial loss is not multiplied by cube 2');
+      assert.equal(await checker.locator('.history-accepted .history-played').innerText(), expected[0].accepted);
+      assert.equal(await checker.locator('.history-loss .value').innerText(), '0.010', 'played loss stays independent');
+      assert.equal(await checker.locator('.history-initial-loss').getAttribute('data-loss-tone'), 'medium');
+      await page.locator('#review-heading').evaluate(n => n.scrollIntoView({block:'start'}));
+      if (layout === 'landscape') await checker.evaluate(n => n.closest('.history-turn').scrollIntoView({block:'center'}));
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'history fits horizontally');
+      await page.screenshot({path: path.join(out, `${name}-initial-move-${layout}.png`)});
       // A pending original grade updates in place when background review finishes,
       // without changing the accepted grade or the game/score.
       // Leave Play before replacing its save so pagehide cannot checkpoint the old fixture.
@@ -111,9 +126,13 @@ module.exports = async function gameLossSummary(browser, base, out, name) {
       await resume();
       await page.waitForFunction(() => typeof window.completeSummaryGrade === "function");
       assert.match(await value(0, "checker", "initial").innerText(), /1 pending/);
+      assert.equal(await checker.locator('.history-initial').getAttribute('data-initial-status'), 'pending');
+      assert.equal(await checker.locator('.history-initial-loss').innerText(), 'EV loss pending');
       assert.equal(await value(0,"checker","initial").locator('strong').getAttribute('data-loss-tone'),null,'unknown loss stays ungraded');
       await page.evaluate(() => window.completeSummaryGrade());
       await page.waitForFunction(() => document.querySelector('[data-summary-player="0"] [data-loss-kind="checker"] [data-stage="initial"] strong')?.textContent === "0.060");
+      assert.equal(await checker.locator('.history-initial-loss strong').innerText(), '0.060', 'history refreshes when only the initial grade changes');
+      assert.equal(await checker.locator('.history-loss .value').innerText(), '0.010');
       assert.equal(await value(0, "checker", "accepted").locator("strong").innerText(), "0.010");
       const archived = await page.evaluate(async () => (await (await import("/backgammon/core/storage.mjs")).get("items", "loss-summary")));
       assert.ok(Math.abs(archived.decisionSummary[0].loss-.01)<1e-7,"saved totals exclude cube multiplier");

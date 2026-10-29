@@ -2722,7 +2722,8 @@ function renderFeedback() {
     const signature = JSON.stringify([group.turn, group.response, group.decisions.map(row => [
       row.index, row.label, row.forced, row.result?.type, row.result?.positionKey,
       row.result?.settings?.name, analysisDepthLabel(row.result),
-      row.feedback, row.index === reviewIndex, canReturnToDecision(row, m.id),
+      row.feedback, row.initialAction, row.initialFeedback,
+      row.index === reviewIndex, canReturnToDecision(row, m.id),
       !row.feedback && (autoReview.job?.row.index === row.index ? "active" : autoReview.error ? "error" : "queued"),
     ])]);
     if (entry.signature === signature) {

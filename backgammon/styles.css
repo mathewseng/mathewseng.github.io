@@ -2827,6 +2827,32 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   font-variant-numeric: tabular-nums;
 }
 
+.history-initial,
+.history-accepted {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.history-initial {
+  margin-block: 4px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+}
+
+.history-attempt-label,
+.history-initial-loss {
+  font-size: var(--t-xs);
+}
+
+.history-initial-loss {
+  font-variant-numeric: tabular-nums;
+}
+
+.history-initial-loss strong {
+  color: var(--loss-color);
+}
+
 .play-feedback .feedback-best {
   font-size: var(--t-xs);
 }

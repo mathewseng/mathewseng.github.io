@@ -5,6 +5,7 @@ import { presentCubeAction } from '../core/cube-presentation.mjs';
 import { analysisDepthLabel } from '../core/analysis-insight.mjs';
 import { cubeActionIcon } from './cube-action-icon.mjs';
 import { decisionValues } from './decision-values.mjs';
+import { applyStep, boardKey } from '../core/rules.mjs';
 
 // Shared by the active game and one lazily opened archived game.
 export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
@@ -37,8 +38,31 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
     const handlers = actions(row);
     const kind = row.action.type === "move" ? "Move" : "Cube";
     const cube = kind === "Cube" ? presentCubeAction(row.source, row.action.type) : null;
+    const initial = !cube && (local || side === "self") && row.initialAction?.type === "move"
+      ? row.initialAction : null;
+    // Equivalent move orders need only one line. Keep separate grades when
+    // the original and accepted analyses differ, even for the same board.
+    const revised = initial && (
+      boardKey(initial.steps.reduce((s, step) => applyStep(s, step), row.source)) !==
+        boardKey(row.action.steps.reduce((s, step) => applyStep(s, step), row.source)) ||
+      row.initialFeedback?.value !== row.feedback?.value
+    );
+    const initialMove = () => {
+      if (!revised) return null;
+      const f = row.initialFeedback;
+      return el("span", { class: "history-initial", "data-initial-status": f ? "evaluated" : "pending" },
+        el("span", { class: "history-attempt-label muted" }, "Initial"),
+        el("span", { class: "history-played" }, presentMove(row.source, initial.steps).notation),
+        el("span", { class: "history-initial-loss", ...(f ? { "data-loss-tone": f.tone } : {}) },
+          ...(f ? [el("strong", {}, f.value), el("span", { class: "muted" }, ` ${f.label}`)]
+            : [el("span", { class: "muted" }, "EV loss pending")]),
+        ),
+      );
+    };
     const played = () => {
-      if (!cube) return el("span", { class: "history-played" }, row.label);
+      if (!cube) return el("span", { class: "history-accepted" },
+        ...(initial ? [el("span", { class: "history-attempt-label muted" }, revised ? "Played" : "Initial · played")] : []),
+        el("span", { class: "history-played" }, row.label));
       if (!cube.displayLabel) return null;
       return el("span", { class: "history-played history-cube-action", title: cube.description },
         ...(cube.icon ? [cubeActionIcon(cube.icon)] : []), el("span", {}, cube.displayLabel));
@@ -63,7 +87,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
             "data-history-player": row.player,
             "data-decision-type": row.action.type === "move" ? "checker" : "cube",
           },
-          el("span", { class: "history-move" }, detail(), played()),
+          el("span", { class: "history-move" }, detail(), initialMove(), played()),
           ...(handlers.preview ? [button("Review", handlers.preview, "ghost")] : []),
           ...(handlers.restore
             ? [
@@ -104,6 +128,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
     review.append(
       el("span", { class: "history-move" },
         detail(),
+        initialMove(),
         played(),
         ...(!bestPlayed ? [el("span", { class: "feedback-best muted" },
           el("span", { class: "history-best-label" }, "Best "),
@@ -112,7 +137,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
       ),
       decisionValues(f, true, { opponent: side === "opponent" }),
       el("span", { class: "history-loss" },
-        el("span", { class: "muted" }, f.label),
+        el("span", { class: "muted" }, revised ? `Played ${f.label}` : f.label),
         el("strong", { class: "value" }, f.value),
       ),
     );
