@@ -324,6 +324,18 @@ export const exercises: ExerciseDefinition[] = [
     notes: "Record equipment and per-side load.",
   }),
   defineExercise({
+    id: "dumbbell-curl",
+    canonicalName: "Dumbbell Curl",
+    aliases: ["Standing dumbbell curl", "Biceps curl"],
+    category: "arms",
+    muscleGroups: ["biceps", "brachialis"],
+    equipment: ["dumbbells"],
+    weightMayBePerSide: true,
+    failureRelativelySafe: true,
+    defaultRepRange: [8, 15],
+    notes: "Record load per dumbbell.",
+  }),
+  defineExercise({
     id: "cable-biceps-curl",
     canonicalName: "Cable Biceps Curl",
     aliases: ["Two-hand cable curl", "Cable curl"],

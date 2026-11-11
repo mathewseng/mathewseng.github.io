@@ -31,6 +31,7 @@ Exercise identifiers are stable keys. A Smith-machine press and a free-weight ba
 - `spider-curl`
 - `incline-curl`
 - `hammer-curl`
+- `dumbbell-curl`
 
 ## Shoulders
 

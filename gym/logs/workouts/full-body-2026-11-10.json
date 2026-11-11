@@ -1,0 +1,252 @@
+{
+  "id": "full-body-2026-11-10",
+  "date": "2026-11-10",
+  "startTime": "22:45",
+  "durationMinutes": 72,
+  "type": "full-body",
+  "title": "Light Shoulders, Arms, Calves, and Core While Sore",
+  "chronologyIndex": 27,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "Second day back, trained while sore from the November 9 session. Soreness was described but not rated on the 0\u20136 scale. No readiness or pain ratings supplied.",
+    "sourceLabels": ["return-from-break", "late-night-training", "reported-soreness"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "reverse-cable-fly",
+      "name": "Reverse Cable Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-10-reverse-fly-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-reverse-fly-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-reverse-fly-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-reverse-fly-4",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Setup and per-side convention not specified."
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-10-lateral-raise-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-lateral-raise-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-lateral-raise-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-lateral-raise-4",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Single- versus dual-arm setup not specified."
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-10-ab-crunch-1",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-ab-crunch-2",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-ab-crunch-3",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-ab-crunch-4",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Setup not specified."
+    },
+    {
+      "exerciseId": "calf-raise",
+      "name": "Standing Calf Raise",
+      "equipment": "Unspecified",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-11-10-calf-raise-1",
+          "weightLb": 50,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-calf-raise-2",
+          "weightLb": 50,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-calf-raise-3",
+          "weightLb": 50,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-calf-raise-4",
+          "weightLb": 50,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "50 lb entered; equipment and whether the load is per hand were not specified."
+    },
+    {
+      "exerciseId": "shoulder-press",
+      "name": "Standing Dumbbell Overhead Press",
+      "equipment": "Dumbbells",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-10-ohp-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-10-ohp-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-10-ohp-3",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-10-ohp-4",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Entered as 15 lb per dumbbell, matching the earlier 20 lb-per-dumbbell record; standing versus seated not specified. Entered-load volume is not doubled."
+    },
+    {
+      "exerciseId": "dumbbell-curl",
+      "name": "Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-11-10-db-curl-1",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-10-db-curl-2",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-10-db-curl-3",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-10-db-curl-4",
+          "weightLb": 15,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "15 lb per arm as reported. Entered-load volume is not doubled."
+    },
+    {
+      "exerciseId": "leg-raise",
+      "name": "Leg Raise",
+      "equipment": "Bodyweight",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-10-leg-raise-1",
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-leg-raise-2",
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-leg-raise-3",
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-10-leg-raise-4",
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Lying versus hanging variation not specified."
+    }
+  ],
+  "notes": "Started at 10:45 PM local time; workout duration 72 minutes. 28 completed sets, 280 completed reps, and 6,800 lb entered-load volume. Bodyweight leg raises excluded from external-load volume. Per-dumbbell loads not doubled. No numeric readiness, soreness, pain, or RIR ratings supplied."
+}

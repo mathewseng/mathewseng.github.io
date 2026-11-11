@@ -1458,6 +1458,24 @@ Totals: **21 working sets, 183 working reps, and 13,440 lb entered-load volume**
 
 ---
 
+# 27. Light Shoulders, Arms, Calves, and Core While Sore — November 10, 2026
+
+**Start:** 10:45 PM local time · **Duration:** 72 minutes
+
+Second day back, trained while sore from November 9. Soreness was not rated on the 0–6 scale.
+
+- Reverse cable fly: 10 lb × 10, 10, 10, 10
+- Cable lateral raise: 10 lb × 10, 10, 10, 10
+- Cable ab crunch: 70 lb × 10, 10, 10, 10
+- Calf raise: 50 lb × 10, 10, 10, 10; equipment and per-hand status unreported
+- Dumbbell overhead press: 15 lb per dumbbell × 10, 10, 10, 10
+- Dumbbell curl: 15 lb per arm × 10, 10, 10, 10
+- Leg raises: 10, 10, 10, 10
+
+Totals: **28 completed sets, 280 completed reps, and 6,800 lb entered-load volume**. Leg raises excluded from volume; per-dumbbell loads not doubled. RIR and 0–6 readiness, soreness or pain ratings were not supplied.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench

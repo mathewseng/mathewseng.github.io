@@ -62,6 +62,7 @@ export const BUILT_IN_EXERCISE_IDS = new Set([
   "spider-curl",
   "incline-curl",
   "hammer-curl",
+  "dumbbell-curl",
   "cable-biceps-curl",
   "cable-lateral-raise",
   "dumbbell-lateral-raise",
