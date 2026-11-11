@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { blockedBarRoll, canDouble } from './rules.mjs';
+import { blockedBarRoll, canDouble, legalTurns } from './rules.mjs';
 
 // Roll after an opponent's failed entry, or when every entry is blocked.
 // Keep every legal cube choice and pending response manual.
@@ -11,11 +11,26 @@ export function canAutoRollAfterBarPass(state, lastEvent = null) {
   return missedEntry || blockedBarRoll({...state, turn:opponent});
 }
 
-// A single opposing checker can be hit, so only made points block entry.
+// Auto roll is worth offering only when a roll could leave nothing to decide:
+// a made point blocks an entry (a lone opposing checker can be hit), and some
+// roll of two different dice has a single legal play, with both dice forced
+// or unplayable. One blocked point with one checker on the bar does not count:
+// the checker enters and the other die is still a free choice.
+const forcedRolls = new Map();
 export function canAutoRollFromBar(state, player = state?.turn) {
   if (!state?.bar[player]) return false;
   const start = player === 0 ? 18 : 0, opponent = player === 0 ? -1 : 1;
-  return state.points.slice(start, start + 6).some(count => count * opponent >= 2);
+  if (!state.points.slice(start, start + 6).some(count => count * opponent >= 2)) return false;
+  const off = state.off || [0, 0];
+  const key = `${player}:${state.points}:${state.bar}:${off}`;
+  if (!forcedRolls.has(key)) {
+    let forced = false;
+    for (let a = 1; a <= 6 && !forced; a++) for (let b = a + 1; b <= 6 && !forced; b++)
+      forced = legalTurns({...state, off, turn:player, phase:'move', dice:[b, a]}).length <= 1;
+    forcedRolls.set(key, forced);
+    if (forcedRolls.size > 256) forcedRolls.delete(forcedRolls.keys().next().value);
+  }
+  return forcedRolls.get(key);
 }
 
 // Session-only intent: never consumes dice, chooses an entry, or survives reload.

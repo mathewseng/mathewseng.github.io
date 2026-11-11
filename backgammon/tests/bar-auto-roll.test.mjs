@@ -163,3 +163,20 @@ test('unrelated/late second taps never skip, and explicit stop clears the pendin
     assert.equal(a.waitingForRepeat,false);
   }
 });
+
+test('auto roll is offered only when some roll of two different dice leaves nothing to decide',()=>{
+  for (const player of [0,1]) {
+    const at=i=>player?23-i:i,mine=player?-1:1;
+    const state=(blocked,bar,spare=[])=>{
+      const points=Array(24).fill(0);
+      for(const entry of blocked)points[at(24-entry)]=-mine*2;
+      for(const [point,n] of spare)points[at(point-1)]=mine*n;
+      return {phase:'roll',turn:player,points,bar:player?[0,bar]:[bar,0],off:[0,0]};
+    };
+    assert.equal(canAutoRollFromBar(state([6],1,[[13,2],[8,2]])),false,'one blocked point: the checker enters and the other die is a choice');
+    assert.equal(canAutoRollFromBar(state([6,5],1,[[13,2],[8,2]])),true,'6-5 cannot enter at all');
+    assert.equal(canAutoRollFromBar(state([6],2,[[13,2]])),true,'two checkers on the bar use both dice to enter');
+    assert.equal(canAutoRollFromBar(state([6],1)),true,'a lone checker has one way to play each roll');
+    assert.equal(canAutoRollFromBar(state([],2,[[13,2]])),false,'no blocked entry point');
+  }
+});
