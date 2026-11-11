@@ -1440,6 +1440,24 @@ Totals: **22 completed sets, 196 completed reps, 6,300 lb entered-load volume**.
 
 ---
 
+# 26. Return Full Body After Five-Week Break — November 9, 2026
+
+**Start:** 10:30 PM local time · **Duration:** 75 minutes
+
+First session after a 34-day gap since October 6. The date was written as 10/9 and is recorded as November 9.
+
+- Smith flat bench: warm-ups 25 lb × 10, 55 lb × 6, 75 lb × 6; working 85 lb × 8, 8, 8
+- Pull-ups: 4, 3, 2 (9 total; strict form unconfirmed)
+- Triceps pushdown: 30 lb × 10, 10, 10
+- Face pulls: 50, 60, 70 lb × 10 each
+- Cable curl: 30 lb × 10, 10, 10; per-side convention unreported
+- Cable ab crunch: 70 lb × 10, 10, 10
+- Leg press: 190 lb × 10, 10, 10; machine identity unreported
+
+Totals: **21 working sets, 183 working reps, and 13,440 lb entered-load volume**. Bench warm-ups (22 reps, 1,030 lb) and bodyweight pull-ups excluded; with warm-ups the app shows 205 reps and 14,470 lb. RIR and 0–6 readiness or back-pain ratings were not supplied.
+
+---
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench

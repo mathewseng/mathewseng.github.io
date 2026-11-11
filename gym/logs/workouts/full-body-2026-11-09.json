@@ -1,0 +1,224 @@
+{
+  "id": "full-body-2026-11-09",
+  "date": "2026-11-09",
+  "startTime": "22:30",
+  "durationMinutes": 75,
+  "type": "full-body",
+  "title": "Return Full Body After Five-Week Break",
+  "chronologyIndex": 26,
+  "dataQuality": "partial",
+  "context": {
+    "notes": "First session after a 34-day gap since October 6. The user wrote the date as 10/9; recorded as November 9 because that session followed the November 9 return plan. Numeric 0\u20136 readiness and pain ratings were not supplied.",
+    "sourceLabels": ["return-from-break", "late-night-training"]
+  },
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "dataQuality": "complete",
+      "sets": [
+        {
+          "id": "2026-11-09-bench-1",
+          "weightLb": 25,
+          "reps": 10,
+          "completed": true,
+          "warmup": true
+        },
+        {
+          "id": "2026-11-09-bench-2",
+          "weightLb": 55,
+          "reps": 6,
+          "completed": true,
+          "warmup": true
+        },
+        {
+          "id": "2026-11-09-bench-3",
+          "weightLb": 75,
+          "reps": 6,
+          "completed": true,
+          "warmup": true
+        },
+        {
+          "id": "2026-11-09-bench-4",
+          "weightLb": 85,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-bench-5",
+          "weightLb": 85,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-bench-6",
+          "weightLb": 85,
+          "reps": 8,
+          "completed": true
+        }
+      ],
+      "notes": "Weights include the 25 lb Smith bar. First three sets are warm-ups. Working load reduced from 105 lb after the break; RIR not supplied."
+    },
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-09-pullup-1",
+          "reps": 4,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-pullup-2",
+          "reps": 3,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-pullup-3",
+          "reps": 2,
+          "completed": true
+        }
+      ],
+      "notes": "9 reps across three sets. Strict form not confirmed."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-09-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-pushdown-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-pushdown-3",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Attachment not specified."
+    },
+    {
+      "exerciseId": "face-pull",
+      "name": "Face Pull",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-09-face-pull-1",
+          "weightLb": 50,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-face-pull-2",
+          "weightLb": 60,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-face-pull-3",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Ascending stack loads; attachment and form not specified."
+    },
+    {
+      "exerciseId": "cable-biceps-curl",
+      "name": "Cable Biceps Curl",
+      "equipment": "Cable machine",
+      "dataQuality": "ambiguous",
+      "sets": [
+        {
+          "id": "2026-11-09-cable-curl-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-cable-curl-2",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-cable-curl-3",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Per-side loading and unilateral versus bilateral setup not specified."
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-09-ab-crunch-1",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-ab-crunch-2",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-ab-crunch-3",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Setup not specified."
+    },
+    {
+      "exerciseId": "leg-press",
+      "name": "Leg Press",
+      "equipment": "Leg press machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-09-leg-press-1",
+          "weightLb": 190,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-leg-press-2",
+          "weightLb": 190,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-09-leg-press-3",
+          "weightLb": 190,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Machine identity not recorded, so do not compare directly with the 140 lb baseline unless it is the same machine. Back-pain response not supplied."
+    }
+  ],
+  "notes": "Started at 10:30 PM local time; workout duration 75 minutes. 21 working sets, 183 working reps, and 13,440 lb entered-load volume. Three bench warm-up sets (22 reps, 1,030 lb) excluded; including them gives 205 reps and 14,470 lb. Bodyweight pull-ups excluded from external-load volume. No numeric readiness, pain, or RIR ratings supplied."
+}
