@@ -232,6 +232,40 @@ export function entrySwitchRoutes(state, paths, draft) {
   );
 }
 
+// With checkers on the bar, choosing a move for another checker also settles
+// the entry: the dice it leaves must bring every bar checker in first. Each
+// route is that entry prefix followed by one checker's chain, so both parts are
+// played (and later taken back) together. Continuing with the checker that has
+// just entered remains the bar's own route.
+export function entryRoutes(paths, draft, current) {
+  const routes = new Map();
+  for (const path of matchingPaths(paths, draft)) {
+    let index = draft.length;
+    while (path.steps[index]?.from === "bar") index++;
+    const entry = index - draft.length, first = path.steps[index];
+    if (!entry || !first) continue;
+    const prefix = path.steps.slice(draft.length, index);
+    if (prefix.some((step) => step.to === first.from) &&
+        !(current.points[first.from] * sign(current.turn) > 0)) continue;
+    let point = first.from;
+    const steps = [];
+    for (const step of path.steps.slice(index)) {
+      if (step.from !== point || point === "off") break;
+      steps.push(step);
+      point = step.to;
+      routes.set(JSON.stringify([prefix, steps]), {
+        from: first.from,
+        to: point,
+        steps: [...prefix, ...steps],
+        entry,
+        die: steps.reduce((n, s) => n + s.die, 0),
+        undo: false,
+      });
+    }
+  }
+  return [...routes.values()].sort((a, b) => a.steps.length - b.steps.length);
+}
+
 // All immediately executable single-checker chains using the remaining dice.
 export function availableRoutes(paths, draft) {
   const sources = [

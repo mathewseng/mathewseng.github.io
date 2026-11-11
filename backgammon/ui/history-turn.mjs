@@ -3,7 +3,7 @@ import { el, button, dieFace } from './shell.mjs';
 import { presentMove } from '../core/move-presentation.mjs';
 import { presentCubeAction } from '../core/cube-presentation.mjs';
 import { cubeActionIcon } from './cube-action-icon.mjs';
-import { equity } from './analysis.mjs';
+import { equity, chanceLines } from './analysis.mjs';
 import { applyStep, boardKey } from '../core/rules.mjs';
 
 // Shared by the active game and one lazily opened archived game.
@@ -163,6 +163,8 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
           el("span", { class: "history-best-label" }, "Best "),
           row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : presentCubeAction(row.source, f.best.action).label,
         )] : []),
+        // Chances after the played choice; cube actions share the position's.
+        chanceLines(f.actual.probabilities ?? f.positionChances, f.chancePlayer),
       ),
     );
     decisions.append(review);

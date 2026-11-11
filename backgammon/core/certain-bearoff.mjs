@@ -8,17 +8,18 @@ const count = h => h.reduce((a,b)=>a+b,0);
 const pips = h => h.reduce((a,b,i)=>a+b*(i+1),0);
 const cache = new Map();
 
-// All legal outcomes for one side already wholly in its home board. With no
-// contact, every die is playable until the last checker is borne off.
+// All legal outcomes for one side of a contact-free race, indexed from its own
+// ace point. No point can be blocked, so every die is playable until the last
+// checker is borne off; bearing off needs every checker in the home board.
 export function homeRollOutcomes(home, dice) {
   const outcomes=new Map(), orders=dice[0]===dice[1] ? [Array(4).fill(dice[0])] : [dice,[...dice].reverse()];
   const walk=(h,order,index)=>{
     if(index===order.length||!h.some(Boolean)){outcomes.set(h.join(','),h);return;}
     const die=order[index],highest=h.findLastIndex(Boolean);
-    for(let from=0;from<6;from++){
-      if(!h[from]||(from+1<die&&from!==highest))continue;
+    for(let from=0;from<h.length;from++){
+      if(!h[from]||(from<die&&(highest>5||(from+1<die&&from!==highest))))continue;
       const next=[...h];next[from]--;
-      if(from+1>die)next[from-die]++;
+      if(from>=die)next[from-die]++;
       walk(next,order,index+1);
     }
   };
@@ -26,22 +27,35 @@ export function homeRollOutcomes(home, dice) {
   return [...outcomes.values()].sort((a,b)=>pips(b)-pips(a));
 }
 
-function proveWithin(home, turns, firstOff, budget, memo) {
-  const n=count(home),pip=pips(home);
-  if(!n)return true;
+// Earliest possible turn for each goal: four sixes a turn, one quadrant a move.
+const fastest={
+  finish:side=>Math.ceil(side.reduce((sum,n,i)=>sum+n*Math.ceil((i+1)/6),0)/4),
+  off:side=>Math.ceil((side.reduce((sum,n,i)=>sum+n*Math.floor(i/6),0)+1)/4),
+  escape:side=>Math.ceil(count(side.slice(18))/4),
+};
+const trim=side=>side.slice(0,Math.max(6,side.findLastIndex(Boolean)+1));
+
+// True when EVERY roll and EVERY legal play reaches the goal within `turns`:
+// 'finish' bears off the last checker, 'off' bears off the first one, and
+// 'escape' leaves the opponent's home board (points 19-24).
+function proveWithin(side, turns, goal, budget, memo) {
+  const n=count(side),pip=pips(side);
+  if(!n||(goal==='escape'&&!side.slice(18).some(Boolean)))return true;
   if(turns<=0)return false;
-  // Each unfinished turn reduces (pips + checkers) by at least three.
-  // Until the first bearoff, it reduces pips by at least three instead.
-  const upper=firstOff?Math.floor((pip-n)/3)+1:Math.floor((pip+n+1)/3);
+  // Each unfinished turn reduces (pips + checkers) by at least three. Without
+  // a bearoff it reduces pips by at least three, and a turn that bears nothing
+  // off leaves at least one pip a checker; one that leaves a checker in the
+  // opponent's home board leaves at least 18 more.
+  const upper=goal==='finish'?Math.floor((pip+n+1)/3):Math.floor((pip-n-(goal==='escape'?18:0))/3)+1;
   if(turns>=upper)return true;
-  if(!firstOff&&turns<Math.ceil(n/4))return false;
-  const key=`${home}:${turns}:${firstOff}`;
+  if(turns<fastest[goal](side))return false;
+  const key=`${side}:${turns}:${goal}`;
   if(memo.has(key))return memo.get(key);
   if(--budget.nodes<0)return null;
-  for(const dice of rolls)for(const next of homeRollOutcomes(home,dice)){
+  for(const dice of rolls)for(const next of homeRollOutcomes(side,dice)){
     if(--budget.outcomes<0)return null;
-    if(firstOff&&count(next)<n)continue;
-    const proof=proveWithin(next,turns-1,firstOff,budget,memo);
+    if(goal==='off'&&count(next)<n)continue;
+    const proof=proveWithin(next,turns-1,goal,budget,memo);
     if(proof!==true){if(proof===false)memo.set(key,false);return proof;}
   }
   memo.set(key,true);return true;
@@ -53,21 +67,24 @@ export function certainBearoff(state) {
   if(!white.length||!black.length||Math.max(...white)>=Math.min(...black))return null;
   const homes=[0,1].map(player=>Array.from({length:24},(_,i)=>Math.max(0,state.points[player?23-i:i]*(player?-1:1))));
   const jacoby=!state.matchLength&&state.rules?.jacoby&&state.cube.owner===null;
-  const key=JSON.stringify([homes,state.turn,jacoby,state.phase==='move'?state.dice:null]);
+  // A single game already ends the match for this winner: gammons add nothing.
+  const flat=[0,1].map(winner=>!!(jacoby||(state.matchLength&&state.cube.value>=state.matchLength-state.scores[winner])));
+  const key=JSON.stringify([homes,state.turn,flat,state.phase==='move'?state.dice:null]);
   if(cache.has(key))return cache.get(key);
   const budget={nodes:2000,outcomes:20000},memo=new Map();
-  let result=proveRace(homes,state.turn,jacoby,budget,memo);
-  if(!result&&state.phase==='move'&&!homes[state.turn].slice(6).some(Boolean)) {
+  let result=proveRace(homes,state.turn,flat,budget,memo);
+  if(!result&&state.phase==='move') {
     // The current dice are known; future dice are still ALL possible rolls.
     // Every legal way to use this roll must lead to the same exact award.
     // One shared work budget covers every branch, including future proofs.
     let common=null;
-    for(const next of homeRollOutcomes(homes[state.turn].slice(0,6),state.dice)) {
+    const mover=state.turn,other=homes[1-mover];
+    for(const next of homeRollOutcomes(trim(homes[mover]),state.dice)) {
       if(--budget.outcomes<0){common=null;break;}
-      const after=homes.map((home,p)=>p===state.turn?[...next,...Array(18).fill(0)]:home);
+      const after=homes.map((home,p)=>p===mover?[...next,...Array(24-next.length).fill(0)]:home);
       const proof=count(next)===0
-        ? {winner:state.turn,level:jacoby||count(after[1-state.turn])<15?1:after[1-state.turn].slice(18).some(Boolean)?3:2}
-        : proveRace(after,1-state.turn,jacoby,budget,memo);
+        ? {winner:mover,level:flat[mover]||count(other)<15?1:other.slice(18).some(Boolean)?3:2}
+        : proveRace(after,1-mover,flat,budget,memo);
       if(!proof||(common&&(common.winner!==proof.winner||common.level!==proof.level))){common=null;break;}
       common=proof;
     }
@@ -80,28 +97,23 @@ export function certainBearoff(state) {
   return result;
 }
 
-function proveRace(homes,turn,jacoby,budget,memo) {
-  let result=null;
+function proveRace(homes,turn,flat,budget,memo) {
   for(const winner of [turn,1-turn]){
-    const own=homes[winner],loser=1-winner,other=homes[loser];
-    if(own.slice(6).some(Boolean))continue;
-    // Passed checkers may still sit in the winner's home board: contact is
-    // impossible but a backgammon can still change the award. Leave it live.
-    if(count(other)===15&&!jacoby&&other.slice(18).some(Boolean))continue;
-    // Four sixes achieve these earliest possible turns in a contact-free race.
-    const fastest=side=>Math.ceil(side.reduce((sum,n,i)=>sum+n*Math.ceil((i+1)/6),0)/4);
+    const own=trim(homes[winner]),loser=1-winner,other=homes[loser];
     const loserFirst=turn===loser?1:0;
-    const winBy=fastest(other)-loserFirst;
-    if(proveWithin(own.slice(0,6),winBy,false,budget,memo)!==true)continue;
-    let level;
-    if(count(other)<15||jacoby)level=1;
-    else {
-      const firstOff=Math.ceil((other.reduce((sum,n,i)=>sum+n*Math.floor(i/6),0)+1)/4);
-      if(proveWithin(own.slice(0,6),firstOff-loserFirst,false,budget,memo)===true)level=2;
-      else if(!other.slice(6).some(Boolean)&&
-        proveWithin(other.slice(0,6),fastest(own)-(turn===winner?1:0),true,budget,memo)===true)level=1;
-    }
-    if(level){result=Object.freeze({winner,level});break;}
+    const within=(turns,side=own,goal='finish')=>proveWithin(side,turns,goal,budget,memo)===true;
+    // The winner's slowest finish must precede the loser's fastest one.
+    if(!within(fastest.finish(other)-loserFirst))continue;
+    if(count(other)<15||flat[winner])return Object.freeze({winner,level:1});
+    // The loser's turns before the winner's fastest possible finish.
+    const reprieve=fastest.finish(own)-(turn===winner?1:0);
+    const back=other.slice(18).some(Boolean);
+    let level=0;
+    if(back&&within(fastest.escape(other)-loserFirst))level=3;
+    else if(within(fastest.off(other)-loserFirst)){
+      if(!back||within(reprieve,other,'escape'))level=2;
+    } else if(within(reprieve,trim(other),'off'))level=1;
+    if(level)return Object.freeze({winner,level});
   }
-  return result;
+  return null;
 }

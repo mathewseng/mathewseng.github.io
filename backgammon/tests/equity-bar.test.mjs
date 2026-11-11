@@ -3,12 +3,24 @@ import assert from "node:assert/strict";
 import { initialState, positionKey } from "../core/rules.mjs";
 import { equityFraction, equityReading } from "../core/equity-bar.mjs";
 import { settingsDefaults } from "../core/storage.mjs";
-test("equity bar is enabled by default; its symmetric nonlinear scale is not a probability", () => {
+test("equity bar is enabled by default; its fill measures equity against the leader's average win", () => {
   assert.equal(settingsDefaults.equityBar, true);
   assert.equal(equityFraction(0), 0.5);
-  for (const e of [0.1, 1, 3, 20]) {
-    assert.ok(equityFraction(e) > 0.5 && equityFraction(e) < 1);
-    assert.ok(Math.abs(equityFraction(e) + equityFraction(-e) - 1) < 1e-10);
+  const side = (win, gammon = 0, backgammon = 0) => ({ win, gammon, backgammon });
+  // Certain singles, gammons and backgammons all fill the rail for the winner.
+  for (const [equity, mine] of [[1, side(1)], [2, side(1, 1)], [3, side(1, 1, 1)]]) {
+    assert.equal(equityFraction(equity, [mine, side(0)]), 1);
+    assert.equal(equityFraction(-equity, [side(0), mine]), 0);
+  }
+  // Without gammons the fill is the win chance; gammons widen the scale.
+  assert.ok(Math.abs(equityFraction(0.5, [side(0.75), side(0.25)]) - 0.75) < 1e-12);
+  const gammonish = equityFraction(0.75, [side(0.75, 0.25, 0.05), side(0.25, 0.05)]);
+  assert.ok(gammonish > 0.75 && gammonish < 0.8);
+  for (const e of [0.1, 0.6, 1, 3, 20]) {
+    const chances = [side(0.6, 0.2), side(0.4, 0.1)];
+    assert.ok(equityFraction(e, chances) > 0.5 && equityFraction(e, chances) <= 1);
+    assert.ok(equityFraction(-e, chances) < 0.5 && equityFraction(-e, chances) >= 0);
+    assert.ok(Math.abs(equityFraction(e) + equityFraction(-e) - 1) < 1e-10, "no chances: a plain symmetric scale");
   }
 });
 test("equity readings reject stale results and preserve actual choice, player and match units", () => {
@@ -24,6 +36,12 @@ test("equity readings reject stale results and preserve actual choice, player an
     actual: { equity: 0.2 },
   };
   assert.equal(equityReading(source, result).ivory, -0.2);
+  assert.equal(equityReading(source, result).chances, null, "a model without chances shows equity alone");
+  const chances = equityReading(source, { ...result, actual: { equity: 0.2, probabilities: [0.6, 0.2, 0.01, 0.1, 0] } }).chances;
+  assert.deepEqual(chances, [
+    { player: 0, win: 0.4, gammon: 0.1, backgammon: 0 },
+    { player: 1, win: 0.6, gammon: 0.2, backgammon: 0.01 },
+  ], "chances are listed per player from the roller's five nested values");
   const before = equityReading(source, result, {beforeDecision:true});
   assert.equal(before.ivory, -0.4, "Play displays equity before the submitted choice");
   assert.equal(before.choice, "Before decision");

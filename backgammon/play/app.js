@@ -84,7 +84,7 @@ import { returnToHistory } from "../core/history-tree.mjs";
 import { AutoReview } from "../core/auto-review.mjs";
 import { Prethink } from "../core/prethink.mjs";
 import { BarAutoRoll, canAutoRollFromBar, canAutoRollAfterBarPass } from "../core/bar-auto-roll.mjs";
-import { RaceAutoPlay, bearingOffRace, clearRaceCubeAction } from "../core/race-auto-play.mjs";
+import { RaceAutoPlay, bearingOffRace, clearRaceCubeAction, raceBearoffMove } from "../core/race-auto-play.mjs";
 import { certainBearoff } from "../core/certain-bearoff.mjs";
 import { shouldAutoPassClosedOut, closedOutCubeMargin } from '../core/closed-out.mjs';
 import { ensureLocalRolls, localPlayAction, futureLocalRoll } from "../core/local-rolls.mjs";
@@ -148,7 +148,7 @@ let config = {
   epoch = 0;
 const barAutoRoll = new BarAutoRoll();
 const raceAutoPlay = new RaceAutoPlay();
-let raceAutoJob = null;
+let raceAutoJob = null, raceChoice = null, raceTapTimer = null;
 let barRollTimer = null, barRollSchedule = '', barRollAttempt = '', barTapTimer = null;
 const presentationWaits = new Set();
 const boardWorkspace = el("div", { class: "board-workspace" });
@@ -591,10 +591,10 @@ const opening = new OpeningRoll(ui.board.container, () => {
 });
 function repeatBarRoll(point) {
   if (!barAutoRoll.repeat(model(), point) && !raceAutoPlay.repeat(model(), point)) return false;
-  clearTimeout(barTapTimer);
+  clearTimeout(barTapTimer); clearTimeout(raceTapTimer);
   clearTimeout(barRollTimer); barRollSchedule = ''; barRollAttempt = '';
   actions();
-  if (barAutoRoll.skipping) {
+  if (barAutoRoll.skipping || raceAutoPlay.skipping) {
     ui.board.finishPresentation();
     for (const finish of presentationWaits) finish();
   }
@@ -605,7 +605,18 @@ ui.board.onRoll = (event = {}) => {
   if (repeatBarRoll(point)) return true;
   if (raceAutoPlay.active && (event.target?.closest('.board-caption') ||
       (state().phase === 'roll' && state().turn === raceAutoPlay.active.player))) {
-    raceAutoPlay.reset(); actions(); return true;
+    if (raceAutoPlay.skipping || event.clientX === undefined) {
+      raceAutoPlay.reset(); actions(); return true;
+    }
+    // As with auto roll: hold the next action briefly so a second tap can
+    // ask to skip ahead. A lone tap stops auto play.
+    const gesture = raceAutoPlay.noteSkip(model(), point);
+    clearTimeout(raceTapTimer);
+    raceTapTimer = setTimeout(() => {
+      if (raceAutoPlay.gesture !== gesture) return;
+      raceAutoPlay.reset(); actions();
+    }, 450);
+    actions(); return true;
   }
   if ((barAutoRoll.active || barAutoRoll.skipping) && (event.target?.closest('.board-caption') ||
       (state().phase === 'roll' && state().turn === (barAutoRoll.active || barAutoRoll.skip).player))) {
@@ -996,11 +1007,11 @@ function syncBarAutoRoll(current = state()) {
     (s.pending || (s.phase === 'roll' && !barAutoRoll.active) ||
       (s.phase === 'move' && !forcedTurn(s))));
   const active = barAutoRoll.sync(m, current, !!choice);
-  ui.board.motion = !barAutoRoll.skipping;
+  ui.board.motion = !barAutoRoll.skipping && !raceAutoPlay.skipping;
   return active;
 }
 function presentationPause(milliseconds) {
-  if (barAutoRoll.skipping) return Promise.resolve();
+  if (barAutoRoll.skipping || raceAutoPlay.skipping) return Promise.resolve();
   return new Promise(resolve => {
     const finish = () => { clearTimeout(timer); presentationWaits.delete(finish); resolve(); };
     const timer = setTimeout(finish, motionDuration(milliseconds));
@@ -1033,24 +1044,40 @@ function scheduleBarAutoRoll() {
 function syncRaceAutoPlay(current = state()) {
   const s = state();
   if (config.mode !== 'computer') raceAutoPlay.reset();
-  return raceAutoPlay.sync(model(), current, myTurn(s) && s.phase === 'move' && !forcedTurn(s));
+  // A checker play left to the player ends skipping; auto play resumes after it.
+  const choice = !!document.querySelector('dialog[open]') || raceChoice === s ||
+    (myTurn(s) && s.phase === 'move' && draft.state === s && draft.draft.length > draft.minDraft);
+  const active = raceAutoPlay.sync(model(), current, choice);
+  ui.board.motion = !barAutoRoll.skipping && !raceAutoPlay.skipping;
+  return active;
 }
 function scheduleRaceAutoPlay() {
-  const active = raceAutoPlay.active, s = state(), token = epoch;
+  const active = raceAutoPlay.active, s = state(), token = epoch, moving = s.phase === 'move';
   const ready = () => raceAutoPlay.active === active && raceAutoPlay.valid(active,model()) &&
+    !raceAutoPlay.waitingForRepeat &&
     state() === s && epoch === token && myTurn(s) && config.mode === 'computer' &&
-    ['roll','double'].includes(s.phase) && !certainBearoff(s) &&
+    (moving ? raceChoice !== s && !forcedTurn(s) && !automaticDraft && !draft.preview &&
+        draft.state === s && draft.draft.length <= draft.minDraft
+      : ['roll','double'].includes(s.phase)) && !certainBearoff(s) &&
     !document.hidden && !leaving && !committing && !botBusy && !assistanceJob &&
     !opening.active && !document.querySelector('dialog[open]');
   if (raceAutoJob || !ready()) return;
   const job = raceAutoJob = {source:s};
   (async () => {
     try {
-      await presentationPause(900);
+      await presentationPause(moving ? 450 : 900);
       await ui.board.waitForPresentation();
       if (!ready()) return;
       let action = {type:'roll'}, evaluation = null;
-      if (s.phase === 'double' || canDouble(s)) {
+      if (moving) {
+        // Bear off when that is the best evaluated play at the review strength
+        // (so the game's own analysis agrees). Otherwise the player chooses.
+        const result = await analysis.engine.analyze(s,{preset:config.reviewStrength || 'auto',priority:5});
+        if (!ready()) return;
+        action = raceBearoffMove(s,result);
+        if (!action) { raceChoice = s; return; }
+        evaluation = {source:clone(s),result:{...result,actual:result.candidates[0],error:0}};
+      } else if (s.phase === 'double' || canDouble(s)) {
         let result = analysis.engine.peek(s,{preset:null});
         // Reuse warm analysis. A missing, shallow or noisy reading must finish
         // a real 3-ply cube search before it can authorize automatic play.
@@ -1064,8 +1091,11 @@ function scheduleRaceAutoPlay() {
       if (ready()) await commit(action,evaluation);
     } catch (error) {
       if (raceAutoPlay.active === active) {
-        raceAutoPlay.reset();
-        if (error.name !== 'AbortError') toast('Auto play stopped. Choose your cube action.');
+        if (moving) raceChoice = s;
+        else {
+          raceAutoPlay.reset();
+          if (error.name !== 'AbortError') toast('Auto play stopped. Choose your cube action.');
+        }
       }
     } finally {
       if (raceAutoJob === job) raceAutoJob = null;
@@ -1626,7 +1656,7 @@ function actions() {
     if (race && s.phase === 'double') cubeReplies.hidden = true;
     ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,
       canAutoPlay:config.mode === 'computer' && bearingOffRace(s) && !model().reviewingTurn,
-      auto:!!active,skipping:barAutoRoll.skipping,raceAuto:!!race});
+      auto:!!active,skipping:barAutoRoll.skipping || raceAutoPlay.skipping,raceAuto:!!race});
     ui.board.container.classList.toggle("roll-ready", rollReady);
     scheduleBarAutoRoll();
     scheduleRaceAutoPlay();

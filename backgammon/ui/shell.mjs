@@ -21,6 +21,7 @@ import {
   boardKey,
   decisionPlayer,
   blockedBarRoll,
+  distance,
 } from "../core/rules.mjs";
 import { Board } from "./board.mjs";
 import {
@@ -32,6 +33,7 @@ import {
   undoDieDraft,
   dieSwitchRoutes,
   preferHittingRoutes,
+  entryRoutes,
 } from "../core/draft.mjs";
 import { applyBoardTheme } from "../core/appearance.mjs";
 import { applySkin } from "./skin.mjs";
@@ -848,6 +850,7 @@ export class DraftBoard {
     this.selected = null;
     this.hint = "";
     this.preferred = null;
+    this.link = null;
     this.enabled = enabled;
     this.preview = null;
     if (enabled && !this.advanced && s.bar[s.turn] && this.candidates().length)
@@ -886,15 +889,27 @@ export class DraftBoard {
         left ? `${left} move${left === 1 ? "" : "s"} left` : ready),
     );
   }
+  // The entered half of an entry-and-move pair cannot go back alone (the other
+  // move needs it on the board), so its return takes the whole pair back.
+  withLinkedReturn(routes) {
+    const link = this.linkedSteps();
+    if (!link) return routes;
+    const pair = this.draft.slice(link.start, link.end),
+      kept = this.draft.filter((step) => !pair.includes(step)),
+      from = pair[0].to;
+    if (routes.some((r) => r.from === from && r.to === "bar") ||
+        !matchingPaths(this.paths, kept).length) return routes;
+    return [...routes, { from, to: "bar", undo: true, remaining: kept, steps: pair, die: pair[0].die }];
+  }
   reverseMoves() {
-    return this.cached("reverseMoves", () => originalReturnRoutes(
+    return this.cached("reverseMoves", () => this.withLinkedReturn(originalReturnRoutes(
       this.state, this.paths, this.draft, this.minDraft,
-    ));
+    )));
   }
   checkerUndos() {
-    return this.cached("checkerUndos", () => checkerUndoRoutes(
+    return this.cached("checkerUndos", () => this.withLinkedReturn(checkerUndoRoutes(
       this.state, this.paths, this.draft, this.minDraft,
-    ));
+    )));
   }
   entrySwitches() {
     const key = JSON.stringify([this.draft, this.minDraft]);
@@ -914,11 +929,28 @@ export class DraftBoard {
     return this.revisionCache.routes;
   }
 
+  // Moves for other checkers while one waits on the bar: each also plays the
+  // entry with the dice it leaves over.
+  entryMoves() {
+    return this.cached("entryMoves", () => entryRoutes(this.paths, this.draft, this.current()));
+  }
+  // The steps of the last entry-and-move pair, while they are still in the
+  // draft. Taking back either half returns both checkers.
+  linkedSteps() {
+    const link = this.link;
+    if (!link) return null;
+    const end = link.start + link.length;
+    if (link.start < this.minDraft || JSON.stringify(this.draft.slice(0, end)) !== link.key) {
+      this.link = null;
+      return null;
+    }
+    return { ...link, end };
+  }
   sources() {
     return [
       ...new Set(
         [
-          ...this.candidates(), ...this.reverseMoves(), ...this.entrySwitches(),
+          ...this.candidates(), ...this.reverseMoves(), ...this.entrySwitches(), ...this.entryMoves(),
         ].map((st) => st.from),
       ),
     ];
@@ -935,14 +967,19 @@ export class DraftBoard {
     const forward = nearestRoutes(
       this.paths, this.draft, point, this.state.turn,
     );
-    return forward.length
-      ? forward
+    if (forward.length) return forward;
+    const at = (p) => (p === "off" ? 0 : distance(p, this.state.turn));
+    const entering = this.entryMoves().filter((r) => r.to === point);
+    const nearest = Math.min(...entering.map((r) => at(r.from)));
+    return entering.length
+      ? entering.filter((r) => at(r.from) === nearest)
       : this.entrySwitches().filter((r) => r.to === point);
   }
   routes() {
     if (this.selected === null) return [];
     return [
       ...checkerRoutes(this.paths, this.draft, this.selected),
+      ...this.entryMoves().filter((st) => st.from === this.selected),
       ...this.reverseMoves().filter((st) => st.from === this.selected),
       ...this.entrySwitches().filter((st) => st.from === this.selected),
     ];
@@ -972,11 +1009,24 @@ export class DraftBoard {
       const checker = options.checkerTap || (!options.quick && this.sources().includes(point));
       const action = advancedAction({ point, checker, candidates: this.candidates(),
         returns: this.reverseMoves(), checkerReturns: this.checkerUndos(), revisions: checker ? [] : this.entrySwitches(), routes: checker ? [] : nearestRoutes(this.paths, this.draft, point, this.state.turn), preferred: this.preferred, dice: this.state.dice, turn: this.state.turn });
+      // With a checker on the bar, a tap elsewhere plays that checker's die
+      // and enters with the other one.
+      const die = this.activeDie();
+      // Point space asks for an arrival first; otherwise, as elsewhere, the
+      // rest of an occupied point extends its checker's tap target.
+      const pairs = action ? [] : this.entryMoves();
+      const resident = pairs.filter((r) => r.from === point && r.steps.length === r.entry + 1);
+      const arriving = checker ? [] : pairs.filter((r) => r.to === point);
+      const entering = (arriving.length ? arriving : resident)
+        .sort((a, b) => Number(b.steps[b.entry].die === die) - Number(a.steps[a.entry].die === die) ||
+          a.steps.length - b.steps.length ||
+          distance(a.from, this.state.turn) - distance(b.from, this.state.turn))[0];
       if (action?.type === "move") this.move(action.step);
       else if (action?.type === "undo") this.moveRoute(action.route);
       else if (action?.type === "routes") this.chooseRoutes(action.routes);
+      else if (entering) this.moveRoute(entering);
       else this.clearSelection();
-      return action?.type || "unavailable";
+      return action?.type || (entering ? "move" : "unavailable");
     }
     const result = this.resolvePoint(raw, options);
     if (result === "unavailable" && options.activation !== false)
@@ -1030,11 +1080,17 @@ export class DraftBoard {
     // Keyboard activation toggles an existing selection; Shift requests a destination.
     if (
       activation &&
-      ((checkerTap && (selectable || this.selected === p || !highlightedTarget)) ||
+      ((checkerTap && !(this.selected === "bar" && selectedRoutes.length) &&
+          (selectable || this.selected === p || !highlightedTarget)) ||
         (!destinationTap && this.selected !== null && p === this.selected))
     )
       return toggleSelection();
     const current = this.current();
+    // The bar is preselected, but a destination only another checker can reach
+    // still plays: that checker moves and the bar checker enters with the rest.
+    if (this.selected === "bar" && destinationTap && !selectedRoutes.length &&
+        this.chooseRoutes(incoming.filter((r) => r.entry)))
+      return;
     // The visible selection is a promise: ordinary destination input can only
     // play its advertised routes. Changing source remains a single click.
     if (this.selected !== null && !selectedRoutes.length) {
@@ -1212,12 +1268,27 @@ export class DraftBoard {
   }
   moveRoute(route) {
     if (!this.enabled || this.preview) return;
-    const next =
+    let next =
       route.undo || route.switchDie
         ? route.remaining
         : [...this.draft, ...route.steps];
+    // Returning one half of an entry-and-move pair returns the other half too.
+    let linked = false;
+    const link = route.undo ? this.linkedSteps() : null;
+    if (link) {
+      const pair = this.draft.slice(link.start, link.end);
+      const wider = next.filter((step) => !pair.includes(step));
+      if (pair.some((step) => !next.includes(step)) && wider.length < next.length &&
+          matchingPaths(this.paths, wider).length) {
+        next = wider;
+        linked = true;
+      }
+    }
     if (!matchingPaths(this.paths, next).length) return;
     const before = this.current();
+    if (route.entry)
+      this.link = { start: this.draft.length, length: route.steps.length,
+        key: JSON.stringify(next) };
     this.draft = [...next];
     this.hint = route.switchDie
       ? "Checker revised. Used and remaining dice updated."
@@ -1242,8 +1313,10 @@ export class DraftBoard {
               ? route.to
               : null;
     this.render();
-    if (route.switchDie)
+    if (route.switchDie || route.entry)
       this.board.animateRestore(before, this.current(), "move");
+    else if (linked)
+      this.board.animateRestore(before, this.current(), "undo");
     else if (!route.undo && route.steps.length > 1)
       this.board.animateMove(
         before,
@@ -1259,7 +1332,7 @@ export class DraftBoard {
         route.undo ? { from: route.to, to: route.from } : route.steps[0],
         !!route.undo,
       );
-    if (route.undo && route.steps.length > 1)
+    if (route.undo && route.steps.length > 1 && !linked)
       this.board.animateRestore(before, this.current(), "undo");
     this.onChange({
       kind: route.undo ? "undo" : route.switchDie ? "revision" : "move",
@@ -1270,6 +1343,20 @@ export class DraftBoard {
   }
   undoDie(index) {
     if (!this.enabled || this.preview) return;
+    const link = this.linkedSteps();
+    if (link && index >= link.start && index < link.end) {
+      // Either die of an entry-and-move pair takes back both checkers.
+      const kept = this.draft.filter((_, i) => i < link.start || i >= link.end);
+      if (kept.length === link.start || !matchingPaths(this.paths, kept).length)
+        return this.undoTo(link.start);
+      const before = this.current();
+      this.draft = kept;
+      this.selected = null;
+      this.hint = "Entry and move undone.";
+      this.render();
+      this.board.animateRestore(before, this.current(), "undo");
+      return this.onChange({ kind: "undo" });
+    }
     const remaining = undoDieDraft(this.state, this.paths, this.draft, index, this.minDraft);
     if (!remaining) return;
     const before = this.current(), step = this.draft[index],
@@ -1287,6 +1374,8 @@ export class DraftBoard {
   undoTo(index) {
     if (!this.enabled || this.preview || !Number.isInteger(index) ||
         index < this.minDraft || index >= this.draft.length) return;
+    const link = this.linkedSteps();
+    if (link && index > link.start && index < link.end) index = link.start;
     const before = this.current(),
       step = this.draft[index], count = this.draft.length - index;
     this.preview = null;
@@ -1344,6 +1433,7 @@ export class DraftBoard {
           ? (this.selected === null
               ? [
                   ...availableRoutes(this.paths, this.draft),
+                  ...this.entryMoves(),
                   ...this.entrySwitches(),
                 ]
               : moves.filter((r) => !r.undo)

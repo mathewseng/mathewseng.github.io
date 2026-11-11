@@ -7,19 +7,45 @@ import { PRESETS } from "../engine/metadata.mjs";
 import { puretdIssue } from "../engine/puretd.mjs";
 import { PURETD } from "../engine/puretd-metadata.mjs";
 import { positionKey, playerName } from "../core/rules.mjs";
+import { outcomeChances } from "../core/decision-feedback.mjs";
 export const percentage = (n) => `${(100 * n).toFixed(1)}%`;
 export const equity = (n) => (n >= 0 ? "+" : "") + n.toFixed(3);
+// One line per player: chance of winning, of a gammon or better, and of a
+// backgammon. `player` is the side the five nested engine chances describe.
+export function chanceLines(probabilities, player) {
+  const rows = outcomeChances(probabilities, player);
+  if (!rows) return null;
+  return el(
+    "span",
+    {
+      class: "chance-lines",
+      role: "group",
+      "aria-label": "Chances of winning, of a gammon and of a backgammon",
+      title: "Chances for each player. Gammon includes backgammon.",
+    },
+    ...rows.map((row) =>
+      el(
+        "span",
+        { class: "chance-line", "data-chance-player": row.player },
+        el("span", { class: "chance-name" }, playerName(row.player)),
+        el("span", {}, el("span", { class: "muted" }, "Win "), percentage(row.win)),
+        el("span", {}, el("span", { class: "muted" }, "G "), percentage(row.gammon)),
+        el("span", {}, el("span", { class: "muted" }, "BG "), percentage(row.backgammon)),
+      ),
+    ),
+  );
+}
 export function probabilityView(c, player) {
-  if (c.probabilities === null)
+  if (c.probabilities === null || player === undefined)
     return el("p", {class:"muted small"}, "This model estimates cubeful equity directly. It does not produce win or gammon probabilities.");
-  const [win, gammon, bg, loseGammon, loseBg] = c.probabilities;
+  const [win] = c.probabilities;
   return el(
     "div",
     {},
     el(
       "div",
       { class: "row spread small" },
-      el("span", {}, "Win chance"),
+      el("span", {}, `${playerName(player)} win chance`),
       el("strong", {}, percentage(win)),
     ),
     el(
@@ -27,26 +53,11 @@ export function probabilityView(c, player) {
       { class: "probability-bar" },
       el("span", { style: `width:${Math.max(0, Math.min(100, win * 100))}%` }),
     ),
-    el(
-      "div",
-      { class: "metrics" },
-      el(
-        "div",
-        {},
-        "Win gammon / BG",
-        el("strong", {}, `${percentage(gammon)} / ${percentage(bg)}`),
-      ),
-      el(
-        "div",
-        {},
-        "Lose gammon / BG",
-        el("strong", {}, `${percentage(loseGammon)} / ${percentage(loseBg)}`),
-      ),
-    ),
+    chanceLines(c.probabilities, player),
     el(
       "p",
       { class: "muted small" },
-      `Gammon includes backgammon. Chances are for ${player === undefined ? "the player on roll" : playerName(player) + ", the player on roll"}.`,
+      "Gammon includes backgammon.",
     ),
   );
 }
@@ -153,8 +164,9 @@ export function resultView(
           el(
             "span",
             { class: "muted small" },
-            `Δ ${equity(c.equity - result.candidates[0].equity)}${c.probabilities ? ` · win ${percentage(c.probabilities[0])}` : ""}`,
+            `Δ ${equity(c.equity - result.candidates[0].equity)}`,
           ),
+          chanceLines(c.probabilities, result.perspective),
         );
         if (result.method === "reference")
           b.append(el("div", {class:"small"}, `By ${c.referenceCredit.author} · ${c.referenceCredit.date} · ${c.referenceMethod}${c.referenceTrials ? ` · ${c.referenceTrials.toLocaleString()} trials` : ''}${Number.isFinite(c.referenceHalfWidth) ? ` · published ±${c.referenceHalfWidth.toFixed(4)} equity` : ''}`));

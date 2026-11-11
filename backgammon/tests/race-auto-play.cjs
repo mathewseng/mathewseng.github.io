@@ -15,7 +15,7 @@ module.exports=async(browser,base,out,name)=>{
     page.on('pageerror',e=>errors.push(e.message));
     const caption=page.locator('#board .board-caption'),verb=touch?'tap':'click';
     await seedOpening(page,[6,6,6,5,1,2]);
-    const load=async(kind='no-cube',scale=.5)=>{
+    const load=async(kind='no-cube',scale=.5,bearoff='quiet')=>{
       console.log(`${name}: race ${viewport.width} ${kind}`);
       await page.goto(base+'/backgammon/');
       await page.evaluate(async({turn,kind,scale})=>{
@@ -32,6 +32,19 @@ module.exports=async(browser,base,out,name)=>{
       },{turn,kind,scale});
       await page.goto(base+'/backgammon/play/#resume=race-auto-'+kind);
       await page.locator('#board.roll-ready').waitFor();
+      // By default the fixture engine prefers a move that bears nothing off,
+      // so the run reaches a checker choice; 'real' uses actual GNUbg.
+      if(bearoff==='quiet')await page.evaluate(async()=>{
+        const {EngineClient}=await import('/backgammon/engine/client.mjs');
+        const {positionKey,legalTurns}=await import('/backgammon/core/rules.mjs');
+        const analyze=EngineClient.prototype.analyze;
+        EngineClient.prototype.analyze=function(s,options={}){
+          const quiet=s.phase==='move'&&options.priority===5&&legalTurns(s).find(t=>!t.steps.some(step=>step.to==='off'));
+          if(!quiet)return analyze.call(this,s,options);
+          return Promise.resolve({type:'checker',status:'complete',perspective:s.turn,positionKey:positionKey(s),engine:'fixture',
+            settings:{plies:0,cubeful:true,noise:0},units:'current-cube-points',candidates:[{steps:quiet.steps,key:quiet.key,equity:0}]});
+        };
+      });
       if(kind!=='no-cube')await page.evaluate(async kind=>{
         // Deterministic boundary/failure fixtures at the engine seam. Rolling,
         // forced play, bot turns, gestures, persistence and scheduling are real.
@@ -85,7 +98,7 @@ module.exports=async(browser,base,out,name)=>{
       assert.equal(choice.game.state.turn,turn);
       assert.deepEqual(choice.game.events.filter(e=>e.action.type==='roll').map(e=>e.action.dice),[[6,6],[6,5],[1,2]]);
       assert.equal(choice.game.events.filter(e=>e.action.type==='move'&&e.actor===turn).length,1,'only the fully forced checker turn commits');
-      assert.ok(!(await caption.textContent()).includes('Auto play on'),'stops for a checker choice');
+      assert.ok((await caption.textContent()).includes('Auto play on'),'waits for the checker choice without ending auto play');
       await page.waitForTimeout(700);assert.equal((await work(page)).game.localRolls.cursor,3);
       await page.screenshot({path:path.join(out,`${name}-race-choice-${viewport.width}.png`)});
 
@@ -107,6 +120,27 @@ module.exports=async(browser,base,out,name)=>{
       await page.waitForTimeout(1100);
       assert.equal((await work(page)).game.localRolls.cursor,2,'reload does not resume automatic intent');
 
+      // Real engine: bearing off is best with 2-1 from the three point, so the
+      // run plays it, grades it as best and carries on.
+      await load('no-cube',.5,'real');await tap(2);
+      const mine=w=>w?.game.events.filter(e=>e.actor===turn&&e.action.type==='move')||[];
+      const bore=await waitWork(page,w=>mine(w).length>=2);
+      const autoMove=mine(bore)[1];
+      assert.deepEqual(autoMove.action.steps.map(step=>step.die).sort(),[1,2],'the 2-1 checker choice was played automatically');
+      assert.ok(autoMove.action.steps.some(step=>step.to==='off'),'by bearing off');
+      assert.equal(autoMove.evaluation.result.error,0,'and graded as the best evaluated move');
+      await page.waitForFunction(()=>document.querySelector('#board .board-caption')?.textContent.includes('Auto play on'));
+      assert.deepEqual(await caption.locator('text').allTextContents(),['Auto play on',`Double ${verb} to skip`]);
+      // A double tap on the prompt skips the waits; the game then runs to its end.
+      const hit=await caption.locator('.board-caption-hit').boundingBox();
+      for(let i=0;i<2;i++){
+        if(touch)await page.touchscreen.tap(hit.x+hit.width/2,hit.y+hit.height/2);else await page.mouse.click(hit.x+hit.width/2,hit.y+hit.height/2);
+      }
+      await page.waitForFunction(()=>document.querySelector('#board .board-caption')?.textContent.includes('Skipping to your choice')||
+        !!document.querySelector('#next-game'));
+      const finished=await waitWork(page,w=>w?.game.state.phase==='over');
+      assert.ok(finished.game.events.filter(e=>e.actor===turn&&e.action.type==='move').every(e=>e.action.steps.some(step=>step.to==='off')||e.automatic),
+        'every automatic checker play bore off');
       for(const kind of ['clear','close','failure','delayed']) {
         await load(kind);await tap(2);
         if(kind==='clear'){
@@ -157,7 +191,7 @@ module.exports=async(browser,base,out,name)=>{
         assert.ok(!(await caption.textContent()).includes('Auto play on'),'real close cube stops before rolling');
       }
       assert.deepEqual(errors,[]);
-      reports.push({...variant,cpuSlowdown:touch&&name==='chromium'?4:1,forcedRun:true,checkerChoiceStop:true,
+      reports.push({...variant,autoBearoff:true,skipToChoice:true,cpuSlowdown:touch&&name==='chromium'?4:1,forcedRun:true,checkerChoiceStop:true,
         cubeBoundary:true,failedAnalysisStop:true,lateResultIgnored:true,manualStop:true,nativeCube:native});
     } finally {await context.close();}
   }

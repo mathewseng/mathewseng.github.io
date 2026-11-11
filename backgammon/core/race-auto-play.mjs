@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { decisionPlayer, positionKey, transition } from './rules.mjs';
+import { decisionPlayer, positionKey, transition, legalTurns, boardKey, commitTurn } from './rules.mjs';
 import { cubeChoices } from '../engine/cube-grade.mjs';
 
 export const RACE_CUBE_MARGIN = 0.05;
@@ -34,21 +34,45 @@ export function clearRaceCubeAction(state, result) {
   } catch { return null; }
 }
 
+// Auto play bears off whenever that is the best evaluated play: the engine's
+// first choice must take off as many checkers as this roll allows. Any other
+// best move, or a roll that cannot bear off, is left for the player.
+export function raceBearoffMove(state, result) {
+  if (!bearingOffRace(state) || state.phase !== 'move' || result?.status !== 'complete' ||
+      result.type !== 'checker' || result.positionKey !== positionKey(state) ||
+      result.perspective !== state.turn || (result.settings?.noise ?? 0) !== 0) return null;
+  const steps = result.candidates?.[0]?.steps;
+  if (!Array.isArray(steps)) return null;
+  const off = steps => steps.filter(step => step.to === 'off').length;
+  try {
+    const turns = legalTurns(state), key = boardKey(commitTurn(state, steps));
+    const most = Math.max(...turns.map(turn => off(turn.steps)));
+    if (!most || off(steps) < most || !turns.some(turn => turn.key === key)) return null;
+    return {type:'move', steps};
+  } catch { return null; }
+}
+
 // Explicit, session-only intent, scoped to one player/game. Never persists an
 // automatic action through reload, takeback, changed controls or a new game.
+// A second double tap skips the waits between automatic actions until the
+// player's next real choice; auto play itself carries on after that choice.
 export class RaceAutoPlay {
   active = null;
   gesture = null;
-  reset() { this.active = this.gesture = null; }
+  skip = null;
+  get skipping() { return !!this.skip; }
+  get waitingForRepeat() { return this.gesture?.action === 'skip'; }
+  reset() { this.active = this.gesture = this.skip = null; }
   valid(record, model, current = model?.state) {
     return !!record && !!model?.started && record.id === model.id &&
       record.game === current.gameNumber && current.sequence >= record.sequence &&
       !model.reviewingTurn && !model.undoRequest && bearingOffRace(current,record.player);
   }
   sync(model, current = model?.state, choice = false) {
-    if (choice || !this.valid(this.active,model,current)) this.active = null;
+    if (!this.valid(this.active,model,current)) this.active = null;
     if (!this.valid(this.gesture,model,current)) this.gesture = null;
-    for (const record of [this.active,this.gesture].filter(Boolean)) record.sequence = current.sequence;
+    if (!this.active || choice || !this.valid(this.skip,model,current)) this.skip = null;
+    for (const record of [this.active,this.gesture,this.skip].filter(Boolean)) record.sequence = current.sequence;
     return this.active;
   }
   noteRoll(model, {x=0,y=0,at=performance.now()} = {}) {
@@ -57,10 +81,17 @@ export class RaceAutoPlay {
       id:model.id,game:s.gameNumber,sequence:s.sequence,player:s.turn,x,y,at,
     } : null;
   }
+  noteSkip(model, {x=0,y=0,at=performance.now()} = {}) {
+    this.sync(model);
+    this.gesture = this.active ? {...this.active,action:'skip',x,y,at} : null;
+    return this.gesture;
+  }
   repeat(model, {x=0,y=0,at=performance.now()} = {}) {
     const g = this.gesture;
     if (!this.valid(g,model) || at < g.at || at-g.at > 450 || Math.hypot(x-g.x,y-g.y) > 44) return false;
-    this.active = {...g}; this.gesture = null;
+    if (g.action === 'skip') this.skip = {...g};
+    else this.active = {...g};
+    this.gesture = null;
     return true;
   }
 }

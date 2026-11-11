@@ -13,7 +13,7 @@ import {
 } from "../core/rules.mjs";
 import { decisionFeedback, lossTone } from "../core/decision-feedback.mjs";
 import { decisionValues, lossLegend } from "./decision-values.mjs";
-import { equity, percentage } from "./analysis.mjs";
+import { equity, percentage, chanceLines } from "./analysis.mjs";
 import { reviewSearch } from "./review-search.mjs";
 import { returnIcon } from "./return-icon.mjs";
 
@@ -273,7 +273,13 @@ export function decisionReview(
               showCube(choice, choice.notation);
             },
           }),
+          el("div", { class: "review-chances" }, chanceLines(f.positionChances, f.chancePlayer)),
           lossLegend(),
+          el(
+            "p",
+            { class: "muted small" },
+            "Chances are for the position played to the end without the cube; gammon includes backgammon.",
+          ),
           el(
             "p",
             { class: "muted small" },
@@ -404,8 +410,12 @@ export function decisionReview(
       };
       moveRowsObserver?.disconnect();
       moveRowsObserver = new ResizeObserver(sizeMoves);
+      // Chances follow the previewed move; the bare position shows the best one.
+      const chances = el("div", { class: "review-chances", "aria-live": "polite" });
       const redraw = () => {
         moveRowsObserver.disconnect();
+        chances.replaceChildren(...[chanceLines((candidates[selected] || best).probabilities, result.perspective)].filter(Boolean));
+        chances.hidden = !chances.childElementCount;
         position.setAttribute("aria-pressed",String(selected === -1));
         const scrollTop = rows.scrollTop;
         rows.replaceChildren(
@@ -479,7 +489,7 @@ export function decisionReview(
         ),
         position, rows,
       );
-      body.append(ranked,search.node);
+      body.append(chances,ranked,search.node);
       revealSelectedMove = () => {
         const row = rows.querySelector('[aria-pressed="true"]');
         if (!row || !rows.clientHeight) return;

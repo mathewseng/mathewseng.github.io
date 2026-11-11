@@ -294,6 +294,67 @@ details .stack {
   background: var(--accent);
 }
 
+/* Win / gammon / backgammon chances, one line per player. Lines wrap rather
+   than overflow in narrow history columns; tabular figures keep them aligned. */
+.chance-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.chance-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+
+.chance-line > span {
+  white-space: nowrap;
+}
+
+.chance-name {
+  min-width: 3.3em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.review-chances {
+  margin: 6px 0;
+}
+
+/* Short landscape phones have no spare height: both players share one line
+   of bare win / gammon / backgammon figures above the move list. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .review-chances .chance-lines {
+    flex-flow: row nowrap;
+    gap: 0 12px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .review-chances .chance-line {
+    flex-wrap: nowrap;
+    gap: 0 5px;
+  }
+
+  .review-chances .chance-name {
+    min-width: 0;
+  }
+
+  .review-chances .chance-line .muted {
+    display: none;
+  }
+
+  .review-chances {
+    margin: -2px 0 0;
+  }
+}
+
 .metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -929,6 +990,33 @@ button kbd.keycap,
   white-space: nowrap;
 }
 
+.equity-chances {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  width: 100%;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.equity-chance {
+  min-height: 1.25em;
+}
+
+.equity-chance[data-chance="win"] {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.equity-bar:not([data-chances="true"]) .equity-chances {
+  display: none;
+}
+
 .equity-meter {
   position: relative;
   flex: 1;
@@ -1032,6 +1120,14 @@ button kbd.keycap,
   .equity-number {
     flex: 0 0 40px;
     width: 40px;
+  }
+
+  .equity-chances {
+    flex-direction: row;
+    justify-content: center;
+    align-items: baseline;
+    gap: 5px;
+    width: auto;
   }
 
   .equity-meter {

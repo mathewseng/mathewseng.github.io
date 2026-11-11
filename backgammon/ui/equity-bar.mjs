@@ -43,7 +43,20 @@ export class EquityBar {
       this.stop();
       this.refresh();
     };
-    this.hide.append(this.topLabel, this.meter, this.label);
+    // Win, gammon and backgammon chances sit beside each player's number.
+    const chances = (side) => {
+      const node = element("span", `equity-chances equity-${side}-chances`);
+      node.setAttribute("aria-hidden", "true");
+      node.append(...["win", "gammon", "backgammon"].map((kind) => {
+        const line = element("span", "equity-chance");
+        line.dataset.chance = kind;
+        return line;
+      }));
+      return node;
+    };
+    this.topChances = chances("top");
+    this.chances = chances("bottom");
+    this.hide.append(this.topLabel, this.topChances, this.meter, this.chances, this.label);
     this.node.append(this.hide, this.retry);
     board.container.append(this.node, this.reveal);
     this.enabled = readSettings().equityBar === true;
@@ -159,12 +172,24 @@ export class EquityBar {
       "--equity-bottom",
       `var(--board-checker${orientation})`,
     );
+    const rows = reading?.chances
+      ? [reading.chances[orientation], reading.chances[1 - orientation]] : null;
+    this.node.dataset.chances = String(!!rows);
+    for (const [node, row] of [[this.chances, rows?.[0]], [this.topChances, rows?.[1]]])
+      for (const line of node.children) {
+        const kind = line.dataset.chance;
+        line.textContent = row
+          ? `${kind === "win" ? "" : kind === "gammon" ? "G " : "B "}${Math.round(row[kind] * 100)}${kind === "win" ? "%" : ""}` : "";
+      }
     if (reading) {
       const equity = orientation ? -reading.ivory : reading.ivory;
-      this.fill.style.setProperty("--equity-fraction", `${equityFraction(equity) * 100}%`);
+      this.fill.style.setProperty("--equity-fraction", `${equityFraction(equity, rows) * 100}%`);
       this.label.textContent = equity >= 0 ? equity.toFixed(3) : "";
       this.topLabel.textContent = equity < 0 ? (-equity).toFixed(3) : "";
-      this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${equity.toFixed(3)} ${reading.units} · ${reading.setting}. Nonlinear equity scale, not win probability.`;
+      const percent = (n) => `${(100 * n).toFixed(1)}%`;
+      const spoken = rows ? ` ${rows.map((row) =>
+        `${playerName(row.player)} wins ${percent(row.win)}, gammon ${percent(row.gammon)}, backgammon ${percent(row.backgammon)}.`).join(" ")} Gammon includes backgammon.` : "";
+      this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${equity.toFixed(3)} ${reading.units} · ${reading.setting}.${spoken} The fill is equity relative to the leader’s average win.`;
     } else {
       this.label.textContent = status === "loading" ? "…" : "—";
       this.topLabel.textContent = "";

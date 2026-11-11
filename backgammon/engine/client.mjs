@@ -404,10 +404,10 @@ export class EngineClient {
     const previous = this.readings.get(job.key)?.result;
     if (previous && this.betterReading(previous, result)) return;
     this.readings.delete(job.key);
-    const value = candidate => candidate && ({key:candidate.key,equity:candidate.equity});
-    // The rail needs numbers, not thousands of legal-step/probability arrays.
+    const value = candidate => candidate && ({key:candidate.key,equity:candidate.equity,probabilities:candidate.probabilities});
+    // The rail needs numbers, not thousands of legal-step arrays.
     const reading = {status:result.status,type:result.type,settings:result.settings,method:result.method,engine:result.engine,reference:result.reference,
-      perspective:result.perspective,units:result.units,available:result.available,
+      perspective:result.perspective,units:result.units,available:result.available,probabilities:result.probabilities,
       outcomes:result.outcomes,decisionOptions:result.decisionOptions,decision:result.decision,
       candidates:result.candidates?.map(value),actual:value(result.actual)};
     const position = this.normalizedPosition(job.state);

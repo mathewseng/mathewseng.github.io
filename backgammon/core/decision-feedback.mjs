@@ -16,6 +16,19 @@ export function lossTone(loss) {
           ? { tone: "medium", label: "Larger loss" }
           : { tone: "large", label: "High loss" };
 }
+// GNUbg's five nested chances for the player on roll, as one row per player:
+// winning at all, by a gammon or better, and by a backgammon.
+export function outcomeChances(probabilities, player) {
+  if (!Array.isArray(probabilities) || probabilities.length < 5 || ![0, 1].includes(player) ||
+      probabilities.slice(0, 5).some((n) => !Number.isFinite(n)))
+    return null;
+  const clamp = (n) => Math.min(1, Math.max(0, n));
+  const [win, gammon, backgammon, loseGammon, loseBackgammon] = probabilities.map(clamp);
+  return [
+    { player, win, gammon, backgammon },
+    { player: 1 - player, win: 1 - win, gammon: loseGammon, backgammon: loseBackgammon },
+  ].sort((a, b) => a.player - b.player);
+}
 export function decisionFeedback(result, source = null) {
   if (
     !["checker", "cube"].includes(result.type) ||
@@ -48,6 +61,10 @@ export function decisionFeedback(result, source = null) {
     ...lossTone(loss),
     quality: lossTone(loss).label,
     perspective: result.decision?.player ?? result.perspective,
+    // Chances always describe the player on roll. Cube choices share the
+    // position's chances; each checker move carries its own.
+    chancePlayer: result.perspective,
+    positionChances: result.type === "cube" ? result.probabilities ?? null : null,
     cube,
     money,
     label: money ? "EV lost" : "Equity lost",

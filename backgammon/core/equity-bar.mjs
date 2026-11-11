@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { positionKey } from "./rules.mjs";
 import { gradeCube } from "../engine/cube-grade.mjs";
-// The rail is a nonlinear equity scale, never a win-probability display.
-export function equityFraction(equity) {
-  return (1 + equity / (1 + Math.abs(equity))) / 2;
+import { outcomeChances } from "./decision-feedback.mjs";
+// The bottom player's share of the rail. Equity is measured against the
+// average size of the leader's wins, so a certain single game, gammon or
+// backgammon fills the rail, and without gammons the share is the win chance.
+export function equityFraction(equity, chances = null) {
+  const side = chances?.[equity >= 0 ? 0 : 1];
+  const size = side?.win > 0 ? (side.win + side.gammon + side.backgammon) / side.win : 1;
+  return Math.min(1, Math.max(0, (1 + equity / Math.max(1, size)) / 2));
 }
 export function equityReading(source, result, {beforeDecision = false} = {}) {
   if (
@@ -35,6 +40,8 @@ export function equityReading(source, result, {beforeDecision = false} = {}) {
     return null;
   return {
     ivory: perspective === 0 ? candidate.equity : -candidate.equity,
+    // One row per player (ivory first), or null when the model has no chances.
+    chances: outcomeChances(candidate.probabilities ?? graded.probabilities, graded.perspective),
     units:
       graded.units === "current-cube-points"
         ? "current-cube points"

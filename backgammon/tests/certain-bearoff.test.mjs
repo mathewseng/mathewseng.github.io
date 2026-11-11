@@ -32,7 +32,8 @@ test('contact, bars, pending decisions and rounded engine equities cannot finish
  const bar=structuredClone(base);bar.bar[1]=1;bar.points[23]++;assert.equal(certainBearoff(bar),null);
  const contact=position([0,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7]);
  assert.equal(certainBearoff(contact),null);
-  assert.equal(certainBearoff(position([1],Array(22).fill(0).concat(15))),null,'passed checkers in the winner’s home board can still produce a backgammon');
+  assert.deepEqual(certainBearoff(position([1],Array(22).fill(0).concat(15))),{winner:0,level:3},'a backgammon is awarded once no roll or play can avoid it');
+  assert.equal(certainBearoff(position([0,0,0,0,0,2],Array(22).fill(0).concat(15))),null,'the loser may or may not leave the winner’s home board in time');
  const uncertain=position([0,0,0,0,0,1],[1]);
  assert.equal(certainBearoff({...uncertain,equity:-1}),null);
  assert.throws(()=>transition(uncertain,{type:'finish-race',winner:0,level:1}),/not certain/);
@@ -190,4 +191,64 @@ test('an online roll request cannot draw dice before a known certain result',asy
   assert.deepEqual(accept(ended,id,envelope(table,id,{type:'roll'},'queued-roll'),options),ended);
   assert.throws(()=>accept(table,id,envelope(table,id,{type:'roll',dice:[1,2]},'forged-dice'),options),/Only the host supplies dice/);
  }
+});
+
+test('races are decided before either side is home, including gammons and backgammons',()=>{
+ const far=points=>{const side=[];for(const [point,n] of points)side[point-1]=n;return Array.from(side,n=>n||0);};
+ // One checker eight pips away always needs at most three turns; four checkers
+ // on the 24 point need at least two turns each before the first can come home.
+ const outside=position(far([[8,1]]),far([[13,15]]),0);
+ assert.deepEqual(certainBearoff(outside),{winner:0,level:2},'a gammon is certain with the winner still outside home');
+ assert.deepEqual(certainBearoff(mirror(outside)),{winner:1,level:2});
+ assert.deepEqual(certainBearoff({...outside,rules:{...outside.rules,jacoby:true}}),{winner:0,level:1});
+ assert.deepEqual(certainBearoff(position(far([[8,1]]),far([[13,14]]),0)),{winner:0,level:1},'a borne-off checker rules out the gammon');
+ assert.equal(certainBearoff(position(far([[8,1]]),far([[7,1],[1,14]]),0)),null,'the loser can still save the gammon');
+ const backgammon=position(far([[1,2]]),far([[23,15]]),1);
+ assert.deepEqual(certainBearoff(backgammon),{winner:0,level:3},'four sixes cannot clear fifteen checkers in one turn');
+ assert.equal(certainBearoff(position(far([[1,1]]),far([[19,1],[1,14]]),1)),null,'four sixes still bring the last checker home and off');
+ assert.equal(certainBearoff(position(far([[1,1]]),far([[19,2],[12,13]]),1)),null,'the loser chooses whether to leave the winner’s home board');
+ // Gammons stop mattering once a single game wins the match.
+ const match={matchLength:5,scores:[4,0],crawford:true};
+ assert.deepEqual(certainBearoff(position([0,0,0,0,0,1],[0,0,0,0,0,15],1,match)),{winner:0,level:1});
+ assert.equal(certainBearoff(position([0,0,0,0,0,1],[0,0,0,0,0,15],1,{...match,scores:[3,0],crawford:false})),null);
+ assert.deepEqual(certainBearoff(position([0,0,0,0,0,1],[0,0,0,0,0,15],1,{...match,scores:[3,0],crawford:false,cube:{value:2,owner:0}})),{winner:0,level:1});
+});
+
+test('a known roll is checked against every legal play outside the home board',()=>{
+ const far=points=>{const side=[];for(const [point,n] of points)side[point-1]=n;return Array.from(side,n=>n||0);};
+ const before=position(far([[10,1]]),far([[6,1],[5,1]]),0);
+ assert.equal(certainBearoff(before),null,'a small roll leaves the opponent a winning double');
+ assert.deepEqual(certainBearoff(transition(before,{type:'roll',dice:[6,4]})),{winner:0,level:1});
+ assert.deepEqual(certainBearoff(transition(before,{type:'roll',dice:[3,3]})),{winner:0,level:1});
+ assert.equal(certainBearoff(transition(before,{type:'roll',dice:[2,1]})),null);
+});
+
+test('general race proofs agree with exhaustive timing of both sides',()=>{
+ const sides=[];
+ for(let a=0;a<11;a++)for(let b=a;b<11;b+=2){const h=Array(11).fill(0);h[a]++;h[b]++;sides.push(h);}
+ for(let a=0;a<14;a+=2){const h=Array(14).fill(0);h[a]=1;sides.push(h);}
+ const memo=new Map();
+ const timing=h=>{
+  const key=h.join();if(memo.has(key))return memo.get(key);
+  if(!h.some(Boolean))return {min:0,max:0};
+  let min=Infinity,max=0;
+  for(let a=1;a<=6;a++)for(let b=a;b<=6;b++){
+   const state=position(h,[15],0,{phase:'move',dice:[a,b]});
+   for(const turn of legalTurns(state)){
+    const t=timing(turn.state.points.slice(0,h.length));min=Math.min(min,1+t.min);max=Math.max(max,1+t.max);
+   }
+  }
+  const result={min,max};memo.set(key,result);return result;
+ };
+ let proved=0,outside=0;
+ for(const white of sides)for(const black of sides){
+  if(white.length+black.length>24)continue;
+  for(const turn of [0,1]){
+   const s=position(white,black,turn),times=[timing(white),timing(black)];
+   const winners=[0,1].filter(w=>times[w].max<=times[1-w].min-(turn===1-w?1:0));
+   assert.deepEqual(certainBearoff(s),winners.length?{winner:winners[0],level:1}:null,boardKey(s));
+   if(winners.length){proved++;if(white.slice(6).some(Boolean)||black.slice(6).some(Boolean))outside++;}
+  }
+ }
+ assert.ok(proved>60&&outside>40,`${proved} proofs, ${outside} outside home`);
 });
