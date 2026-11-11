@@ -114,8 +114,8 @@
     {
       "exerciseId": "calf-raise",
       "name": "Standing Calf Raise",
-      "equipment": "Unspecified",
-      "dataQuality": "ambiguous",
+      "equipment": "Kettlebell",
+      "dataQuality": "complete",
       "sets": [
         {
           "id": "2026-11-10-calf-raise-1",
@@ -142,7 +142,7 @@
           "completed": true
         }
       ],
-      "notes": "50 lb entered; equipment and whether the load is per hand were not specified."
+      "notes": "Standing two-leg calf raise holding one 50 lb kettlebell; 50 lb is the total external load."
     },
     {
       "exerciseId": "shoulder-press",

@@ -1467,7 +1467,7 @@ Second day back, trained while sore from November 9. Soreness was not rated on t
 - Reverse cable fly: 10 lb × 10, 10, 10, 10
 - Cable lateral raise: 10 lb × 10, 10, 10, 10
 - Cable ab crunch: 70 lb × 10, 10, 10, 10
-- Calf raise: 50 lb × 10, 10, 10, 10; equipment and per-hand status unreported
+- Standing two-leg calf raise: one 50 lb kettlebell (total load) × 10, 10, 10, 10
 - Dumbbell overhead press: 15 lb per dumbbell × 10, 10, 10, 10
 - Dumbbell curl: 15 lb per arm × 10, 10, 10, 10
 - Leg raises: 10, 10, 10, 10
