@@ -1538,7 +1538,13 @@ function setupFields() {
           id: "player-name",
           value: config.name,
           maxlength: 24,
+          enterkeyhint: "next",
           onInput: (e) => (config.name = e.target.value),
+          onKeydown: (e) => {
+            if (e.key !== "Enter" || e.isComposing) return;
+            e.preventDefault();
+            $("room-code")?.focus();
+          },
         }),
       ),
       field(
@@ -1551,12 +1557,20 @@ function setupFields() {
           autocomplete: "off",
           autocorrect: "off",
           spellcheck: "false",
+          enterkeyhint: "go",
           onInput: (e) => {
             // A pasted invite link keeps only its code.
             const code = /room=([^&\s]+)/i.exec(e.target.value)?.[1];
             if (code) e.target.value = code;
             roomDraft = e.target.value;
             syncRoomButtons();
+          },
+          // Return joins, so the keyboard needn't close to reach Join room.
+          onKeydown: (e) => {
+            if (e.key !== "Enter" || e.isComposing || !roomDraft.trim() || connecting) return;
+            e.preventDefault();
+            e.target.blur();
+            connect(true);
           },
         }),
       ),

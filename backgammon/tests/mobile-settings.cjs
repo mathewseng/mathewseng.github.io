@@ -41,12 +41,18 @@ module.exports = async function mobileSettings(browser, base, out, name) {
     await page.keyboard.press("Enter");
     const dialog = page.locator(".settings-dialog");
     await dialog.waitFor();
+    // Touch-only screens drop the shortcut editor and its click/S-key help.
+    const touchOnly = await page.evaluate(() => !matchMedia("(any-pointer: fine)").matches);
+    if (touchOnly) {
+      assert.equal(await tab("Keyboard").count(), 0, "touch-only Settings has no Keyboard tab");
+      assert.doesNotMatch(await dialog.innerText(), /S switches dice|click a checker/);
+    }
     for (const [width,height] of sizes) {
       await page.setViewportSize({width,height});
       await tab("Board colors").tap();
       await reachable(tab("Board colors"));
       await reachable(tab("Display & controls"));
-      await reachable(tab("Keyboard"));
+      if (!touchOnly) await reachable(tab("Keyboard"));
       await reachable(dialog.locator(".close"));
       const metrics = await dialog.evaluate(d => {
         const body = d.querySelector(".dialog-body"), r = d.getBoundingClientRect();
@@ -61,6 +67,7 @@ module.exports = async function mobileSettings(browser, base, out, name) {
       assert.equal(await dialog.locator(".dialog-body").evaluate(n => n.scrollTop), 0, "changing sections starts at the first control");
       await page.getByLabel("Board orientation", {exact:true}).scrollIntoViewIfNeeded();
       await reachable(page.getByLabel("Board orientation", {exact:true}));
+      if (touchOnly) continue;
       await tab("Keyboard").tap();
       assert.ok(await page.getByLabel("Enable game shortcuts", {exact:true}).isVisible());
     }

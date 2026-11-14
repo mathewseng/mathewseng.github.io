@@ -177,7 +177,7 @@
 
 .docs-toc--sticky {
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 5;
   flex-wrap: nowrap;
   margin: 0 0 8px;
@@ -202,7 +202,7 @@
 }
 
 .docs-page--report .docs-section {
-  scroll-margin-top: 76px;
+  scroll-margin-top: calc(76px + env(safe-area-inset-top, 0px));
 }
 
 /* ---------- Flowcharts ----------

@@ -463,6 +463,8 @@ export async function preferences() {
   const { appearanceControls } = await import("./appearance.mjs");
   if (document.querySelector(".settings-dialog")) return;
   const s = settings();
+  // No mouse, trackpad or stylus: drop click, key and shortcut-editor copy.
+  const touchOnly = !matchMedia("(any-pointer: fine)").matches;
   const orient = select(
     [
       ["0", "White home at bottom right"],
@@ -477,7 +479,7 @@ export async function preferences() {
     onChange: (e) => saveSettings({ numbers: e.target.checked }),
   });
   const interaction = select([
-    ["advanced", "Advanced · one click per die"],
+    ["advanced", `Advanced · one ${pressVerb().toLowerCase()} per die`],
     ["beginner", "Beginner · select, then choose destination"],
   ], s.interactionMode, value => {
     saveSettings({ interactionMode: value });
@@ -544,7 +546,9 @@ export async function preferences() {
     el("div", {class:"motion-settings"}, field("Animation speed", motion),
       el("div", {class:"row spread small muted"}, el("span", {}, "Instant"), motionValue, el("span", {}, "0.25×"))),
     field("Playing style", interaction),
-    el("p", { class: "muted small" }, `Advanced: ${pressVerb().toLowerCase()} a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice.${matchMedia("(pointer: coarse)").matches ? "" : " S switches dice before moving; after a move, S undoes one draft step."} Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode.`),
+    el("p", { class: "muted small" }, touchOnly
+      ? "Advanced: tap a checker to play the selected die, or a destination to move there. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."
+      : "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
     el("label", { class: "check" }, el("input", {
@@ -556,7 +560,7 @@ export async function preferences() {
     }), "Show unturned cube as 1 instead of 64"),
     el("label", { class: "check" }, moveHints, "Show legal-move hints in beginner mode"),
     el("p", { class: "muted small" },
-      "Turn off checker rings and destination highlights. Your selected checker stays marked; taps, dragging and keyboard moves still work."),
+      `Turn off checker rings and destination highlights. Your selected checker stays marked; ${touchOnly ? "taps and dragging" : "taps, dragging and keyboard moves"} still work.`),
     field("Closed-out passing", select([
       ["off", "Off"],
       ["forced", "Forced passes only"],
@@ -611,7 +615,7 @@ export async function preferences() {
   for (const [label, shortLabel, section] of [
     ["Board colors", "Board", colors],
     ["Display & controls", "Display", display],
-    ["Keyboard", "Keyboard", keys],
+    ...(touchOnly ? [] : [["Keyboard", "Keyboard", keys]]),
   ]) {
     const tab = button(
       label,
