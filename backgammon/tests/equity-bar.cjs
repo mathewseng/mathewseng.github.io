@@ -436,7 +436,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     await page.setViewportSize({width:1440, height:900});
     await page.locator("#panel .list-row").first().click();
     await page.locator('#equity-bar[data-state="unavailable"]').waitFor();
-    await page.getByRole("button", { name: "Original", exact: true }).click();
+    await page.getByRole("button", { name: "Show original position", exact: true }).click();
     await page.locator('#equity-bar[data-state="ready"]').waitFor();
     await page.locator("#edit-position").click();
     await page.locator('#equity-bar[data-state="unavailable"]').waitFor();

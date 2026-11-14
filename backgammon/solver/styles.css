@@ -324,3 +324,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* The study strip carries its own Original button; don't repeat it above. */
+.app[data-page="solver"]:has(.study-strip:not([hidden]) .study-original) .source-preview-control {
+  display: none;
+}
