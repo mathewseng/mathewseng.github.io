@@ -1243,7 +1243,8 @@ function advanceOpening() {
     if (model()?.id !== m.id || model().events.length !== m.events.length || !opening.active || committing || document.hidden) return;
     if (opening.dice && !opening.tie) opening.dismiss();
     else if (myTurn(state())) commit({ type: "opening" }).catch(showError);
-  }, motionDuration(opening.dice ? 700 : 300));
+    // Reading time for the result does not shrink with faster animation.
+  }, !opening.dice ? motionDuration(300) : reducedMotion() ? 0 : Math.max(motionDuration(700), opening.tie ? 1600 : 1100));
 }
 function autoDraft() {
   if (!ui.board.container.isConnected) return;

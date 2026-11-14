@@ -106,7 +106,6 @@ export class OpeningRoll {
       sound.play("die");
     this.players[p].classList.add("revealed");
     this.players[p].querySelector(".die").removeAttribute("aria-hidden");
-    this.title.textContent = `${this.names[p]} rolled ${this.dice[p]}`;
   }
   finish(notify = true) {
     this.timers.forEach(clearTimeout);
