@@ -35,7 +35,6 @@ import {
   select,
   DraftBoard,
   saveDialog,
-  toast,
   showError,
   dialog,
   confirmDialog,
@@ -46,7 +45,7 @@ import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
 import { decisionFeedback, lossTone } from "../core/decision-feedback.mjs";
 import { decisionValues, lossLegend } from "../ui/decision-values.mjs";
-import { gradeCube } from "../engine/cube-grade.mjs";
+import { gradeCube, CUBE_LABELS } from "../engine/cube-grade.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
@@ -64,6 +63,7 @@ let catalog = [],
   length = 5,
   revealed = false,
   hinted = false,
+  hintText = "",
   result = null,
   answer = null,
   busy = false,
@@ -121,6 +121,7 @@ try {
     exercise = pool.find((i) => i.id === saved.exerciseId);
     revealed = !!saved.revealed;
     hinted = !!saved.hinted;
+    hintText = (hinted && saved.hint) || "";
     result = presentAnalysis(exercise.state, saved.result);
     answer = saved.answer;
     if (result?.type === "cube" && answer)
@@ -144,6 +145,7 @@ keepPageProgress(() =>
         draft: clone(draft.draft),
         revealed,
         hinted,
+        hint: hintText,
         answer,
         result,
       }
@@ -184,6 +186,7 @@ async function next() {
   previewIndex = -1;
   revealed = false;
   hinted = false;
+  hintText = "";
   answer = null;
   busy = false;
   summaryCard.hidden = true;
@@ -252,7 +255,7 @@ function actions() {
     a = $("actions");
   a.replaceChildren();
   if (busy) {
-    $("message").textContent = "Evaluating your decision with GNUbg…";
+    $("message").textContent = busy === "hint" ? "Finding a hint…" : "Evaluating your decision with GNUbg…";
     a.append(
       button("Cancel", () => {
         analysis.cancel();
@@ -263,8 +266,11 @@ function actions() {
     return;
   }
   if (revealed) {
+    // The one verdict a phone sees without opening Results, in the panel's words.
+    const f = decisionFeedback(result, s);
     $("message").textContent =
-      `${hinted ? "Studied with a hint" : result.error < 0.005 ? "Equivalent at this setting" : `${equity(result.error)} equity below the best evaluated decision`}`;
+      (Math.abs(f.best.equity - f.actual.equity) <= 1e-7 ? f.quality : `Best ${f.best.notation} · ${f.label} ${f.value}`) +
+      (hinted ? " · hint" : "");
     a.append(
       button("Save", () =>
         saveDialog(s, "mistake", {
@@ -282,8 +288,9 @@ function actions() {
     );
     return;
   }
-  const instruction =
-    s.phase === "move"
+  const instruction = hintText
+    ? `Hint: ${hintText}`
+    : s.phase === "move"
       ? "Find your move, then submit."
       : s.phase === "double"
         ? `${offerName(s)} to ${s.cube.value * 2}. ${playerName(decisionPlayer(s))} to decide.`
@@ -534,12 +541,12 @@ async function skip() {
 async function hint() {
   if (busy || revealed || !exercise) return;
   hinted = true;
-  busy = true;
+  busy = "hint";
   render();
   try {
     const r = await analysis.run(exercise.state, { preset: "quick" });
-    const clue = r.type === "checker" ? r.candidates[0].notation : r.action;
-    toast(`GNUbg hint: ${clue}`);
+    const clue = r.type === "checker" ? r.candidates[0].notation : CUBE_LABELS[r.action] || r.action;
+    hintText = clue;
     dialog(
       "Study hint",
       el(
@@ -670,6 +677,7 @@ async function savePractice() {
       draft: clone(draft.draft),
       revealed,
       hinted,
+      hint: hintText,
       answer,
       result,
     });
