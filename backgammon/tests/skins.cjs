@@ -140,6 +140,17 @@ module.exports = async function skinsUX(browser, base, out, browserName) {
       }
     }
     report.cases.push(`${skins.length} skins selectable, stored, applied and screenshotted`);
+    // Undo after a skin pick restores the skin it replaced along with its palette.
+    await page.getByRole("tab", { name: "Board colors", exact: true }).click();
+    await page.locator('.skin-choice[data-skin="liquid-chrome"]').click();
+    await page.locator('.theme-preset[data-preset="plum"]').click();
+    await page.locator('.skin-choice[data-skin="tidal"]').click();
+    await page.locator("#undo-theme").click();
+    assert.equal((await stored()).skin, "liquid-chrome");
+    assert.equal((await stored()).boardTheme.preset, "plum");
+    assert.equal((await state()).skin, "liquid-chrome");
+    assert.equal(await page.locator('.skin-choice[data-skin="liquid-chrome"]').getAttribute("aria-pressed"), "true");
+    report.cases.push("undo restores the replaced skin and palette together");
 
     // The shader layer with a synthetic skin: compiles, paces, pauses under
     // reduced motion, restarts on the next bg-motion, and stops cleanly.

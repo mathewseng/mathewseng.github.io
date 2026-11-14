@@ -143,15 +143,16 @@ module.exports = async function keyboardUX(
     const before = (await saved()).game;
     await page.getByLabel("Top 1", { exact: true }).fill("j");
     await page.getByLabel("Hint", { exact: true }).fill("q");
-    await page.locator("#save-shortcuts").focus();
-    await page.keyboard.press("Enter");
+    await page.getByLabel("Hint", { exact: true }).press("Tab");
     assert.match(
       await page.locator('.settings-content [role="alert"]').innerText(),
       /conflicts/,
     );
+    assert.equal((await page.evaluate(async () =>
+      (await import("/backgammon/core/storage.mjs")).settings().shortcuts.hint[0])), "h", "a conflicting edit is not saved");
     await page.getByLabel("Hint", { exact: true }).fill("h");
-    await page.locator("#save-shortcuts").focus();
-    await page.keyboard.press("Enter");
+    await page.getByLabel("Hint", { exact: true }).press("Tab");
+    assert.equal(await page.locator('.settings-content [role="alert"]').innerText(), "");
     assert.deepEqual((await saved()).game, before);
     await page.screenshot({
       path: path.join(out, `${browserName}-keyboard-settings.png`),

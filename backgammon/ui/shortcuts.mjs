@@ -10,7 +10,7 @@ import {
 } from "../core/shortcuts.mjs";
 import { keycap } from "./keycap.mjs";
 import { readSettings, saveSettings } from "../core/storage.mjs";
-import { el, button, field, toast } from "./shell.mjs";
+import { el, button, field } from "./shell.mjs";
 export function decorateShortcuts(root) {
   const prefs = readSettings();
   const actions = { "confirm": "confirm", "roll": "roll", "double-cube": "double",
@@ -29,6 +29,23 @@ export function shortcutControls() {
   const root = el("div", { class: "stack" }),
     inputs = new Map(),
     error = el("p", { class: "error", role: "alert" });
+  // Each edit saves once every binding is valid, as board colors do, so
+  // closing Settings never drops a change.
+  const commit = () => {
+    const bindings = Object.fromEntries(
+      [...inputs].map(([id, input]) => [
+        id,
+        input.value
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean)
+          .map(canonicalKey),
+      ]),
+    );
+    const errors = shortcutErrors(bindings);
+    error.textContent = errors.join(" ");
+    if (!errors.length) saveSettings({ shortcuts: bindings });
+  };
   const enabled = el("input", {
     type: "checkbox",
     checked: readSettings().keyboardEnabled,
@@ -57,6 +74,7 @@ export function shortcutControls() {
         autocomplete: "off",
         spellcheck: "false",
         "aria-label": `${def.label} shortcut`,
+        onChange: commit,
       });
       inputs.set(def.id, input);
       grid.append(field(def.label, input));
@@ -68,28 +86,6 @@ export function shortcutControls() {
     el(
       "div",
       { class: "row" },
-      button(
-        "Save shortcuts",
-        () => {
-          const bindings = Object.fromEntries(
-            [...inputs].map(([id, input]) => [
-              id,
-              input.value
-                .split(",")
-                .map((v) => v.trim())
-                .filter(Boolean)
-                .map(canonicalKey),
-            ]),
-          );
-          const errors = shortcutErrors(bindings);
-          error.textContent = errors.join(" ");
-          if (errors.length) return;
-          saveSettings({ shortcuts: bindings });
-          toast("Keyboard shortcuts saved.");
-        },
-        "primary",
-        { id: "save-shortcuts" },
-      ),
       button("Restore default shortcuts", () => {
         saveSettings({ shortcuts: DEFAULT_SHORTCUTS });
         for (const [id, input] of inputs)

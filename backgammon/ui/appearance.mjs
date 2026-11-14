@@ -22,7 +22,8 @@ import { selectSkin } from "./skin.mjs";
 // Only this isolated sample has a selection. Editing colors never touches a game,
 // its draft, history, engine requests or an opponent's appearance preferences.
 export function appearanceControls() {
-  let theme = settings().boardTheme;
+  let theme = settings().boardTheme,
+    skinId = settings().skin;
   const history = [],
     fields = new Map(),
     presets = new Map(),
@@ -67,10 +68,26 @@ export function appearanceControls() {
     el("strong", {}, "Check readability"),
     warningList,
   );
+  // Each step remembers the skin with its palette, so undoing a skin pick
+  // restores both. It sits in the sticky preview heading, in view of the picker.
+  const undo = button(
+    "Undo",
+    () => {
+      const previous = history.pop();
+      if (!previous) return;
+      if (previous.skin !== settings().skin) {
+        selectSkin(previous.skin);
+        theme = settings().boardTheme;
+      }
+      change(previous.theme, false);
+    },
+    "ghost",
+    { disabled: true, id: "undo-theme", "aria-label": "Undo style change" },
+  );
   const preview = el(
     "section",
     { class: "theme-preview", "aria-label": "Live theme preview" },
-    el("div", { class: "theme-preview-heading" }, title, saved),
+    el("div", { class: "theme-preview-heading" }, title, saved, undo),
     sample,
     el(
       "div",
@@ -157,15 +174,6 @@ export function appearanceControls() {
     presets.set(preset.id, choice);
     grid.append(choice);
   }
-  const undo = button(
-    "Undo style change",
-    () => {
-      const previous = history.pop();
-      if (previous) change(previous, false);
-    },
-    "ghost",
-    { disabled: true, id: "undo-theme" },
-  );
   const reset = button(
     "Reset colors",
     () => change({ ...theme, colors: {} }),
@@ -313,7 +321,6 @@ export function appearanceControls() {
     palettePanel,
     colorPanel,
     patternPanel,
-    undo,
   );
   for (const group of COLOR_GROUPS) {
     const details = el(
@@ -425,11 +432,13 @@ export function appearanceControls() {
   }
   function change(value, remember = true, updateInputs = true) {
     const next = normalizeBoardTheme(value);
-    if (JSON.stringify(next) !== JSON.stringify(theme)) {
+    // A skin pick saves its skin before calling here; remember the one it replaced.
+    if (JSON.stringify(next) !== JSON.stringify(theme) || settings().skin !== skinId) {
       if (remember) {
-        history.push(theme);
+        history.push({ theme, skin: skinId });
         if (history.length > 40) history.shift();
       }
+      skinId = settings().skin;
       theme = next;
       applyBoardTheme(theme);
       try {

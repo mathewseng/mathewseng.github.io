@@ -4169,8 +4169,14 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   margin: 4px 0 12px;
 }
 
-.theme-controls > #undo-theme {
-  margin-top: 16px;
+/* Undo sits after the Saved status at the heading's end; its negative block
+   margin keeps the heading one text line tall. */
+.theme-preview-heading > [role="status"] {
+  margin-inline-start: auto;
+}
+
+.theme-preview-heading > #undo-theme {
+  margin-block: -10px;
 }
 
 .appearance-tabs {
@@ -5315,7 +5321,18 @@ html.bg-dialog-open {
 }
 
 /* Toast: one dark kit toast with a dismiss control; errors switch it to the
-   assertive alert variant. */
+   assertive alert variant. Its stack is a popover (ui/shell.mjs) placed by
+   the kit's bottom-centre rule, without the browser's popover box. */
+.toast-stack[popover] {
+  top: auto;
+  right: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+}
+
 .toast-stack .toast {
   align-items: flex-start;
 }
@@ -5497,6 +5514,10 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
 .offline-install ol { padding-inline-start: 24px; margin-block: 12px; }
 .offline-install li + li { margin-top: 8px; }
 .offline-install p { color: var(--muted); }
+/* Already running as the Home Screen app: the install steps are done. */
+@media (display-mode: standalone) {
+  .offline-install { display: none; }
+}
 
 .hub-update a {
   display: inline-flex;
@@ -6766,6 +6787,10 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
 
   .theme-preview-heading strong {
     overflow-wrap: anywhere;
+  }
+
+  .theme-preview-heading > #undo-theme {
+    margin-block: 0;
   }
 
   .theme-sample {

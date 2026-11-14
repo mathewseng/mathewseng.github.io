@@ -10,6 +10,24 @@ export function installOfflineDownload() {
     status.textContent = "Offline downloads aren’t available in this browser.";
     return;
   }
+  const showReady = () => {
+    status.dataset.state = "ready";
+    status.textContent = "Ready for offline play here. Online friend rooms need internet.";
+    button.textContent = "Refresh offline files";
+    button.title = "Verify saved app files and download anything missing.";
+  };
+  // Each visit asks the controlling worker whether this release is already
+  // saved. It only looks in the cache; nothing downloads until the click.
+  const worker = navigator.serviceWorker.controller,
+    release = document.querySelector('link[href*="styles.css?bgv="]');
+  if (worker && release) {
+    const check = new MessageChannel();
+    check.port1.onmessage = ({data}) => {
+      check.port1.close();
+      if (data.ready && !status.dataset.state) showReady();
+    };
+    worker.postMessage({type: "BACKGAMMON_OFFLINE_STATUS", version: new URL(release.href).searchParams.get("bgv")}, [check.port2]);
+  }
   button.addEventListener("click", async () => {
     button.disabled = true;
     button.textContent = "Saving offline files…";
@@ -34,12 +52,7 @@ export function installOfflineDownload() {
           timer = setTimeout(() => reject(new Error("Download timed out. Stay online and try again.")), 120000);
         }),
       ]);
-      if (result.status === "ready") {
-        status.dataset.state = "ready";
-        status.textContent = "Ready for offline play here. Online friend rooms need internet.";
-        button.textContent = "Refresh offline files";
-        button.title = "Verify saved app files and download anything missing.";
-      }
+      if (result.status === "ready") showReady();
     } catch (error) {
       status.dataset.state = "error";
       status.textContent = error.message;

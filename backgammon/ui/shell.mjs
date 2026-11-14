@@ -164,17 +164,31 @@ export function toast(text, { alert = false, duration = 5000 } = {}) {
   node.setAttribute("role", alert ? "alert" : "status");
   node.setAttribute("aria-live", alert ? "assertive" : "polite");
   node.hidden = false;
+  layerToast(node, true);
   clearTimeout(toastTimer);
   const hide = () => {
     if (toastPaused) { toastTimer = setTimeout(hide, 1000); return; }
     node.hidden = true;
+    layerToast(node, false);
   };
   toastTimer = setTimeout(hide, duration);
 }
+// The stack is a manual popover, so the toast draws in the top layer above an
+// open dialog or sheet; showing it again raises it above one opened later.
+function layerToast(node, show) {
+  const stack = node.parentElement;
+  if (!stack?.popover) return;
+  try {
+    if (stack.matches(":popover-open")) stack.hidePopover();
+    if (show) stack.showPopover();
+  } catch {}
+}
 function installToast(node) {
+  if (node.parentElement.showPopover) node.parentElement.popover = "manual";
   node.querySelector(".toast-close").addEventListener("click", () => {
     clearTimeout(toastTimer);
     node.hidden = true;
+    layerToast(node, false);
   });
   const pause = () => { toastPaused = true; };
   const resume = () => { toastPaused = false; };

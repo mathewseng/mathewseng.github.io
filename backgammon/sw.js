@@ -93,6 +93,18 @@ self.addEventListener("message", (event) => {
     })().catch(() => reply({status: "error", message: "Download didn’t finish. Stay online, keep Backgammon open and try again."})));
     return;
   }
+  // Read-only: is this release's shell and engine already saved? Cache lookups
+  // only; it never downloads or writes anything.
+  if (event.data?.type === "BACKGAMMON_OFFLINE_STATUS" && event.ports?.[0]) {
+    const sourceURL = event.source?.url && new URL(event.source.url);
+    const reply = ready => event.ports[0].postMessage({type: "BACKGAMMON_OFFLINE_STATUS", ready});
+    if (sourceURL?.origin !== location.origin || !sourceURL.pathname.startsWith("/backgammon/") || event.data.version !== self.BG_CACHE_VERSION)
+      reply(false);
+    else
+      event.waitUntil(Promise.all([...self.BG_SHELL, ...self.BG_ENGINE].map(path => caches.match(path, {cacheName: CACHE})))
+        .then(saved => reply(saved.every(Boolean)), () => reply(false)));
+    return;
+  }
   if (event.data?.type === "BACKGAMMON_VERSION" && event.ports?.[0]) {
     const sourceURL = event.source?.url && new URL(event.source.url);
     if (sourceURL?.origin === location.origin && sourceURL.pathname.startsWith("/backgammon/"))
