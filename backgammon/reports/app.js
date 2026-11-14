@@ -587,12 +587,19 @@ function trackSections() {
   const sections = links.map((a) => document.getElementById(a.hash.slice(1))).filter(Boolean);
   if (!sections.length || !("IntersectionObserver" in window)) return;
   const visible = new Set();
+  const toc = links[0].parentElement;
+  let shown = null;
   const mark = () => {
     const current = sections.find((s) => visible.has(s)) || null;
     for (const a of links) {
       if (current && a.hash === "#" + current.id) a.setAttribute("aria-current", "true");
       else a.removeAttribute("aria-current");
     }
+    // The phone strip scrolls sideways: keep the current link in view.
+    const active = current && links.find((a) => a.hash === "#" + current.id);
+    if (active && active !== shown && toc.scrollWidth > toc.clientWidth)
+      toc.scrollTo({ left: active.offsetLeft - 12, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    shown = active;
   };
   const observer = new IntersectionObserver(
     (entries) => {
