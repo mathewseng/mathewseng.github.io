@@ -74,7 +74,11 @@ export class EquityBar {
     this.portrait = matchMedia("(max-width: 700px) and (orientation: portrait)");
     this.portrait.addEventListener("change", () => this.schedulePosition(), options);
     toggle.onclick = () => this.setEnabled(!this.enabled);
-    this.hide.onclick = () => this.setEnabled(false);
+    // An empty rail only explains itself; tapping its note must not switch
+    // the bar off. The Equity bar toggle still hides it.
+    this.hide.onclick = () => {
+      if (this.node.dataset.state !== "unavailable") this.setEnabled(false);
+    };
     this.reveal.onclick = () => this.setEnabled(true);
     const changed = () => {
       this.enabled = readSettings().equityBar === true;

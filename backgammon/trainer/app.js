@@ -202,7 +202,7 @@ function render() {
       : preview && exercise && boardKey(preview) !== boardKey(exercise.state)
         ? "Return to the original position to see decision equity."
         : "",
-    note: !revealed ? "Shown after you submit" : preview && exercise && boardKey(preview) !== boardKey(exercise.state) ? "Back to the original" : "",
+    note: !revealed ? "Shown after you submit" : preview && exercise && boardKey(preview) !== boardKey(exercise.state) ? "Preview" : "",
   });
   if (!exercise) {
     practiceHelp.hidden = true;

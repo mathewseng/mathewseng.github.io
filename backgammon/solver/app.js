@@ -395,7 +395,7 @@ function render() {
         : preview
           ? "Return to Source to see its equity."
           : "",
-    note: editing || problems.length ? "Finish editing" : preview ? "Back to Source" : "",
+    note: editing || problems.length ? "Finish editing" : preview ? "Preview" : "",
   });
   draft.set(source, editing || problems.length ? [] : legalPaths(source), false);
   draft.preview = preview;

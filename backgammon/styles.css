@@ -319,6 +319,25 @@ details .stack {
   white-space: nowrap;
 }
 
+/* Inline lines hang their figures after the name, so a wrapped figure
+   lines up under "Win", not under the player's name. */
+.chance-lines:not(.chance-table) .chance-line {
+  padding-left: calc(3.3em + 8px);
+  column-gap: 8px;
+}
+
+.chance-lines:not(.chance-table) .chance-name {
+  margin-left: calc(-3.3em - 8px);
+  width: calc(3.3em + 8px);
+  min-width: 0;
+}
+
+/* Solver and trainer result rows: keep each player's figures on one line. */
+#panel .list-row .chance-line {
+  flex-wrap: nowrap;
+  column-gap: 7px;
+}
+
 .chance-name {
   min-width: 3.3em;
   color: var(--muted);
@@ -336,8 +355,9 @@ details .stack {
 
 .chance-table {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(4, auto);
-  gap: 1px 16px;
+  grid-template-columns: max-content repeat(4, minmax(0, auto));
+  justify-content: space-between;
+  gap: 1px 10px;
   align-items: baseline;
   font-size: 13px;
   line-height: 1.3;
@@ -429,7 +449,7 @@ details .stack {
 /* Short landscape phones: the same table, tightened to spare the move list. */
 @media (max-height: 500px) and (orientation: landscape) {
   .chance-table {
-    gap: 0 14px;
+    gap: 0 10px;
     font-size: 12px;
     line-height: 1.25;
   }
@@ -1071,6 +1091,11 @@ button kbd.keycap,
   background: var(--surface-2);
 }
 
+.equity-bar[data-state="unavailable"] .equity-reading:is(:hover, :active) {
+  background: transparent;
+  color: var(--ink);
+}
+
 .equity-number {
   flex-shrink: 0;
   width: 100%;
@@ -1164,6 +1189,10 @@ button kbd.keycap,
 }
 
 /* An unavailable rail is an empty slot that says why, not a striped bar. */
+.equity-bar[data-state="unavailable"] .equity-reading {
+  cursor: default;
+}
+
 .equity-bar[data-state="unavailable"] .equity-meter {
   border-style: dashed;
   border-color: var(--line-strong);
@@ -3285,6 +3314,10 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 @container (max-width: 599px) {
+  /* Narrow columns: split evenly so each player's chances fit in two lines. */
+  .history-turn-decisions[data-paired="true"] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
   .play-feedback .history-turn-decisions[data-paired="true"] > :is(.feedback-review, .feedback-pending) {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "move";
