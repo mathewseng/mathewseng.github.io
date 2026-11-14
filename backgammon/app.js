@@ -36,8 +36,10 @@ board.render(initialState(), { ...settings(), interactive: false });
 try {
   const recent = document.getElementById("recent"),
     saved = await get("work", "play"),
-    items = (await listItemSummaries({limit:1})).items;
-  if (saved?.game?.id && saved.game.config?.mode !== "online") {
+    live = saved?.game?.id && saved.game.config?.mode !== "online",
+    // The live game's own archive is the newest item; "Resume" already covers it.
+    items = (await listItemSummaries({limit:1, excludeId: live ? saved.game.archiveId || saved.game.id : undefined})).items;
+  if (live) {
     const a = document.createElement("a");
     a.href = `/backgammon/play/#resume=${encodeURIComponent(saved.game.id)}`;
     a.textContent = "Resume your game";

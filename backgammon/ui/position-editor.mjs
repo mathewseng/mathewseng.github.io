@@ -2,7 +2,8 @@
 import { clone, playerName } from '../core/rules.mjs';
 import { editorOwner, editorCount, editorTargets, transferChecker, editChecker } from '../core/position-editor.mjs';
 import { settings } from '../core/storage.mjs';
-import { el, button } from './shell.mjs';
+import { el, button, pressVerb } from './shell.mjs';
+const editorHelp = () => { const v = pressVerb(); return `${v} a checker to remove · ${v.toLowerCase()} a point to add · drag to move.`; };
 
 const normalized = point => typeof point === 'string' ? point.slice(0, -1) : point;
 export class PositionEditor {
@@ -18,7 +19,7 @@ export class PositionEditor {
     }));
     this.undo = button('Undo', () => this.restore(false), '', {id:'editor-undo'});
     this.redo = button('Redo', () => this.restore(true), '', {id:'editor-redo'});
-    this.help = el('span', {class:'editor-help', role:'status'}, 'Tap a checker to remove · tap a point to add · drag to move.');
+    this.help = el('span', {class:'editor-help', role:'status'}, editorHelp());
     this.node = el('section', {class:'position-editor', hidden:true, 'aria-label':'Checker editor'},
       el('div', {class:'editor-supplies'}, ...this.supplies),
       el('div', {class:'editor-actions'}, this.undo, this.redo), this.help);
@@ -125,7 +126,7 @@ export class PositionEditor {
     });
     this.undo.disabled = !this.past.length; this.redo.disabled = !this.future.length;
     this.help.textContent = this.dragging ? 'Release to place · return to the start to cancel.'
-      : 'Tap a checker to remove · tap a point to add · drag to move.';
+      : editorHelp();
 
   }
 }

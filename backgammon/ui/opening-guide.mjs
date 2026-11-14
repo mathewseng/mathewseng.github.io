@@ -81,6 +81,11 @@ export function openingGuide(root) {
           if (mode==='opening') {openingRoll=roll;openingChoice=0;}
           else {replyRoll=roll;replyChoice=0;}
           before=false; refresh();
+          // Compact puts the board above the grid: bring it back into view
+          // when the player has scrolled down to pick a roll.
+          const figure=root.querySelector('.opening-preview');
+          if(root.dataset.layout==='compact'&&figure&&figure.getBoundingClientRect().top<0)
+            figure.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
         });
         return button;
       }));

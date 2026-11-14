@@ -32,6 +32,7 @@ import {
   saveDialog,
   showError,
   copy,
+  pressVerb,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { clearPosition, swapPositionColors } from "../core/position-editor.mjs";
@@ -410,7 +411,7 @@ function render() {
     : preview
       ? "Alternative preview · source position preserved"
       : `${source.matchLength ? source.matchLength + "-point match" : "Unlimited points"} · ${source.phase === "double" ? `${offerName(source)} to ${source.cube.value * 2}` : source.dice.length ? source.dice.join("–") : "pre-roll"} · cube ${source.cube.value}`;
-  $("message").textContent = emptySetup ? "Choose a color, then tap points to place checkers." : problems.length
+  $("message").textContent = emptySetup ? `Choose a color, then ${pressVerb().toLowerCase()} points to place checkers.` : problems.length
     ? problems.join(" ")
     : editing
       ? ""
