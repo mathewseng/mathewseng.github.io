@@ -1654,7 +1654,7 @@ function actions() {
       cube.querySelector(".cube-key")?.setAttribute("display", ui.board.cubeEnabled ? "inline" : "none");
       cube.setAttribute("role", ui.board.cubeEnabled ? "button" : "img");
       cube.setAttribute("tabindex", ui.board.cubeEnabled ? "0" : "-1");
-      cube.setAttribute("aria-label", `Cube ${state().cube.value}${ui.board.cubeEnabled ? ". Offer double" : ""}`);
+      cube.setAttribute("aria-label", `Cube ${state().cube.value}${state().crawford ? ". Crawford game" : ""}${ui.board.cubeEnabled ? ". Offer double" : ""}`);
     }
     const s = state(), rollReady = !!$("roll") && !$("roll").disabled && s.phase === "roll" && !opening.active;
     const current = draft.state === s && !draft.preview ? draft.current() : s;

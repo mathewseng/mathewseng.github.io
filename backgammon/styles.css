@@ -1523,6 +1523,11 @@ button.die.preferred {
   letter-spacing: .005em;
   opacity: .75;
 }
+/* The phone board scales the SVG to about half size; keep the prompt legible. */
+@media (max-width: 600px) {
+  .board-caption[role="button"] .board-caption-main { font-size: 30px; }
+  .board-caption-detail { font-size: 26px; opacity: .9; }
+}
 .board-caption[data-auto="true"] .board-caption-main { fill: var(--board-selection); }
 .board-caption-hit { stroke: var(--board-selection); stroke-width: 1.5; stroke-opacity: 0; }
 html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-caption-hit { stroke-opacity: 1; }
@@ -1865,6 +1870,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   transition: filter calc(180ms * var(--bg-motion-scale, 1)) ease;
 }
 
+/* The Crawford game's cube cannot be turned. */
+.board-cube.cube-dead {
+  opacity: .4;
+}
+
 .board-cube[role="button"]:active {
   filter: drop-shadow(0 1px 1px var(--bg-shadow));
 }
@@ -1888,9 +1898,13 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   filter: drop-shadow(0 2px 2px var(--bg-shadow));
 }
 
-.board-die.blocked .board-die-face > :not(.die-status-mark),
 .board-die.consumed .board-die-face > :not(.die-status-mark) {
   opacity: 0.38;
+}
+
+/* Blocked dice stay readable: they are the only record of a dance. */
+.board-die.blocked .board-die-face > :not(.die-status-mark) {
+  opacity: 0.6;
 }
 
 .board-die.consumed {

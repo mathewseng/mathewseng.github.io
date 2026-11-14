@@ -765,7 +765,7 @@ export class Board {
         "stroke-width": 5, "stroke-linecap": "round", "stroke-linejoin": "round",
         "pointer-events": "none",
       }));
-      body.append(svg("path", { d: "M-13 -13L13 13 M13 -13L-13 13",
+      body.append(svg("path", { d: "M26 23L38 35M38 23L26 35",
         class: "die-status-mark die-blocked", "data-die-mark": "blocked", "aria-hidden": "true",
         opacity: blocked ? 1 : 0, stroke: "var(--loss-red, #ff8f92)", "stroke-width": 5,
         "stroke-linecap": "round", fill: "none", "pointer-events": "none" }));
@@ -2072,8 +2072,8 @@ export class Board {
             ? 420
             : 240;
       const cube = svg("g", {
-        class: "board-cube",
-        "aria-label": `Doubling cube ${offered ? `${cubeLabel}, offered` : s.cube.value}${this.cubeEnabled ? ", offer double" : ""}`,
+        class: s.crawford && !editor ? "board-cube cube-dead" : "board-cube",
+        "aria-label": `Doubling cube ${offered ? `${cubeLabel}, offered` : s.cube.value}${s.crawford && !editor ? ", Crawford game" : ""}${this.cubeEnabled ? ", offer double" : ""}`,
         ...(this.cubeEnabled ? { role: "button", tabindex: 0 } : {}),
       });
       cube.append(
@@ -2253,10 +2253,10 @@ export class Board {
     const detail = active ? (prompt.skipping ? `${touch ? 'Tap' : 'Click'} to stop` : `Double ${touch ? 'tap' : 'click'} to skip`) :
       ready && prompt.canAutoPlay ? `Double ${touch ? 'tap' : 'click'} to auto play` :
         ready && prompt.canAutoRoll ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
-    // Roll instructions stay with the local player’s dice even without a
-    // previous roll. While dice are visible, keep the auto-roll stop label
+    // Roll instructions sit in the roller's own dice lane, which the previous
+    // roll leaves free. While dice are visible, keep the auto-roll stop label
     // in the unused lane so it never overlaps the rolling dice.
-    const x = ready || (active && this.state?.phase === 'roll') ? 610 : +node.dataset.x;
+    const x = ready || (active && this.state?.phase === 'roll') ? (this.state.turn === this.options.orientation ? 610 : 204) : +node.dataset.x;
     const key = JSON.stringify([main,detail,active,ready,x]);
     if (node.dataset.caption === key) return;
     node.dataset.caption = key;
