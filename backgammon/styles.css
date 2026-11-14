@@ -6885,6 +6885,9 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
   .app > .topbar .crumbs { display: none; }
   .app > .topbar .tool-nav { flex: 1; min-width: 0; order: 0; }
   .app > .topbar .header-tools { flex: none; order: 1; }
+  /* Icon-only Settings, as in portrait and Play's dock; its aria-label stays. */
+  .app > .topbar .topbar-label { display: none; }
+  .app > .topbar #preferences { width: 44px; min-width: 44px; padding: 0; }
 
   .app .tool-head {
     min-height: 40px;
@@ -7057,6 +7060,18 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     font-size: var(--t-sm);
   }
 
+  /* Details (or Practice) and Tools fill the dock as equal halves, as in Play. */
+  .app:is([data-page="trainer"], [data-page="solver"]) #toolbar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+
+  .app:is([data-page="trainer"], [data-page="solver"]) #toolbar > :is(#mobile-tools, #panel-toggle) {
+    width: 100%;
+    justify-content: center;
+  }
+
   .app:is([data-page="trainer"], [data-page="solver"]) .action-area {
     display: flex;
     flex-direction: column;
@@ -7101,6 +7116,11 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     align-items: stretch;
   }
 
+  /* Decision buttons fill the dock, in line with the help grid above. */
+  .app[data-page="trainer"] #actions > .btn {
+    flex: 1 1 auto;
+  }
+
   /* Two columns in the 164px dock keep every help button a 44px target. */
   .trainer-help {
     display: grid;
@@ -7110,7 +7130,6 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
 
   .trainer-help .btn {
     padding-inline: 6px;
-    font-size: var(--t-sm);
   }
 
   .study-strip:not([hidden]) {

@@ -148,10 +148,23 @@ export function installSound() {
   if (installed) return;
   installed = true;
   // Creating the audio device can take >100 ms on a phone. Do it away from
-  // pointerdown; never start a source or resume autoplay before a gesture.
+  // pointerdown and after the page's first render has painted, so it never
+  // holds the page on an empty table; never start a source or resume
+  // autoplay before a gesture.
   const prepare = () => sound.prepare();
-  if (globalThis.requestIdleCallback) requestIdleCallback(prepare);
-  else setTimeout(prepare, 0);
+  let pending = true;
+  const schedule = () => {
+    if (!pending) return;
+    pending = false;
+    ready.disconnect();
+    if (globalThis.requestIdleCallback) requestIdleCallback(prepare);
+    else requestAnimationFrame(() => setTimeout(prepare, 0));
+  };
+  const ready = new MutationObserver(schedule);
+  ready.observe(document.documentElement, { attributes: true, attributeFilter: ["data-app-ready"] });
+  if (document.documentElement.dataset.appReady) schedule();
+  // Pages that never report ready still prepare ahead of a gesture.
+  setTimeout(schedule, 3000);
   const gesture = (event) => {
     if (event.isTrusted) sound.unlock();
   };
