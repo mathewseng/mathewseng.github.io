@@ -72,6 +72,12 @@ const list = el("section", {
   id: "library-list",
 });
 $("workspace").prepend(list);
+// Whether a press on the list is still in progress. A mouse press blurs an
+// edited field (and saves it) before the press ends; a touch tap ends first.
+let listPressed = false;
+list.addEventListener("pointerdown", () => { listPressed = true; });
+for (const type of ["pointerup", "pointercancel"])
+  addEventListener(type, () => { listPressed = false; }, true);
 $("toolbar").prepend(
   button("Import", importDialog, "ghost"),
   button("Export", exportDialog, "ghost", { id: "export-library" }),
@@ -203,7 +209,8 @@ function renderList() {
               query = collection = kind = "";
               cursor = null;
               history.replaceState(null, "", location.pathname);
-              refresh();
+              // The rebuild removes this button; keep focus in the filters.
+              refresh().then(() => document.querySelector("input[aria-label='Search Library']")?.focus());
             })]
           : [
               el(
@@ -344,10 +351,14 @@ function inspector() {
     } catch (e) {
       return showError(e);
     }
-    // A press on a row blurs the field first; redraw the list only after the
-    // press ends, or its click would land on a replaced row.
-    if (list.matches(":active"))
-      await new Promise((r) => addEventListener("pointerup", () => setTimeout(r), { once: true }));
+    // A mouse press on a row blurs the field first; redraw the list only after
+    // the press ends, or its click would land on a replaced row.
+    if (listPressed)
+      await new Promise((r) => {
+        const done = () => setTimeout(r);
+        addEventListener("pointerup", done, { once: true });
+        addEventListener("pointercancel", done, { once: true });
+      });
     refresh(false);
   };
   [title, notes, tags, group].forEach((n) => n.addEventListener("change", () => saveEdits()));

@@ -513,7 +513,10 @@ function placeConfirm() {
   // The live Hint comes from actions() on rolled turns; elsewhere it holds its slot, disabled.
   const hint = $("hint") || button("Hint", showHint, "", {id:"hint", disabled:true});
   const ended = state().phase === "over", hinted = !ended && config.mode === "computer";
-  turnTools.classList.toggle("game-ended", !hinted);
+  // Game over shares its row with the end-of-game buttons; mid-game without
+  // Hint, Controls alone spans the rail.
+  turnTools.classList.toggle("game-ended", ended);
+  turnTools.classList.toggle("single-tool", !ended && !hinted);
   turnTools.replaceChildren(...(hinted ? [hint] : []), allControls);
   helpActions.append(analysisJump, draftKeys);
   if (desktopTable.matches) actions.append(turnTools);

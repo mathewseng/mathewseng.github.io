@@ -1211,6 +1211,10 @@ button kbd.keycap,
   cursor: default;
 }
 
+.equity-bar[data-state="unavailable"] .equity-meter::after {
+  display: none;
+}
+
 .equity-bar[data-state="unavailable"] .equity-meter {
   border-style: dashed;
   border-color: var(--line-strong);
@@ -8045,7 +8049,7 @@ html.skin-shader .docs-toc--sticky {
   width: 100%;
 }
 .turn-tools > .btn { width: 100%; min-width: 0; min-height: 48px; justify-content: center; }
-.turn-tools.game-ended { grid-template-columns: minmax(0, 1fr); }
+.turn-tools:is(.game-ended, .single-tool) { grid-template-columns: minmax(0, 1fr); }
 .play-page.live-table #actions > .btn { min-height: 48px; }
 .play-page.live-table .board-actions > .turn-tools { grid-column: 1 / -1; }
 .play-page.live-table .board-actions > .turn-tools.game-ended { grid-column: auto; }
@@ -8064,7 +8068,7 @@ html.skin-shader .docs-toc--sticky {
 }
 .play-page.desktop-table .turn-tools { flex: 0 1 320px; }
 .play-page.desktop-table #actions { width: 100%; }
-.play-page.desktop-table .turn-tools.game-ended { flex-basis: 160px; }
+.play-page.desktop-table .turn-tools:is(.game-ended, .single-tool) { flex-basis: 160px; }
 .board-confirm {
   pointer-events: none;
   position: absolute;
