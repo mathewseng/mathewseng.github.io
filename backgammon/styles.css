@@ -4445,6 +4445,9 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 /* WebKit otherwise shrinks an auto-height flex dialog's body to its padding. */
 .dice-editor-dialog .dialog-body,
 .solver-context-dialog .dialog-body { flex-basis: auto; }
+.solver-context-dialog .choice-buttons:has(> button:nth-child(11)) {
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+}
 
 /* Two rows of pips per die on the narrowest phones: the dialog may use the
    whole viewport height so the form never scrolls. */

@@ -789,12 +789,9 @@ function contextDialog(focus) {
         field("First die", d1),
         field("Second die", d2),
       ),
-      el(
-        "div",
-        { class: "pair" },
-        field("Cube value (accepted stake)", cube),
-        field("Cube owner", owner),
-      ),
+      // Eleven cube values fit two short rows, not a tower in half a pair.
+      field("Cube value (accepted stake)", cube),
+      field("Cube owner", owner),
       field("Match length (0 = unlimited)", len),
       el(
         "div",
