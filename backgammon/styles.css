@@ -1221,6 +1221,10 @@ button kbd.keycap,
   background: transparent;
 }
 
+.equity-bar[data-state="over"] .equity-reading {
+  visibility: hidden;
+}
+
 .equity-note {
   position: absolute;
   inset: 0;

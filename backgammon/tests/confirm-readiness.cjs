@@ -48,7 +48,8 @@ module.exports=async function confirmReadiness(browser,base,out,name){
     await waitWork(page,w=>w.game.events.length>0);
     assert.equal(await page.locator('dialog[open]').count(),0);
    }else{
-    await page.locator('#pending-move-loss').waitFor({timeout:1000});
+    // The rail answers at once; the review dialog follows if grading is still pending.
+    await page.locator('#pending-move-loss').waitFor({timeout:3000});
     assert.equal((await page.evaluate(async()=>(await(await import('/backgammon/core/storage.mjs')).get('work','play')).game.events.length)),0);
     assert.equal(await page.evaluate(()=>requested.readyOnly),true);
     if(mode==='pending-revise'){

@@ -237,6 +237,8 @@ export class EquityBar {
       !["move", "roll", "double"].includes(state.phase)
     ) {
       if (this.key || this.engine.worker) this.stop();
+      // A finished game keeps the rail's space but leaves it empty.
+      if (!blocked && state?.phase === "over") return this.paint("over");
       this.paint(
         "unavailable",
         null,

@@ -644,17 +644,34 @@ ui.board.onRoll = (event = {}) => {
     }, 450);
     actions(); return true;
   }
-  const control = $("roll");
-  if (state().phase !== "roll" || opening.active || !control || control.disabled || ui.board.playbackTimer) return false;
-  barAutoRoll.noteRoll(model(), point);
-  if (config.mode === 'computer') raceAutoPlay.noteRoll(model(), point);
-  control.click(); return true;
+  const roll = () => {
+    const control = $("roll");
+    if (state().phase !== "roll" || opening.active || !control || control.disabled) return false;
+    if (ui.board.playbackTimer) return queueBoardTap(roll);
+    barAutoRoll.noteRoll(model(), point);
+    if (config.mode === 'computer') raceAutoPlay.noteRoll(model(), point);
+    control.click(); return true;
+  };
+  return roll();
 };
 ui.board.onCube = () => {
   raceAutoPlay.reset();
   const control = $("double-cube");
-  if (control && !control.disabled && !opening.active && !ui.board.playbackTimer) control.click();
+  if (!control || control.disabled || opening.active) return;
+  if (ui.board.playbackTimer) queueBoardTap(ui.board.onCube);
+  else control.click();
 };
+// The roll prompt shows while the opponent's checkers are still landing. Keep
+// one roll or cube tap from then and replay it once they settle, unless the
+// position changed or a dialog opened meanwhile.
+let boardTap = 0;
+function queueBoardTap(run) {
+  const tap = ++boardTap, s = state(), turn = epoch;
+  ui.board.waitForPresentation().then(() => {
+    if (tap === boardTap && state() === s && epoch === turn && !document.querySelector("dialog[open]")) run();
+  });
+  return true;
+}
 ui.board.container.addEventListener("click", e => {
   if (e.target === ui.board.container) ui.board.onRoll(e);
 });
@@ -2060,11 +2077,14 @@ function renderActions() {
     const checking = closed && prefs.closedOutPassing === 'bad-double' && closedOutCheck?.key === closedOutKey(s) && closedOutCheck.pending;
     const keycap = action => prefs.keyboardEnabled && prefs.shortcuts[action]?.length
       ? shortcutBadge(prefs.shortcuts[action][0]) : "";
+    // Name whose turn was automatic; only the player on roll gets instructions.
+    const auto = previous?.automatic ? `${names()[previous.actor]}: ${previous.action.steps?.length ? "forced turn" : "no legal move"} · ` : "";
     $("message").replaceChildren(
-      closed ? `${names()[s.turn]} · ${checking ? 'checking cube…' : `${pressVerb()} board to pass`}`
-        : `${previous?.automatic ? (previous.action.steps?.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · ${pressVerb()} board to roll`,
-      ...(checking ? [] : [keycap("roll")]),
-      ...(canDouble(s) ? [" · Cube to double", keycap("double")] : []),
+      !myTurn(s) ? `${auto}${names()[s.turn]} to ${closed ? "pass" : "roll"}`
+        : closed ? `${names()[s.turn]} · ${checking ? 'checking cube…' : `${pressVerb()} board to pass`}`
+        : `${auto}${names()[s.turn]} · ${pressVerb()} board to roll`,
+      ...(checking || !myTurn(s) ? [] : [keycap("roll")]),
+      ...(canDouble(s) && myTurn(s) ? [" · Cube to double", keycap("double")] : []),
     );
     a.append(
       button("Double", () => submitCube({ type: "double" }), "", {
@@ -3098,6 +3118,9 @@ async function evaluateDecision(action) {
     }
     job.dialog.addEventListener("close", onClose, { once: true });
   };
+  // A cube warning names the better action; "play" is the checker word.
+  const lossCopy = f => `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} vs ${
+    checker ? "the best play" : f.best.action === "pass" ? "Drop" : f.best.notation}.`;
   const showPendingWarning = () => {
     if (!config.warning || !activeAssistance(job)) return;
     if (job.dialog) return;
@@ -3108,12 +3131,16 @@ async function evaluateDecision(action) {
       {warning:true, dismissible:true, onDismiss:onClose});
     configureWarning();
   };
+  // The rail's checking status answers the tap at once. Most grades land
+  // within a moment, so the review dialog waits briefly instead of flashing.
+  let pendingTimer = 0;
+  const showPendingSoon = () => { pendingTimer ||= setTimeout(showPendingWarning, 800); };
   try {
     const preset = config.reviewStrength || 'auto';
     const ready = analysis.engine.readyResult(job.source, {preset,submitted:steps});
-    // A cache miss must have a visible, usable response on this very tap.
-    // No blank locked board while WASM calculates an unprepared decision.
-    if (!ready) showPendingWarning();
+    // A cache miss must have a visible, usable response soon after the tap.
+    // No long blank locked board while WASM calculates an unprepared decision.
+    if (!ready) showPendingSoon();
     persist(false);
     // A cached grade can resolve in the same microtask as the tap. Give the
     // locked controls one paint before committing/rendering the next turn.
@@ -3125,9 +3152,10 @@ async function evaluateDecision(action) {
       preset,
       priority: 20,
       readyOnly: true,
-      onUnlisted: () => showPendingWarning(),
+      onUnlisted: showPendingSoon,
     });
     let [result] = await Promise.all([evaluation, painted]);
+    clearTimeout(pendingTimer);
     if (!activeAssistance(job) || (job.dialog && !job.dialog.open)) return;
     if (!checker) result = gradeCube(job.source, result, action.type);
     recordInitialEvaluation(game, action, compactEvaluation(job.source, result));
@@ -3143,7 +3171,7 @@ async function evaluateDecision(action) {
         return;
       }
       const f = decisionFeedback(result, job.source);
-      warningCopy.textContent = `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} vs the best play.`;
+      warningCopy.textContent = lossCopy(f);
       if (!checker) job.dialog.querySelector(".primary").disabled = false;
       return; // Keep the player's review open; never confirm behind the dialog.
     }
@@ -3154,7 +3182,7 @@ async function evaluateDecision(action) {
         el(
           "p",
           {},
-          `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} vs the best play.`,
+          lossCopy(f),
         ),
         warningActions(),
         {warning:true, dismissible:true, onDismiss:onClose},
@@ -3162,6 +3190,7 @@ async function evaluateDecision(action) {
       configureWarning();
     } else await finish(result);
   } catch (error) {
+    clearTimeout(pendingTimer);
     if (!activeAssistance(job)) return;
     job.done = true;
     if (error.name === "AbortError") {

@@ -1510,7 +1510,7 @@ export class DraftBoard {
               ? `${pressVerb()} a checker or destination · using die ${this.activeDie() ?? "–"}.`
               : this.complete()
               ? this.draft.length
-                ? `Ready to confirm. ${pressVerb()} a used die to undo its move.`
+                ? `${pressVerb()} a used die to undo its move.`
                 : "All entries are blocked. Confirm to pass your turn."
               : this.selected !== null
                 ? display.moveHints

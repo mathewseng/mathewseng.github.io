@@ -431,8 +431,8 @@ export class Board {
       // A second roll tap may arrive during the first roll's animation.
       // Let Play recognize that intent before locking ordinary board actions.
       if (!target?.closest('.board-cube') && this.onRoll?.({target, clientX:pointer.clientX, clientY:pointer.clientY})) return;
-      if (this.playbackTimer) return;
       if (target?.closest(".board-cube")) { this.onCube?.(); return; }
+      if (this.playbackTimer) return;
       if (!this.options?.interactive) return;
       if (target?.closest(".dice-switch, .dice-switch-hit")) { this.onSwitchDice?.(); return; }
       const die = target?.closest("[data-die]");
