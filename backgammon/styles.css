@@ -5900,6 +5900,15 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     padding-inline: 0;
   }
 
+  /* The trainer's action area is a bordered card: keep text off its edge. */
+  .app[data-page="trainer"] .action-area {
+    padding-inline: 10px;
+  }
+
+  .app[data-page="trainer"] #draft-line:empty {
+    display: none;
+  }
+
   .app:not(.play-page) .action-main,
   .app:not(.play-page) .action-buttons {
     width: 100%;
@@ -6478,7 +6487,7 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
 
   .study-strip > .btn {
     justify-self: start;
-    padding-inline: 0;
+    padding-inline: 12px;
     color: var(--accent);
   }
 
@@ -6996,9 +7005,10 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     gap: 4px;
   }
 
+  /* The narrow dock gives the move picker its own row, arrows below. */
   .study-preview-controls:not([hidden]) {
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    grid-template-columns: 1fr 1fr;
     gap: 6px;
   }
 
@@ -7008,13 +7018,17 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
   }
 
   .study-preview-controls select {
-    font-size: 1rem;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    font-size: var(--t-sm);
     font-weight: 600;
   }
 
   .study-strip > .btn {
     justify-self: start;
-    padding-inline: 0;
+    max-width: 100%;
+    padding-inline: 8px;
+    white-space: normal;
     color: var(--accent);
   }
 
