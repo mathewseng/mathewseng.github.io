@@ -341,9 +341,9 @@ function actions() {
 function panel() {
   const p = $("panel");
   const resultSlot = el("div", { class: "trainer-result-slot" });
-  p.replaceChildren(
-    el("h2", {}, revealed ? "Decision review" : "Practice"),
-    resultSlot,
+  // Session settings: above the answer while practising, below the
+  // evaluated moves once a result is shown.
+  const session = [
     field(
       "Practice set",
       select(
@@ -376,6 +376,11 @@ function panel() {
         (v) => (length = Number(v)),
       ),
     ),
+  ];
+  p.replaceChildren(
+    el("h2", {}, revealed ? "Decision review" : "Practice"),
+    resultSlot,
+    ...session,
   );
   if (!exercise) {
     resultSlot.remove();
@@ -388,13 +393,12 @@ function panel() {
     );
     return;
   }
-  p.append(
-    el(
-      "p",
-      { class: "muted small", id: "practice-rules" },
-      ruleSummary(exercise.state),
-    ),
+  const rules = el(
+    "p",
+    { class: "muted small", id: "practice-rules" },
+    ruleSummary(exercise.state),
   );
+  p.append(rules);
   if (!revealed) {
     p.append(el("div", { id: "draft-controls" }));
     draftControls();
@@ -473,6 +477,7 @@ function panel() {
           observation(result.candidates[0].steps),
         ),
       );
+    p.append(...session, rules);
   }
 }
 function draftControls() {
