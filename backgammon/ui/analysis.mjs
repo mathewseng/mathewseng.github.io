@@ -15,7 +15,9 @@ export const equity = (n) => (n >= 0 ? "+" : "") + n.toFixed(3);
 // five nested engine chances describe. Inline by default; `table` lays the
 // same figures out under column headings with a bar of the six outcomes.
 const CHANCES = [["win", "Win", "Win"], ["single", "Single", "S"], ["plainGammon", "Gammon", "G"], ["backgammon", "Backgammon", "BG"]];
-export function chanceLines(probabilities, player, { table = false } = {}) {
+// `names` labels the rows with the table's player names (You, GNUbg, a
+// friend) instead of White and Black.
+export function chanceLines(probabilities, player, { table = false, names = null } = {}) {
   const rows = outcomeChances(probabilities, player);
   if (!rows) return null;
   const segment = (row, kind) =>
@@ -37,7 +39,7 @@ export function chanceLines(probabilities, player, { table = false } = {}) {
       el(
         "span",
         { class: "chance-line", "data-chance-player": row.player },
-        el("span", { class: "chance-name" }, playerName(row.player)),
+        el("span", { class: "chance-name", title: names?.[row.player] ?? playerName(row.player) }, names?.[row.player] ?? playerName(row.player)),
         ...CHANCES.map(([kind, name, key]) =>
           el("span", { class: "chance-cell", "data-chance": kind, "aria-label": `${name} ${percentage(row[kind])}` },
             el("span", { class: "chance-key muted" }, `${key} `),

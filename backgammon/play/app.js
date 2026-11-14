@@ -2269,13 +2269,12 @@ function playerControls(close = () => {}, prefix = "") {
   return el(
     "div",
     { class: "stack player-controls" },
-    el(
+    // The strips already name each side beside its checker colour.
+    ...(config.mode === "computer" ? [] : [el(
       "p",
       { class: "muted small" },
-      config.mode === "computer"
-        ? `You play ${playerName(config.humanSide)}. GNUbg plays ${playerName(1 - config.humanSide)}.`
-        : "Both sides are controlled on this device.",
-    ),
+      "Both sides are controlled on this device.",
+    )]),
     el(
       "div",
       { class: "row wrap" },
@@ -2757,6 +2756,7 @@ function historyDecisionActions(entry, index, gameId, opponent) {
     review: () => {
       const current = currentRow();
       return decisionReview(current.source, {
+        names: names(),
         beforeRoll: entry.group.decisions.find(row => row.result?.type === "cube" && row.source.phase === "roll" && row.source.cube.value === current.source.cube.value)?.result,
         opponent,
         title: current.result.type === "cube" ? "Cube decision" : "Checker decision",
@@ -3020,6 +3020,7 @@ function showHint({ result: prepared = null, playBest = false } = {}) {
     await commit({ type: "move", steps }, feedback, {choiceMethod:"play-best"});
   };
   const review = decisionReview(job.source, {
+    names: names(),
     beforeRoll: analysis.engine.peek({...job.source,phase:"roll",dice:[],pending:null},{preset:config.reviewStrength || "auto"}),
     replayLabel: "Play best",
     onClose: () => {

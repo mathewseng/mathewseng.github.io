@@ -164,7 +164,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
           row.result.type === "checker" ? presentMove(row.source, f.best.steps).notation : presentCubeAction(row.source, f.best.action).label,
         )] : []),
         // Chances after the played choice; cube actions share the position's.
-        chanceLines(f.actual.probabilities ?? f.positionChances, f.chancePlayer),
+        chanceLines(f.actual.probabilities ?? f.positionChances, f.chancePlayer, { names }),
       ),
     );
     decisions.append(review);

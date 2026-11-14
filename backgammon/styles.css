@@ -330,6 +330,8 @@ details .stack {
   margin-left: calc(-3.3em - 8px);
   width: calc(3.3em + 8px);
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Solver and trainer result rows: keep each player's figures on one line. */
@@ -393,6 +395,9 @@ details .stack {
 }
 
 .chance-table .chance-name {
+  max-width: 8em;
+  overflow: hidden;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 6px;

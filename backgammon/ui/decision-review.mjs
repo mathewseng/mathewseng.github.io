@@ -29,6 +29,7 @@ function lossSummary(feedback) {
 // A separate instance of the shared renderer: previews cannot touch the live
 // DraftBoard. Callers own live analysis; this dialog owns and cancels the
 // optional worker that expands an older saved review.
+const possessive = (name) => (name === "You" ? "Your" : `${name}’s`);
 export function decisionReview(
   source,
   {
@@ -40,6 +41,7 @@ export function decisionReview(
     onReplay,
     onReturn,
     replayDescription = "Rewinds this turn and any bot reply, then plays the best move. Already rolled dice are preserved.",
+    names = null,
   } = {},
 ) {
   const slot = el("div", { class: "decision-board" });
@@ -286,7 +288,7 @@ export function decisionReview(
               showCube(choice, choice.notation);
             },
           }),
-          el("div", { class: "review-chances" }, chanceLines(f.positionChances, f.chancePlayer, { table: true })),
+          el("div", { class: "review-chances" }, chanceLines(f.positionChances, f.chancePlayer, { table: true, names })),
           lossLegend(),
           el(
             "p",
@@ -326,7 +328,7 @@ export function decisionReview(
         el(
           "p",
           { class: "muted small" },
-          `${freshReview ? "Fresh · " : ""}${result.settings.name} · ${result.method === "reference" ? "published XG book" : `${result.settings.plies} ply`} · ${playerName(source.turn)}’s perspective`,
+          `${freshReview ? "Fresh · " : ""}${result.settings.name} · ${result.method === "reference" ? "published XG book" : `${result.settings.plies} ply`} · ${possessive(names?.[source.turn] ?? playerName(source.turn))} perspective`,
         ),
       );
       if (result.actual) {
@@ -427,7 +429,7 @@ export function decisionReview(
       const chances = el("div", { class: "review-chances", "aria-live": "polite" });
       const redraw = () => {
         moveRowsObserver.disconnect();
-        chances.replaceChildren(...[chanceLines((candidates[selected] || best).probabilities, result.perspective, { table: true })].filter(Boolean));
+        chances.replaceChildren(...[chanceLines((candidates[selected] || best).probabilities, result.perspective, { table: true, names })].filter(Boolean));
         chances.hidden = !chances.childElementCount;
         position.setAttribute("aria-pressed",String(selected === -1));
         const scrollTop = rows.scrollTop;
