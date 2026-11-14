@@ -788,6 +788,9 @@ installPlayShortcuts({
 const params = new URLSearchParams(location.hash.slice(1));
 const roomCode = params.get("room");
 if (roomCode) config.mode = "online";
+// The typed room code survives re-renders; orientedRoom flips each online
+// player to their own side once per room.
+let roomDraft = roomCode || "", orientedRoom = "", connecting = false;
 const playersButton = button(
   "Players",
   () => {
@@ -1136,6 +1139,12 @@ function render() {
   placeReview();
   const m = model(),
     s = state();
+  if (config.mode === "online" && online.seat >= 0 &&
+      orientedRoom !== `${online.room.roomCode}:${online.seat}`) {
+    orientedRoom = `${online.room.roomCode}:${online.seat}`;
+    if (readSettings().orientation !== online.seat) saveSettings({ orientation: online.seat });
+    boardKey = "";
+  }
   if (config.mode !== "online") analysis.engine.book?.prepare(s);
   syncBarAutoRoll();
   playersButton.hidden = !m?.started || config.mode === "online";
@@ -1173,8 +1182,7 @@ function render() {
     const before = ui.board.state,
       event = m?.events?.at(-1);
     boardKey = key;
-    draft.names = m?.names ||
-      m?.players?.map((p) => p.name) || ["White", "Black"];
+    draft.names = names();
     let presentation = null;
     if (
       before &&
@@ -1528,19 +1536,32 @@ function setupFields() {
         "Room code",
         el("input", {
           id: "room-code",
-          value: roomCode || "",
+          value: roomDraft,
           placeholder: "ABC234",
-          maxlength: 6,
           autocapitalize: "characters",
+          autocomplete: "off",
+          autocorrect: "off",
+          spellcheck: "false",
+          onInput: (e) => {
+            // A pasted invite link keeps only its code.
+            const code = /room=([^&\s]+)/i.exec(e.target.value)?.[1];
+            if (code) e.target.value = code;
+            roomDraft = e.target.value;
+            syncRoomButtons();
+          },
         }),
       ),
       el(
         "div",
         { class: "row" },
-        button("Create room", () => connect(false), "primary", {
+        button("Create room", () => connect(false), roomDraft.trim() ? "" : "primary", {
           id: "create-room",
+          disabled: connecting,
         }),
-        button("Join room", () => connect(true), "", { id: "join-room" }),
+        button("Join room", () => connect(true), roomDraft.trim() ? "primary" : "", {
+          id: "join-room",
+          disabled: connecting,
+        }),
       ),
       button("Reconnect saved room", async () => {
         await online.resume();
@@ -1574,20 +1595,37 @@ function setupFields() {
     );
   return fields;
 }
+// Join leads once a code is typed; the dock repeats whichever button leads.
+function syncRoomButtons() {
+  const join = !!roomDraft.trim();
+  for (const [id, lead] of [["create-room", !join], ["join-room", join]]) {
+    $(id)?.classList.toggle("btn--primary", lead);
+    $(id)?.classList.toggle("primary", lead);
+  }
+  if (config.mode === "online" && !model() && $("start-match"))
+    $("start-match").firstChild.textContent = join ? "Join room" : "Create room";
+}
 async function connect(join) {
+  if (connecting) return;
+  connecting = true;
   netStatus = "Connecting…";
   toast(netStatus);
+  render();
   try {
-    if (join) await online.join($("room-code").value, config.name);
+    if (join) await online.join(roomDraft, config.name);
     else
       await online.create(config.name, {
         matchLength: config.matchLength,
         rules: config.rules,
       });
     history.replaceState(null, "", `#room=${online.room.roomCode}`);
-    render();
+    if ($("toast").querySelector(".toast-text")?.textContent === "Connecting…") $("toast").hidden = true;
+    $("panel").scrollTop = 0;
   } catch (e) {
     showError(e);
+  } finally {
+    connecting = false;
+    render();
   }
 }
 function start() {
@@ -1900,6 +1938,10 @@ async function respondTakeback(type, request) {
     render();
   }
 }
+function lobbyStatus() {
+  return !online.room.isHost ? "Waiting for the host to start"
+    : online.ready ? "Ready when you are" : "Waiting for a second player";
+}
 function renderActions() {
   cubeReplies.hidden = true;
   cubeReplies.replaceChildren();
@@ -1922,29 +1964,29 @@ function renderActions() {
   a.replaceChildren();
   if (!m) {
     $("message").textContent = "Ready for a game?";
+    const join = config.mode === "online" && !!roomDraft.trim();
     a.append(
       button(
-        config.mode === "online" ? "Room setup" : "Start match",
-        () => (config.mode === "online" ? $("panel-toggle").click() : start()),
+        config.mode !== "online" ? "Start match" : join ? "Join room" : "Create room",
+        () => (config.mode === "online" ? connect(!!roomDraft.trim()) : start()),
         "primary",
-        { id: "start-match" },
+        { id: "start-match", disabled: config.mode === "online" && connecting },
       ),
     );
     return;
   }
   if (config.mode === "online" && !m.started) {
     const host = online.room.isHost;
-    $("message").textContent =
-      `Room ${online.room.roomCode} · ${m.players.length}/2 players · ${
-        host
-          ? online.ready ? "Ready when you are" : "Share the invite; Start match unlocks when the second player joins"
-          : "Waiting for the host to start"}`;
+    $("message").textContent = lobbyStatus();
     a.append(
-      button("Copy invite", () =>
-        copy(
-          `${location.origin}/backgammon/play/#room=${online.room.roomCode}`,
-        ),
-      ),
+      // Before the start, Copy invite lives here only while a seat is open.
+      ...(host && m.players.length < 2
+        ? [button("Copy invite", () =>
+            copy(
+              `${location.origin}/backgammon/play/#room=${online.room.roomCode}`,
+            ),
+          )]
+        : []),
       ...(host
         ? [button("Start match", () => online.send({ type: "start" }), "primary", {
             disabled: !online.ready,
@@ -2180,9 +2222,12 @@ function renderActions() {
   }
 }
 function names() {
-  return (
-    model()?.names || model()?.players?.map((p) => p.name) || ["White", "Black"]
-  );
+  const list =
+    model()?.names || model()?.players?.map((p) => p.name) || ["White", "Black"];
+  // Both online players default to "You": call the other seat by its colour.
+  return config.mode === "online"
+    ? [0, 1].map((i) => i !== online.seat && /^(You|Player|)$/.test(list[i] ?? "") ? ["White", "Black"][i] : list[i])
+    : list;
 }
 function playerControls(close = () => {}, prefix = "") {
   const s = state();
@@ -2262,7 +2307,8 @@ function panel() {
   if (config.mode === "online")
     p.append(
       el("h2", {}, `Room ${online.room.roomCode}`),
-      el("p", { class: "muted", id: "connection-status" }, netStatus),
+      el("p", { class: "muted", id: "connection-status" },
+        !m.started && online.room.connected ? lobbyStatus() : netStatus),
       el(
         "div",
         { class: "list" },
@@ -2270,15 +2316,17 @@ function panel() {
           el(
             "div",
             { class: "list-row" },
-            `${i === 0 ? "White" : "Black"} · ${v.name} · ${online.roster.some((r) => r.id === v.id && r.connected) ? "connected" : "away"}`,
+            `${i === 0 ? "White" : "Black"}${names()[i] === (i === 0 ? "White" : "Black") ? "" : ` · ${names()[i]}`} · ${online.roster.some((r) => r.id === v.id && r.connected) ? "connected" : "away"}`,
           ),
         ),
       ),
-      button("Copy invite", () =>
-        copy(
-          `${location.origin}/backgammon/play/#room=${online.room.roomCode}`,
-        ),
-      ),
+      ...(m.started
+        ? [button("Copy invite", () =>
+            copy(
+              `${location.origin}/backgammon/play/#room=${online.room.roomCode}`,
+            ),
+          )]
+        : []),
       button(
         "Leave room",
         () =>
