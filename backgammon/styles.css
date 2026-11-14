@@ -5039,6 +5039,14 @@ button.library-item {
 
 .practice-controls-dialog #analysis-jump { display: inline-flex; }
 
+/* The keyboard legend takes its own row under the buttons so they stay paired. */
+.practice-controls-dialog .action-help > .draft-shortcuts {
+  grid-column: 1 / -1;
+  order: 1;
+  justify-content: center;
+  margin: 0;
+}
+
 .practice-controls-dialog .action-help .btn {
   min-height: 48px;
 }
@@ -5152,7 +5160,13 @@ button.library-item {
   display: none;
 }
 
+/* The sheet keeps the inspector's spacing. Its full height scrolls in the
+   dialog body, so rows such as the Solver's segmented tabs never shrink. */
 .bg-dialog .dialog-body > .panel-body {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-height: auto;
   padding: 0;
   overflow: visible;
 }
@@ -6128,10 +6142,10 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     scrollbar-gutter: auto;
   }
 
-  /* Four skin columns at 390px, three at 320px: the preview below the picker
-     comes into view after fewer rows. */
+  /* Four skin columns at 390-430px, three at 320px: the preview below the
+     picker comes into view after fewer rows, and names wrap between words. */
   .settings-dialog .skin-grid {
-    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: 4px 6px;
   }
 
@@ -7689,6 +7703,9 @@ html.skin-shader .docs-toc--sticky {
   .decision-dialog .decision-choices .btn { flex: 1; padding: 4px; font-size: var(--t-xs); }
   .decision-dialog .decision-caption { display: none; }
   .decision-dialog .review-move-heading { padding-block: 2px; }
+  /* The six-row list is taller than this column: at its end, scrolling
+     carries on to the depth buttons below. */
+  .decision-dialog .review-move-rows { overscroll-behavior: auto; }
   .decision-dialog[data-review-view="notes"] .decision-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -8149,6 +8166,7 @@ html[data-focus-navigation="true"] .board-confirm #confirm:focus-visible {
     border-radius: var(--r-md);
     background: var(--surface);
   }
+  /* Toasts sit in the dock's empty foot, off the player's home board. */
   .play-page.landscape-table .landscape-dock > :is(.topbar, .tool-head, .player-strip, .board-actions, .action-area) {
     position: static;
     inset: auto;
