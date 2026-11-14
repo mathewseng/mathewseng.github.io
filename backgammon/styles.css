@@ -3656,14 +3656,18 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 .decision-notes {
+  display: grid;
+  align-content: start;
+  align-self: start;
+  gap: 10px;
   width: min(680px, 100%);
-  margin: auto;
-  align-self: center;
+  margin-inline: auto;
+  overflow-wrap: anywhere;
 }
 
+/* Paged notes keep Previous/Next still while the note height changes. */
 .review-note {
   min-height: clamp(0px, calc(100dvh - 310px), 140px);
-  overflow-wrap: anywhere;
 }
 
 .history-tree-tablist .btn[aria-selected="true"] {

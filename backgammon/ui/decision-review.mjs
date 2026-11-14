@@ -88,11 +88,50 @@ export function decisionReview(
   let moveRowsObserver;
   const resizeMoves = () => moveListResize();
   window.addEventListener("resize", resizeMoves);
+  // Short notes read as one stack; a viewport too small for them pages them.
+  let notePages = [], noteIndex = 0;
+  const layoutNotes = () => {
+    const heading = el("h3", {}, "How to read this result");
+    const shown = notePages.length ? notePages : [el("p", {}, "No additional details.")];
+    for (const note of shown) if (note.tagName === "DETAILS") note.open = true;
+    notes.replaceChildren(heading, ...shown);
+    const frame = d.querySelector(".dialog-body");
+    if (notes.hidden || shown.length < 2 || frame.scrollHeight <= frame.clientHeight + 1) return;
+    noteIndex = Math.min(noteIndex, shown.length - 1);
+    const content = el("div", { class: "review-note" });
+    const count = el("span", {
+      class: "muted small",
+      "aria-live": "polite",
+    });
+    const update = () => {
+      content.replaceChildren(shown[noteIndex]);
+      count.textContent = `${noteIndex + 1} / ${shown.length}`;
+      prev.disabled = noteIndex === 0;
+      next.disabled = noteIndex >= shown.length - 1;
+    };
+    const prev = button("Previous", () => {
+      noteIndex--;
+      update();
+    });
+    const next = button("Next", () => {
+      noteIndex++;
+      update();
+    });
+    notes.replaceChildren(
+      heading,
+      content,
+      el("div", { class: "row spread" }, prev, count, next),
+    );
+    update();
+  };
+  const notesObserver = new ResizeObserver(() => layoutNotes());
+  notesObserver.observe(d.querySelector(".dialog-body"));
   d.addEventListener(
     "close",
     () => {
       window.removeEventListener("resize", resizeMoves);
       moveRowsObserver?.disconnect();
+      notesObserver.disconnect();
     },
     { once: true },
   );
@@ -106,6 +145,7 @@ export function decisionReview(
     detailToggle.textContent = view === "notes" ? "Review" : "Details";
     detailToggle.setAttribute("aria-expanded", String(view === "notes"));
     if (view === "decision") queueMicrotask(() => revealSelectedMove());
+    else layoutNotes();
   };
   setView("decision");
   const paginateNotes = () => {
@@ -123,36 +163,9 @@ export function decisionReview(
       ),
     );
     for (const node of pages) node.remove();
-    const content = el("div", { class: "review-note" });
-    const count = el("span", {
-      class: "muted small",
-      "aria-live": "polite",
-    });
-    let index = 0;
-    const update = () => {
-      const note = pages[index];
-      if (note?.tagName === "DETAILS") note.open = true;
-      content.replaceChildren(
-        ...(note ? [note] : [el("p", {}, "No additional details.")]),
-      );
-      count.textContent = `${index + 1} / ${Math.max(1, pages.length)}`;
-      prev.disabled = index === 0;
-      next.disabled = index >= pages.length - 1;
-    };
-    const prev = button("Previous", () => {
-      index--;
-      update();
-    });
-    const next = button("Next", () => {
-      index++;
-      update();
-    });
-    notes.replaceChildren(
-      el("h3", {}, "How to read this result"),
-      content,
-      el("div", { class: "row spread" }, prev, count, next),
-    );
-    update();
+    notePages = pages;
+    noteIndex = 0;
+    layoutNotes();
   };
 
   let selectPreview = () => {},
