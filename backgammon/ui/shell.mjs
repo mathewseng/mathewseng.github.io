@@ -1083,12 +1083,14 @@ export class DraftBoard {
       : [];
     const highlightedTarget = selectedRoutes.length ||
       (this.selected === null && (incoming.length || returning.length));
-    // A movable physical disc is selection input, even over a destination.
+    // A movable physical disc is selection input, even over a destination,
+    // unless a selected bar checker can enter there or the selection can bear
+    // off onto that tray disc.
     // An immovable resident must not swallow its point's advertised action.
     // Keyboard activation toggles an existing selection; Shift requests a destination.
     if (
       activation &&
-      ((checkerTap && !(this.selected === "bar" && selectedRoutes.length) &&
+      ((checkerTap && !((this.selected === "bar" || p === "off") && selectedRoutes.length) &&
           (selectable || this.selected === p || !highlightedTarget)) ||
         (!destinationTap && this.selected !== null && p === this.selected))
     )

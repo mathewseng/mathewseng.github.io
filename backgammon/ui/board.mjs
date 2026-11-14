@@ -367,6 +367,8 @@ export class Board {
       class: "bg-board",
       role: "group",
       "aria-label": "Backgammon board",
+      // Its focus listeners otherwise make Chromium stop Tab on the bare svg.
+      tabindex: "-1",
     });
     container.replaceChildren(this.svg);
     // Ring strokes are user units, so a phone board (under half scale)
@@ -1905,10 +1907,10 @@ export class Board {
         const visible = orientation ? 23 - p : p;
         const id = visible >= 12 ? `top${visible - 12}` : `bottom${11 - visible}`;
         const key = shortcuts[id]?.[0];
-        if (key) g.append(keycapGraphic(key, { x: x + 30, y: top ? 18 : 648,
-          height: 10, maxWidth: 52, className: "point-shortcut" }));
+        if (key) g.append(keycapGraphic(key, { x: x + 44, y: top ? 7 : 638,
+          height: 16, maxWidth: 24, className: "point-shortcut" }));
         const label = g.querySelector(":scope > text");
-        if (label) { label.setAttribute("y", top ? 10 : 640); label.setAttribute("font-size", "14"); }
+        if (label) label.setAttribute("x", x + 21);
       }
       pointCache.set(p, {key:pointKey, node:g});
       children.push(g);

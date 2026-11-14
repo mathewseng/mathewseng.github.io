@@ -1672,6 +1672,7 @@ html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-ca
 }
 
 .point.reachable[data-point^="off"] .point-accent {
+  fill: color-mix(in srgb, var(--board-destination) 28%, transparent);
   stroke: var(--board-destination);
   stroke-width: 1;
   stroke-opacity: 1;
@@ -1759,8 +1760,10 @@ html:not([data-focus-navigation="false"]) .board-caption:focus-visible .board-ca
 html[data-focus-navigation="true"] .point:focus-visible .point-hit,
 html[data-focus-navigation="true"] .point.return-destination:focus-visible .point-hit,
 html[data-focus-navigation="true"] .bg-board.no-move-hints .point:focus-visible .point-hit {
+  /* Wide enough and tinted to stand out among highlighted destinations. */
+  fill: color-mix(in srgb, var(--board-focus, var(--accent)) 16%, transparent);
   stroke: var(--board-focus, var(--accent));
-  stroke-width: 2;
+  stroke-width: 4;
   vector-effect: non-scaling-stroke;
 }
 

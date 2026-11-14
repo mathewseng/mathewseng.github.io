@@ -236,12 +236,14 @@ module.exports = async function actionAudit(browser, base, out, name) {
               if(disc&&!own)continue;
               const selectable=d.sources().includes(p)||d.entrySwitches().some(m=>m.from===p);
               const advertised=[...o.destinations,...o.reachable,...o.reverseTargets].includes(p);
+              // A selected checker's bearoff wins over the tray's count disc.
+              const bearsOff=p==="off"&&d.routes().some(m=>m.to==="off");
               const before=JSON.stringify(d.draft), beforeMessage=document.querySelector("#draft-line").textContent;
               d.point(raw,{quick:!disc,checkerTap:disc});
               const changed=JSON.stringify(d.draft)!==before;
               const modal=document.querySelector("dialog[open]");
               const label=JSON.stringify({selected,raw,disc,advertised,selectable,draft:initial});
-              if(disc&&(selectable||p===selected)){
+              if(disc&&(selectable||p===selected)&&!bearsOff){
                 check(!changed&&!modal,`disc unexpectedly moved: ${label}`);
                 check(d.selected===(p===selected?null:p),`disc did not toggle: ${label}`);
               }else if(advertised)check(changed||modal,`advertised destination did not act: ${label}`);
