@@ -385,7 +385,7 @@ function panel() {
     ),
   ];
   p.replaceChildren(
-    el("h2", {}, revealed ? "Decision review" : "Practice"),
+    el("h2", revealed ? {} : { class: "sr-only" }, revealed ? "Decision review" : "Practice"),
     resultSlot,
     ...session,
   );

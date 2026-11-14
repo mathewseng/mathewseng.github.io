@@ -196,7 +196,7 @@ label.field {
   font-weight: 600;
 }
 
-.field input,
+.field input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
 .field select,
 .field textarea {
   color: var(--ink);
@@ -638,6 +638,19 @@ kbd:not(.keycap) {
 
 .app .header-tools {
   flex: none;
+}
+
+/* Equal side columns keep the tool nav at one x on every desktop page. */
+@media (min-width: 1025px) and (min-height: 501px) {
+  .app > .topbar {
+    display: grid;
+    grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+    justify-items: start;
+  }
+
+  .app > .topbar .header-tools {
+    justify-self: end;
+  }
 }
 
 .sound-toggle {
@@ -4675,6 +4688,7 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   border-radius: var(--r-sm);
   background: var(--surface);
   color: var(--ink);
+  font-weight: 500;
 }
 
 .library-filters select {

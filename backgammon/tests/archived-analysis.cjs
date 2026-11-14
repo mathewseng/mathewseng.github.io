@@ -83,7 +83,7 @@ module.exports = async (browser, base, out, name) => {
     assert.equal(await latest.locator('.feedback-review').count(),2,'cube and checker available under summary');
     assert.equal(await latest.locator('.history-turn').count(),1,'paired turn');
     assert.equal(await latest.locator('.history-initial').count(),0,'legacy records do not invent an initial move');
-    assert.equal(await latest.locator('.history-choice-method').count(),0,'legacy records never guess whether Play Best was used');
+    assert.equal(await latest.locator('.history-choice-method').count(),0,'legacy records never guess whether Play best was used');
     assert.deepEqual(await latest.locator('.history-roll .die').evaluateAll(ns=>ns.map(n=>n.getAttribute('aria-label'))),['4','1'],'saved rolls show higher die first');
     assert.equal(await latest.locator('[data-stage="accepted"] strong').first().innerText(),'0.010','legacy summary upgrades on expansion');
     assert.equal(await latest.locator('.history-turn[data-history-side="opponent"]').count(),0,'You filter applies to archives');

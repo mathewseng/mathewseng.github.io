@@ -729,8 +729,8 @@ the controls and summary below it instead of shrinking the board; taller phones 
 keep the summary at the bottom of the viewport. Same-device games have a player switch in the summary. Scrolling
 below the table reaches analysis.
 Short portrait screens keep Settings but tuck navigation into Controls.
-The costly-checker warning offers Hint and Play Best above Reset and Play Anyway; on phones in portrait it docks at the bottom so the move stays visible. Its close icon returns to revising; Play Anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
-Hint preserves the draft; Play Best returns drafted checkers before replaying.
+The costly-checker warning offers Hint and Play best above Reset and Play anyway; on phones in portrait it docks at the bottom so the move stays visible. Its close icon returns to revising; Play anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
+Hint preserves the draft; Play best returns drafted checkers before replaying.
 A drag can start anywhere in an occupied movable point and lifts its top checker.
 New installs default to Liquid Chrome styling with the Plum board palette;
 existing saved theme choices are preserved.

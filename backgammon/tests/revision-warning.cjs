@@ -38,7 +38,7 @@ module.exports=async function revisionWarning(browser,base,out,name){
         // The pending warning opens before grading. This case tests revising a
         // completed grade; the unlisted cases below cover revision while pending.
         await waitWork(page,w=>w?.game.initialDecision?.evaluation?.result?.error===loss);
-        assert.deepEqual(await page.locator('.checker-warning .dialog-foot button').allTextContents(),['Hint','Play Best','Reset','Play Anyway']);
+        assert.deepEqual(await page.locator('.checker-warning .dialog-foot button').allTextContents(),['Hint','Play best','Reset','Play anyway']);
         assert.equal((await read()).game.events.length,0,'warning leaves turn uncommitted');
         assert.equal(await page.locator('.checker-warning .close').getAttribute('aria-label'),'Revise');
         await page.locator('.checker-warning .close').click();
@@ -48,7 +48,7 @@ module.exports=async function revisionWarning(browser,base,out,name){
         assert.equal(first.evaluation.result.error,loss,'the first grade is saved before acceptance');
         assert.equal(await page.locator('#confirm').isEnabled(),true);
         await page.locator('#confirm').click();
-        await page.getByRole('button',{name:'Play Best',exact:true}).click();
+        await page.getByRole('button',{name:'Play best',exact:true}).click();
       }
       await waitWork(page,w=>w?.game.id==='warning-boundary'&&w.game.events.length>0);
       assert.equal((await read()).game.events[0]?.action.type,'move');
@@ -105,16 +105,16 @@ module.exports=async function revisionWarning(browser,base,out,name){
           await page.evaluate(()=>window.finishPending());
           await page.waitForFunction(()=>!document.querySelector('#pending-move-loss').textContent.includes('Still calculating'));
         }
-        await page.getByRole('button',{name:'Play Anyway',exact:true}).click();
+        await page.getByRole('button',{name:'Play anyway',exact:true}).click();
         const accepted=await waitWork(page,w=>w?.game.events.length>0);
-        assert.deepEqual(accepted.game.events[0].action.steps,submitted,'Play Anyway commits the submitted move, not the best move');
+        assert.deepEqual(accepted.game.events[0].action.steps,submitted,'Play anyway commits the submitted move, not the best move');
         const count=accepted.game.events.length;
         await page.evaluate(()=>window.finishSubmitted());await page.waitForTimeout(80);
         assert.equal((await read()).game.events.length,count,'a late grade cannot submit a second action');
         assert.equal(await page.locator('dialog[open]').count(),0);
       } else if(response==='reset') {
         const buttons=await page.locator('.checker-warning .dialog-foot button').evaluateAll(nodes=>nodes.map(n=>({text:n.textContent,x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y,width:n.getBoundingClientRect().width})));
-        assert.deepEqual(buttons.map(b=>b.text),['Hint','Play Best','Reset','Play Anyway']);
+        assert.deepEqual(buttons.map(b=>b.text),['Hint','Play best','Reset','Play anyway']);
         assert.ok(await page.locator('.checker-warning .dialog-body').evaluate(n=>n.scrollHeight<=n.clientHeight+1),
           'the warning copy remains fully visible above both button rows');
         await page.screenshot({path:path.join(out,`${name}-revision-warning-actions.png`)});
@@ -147,7 +147,7 @@ module.exports=async function revisionWarning(browser,base,out,name){
           assert.match(await page.locator('#pending-move-loss').textContent(),response==='fail'?/EV unavailable/:/0.020/);
         }
         if(response==='hint'||response==='best') {
-          await page.locator('.checker-warning').getByRole('button',{name:response==='hint'?'Hint':'Play Best',exact:true}).click();
+          await page.locator('.checker-warning').getByRole('button',{name:response==='hint'?'Hint':'Play best',exact:true}).click();
           await page.getByRole('dialog',{name:'Move hint',exact:true}).waitFor();
           await page.evaluate(()=>window.finishPending());
           if(response==='hint') {
@@ -155,7 +155,7 @@ module.exports=async function revisionWarning(browser,base,out,name){
             assert.equal((await read()).game.events.length,0,'opening a hint never commits the drafted move');
             await page.getByRole('button',{name:'Play best',exact:true}).click();
           }
-        } else await page.getByRole('button',{name:response==='fail'?'Play Anyway':'Play Best',exact:true}).click();
+        } else await page.getByRole('button',{name:response==='fail'?'Play anyway':'Play best',exact:true}).click();
         await waitWork(page,w=>w?.game.id==='pending-warning'&&w.game.events.length>0);
         assert.equal((await read()).game.events[0]?.action.type,'move');
       }

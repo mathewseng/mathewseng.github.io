@@ -38,10 +38,13 @@
   justify-content: center;
 }
 
-/* The report is a Docs page too, though the Docs link opens the guide. */
-.tool-nav a[aria-current="true"] {
-  color: var(--ink);
-  background: var(--accent-soft);
+/* Matches the app topbar, so the tool nav keeps its x across pages. */
+@media (min-width: 1025px) and (min-height: 501px) {
+  .docs-topbar {
+    display: grid;
+    grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+    justify-items: start;
+  }
 }
 
 .docs-head {

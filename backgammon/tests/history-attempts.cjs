@@ -1,4 +1,4 @@
-// Scripted grades exercise real Confirm/Revise/Play Best and persistence, not engine accuracy.
+// Scripted grades exercise real Confirm/Revise/Play best and persistence, not engine accuracy.
 const assert = require('node:assert/strict'), path = require('node:path');
 const {waitWork} = require('./play-helpers.cjs');
 module.exports = async (browser, base, out, name) => {
@@ -62,7 +62,7 @@ module.exports = async (browser, base, out, name) => {
       await resume();
       await page.locator('#confirm').click();
       await waitWork(page,w=>w?.game.initialDecision?.revisions?.[0]?.evaluation);
-      await page.locator('.checker-warning').getByRole('button',{name:'Play Best',exact:true}).click();
+      await page.locator('.checker-warning').getByRole('button',{name:'Play best',exact:true}).click();
       const accepted=await waitWork(page,w=>w?.game.events.some(e=>e.action.type==='move'));
       assert.equal(accepted.game.events[1].initialDecision.revisions.length,1);
       const checker=page.locator('#move-feedback [data-history-side="self"][data-decision-type="checker"]');

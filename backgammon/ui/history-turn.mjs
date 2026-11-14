@@ -78,7 +78,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
             class:"history-choice-method muted",
             "data-choice-method":row.choiceMethod,
             title:row.choiceMethod === "manual" ? "Best move found without viewing a hint"
-              : row.choiceMethod === "play-best" ? "Played using the Play Best button" : "Best move played after viewing a hint",
+              : row.choiceMethod === "play-best" ? "Played using the Play best button" : "Best move played after viewing a hint",
           }, row.choiceMethod === "manual" ? "Found" : "Hint")] : []),
           ...(row.feedback && equity(row.feedback.actual.equity) !== equity(row.feedback.best.equity)
             ? [el("span", {class:"history-choice-equity", "aria-label":`Played equity ${equity(row.feedback.actual.equity)}`}, equity(row.feedback.actual.equity))] : []),

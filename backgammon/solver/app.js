@@ -191,7 +191,8 @@ function renderContext() {
     item('Match',s.matchLength?`${s.scores[0]}–${s.scores[1]} / ${s.matchLength}${s.crawford?' · Crawford':''}`:'Unlimited',()=>contextDialog('match'),'solver-match'),
   );
   for (const [id,player] of [['opponent',1-(solverView.orientation??settings().orientation)],['player',solverView.orientation??settings().orientation]]) {
-    $(id).replaceChildren(el('span',{},names[player]),el('span',{class:'muted'},`${pipCount(preview || s,player)} pips`));
+    $(id).replaceChildren(el('span',{class:'player-name'},el('i',{class:`checker-dot${player?' teal':''}`,'aria-hidden':true}),el('strong',{title:names[player]},names[player])),
+      el('span',{class:'muted player-stats'},`${pipCount(preview || s,player)} pips`));
   }
   decisionChoices.value=s.phase;
   $('editor-direction').setAttribute('aria-pressed',String(solverView.mirrored));
@@ -510,6 +511,8 @@ function panel(problems) {
   const positionGroup = group("position", "Position tools"),
     analysisGroup = group("analysis", "Analysis & results"),
     saveGroup = group("save", "Save to Library");
+  // Rendered results carry their own heading (Evaluated moves or the cube action).
+  if (result) analysisGroup.firstChild.classList.add("sr-only");
   p.append(
     el(
       "nav",
@@ -690,7 +693,7 @@ function panel(problems) {
     );
   into = saveGroup;
   add(
-    button("Save position to Library", () =>
+    button("Save position", () =>
       saveDialog(source, "position", { ...savedFields(), analysis: result }),
     ),
   );

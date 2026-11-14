@@ -3176,14 +3176,14 @@ async function evaluateDecision(action) {
   };
   const warningActions = () => checker ? [
     button("Hint", () => openHint()),
-    button("Play Best", () => openHint(true)),
+    button("Play best", () => openHint(true)),
     button("Reset", () => {
       if (!activeAssistance(job)) return;
       releaseAssistance();
       unlockDraft();
       draft.reset();
     }),
-    button("Play Anyway", () => finish(completedResult), "primary"),
+    button("Play anyway", () => finish(completedResult), "primary"),
   ] : [
     button("Revise", onClose),
     button("Confirm anyway", () => finish(completedResult), "primary", {disabled: !completedResult}),
@@ -3282,7 +3282,7 @@ async function evaluateDecision(action) {
       return;
     }
     if (warningCopy) {
-      warningCopy.textContent = `EV unavailable: ${error.message}. ${checker ? "Play Anyway continues without feedback. Hint retries analysis." : "Revise or continue without feedback."}`;
+      warningCopy.textContent = `EV unavailable: ${error.message}. ${checker ? "Play anyway continues without feedback. Hint retries analysis." : "Revise or continue without feedback."}`;
       if (!checker) {
         const best = job.dialog.querySelector(".primary");
         best.replaceWith(button("Confirm without feedback", () => finish(), "primary"));

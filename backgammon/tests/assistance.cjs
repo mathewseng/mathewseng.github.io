@@ -618,7 +618,7 @@ module.exports = async function assistanceUX(
         else await edge.locator("#undo-play-best").click();
         if (scenario === "warning")
           await edge
-            .getByRole("button", { name: "Play Best", exact: true })
+            .getByRole("button", { name: "Play best", exact: true })
             .click();
         await edge.locator("#review-feedback").waitFor({ timeout: 60000 });
         // Inspect the rendered review after scrolling, including WebKit on phones.
