@@ -1,0 +1,357 @@
+.scc {
+  --scc-die: clamp(48px, 5vw, 72px);
+  display: grid;
+  gap: 24px;
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+.scc .tdie {
+  --die: var(--scc-die);
+}
+
+/* ---------- This round's cargos ---------- */
+
+.scc-round {
+  display: grid;
+  gap: 10px;
+}
+
+.scc-round-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+
+.scc-round-head h2 {
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+
+.scc-round-note {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.scc-cargos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scc-seat {
+  display: grid;
+  grid-template-areas:
+    "name cargo"
+    "pips cargo";
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  transition:
+    background-color var(--d-fast),
+    border-color var(--d-fast);
+}
+
+.scc-seat.is-turn {
+  background: color-mix(in oklab, var(--seat-color) 14%, transparent);
+}
+
+.scc-seat.is-best {
+  border-color: var(--seat-color);
+  box-shadow: inset 0 0 0 1px var(--seat-color);
+}
+
+.scc-seat-name {
+  display: flex;
+  grid-area: name;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.scc-seat-name > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scc-seat.is-turn .scc-seat-name,
+.scc-seat.is-best .scc-seat-name {
+  color: var(--ink);
+}
+
+.scc-seat-cargo {
+  grid-area: cargo;
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.scc-seat-cargo.is-empty,
+.scc-cargo > strong.is-empty {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.scc-seat.is-best .scc-seat-cargo {
+  color: var(--seat-color);
+}
+
+.scc-pips {
+  grid-area: pips;
+}
+
+.scc-pips,
+.scc-roll-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.scc-pip {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.scc-pip.is-won {
+  border-color: var(--seat-color);
+  background: var(--seat-color);
+}
+
+/* ---------- The turn: ship, captain and crew, the dice in play, the cargo ---------- */
+
+.scc-play {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-3);
+  container-type: inline-size;
+}
+
+.scc-row {
+  display: grid;
+  grid-template-areas: "ship hold cargo";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 20px 32px;
+}
+
+.scc-ship {
+  display: flex;
+  grid-area: ship;
+  gap: 12px;
+}
+
+.scc-hold {
+  grid-area: hold;
+  min-width: 0;
+}
+
+.scc-cargo {
+  display: grid;
+  grid-area: cargo;
+  justify-items: center;
+  gap: 6px;
+  min-width: 88px;
+}
+
+.scc-slot {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.scc-slot-label,
+.scc-cargo > span {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.scc-slot.is-next .scc-slot-label {
+  color: var(--ink);
+}
+
+.scc-ghost {
+  display: grid;
+  place-items: center;
+  width: var(--scc-die);
+  height: var(--scc-die);
+  border: 2px dashed var(--line-strong);
+  border-radius: calc(var(--scc-die) * 0.23);
+  color: var(--muted);
+  font-size: calc(var(--scc-die) * 0.38);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.scc-slot.is-next .scc-ghost {
+  border-color: color-mix(in oklab, var(--seat-color) 70%, transparent);
+  background: color-mix(in oklab, var(--seat-color) 8%, transparent);
+  color: var(--ink);
+}
+
+.scc-ghost--blank {
+  border-color: var(--line);
+}
+
+.scc-dice {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.scc-cargo > strong {
+  font-size: 3.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.scc-play.is-done .scc-row {
+  opacity: 0.8;
+}
+
+.scc-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.scc-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.scc-rolls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.scc-roll-pips .scc-pip {
+  width: 10px;
+  height: 10px;
+}
+
+/* Narrow tables: the cargo sits beside the ship and the dice in play go below. */
+@container (max-width: 760px) {
+  .scc-row {
+    grid-template-areas:
+      "ship cargo"
+      "hold hold";
+    grid-template-columns: auto auto;
+    justify-content: center;
+    gap: 18px 28px;
+  }
+
+  .scc-dice {
+    justify-content: center;
+  }
+}
+
+@container (max-width: 340px) {
+  .scc-row {
+    gap: 16px 18px;
+  }
+
+  .scc-ship {
+    gap: 8px;
+  }
+
+  .scc-dice {
+    gap: 8px;
+  }
+
+  .scc-cargo {
+    min-width: 64px;
+  }
+
+  .scc-cargo > strong {
+    font-size: 2.75rem;
+  }
+}
+
+/* Five or six seats, or a phone: each seat stacks name, cargo and wins. */
+.scc-cargos--tight .scc-seat {
+  grid-template-areas:
+    "name"
+    "cargo"
+    "pips";
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.scc-cargos--tight {
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+}
+
+@media (max-width: 520px) {
+  .scc {
+    gap: 18px;
+  }
+
+  .scc-cargos {
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  }
+
+  .scc-seat {
+    grid-template-areas:
+      "name"
+      "cargo"
+      "pips";
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .scc-seat-cargo {
+    font-size: 1.5rem;
+  }
+
+  .scc-play {
+    gap: 14px;
+    padding: 16px 12px;
+  }
+
+  .scc-foot {
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Both buttons share a row when their labels fit, else each takes one. */
+  .scc-actions .btn {
+    min-width: fit-content;
+  }
+}

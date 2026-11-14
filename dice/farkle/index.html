@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" data-family="dice">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Play Farkle against bots or friends: set aside scoring dice, roll the rest, and bank before a Farkle wipes your turn." />
+  <title>Farkle · Dice</title>
+  <link rel="icon" href="../favicon.svg" />
+  <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+  <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+  <link rel="stylesheet" href="../table.css?v=20261114" />
+  <link rel="stylesheet" href="./styles.css?v=20261114" />
+  <script type="module" src="./app.js?v=20261114"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/" aria-label="All projects"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a><span class="crumb-sep" aria-hidden="true">/</span><a href="/dice/">Dice</a><span class="crumb-sep" aria-hidden="true">/</span><span class="crumb-current" aria-current="page">Farkle</span></nav>
+    <nav class="tool-nav" aria-label="Dice games"><a href="/dice/yacht/">Yacht</a><a href="/dice/farkle/" aria-current="page">Farkle</a><a href="/dice/liars-dice/">Liar’s Dice</a><a href="/dice/ship-captain-crew/">Ship, Captain &amp; Crew</a><a href="/dice/shut-the-box/">Shut the Box</a><a href="/dice/pig/">Pig</a><a href="/dice/mia/">Mia</a></nav>
+    <div class="topbar-actions">
+      <span class="badge badge--plain" id="network-state" hidden>Offline</span>
+      <div id="dice-style"></div>
+      <button class="btn btn--ghost btn--icon" id="rules-button" type="button" aria-label="How to play" title="How to play"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <noscript><p>Farkle needs JavaScript to roll dice.</p></noscript>
+  </main>
+  <dialog class="dialog dialog--wide" id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-head"><h2 id="rules-title">How to play Farkle</h2><button class="btn btn--ghost btn--icon" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div>
+    <div class="dialog-body rules-copy">
+      <p>Start your turn by rolling all six dice. After every roll, set aside at least one scoring die or combination. Then bank your turn total, or roll the dice you have left to add more.</p>
+      <p>A roll with nothing that scores is a Farkle: you lose the turn total and the dice pass on.</p>
+      <p>Hot dice: once all six dice have been set aside as scoring, roll all six again and keep building the same turn total.</p>
+      <p>Combinations count only within a single roll, and every die you set aside must score. A selection scores by its best split: four 1s are three 1s and a single 1, worth 1,100.</p>
+      <h3>Scoring</h3>
+      <table>
+        <thead><tr><th scope="col">Dice</th><th scope="col">Points</th></tr></thead>
+        <tbody>
+          <tr><td>Single 1</td><td>100</td></tr>
+          <tr><td>Single 5</td><td>50</td></tr>
+          <tr><td>Three 1s</td><td>1,000</td></tr>
+          <tr><td>Three of a kind, 2 to 6</td><td>Face × 100</td></tr>
+          <tr><td>Four of a kind</td><td>1,000</td></tr>
+          <tr><td>Five of a kind</td><td>2,000</td></tr>
+          <tr><td>Six of a kind</td><td>3,000</td></tr>
+          <tr><td>Straight, 1 to 6</td><td>1,500</td></tr>
+          <tr><td>Three pairs, or four of a kind with a pair</td><td>1,500</td></tr>
+          <tr><td>Two triplets</td><td>2,500</td></tr>
+        </tbody>
+      </table>
+      <h3>Winning</h3>
+      <p>When a player banks the target (10,000 or 5,000), everyone else gets one final turn. The highest score then wins; tied players share the win.</p>
+      <p>With an opening minimum of 500, a player who has not banked yet can only bank a turn worth 500 or more.</p>
+      <h3>Bots</h3>
+      <p>Easy sets aside every scoring die and banks at about 300 to 400, however many dice are left. Normal keeps sets, or a single 1 or 5 to reroll more dice, and banks sooner as the dice run out. Hard plays the move that maximises the points a turn is expected to bank, worked out over every possible roll. It presses on when a rival nears the target, keeps rolling past the target when a close rival could beat a smaller total, and plays its final turn to beat the leader.</p>
+      <p>Keys: 1 to 6 pick dice, R keeps and rolls, B banks.</p>
+    </div>
+  </dialog>
+</body>
+</html>

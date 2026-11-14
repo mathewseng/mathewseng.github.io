@@ -1,0 +1,404 @@
+.ld {
+  display: grid;
+  gap: 20px;
+  max-width: 980px;
+  margin-inline: auto;
+}
+
+.ld-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+/* ---------- Everyone else’s cups ---------- */
+
+.ld-cups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Five cups (six players) fit one row of the 980px board. */
+.ld-cup {
+  display: grid;
+  flex: 0 1 186px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--surface-3) 70%, transparent);
+  transition:
+    border-color var(--d-fast),
+    background-color var(--d-fast);
+}
+
+.ld-cup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ld-cup-head strong {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ld-cup-count {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ld-cup-dice {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  min-height: 28px;
+}
+
+.ld-cup .tdice--sm {
+  gap: 4px;
+}
+
+.ld-cup.is-turn {
+  border-color: color-mix(in oklab, var(--seat-color) 70%, transparent);
+  background: color-mix(in oklab, var(--seat-color) 10%, var(--surface-3));
+}
+
+.ld-cup.is-turn .dt-dot {
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--seat-color) 30%, transparent);
+}
+
+.ld-cup.is-out {
+  opacity: 0.55;
+}
+
+.ld-cup.is-loser {
+  border-color: color-mix(in oklab, var(--bad) 60%, transparent);
+}
+
+.ld-cup.is-loser .ld-cup-count {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+
+/* Revealed dice: the ones that counted are ringed, the rest step back. */
+.ld .tdie--mark {
+  box-shadow: 0 0 0 2px var(--good);
+}
+
+.ld-hand .tdie--mark:not(.tdie--3d) {
+  box-shadow:
+    0 0 0 3px var(--page),
+    0 0 0 5px var(--good);
+}
+
+.ld.is-open .tdice .tdie:not(.tdie--mark) {
+  opacity: 0.4;
+}
+
+/* ---------- The bid ---------- */
+
+.ld-table {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px 32px;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-3);
+}
+
+.ld-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 36px;
+}
+
+.ld-bid {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.ld-bid .dt-dot {
+  background: var(--seat-color);
+}
+
+.ld-bid-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+}
+
+.ld-bid-value strong {
+  font-size: 48px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.ld-bid .tdie {
+  --die: 52px;
+}
+
+.ld-times {
+  color: var(--muted);
+  font-size: var(--t-lg);
+  font-weight: 600;
+}
+
+.ld-bid-unit {
+  color: var(--muted);
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+
+.ld-found.is-held strong {
+  color: var(--good);
+}
+
+.ld-found.is-short strong {
+  color: var(--bad);
+}
+
+.ld-round {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ld-total {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ld-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-data);
+  list-style: none;
+}
+
+.ld-history strong {
+  color: var(--seat-color);
+  font-weight: 600;
+}
+
+.ld-history .is-current {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.ld-result {
+  grid-column: 1 / -1;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--t-md);
+  line-height: var(--lh-body);
+}
+
+.ld-result strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ---------- Your dice and your bid ---------- */
+
+.ld-me {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 20px 48px;
+}
+
+.ld-hand {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.ld-hand .ld-label .dt-dot {
+  background: var(--seat-color);
+}
+
+.ld-hand.is-loser .ld-label {
+  color: var(--bad);
+}
+
+.ld-hand-dice .tdie {
+  --die: clamp(48px, 5vw, 60px);
+}
+
+.ld-picker {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.ld-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 20px;
+}
+
+.ld-qty {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ld-qty-value {
+  min-width: 3ch;
+  font-size: var(--t-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.ld-faces {
+  display: flex;
+  gap: 6px;
+}
+
+.ld-face {
+  width: 48px;
+  min-width: 44px;
+  height: 48px;
+  padding: 0;
+}
+
+.ld-face[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.ld-face .tdie {
+  box-shadow: none;
+}
+
+.ld-actions .btn--primary {
+  min-width: 168px;
+}
+
+.ld-next {
+  align-self: center;
+  color: var(--muted);
+  font-size: var(--t-md);
+  text-align: center;
+}
+
+.ld-me > .ld-actions {
+  align-self: center;
+}
+
+@media (max-width: 880px) {
+  .ld-me {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 520px) {
+  .ld {
+    gap: 16px;
+  }
+
+  /* Phones: the bid, then your dice and bid, then everyone else. */
+  .ld-table {
+    order: 1;
+  }
+
+  .ld-me {
+    order: 2;
+  }
+
+  .ld-cups {
+    flex-direction: column;
+    order: 3;
+    gap: 6px;
+  }
+
+  .ld-cup {
+    flex: none;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 2px 10px;
+    padding: 8px 10px;
+  }
+
+  .ld-cup-dice {
+    grid-row: 1 / 3;
+    grid-column: 2;
+    justify-content: flex-end;
+  }
+
+  .ld-cup-count {
+    grid-row: 2;
+    grid-column: 1;
+    padding-left: 18px;
+  }
+
+  .ld-table {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .ld-stats {
+    justify-content: space-between;
+  }
+
+  .ld-bid-value strong {
+    font-size: 40px;
+  }
+
+  .ld-bid .tdie {
+    --die: 44px;
+  }
+
+  .ld-controls {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+  }
+
+  .ld-faces {
+    width: 100%;
+  }
+
+  .ld-face {
+    flex: 1 1 0;
+    width: auto;
+  }
+}

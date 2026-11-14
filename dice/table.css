@@ -1,0 +1,744 @@
+/* The dice table shell (dice/table.js): setup, stage, players, log and dice.
+   Game pages add only their board styles in their own styles.css. */
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+}
+
+.topbar {
+  flex: none;
+  padding: 8px 32px;
+}
+
+.dt {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1400px;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0 32px 20px;
+}
+
+.dt-muted {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.dt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 0 14px;
+}
+
+.dt-head h1 {
+  font-size: var(--t-xl);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  letter-spacing: -0.02em;
+}
+
+.dt-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dt-dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--seat-color, var(--accent));
+}
+
+.dice-style > button {
+  min-width: 44px;
+}
+
+/* ---------- Setup ---------- */
+
+.dt-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.dt-setup .panel-body {
+  display: grid;
+  gap: 14px;
+}
+
+.dt-seats {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dt-seat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 11rem) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.dt-seat--static {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 44px;
+}
+
+.dt-seat .field input,
+.dt-seat .field select,
+.dt-online-form .field input {
+  width: 100%;
+}
+
+.dt-seat-text {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-seat-actions,
+.dt-online-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dt-online-form {
+  display: grid;
+  gap: 14px;
+}
+
+.dt-code-input {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dt-room {
+  display: grid;
+  gap: 14px;
+}
+
+.dt-room-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+}
+
+.dt-room-code span {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.dt-room-code strong {
+  font-family: var(--font-mono);
+  font-size: var(--t-xl);
+  letter-spacing: 0.12em;
+}
+
+.dt-room-code .btn {
+  margin-left: auto;
+}
+
+.dt-options {
+  display: grid;
+  gap: 16px;
+}
+
+.dt-option {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.dt-option[disabled] {
+  opacity: 0.75;
+}
+
+.dt-setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.dt-setup-actions .btn--primary {
+  min-width: 180px;
+}
+
+/* ---------- Table ---------- */
+
+.dt-table:not([hidden]) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dt-layout {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  min-height: 0;
+}
+
+.dt-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: linear-gradient(170deg, var(--surface-2), var(--surface) 60%);
+  box-shadow: var(--shadow-tile);
+}
+
+.dt-status {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-height: 64px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  transition: background-color var(--d-base);
+}
+
+.dt-status-text {
+  font-size: var(--t-lg);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+}
+
+.dt-status[data-state="yours"] .dt-status-text {
+  color: var(--accent);
+}
+
+.dt-status[data-state="over"] {
+  background: color-mix(in oklab, var(--seat-color) 14%, transparent);
+}
+
+.dt-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dt-board {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 20px;
+  overflow: auto;
+}
+
+/* Centred when there is room; top-aligned and scrolling when there is not. */
+.dt-board > * {
+  width: 100%;
+  margin-block: auto;
+}
+
+.dt-curtain:not([hidden]) {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.dt-curtain p:first-child {
+  font-size: var(--t-xl);
+  font-weight: 700;
+}
+
+.dt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.dt-actions .btn {
+  min-width: 132px;
+  min-height: 48px;
+}
+
+.dt-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dt-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 12px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.dt-panel h2 {
+  margin: 0 4px 8px;
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+
+.dt-players {
+  flex: none;
+}
+
+.dt-players ol,
+.dt-log ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dt-players ol {
+  display: grid;
+  gap: 2px;
+}
+
+.dt-player {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 48px;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  transition: background-color var(--d-fast);
+}
+
+.dt-player.is-turn {
+  background: color-mix(in oklab, var(--seat-color) 14%, transparent);
+}
+
+.dt-player.is-turn .dt-dot {
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--seat-color) 30%, transparent);
+}
+
+.dt-player-name {
+  display: grid;
+  min-width: 0;
+}
+
+.dt-player-name strong,
+.dt-player-name small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-player-name small {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.dt-player-summary {
+  font-size: var(--t-md);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.dt-player.is-winner .dt-player-summary {
+  color: var(--seat-color);
+}
+
+.dt-takeover {
+  grid-column: 2 / -1;
+  justify-self: start;
+}
+
+.dt-log {
+  flex: 1;
+}
+
+.dt-log ol {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.dt-log li {
+  padding: 5px 4px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.dt-log li:first-child {
+  border-top: 0;
+}
+
+.dt-log li strong {
+  color: var(--seat-color);
+  font-weight: 600;
+}
+
+.dt-log .dt-log-table {
+  color: var(--ink);
+}
+
+/* ---------- Dice ---------- */
+
+.tdice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(8px, 1.2vw, 16px);
+}
+
+.tdice--sm {
+  gap: 6px;
+}
+
+.tdie-slot {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.tdie-btn {
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tdie-btn:disabled {
+  cursor: default;
+}
+
+.tdie-label {
+  min-height: 16px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.tdie-btn[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.tdie {
+  --die: clamp(48px, 5vw, 64px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: calc(var(--die) * 0.07);
+  width: var(--die);
+  height: var(--die);
+  padding: calc(var(--die) * 0.17);
+  border-radius: calc(var(--die) * 0.23);
+  background: var(--ink);
+  color: var(--page);
+  box-shadow:
+    0 calc(var(--die) * 0.07) 0 var(--control-border),
+    0 10px 18px color-mix(in oklab, var(--page) 60%, transparent);
+  transition:
+    transform var(--d-fast) var(--ease),
+    background-color var(--d-fast) var(--ease);
+}
+
+.tdie--sm {
+  --die: 28px;
+  box-shadow: 0 2px 0 var(--control-border);
+}
+
+.tdie .pip {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.tdie .pip.off {
+  visibility: hidden;
+}
+
+.tdie--held {
+  background: var(--accent);
+  box-shadow:
+    0 calc(var(--die) * 0.07) 0 color-mix(in oklab, var(--accent) 45%, var(--page)),
+    0 10px 18px color-mix(in oklab, var(--page) 60%, transparent);
+  transform: translateY(-6px);
+}
+
+.tdie--mark {
+  box-shadow:
+    0 0 0 3px var(--page),
+    0 0 0 5px var(--good);
+}
+
+.tdie--hidden {
+  display: grid;
+  grid-template: 1fr / 1fr;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-3);
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.tdie-cup {
+  font-size: max(var(--t-xs), calc(var(--die) * 0.42));
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tdie--3d {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tdie--3d canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tdie--3d.tdie--held {
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.tdie--3d.tdie--mark {
+  border-radius: var(--r-md);
+  box-shadow: 0 0 0 2px var(--good);
+}
+
+.tdie--3d.tdie--hidden {
+  border: 0;
+  background: transparent;
+  opacity: 0.45;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tdie-btn:not(:disabled):hover .tdie {
+    transform: translateY(-4px);
+  }
+
+  .tdie-btn[aria-pressed="true"]:not(:disabled):hover .tdie {
+    transform: translateY(-8px);
+  }
+}
+
+.tdie.rolling {
+  animation: tdie-tumble 420ms var(--ease) both;
+}
+
+.tdie--3d.rolling {
+  animation: none;
+}
+
+@keyframes tdie-tumble {
+  0% {
+    opacity: 0.3;
+    transform: translateY(-14px) rotate(-18deg);
+  }
+
+  60% {
+    transform: translateY(3px) rotate(8deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tdie.rolling {
+    animation: none;
+  }
+}
+
+/* ---------- Narrow screens: one column, the page scrolls ---------- */
+
+@media (max-width: 960px) {
+  .dt-setup-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 880px) {
+  .topbar {
+    padding: 6px 12px;
+  }
+
+  .topbar .tool-nav {
+    order: 3;
+    width: 100%;
+  }
+
+  .dt {
+    padding: 0 12px 16px;
+  }
+
+  .dt-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dt-stage {
+    overflow: visible;
+  }
+
+  .dt-board {
+    overflow: visible;
+    padding: 16px 12px;
+  }
+
+  .dt-log ol {
+    max-height: 240px;
+  }
+}
+
+@media (max-width: 520px) {
+  .crumbs > a:first-child > span:not(.mark) {
+    display: none;
+  }
+
+  .dt-seat {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .dt-seat .dt-seat-kind {
+    grid-column: 2 / 3;
+  }
+
+  .dt-seat--static .dt-seat-kind {
+    grid-column: auto;
+  }
+
+  .dt-setup-actions .btn {
+    flex: 1;
+  }
+
+  .dt-status {
+    padding: 10px 14px;
+  }
+
+  .dt-status-text {
+    font-size: var(--t-md);
+  }
+
+  .dt-actions .btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Desktop app shell: the table fits the window and the log scrolls in its panel. */
+@media (min-width: 881px) {
+  body:has(.dt-table:not([hidden])) {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .dt-layout {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .dt-log ol {
+    contain: size;
+  }
+}
+
+@media (min-width: 881px) and (max-height: 760px) {
+  .dt-head {
+    padding: 4px 0 8px;
+  }
+
+  .dt-board {
+    padding: 14px 18px;
+  }
+}
+
+/* ---------- Rules dialog ---------- */
+
+.rules-copy {
+  display: grid;
+  gap: 10px;
+  line-height: var(--lh-body);
+}
+
+.rules-copy h3 {
+  margin-top: 8px;
+  font-size: var(--t-md);
+}
+
+.rules-copy ul,
+.rules-copy ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.rules-copy table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.rules-copy th,
+.rules-copy td {
+  padding: 6px 8px 6px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.rules-copy th {
+  color: var(--muted);
+  font-weight: 600;
+}

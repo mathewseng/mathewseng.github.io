@@ -197,6 +197,40 @@
       "glyph": "pips:5",
       "groups": [
         {
+          "title": "Play with friends or bots",
+          "unit": "games",
+          "tools": [
+            {
+              "name": "Yacht",
+              "path": "/dice/yacht/"
+            },
+            {
+              "name": "Farkle",
+              "path": "/dice/farkle/"
+            },
+            {
+              "name": "Liar’s Dice",
+              "path": "/dice/liars-dice/"
+            },
+            {
+              "name": "Ship, Captain & Crew",
+              "path": "/dice/ship-captain-crew/"
+            },
+            {
+              "name": "Shut the Box",
+              "path": "/dice/shut-the-box/"
+            },
+            {
+              "name": "Pig",
+              "path": "/dice/pig/"
+            },
+            {
+              "name": "Mia",
+              "path": "/dice/mia/"
+            }
+          ]
+        },
+        {
           "title": "Hold & reroll",
           "unit": "games",
           "tools": [
@@ -793,7 +827,7 @@
         "ofc/"
       ],
       "kind": "hub",
-      "updated": "2026-10-21",
+      "updated": "2026-10-27",
       "created": "2026-06-29"
     },
     {
@@ -805,7 +839,7 @@
       "sourcePaths": [
         "ofc/play/"
       ],
-      "updated": "2026-10-21",
+      "updated": "2026-10-27",
       "created": "2026-09-07"
     },
     {
@@ -817,7 +851,7 @@
       "sourcePaths": [
         "ofc/fantasyland-trainer/"
       ],
-      "updated": "2026-10-21",
+      "updated": "2026-10-27",
       "created": "2026-06-29"
     },
     {
@@ -829,7 +863,7 @@
       "sourcePaths": [
         "ofc/fantasyland-ev/"
       ],
-      "updated": "2026-10-21",
+      "updated": "2026-10-27",
       "created": "2026-06-29"
     },
     {
@@ -842,7 +876,7 @@
         "backgammon/"
       ],
       "kind": "hub",
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-04"
     },
     {
@@ -854,7 +888,7 @@
       "sourcePaths": [
         "backgammon/play/"
       ],
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-04"
     },
     {
@@ -866,7 +900,7 @@
       "sourcePaths": [
         "backgammon/trainer/"
       ],
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-04"
     },
     {
@@ -878,7 +912,7 @@
       "sourcePaths": [
         "backgammon/solver/"
       ],
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-04"
     },
     {
@@ -890,7 +924,7 @@
       "sourcePaths": [
         "backgammon/library/"
       ],
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-04"
     },
     {
@@ -902,7 +936,7 @@
       "sourcePaths": [
         "backgammon/openings/"
       ],
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-22"
     },
     {
@@ -914,7 +948,7 @@
       "sourcePaths": [
         "backgammon/controls/"
       ],
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-06"
     },
     {
@@ -926,7 +960,7 @@
       "sourcePaths": [
         "backgammon/reports/"
       ],
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-06"
     },
     {
@@ -970,7 +1004,7 @@
       "name": "Dice",
       "path": "/dice/",
       "category": "games",
-      "description": "Hold and reroll in Draw Dice, explore fair payout schedules, and compare two-dice matchups.",
+      "description": "Play Yacht, Farkle, Liar’s Dice and more against bots or friends, plus Draw Dice and fair payout reports.",
       "historyPath": "dice/index.html",
       "sourcePaths": [
         "dice/"
@@ -1000,8 +1034,113 @@
       "sourcePaths": [
         "dice/reports/"
       ],
-      "updated": "2026-10-21",
+      "updated": "2026-10-27",
       "created": "2026-10-07"
+    },
+    {
+      "name": "Yacht",
+      "path": "/dice/yacht/",
+      "category": "games",
+      "description": "Five dice, three rolls and thirteen scorecard boxes, against bots or friends.",
+      "historyPath": "dice/yacht/index.html",
+      "sourcePaths": [
+        "dice/yacht/",
+        "dice/table.js",
+        "dice/table.css",
+        "dice/table-core.mjs"
+      ],
+      "updated": "2026-11-14",
+      "created": "2026-11-14"
+    },
+    {
+      "name": "Farkle",
+      "path": "/dice/farkle/",
+      "category": "games",
+      "description": "Set aside scoring dice and push on, or bank before a roll with nothing in it wipes the turn.",
+      "historyPath": "dice/farkle/index.html",
+      "sourcePaths": [
+        "dice/farkle/",
+        "dice/table.js",
+        "dice/table.css",
+        "dice/table-core.mjs"
+      ],
+      "updated": "2026-11-14",
+      "created": "2026-11-14"
+    },
+    {
+      "name": "Liar’s Dice",
+      "path": "/dice/liars-dice/",
+      "category": "games",
+      "description": "Roll in secret and bid on the whole table’s dice. Raise the bid or call Liar.",
+      "historyPath": "dice/liars-dice/index.html",
+      "sourcePaths": [
+        "dice/liars-dice/",
+        "dice/table.js",
+        "dice/table.css",
+        "dice/table-core.mjs"
+      ],
+      "updated": "2026-11-14",
+      "created": "2026-11-14"
+    },
+    {
+      "name": "Ship, Captain & Crew",
+      "path": "/dice/ship-captain-crew/",
+      "category": "games",
+      "description": "Roll a 6, 5 and 4 in order within three rolls, then load the best cargo you dare.",
+      "historyPath": "dice/ship-captain-crew/index.html",
+      "sourcePaths": [
+        "dice/ship-captain-crew/",
+        "dice/table.js",
+        "dice/table.css",
+        "dice/table-core.mjs"
+      ],
+      "updated": "2026-11-14",
+      "created": "2026-11-14"
+    },
+    {
+      "name": "Shut the Box",
+      "path": "/dice/shut-the-box/",
+      "category": "games",
+      "description": "Shut numbered tiles that add up to each roll. Whatever stays open counts against you.",
+      "historyPath": "dice/shut-the-box/index.html",
+      "sourcePaths": [
+        "dice/shut-the-box/",
+        "dice/table.js",
+        "dice/table.css",
+        "dice/table-core.mjs"
+      ],
+      "updated": "2026-11-14",
+      "created": "2026-11-14"
+    },
+    {
+      "name": "Pig",
+      "path": "/dice/pig/",
+      "category": "games",
+      "description": "Roll one die as long as you dare. Bank before a 1 wipes the turn.",
+      "historyPath": "dice/pig/index.html",
+      "sourcePaths": [
+        "dice/pig/",
+        "dice/table.js",
+        "dice/table.css",
+        "dice/table-core.mjs"
+      ],
+      "updated": "2026-11-14",
+      "created": "2026-11-14"
+    },
+    {
+      "name": "Mia",
+      "path": "/dice/mia/",
+      "category": "games",
+      "description": "Roll two dice in secret and announce something higher. Believe it or call the bluff.",
+      "historyPath": "dice/mia/index.html",
+      "sourcePaths": [
+        "dice/mia/",
+        "dice/table.js",
+        "dice/table.css",
+        "dice/table-core.mjs"
+      ],
+      "updated": "2026-11-14",
+      "created": "2026-11-14"
     },
     {
       "name": "Card Table Workshop",
@@ -1024,7 +1163,7 @@
       "sourcePaths": [
         "scoundrel/"
       ],
-      "updated": "2026-10-23",
+      "updated": "2026-10-28",
       "created": "2026-10-22"
     },
     {
@@ -1048,7 +1187,7 @@
       "sourcePaths": [
         "scoundrel/reports/"
       ],
-      "updated": "2026-10-23",
+      "updated": "2026-10-28",
       "created": "2026-10-22"
     },
     {
@@ -1366,7 +1505,7 @@
       "sourcePaths": [
         "gym/"
       ],
-      "updated": "2026-10-21",
+      "updated": "2026-11-11",
       "created": "2026-07-28"
     },
     {

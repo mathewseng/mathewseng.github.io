@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-family="dice">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Play Liar’s Dice against bots or friends: roll in secret, bid on every die at the table, and call Liar when a bid is too high." />
+  <title>Liar’s Dice · Dice</title>
+  <link rel="icon" href="../favicon.svg" />
+  <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+  <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+  <link rel="stylesheet" href="../table.css?v=20261114" />
+  <link rel="stylesheet" href="./styles.css?v=20261114" />
+  <script type="module" src="./app.js?v=20261114"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/" aria-label="All projects"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a><span class="crumb-sep" aria-hidden="true">/</span><a href="/dice/">Dice</a><span class="crumb-sep" aria-hidden="true">/</span><span class="crumb-current" aria-current="page">Liar’s Dice</span></nav>
+    <nav class="tool-nav" aria-label="Dice games"><a href="/dice/yacht/">Yacht</a><a href="/dice/farkle/">Farkle</a><a href="/dice/liars-dice/" aria-current="page">Liar’s Dice</a><a href="/dice/ship-captain-crew/">Ship, Captain &amp; Crew</a><a href="/dice/shut-the-box/">Shut the Box</a><a href="/dice/pig/">Pig</a><a href="/dice/mia/">Mia</a></nav>
+    <div class="topbar-actions">
+      <span class="badge badge--plain" id="network-state" hidden>Offline</span>
+      <div id="dice-style"></div>
+      <button class="btn btn--ghost btn--icon" id="rules-button" type="button" aria-label="How to play" title="How to play"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <noscript><p>Liar’s Dice needs JavaScript to roll and hide the dice.</p></noscript>
+  </main>
+  <dialog class="dialog dialog--wide" id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-head"><h2 id="rules-title">How to play Liar’s Dice</h2><button class="btn btn--ghost btn--icon" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div>
+    <div class="dialog-body rules-copy">
+      <p>Everyone starts with the same number of dice: five, or three for a shorter game. Each round, everyone rolls in secret and sees only their own dice.</p>
+      <p>Players then bid in turn around the table, starting with the round’s opener. A bid names a quantity and a face and is about every die in play, not just yours: “four 5s” claims that at least four of all the dice on the table show a 5.</p>
+      <p>With ones wild (the default), every 1 counts toward whatever face is bid, so bids name a face from 2 to 6. With ones wild off, a 1 is an ordinary face and can be bid like any other.</p>
+      <h3>Raising</h3>
+      <p>Each bid must raise the one before it: more dice of any face, or the same number of dice with a higher face. A bid can never name more dice than are in play. After “four 5s”:</p>
+      <ul>
+        <li>“four 6s” is a raise: the same number, a higher face.</li>
+        <li>“five 2s” is a raise: more dice, and the face can drop.</li>
+        <li>“four 3s” is not a raise: a lower face needs more dice, so the smallest bid on 3s is “five 3s”.</li>
+        <li>“three 6s” is not a raise: fewer dice, whatever the face.</li>
+      </ul>
+      <h3>Calling Liar</h3>
+      <p>Instead of raising, call Liar on the last bid (the opener has to bid, as there is nothing to call yet). Everyone shows their dice and the bid face is counted, wild ones included. If there are at least as many as the bid said, the bid stands and the caller loses a die. If there are fewer, the bidder loses a die.</p>
+      <p>Example, ones wild: Pascal bid four 5s and you called Liar. The table shows two 5s and one 1, which makes three 5s. The bid was one short, so Pascal lost a die. With a fourth 5 or another 1 on the table, the bid would have stood and you would have lost the die.</p>
+      <p>Whoever lost the die opens the next round. A player who loses their last die is out, and the next player still in opens instead. The last player with dice wins.</p>
+      <h3>Bots</h3>
+      <p>Easy calls Liar only when a bid is well above the average count for the table, otherwise raises by the least it can on a random face, and slips up now and then. Normal works out how likely each bid is from its own dice and raises with the bid most likely to be true. Hard also reads the bidding, treating a face a player has bid as one they probably hold, weighs calling against the risk of its own best raise, and bluffs now and then.</p>
+      <p>Keys: Enter bids or starts the next round, L calls Liar, + and − change the quantity, 1 to 6 pick a face.</p>
+    </div>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,159 @@
+.pig {
+  display: grid;
+  gap: 28px;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+.pig-race {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pig-lane {
+  display: grid;
+  grid-template-columns: minmax(64px, 9rem) minmax(0, 1fr) 4.5rem;
+  align-items: center;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pig-lane-name {
+  overflow: hidden;
+  color: var(--muted);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pig-lane.is-turn .pig-lane-name {
+  color: var(--ink);
+}
+
+.pig-track {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+}
+
+.pig-bank,
+.pig-risk {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  transition: width var(--d-base) var(--ease);
+}
+
+.pig-bank {
+  width: calc(var(--bank) * 100%);
+  background: var(--seat-color);
+}
+
+.pig-risk {
+  width: calc(var(--risk) * 100%);
+  background: color-mix(in oklab, var(--seat-color) 35%, transparent);
+}
+
+.pig-lane-score {
+  font-weight: 700;
+  text-align: right;
+}
+
+.pig-lane-score small {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.pig-play {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-3);
+}
+
+.pig-die {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  min-width: 140px;
+}
+
+.pig-die .tdie {
+  --die: 96px;
+}
+
+.pig-caption {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.pig-die.is-bust .pig-caption {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.pig-turn {
+  display: grid;
+  gap: 6px;
+}
+
+.pig-turn > span {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.pig-turn > strong {
+  font-size: 56px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.pig-rolls {
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
+.pig-empty {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+@media (max-width: 520px) {
+  .pig {
+    gap: 20px;
+  }
+
+  .pig-lane {
+    grid-template-columns: minmax(56px, 6rem) minmax(0, 1fr) 4rem;
+    gap: 8px;
+  }
+
+  .pig-play {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 18px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .pig-die .tdie {
+    --die: 80px;
+  }
+
+  .pig-rolls {
+    justify-content: center;
+  }
+}

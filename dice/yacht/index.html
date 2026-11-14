@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-family="dice">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Play Yacht against bots or friends: roll five dice up to three times a turn and fill all thirteen boxes of the scorecard." />
+  <title>Yacht · Dice</title>
+  <link rel="icon" href="../favicon.svg" />
+  <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+  <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+  <link rel="stylesheet" href="../table.css?v=20261114" />
+  <link rel="stylesheet" href="./styles.css?v=20261114" />
+  <script type="module" src="./app.js?v=20261114"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/" aria-label="All projects"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a><span class="crumb-sep" aria-hidden="true">/</span><a href="/dice/">Dice</a><span class="crumb-sep" aria-hidden="true">/</span><span class="crumb-current" aria-current="page">Yacht</span></nav>
+    <nav class="tool-nav" aria-label="Dice games"><a href="/dice/yacht/" aria-current="page">Yacht</a><a href="/dice/farkle/">Farkle</a><a href="/dice/liars-dice/">Liar’s Dice</a><a href="/dice/ship-captain-crew/">Ship, Captain &amp; Crew</a><a href="/dice/shut-the-box/">Shut the Box</a><a href="/dice/pig/">Pig</a><a href="/dice/mia/">Mia</a></nav>
+    <div class="topbar-actions">
+      <span class="badge badge--plain" id="network-state" hidden>Offline</span>
+      <div id="dice-style"></div>
+      <button class="btn btn--ghost btn--icon" id="rules-button" type="button" aria-label="How to play" title="How to play"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <noscript><p>Yacht needs JavaScript to roll dice.</p></noscript>
+  </main>
+  <dialog class="dialog dialog--wide" id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-head"><h2 id="rules-title">How to play Yacht</h2><button class="btn btn--ghost btn--icon" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div>
+    <div class="dialog-body rules-copy">
+      <p>The game lasts 13 rounds. On your turn, roll all five dice. Then hold any dice you like and reroll the rest, up to three rolls in all.</p>
+      <p>After any roll you may stop and fill one open box on your scorecard; after the third roll you must. Every turn fills exactly one box, and a box takes 0 when the dice do not fit it.</p>
+      <table>
+        <thead><tr><th scope="col">Box</th><th scope="col">Scores</th></tr></thead>
+        <tbody>
+          <tr><td>Ones to Sixes</td><td>The total of the dice showing that face</td></tr>
+          <tr><td>Upper bonus</td><td>35 once Ones to Sixes reach 63</td></tr>
+          <tr><td>Three of a kind</td><td>The total of all five dice, with at least three alike</td></tr>
+          <tr><td>Four of a kind</td><td>The total of all five dice, with at least four alike</td></tr>
+          <tr><td>Full house</td><td>25 for three of one face and two of another</td></tr>
+          <tr><td>Small straight</td><td>30 for four faces in a row</td></tr>
+          <tr><td>Large straight</td><td>40 for five faces in a row</td></tr>
+          <tr><td>Yacht</td><td>50 for five alike</td></tr>
+          <tr><td>Chance</td><td>The total of all five dice</td></tr>
+        </tbody>
+      </table>
+      <p>After 13 rounds the highest total wins; tied players share the win.</p>
+      <h3>Extra Yachts</h3>
+      <p>Once your Yacht box holds 50, every further Yacht adds a 100 bonus and becomes a joker. It must fill its own upper box (five Fours go in Fours) if that box is open. Otherwise it may fill any open lower box, where Full house, Small straight and Large straight score their full 25, 30 and 40. If the lower boxes are full too, it puts 0 in an open upper box.</p>
+      <p>Five alike is not a full house on its own, and a 0 in the Yacht box earns no bonus and no joker.</p>
+      <h3>Strategy</h3>
+      <p>Three of each face makes exactly 63, so a fourth Five or Six banks spare points towards the bonus, while a poor roll is often best placed in Ones or Chance.</p>
+      <h3>Bots</h3>
+      <p>Easy holds its most common face or an open straight draw and takes whichever box scores most right now. Normal looks one roll ahead, weighs each box against what it usually scores, and sometimes holds the wrong dice. Hard works out the exact odds of every hold over both remaining rolls and weighs each box against its usual score and its pull towards the upper bonus; alone it averages about 240.</p>
+      <p>Keys: 1 to 5 hold dice, R rolls.</p>
+    </div>
+  </dialog>
+</body>
+</html>

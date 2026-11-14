@@ -1,0 +1,410 @@
+.mia {
+  display: grid;
+  gap: 22px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* ---------- Lives ---------- */
+
+.mia-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mia-seat {
+  display: grid;
+  gap: 6px;
+  min-width: 108px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  transition:
+    background-color var(--d-fast),
+    border-color var(--d-fast);
+}
+
+.mia-seat.is-turn {
+  border-color: color-mix(in oklab, var(--seat-color) 60%, transparent);
+  background: color-mix(in oklab, var(--seat-color) 12%, var(--surface-2));
+}
+
+.mia-seat.is-out {
+  opacity: 0.5;
+}
+
+.mia-seat-name {
+  max-width: 9rem;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mia-seat.is-turn .mia-seat-name,
+.mia-seat.is-winner .mia-seat-name {
+  color: var(--ink);
+}
+
+.mia-pips {
+  display: flex;
+  gap: 4px;
+}
+
+.mia-pips i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border: 1.5px solid color-mix(in oklab, var(--seat-color) 50%, transparent);
+  border-radius: 50%;
+}
+
+.mia-pips i.is-on {
+  border-color: var(--seat-color);
+  background: var(--seat-color);
+}
+
+.mia.is-fresh .mia-pips i.is-lost {
+  animation: mia-life 1100ms var(--ease) both;
+}
+
+@keyframes mia-life {
+  0%,
+  35% {
+    border-color: var(--bad);
+    background: var(--bad);
+    transform: scale(1.5);
+  }
+
+  100% {
+    background: transparent;
+    transform: none;
+  }
+}
+
+/* ---------- Cup and announcement ---------- */
+
+.mia-table {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+  padding: 22px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-3);
+}
+
+.mia-cup {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  min-width: 184px;
+}
+
+.mia-cup .tdie {
+  --die: 76px;
+}
+
+.mia-dice {
+  flex-wrap: nowrap;
+  gap: 14px;
+}
+
+.mia-cup-caption {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+
+.mia-cup.is-mine .mia-cup-caption {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mia-cup.is-true .mia-cup-caption {
+  color: var(--good);
+  font-weight: 600;
+}
+
+.mia-cup.is-bluff .mia-cup-caption {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.mia-claim {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 6px;
+  min-width: 0;
+  min-height: 112px;
+}
+
+.mia-claim-who {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mia-claim-value {
+  color: var(--seat-color, var(--ink));
+  font-size: 64px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.mia-claim.is-empty .mia-claim-value {
+  color: var(--muted);
+  font-size: var(--t-xl);
+  letter-spacing: -0.01em;
+  line-height: var(--lh-heading);
+}
+
+.mia-claim-odds {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.mia-verdict {
+  color: var(--muted);
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.mia-verdict.is-true {
+  color: var(--good);
+}
+
+.mia-verdict.is-bluff {
+  color: var(--bad);
+}
+
+.mia-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+  list-style: none;
+}
+
+.mia-history li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mia-history .dt-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.mia-history li.is-last {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.mia.is-fresh .mia-verdict {
+  animation: mia-settle var(--d-slow) var(--ease) both;
+}
+
+@keyframes mia-settle {
+  from {
+    opacity: 0.4;
+    transform: translateY(-4px);
+  }
+}
+
+/* ---------- The ranking ladder and announce picker ---------- */
+
+.mia-pick {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.mia-ladder {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  width: min(100%, 476px);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--line-strong);
+}
+
+.mia-cell {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-md);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.mia-cell.is-mia {
+  font-weight: 700;
+}
+
+.mia-cell.is-below {
+  background: var(--surface);
+  color: var(--soft);
+}
+
+.mia-cell.is-claim {
+  background: color-mix(in oklab, var(--seat-color) 20%, var(--surface-2));
+  box-shadow: inset 0 0 0 2px var(--seat-color);
+  color: var(--ink);
+}
+
+.mia-cell.is-mine {
+  background: color-mix(in oklab, var(--accent) 16%, var(--surface-2));
+  color: var(--ink);
+}
+
+.mia-cell.is-actual {
+  background: color-mix(in oklab, var(--good) 22%, var(--surface-2));
+  box-shadow: inset 0 0 0 2px var(--good);
+  color: var(--ink);
+}
+
+.mia[data-phase="reveal"] .mia-cell.is-actual.is-below:not(.is-claim) {
+  background: color-mix(in oklab, var(--bad) 22%, var(--surface-2));
+  box-shadow: inset 0 0 0 2px var(--bad);
+}
+
+.mia-cell-tag {
+  color: var(--accent);
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+button.mia-cell {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-fast),
+    color var(--d-fast);
+}
+
+button.mia-cell:disabled {
+  cursor: default;
+}
+
+button.mia-cell:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -4px;
+}
+
+button.mia-cell[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+button.mia-cell[aria-pressed="true"] .mia-cell-tag {
+  color: var(--on-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button.mia-cell:not(:disabled, [aria-pressed="true"]):hover {
+    background: var(--surface-3);
+  }
+}
+
+.mia-note {
+  min-height: 1.45em;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+
+.mia-note.is-true {
+  color: var(--good);
+}
+
+.mia-note.is-bluff {
+  color: var(--warn);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mia.is-fresh .mia-pips i.is-lost,
+  .mia.is-fresh .mia-verdict {
+    animation: none;
+  }
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 520px) {
+  .mia {
+    gap: 16px;
+  }
+
+  .mia-seats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  }
+
+  .mia-seat {
+    min-width: 0;
+    padding: 8px 10px;
+  }
+
+  .mia-table {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .mia-cup {
+    min-width: 0;
+  }
+
+  .mia-cup .tdie {
+    --die: 50px;
+  }
+
+  .mia-dice {
+    gap: 8px;
+  }
+
+  .mia-claim {
+    min-height: 92px;
+  }
+
+  .mia-claim-value {
+    font-size: 44px;
+  }
+
+  .mia-claim.is-empty .mia-claim-value {
+    font-size: var(--t-lg);
+  }
+}

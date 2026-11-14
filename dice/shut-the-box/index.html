@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" data-family="dice">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Play Shut the Box against bots or friends: roll two dice, shut tiles that add up to the roll, and finish each round with the lowest score." />
+  <title>Shut the Box · Dice</title>
+  <link rel="icon" href="../favicon.svg" />
+  <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+  <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+  <link rel="stylesheet" href="../table.css?v=20261114" />
+  <link rel="stylesheet" href="./styles.css?v=20261114" />
+  <script type="module" src="./app.js?v=20261114"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/" aria-label="All projects"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a><span class="crumb-sep" aria-hidden="true">/</span><a href="/dice/">Dice</a><span class="crumb-sep" aria-hidden="true">/</span><span class="crumb-current" aria-current="page">Shut the Box</span></nav>
+    <nav class="tool-nav" aria-label="Dice games"><a href="/dice/yacht/">Yacht</a><a href="/dice/farkle/">Farkle</a><a href="/dice/liars-dice/">Liar’s Dice</a><a href="/dice/ship-captain-crew/">Ship, Captain &amp; Crew</a><a href="/dice/shut-the-box/" aria-current="page">Shut the Box</a><a href="/dice/pig/">Pig</a><a href="/dice/mia/">Mia</a></nav>
+    <div class="topbar-actions">
+      <span class="badge badge--plain" id="network-state" hidden>Offline</span>
+      <div id="dice-style"></div>
+      <button class="btn btn--ghost btn--icon" id="rules-button" type="button" aria-label="How to play" title="How to play"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <noscript><p>Shut the Box needs JavaScript to roll dice.</p></noscript>
+  </main>
+  <dialog class="dialog dialog--wide" id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-head"><h2 id="rules-title">How to play Shut the Box</h2><button class="btn btn--ghost btn--icon" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div>
+    <div class="dialog-body rules-copy">
+      <p>Each player has a box of nine tiles numbered 1 to 9. Every turn starts with all nine open.</p>
+      <p>Roll two dice, then shut any open tiles that add up to the roll: one tile or several. A roll of 9 can shut the 9, or 5 and 4, or 6, 2 and 1. Then roll again.</p>
+      <p>Once 7, 8 and 9 are all shut, you may roll one die instead of two.</p>
+      <p>Your turn ends when no open tiles add up to the roll. Your score for the round is the sum of the tiles still open. Shut all nine and you have shut the box: the round scores 0.</p>
+      <p>Each round every player takes one turn, and the first player moves one seat on each round. Scores add up like golf: after the last round the lowest total wins, and tied players share the win. Playing alone, aim for the lowest total you can.</p>
+      <h3>Strategy</h3>
+      <p>Shut the high tiles first: 7, 8 and 9 are hard to make late, and they cost the most if they stay open. Shutting fewer tiles keeps more ways open to make the next roll.</p>
+      <h3>Bots</h3>
+      <p>Easy shuts a random set of tiles that makes the roll and always rolls two dice. Normal shuts the single tile that matches when it can, otherwise the fewest and highest tiles, and rolls one die once 7, 8 and 9 are shut and 6 or less is left. Hard plays exactly: it has worked out every one of the 512 ways the box can stand and makes the choice with the lowest expected score, about 11 from a full box. On the last turn of the game, when every other total is known, it plays to give itself the best chance of winning.</p>
+      <p>Keys: 1 to 9 select tiles, Enter shuts them, R rolls two dice, O rolls one die.</p>
+    </div>
+  </dialog>
+</body>
+</html>

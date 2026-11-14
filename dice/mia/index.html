@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-family="dice">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Play Mia against bots or friends: roll two dice in secret, announce a higher value than the last player, and call the bluffs." />
+  <title>Mia · Dice</title>
+  <link rel="icon" href="../favicon.svg" />
+  <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+  <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+  <link rel="stylesheet" href="../table.css?v=20261114" />
+  <link rel="stylesheet" href="./styles.css?v=20261114" />
+  <script type="module" src="./app.js?v=20261114"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/" aria-label="All projects"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a><span class="crumb-sep" aria-hidden="true">/</span><a href="/dice/">Dice</a><span class="crumb-sep" aria-hidden="true">/</span><span class="crumb-current" aria-current="page">Mia</span></nav>
+    <nav class="tool-nav" aria-label="Dice games"><a href="/dice/yacht/">Yacht</a><a href="/dice/farkle/">Farkle</a><a href="/dice/liars-dice/">Liar’s Dice</a><a href="/dice/ship-captain-crew/">Ship, Captain &amp; Crew</a><a href="/dice/shut-the-box/">Shut the Box</a><a href="/dice/pig/">Pig</a><a href="/dice/mia/" aria-current="page">Mia</a></nav>
+    <div class="topbar-actions">
+      <span class="badge badge--plain" id="network-state" hidden>Offline</span>
+      <div id="dice-style"></div>
+      <button class="btn btn--ghost btn--icon" id="rules-button" type="button" aria-label="How to play" title="How to play"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <noscript><p>Mia needs JavaScript to roll dice.</p></noscript>
+  </main>
+  <dialog class="dialog dialog--wide" id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-head"><h2 id="rules-title">How to play Mia</h2><button class="btn btn--ghost btn--icon" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div>
+    <div class="dialog-body rules-copy">
+      <p>Mia, also called Mäxchen, is a bluffing game for two to six players. Everyone starts with the same number of lives.</p>
+      <p>Two dice are read with the higher die first: a 3 and a 1 is 31, a 6 and a 4 is 64. From lowest to highest:</p>
+      <ol>
+        <li>31, 32, 41, 42, 43, 51, 52, 53, 54, 61, 62, 63, 64, 65</li>
+        <li>Doubles: 11, 22, 33, 44, 55, 66</li>
+        <li>Mia (a 2 and a 1), the best roll of all</li>
+      </ol>
+      <h3>A round</h3>
+      <p>The round’s first player rolls in secret and announces a value. It can be the truth or a bluff.</p>
+      <p>The next player either calls the bluff or believes it. To believe it, they take the dice, roll in secret and must announce more than the last announcement, again truth or bluff.</p>
+      <p>On a call the dice are shown. If they are lower than announced, the announcer loses a life. If they match or beat the announcement, the caller loses a life. Either way the round ends.</p>
+      <h3>Mia</h3>
+      <p>Nothing beats Mia, so after an announced Mia the next player must call or concede. Calling a real Mia costs 2 lives; calling a bluff costs the announcer 1. Conceding costs 1 life and the dice stay hidden.</p>
+      <h3>Winning</h3>
+      <p>Whoever lost a life starts the next round, or the next player still in if they are out. A player with no lives left is out, and the last player standing wins.</p>
+      <h3>Bots</h3>
+      <p>Easy calls or believes mostly at random and sometimes bluffs when the truth would do. Normal tells the truth when it can, bluffs with the smallest raise, and calls once fewer than about 40% of rolls would reach the announcement. Hard tells the truth when it can and bluffs low, and weighs the odds an announcement is true (the smallest raise is the classic bluff) against the risk of having to beat it, counting Mia’s 2-life stakes.</p>
+      <p>Keys: R rolls or believes and rolls, C calls, arrow keys pick a value, Enter announces it or starts the next round.</p>
+    </div>
+  </dialog>
+</body>
+</html>

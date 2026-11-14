@@ -1,0 +1,301 @@
+.yt {
+  container-type: inline-size;
+}
+
+.yt-layout {
+  display: grid;
+  gap: 20px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+/* ---------- Dice and the roll button ---------- */
+
+.yt-play {
+  display: grid;
+  container-type: inline-size;
+  justify-items: center;
+  align-content: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 24px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-3);
+}
+
+/* Five dice share one row of the panel. */
+.yt-dice {
+  gap: clamp(6px, 3cqi, 12px);
+}
+
+.yt-dice .tdie {
+  --die: clamp(40px, calc((100cqi - 48px) / 5), 60px);
+}
+
+.yt-caption {
+  min-height: 1.45em;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  text-align: center;
+}
+
+.yt-caption strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.yt-joker {
+  color: var(--good);
+  font-weight: 600;
+}
+
+.yt-play .dt-actions {
+  width: 100%;
+}
+
+.yt-play .dt-actions .btn {
+  min-width: min(100%, 240px);
+}
+
+/* ---------- Scorecard ---------- */
+
+.yt-card {
+  align-self: start;
+  isolation: isolate;
+}
+
+.yt-table th,
+.yt-table td {
+  height: 32px;
+  padding: 3px 12px;
+}
+
+.yt-table thead th.yt-player {
+  min-width: 72px;
+  color: var(--seat-color);
+  text-align: center;
+}
+
+.yt-player > span {
+  display: block;
+  max-width: 7.5rem;
+  margin: 0 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.yt-table thead th.yt-player.is-turn {
+  background: color-mix(in oklab, var(--seat-color) 16%, var(--surface-3));
+  box-shadow: inset 0 3px 0 var(--seat-color);
+}
+
+.yt-table td.num {
+  min-width: 72px;
+  text-align: center;
+}
+
+.yt-table tbody tr > td.is-turn {
+  background: color-mix(in oklab, var(--seat-color) 8%, transparent);
+}
+
+.yt-table td.yt-open {
+  padding: 2px 6px;
+}
+
+.yt-table tbody th {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* Running totals read as a band between the scoring rows. */
+.yt-sum th,
+.yt-sum td {
+  color: var(--muted);
+}
+
+.yt-table tbody tr.yt-sum > td {
+  background: color-mix(in oklab, var(--surface-3) 55%, transparent);
+}
+
+.yt-table tbody tr.yt-sum > td.is-turn {
+  background: color-mix(in oklab, var(--seat-color) 8%, color-mix(in oklab, var(--surface-3) 55%, var(--surface)));
+}
+
+.table-wrap--sticky-col .yt-table tbody tr.yt-sum > th:first-child {
+  background: color-mix(in oklab, var(--surface-3) 55%, var(--surface));
+}
+
+.yt-table tbody tr.yt-sum > th {
+  font-weight: 500;
+}
+
+.yt-table tbody tr.yt-sum > td {
+  font-weight: 600;
+}
+
+.yt-of {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 500;
+}
+
+.yt-table tfoot th,
+.yt-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 0;
+  background: var(--surface-3);
+  font-size: var(--t-md);
+  font-weight: 700;
+}
+
+.table-wrap--sticky-col .yt-table tfoot th:first-child {
+  z-index: 3;
+  background: var(--surface-3);
+}
+
+.yt-table tfoot td.is-turn {
+  background: color-mix(in oklab, var(--seat-color) 16%, var(--surface-3));
+}
+
+.yt-table tfoot td.is-best {
+  color: var(--seat-color);
+}
+
+.yt-last {
+  display: inline-block;
+  min-width: 2.2em;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--seat-color) 22%, transparent);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.yt-blocked {
+  color: var(--muted);
+}
+
+.yt-pick {
+  display: inline-grid;
+  place-items: center;
+  width: 100%;
+  min-width: 44px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, transparent);
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-fast),
+    border-color var(--d-fast);
+}
+
+.yt-pick.is-zero {
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .yt-pick:hover {
+    border-color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 24%, transparent);
+    color: var(--ink);
+  }
+}
+
+/* ---------- Wide boards: dice beside the scorecard ---------- */
+
+@container (min-width: 720px) {
+  .yt-layout {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .yt-play {
+    padding: 32px 20px;
+  }
+}
+
+/* Shorter desktop windows: tighter rows keep the card clear of scrolling. */
+@media (min-width: 641px) and (max-height: 860px) and (pointer: fine) {
+  .yt-table th,
+  .yt-table td {
+    height: 28px;
+    padding-block: 2px;
+  }
+
+  .yt-table td.yt-open {
+    padding-block: 1px;
+  }
+
+  .yt-pick {
+    min-height: 24px;
+  }
+}
+
+@media (min-width: 641px) and (max-height: 760px) and (pointer: fine) {
+  .yt-table th,
+  .yt-table td {
+    height: 27px;
+  }
+}
+
+/* ---------- Phones and touch: 44px targets ---------- */
+
+@media (pointer: coarse), (max-width: 640px) {
+  .yt-pick {
+    min-height: 44px;
+  }
+
+  .yt-table td.yt-open {
+    padding: 2px 4px;
+  }
+}
+
+/* Below 880px the page scrolls, so the dice stay in view over or beside the card. */
+@media (max-width: 880px) {
+  .yt-play {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    align-self: start;
+    box-shadow: 0 12px 20px -14px color-mix(in oklab, var(--page) 90%, transparent);
+  }
+}
+
+@media (max-width: 640px) {
+  .yt-layout {
+    gap: 14px;
+  }
+
+  .yt-play {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .yt-table th,
+  .yt-table td {
+    padding: 3px 10px;
+  }
+
+  .yt-table thead th.yt-player,
+  .yt-table td.num {
+    min-width: 60px;
+  }
+
+  .yt-player > span {
+    max-width: 6rem;
+  }
+}

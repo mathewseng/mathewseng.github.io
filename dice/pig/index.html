@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-family="dice">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08090d" />
+  <meta name="description" content="Play Pig against bots or friends: roll one die as long as you dare, and bank before a 1 wipes your turn." />
+  <title>Pig · Dice</title>
+  <link rel="icon" href="../favicon.svg" />
+  <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
+  <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
+  <link rel="stylesheet" href="../table.css?v=20261114" />
+  <link rel="stylesheet" href="./styles.css?v=20261114" />
+  <script type="module" src="./app.js?v=20261114"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/" aria-label="All projects"><span class="mark" aria-hidden="true">MS</span><span>Projects</span></a><span class="crumb-sep" aria-hidden="true">/</span><a href="/dice/">Dice</a><span class="crumb-sep" aria-hidden="true">/</span><span class="crumb-current" aria-current="page">Pig</span></nav>
+    <nav class="tool-nav" aria-label="Dice games"><a href="/dice/yacht/">Yacht</a><a href="/dice/farkle/">Farkle</a><a href="/dice/liars-dice/">Liar’s Dice</a><a href="/dice/ship-captain-crew/">Ship, Captain &amp; Crew</a><a href="/dice/shut-the-box/">Shut the Box</a><a href="/dice/pig/" aria-current="page">Pig</a><a href="/dice/mia/">Mia</a></nav>
+    <div class="topbar-actions">
+      <span class="badge badge--plain" id="network-state" hidden>Offline</span>
+      <div id="dice-style"></div>
+      <button class="btn btn--ghost btn--icon" id="rules-button" type="button" aria-label="How to play" title="How to play"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-rules" /></svg></button>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <noscript><p>Pig needs JavaScript to roll dice.</p></noscript>
+  </main>
+  <dialog class="dialog dialog--wide" id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-head"><h2 id="rules-title">How to play Pig</h2><button class="btn btn--ghost btn--icon" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="../../shared/icons.svg#i-close" /></svg></button></div>
+    <div class="dialog-body rules-copy">
+      <p>On your turn, roll one die as many times as you like. Every roll from 2 to 6 adds to your turn total.</p>
+      <p>Hold to bank the turn total and pass the die. Roll a 1 and the turn total is lost; the die passes on.</p>
+      <p>The first player to bank the target score wins.</p>
+      <h3>Strategy</h3>
+      <p>Each roll risks everything at stake for an average gain of 4 points, so holding at about 20 maximises your score per turn. When an opponent nears the finish, keep rolling: a safe hold no longer wins.</p>
+      <h3>Bots</h3>
+      <p>Easy holds around 15. Normal holds at 20. Hard plays Neller and Presser’s “keep pace and end race” rule: hold at 21 plus an eighth of the score gap, and roll for the win once anyone reaches 71.</p>
+      <p>Keys: R rolls, H holds.</p>
+    </div>
+  </dialog>
+</body>
+</html>
