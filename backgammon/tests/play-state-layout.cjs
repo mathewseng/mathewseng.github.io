@@ -114,14 +114,14 @@ module.exports = async (browser, base, out, name) => {
     try {
       for (const kind of ['roll','move','partial','confirm','bearoff','blocked-bar','double','beaver','raccoon','re-beaver','resign','undo-request','bot','game-over','match-over']) {
         await seed(kind);
-        if(kind==='bot')await page.getByRole('button',{name:'Cancel',exact:true}).waitFor();
+        if(kind==='bot')await page.getByRole('button',{name:'Pause',exact:true}).waitFor();
         await inspect(kind);
         if(layout!=='desktop'&&['resign','undo-request','bot'].includes(kind)) {
           assert.ok(await page.locator('.table-action-status').isVisible(),'offers and waiting actions have visible context');
           assert.ok((await page.locator('.table-action-status').innerText()).length>10);
         }
         if(kind==='bot') {
-          await page.getByRole('button',{name:'Cancel',exact:true}).click();
+          await page.getByRole('button',{name:'Pause',exact:true}).click();
           await page.getByRole('button',{name:'Resume computer',exact:true}).waitFor();
           await inspect('bot-paused');
         }

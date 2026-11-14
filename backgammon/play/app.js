@@ -132,6 +132,8 @@ let config = {
   game = null,
   boardKey = "",
   botBusy = false,
+  botSlow = false,
+  botSlowTimer = 0,
   botPaused = false,
   feedback = null,
   renderedFeedback = null,
@@ -500,6 +502,11 @@ landscapeTable.addEventListener("change", () => {
   placeReview();
   placeConfirm();
 });
+// Quick checks and GNUbg turns keep the ordinary turn line; only slow ones
+// show the waiting row and its Cancel/Pause, so nothing flashes each turn.
+function waitingShown() {
+  return (botBusy && botSlow) || (assistanceJob?.kind === "submit" && !!assistanceJob.slow);
+}
 // Confirmation is always on the board. Hint and Controls share its old rail.
 // Exceptional actions get their own rows instead of shrinking the tool buttons.
 function placeConfirm() {
@@ -525,11 +532,11 @@ function placeConfirm() {
     const phone = phonePortrait.matches || landscapeTable.matches;
     // Waiting rows go below Hint and Controls so those taps never land on Cancel.
     const waiting = phone && state().phase !== "resign" && !model()?.undoRequest &&
-      (botBusy || assistanceJob?.kind === "submit");
+      waitingShown();
     if (phone && actions.childElementCount)
       boardActions[waiting ? "append" : "prepend"](...actions.children);
     if (phone &&
-      (state().phase === "resign" || model()?.undoRequest || botBusy || assistanceJob?.kind === "submit" ||
+      (state().phase === "resign" || model()?.undoRequest || waitingShown() ||
        (config.mode === "online" && (!online.ready || model()?.recovery)))) {
       tableActionStatus.textContent = state().phase === "resign"
         ? `${names()[state().turn]} offers ${state().pending.level * state().cube.value} points.`
@@ -2049,7 +2056,7 @@ function renderActions() {
     return;
   }
   const mine = myTurn(s) && !botBusy && !committing && !assistanceJob && automaticDraft?.source !== s;
-  if (assistanceJob?.kind === "submit") {
+  if (assistanceJob?.kind === "submit" && assistanceJob.slow) {
     $("message").textContent =
       `Checking your decision · ${searchName(config.reviewStrength || "auto")}…`;
     a.append(
@@ -2092,10 +2099,10 @@ function renderActions() {
     );
     return;
   }
-  if (botBusy) {
+  if (botBusy && botSlow) {
     $("message").textContent = "GNUbg is evaluating…";
     a.append(
-      button("Cancel", () => {
+      button("Pause", () => {
         analysis.cancel();
         epoch++;
         botBusy = false;
@@ -3102,6 +3109,10 @@ async function evaluateDecision(action) {
     return;
   }
   const job = assistance("submit");
+  // Most grades are ready at once; the rail shows the check only when it lags.
+  const slowTimer = setTimeout(() => {
+    if (activeAssistance(job) && !job.done) { job.slow = true; actions(); }
+  }, 800);
   beginDecisionAttempt(game, action);
   // Persist each submission even if the warning is revised or reloaded.
   // This is metadata only; the legal game history remains uncommitted.
@@ -3210,6 +3221,7 @@ async function evaluateDecision(action) {
     });
     let [result] = await Promise.all([evaluation, painted]);
     clearTimeout(pendingTimer);
+    clearTimeout(slowTimer);
     if (!activeAssistance(job) || (job.dialog && !job.dialog.open)) return;
     if (!checker) result = gradeCube(job.source, result, action.type);
     recordInitialEvaluation(game, action, compactEvaluation(job.source, result));
@@ -3245,6 +3257,7 @@ async function evaluateDecision(action) {
     } else await finish(result);
   } catch (error) {
     clearTimeout(pendingTimer);
+    clearTimeout(slowTimer);
     if (!activeAssistance(job)) return;
     job.done = true;
     if (error.name === "AbortError") {
@@ -3293,6 +3306,8 @@ async function computerTurn() {
     myTurn(s)
   )
     return;
+  clearTimeout(botSlowTimer);
+  botSlow = false;
   if (s.phase === "roll" && !s.pending && !canDouble(s)) {
     // Exact rule shortcut, not a heuristic recommendation.
     botBusy = true;
@@ -3316,6 +3331,9 @@ async function computerTurn() {
     key = positionKey(s);
   botBusy = true;
   draft.enabled = false;
+  botSlowTimer = setTimeout(() => {
+    if (botBusy && token === epoch && key === positionKey(state())) { botSlow = true; actions(); }
+  }, 1000);
   actions();
   try {
     let action,
@@ -3362,6 +3380,8 @@ async function computerTurn() {
           result: gradeCube(s, result, action.type),
         };
     }
+    // The answer is in; the staged pause below is not a slow search.
+    clearTimeout(botSlowTimer);
     prethink.prepareAfter(s,action.type === 'roll'
       ? {...action,dice:await futureLocalRoll(game) || cryptoDice()} : action);
     if (!reducedMotion()) {
