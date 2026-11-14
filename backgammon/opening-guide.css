@@ -116,6 +116,8 @@
 .opening-guide[data-loading="true"] .opening-panel { opacity: .45; }
 .opening-preview { min-width: 0; margin: 0; }
 #opening-board { width: 100%; aspect-ratio: 876 / 660; }
+/* The caption below names the move; the in-board label is too small to read. */
+#opening-board .board-caption { display: none; }
 .opening-preview-controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .opening-preview-controls .segmented { flex: 0 0 auto; }
 .opening-preview-controls figcaption { font-size: var(--t-sm); line-height: 1.4; }
@@ -124,7 +126,7 @@
 .opening-study { min-width: 0; }
 .opening-position-heading { margin: 4px 0 20px; }
 .opening-position-heading h3 { font-size: var(--t-xl); letter-spacing: -.025em; }
-#opening-idea { color: var(--muted); font-size: var(--t-sm); margin-top: 6px; min-height: 2.8em; }
+#opening-idea { color: var(--muted); font-size: var(--t-sm); margin-top: 6px; min-height: 1lh; }
 .opening-columns, .opening-move {
   display: grid;
   grid-template-columns: minmax(0,1fr) 5.2em 4.4em;
@@ -160,6 +162,7 @@
 .opening-best { color: var(--accent); font-weight: 600; }
 .opening-loss { color: var(--muted); }
 #opening-empty, #opening-window { font-size: var(--t-xs); color: var(--muted); margin-top: 12px; }
+#opening-source:not([hidden]) { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--t-sm); }
 .opening-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
 .opening-actions .btn { min-height: 44px; font-size: var(--t-sm); }
 .opening-method { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 6px; }
@@ -177,6 +180,8 @@
 .opening-guide[data-layout="compact"] .opening-dice { gap: 3px; }
 .opening-guide[data-layout="compact"] .opening-dice svg { width: 18px; height: 18px; }
 .opening-guide[data-layout="compact"] :is(.opening-roll-notation,.opening-roll-idea,.opening-roll-alternatives) { display: none; }
+/* Compact hides the numbered markers this list explains. */
+.opening-guide[data-layout="compact"] .opening-credits { display: none; }
 .opening-guide[data-layout="compact"] #opening-moves { max-height: 280px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
 .opening-guide[data-layout="compact"] .opening-position-heading { margin-bottom: 12px; }
 .opening-guide[data-layout="compact"] #opening-idea { min-height: 0; }
@@ -208,7 +213,8 @@
   .opening-actions .btn { flex: 1; }
   .opening-guide[data-layout="compact"] .opening-panel { grid-template-columns: minmax(0,1fr); gap: 16px; }
   .opening-guide[data-layout="compact"] .opening-preview { position: static; max-width: 560px; }
-  .opening-guide[data-layout="compact"] #opening-moves { max-height: 320px; }
+  /* Stacked below the grid, the full list scrolls with the page. */
+  .opening-guide[data-layout="compact"] #opening-moves { max-height: none; overflow: visible; }
 }
 @media (max-width: 640px) {
   .hub-backgammon .hub-main > .opening-guide { order: 5; margin-top: 16px; }

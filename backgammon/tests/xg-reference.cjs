@@ -21,7 +21,7 @@ module.exports=async function(browser,base,out,name){
    }return{positions,moves,state:first,solverURL:shareURL(first)};}finally{c.destroy();}
   });
   assert.ok(await page.getByLabel('XG contributors').textContent());
-  assert.ok(await page.locator('#opening-moves').getByText(/XG ·/).count());
+  assert.ok(await page.locator('#opening-idea').getByText(/XG ·/).count());
   assert.equal(measured.state.rules.immediateRedoubles,2);
   assert.equal(measured.positions,729);assert.equal(measured.moves,2584);
   for(const width of [1366,390]){

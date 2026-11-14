@@ -39,8 +39,15 @@ export function openingGuide(root) {
   let openings, position, mode='opening', openingRoll='31', replyRoll='31';
   let openingChoice=0, replyChoice=0, replySide=0, before=false, generation=0, pickerKey=null;
   let replyPositions;
-  const credits=node('p',{class:'small muted','aria-label':'XG contributors'});picker.after(credits);
+  const credits=node('p',{class:'small muted opening-credits','aria-label':'XG contributors'});picker.after(credits);
   const choice = () => mode==='opening' ? openingChoice : replyChoice;
+  // A pick changes the board: bring it back when it is out of view, such as
+  // below the Expanded grid or above a phone's move list. Sticky boards stay put.
+  const revealBoard=()=>{
+    const board=$('opening-board').getBoundingClientRect();
+    if(board.top<0||board.bottom>innerHeight)
+      root.querySelector('.opening-preview').scrollIntoView({block:board.top<0?'start':'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  };
   const status = (message,error=false) => {
     $('opening-status').textContent=message;
     $('opening-retry').hidden=!error;
@@ -80,12 +87,7 @@ export function openingGuide(root) {
         button.addEventListener('click',() => {
           if (mode==='opening') {openingRoll=roll;openingChoice=0;}
           else {replyRoll=roll;replyChoice=0;}
-          before=false; refresh();
-          // Compact puts the board above the grid: bring it back into view
-          // when the player has scrolled down to pick a roll.
-          const figure=root.querySelector('.opening-preview');
-          if(root.dataset.layout==='compact'&&figure&&figure.getBoundingClientRect().top<0)
-            figure.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+          before=false; refresh().then(revealBoard);
         });
         return button;
       }));
@@ -134,7 +136,8 @@ export function openingGuide(root) {
       lastMove:before?null:moveTrace(after,player,move.steps,position.state.dice),
     });
     $('opening-board').setAttribute('aria-label',`${player?'Black':'White'} · ${before?'before the move':move.notation}`);
-    $('opening-idea').textContent=openingIdea(position,choice())+(move.referenceCredit?` · XG by ${move.referenceCredit.author}, ${move.referenceCredit.date}`:'');
+    // The selected row already reads its idea; this line credits its source.
+    $('opening-idea').textContent=move.referenceCredit?`XG · ${move.referenceCredit.author}, ${move.referenceCredit.date}`:'';
     for (const row of list.children) row.setAttribute('aria-pressed',String(+row.dataset.choice===choice()));
     revealChoice();
     root.dataset.choice=String(choice());
@@ -158,16 +161,19 @@ export function openingGuide(root) {
     if(position.reference){source.href=position.reference.url;source.textContent='View this position in XG’s published book ↗';}
     $('opening-window').textContent=`Close = within ${position.threshold.toFixed(3)} of best`;
     $('opening-empty').hidden=position.moves.length>1;
+    // Credit each row only when its contributors differ; otherwise the line
+    // under the heading credits them all.
+    const rowCredits=new Set(position.moves.map(move=>move.referenceCredit?.author)).size>1;
     list.replaceChildren(...position.moves.map((move,i) => {
       const row=node('button',{type:'button',class:'opening-move','data-choice':i,'aria-pressed':String(i===choice()),
         'aria-label':`${move.notation}. ${openingIdea(position,i)} Equity ${format(move.equity)}${Number.isFinite(move.referenceHalfWidth)?`, XG published bound plus or minus ${move.referenceHalfWidth.toFixed(3)}`:Number.isFinite(move.standardError)?`, approximate 95 percent sampling interval plus or minus ${(1.96*move.standardError).toFixed(3)}`:''}, ${move.loss===0?'best estimate':`estimated loss ${lossLabel(move.loss)}`}`},
         node('span',{class:'opening-notation'},node('span',{class:'opening-rank'},String(i+1)),
-          node('span',{},node('strong',{},move.notation),node('span',{class:'opening-move-idea'},openingIdea(position,i)),...(move.referenceCredit?[node('span',{class:'opening-move-idea'},`XG · ${move.referenceCredit.author}`)]:[]))),
+          node('span',{},node('strong',{},move.notation),node('span',{class:'opening-move-idea'},openingIdea(position,i)),...(rowCredits&&move.referenceCredit?[node('span',{class:'opening-move-idea'},`XG · ${move.referenceCredit.author}`)]:[]))),
         node('span',{class:'opening-equity'},format(move.equity),...(Number.isFinite(move.referenceHalfWidth)?[node('span',{class:'opening-interval'},`±${move.referenceHalfWidth.toFixed(3)}`)]:Number.isFinite(move.standardError)?[node('span',{class:'opening-interval'},`±${(1.96*move.standardError).toFixed(3)}`)]:[])),
         node('span',{class:move.loss===0?'opening-best':'opening-loss'},lossLabel(move.loss)));
       row.addEventListener('click',() => {
         if (mode==='opening') openingChoice=i; else replyChoice=i;
-        before=false;preview();
+        before=false;preview();revealBoard();
       });
       return row;
     }));
