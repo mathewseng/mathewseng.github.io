@@ -172,6 +172,14 @@ async function begin() {
     (a, b) =>
       (progress.get(a.id)?.due || 0) - (progress.get(b.id)?.due || 0),
   );
+  // Library's Practice this position starts on that item once; later
+  // sessions return to due order.
+  const first = new URLSearchParams(location.search).get("item");
+  if (first) {
+    const i = pool.findIndex((p) => p.id === first);
+    if (i > 0) pool.unshift(...pool.splice(i, 1));
+    history.replaceState(null, "", location.pathname + location.hash);
+  }
   if (!pool.length) {
     exercise = null;
     render();

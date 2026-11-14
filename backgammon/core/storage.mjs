@@ -196,8 +196,9 @@ export async function listItemSummaries({sessionId, cursor, limit = 12, kind, co
       const c = request.result;
       if (!c) return;
       const item = c.value;
-      if (item.id !== excludeId && (!kind || item.kind === kind) && (!collection || item.collection === collection) &&
-          [item.title,item.notes,...item.tags].join(' ').toLowerCase().includes(query.toLowerCase())) {
+      if (item.id !== excludeId && (!kind || item.kind === kind) &&
+          (!collection?.trim() || (item.collection || '').toLowerCase() === collection.trim().toLowerCase()) &&
+          [item.title,item.notes,item.collection,...item.tags].join(' ').toLowerCase().includes(query.toLowerCase())) {
         if (items.length === limit) { more = true; return; }
         items.push(item); next = c.key;
       }

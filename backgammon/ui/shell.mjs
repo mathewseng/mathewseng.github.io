@@ -255,6 +255,7 @@ export function saveDialog(state, kind = "position", extra = {}) {
     notes = el("textarea", {
       maxlength: 12000,
       placeholder: "What would you like to remember?",
+      value: extra.notes || "",
     }),
     tags = el("input", {
       placeholder: "Comma-separated tags",

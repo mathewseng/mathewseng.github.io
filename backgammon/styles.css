@@ -538,6 +538,7 @@ button.list-row:has(> .row.spread) {
 
 .empty {
   max-width: 420px;
+  margin-inline: auto;
   padding: 30px 0;
 }
 

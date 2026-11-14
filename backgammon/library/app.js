@@ -177,9 +177,9 @@ function render() {
 function renderList() {
   const shown = items.filter(
     (i) =>
-      (!collection || i.collection === collection) &&
+      (!collection.trim() || (i.collection || "").toLowerCase() === collection.trim().toLowerCase()) &&
       (!kind || i.kind === kind) &&
-      [i.title, i.notes, ...i.tags]
+      [i.title, i.notes, i.collection, ...i.tags]
         .join(" ")
         .toLowerCase()
         .includes(query.toLowerCase()),
@@ -198,14 +198,21 @@ function renderList() {
             ? "No matching items"
             : "Nothing saved yet.",
         ),
-        el(
-          "p",
-          { class: "muted" },
-          query || collection || kind
-            ? "Try another search or collection."
-            : "Games you play save here on their own. Save positions from the Solver and mistakes from the Trainer.",
-        ),
-        el("a", { class: "btn", href: "/backgammon/solver/" }, "Open Solver"),
+        ...(query || collection || kind
+          ? [button("Clear filters", () => {
+              query = collection = kind = "";
+              cursor = null;
+              history.replaceState(null, "", location.pathname);
+              refresh();
+            })]
+          : [
+              el(
+                "p",
+                { class: "muted" },
+                "Games you play save here on their own. Save positions from the Solver and mistakes from the Trainer.",
+              ),
+              el("a", { class: "btn", href: "/backgammon/solver/" }, "Open Solver"),
+            ]),
       ),
     );
   }
@@ -231,7 +238,7 @@ function renderList() {
         el(
           "span",
           { class: "library-item-meta" },
-          `${match ? (games > 1 ? `${games} games` : `Game ${item.gameNumber}`) : KIND_NAMES[item.kind] || item.kind} · ${new Date(item.updatedAt).toLocaleDateString()}${item.status ? " · " + item.status.replaceAll("-", " ") : ""}${tags.length ? " · " + tags.join(", ") : ""}`,
+          `${match ? (games > 1 ? `${games} games` : `Game ${item.gameNumber}`) : KIND_NAMES[item.kind] || item.kind} · ${new Date(item.updatedAt).toLocaleDateString()}${item.status ? " · " + item.status.replaceAll("-", " ") : ""}${item.collection ? " · " + item.collection : ""}${tags.length ? " · " + tags.join(", ") : ""}`,
         ),
       ),
     );
@@ -396,7 +403,7 @@ function inspector() {
           ...item,
           tags: [...new Set([...item.tags, "exercise"])],
         });
-        location.href = "/backgammon/trainer/#mistakes";
+        location.href = `/backgammon/trainer/?item=${encodeURIComponent(item.id)}#mistakes`;
       }),
     );
   if (item.kind !== "collection") {

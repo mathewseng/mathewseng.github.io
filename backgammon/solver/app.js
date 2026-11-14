@@ -71,6 +71,7 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   analysisEpoch = 0,
   sourceContext = null,
   openedPosition = false,
+  openedItem = null,
   previewIndex = -1,
   solverView = {orientation:null, mirrored:false};
 const analysis = new AnalysisPanel(),
@@ -280,6 +281,7 @@ try {
     } else {
       source = clone(item.state);
       openedPosition = true;
+      openedItem = item;
     }
   } else {
     const saved = await get("work", "solver");
@@ -329,7 +331,7 @@ $("toolbar").prepend(
   button("Share", () => copy(shareURL(source)), "ghost"),
   button(
     "Save",
-    () => saveDialog(source, "position", { analysis: result }),
+    () => saveDialog(source, "position", { ...savedFields(), analysis: result }),
     "ghost",
   ),
 );
@@ -375,6 +377,13 @@ function changed() {
   preview = null;
   saveDraft();
   render();
+}
+// A Library position keeps its name, notes, tags and collection as Save
+// defaults while it is still the position on the board.
+function savedFields() {
+  if (!openedItem || positionKey(source) !== positionKey(openedItem.state)) return {};
+  const { title, notes, tags, collection } = openedItem;
+  return { title, notes, tags, collection };
 }
 async function saveDraft() {
   try {
@@ -686,7 +695,7 @@ function panel(problems) {
   into = saveGroup;
   add(
     button("Save position to Library", () =>
-      saveDialog(source, "position", { analysis: result }),
+      saveDialog(source, "position", { ...savedFields(), analysis: result }),
     ),
   );
   if (result)
