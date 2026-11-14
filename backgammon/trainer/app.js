@@ -269,7 +269,9 @@ function actions() {
     // The one verdict a phone sees without opening Results, in the panel's words.
     const f = decisionFeedback(result, s);
     $("message").textContent =
-      (Math.abs(f.best.equity - f.actual.equity) <= 1e-7 ? f.quality : `Best ${f.best.notation} · ${f.label} ${f.value}`) +
+      // Cube results already head the study strip with "Best: <action>".
+      (Math.abs(f.best.equity - f.actual.equity) <= 1e-7 ? f.quality
+        : `${result.type === "cube" ? "" : `Best ${f.best.notation} · `}${f.label} ${f.value}`) +
       (hinted ? " · hint" : "");
     a.append(
       button("Save", () =>
