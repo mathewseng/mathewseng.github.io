@@ -43,15 +43,21 @@ export class EquityBar {
       this.stop();
       this.refresh();
     };
-    // Win, gammon and backgammon chances sit beside each player's number.
+    // Each player's win chance sits beside their number, split underneath
+    // into single games, gammons and backgammons.
     const chances = (side) => {
       const node = element("span", `equity-chances equity-${side}-chances`);
       node.setAttribute("aria-hidden", "true");
-      node.append(...["win", "gammon", "backgammon"].map((kind) => {
+      const line = (kind, key = "") => {
         const line = element("span", "equity-chance");
         line.dataset.chance = kind;
+        if (key) line.append(Object.assign(element("span", "equity-chance-key"), {textContent: key}));
+        line.append(element("span", "equity-chance-value"));
         return line;
-      }));
+      };
+      const split = element("span", "equity-split");
+      split.append(line("single", "S"), line("plainGammon", "G"), line("backgammon", "B"));
+      node.append(line("win"), split);
       return node;
     };
     this.topChances = chances("top");
@@ -176,10 +182,9 @@ export class EquityBar {
       ? [reading.chances[orientation], reading.chances[1 - orientation]] : null;
     this.node.dataset.chances = String(!!rows);
     for (const [node, row] of [[this.chances, rows?.[0]], [this.topChances, rows?.[1]]])
-      for (const line of node.children) {
+      for (const line of node.querySelectorAll(".equity-chance")) {
         const kind = line.dataset.chance;
-        line.textContent = row
-          ? `${kind === "win" ? "" : kind === "gammon" ? "G " : "B "}${Math.round(row[kind] * 100)}${kind === "win" ? "%" : ""}` : "";
+        line.lastChild.textContent = row ? `${Math.round(row[kind] * 100)}${kind === "win" ? "%" : ""}` : "";
       }
     if (reading) {
       const equity = orientation ? -reading.ivory : reading.ivory;
@@ -188,7 +193,7 @@ export class EquityBar {
       this.topLabel.textContent = equity < 0 ? (-equity).toFixed(3) : "";
       const percent = (n) => `${(100 * n).toFixed(1)}%`;
       const spoken = rows ? ` ${rows.map((row) =>
-        `${playerName(row.player)} wins ${percent(row.win)}, gammon ${percent(row.gammon)}, backgammon ${percent(row.backgammon)}.`).join(" ")} Gammon includes backgammon.` : "";
+        `${playerName(row.player)} wins ${percent(row.win)}: single ${percent(row.single)}, gammon ${percent(row.plainGammon)}, backgammon ${percent(row.backgammon)}.`).join(" ")}` : "";
       this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${equity.toFixed(3)} ${reading.units} · ${reading.setting}.${spoken} The fill is equity relative to the leader’s average win.`;
     } else {
       this.label.textContent = status === "loading" ? "…" : "—";

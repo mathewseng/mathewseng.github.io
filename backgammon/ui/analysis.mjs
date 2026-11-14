@@ -10,27 +10,39 @@ import { positionKey, playerName } from "../core/rules.mjs";
 import { outcomeChances } from "../core/decision-feedback.mjs";
 export const percentage = (n) => `${(100 * n).toFixed(1)}%`;
 export const equity = (n) => (n >= 0 ? "+" : "") + n.toFixed(3);
-// One line per player: chance of winning, of a gammon or better, and of a
-// backgammon. `player` is the side the five nested engine chances describe.
-export function chanceLines(probabilities, player) {
+// Each player's chance of winning, split into single games, gammons and
+// backgammons (the three add up to the win chance). `player` is the side the
+// five nested engine chances describe. Inline by default; `table` lays the
+// same figures out under column headings with a bar of the six outcomes.
+const CHANCES = [["win", "Win", "Win"], ["single", "Single", "S"], ["plainGammon", "Gammon", "G"], ["backgammon", "Backgammon", "BG"]];
+export function chanceLines(probabilities, player, { table = false } = {}) {
   const rows = outcomeChances(probabilities, player);
   if (!rows) return null;
+  const segment = (row, kind) =>
+    el("span", { class: "chance-segment", "data-chance": kind, "data-chance-player": row.player, style: `flex-grow:${row[kind]}` });
   return el(
     "span",
     {
-      class: "chance-lines",
+      class: `chance-lines${table ? " chance-table" : ""}`,
       role: "group",
-      "aria-label": "Chances of winning, of a gammon and of a backgammon",
-      title: "Chances for each player. Gammon includes backgammon.",
+      "aria-label": "Chances of winning, split into single games, gammons and backgammons",
+      title: "Each player’s chance of winning: single game, gammon and backgammon add up to it.",
     },
+    el("span", { class: "chance-bar", "aria-hidden": "true" },
+      segment(rows[0], "backgammon"), segment(rows[0], "plainGammon"), segment(rows[0], "single"),
+      segment(rows[1], "single"), segment(rows[1], "plainGammon"), segment(rows[1], "backgammon")),
+    el("span", { class: "chance-head", "aria-hidden": "true" },
+      el("span", {}), ...CHANCES.map(([, name]) => el("span", {}, name))),
     ...rows.map((row) =>
       el(
         "span",
         { class: "chance-line", "data-chance-player": row.player },
         el("span", { class: "chance-name" }, playerName(row.player)),
-        el("span", {}, el("span", { class: "muted" }, "Win "), percentage(row.win)),
-        el("span", {}, el("span", { class: "muted" }, "G "), percentage(row.gammon)),
-        el("span", {}, el("span", { class: "muted" }, "BG "), percentage(row.backgammon)),
+        ...CHANCES.map(([kind, name, key]) =>
+          el("span", { class: "chance-cell", "data-chance": kind, "aria-label": `${name} ${percentage(row[kind])}` },
+            el("span", { class: "chance-key muted" }, `${key} `),
+            // Short landscape dialogs show the rounded figure instead.
+            el("span", { class: "chance-value", "data-short": `${Math.round(row[kind] * 100)}${kind === "win" ? "%" : ""}` }, percentage(row[kind])))),
       ),
     ),
   );
@@ -38,28 +50,7 @@ export function chanceLines(probabilities, player) {
 export function probabilityView(c, player) {
   if (c.probabilities === null || player === undefined)
     return el("p", {class:"muted small"}, "This model estimates cubeful equity directly. It does not produce win or gammon probabilities.");
-  const [win] = c.probabilities;
-  return el(
-    "div",
-    {},
-    el(
-      "div",
-      { class: "row spread small" },
-      el("span", {}, `${playerName(player)} win chance`),
-      el("strong", {}, percentage(win)),
-    ),
-    el(
-      "div",
-      { class: "probability-bar" },
-      el("span", { style: `width:${Math.max(0, Math.min(100, win * 100))}%` }),
-    ),
-    chanceLines(c.probabilities, player),
-    el(
-      "p",
-      { class: "muted small" },
-      "Gammon includes backgammon.",
-    ),
-  );
+  return chanceLines(c.probabilities, player, { table: true });
 }
 export function resultView(
   result,

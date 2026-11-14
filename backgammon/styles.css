@@ -294,8 +294,10 @@ details .stack {
   background: var(--accent);
 }
 
-/* Win / gammon / backgammon chances, one line per player. Lines wrap rather
-   than overflow in narrow history columns; tabular figures keep them aligned. */
+/* Each player's win chance, split into single games, gammons and
+   backgammons. Inline, one wrapping line per player (history columns are
+   narrow); `.chance-table` aligns the same figures under headings beneath a
+   bar of the six outcomes. */
 .chance-lines {
   display: flex;
   flex-direction: column;
@@ -323,31 +325,153 @@ details .stack {
   font-weight: 600;
 }
 
+.chance-bar,
+.chance-head {
+  display: none;
+}
+
 .review-chances {
-  margin: 6px 0;
+  margin: 4px 0;
+}
+
+@media not ((max-height: 500px) and (orientation: landscape)) {
+  .chance-table {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) repeat(4, auto);
+    gap: 1px 16px;
+    align-items: baseline;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .chance-table .chance-head,
+  .chance-table .chance-line {
+    display: contents;
+  }
+
+  .chance-table .chance-head > span {
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .chance-table .chance-key {
+    display: none;
+  }
+
+  .chance-table .chance-cell {
+    text-align: right;
+  }
+
+  .chance-table .chance-cell[data-chance="win"] {
+    font-weight: 700;
+  }
+
+  .chance-table .chance-cell:not([data-chance="win"]) {
+    color: var(--muted);
+  }
+
+  .chance-table .chance-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: var(--ink);
+  }
+
+  .chance-table .chance-name::before {
+    content: "";
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: var(--bg-seat-0);
+  }
+
+  .chance-table .chance-line[data-chance-player="1"] .chance-name::before {
+    background: var(--bg-seat-1);
+  }
+
+  /* Player 0's outcomes run in from the left, player 1's from the right;
+     single games meet at the boundary and the rarer, bigger wins fade
+     toward the ends. */
+  .chance-table .chance-bar {
+    position: relative;
+    display: flex;
+    grid-column: 1 / -1;
+    gap: 2px;
+    height: 8px;
+    margin-bottom: 4px;
+    border-radius: var(--r-pill);
+    overflow: hidden;
+  }
+
+  .chance-bar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    border-left: 1px solid var(--bg);
+    opacity: 0.55;
+  }
+
+  .chance-segment {
+    flex: 0 1 0;
+    min-width: 0;
+    background: var(--bg-seat-0);
+  }
+
+  .chance-segment[data-chance-player="1"] {
+    background: var(--bg-seat-1);
+  }
+
+  .chance-segment[data-chance="plainGammon"] {
+    opacity: 0.62;
+  }
+
+  .chance-segment[data-chance="backgammon"] {
+    opacity: 0.34;
+  }
 }
 
 /* Short landscape phones have no spare height: both players share one line
-   of bare win / gammon / backgammon figures above the move list. */
+   above the move list. */
 @media (max-height: 500px) and (orientation: landscape) {
   .review-chances .chance-lines {
     flex-flow: row nowrap;
-    gap: 0 12px;
+    gap: 0 14px;
     font-size: 11px;
     line-height: 1.2;
   }
 
   .review-chances .chance-line {
     flex-wrap: nowrap;
-    gap: 0 5px;
+    gap: 0 6px;
   }
 
   .review-chances .chance-name {
     min-width: 0;
   }
 
-  .review-chances .chance-line .muted {
+  .review-chances .chance-cell[data-chance="win"] {
+    font-weight: 700;
+  }
+
+  .review-chances .chance-cell[data-chance="win"] .chance-key {
     display: none;
+  }
+
+  .review-chances .chance-value {
+    font-size: 0;
+  }
+
+  .review-chances .chance-value::after {
+    content: attr(data-short);
+    font-size: 11px;
   }
 
   .review-chances {
@@ -990,11 +1114,16 @@ button kbd.keycap,
   white-space: nowrap;
 }
 
-.equity-chances {
+.equity-chances,
+.equity-split {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   align-items: center;
+}
+
+.equity-chances {
+  gap: 2px;
   width: 100%;
   color: var(--muted);
   font-size: 10px;
@@ -1004,13 +1133,29 @@ button kbd.keycap,
   white-space: nowrap;
 }
 
+/* Single / gammon / backgammon: keys line up, figures right-align. */
+.equity-split {
+  align-items: stretch;
+}
+
 .equity-chance {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
   min-height: 1.25em;
 }
 
-.equity-chance[data-chance="win"] {
+.equity-chance-key {
+  opacity: 0.7;
+}
+
+.equity-chance-value {
   color: var(--ink);
-  font-size: 11px;
+}
+
+.equity-chance[data-chance="win"] {
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .equity-bar:not([data-chances="true"]) .equity-chances {
@@ -1123,11 +1268,17 @@ button kbd.keycap,
   }
 
   .equity-chances {
-    flex-direction: row;
-    justify-content: center;
-    align-items: baseline;
-    gap: 5px;
+    gap: 0;
     width: auto;
+  }
+
+  .equity-split {
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .equity-chance {
+    gap: 2px;
   }
 
   .equity-meter {

@@ -273,7 +273,7 @@ export function decisionReview(
               showCube(choice, choice.notation);
             },
           }),
-          el("div", { class: "review-chances" }, chanceLines(f.positionChances, f.chancePlayer)),
+          el("div", { class: "review-chances" }, chanceLines(f.positionChances, f.chancePlayer, { table: true })),
           lossLegend(),
           el(
             "p",
@@ -414,7 +414,7 @@ export function decisionReview(
       const chances = el("div", { class: "review-chances", "aria-live": "polite" });
       const redraw = () => {
         moveRowsObserver.disconnect();
-        chances.replaceChildren(...[chanceLines((candidates[selected] || best).probabilities, result.perspective)].filter(Boolean));
+        chances.replaceChildren(...[chanceLines((candidates[selected] || best).probabilities, result.perspective, { table: true })].filter(Boolean));
         chances.hidden = !chances.childElementCount;
         position.setAttribute("aria-pressed",String(selected === -1));
         const scrollTop = rows.scrollTop;

@@ -104,7 +104,7 @@ module.exports = async function equityBarUX(browser, base, out, name) {
     assert.ok(assets > 0);
     assert.match(
       await page.locator("#equity-bar").getAttribute("title"),
-      /Quick.*White wins \d+\.\d%, gammon \d+\.\d%, backgammon \d+\.\d%\. Black wins .*average win/,
+      /Quick.*White wins \d+\.\d%: single \d+\.\d%, gammon \d+\.\d%, backgammon \d+\.\d%\. Black wins .*average win/,
     );
     const gameBefore = await savedGame();
     await hide.focus();

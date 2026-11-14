@@ -39,9 +39,11 @@ test("equity readings reject stale results and preserve actual choice, player an
   assert.equal(equityReading(source, result).chances, null, "a model without chances shows equity alone");
   const chances = equityReading(source, { ...result, actual: { equity: 0.2, probabilities: [0.6, 0.2, 0.01, 0.1, 0] } }).chances;
   assert.deepEqual(chances, [
-    { player: 0, win: 0.4, gammon: 0.1, backgammon: 0 },
-    { player: 1, win: 0.6, gammon: 0.2, backgammon: 0.01 },
-  ], "chances are listed per player from the roller's five nested values");
+    { player: 0, win: 0.4, gammon: 0.1, backgammon: 0, single: 0.30000000000000004, plainGammon: 0.1 },
+    { player: 1, win: 0.6, gammon: 0.2, backgammon: 0.01, single: 0.39999999999999997, plainGammon: 0.19 },
+  ], "chances are listed per player from the roller's five nested values, with the exclusive shares");
+  for (const row of chances)
+    assert.ok(Math.abs(row.single + row.plainGammon + row.backgammon - row.win) < 1e-12, "single, gammon and backgammon add up to the win chance");
   const before = equityReading(source, result, {beforeDecision:true});
   assert.equal(before.ivory, -0.4, "Play displays equity before the submitted choice");
   assert.equal(before.choice, "Before decision");

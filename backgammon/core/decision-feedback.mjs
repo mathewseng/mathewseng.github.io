@@ -24,9 +24,17 @@ export function outcomeChances(probabilities, player) {
     return null;
   const clamp = (n) => Math.min(1, Math.max(0, n));
   const [win, gammon, backgammon, loseGammon, loseBackgammon] = probabilities.map(clamp);
+  // `gammon` and `backgammon` are nested (a gammon or better, a backgammon);
+  // `single` and `plainGammon` are the exclusive shares, so that
+  // single + plainGammon + backgammon = win.
+  const row = (player, win, gammon, backgammon) => {
+    gammon = Math.min(win, gammon);
+    backgammon = Math.min(gammon, backgammon);
+    return { player, win, gammon, backgammon, single: win - gammon, plainGammon: gammon - backgammon };
+  };
   return [
-    { player, win, gammon, backgammon },
-    { player: 1 - player, win: 1 - win, gammon: loseGammon, backgammon: loseBackgammon },
+    row(player, win, gammon, backgammon),
+    row(1 - player, 1 - win, loseGammon, loseBackgammon),
   ].sort((a, b) => a.player - b.player);
 }
 export function decisionFeedback(result, source = null) {
