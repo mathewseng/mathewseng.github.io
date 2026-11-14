@@ -1607,6 +1607,7 @@ function syncRoomButtons() {
 }
 async function connect(join) {
   if (connecting) return;
+  let failed = false;
   connecting = true;
   netStatus = "Connecting…";
   toast(netStatus);
@@ -1622,10 +1623,14 @@ async function connect(join) {
     if ($("toast").querySelector(".toast-text")?.textContent === "Connecting…") $("toast").hidden = true;
     $("panel").scrollTop = 0;
   } catch (e) {
+    failed = true;
     showError(e);
   } finally {
     connecting = false;
     render();
+    // The rebuild replaced the button that started this; keep keyboard focus
+    // on its replacement so Enter retries a failed join.
+    if (failed) $(join ? "join-room" : "create-room")?.focus({ preventScroll: true });
   }
 }
 function start() {
