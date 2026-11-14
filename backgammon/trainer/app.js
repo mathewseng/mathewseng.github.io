@@ -578,10 +578,11 @@ function finish() {
   analysis.cancel();
   study.set(null);
   practiceHelp.hidden = true;
-  draft.enabled = false;
-  draft.render();
-  $("message").textContent =
-    `Session complete · ${count} decisions studied.`;
+  // Keep the final position on view, but nobody is to move and no roll or
+  // equity reveal is pending once the session is over.
+  draft.set({ ...draft.current(), phase: "over", dice: [] }, [], false);
+  ui.equityBar.set({ state: null, blocked: "Session complete", note: "" });
+  $("message").replaceChildren(el("span", { class: "sr-only" }, "Session complete"));
   $("actions").replaceChildren(button("Practice again", begin, "primary"));
   renderSteps(true);
   const s = sessionSummary();
@@ -599,8 +600,7 @@ function finish() {
     );
   summaryCard.replaceChildren(
     hideCardButton(summaryCard, "Hide the summary to see the board"),
-    el("p", { class: "bg-result-kind" }, "Session complete"),
-    el("h2", {}, `${count} decision${count === 1 ? "" : "s"} studied`),
+    el("h2", {}, `${s.answered} answered`),
     stats(),
     ...(s.recorded < count
       ? [el("p", { class: "muted small" }, `${count - s.recorded} earlier decision${count - s.recorded === 1 ? " was" : "s were"} answered before this page loaded and ${count - s.recorded === 1 ? "is" : "are"} not in this summary.`)]

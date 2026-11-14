@@ -2094,6 +2094,11 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   overflow-wrap: anywhere;
 }
 
+/* A heading in the hide button's row keeps clear of it on both sides. */
+.bg-result-card > .bg-result-hide + h2 {
+  padding-inline: 36px;
+}
+
 /* Stats wrap as whole rows (no empty grid cells) and labels may wrap. */
 .bg-result-card .stat-strip,
 .trainer-summary-stats {
