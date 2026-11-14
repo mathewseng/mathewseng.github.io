@@ -1,5 +1,5 @@
-import { mountTable, diceHTML, esc, seatColor } from '../table.js?v=20261114';
-import { game, UPPER, LOWER, LABELS, ROUNDS, UPPER_TARGET, YACHT_BONUS, scoreBox, legalBoxes, jokerActive, totals, filledCount } from './engine.mjs?v=20261114';
+import { mountTable, diceHTML, esc, seatColor } from '../table.js?v=20261115';
+import { game, UPPER, LOWER, LABELS, ROUNDS, UPPER_TARGET, YACHT_BONUS, scoreBox, legalBoxes, jokerActive, totals, filledCount } from './engine.mjs?v=20261115';
 
 // The acting player's holds live here until the next roll or turn, when they
 // reset to the dice the last roll kept.
@@ -13,6 +13,25 @@ function heldSet(state) {
 
 const actAttr = (action) => `data-act="${esc(JSON.stringify(action))}"`;
 
+// A roll that keeps these positions; `faces` lets the best-move check compare keeps as multisets.
+const rollAction = (state, keep) => ({ type: 'roll', keep, faces: keep.map((i) => state.dice[i]).sort((a, b) => a - b) });
+
+// The best move on the board: the dice it keeps (matched by face, held dice first) or its box.
+function bestMove(state, ctx) {
+  const best = ctx.canAct && ctx.advice?.best;
+  if (!best) return { dice: new Set(), box: null };
+  if (best.type === 'score') return { dice: new Set(), box: best.box };
+  if (!state.rollsUsed) return { dice: new Set(), box: null };
+  const held = heldSet(state);
+  const order = [0, 1, 2, 3, 4].sort((a, b) => Number(held.has(b)) - Number(held.has(a)));
+  const dice = new Set();
+  for (const face of best.faces ?? best.keep.map((i) => state.dice[i])) {
+    const i = order.find((j) => !dice.has(j) && state.dice[j] === face);
+    if (i != null) dice.add(i);
+  }
+  return { dice, box: null };
+}
+
 function caption(state) {
   if (state.done) return `<strong>All ${ROUNDS} rounds played</strong>`;
   const round = `<strong>Round ${filledCount(state.cards[state.turn]) + 1} of ${ROUNDS}</strong>`;
@@ -25,7 +44,7 @@ function caption(state) {
   return `${round} · ${esc(state.names[last.seat])} scored ${last.score} in ${LABELS[last.box]}${last.bonus ? ` and a ${last.bonus} Yacht bonus` : ''}.`;
 }
 
-function diceRow(state, canAct, rolled) {
+function diceRow(state, canAct, rolled, best) {
   if (!state.rollsUsed) return diceHTML([1, 1, 1, 1, 1], { hidden: true, aria: () => 'Not rolled yet', className: 'yt-dice' });
   const rolling = (i) => rolled && !state.kept[i];
   if (canAct && state.rollsUsed < 3) {
@@ -34,8 +53,9 @@ function diceRow(state, canAct, rolled) {
       select: true,
       held: (i) => held.has(i),
       rolling,
+      mark: (i) => best.dice.has(i),
       label: (i) => (held.has(i) ? 'Held' : ''),
-      aria: (i) => `Die ${i + 1} showing ${state.dice[i]}`,
+      aria: (i) => `Die ${i + 1} showing ${state.dice[i]}${best.dice.has(i) ? ', best move keeps it' : ''}`,
       key: 'die',
       className: 'yt-dice',
     });
@@ -49,7 +69,7 @@ function diceRow(state, canAct, rolled) {
   });
 }
 
-function scorecard(state, canAct) {
+function scorecard(state, canAct, advised) {
   const turn = state.done ? -1 : state.turn;
   const picking = canAct && state.rollsUsed > 0;
   const legal = picking ? legalBoxes(state.dice, state.cards[turn]) : [];
@@ -66,7 +86,8 @@ function scorecard(state, canAct) {
     if (!picking || i !== turn) return cell(i, '');
     if (!legal.includes(id)) return cell(i, '<span class="yt-blocked" title="The joker rule sends this Yacht elsewhere">–</span>');
     const score = scoreBox(state.dice, id, state.cards[i]);
-    return cell(i, `<button type="button" class="yt-pick${score ? '' : ' is-zero'}" data-key="box-${id}" ${actAttr({ type: 'score', box: id })} aria-label="Score ${score} in ${LABELS[id]}">${score}</button>`, ' yt-open');
+    const top = advised.box === id;
+    return cell(i, `<button type="button" class="yt-pick${score ? '' : ' is-zero'}${top ? ' is-best' : ''}" data-key="box-${id}" ${actAttr({ type: 'score', box: id })} aria-label="Score ${score} in ${LABELS[id]}${top ? ', the best move' : ''}">${score}</button>`, ' yt-open');
   }).join('')}</tr>`;
 
   const sumRow = (label, value, cls = '') => `<tr class="yt-sum${cls}"><th scope="row">${label}</th>${state.names.map((_, i) => cell(i, value(i))).join('')}</tr>`;
@@ -114,18 +135,19 @@ function render(board, ctx) {
   const canRoll = canAct && state.rollsUsed < 3 && (state.rollsUsed === 0 || held.size < 5);
   const label = state.rollsUsed === 0 ? 'Roll' : state.rollsUsed < 3 ? `Roll again · ${3 - state.rollsUsed} left` : 'No rolls left';
   const keep = state.rollsUsed ? [...held].sort((a, b) => a - b) : [];
+  const best = bestMove(state, ctx);
   const scrolled = board.querySelector('.yt-card')?.scrollLeft || 0;
   board.innerHTML = `
     <div class="yt">
       <div class="yt-layout">
         <section class="yt-play" aria-label="Dice">
-          ${diceRow(state, canAct, rolled)}
+          ${diceRow(state, canAct, rolled, best)}
           <p class="yt-caption">${caption(state)}</p>
           <div class="dt-actions">
-            <button type="button" class="btn btn--primary btn--lg" data-key="roll" ${actAttr({ type: 'roll', keep })}${canRoll ? '' : ' disabled'}>${label}</button>
+            <button type="button" class="btn btn--primary btn--lg" data-key="roll" ${actAttr(rollAction(state, keep))}${canRoll ? '' : ' disabled'}>${label}</button>
           </div>
         </section>
-        ${scorecard(state, canAct)}
+        ${scorecard(state, canAct, best)}
       </div>
     </div>`;
   keepCardInView(board, scrolled, state, canAct);
@@ -155,7 +177,7 @@ function key(event, ctx) {
     const { state } = ctx;
     const held = heldSet(state);
     if (state.rollsUsed >= 3 || (state.rollsUsed && held.size >= 5)) return;
-    ctx.act({ type: 'roll', keep: state.rollsUsed ? [...held].sort((a, b) => a - b) : [] });
+    ctx.act(rollAction(state, state.rollsUsed ? [...held].sort((a, b) => a - b) : []));
   }
 }
 

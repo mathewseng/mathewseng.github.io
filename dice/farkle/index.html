@@ -9,9 +9,9 @@
   <link rel="icon" href="../favicon.svg" />
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-  <link rel="stylesheet" href="../table.css?v=20261114" />
-  <link rel="stylesheet" href="./styles.css?v=20261114" />
-  <script type="module" src="./app.js?v=20261114"></script>
+  <link rel="stylesheet" href="../table.css?v=20261115" />
+  <link rel="stylesheet" href="./styles.css?v=20261115" />
+  <script type="module" src="./app.js?v=20261115"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -54,7 +54,9 @@
       <p>When a player banks the target (10,000 or 5,000), everyone else gets one final turn. The highest score then wins; tied players share the win.</p>
       <p>With an opening minimum of 500, a player who has not banked yet can only bank a turn worth 500 or more.</p>
       <h3>Bots</h3>
-      <p>Easy sets aside every scoring die and banks at about 300 to 400, however many dice are left. Normal keeps sets, or a single 1 or 5 to reroll more dice, and banks sooner as the dice run out. Hard plays the move that maximises the points a turn is expected to bank, worked out over every possible roll. It presses on when a rival nears the target, keeps rolling past the target when a close rival could beat a smaller total, and plays its final turn to beat the leader.</p>
+      <p>Easy sets aside every scoring die and banks at about 300 to 400, however many dice are left. Normal keeps sets, or a single 1 or 5 to reroll more dice, and banks sooner as the dice run out. Hard plays the best move. With two players that is the move with the highest chance to win, solved exactly for every pair of scores. With more players it maximises the points the turn is expected to bank, and in the final round it plays for the best chance to finish on top.</p>
+      <h3>Best move</h3>
+      <p>On your turn the strip over the board shows the best move and its value: your chance to win, or the points the turn is expected to bank with three or more players. Open it to compare every keep with banking or rolling on. The dice it would set aside are ringed, as is the button it would press. After you move it says whether you matched it.</p>
       <p>Keys: 1 to 6 pick dice, R keeps and rolls, B banks.</p>
     </div>
   </dialog>

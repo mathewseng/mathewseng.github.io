@@ -288,10 +288,23 @@ body {
 }
 
 .dt-advice-toggle {
+  min-height: 44px;
   margin-left: auto;
 }
 
-.dt-advice-more {
+.dt-advice-review {
+  flex-basis: 100%;
+}
+
+.dt-advice-review.is-good {
+  color: var(--good);
+}
+
+.dt-advice-review.is-off {
+  color: var(--warn);
+}
+
+.dt-advice-more[open] {
   flex-basis: 100%;
   order: 3;
 }

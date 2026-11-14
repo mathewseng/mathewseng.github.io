@@ -1,6 +1,7 @@
 // Liar’s Dice: everyone rolls in secret, then bids on how many dice around the
 // table show a face. Raise the bid or call Liar; the wrong side loses a die.
 import { clone, log, rollDice, nextSeat, sum, pick, plural, binomialAtLeast } from '../table-core.mjs';
+import { evaluate, solvedEndgame, MODEL } from './solver.mjs';
 
 const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
   'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'twenty-one',
@@ -218,9 +219,10 @@ export function bidChance(state, seat, quantity, face, read = 0) {
 // when P(true) < weigh × P(its best raise is false), since a raise only risks a
 // die if it is false. open: how likely an opening bid must be. Tuned by
 // self-play (tests/engine.test.mjs reports the rates).
+// `reader` was the hard bot before the solver; tests still measure Hard against it.
 export const STYLE = {
   normal: { read: 0, call: 0.4, weigh: 0, open: 0.55, bluff: 0.05 },
-  hard: { read: 0.6, call: 0.3, weigh: 0.7, open: 0.7, bluff: 0.12 },
+  reader: { read: 0.6, call: 0.3, weigh: 0.7, open: 0.7, bluff: 0.12 },
 };
 
 function easyBot(state, seat, rng) {
@@ -246,6 +248,7 @@ function easyBot(state, seat, rng) {
 export function bot(state, seat, level = 'normal', rng = Math.random) {
   if (state.phase === 'reveal') return { type: 'next' };
   if (level === 'easy') return easyBot(state, seat, rng);
+  if (level === 'hard') return then(advise(state, seat), (advice) => hardMove(advice, rng));
   const style = STYLE[level] || STYLE.normal;
   const mine = state.dice[seat] || [];
   const held = (face) => mine.filter((die) => die === face).length;
@@ -292,6 +295,64 @@ export function bot(state, seat, level = 'normal', rng = Math.random) {
   return { type: 'bid', quantity: best.quantity, face: best.face };
 }
 
+// ---------- Best move ----------
+
+const moveLabel = (action) => (action.type === 'liar' ? 'Call Liar' : action.type === 'next' ? 'Next round' : `Bid ${bidText(action.quantity, action.face)}`);
+const percent = (risk) => {
+  const value = risk * 100;
+  if (value > 0 && value < 1) return '<1%';
+  if (value < 100 && value > 99) return '>99%';
+  return `${Math.round(value)}%`;
+};
+
+const then = (value, next) => (value && typeof value.then === 'function' ? value.then(next) : next(value));
+
+// The solver’s ranked moves from `seat`’s view alone (see solver.mjs): the exact
+// equilibrium in a solved heads-up endgame, otherwise the estimate. Returns a
+// Promise only while the endgame table loads.
+export function advise(state, seat, model = MODEL) {
+  if (state.phase === 'reveal') {
+    const action = { type: 'next' };
+    return { best: action, options: [{ action, label: moveLabel(action), display: '' }], metric: '', exact: true, note: '' };
+  }
+  if (state.phase !== 'bid' || state.turn !== seat || !(state.counts[seat] > 0)) return null;
+  return then(model.endgame === false ? null : solvedEndgame(state, seat), (solved) => {
+    if (solved) {
+      return {
+        best: solved[0].action,
+        options: solved.map(({ action, risk, mix }) => ({ action, label: moveLabel(action), display: `${percent(risk)} to lose a die`, risk, mix })),
+        metric: 'Chance to lose a die',
+        exact: true,
+        mixed: true,
+        note: 'Exact equilibrium for this heads-up endgame, against an opponent who plays it too. Moves with the same chance are equally good; mixing them keeps you unreadable.',
+      };
+    }
+    const ranked = evaluate(state, seat, model);
+    return {
+      best: ranked[0].action,
+      options: ranked.map(({ action, risk }) => ({ action, label: moveLabel(action), display: `${percent(risk)} to lose a die`, risk })),
+      metric: 'Chance to lose a die',
+      exact: false,
+      note: 'Estimated from your dice and the bidding; bluffing games have no exact solution here.',
+    };
+  });
+}
+
+// Hard plays the best move; in a solved endgame it draws from the equilibrium
+// mix instead, since always making the same move there could be read.
+export function hardMove(advice, rng = Math.random) {
+  if (!advice) return null;
+  if (!advice.mixed) return advice.best;
+  let roll = rng();
+  for (const option of advice.options) {
+    roll -= option.mix;
+    if (option.mix > 0 && roll < 0) return option.action;
+  }
+  return advice.best;
+}
+
+export const sameAction = (a, b) => a?.type === b?.type && (a.type !== 'bid' || (Number(a.quantity) === Number(b.quantity) && Number(a.face) === Number(b.face)));
+
 // ---------- Text ----------
 
 function resultText(state) {
@@ -321,6 +382,8 @@ export const game = {
   view,
   recover,
   bot,
+  advise,
+  sameAction,
   pace: (state, action) => (action.type === 'next' ? 3000 : action.type === 'liar' ? 1100 : 1300),
   needsPrivacy: (state) => state.phase === 'bid',
   summary: (state, seat) => (state.counts[seat] > 0 ? plural(state.counts[seat], 'die', 'dice') : 'Out'),

@@ -9,9 +9,9 @@
   <link rel="icon" href="../favicon.svg" />
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-  <link rel="stylesheet" href="../table.css?v=20261114" />
-  <link rel="stylesheet" href="./styles.css?v=20261114" />
-  <script type="module" src="./app.js?v=20261114"></script>
+  <link rel="stylesheet" href="../table.css?v=20261115" />
+  <link rel="stylesheet" href="./styles.css?v=20261115" />
+  <script type="module" src="./app.js?v=20261115"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -53,7 +53,9 @@
       <h3>Strategy</h3>
       <p>Three of each face makes exactly 63, so a fourth Five or Six banks spare points towards the bonus, while a poor roll is often best placed in Ones or Chance.</p>
       <h3>Bots</h3>
-      <p>Easy holds its most common face or an open straight draw and takes whichever box scores most right now. Normal looks one roll ahead, weighs each box against what it usually scores, and sometimes holds the wrong dice. Hard works out the exact odds of every hold over both remaining rolls and weighs each box against its usual score and its pull towards the upper bonus; alone it averages about 240.</p>
+      <p>Easy holds its most common face or an open straight draw and takes whichever box scores most right now. Normal looks one roll ahead, weighs each box against what it usually scores, and sometimes holds the wrong dice. Hard plays the exact optimal solitaire strategy, the one that maximises its expected final score; alone it averages about 254.</p>
+      <h3>Best move</h3>
+      <p>On your turn the strip under the status line shows the move that maximises your expected final score, marks the dice it keeps or the box it fills, and lists the alternatives with their expected totals. After you move it says whether you matched it. It plays for points, not for beating a particular opponent.</p>
       <p>Keys: 1 to 5 hold dice, R rolls.</p>
     </div>
   </dialog>

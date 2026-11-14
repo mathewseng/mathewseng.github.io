@@ -9,9 +9,9 @@
   <link rel="icon" href="../favicon.svg" />
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-  <link rel="stylesheet" href="../table.css?v=20261114" />
-  <link rel="stylesheet" href="./styles.css?v=20261114" />
-  <script type="module" src="./app.js?v=20261114"></script>
+  <link rel="stylesheet" href="../table.css?v=20261115" />
+  <link rel="stylesheet" href="./styles.css?v=20261115" />
+  <script type="module" src="./app.js?v=20261115"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -46,7 +46,9 @@
       <p>Example, ones wild: Pascal bid four 5s and you called Liar. The table shows two 5s and one 1, which makes three 5s. The bid was one short, so Pascal lost a die. With a fourth 5 or another 1 on the table, the bid would have stood and you would have lost the die.</p>
       <p>Whoever lost the die opens the next round. A player who loses their last die is out, and the next player still in opens instead. The last player with dice wins.</p>
       <h3>Bots</h3>
-      <p>Easy calls Liar only when a bid is well above the average count for the table, otherwise raises by the least it can on a random face, and slips up now and then. Normal works out how likely each bid is from its own dice and raises with the bid most likely to be true. Hard also reads the bidding, treating a face a player has bid as one they probably hold, weighs calling against the risk of its own best raise, and bluffs now and then.</p>
+      <p>Easy calls Liar only when a bid is well above the average count for the table, otherwise raises by the least it can on a random face, and slips up now and then. Normal works out how likely each bid is from its own dice and raises with the bid most likely to be true. Hard plays the best move below: for every call and raise it works out the chance of losing a die, reading each bid as a clue to what the bidder holds and judging whether the next player would call. Heads-up with one die each, or two dice against one with ones wild, it plays the exact solution instead, mixing its moves as that solution does.</p>
+      <h3>Best move</h3>
+      <p>On your turn, the strip under the status line shows the move with the lowest chance to lose you a die, and the board marks it. With more dice in play this is an estimate from your dice and the bidding, as a bluffing game has no exact answer there; in the heads-up endgames above it is exact against an opponent who plays perfectly. Hide it with Hide best move.</p>
       <p>Keys: Enter bids or starts the next round, L calls Liar, + and − change the quantity, 1 to 6 pick a face.</p>
     </div>
   </dialog>

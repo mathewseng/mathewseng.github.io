@@ -9,9 +9,9 @@
   <link rel="icon" href="../favicon.svg" />
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-  <link rel="stylesheet" href="../table.css?v=20261114" />
-  <link rel="stylesheet" href="./styles.css?v=20261114" />
-  <script type="module" src="./app.js?v=20261114"></script>
+  <link rel="stylesheet" href="../table.css?v=20261115" />
+  <link rel="stylesheet" href="./styles.css?v=20261115" />
+  <script type="module" src="./app.js?v=20261115"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -46,7 +46,9 @@
       <h3>Winning</h3>
       <p>Whoever lost a life starts the next round, or the next player still in if they are out. A player with no lives left is out, and the last player standing wins.</p>
       <h3>Bots</h3>
-      <p>Easy calls or believes mostly at random and sometimes bluffs when the truth would do. Normal tells the truth when it can, bluffs with the smallest raise, and calls once fewer than about 40% of rolls would reach the announcement. Hard tells the truth when it can and bluffs low, and weighs the odds an announcement is true (the smallest raise is the classic bluff) against the risk of having to beat it, counting Mia’s 2-life stakes.</p>
+      <p>Easy calls or believes mostly at random and sometimes bluffs when the truth would do. Normal tells the truth when it can, bluffs with the smallest raise, and calls once fewer than about 40% of rolls would reach the announcement. Hard plays the solver’s move: with two players left that is an exact equilibrium for the chance of winning the match, and where it mixes (bluffing some rolls, calling some claims) Hard picks at random with the equilibrium’s chances, so it cannot be read. With three or more it plays the move least likely to cost it a life against a model table.</p>
+      <h3>Best move</h3>
+      <p>On your turn the strip under the status line shows the solver’s move, also marked on the buttons or the value ladder. Heads-up it is exact and gives your chance to win the match; where the equilibrium mixes it says how often to play each move, and those moves are worth the same. With three or more players it is an estimate of your chance to lose a life this round. Open the strip for every option, or hide it.</p>
       <p>Keys: R rolls or believes and rolls, C calls, arrow keys pick a value, Enter announces it or starts the next round.</p>
     </div>
   </dialog>

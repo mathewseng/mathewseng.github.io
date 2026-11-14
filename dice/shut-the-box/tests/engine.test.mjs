@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   game, waysToShut, wayMasks, canRollOne, maskOf, tilesOf, openSum, tileText, FULL,
-  expectedScore, winChance, solve, decisiveNeed, totals,
+  expectedScore, winChance, solve, decisiveNeed, totals, advise, sameAction, turnGoal, scoreDistribution,
 } from '../engine.mjs';
 import { seededRng, clone } from '../../table-core.mjs';
 
@@ -329,4 +329,281 @@ test('text reads correctly for a player called You', () => {
   assert.equal(game.status(state, 1, { canAct: false }), 'You to shut tiles for 9.');
   assert.deepEqual(tilesOf(maskOf([9, 1, 5])), [1, 5, 9]);
   assert.equal(start(['You'], 3).log[0].text, '3 rounds: aim for the lowest total.');
+});
+
+// ---------- Best move ----------
+
+const EPS = 1e-12;
+const TWO = Array.from({ length: 11 }, (_, i) => [i + 2, (6 - Math.abs(i + 2 - 7)) / 36]);
+const ONE = [1, 2, 3, 4, 5, 6].map((total) => [total, 1 / 6]);
+const expTable = solve((score) => -score);
+
+// Tidy order as the engine breaks ties: fewest tiles, then the highest.
+function tidy(a, b) {
+  const ta = tilesOf(a).reverse();
+  const tb = tilesOf(b).reverse();
+  if (ta.length !== tb.length) return ta.length - tb.length;
+  for (let i = 0; i < ta.length; i += 1) if (ta[i] !== tb[i]) return tb[i] - ta[i];
+  return 0;
+}
+
+// A policy ranked by (win table, expected score, tidy), as the engine's hard bot ranks.
+function rankedPolicy(win) {
+  return {
+    set(mask, total) {
+      const ways = wayMasks(mask, total);
+      if (!ways.length) return -1;
+      return ways.reduce((best, set) => {
+        const a = [win ? win.value[mask & ~set] : 0, expTable.value[mask & ~set]];
+        const b = [win ? win.value[mask & ~best] : 0, expTable.value[mask & ~best]];
+        if (Math.abs(a[0] - b[0]) > EPS) return a[0] > b[0] ? set : best;
+        if (Math.abs(a[1] - b[1]) > EPS) return a[1] > b[1] ? set : best;
+        return tidy(set, best) < 0 ? set : best;
+      });
+    },
+    dice(mask) {
+      if (!canRollOne(mask)) return 2;
+      if (win && Math.abs(win.one[mask] - win.two[mask]) > EPS) return win.one[mask] > win.two[mask] ? 1 : 2;
+      return expTable.one[mask] > expTable.two[mask] + EPS ? 1 : 2;
+    },
+  };
+}
+
+// The previous hard bot played for the lowest expected score, and on the decisive
+// last turn exactly for the win against the score to beat.
+const winNeed = new Map();
+const needTable = (need) => {
+  if (!winNeed.has(need)) winNeed.set(need, solve((score) => (score < need ? 1 : score === need ? 0.5 : 0)));
+  return winNeed.get(need);
+};
+// Normal as a policy (it never looks past the box).
+const normalPolicy = {
+  set(mask, total) {
+    const ways = wayMasks(mask, total);
+    return ways.length ? mask & ~ways.slice().sort(tidy)[0] : -1;
+  },
+  dice: (mask) => (canRollOne(mask) && openSum(mask) <= 6 ? 1 : 2),
+};
+// The exact distribution of a turn's score from the full box under a policy.
+function turnDist(policy) {
+  const dist = Array.from({ length: 512 }, () => new Float64Array(46));
+  dist[0][0] = 1;
+  for (let mask = 1; mask < 512; mask += 1) {
+    for (const [total, p] of policy.dice(mask) === 1 ? ONE : TWO) {
+      const ways = wayMasks(mask, total);
+      if (!ways.length) { dist[mask][openSum(mask)] += p; continue; }
+      const rest = policy.set(mask, total);
+      for (let s = 0; s < 46; s += 1) dist[mask][s] += p * dist[rest][s];
+    }
+  }
+  return dist[FULL];
+}
+
+// rankedPolicy.set returns the remaining mask for the chosen set.
+const remainingPolicy = (win) => {
+  const ranked = rankedPolicy(win);
+  return { dice: ranked.dice, set: (mask, total) => { const set = ranked.set(mask, total); return set < 0 ? -1 : mask & ~set; } };
+};
+
+// A synthetic two-player state at turn k with seat 0's total minus seat 1's equal to d.
+function duelState(rounds, first, k, d) {
+  const state = start(['A', 'B'], rounds, first);
+  state.round = Math.floor(k / 2) + 1;
+  state.played = k % 2;
+  state.turn = (first + state.round - 1 + state.played) % 2;
+  state.scores[0][0] = Math.max(d, 0);
+  state.scores[1][0] = Math.max(-d, 0);
+  return state;
+}
+
+// Exact chance that seat 0 wins a two-player match (ties half) when each seat
+// follows a turn policy chosen from (state, seat).
+function exactDuel(rounds, first, policies) {
+  const memo = new Map();
+  const distMemo = new Map();
+  const order = [];
+  for (let r = 0; r < rounds; r += 1) for (let i = 0; i < 2; i += 1) order.push((first + r + i) % 2);
+  const value = (k, d) => {
+    if (k === order.length) return d < 0 ? 1 : d === 0 ? 0.5 : 0;
+    const key = `${k}|${d}`;
+    if (memo.has(key)) return memo.get(key);
+    const mover = order[k];
+    const policyKey = policies[mover].key(rounds, first, k, d);
+    const dk = `${mover}|${policyKey}`;
+    if (!distMemo.has(dk)) distMemo.set(dk, turnDist(policies[mover].policy(rounds, first, k, d)));
+    const dist = distMemo.get(dk);
+    let total = 0;
+    for (let s = 0; s < 46; s += 1) if (dist[s]) total += dist[s] * value(k + 1, mover === 0 ? d + s : d - s);
+    memo.set(key, total);
+    return total;
+  };
+  return value(0, 0);
+}
+
+const policies = {
+  normal: { key: () => 'n', policy: () => normalPolicy },
+  old: {
+    key: (rounds, first, k, d) => { const st = duelState(rounds, first, k, d); return String(decisiveNeed(st, st.turn)); },
+    policy: (rounds, first, k, d) => { const st = duelState(rounds, first, k, d); const need = decisiveNeed(st, st.turn); return remainingPolicy(need === null ? null : needTable(need)); },
+  },
+  hard: {
+    key: (rounds, first, k, d) => { const goal = turnGoal(duelState(rounds, first, k, d), duelState(rounds, first, k, d).turn); return goal.kind === 'win' ? Array.from(goal.u, (x) => x.toPrecision(12)).join() : 'e'; },
+    policy: (rounds, first, k, d) => { const st = duelState(rounds, first, k, d); const goal = turnGoal(st, st.turn); return remainingPolicy(goal.kind === 'win' ? solve((score) => goal.u[score]) : null); },
+  },
+};
+
+// Seat-averaged exact win share of `a` against `b` (each opens half the matches).
+const matchShare = (a, b, rounds) => (exactDuel(rounds, 0, [policies[a], policies[b]]) + 1 - exactDuel(rounds, 0, [policies[b], policies[a]])) / 2;
+
+test('best move: options are every legal move, ranked, and hard plays the best', () => {
+  const rng = seededRng(31);
+  let checked = 0;
+  for (const names of [['You'], ['You', 'B'], ['You', 'B', 'C'], ['You', 'B', 'C', 'D']]) {
+    for (let g = 0; g < 4; g += 1) {
+      let state = start(names, 3, g % names.length);
+      while (!game.outcome(state)) {
+        const seat = game.actor(state);
+        const advice = game.advise(game.view(state, seat), seat);
+        assert.equal(advice.exact, names.length < 3 || (state.round === state.rounds && state.played === names.length - 1) || advice.metric === 'Expected total left open');
+        if (state.roll > 0) {
+          const ways = waysToShut(state.open, state.roll);
+          assert.equal(advice.options.length, ways.length);
+          assert.deepEqual(advice.options.map((o) => o.action.tiles.join()).sort(), ways.map((t) => t.join()).sort());
+          for (const o of advice.options) {
+            assert.equal(o.label, `Shut ${tileText(o.action.tiles)}`);
+            game.apply(state, seat, o.action, rng); // legal
+          }
+        } else {
+          assert.deepEqual(advice.options.map((o) => o.label).sort(), (canRollOne(state.open) ? ['Roll one die', 'Roll two dice'] : ['Roll two dice']).sort());
+        }
+        // Ranked best first by the metric, and the display matches it.
+        const key = advice.metric === 'Expected total left open' ? (o) => -o.expected : (o) => o.win;
+        for (let i = 1; i < advice.options.length; i += 1) assert.ok(key(advice.options[i - 1]) >= key(advice.options[i]) - EPS);
+        for (const o of advice.options) assert.match(o.display, advice.metric === 'Expected total left open' ? /^Expected \d+\.\d\d left$/ : /^\d+\.\d% to win$/);
+        assert.deepEqual(advice.best, advice.options[0].action);
+        const action = game.bot(state, seat, 'hard', rng);
+        assert.ok(sameAction(action, advice.best));
+        state = game.apply(state, seat, action, rng);
+        checked += 1;
+      }
+    }
+  }
+  assert.ok(checked > 200);
+  assert.equal(game.advise, advise);
+  assert.equal(game.sameAction, sameAction);
+  assert.ok(sameAction({ type: 'shut', tiles: [6, 3] }, { type: 'shut', tiles: [3, 6] }));
+  assert.ok(!sameAction({ type: 'shut', tiles: [9] }, { type: 'shut', tiles: [5, 4] }));
+  assert.ok(sameAction({ type: 'roll' }, { type: 'roll', dice: 2 }));
+  assert.ok(!sameAction({ type: 'roll', dice: 1 }, { type: 'roll', dice: 2 }));
+  assert.equal(advise({ ...start(), over: true }, 0), null);
+  assert.equal(advise(start(), 1), null); // not seat 1's turn
+});
+
+test('best move: hand-checked positions', () => {
+  // Solo, full box: expected 11.0092 left.
+  const solo = start(['You'], 1);
+  let advice = advise(solo, 0);
+  assert.equal(advice.metric, 'Expected total left open');
+  assert.equal(advice.exact, true);
+  assert.deepEqual(advice.options.map((o) => [o.label, o.display]), [['Roll two dice', 'Expected 11.01 left']]);
+  assert.ok(Math.abs(advice.options[0].expected - 11.009208593217634) < 1e-9);
+
+  // Solo, tile 2 alone: one die leaves 5/3, two dice 70/36.
+  advice = advise(withOpen(solo, [2]), 0);
+  assert.deepEqual(advice.options.map((o) => [o.label, o.display]), [['Roll one die', 'Expected 1.67 left'], ['Roll two dice', 'Expected 1.94 left']]);
+
+  // Solo, full box, rolled 9: shutting the 9 is best, and every option is listed.
+  advice = advise({ ...solo, roll: 9 }, 0);
+  assert.equal(advice.options[0].label, 'Shut 9');
+  assert.equal(advice.options.length, 8);
+  assert.ok(Math.abs(advice.options[0].expected - expectedScore(FULL & ~maskOf([9]))) < 1e-12);
+
+  // Last turn of a duel, tiles 1 and 2 open, tied at 3 if stuck.
+  // One die: a 1, 2 or 3 wins (1/2), otherwise a tie: 3/4. Two dice: 2 or 3 wins (3/36), else a tie: 13/24.
+  const last = start(['A', 'You'], 1, 0);
+  last.scores[0][0] = 3;
+  last.played = 1;
+  last.turn = 1;
+  advice = advise(withOpen(last, [1, 2]), 1);
+  assert.equal(advice.metric, 'Chance to win the match');
+  assert.equal(advice.exact, true);
+  assert.deepEqual(advice.options.map((o) => [o.label, o.display]), [['Roll one die', '75.0% to win'], ['Roll two dice', '54.2% to win']]);
+  assert.ok(Math.abs(advice.options[1].win - 13 / 24) < 1e-12);
+
+  // The last turn matches the decisive-turn table for every target.
+  for (let need = 0; need <= 45; need += 1) {
+    const st = start(['A', 'You'], 1, 0);
+    st.scores[0][0] = need;
+    st.played = 1;
+    st.turn = 1;
+    const a = advise(st, 1);
+    if (a.metric === 'Chance to win the match') assert.ok(Math.abs(a.options[0].win - winChance(FULL, need)) < 1e-12, `need ${need}`);
+  }
+
+  // A one-round duel's opener faces the reply's exact chances: max E[1 - winChance(FULL, s)].
+  const opener = advise(start(['You', 'B'], 1, 0), 0);
+  const direct = solve((score) => 1 - winChance(FULL, score)).value[FULL];
+  assert.ok(Math.abs(opener.options[0].win - direct) < 1e-12);
+  assert.ok(opener.options[0].win < 0.5); // moving first is a disadvantage
+
+  // A match already decided falls back to the lowest expected score.
+  const far = start(['A', 'You'], 3, 0);
+  far.scores = [[0, 0, null], [45, 45, null]];
+  far.round = 3;
+  far.played = 0;
+  far.turn = 0;
+  advice = advise(far, 0); // A has already won
+  assert.equal(advice.metric, 'Expected total left open');
+  assert.match(advice.note, /same chance to win \(100\.0%\)/);
+
+  // The turn-score distribution of expected-score play has mean 11.0092.
+  const dist = scoreDistribution(expTable);
+  assert.ok(Math.abs(dist.reduce((t, p, score) => t + p * score, 0) - 11.009208593217634) < 1e-9);
+  assert.ok(dist.every((p, score) => Math.abs(p - turnDist(remainingPolicy(null))[score]) < 1e-12));
+
+  // Three players before the last turn: an estimate.
+  advice = advise(start(['You', 'B', 'C'], 3, 0), 0);
+  assert.equal(advice.exact, false);
+  assert.match(advice.note, /^Estimate/);
+});
+
+test('best move: the duel solver checks out by simulation', () => {
+  // One-round duel, both seats hard: seat 0 should win at the solver's value.
+  const value = advise(start(['A', 'B'], 1, 0), 0).options[0].win;
+  const rng = seededRng(41);
+  let wins = 0;
+  const games = 20000;
+  for (let i = 0; i < games; i += 1) {
+    const winners = game.outcome(playOut(start(['A', 'B'], 1, 0), ['hard', 'hard'], rng)).winners;
+    if (winners.includes(0)) wins += 1 / winners.length;
+  }
+  console.log(`  one-round duel opener: simulated ${(wins / games).toFixed(4)}, solver ${value.toFixed(4)}`);
+  assert.ok(Math.abs(wins / games - value) < 0.012);
+  // Exact evaluation of hard against itself reproduces the solver's value.
+  assert.ok(Math.abs(exactDuel(1, 0, [policies.hard, policies.hard]) - value) < 1e-9);
+  assert.ok(Math.abs(exactDuel(3, 0, [policies.hard, policies.hard]) - advise(start(['A', 'B'], 3, 0), 0).options[0].win) < 1e-9);
+});
+
+test('best move: hard is at least as strong as the previous hard (exact duels)', () => {
+  // The previous hard as a bot agrees with its policy form.
+  const rng = seededRng(51);
+  let state = start(['A', 'B'], 1, 0);
+  while (!game.outcome(state)) {
+    const seat = game.actor(state);
+    const need = decisiveNeed(state, seat);
+    const policy = remainingPolicy(need === null ? null : needTable(need));
+    const action = state.roll > 0
+      ? { type: 'shut', tiles: tilesOf(state.open & ~policy.set(state.open, state.roll)) }
+      : { type: 'roll', dice: policy.dice(state.open) };
+    state = game.apply(state, seat, action, rng);
+  }
+  for (const rounds of [1, 3, 5]) {
+    const newOld = matchShare('hard', 'old', rounds);
+    const newNormal = matchShare('hard', 'normal', rounds);
+    const oldNormal = matchShare('old', 'normal', rounds);
+    console.log(`  ${rounds} round${rounds > 1 ? 's' : ''}, exact match share: hard v previous hard ${(100 * newOld).toFixed(3)}%, hard v normal ${(100 * newNormal).toFixed(3)}%, previous hard v normal ${(100 * oldNormal).toFixed(3)}%`);
+    assert.ok(newOld >= 0.5 - 1e-12);
+    assert.ok(newNormal > 0.5);
+    assert.ok(newNormal >= oldNormal - 1e-12);
+  }
 });

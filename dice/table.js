@@ -542,7 +542,7 @@ export function mountTable(game, ui = {}) {
       if (advice === 'pending') body = '<p class="dt-advice-line dt-muted">Solving…</p>';
       else if (advice?.options?.length) {
         const [best, ...rest] = advice.options;
-        body = `<p class="dt-advice-line"><span class="dt-muted">Best move</span> <strong>${esc(best.label)}</strong>${best.display ? ` <span class="dt-advice-value">${esc(best.display)}</span>` : ''}</p>
+        body = `${review ? `<p class="dt-advice-review ${review.good ? 'is-good' : 'is-off'}">${esc(review.text)}</p>` : ''}<p class="dt-advice-line"><span class="dt-muted">Best move</span> <strong>${esc(best.label)}</strong>${best.display ? ` <span class="dt-advice-value">${esc(best.display)}</span>` : ''}</p>
           ${rest.length ? `<details class="dt-advice-more"><summary>${advice.metric ? esc(advice.metric) : 'Other moves'}${advice.exact === false ? ' · estimate' : ''}</summary><ol>${advice.options.slice(0, 8).map((option, i) => `<li${i === 0 ? ' class="is-best"' : ''}><span>${esc(option.label)}</span><span>${esc(option.display || '')}</span></li>`).join('')}</ol>${advice.note ? `<p class="dt-muted">${esc(advice.note)}</p>` : ''}</details>` : ''}`;
       }
     } else if (adviceOn && review) {

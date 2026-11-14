@@ -109,6 +109,17 @@
   transform: translateY(-6px);
 }
 
+/* The best move on your turn: a ring around each tile it shuts. */
+.stb-tile.is-advised .stb-face {
+  outline: 3px solid color-mix(in oklab, var(--accent) 75%, transparent);
+  outline-offset: 3px;
+}
+
+.stb-actions .btn.is-advised {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 /* Shut: the tile tips over on its bottom edge, lies flat in the box and goes dark. */
 .stb-tile.is-shut .stb-face {
   background: linear-gradient(180deg, var(--surface), var(--surface-2));

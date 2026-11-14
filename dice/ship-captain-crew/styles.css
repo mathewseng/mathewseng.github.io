@@ -355,3 +355,22 @@
     min-width: fit-content;
   }
 }
+
+/* ---------- Best move ---------- */
+
+.scc-actions .scc-best {
+  box-shadow:
+    0 0 0 2px var(--page),
+    0 0 0 4px var(--good);
+}
+
+.scc-best-tag {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--good) 18%, transparent);
+  color: var(--ink);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1.3;
+}

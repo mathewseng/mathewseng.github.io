@@ -1,5 +1,5 @@
-import { mountTable, diceHTML, esc, seatColor } from '../table.js?v=20261114';
-import { game, TILES, isOpen, canRollOne, openSum, tileText, totals } from './engine.mjs?v=20261114';
+import { mountTable, diceHTML, esc, seatColor } from '../table.js?v=20261115';
+import { game, TILES, isOpen, canRollOne, openSum, tileText, totals } from './engine.mjs?v=20261115';
 
 // Tiles the acting player has picked. Local to this screen; a new roll or turn clears it.
 let picked = [];
@@ -83,6 +83,10 @@ function render(board, ctx) {
   const sum = pickedSum();
   const ready = choosing && sum === state.roll;
   const oneDie = canAct && !pending && canRollOne(state.open);
+  // The solver's best move on your turn: tiles to shut, or which roll.
+  const best = canAct && !over ? ctx.advice?.best : null;
+  const advisedTiles = choosing && best?.type === 'shut' ? best.tiles : [];
+  const advisedDice = !pending && best?.type === 'roll' ? best.dice ?? 2 : 0;
 
   // Tiles shut since the last drawing of this same box flip down.
   const boxKey = `${showLast ? state.last.round : state.round}:${boxSeat}`;
@@ -92,8 +96,9 @@ function render(board, ctx) {
   const tiles = TILES.map((n) => {
     const isUp = isOpen(open, n);
     const isPicked = isUp && picked.includes(n);
-    const cls = ['stb-tile', isUp ? 'is-open' : 'is-shut', isPicked ? 'is-picked' : '', flipping & (1 << (n - 1)) ? 'is-flipping' : ''].filter(Boolean).join(' ');
-    const label = `${n}, ${isUp ? (isPicked ? 'selected' : 'open') : 'shut'}`;
+    const isAdvised = isUp && advisedTiles.includes(n);
+    const cls = ['stb-tile', isUp ? 'is-open' : 'is-shut', isPicked ? 'is-picked' : '', isAdvised ? 'is-advised' : '', flipping & (1 << (n - 1)) ? 'is-flipping' : ''].filter(Boolean).join(' ');
+    const label = `${n}, ${isUp ? (isPicked ? 'selected' : 'open') : 'shut'}${isAdvised ? ', in the best move' : ''}`;
     return `<button type="button" class="${cls}" data-tile="${n}" data-key="tile-${n}" aria-label="${label}"${isUp ? ` aria-pressed="${isPicked}"` : ''}${choosing && isUp ? '' : ' disabled'}><span class="stb-face" aria-hidden="true">${n}</span></button>`;
   }).join('');
 
@@ -131,8 +136,8 @@ function render(board, ctx) {
         ${stat}
       </div>
       <div class="dt-actions stb-actions">
-        <button type="button" class="btn ${pending ? '' : 'btn--primary '}btn--lg" data-key="roll" data-act='{"type":"roll","dice":2}'${canAct && !pending ? '' : ' disabled'}>Roll</button>
-        ${oneDie ? `<button type="button" class="btn btn--lg" data-key="roll-one" data-act='{"type":"roll","dice":1}'>Roll one die</button>` : ''}
+        <button type="button" class="btn ${pending || advisedDice === 1 ? '' : 'btn--primary '}btn--lg${advisedDice === 2 && oneDie ? ' is-advised' : ''}" data-key="roll" data-act='{"type":"roll","dice":2}'${canAct && !pending ? '' : ' disabled'}>Roll</button>
+        ${oneDie ? `<button type="button" class="btn ${advisedDice === 1 ? 'btn--primary ' : ''}btn--lg${advisedDice === 1 ? ' is-advised' : ''}" data-key="roll-one" data-act='{"type":"roll","dice":1}'>Roll one die</button>` : ''}
         <button type="button" class="btn ${pending ? 'btn--primary ' : ''}btn--lg" data-key="shut" data-shut${ready ? '' : ' disabled'}>Shut tiles</button>
       </div>
       ${scoreTable(state, over, outcome?.winners || [])}

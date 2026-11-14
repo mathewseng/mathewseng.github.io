@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { game, RANKING, MIA, rank, valueOf, legalValues, atLeast, chance, truthChance } from '../engine.mjs';
+import { game, RANKING, MIA, rank, valueOf, legalValues, atLeast, chance, truthChance, loadTable, adviseWith, classicBot } from '../engine.mjs';
+import { exploitability, simplex } from '../scripts/solve.mjs';
 import { seededRng } from '../../table-core.mjs';
+
+// Hard plays from the solver table; with it loaded, bots answer synchronously.
+const table = await loadTable();
 
 // An rng that rolls the given faces in order.
 const fixed = (...faces) => {
@@ -275,28 +279,187 @@ test('hard reads bluffs: the smallest raise is the least believable', () => {
   assert.ok(truthChance(MIA, null) > 0.5);
 });
 
-test('hard beats normal and easy, and normal beats easy', (t) => {
-  const rng = seededRng(2026);
-  const rate = (a, b, games = 400) => {
-    let wins = 0;
-    for (let g = 0; g < games; g += 1) {
-      const levels = [a, b];
-      let state = game.setup({ names: ['A', 'B'], options: { lives: 6 }, first: g % 2 });
-      while (!game.outcome(state)) {
-        const seat = game.actor(state);
-        state = game.apply(state, seat, game.bot(game.view(state, seat), seat, levels[seat], rng), rng);
-      }
-      if (game.outcome(state).winners[0] === 0) wins += 1;
+// Seat-rotated bot matches: the share of games each level won.
+function rates(levels, games, { lives = 6, seed = 2026 } = {}) {
+  const rng = seededRng(seed);
+  const wins = levels.map(() => 0);
+  const n = levels.length;
+  for (let g = 0; g < games; g += 1) {
+    // Every level sits in every seat and, at three or more, in both orders round the table.
+    const order = levels.map((_, i) => (i + g) % n);
+    if (n > 2 && Math.floor(g / n) % 2) order.reverse();
+    let state = game.setup({ names: order.map((i) => `P${i}`), options: { lives }, first: Math.floor(g / (2 * n)) % n });
+    while (!game.outcome(state)) {
+      const seat = game.actor(state);
+      const level = levels[order[seat]];
+      const view = game.view(state, seat);
+      const action = level === 'classic' ? classicBot(view, seat, rng) : game.bot(view, seat, level, rng);
+      state = game.apply(state, seat, action, rng);
     }
-    return wins / games;
-  };
-  const hardEasy = rate('hard', 'easy');
-  const hardNormal = rate('hard', 'normal');
-  const normalEasy = rate('normal', 'easy');
-  t.diagnostic(`hard beat easy in ${(hardEasy * 100).toFixed(1)}%, hard beat normal in ${(hardNormal * 100).toFixed(1)}%, normal beat easy in ${(normalEasy * 100).toFixed(1)}% of 400 two-player games`);
-  assert.ok(hardEasy > 0.75, `hard beat easy in ${hardEasy}`);
-  assert.ok(hardNormal > 0.56, `hard beat normal in ${hardNormal}`);
+    wins[order[game.outcome(state).winners[0]]] += 1;
+  }
+  return wins.map((w) => w / games);
+}
+const pct = (p) => `${(p * 100).toFixed(1)}%`;
+
+test('hard beats easy, normal and the old hard bot heads-up, and normal beats easy', (t) => {
+  const [hardEasy] = rates(['hard', 'easy'], 600);
+  const [hardNormal] = rates(['hard', 'normal'], 1500);
+  const [hardClassic] = rates(['hard', 'classic'], 1500);
+  const [normalEasy] = rates(['normal', 'easy'], 400);
+  t.diagnostic(`two players, 6 lives: hard beat easy in ${pct(hardEasy)} of 600, normal in ${pct(hardNormal)} of 1500 and the old hard bot in ${pct(hardClassic)} of 1500; normal beat easy in ${pct(normalEasy)} of 400`);
+  // The equilibrium cannot lose on average, but it does not exploit weak play either.
+  assert.ok(hardEasy > 0.62, `hard beat easy in ${hardEasy}`);
+  assert.ok(hardNormal > 0.5, `hard beat normal in ${hardNormal}`);
+  assert.ok(hardClassic > 0.5, `hard beat the old hard bot in ${hardClassic}`);
   assert.ok(normalEasy > 0.65, `normal beat easy in ${normalEasy}`);
+});
+
+test('at three players hard wins more often than the old hard bot and normal', (t) => {
+  const [hard, classic, normal] = rates(['hard', 'classic', 'normal'], 600, { seed: 7 });
+  t.diagnostic(`three players, 6 lives, 600 games: hard ${pct(hard)}, old hard ${pct(classic)}, normal ${pct(normal)}`);
+  assert.ok(hard > classic && hard > normal && hard > 0.4, `hard ${hard}, old hard ${classic}, normal ${normal}`);
+});
+
+// ---------- Solver ----------
+
+test('the simplex solves a known game', () => {
+  // Rock-paper-scissors for the row player: value 0 at (1/3, 1/3, 1/3); shift payoffs by 1.
+  const A = [[1, 0, 2], [2, 1, 0], [0, 2, 1]];
+  // maximize z s.t. z ≤ Σ_i x_i A[i][j] for every column j, Σ x = 1.
+  const rows = A[0].map((_, j) => ({ a: [-A[0][j], -A[1][j], -A[2][j], 1], op: '<=', b: 0 }));
+  rows.push({ a: [1, 1, 1, 0], op: '=', b: 1 });
+  const { x, value, duals } = simplex([0, 0, 0, 1], rows);
+  assert.ok(Math.abs(value - 1) < 1e-9);
+  for (let i = 0; i < 3; i += 1) assert.ok(Math.abs(x[i] - 1 / 3) < 1e-9);
+  for (let j = 0; j < 3; j += 1) assert.ok(Math.abs(duals[j] - 1 / 3) < 1e-9, 'column player mixes evenly');
+});
+
+test('the heads-up table is an equilibrium: best responses gain almost nothing', (t) => {
+  const { worst, at } = exploitability(table);
+  t.diagnostic(`worst exploitability ${(worst * 100).toFixed(5)} points of match-win chance; 6 v 6 opener ${pct(at(6, 6).value)}, 3 v 3 opener ${pct(at(3, 3).value)}`);
+  assert.ok(worst >= -1e-9 && worst < 1e-4, `exploitability ${worst}`);
+  // The measure has teeth: a decider who never calls is easy to exploit.
+  const lax = JSON.parse(JSON.stringify(table));
+  for (const pair of Object.values(lax.lives)) for (const node of pair.nodes) node.y = node.y.map(() => 0);
+  assert.ok(exploitability(lax).worst > 0.1);
+});
+
+const duel = (lives, history, phase, extra = {}) => ({
+  names: ['A', 'B'], lives, maxLives: 6, winner: -1, turn: 0, round: 1, phase,
+  history, claim: history.at(-1) || null, dice: null, diceSeat: -1, cup: true, ...extra,
+});
+
+test('advice reads the view only: hidden dice never change it', () => {
+  // Deciding on a claim: the announcer's dice are not the decider's to see.
+  for (const history of [[{ seat: 1, value: 54 }], [{ seat: 1, value: 31 }, { seat: 0, value: 43 }, { seat: 1, value: 62 }], [{ seat: 1, value: MIA }]]) {
+    const base = duel([4, 5], history, 'decide', { diceSeat: 1 });
+    const seen = JSON.stringify(adviseWith(table, base, 0));
+    for (const dice of [[2, 1], [6, 6], [3, 1], [5, 4]]) {
+      assert.equal(JSON.stringify(adviseWith(table, { ...base, dice }, 0)), seen);
+      assert.equal(JSON.stringify(adviseWith(table, game.view({ ...base, dice }, 0), 0)), seen);
+    }
+  }
+  // Three players: same for the model.
+  const crowd = { ...duel([3, 3, 3], [{ seat: 2, value: 52 }], 'decide', { diceSeat: 2 }), names: ['A', 'B', 'C'] };
+  const seen = JSON.stringify(adviseWith(table, crowd, 0));
+  for (const dice of [[2, 1], [1, 1], [4, 3]]) assert.equal(JSON.stringify(adviseWith(table, { ...crowd, dice }, 0)), seen);
+  // Through whole games: what a seat is advised never depends on dice it cannot see.
+  const rng = seededRng(17);
+  for (let g = 0; g < 16; g += 1) {
+    const players = 2 + (g % 3);
+    let state = game.setup({ names: ['A', 'B', 'C', 'D'].slice(0, players), options: { lives: 3 }, first: g % players });
+    while (!game.outcome(state)) {
+      const seat = game.actor(state);
+      if (state.dice && state.diceSeat !== seat) {
+        const seen2 = JSON.stringify(adviseWith(table, game.view(state, seat), seat));
+        for (const dice of [[2, 1], [6, 5], [3, 1]]) assert.equal(JSON.stringify(adviseWith(table, game.view({ ...state, dice }, seat), seat)), seen2);
+      }
+      state = game.apply(state, seat, game.bot(game.view(state, seat), seat, 'hard', rng), rng);
+    }
+  }
+});
+
+test('advice lists only legal moves, best first, and the hard bot plays them', async () => {
+  const rng = seededRng(33);
+  let decisions = 0;
+  let exact = 0;
+  for (let g = 0; g < 30; g += 1) {
+    const players = 2 + (g % 4);
+    const levels = ['hard', 'normal', 'easy'];
+    let state = game.setup({ names: ['A', 'B', 'C', 'D', 'E'].slice(0, players), options: { lives: g % 2 ? 3 : 6 }, first: g % players });
+    while (!game.outcome(state)) {
+      const seat = game.actor(state);
+      const view = game.view(state, seat);
+      const advice = await game.advise(view, seat);
+      assert.ok(advice && advice.options.length >= 1);
+      assert.equal(advice.exact, state.lives.filter((l) => l > 0).length === 2);
+      assert.deepEqual(advice.best, advice.options[0].action);
+      for (const option of advice.options) {
+        assert.doesNotThrow(() => game.apply(state, seat, option.action, rng), JSON.stringify(option.action));
+        assert.equal(typeof option.label, 'string');
+        assert.equal(typeof option.display, 'string');
+      }
+      if (state.phase === 'announce') assert.equal(advice.options.length, legalValues(state.claim?.value ?? null).length);
+      if (state.phase === 'decide') assert.equal(advice.options.length, 2);
+      decisions += 1;
+      if (advice.exact) exact += 1;
+      const action = game.bot(view, seat, levels[seat % 3], rng);
+      if (levels[seat % 3] === 'hard') assert.ok(advice.options.some((option) => game.sameAction(option.action, action)));
+      state = game.apply(state, seat, action, rng);
+    }
+  }
+  assert.ok(decisions > 500 && exact > 100);
+});
+
+test('heads-up advice shows the equilibrium mix, and hard samples it', () => {
+  // 6 v 6, the opener announced 54: the equilibrium believes about 76% of the time.
+  const state = duel([6, 6], [{ seat: 1, value: 54 }], 'decide', { diceSeat: 1 });
+  const advice = adviseWith(table, state, 0);
+  assert.equal(advice.exact, true);
+  assert.match(advice.metric, /win the match/);
+  assert.match(advice.options[0].label, /^Believe and roll \(play \d+% of the time\)$/);
+  assert.match(advice.options[1].label, /^Call bluff \(play \d+% of the time\)$/);
+  assert.equal(advice.options[0].display, advice.options[1].display, 'mixed moves are worth the same');
+  assert.match(advice.options[0].display, /^\d+\.\d% to win the match$/);
+  const y = advice.options[1].mix;
+  assert.ok(y > 0.1 && y < 0.4);
+  const rng = seededRng(4);
+  let calls = 0;
+  for (let i = 0; i < 4000; i += 1) if (game.bot(state, 0, 'hard', rng).type === 'call') calls += 1;
+  assert.ok(Math.abs(calls / 4000 - y) < 0.03, `called ${calls / 4000}, equilibrium ${y}`);
+
+  // Announcing: every legal value, the equilibrium's choices first, labelled truth or bluff.
+  const roll = duel([6, 6], [], 'announce', { dice: [3, 1], diceSeat: 0 });
+  const announce = adviseWith(table, roll, 0);
+  assert.equal(announce.options.length, 21);
+  assert.ok(announce.options.every((option) => /\((truth|bluff)/.test(option.label)));
+  const played = announce.options.filter((option) => option.mix > 0.0005);
+  assert.ok(played.length > 1 && played.every((option) => /bluff, play \d+% of the time/.test(option.label)));
+  assert.ok(announce.options.slice(played.length).every((option) => option.value <= played[0].value + 1e-9));
+
+  // A plain best move when the equilibrium does not mix: a real Mia is announced as Mia.
+  const mia = adviseWith(table, duel([2, 5], [{ seat: 1, value: 43 }], 'announce', { dice: [2, 1], diceSeat: 0 }), 0);
+  assert.equal(mia.options.filter((option) => option.mix > 0.0005).length, 1);
+});
+
+test('three or more players get a model estimate in chances of losing a life', () => {
+  const state = { ...duel([6, 6, 6], [{ seat: 2, value: 65 }], 'decide', { diceSeat: 2 }), names: ['A', 'B', 'C'] };
+  const advice = adviseWith(table, state, 0);
+  assert.equal(advice.exact, false);
+  assert.match(advice.metric, /lose a life/);
+  assert.match(advice.note, /No exact solution/);
+  for (const option of advice.options) assert.match(option.display, /^\d+\.\d% to lose a life$/);
+  const mia = adviseWith(table, { ...state, history: [{ seat: 2, value: MIA }], claim: { seat: 2, value: MIA } }, 0);
+  assert.deepEqual(mia.options.map((option) => option.action.type).sort(), ['call', 'concede']);
+  assert.ok(mia.options.some((option) => /2 lives/.test(option.display)));
+});
+
+test('sameAction compares the move and its value', () => {
+  assert.equal(game.sameAction({ type: 'announce', value: 54 }, { type: 'announce', value: '54' }), true);
+  assert.equal(game.sameAction({ type: 'announce', value: 54 }, { type: 'announce', value: 61 }), false);
+  assert.equal(game.sameAction({ type: 'call' }, { type: 'call' }), true);
+  assert.equal(game.sameAction({ type: 'call' }, { type: 'roll' }), false);
 });
 
 test('a new host recovers a playable round from the spectator view', () => {

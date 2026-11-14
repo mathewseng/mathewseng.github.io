@@ -9,9 +9,9 @@
   <link rel="icon" href="../favicon.svg" />
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-  <link rel="stylesheet" href="../table.css?v=20261114" />
-  <link rel="stylesheet" href="./styles.css?v=20261114" />
-  <script type="module" src="./app.js?v=20261114"></script>
+  <link rel="stylesheet" href="../table.css?v=20261115" />
+  <link rel="stylesheet" href="./styles.css?v=20261115" />
+  <script type="module" src="./app.js?v=20261115"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -38,7 +38,9 @@
       <h3>Strategy</h3>
       <p>Shut the high tiles first: 7, 8 and 9 are hard to make late, and they cost the most if they stay open. Shutting fewer tiles keeps more ways open to make the next roll.</p>
       <h3>Bots</h3>
-      <p>Easy shuts a random set of tiles that makes the roll and always rolls two dice. Normal shuts the single tile that matches when it can, otherwise the fewest and highest tiles, and rolls one die once 7, 8 and 9 are shut and 6 or less is left. Hard plays exactly: it has worked out every one of the 512 ways the box can stand and makes the choice with the lowest expected score, about 11 from a full box. On the last turn of the game, when every other total is known, it plays to give itself the best chance of winning.</p>
+      <p>Easy shuts a random set of tiles that makes the roll and always rolls two dice. Normal shuts the single tile that matches when it can, otherwise the fewest and highest tiles, and rolls one die once 7, 8 and 9 are shut and 6 or less is left. Hard plays exactly: it has worked out every one of the 512 ways the box can stand. Against one opponent it plays every turn for the best exact chance of winning the match, given both totals and the turns still to come. Against two or three it plays for an estimated chance of winning, which is exact on the last turn of the game. Playing alone, or once no roll can change the result, it plays for the lowest expected score, about 11 from a full box.</p>
+      <h3>Best move</h3>
+      <p>On your turn the strip under the status line shows Hard’s move with its chance to win (or the expected total left open), and rings the tiles it would shut. Open it to compare every choice; after your move it says whether you matched it.</p>
       <p>Keys: 1 to 9 select tiles, Enter shuts them, R rolls two dice, O rolls one die.</p>
     </div>
   </dialog>

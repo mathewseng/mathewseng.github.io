@@ -1,6 +1,7 @@
 // Yacht: thirteen rounds of five dice. Each turn rolls up to three times, holding
 // any dice between rolls, then fills one box on the scorecard.
 import { clone, log, rollDie, nextSeat, faceCounts, diceOutcomes } from '../table-core.mjs';
+import { KEEPS, FIRST_ROLL, REMOVE, STATE_COUNT, keepOf, cardState, solveTurn } from './solver.mjs';
 
 export const UPPER = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
 export const LOWER = ['threeKind', 'fourKind', 'fullHouse', 'smallStraight', 'largeStraight', 'yacht', 'chance'];
@@ -345,7 +346,144 @@ function easyKeep(dice, card) {
   return dice.map((value, i) => (value === face ? i : -1)).filter((i) => i >= 0);
 }
 
+// ---------- Exact solver ----------
+
+// data/values.bin (built by scripts/solve.mjs) holds the expected future score of every
+// turn-start state under optimal solitaire play: Float32 in four byte planes, gzipped.
+// Loaded once, on first use.
+let VALUES = null;
+let loading = null;
+
+async function gunzip(bytes) {
+  if (typeof window === 'undefined') {
+    const { gunzipSync } = await import('node:zlib');
+    return new Uint8Array(gunzipSync(bytes));
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+export function loadSolver() {
+  if (VALUES) return Promise.resolve(VALUES);
+  loading ??= (async () => {
+    const url = new URL('./data/values.bin', import.meta.url);
+    let bytes;
+    if (typeof window === 'undefined') {
+      const { readFile } = await import('node:fs/promises');
+      bytes = new Uint8Array(await readFile(url));
+    } else {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`The Yacht solver table did not load (${response.status}).`);
+      bytes = new Uint8Array(await response.arrayBuffer());
+    }
+    // A server may already have undone the gzip.
+    const planes = bytes[0] === 0x1f && bytes[1] === 0x8b ? await gunzip(bytes) : bytes;
+    if (planes.length !== STATE_COUNT * 4) throw new Error('The Yacht solver table has the wrong size.');
+    const values = new Float32Array(STATE_COUNT);
+    const out = new Uint8Array(values.buffer);
+    for (let j = 0; j < 4; j += 1) {
+      const plane = planes.subarray(j * STATE_COUNT, (j + 1) * STATE_COUNT);
+      for (let i = 0; i < STATE_COUNT; i += 1) out[i * 4 + j] = plane[i];
+    }
+    VALUES = values;
+    return values;
+  })();
+  loading.catch(() => { loading = null; });
+  return loading;
+}
+
+export const solverReady = () => VALUES !== null;
+
+// In the browser, fetch the table as soon as the page settles so the first advice is instant.
+if (typeof window !== 'undefined') window.addEventListener('load', () => setTimeout(() => loadSolver().catch(() => {}), 0), { once: true });
+
+// The current turn's widget, solved once per scorecard.
+let turnCache = { key: null, turn: null };
+function turnFor(card) {
+  const s = cardState(card, BOX_IDS);
+  const key = `${s.um}:${s.sub}:${s.lm6}:${s.y}`;
+  if (turnCache.key !== key) turnCache = { key, turn: solveTurn(s, VALUES) };
+  return turnCache.turn;
+}
+
+// The expected future score from the start of a turn with this card, under optimal play.
+export function expectedFromStart(card) {
+  return turnFor(card).start;
+}
+
+const sortedFaces = (faces) => faces.slice().sort((a, b) => a - b);
+const keepLabel = (faces) => (faces.length ? `Keep ${faces.join(' ')}` : 'Reroll all');
+const expected = (value) => `${value.toFixed(1)} expected`;
+
+// Every distinct keep inside roll r (as multisets of 0–4 dice).
+function subKeeps(r) {
+  const found = new Set();
+  const walk = (k) => {
+    if (found.has(k)) return;
+    found.add(k);
+    for (let f = 0; f < 6; f += 1) if (REMOVE[k * 6 + f] >= 0) walk(REMOVE[k * 6 + f]);
+  };
+  walk(FIRST_ROLL + r);
+  return [...found].filter((k) => KEEPS[k].size < 5);
+}
+
+const keepFaces = (k) => KEEPS[k].counts.flatMap((n, face) => Array(n).fill(face));
+
+function adviseNow(state, seat) {
+  if (state.done || state.turn !== seat) return null;
+  const card = state.cards[seat];
+  const now = totals(state, seat).total;
+  const turn = turnFor(card);
+  const options = [];
+  if (state.rollsUsed === 0) {
+    options.push({ action: { type: 'roll', keep: [], faces: [] }, label: 'Roll', value: turn.start });
+  } else {
+    const { dice } = state;
+    const r = keepOf(dice) - FIRST_ROLL;
+    for (const box of legalBoxes(dice, card)) {
+      const { score, bonus, value } = turn.choice(r, BOX_IDS.indexOf(box));
+      options.push({ action: { type: 'score', box }, label: `Score ${LABELS[box]} (${score}${bonus ? ` + ${bonus} bonus` : ''})`, value });
+    }
+    if (state.rollsUsed < 3) {
+      const ev = state.rollsUsed === 1 ? turn.ev1 : turn.ev2;
+      for (const k of subKeeps(r)) {
+        const faces = keepFaces(k);
+        options.push({ action: { type: 'roll', keep: keepIndices(dice, KEEPS[k].counts), faces }, label: keepLabel(faces), value: ev[k] });
+      }
+    }
+  }
+  // Best first; on a tie, scoring now (listed first) and then keeping more dice wins.
+  const rank = (option) => (option.action.type === 'score' ? 10 : option.action.faces.length);
+  options.sort((a, b) => b.value - a.value || rank(b) - rank(a));
+  const ranked = options.map(({ action, label, value }) => ({ action, label, value: now + value, display: expected(now + value) }));
+  return {
+    best: ranked[0].action,
+    options: ranked,
+    metric: 'Expected final score',
+    exact: true,
+    note: 'The exact solitaire optimum: against opponents it maximises your own expected score, not your chance to win.',
+  };
+}
+
+// The solver's ranked moves for this decision (a Promise only while the table loads).
+export function advise(state, seat) {
+  if (VALUES) return adviseNow(state, seat);
+  return loadSolver().then(() => adviseNow(state, seat));
+}
+
+// Keeps compare as multisets of faces when both carry them, else as position sets.
+export function sameAction(a, b) {
+  if (!a || !b || a.type !== b.type) return false;
+  if (a.type === 'score') return a.box === b.box;
+  if (Array.isArray(a.faces) && Array.isArray(b.faces)) return sortedFaces(a.faces).join() === sortedFaces(b.faces).join();
+  return sortedFaces(a.keep ?? []).join() === sortedFaces(b.keep ?? []).join();
+}
+
 export function bot(state, seat, level, rng) {
+  if (level === 'hard') {
+    if (VALUES) return adviseNow(state, seat).best;
+    return advise(state, seat).then((advice) => advice.best);
+  }
   if (state.rollsUsed === 0) return { type: 'roll', keep: [] };
   const card = state.cards[seat];
   const { dice } = state;
@@ -377,6 +515,8 @@ export const game = {
   apply,
   view: (state) => state,
   bot,
+  advise,
+  sameAction,
   pace: (state, action) => (action.type === 'score' ? 1100 : 700),
   summary: (state, seat) => String(totals(state, seat).total),
   status(state, seat, { canAct } = {}) {

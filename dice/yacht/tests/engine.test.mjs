@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { game, scoreBox, rawScore, legalBoxes, emptyCard, totals, bestBox, planKeep, BOX_IDS, UPPER } from '../engine.mjs';
+import { game, scoreBox, rawScore, legalBoxes, emptyCard, totals, bestBox, planKeep, BOX_IDS, UPPER, loadSolver, solverReady, expectedFromStart, advise, sameAction } from '../engine.mjs';
+import { STATE_COUNT } from '../solver.mjs';
 import { seededRng } from '../../table-core.mjs';
+
+// The solver table loads once; after that advise and the hard bot answer synchronously.
+const values = await loadSolver();
 
 // An rng that rolls the given faces in order.
 const fixed = (...faces) => {
@@ -215,7 +219,93 @@ test('hard keeps the obvious dice and fills boxes sensibly', () => {
   assert.equal(bestBox([3, 3, 5, 5, 5], empty, 'hard'), 'fullHouse');
   assert.equal(bestBox([1, 1, 1, 1, 1], empty, 'hard'), 'yacht');
   assert.equal(bestBox([5, 5, 5, 5, 5], card({ yacht: 50 }), 'hard'), 'fives');
-  assert.deepEqual(game.bot({ ...game.setup({ names: ['A'], options: {}, first: 0 }) }, 0, 'hard', seededRng(1)), { type: 'roll', keep: [] });
+  assert.deepEqual(game.bot({ ...game.setup({ names: ['A'], options: {}, first: 0 }) }, 0, 'normal', seededRng(1)), { type: 'roll', keep: [] });
+});
+
+// ---------- Exact solver ----------
+
+// A position on seat 0's turn: `filled` boxes on the card, `dice` after `rollsUsed` rolls.
+function position(dice, rollsUsed, filled = {}) {
+  const state = game.setup({ names: ['A', 'B'], options: {}, first: 0 });
+  Object.assign(state.cards[0], filled);
+  state.dice = dice;
+  state.rollsUsed = rollsUsed;
+  return state;
+}
+
+test('the solver table loads with every reachable state', () => {
+  assert.ok(solverReady());
+  assert.equal(values.length, STATE_COUNT);
+  assert.ok(values.every((v) => Number.isFinite(v) && v >= 0 && v < 400));
+});
+
+test('optimal play from the empty card expects 254.48 under these rules', () => {
+  // Verhoeff's 254.5896 lets a Yacht in a 0 Yacht box still joker and never forces its upper
+  // box; with Yacht's forced joker that needs 50 in the Yacht box, the optimum is 254.4848.
+  const start = expectedFromStart(emptyCard());
+  assert.ok(Math.abs(start - 254.4848) < 0.001, `got ${start}`);
+  const first = advise(game.setup({ names: ['A'], options: {}, first: 0 }), 0);
+  assert.equal(first.options.length, 1);
+  assert.equal(first.best.type, 'roll');
+  assert.equal(first.options[0].display, '254.5 expected');
+  assert.equal(first.exact, true);
+  assert.equal(first.metric, 'Expected final score');
+});
+
+test('advice takes a rolled Yacht and the obvious keeps', () => {
+  let advice = advise(position([4, 4, 4, 4, 4], 1), 0);
+  assert.deepEqual(advice.best, { type: 'score', box: 'yacht' });
+  assert.equal(advice.options[0].label, 'Score Yacht (50)');
+  // Every legal box and every distinct keep of 0–4 dice (5 here: none to four Fours).
+  assert.equal(advice.options.length, 13 + 5);
+  assert.ok(advice.options.some((o) => o.label === 'Reroll all'));
+  assert.ok(advice.options.every((o, i) => i === 0 || o.value <= advice.options[i - 1].value));
+
+  advice = advise(position([6, 2, 6, 6, 1], 1), 0);
+  assert.equal(advice.options[0].label, 'Keep 6 6 6');
+  assert.deepEqual(advice.best, { type: 'roll', keep: [0, 2, 3], faces: [6, 6, 6] });
+
+  advice = advise(position([2, 3, 4, 5, 6], 1), 0);
+  assert.deepEqual(advice.best, { type: 'score', box: 'largeStraight' });
+
+  advice = advise(position([1, 2, 3, 4, 6], 2), 0);
+  assert.equal(advice.options[0].label, 'Keep 1 2 3 4');
+
+  // After the third roll only the boxes remain.
+  advice = advise(position([3, 3, 5, 5, 5], 3), 0);
+  assert.ok(advice.options.every((o) => o.action.type === 'score'));
+  assert.deepEqual(advice.best, { type: 'score', box: 'fullHouse' });
+
+  // A joker Yacht must take Fives, with the 100 bonus.
+  advice = advise(position([5, 5, 5, 5, 5], 3, { yacht: 50 }), 0);
+  assert.equal(advice.options.length, 1);
+  assert.equal(advice.options[0].label, 'Score Fives (25 + 100 bonus)');
+
+  // Expected totals count the points already on the card.
+  const later = position([1, 1, 2, 3, 3], 3, { sixes: 24, chance: 20 });
+  assert.ok(advise(later, 0).options[0].value > 44);
+  assert.equal(advise(later, 1), null);
+});
+
+test('keeps compare as multisets of faces', () => {
+  assert.ok(sameAction({ type: 'roll', keep: [0, 1], faces: [5, 5] }, { type: 'roll', keep: [3, 4], faces: [5, 5] }));
+  assert.ok(!sameAction({ type: 'roll', keep: [0, 1], faces: [5, 5] }, { type: 'roll', keep: [0, 2], faces: [5, 6] }));
+  assert.ok(sameAction({ type: 'roll', keep: [2, 0] }, { type: 'roll', keep: [0, 2] }));
+  assert.ok(sameAction({ type: 'score', box: 'chance' }, { type: 'score', box: 'chance' }));
+  assert.ok(!sameAction({ type: 'score', box: 'chance' }, { type: 'roll', keep: [] }));
+});
+
+test('hard plays the best move and loads the table if it has to', async () => {
+  const state = position([2, 2, 5, 6, 2], 2);
+  assert.deepEqual(game.bot(state, 0, 'hard', seededRng(1)), advise(state, 0).best);
+  const rng = seededRng(9);
+  let s = game.setup({ names: ['A'], options: {}, first: 0 });
+  while (!game.outcome(s)) {
+    const action = game.bot(s, 0, 'hard', rng);
+    assert.deepEqual(action, advise(s, 0).best);
+    s = game.apply(s, 0, action, rng);
+  }
+  assert.deepEqual(await game.advise(position([4, 4, 4, 4, 4], 1), 0).best, { type: 'score', box: 'yacht' });
 });
 
 test('full bot games end with all 13 boxes filled for every player', () => {
@@ -237,18 +327,22 @@ test('the same seed replays the same game', () => {
   assert.deepEqual(a.cards, b.cards);
 });
 
-test('hard averages over 200 alone and beats easy head to head', () => {
+test('hard averages over 250 alone and beats normal head to head', () => {
   const rng = seededRng(2026);
-  let solo = 0;
-  for (let i = 0; i < 100; i += 1) solo += totals(playGame(['hard'], rng), 0).total;
-  assert.ok(solo / 100 > 200, `hard averaged ${solo / 100}`);
+  const solo = 600;
+  let total = 0;
+  for (let i = 0; i < solo; i += 1) total += totals(playGame(['hard'], rng), 0).total;
+  // The optimum is 254.5 with a standard deviation near 60, so 600 games err by about 2.5.
+  assert.ok(total / solo >= 250, `hard averaged ${total / solo}`);
   let hardWins = 0;
-  const games = 300;
+  let normalWins = 0;
+  const games = 600;
   for (let i = 0; i < games; i += 1) {
-    const levels = i % 2 ? ['hard', 'easy'] : ['easy', 'hard'];
+    const levels = i % 2 ? ['hard', 'normal'] : ['normal', 'hard'];
     const winners = game.outcome(playGame(levels, rng)).winners;
-    if (winners.length === 1 && levels[winners[0]] === 'hard') hardWins += 1;
+    if (winners.length !== 1) continue;
+    if (levels[winners[0]] === 'hard') hardWins += 1; else normalWins += 1;
   }
-  // Hard wins about 70%; 60% of 300 is more than four standard errors below that.
-  assert.ok(hardWins / games > 0.6, `hard won ${hardWins} of ${games}`);
+  console.log(`hard averaged ${(total / solo).toFixed(1)} alone; against normal hard won ${hardWins}, normal ${normalWins} of ${games}`);
+  assert.ok(hardWins > normalWins, `hard won ${hardWins}, normal ${normalWins}`);
 });

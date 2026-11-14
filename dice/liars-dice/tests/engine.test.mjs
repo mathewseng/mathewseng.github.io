@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { game, bidProblem, minimumBid, legalBids, bidText, countText, bidChance } from '../engine.mjs';
+import { readFileSync } from 'node:fs';
+import { game, bidProblem, minimumBid, legalBids, bidText, countText, bidChance, advise, hardMove, STYLE } from '../engine.mjs';
+import { loadEndgame, endgameKey } from '../solver.mjs';
+import { makeGame, solve, exploitability } from '../scripts/endgame.mjs';
 import { seededRng } from '../../table-core.mjs';
+
+await loadEndgame();
 
 const NAMES = ['You', 'Pascal', 'Fermat', 'Cardano'];
 
@@ -300,19 +305,219 @@ function rate(levels, games, seed, options) {
   return wins / games;
 }
 
-test('hard beats easy and normal over many seeded games', (t) => {
+// `reader` is the rule bot Hard used to be (it reads bids at a fixed rate).
+test('hard beats easy, normal and the old hard bot over many seeded games', (t) => {
   const games = 400;
   const oneVsThree = rate(['hard', 'easy', 'easy', 'easy'], games, 31);
   const headsUp = rate(['hard', 'easy'], games, 32);
   const overNormal = rate(['hard', 'normal'], games, 33);
   const normalOverEasy = rate(['normal', 'easy'], games, 34);
   const noWild = rate(['hard', 'easy', 'easy', 'easy'], games, 35, { wild: false, dice: 5 });
+  const overReader = rate(['hard', 'reader'], games, 36);
+  const overReaders = rate(['hard', 'reader', 'reader', 'reader'], games, 37);
+  const overNormals = rate(['hard', 'normal', 'normal', 'normal'], games, 38);
+  const readerOverNormal = rate(['reader', 'normal'], games, 39);
   t.diagnostic(`hard 1v3 easy ${oneVsThree}, hard v easy ${headsUp}, hard v normal ${overNormal}, normal v easy ${normalOverEasy}, hard 1v3 easy (wild off) ${noWild}`);
+  t.diagnostic(`hard v old hard ${overReader}, hard 1v3 old hard ${overReaders}, hard 1v3 normal ${overNormals}, old hard v normal ${readerOverNormal}`);
   assert.ok(oneVsThree > 0.6, `hard won ${oneVsThree} against three easy bots`);
   assert.ok(noWild > 0.6, `hard won ${noWild} against three easy bots with wild ones off`);
   assert.ok(headsUp > 0.85, `hard won ${headsUp} heads-up against easy`);
   assert.ok(overNormal > 0.6, `hard won ${overNormal} heads-up against normal`);
   assert.ok(normalOverEasy > 0.85, `normal won ${normalOverEasy} heads-up against easy`);
+  assert.ok(overReader > 0.5, `hard won ${overReader} heads-up against the old hard bot`);
+  assert.ok(overReaders > 0.25, `hard won ${overReaders} against three old hard bots (a fair share is 0.25)`);
+  assert.ok(overNormals > 0.25, `hard won ${overNormals} against three normal bots`);
+});
+
+// ---------- Best move ----------
+
+// Mid-round states from bot play, for every table size.
+function midRounds(count, seed) {
+  const rng = seededRng(seed);
+  const states = [];
+  for (let trial = 0; states.length < count; trial += 1) {
+    const players = 2 + (trial % 5);
+    let state = start({ names: Array.from({ length: players }, (_, i) => `P${i}`), seed: seed + trial, wild: trial % 3 !== 2, dice: trial % 4 === 3 ? 3 : 5 });
+    const moves = Math.floor(rng() * 60);
+    for (let i = 0; i < moves && !game.outcome(state); i += 1) {
+      const seat = game.actor(state);
+      state = game.apply(state, seat, game.bot(game.view(state, seat), seat, ['easy', 'normal', 'reader'][i % 3], rng), rng);
+    }
+    if (game.outcome(state)) continue;
+    if (state.phase === 'reveal') state = game.apply(state, game.actor(state), { type: 'next' }, rng);
+    states.push(state);
+  }
+  return states;
+}
+
+test('advise reads only the view: hidden dice never change the advice', () => {
+  for (const state of midRounds(80, 500)) {
+    const seat = game.actor(state);
+    const view = game.view(state, seat);
+    const advice = advise(view, seat);
+    assert.ok(advice?.options.length, 'there is always a move');
+    // The full state gives the same answer as the view, and so does any reroll of the others.
+    assert.deepEqual(advise(state, seat), advice);
+    for (let k = 1; k <= 3; k += 1) {
+      const other = JSON.parse(JSON.stringify(state));
+      other.dice = other.dice.map((hand, i) => (i === seat ? hand : hand.map((die) => ((die + k - 1) % 6) + 1)));
+      assert.deepEqual(advise(game.view(other, seat), seat), advice, 'the advice depends on hidden dice');
+    }
+    // Only the acting seat gets advice.
+    const waiting = state.counts.findIndex((n, i) => n > 0 && i !== seat);
+    assert.equal(advise(game.view(state, waiting), waiting), null);
+  }
+});
+
+test('every advised move is legal and the ranking is by chance to lose a die', () => {
+  for (const state of midRounds(120, 900)) {
+    const seat = game.actor(state);
+    const advice = advise(game.view(state, seat), seat);
+    assert.equal(advice.metric, 'Chance to lose a die');
+    assert.ok(game.sameAction(advice.best, advice.options[0].action));
+    for (const [k, option] of advice.options.entries()) {
+      assert.doesNotThrow(() => game.apply(state, seat, option.action, seededRng(1)), JSON.stringify(option.action));
+      assert.ok(option.risk >= 0 && option.risk <= 1);
+      assert.match(option.display, /^(<1|>99|\d+)% to lose a die$/);
+      // Ranked by the chance, to a tenth of a percent (closer ones count as ties).
+      if (k) assert.ok(option.risk >= advice.options[k - 1].risk - 1e-3);
+    }
+    const keys = advice.options.map((option) => JSON.stringify(option.action));
+    assert.equal(new Set(keys).size, keys.length, 'no move listed twice');
+    // Liar is on the list whenever there is a bid; every face has its smallest raise.
+    if (state.bid) assert.ok(advice.options.some((option) => option.action.type === 'liar'));
+    if (!advice.exact) {
+      for (let face = state.wild ? 2 : 1; face <= 6; face += 1) {
+        const min = minimumBid(state, face);
+        if (min) assert.ok(advice.options.some((option) => game.sameAction(option.action, { type: 'bid', ...min })), `smallest ${face} raise`);
+      }
+    }
+  }
+});
+
+test('the advice knows an impossible bid, a certain bid, and its own dice', () => {
+  // Three 6s with one die left elsewhere and none in hand cannot stand: Liar is free.
+  let state = table([[2, 3], [0], [4, 4, 5]], { first: 1 });
+  state.dice[1] = [6];
+  state = bid(state, 1, 4, 6);
+  let advice = advise(game.view(state, 2), 2);
+  assert.deepEqual(advice.best, { type: 'liar' });
+  assert.equal(advice.options[0].risk, 0);
+  assert.equal(advice.options[0].display, '0% to lose a die');
+  assert.equal(advice.exact, false);
+  // Holding the whole bid: Liar is a certain loss, and a raise on that face is ranked first.
+  state = bid(table([[2, 3, 4, 5, 6], [5, 5, 1, 5, 2], [3, 3, 4, 2, 6]]), 0, 2, 5);
+  advice = advise(game.view(state, 1), 1);
+  const liarOption = advice.options.find((option) => option.action.type === 'liar');
+  assert.equal(liarOption.risk, 1);
+  assert.equal(advice.options.at(-1).action.type, 'liar');
+  assert.equal(advice.best.face, 5);
+  // An opening bid backed by your own dice is safer than a bluff on the same count.
+  state = table([[6, 6, 6, 1, 2], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]);
+  advice = advise(game.view(state, 0), 0);
+  const risk = (q, f) => advice.options.find((option) => game.sameAction(option.action, { type: 'bid', quantity: q, face: f })).risk;
+  assert.ok(risk(5, 6) < risk(5, 3));
+  assert.equal(advice.best.type, 'bid');
+});
+
+test('bids are evidence: a player who bid a face is read as holding it', () => {
+  // Seat 2 holds one 4 and one 3 (and no ones), so from its own dice “four 4s” and
+  // “four 3s” are equally likely. Once seat 1 has bid one of them, that one reads as likelier.
+  const hands = [[2, 5, 6, 5, 6], [4, 4, 4, 1, 3], [3, 4, 6, 2, 2]];
+  const liarRisk = (face) => {
+    const state = bid(table(hands, { first: 1 }), 1, 4, face);
+    return advise(game.view(state, 2), 2).options.find((option) => option.action.type === 'liar').risk;
+  };
+  const prior = bidChance(table(hands), 2, 4, 4);
+  assert.ok(Math.abs(prior - bidChance(table(hands), 2, 4, 3)) < 1e-12);
+  assert.ok(liarRisk(4) > prior, 'a bid raises the chance it stands');
+  assert.ok(Math.abs(liarRisk(4) - liarRisk(3)) < 1e-12, 'the model reads the bid, not the hidden dice');
+});
+
+test('sameAction compares the bid, not how it was written', () => {
+  assert.ok(game.sameAction({ type: 'bid', quantity: 3, face: 4 }, { face: 4, quantity: 3, type: 'bid' }));
+  assert.ok(game.sameAction({ type: 'bid', quantity: '3', face: 4 }, { type: 'bid', quantity: 3, face: '4' }));
+  assert.ok(!game.sameAction({ type: 'bid', quantity: 3, face: 4 }, { type: 'bid', quantity: 3, face: 5 }));
+  assert.ok(game.sameAction({ type: 'liar' }, { type: 'liar' }));
+  assert.ok(!game.sameAction({ type: 'liar' }, { type: 'bid', quantity: 1, face: 2 }));
+});
+
+test('hard plays the best move, and only mixes in a solved endgame', () => {
+  for (const state of midRounds(80, 1300)) {
+    const seat = game.actor(state);
+    const view = game.view(state, seat);
+    const advice = advise(view, seat);
+    const moves = [1, 2, 3, 4, 5].map((k) => game.bot(view, seat, 'hard', seededRng(k)));
+    if (!advice.mixed) {
+      for (const move of moves) assert.deepEqual(move, advice.best);
+    } else {
+      for (const move of moves) assert.ok(advice.options.some((option) => option.mix > 0 && game.sameAction(option.action, move)));
+    }
+  }
+  // The reveal needs no advice beyond starting the next round.
+  let state = bid(table([[2, 2], [3, 3]]), 0, 3, 2);
+  state = liar(state, 1);
+  assert.deepEqual(advise(game.view(state, 0), 0).best, { type: 'next' });
+  assert.equal(hardMove(null), null);
+  assert.ok(STYLE.reader);
+});
+
+// ---------- Solved endgames ----------
+
+const endgameData = JSON.parse(readFileSync(new URL('../data/endgame.json', import.meta.url), 'utf8'));
+
+test('the endgame table is an equilibrium (small exploitability) and matches a fresh solve', () => {
+  for (const [key, entry] of Object.entries(endgameData.games)) {
+    assert.ok(entry.gap < 1e-3, `${key} exploitability ${entry.gap}`);
+    assert.ok(entry.openerLoses > 0 && entry.openerLoses < 1);
+  }
+  // Solve one die against one, ones wild off, from scratch: the value agrees.
+  const solved = makeGame(1, 1, false);
+  const nodes = solve(solved, 300);
+  const { gap, lossA } = exploitability(solved, nodes);
+  assert.ok(gap < 2e-3, `fresh solve gap ${gap}`);
+  assert.ok(Math.abs(lossA - endgameData.games['1v1'].openerLoses) < 2e-3);
+  // With one die each and ones wild, the opener is the slight underdog.
+  assert.ok(endgameData.games['1v1w'].openerLoses > 0.5 && endgameData.games['1v1w'].openerLoses < 0.52);
+});
+
+test('a heads-up endgame uses the exact equilibrium from the view alone', () => {
+  for (const wild of [true, false]) {
+    for (let die = wild ? 2 : 1; die <= 6; die += 1) {
+      const state = table([[die], [0]], { wild });
+      state.dice[1] = [wild ? 3 : 2];
+      assert.equal(endgameKey(game.view(state, 0), 0), wild ? '1v1w' : '1v1');
+      const advice = advise(game.view(state, 0), 0);
+      assert.equal(advice.exact, true);
+      assert.equal(advice.mixed, true);
+      assert.ok(Math.abs(advice.options.reduce((total, option) => total + option.mix, 0) - 1) < 0.01);
+      // Every move the equilibrium plays is (within rounding) as good as the best.
+      for (const option of advice.options) if (option.mix > 0.02) assert.ok(option.risk - advice.options[0].risk < 0.01);
+      for (const option of advice.options) assert.doesNotThrow(() => game.apply(state, 0, option.action, seededRng(1)));
+      const other = JSON.parse(JSON.stringify(state));
+      other.dice[1] = [5];
+      assert.deepEqual(advise(game.view(other, 0), 0), advice);
+    }
+  }
+  // Two bids in: Liar against a bid that needs both dice, holding neither, cannot lose.
+  let state = table([[4], [0]]);
+  state.dice[1] = [6];
+  state = bid(state, 0, 1, 4);
+  state = bid(state, 1, 2, 6);
+  const advice = advise(game.view(state, 0), 0);
+  if (advice.exact) {
+    assert.deepEqual(advice.best, { type: 'liar' });
+    assert.equal(advice.options[0].risk, 0);
+  }
+  // Two dice against one is solved with ones wild; with ones wild off it is estimated.
+  const two = table([[3, 5], [0]]);
+  two.dice[1] = [2];
+  assert.equal(advise(game.view(two, 0), 0).exact, true);
+  const plain = table([[3, 5], [0]], { wild: false });
+  plain.dice[1] = [2];
+  assert.equal(advise(game.view(plain, 0), 0).exact, false);
+  // Three players are never an endgame.
+  assert.equal(endgameKey(game.view(table([[2], [3], [4]]), 0), 0), null);
 });
 
 test('a new host recovers a playable round from the spectator view', () => {

@@ -207,6 +207,16 @@
   font-weight: 600;
 }
 
+/* The best move's box, as the dice it keeps carry .tdie--mark. */
+.yt-pick.is-best {
+  border-color: var(--good);
+  box-shadow: 0 0 0 2px var(--good);
+}
+
+.yt-pick.is-best.is-zero {
+  color: var(--ink);
+}
+
 @media (hover: hover) {
   .yt-pick:hover {
     border-color: var(--accent);

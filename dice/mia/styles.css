@@ -308,6 +308,22 @@
   font-weight: 600;
 }
 
+.mia-cell-tag.is-advice {
+  color: var(--good);
+  font-weight: 700;
+}
+
+/* Dashed, so the solver's pick never reads as the claim's seat-coloured ring. */
+.mia-cell.is-advised {
+  outline: 2px dashed var(--good);
+  outline-offset: -5px;
+}
+
+.mia-cell.is-option {
+  outline: 2px dashed color-mix(in oklab, var(--good) 50%, transparent);
+  outline-offset: -5px;
+}
+
 button.mia-cell {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -330,7 +346,8 @@ button.mia-cell[aria-pressed="true"] {
   color: var(--on-accent);
 }
 
-button.mia-cell[aria-pressed="true"] .mia-cell-tag {
+button.mia-cell[aria-pressed="true"] .mia-cell-tag,
+button.mia-cell[aria-pressed="true"] .mia-cell-tag.is-advice {
   color: var(--on-accent);
 }
 
@@ -338,6 +355,28 @@ button.mia-cell[aria-pressed="true"] .mia-cell-tag {
   button.mia-cell:not(:disabled, [aria-pressed="true"]):hover {
     background: var(--surface-3);
   }
+}
+
+/* The solver's pick on the call / believe buttons */
+
+.btn.mia-advised.is-best {
+  box-shadow: 0 0 0 2px var(--good);
+}
+
+.mia-advice-tag {
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--good) 22%, transparent);
+  color: var(--ink);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.btn--primary .mia-advice-tag {
+  background: color-mix(in oklab, var(--on-accent) 16%, transparent);
+  color: var(--on-accent);
 }
 
 .mia-note {

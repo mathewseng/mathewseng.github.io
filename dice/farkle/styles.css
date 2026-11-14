@@ -303,3 +303,10 @@
     font-size: 36px;
   }
 }
+
+/* The button the best move would press (the strip over the board names the move). */
+.dt-actions .btn.is-advised:not(:disabled) {
+  box-shadow:
+    0 0 0 2px var(--page),
+    0 0 0 4px var(--good);
+}

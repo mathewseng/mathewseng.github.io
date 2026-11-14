@@ -9,9 +9,9 @@
   <link rel="icon" href="../favicon.svg" />
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-  <link rel="stylesheet" href="../table.css?v=20261114" />
-  <link rel="stylesheet" href="./styles.css?v=20261114" />
-  <script type="module" src="./app.js?v=20261114"></script>
+  <link rel="stylesheet" href="../table.css?v=20261115" />
+  <link rel="stylesheet" href="./styles.css?v=20261115" />
+  <script type="module" src="./app.js?v=20261115"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -36,7 +36,8 @@
       <h3>Strategy</h3>
       <p>Each roll risks everything at stake for an average gain of 4 points, so holding at about 20 maximises your score per turn. When an opponent nears the finish, keep rolling: a safe hold no longer wins.</p>
       <h3>Bots</h3>
-      <p>Easy holds around 15. Normal holds at 20. Hard plays Neller and Presser’s “keep pace and end race” rule: hold at 21 plus an eighth of the score gap, and roll for the win once anyone reaches 71.</p>
+      <p>Easy holds around 15. Normal holds at 20. Hard plays the proven optimal policy for two players (Neller and Presser’s solution): every roll or hold maximises its chance to win. With three or more players it plays that policy against the leader.</p>
+      <p>Best move: on your turn the strip under the status line shows the optimal move and each move’s chance to win, and after you move it says whether you matched it. With three or more players the odds are two-player odds against the leader, so they are an estimate.</p>
       <p>Keys: R rolls, H holds.</p>
     </div>
   </dialog>

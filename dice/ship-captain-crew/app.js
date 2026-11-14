@@ -1,5 +1,5 @@
-import { mountTable, dieHTML, diceHTML, esc, seatColor } from '../table.js?v=20261114';
-import { game, ROLES, ROLLS, qualified, cargoOf, rollsLeft, joinNames } from './engine.mjs?v=20261114';
+import { mountTable, dieHTML, diceHTML, esc, seatColor } from '../table.js?v=20261115';
+import { game, ROLES, ROLLS, qualified, cargoOf, rollsLeft, joinNames } from './engine.mjs?v=20261115';
 
 // Cargo dice picked for the next reroll. Local to this screen; a new roll or turn clears it.
 let picks = { key: '', set: new Set() };
@@ -73,14 +73,19 @@ function render(board, ctx) {
 
   const pick = !done && canPick(state, canAct);
   const set = picked(state);
+  // While the best move shows, ring the cargo dice it rerolls, or the Stand button.
+  const advised = pick && ctx.advice?.options?.length > 1 ? ctx.advice.best : null;
+  const marked = new Set(advised?.type === 'roll' ? advised.reroll : []);
+  const standBest = advised?.type === 'stand';
   let hold;
   if (turn.dice.length) {
     hold = diceHTML(turn.dice, {
       select: pick,
       held: (i) => pick && set.has(i),
+      mark: (i) => marked.has(i),
       rolling: (i) => rolled && turn.fresh.includes(i),
       label: pick ? (i) => (set.has(i) ? 'Reroll' : '') : null,
-      aria: (i) => `${loaded ? 'Cargo die' : 'Die'} showing ${turn.dice[i]}${pick ? (set.has(i) ? ', picked to reroll' : ', tap to reroll only this die') : ''}`,
+      aria: (i) => `${loaded ? 'Cargo die' : 'Die'} showing ${turn.dice[i]}${pick ? (set.has(i) ? ', picked to reroll' : ', tap to reroll only this die') : ''}${marked.has(i) ? '. The best move rerolls it' : ''}`,
       key: 'cargo',
       className: 'scc-dice',
     });
@@ -124,7 +129,7 @@ function render(board, ctx) {
       </div>
       <div class="dt-actions scc-actions">
         <button type="button" class="btn btn--primary btn--lg" data-key="roll" data-act='${esc(JSON.stringify(action))}'${canAct ? '' : ' disabled'}>${esc(rollLabel(state, canAct))}</button>
-        <button type="button" class="btn btn--lg" data-key="stand" data-act='{"type":"stand"}'${canAct && qualified(state) ? '' : ' disabled'}>${canAct && qualified(state) ? `Stand on ${cargo}` : 'Stand'}</button>
+        <button type="button" class="btn btn--lg${standBest ? ' scc-best' : ''}" data-key="stand" data-act='{"type":"stand"}'${canAct && qualified(state) ? '' : ' disabled'}>${canAct && qualified(state) ? `Stand on ${cargo}` : 'Stand'}${standBest ? ' <span class="scc-best-tag">Best</span>' : ''}</button>
       </div>
     </div>`;
 }

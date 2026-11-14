@@ -9,9 +9,9 @@
   <link rel="icon" href="../favicon.svg" />
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261016" />
   <link rel="stylesheet" href="../../shared/app.css?v=20261016" />
-  <link rel="stylesheet" href="../table.css?v=20261114" />
-  <link rel="stylesheet" href="./styles.css?v=20261114" />
-  <script type="module" src="./app.js?v=20261114"></script>
+  <link rel="stylesheet" href="../table.css?v=20261115" />
+  <link rel="stylesheet" href="./styles.css?v=20261115" />
+  <script type="module" src="./app.js?v=20261115"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -37,7 +37,9 @@
       <h3>Strategy</h3>
       <p>Only 54% of turns load the crew at all. Later players see the cargo to beat: the last player only has to match it, while the first has to guess, and a player who needs more than 8 gets it about one time in four. A rerolled die averages 3.5, so keep a 5 or 6 and reroll a low die beside it. Going first with one roll left, stand on 8 or more unless a die shows 3 or less; with two rolls left, stand only on two 5s or better.</p>
       <h3>Bots</h3>
-      <p>Easy stands on any cargo of 6 or more, sometimes stands lower, and otherwise rerolls both dice. Normal stands on 8 or more once that matches the best cargo so far, rerolls a low die beside a 5 or 6, and otherwise rerolls both. Hard works out the exact chance of winning the round for standing and for every reroll, against the cargo already posted and how often each player still to roll would beat it.</p>
+      <p>Easy stands on any cargo of 6 or more, sometimes stands lower, and otherwise rerolls both dice. Normal stands on 8 or more once that matches the best cargo so far, rerolls a low die beside a 5 or 6, and otherwise rerolls both. Hard plays the exact optimum: it solves the rest of the round, seat by seat, with every later player also playing their best, and on smaller tables (up to four players to 3, or three to 5) the rest of the match.</p>
+      <h3>Best move</h3>
+      <p>On your turn, the strip under the status line shows the best move and its exact chance to win the match (or the round on bigger tables), with every other move under it; a shared win counts as a fraction. The board rings the dice it rerolls, or the Stand button. After you move, it says whether you matched the best move. Hide it with Hide best move.</p>
       <p>Keys: 1 and 2 pick cargo dice, R rolls, S stands.</p>
     </div>
   </dialog>

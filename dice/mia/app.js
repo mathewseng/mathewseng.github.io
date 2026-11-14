@@ -1,5 +1,5 @@
-import { mountTable, diceHTML, esc, seatColor } from '../table.js?v=20261114';
-import { game, RANKING, MIA, rank, label, valueOf, atLeast, chance, legalValues } from './engine.mjs?v=20261114';
+import { mountTable, diceHTML, esc, seatColor } from '../table.js?v=20261115';
+import { game, RANKING, MIA, rank, label, valueOf, atLeast, chance, legalValues } from './engine.mjs?v=20261115';
 
 const COLUMNS = 7;
 
@@ -94,7 +94,23 @@ function claimHTML(state) {
   </div>`;
 }
 
-function ladderHTML(state, picking) {
+// The solver's marks: on the ladder while announcing, on the buttons while deciding. A pure best
+// move says "Best"; where the equilibrium mixes, every move it plays shows how often.
+function adviceMarks(advice) {
+  const marks = new Map();
+  if (!advice?.options?.length || advice.options.length < 2) return marks;
+  const mixed = advice.exact ? advice.options.filter((option) => option.mix > 0.0005) : [];
+  if (mixed.length > 1) {
+    mixed.forEach((option, i) => marks.set(actionKey(option.action), { best: i === 0, text: `${Math.max(1, Math.round(option.mix * 100))}%` }));
+  } else {
+    marks.set(actionKey(advice.options[0].action), { best: true, text: 'Best' });
+  }
+  return marks;
+}
+
+const actionKey = (action) => `${action.type}:${action.value ?? ''}`;
+
+function ladderHTML(state, picking, marks = new Map()) {
   const claim = state.claim;
   const floor = claim ? rank(claim.value) : -1;
   const mine = state.dice ? valueOf(state.dice) : null;
@@ -106,10 +122,15 @@ function ladderHTML(state, picking) {
     if (claim?.value === value) cls.push('is-claim');
     if (value === mine) cls.push('is-mine');
     if (value === actual) cls.push('is-actual');
-    const text = `<span class="mia-cell-value">${esc(label(value))}</span>${value === mine ? '<span class="mia-cell-tag" aria-hidden="true">Rolled</span>' : ''}`;
+    const mark = picking ? marks.get(actionKey({ type: 'announce', value })) : null;
+    if (mark) cls.push(mark.best ? 'is-advised' : 'is-option');
+    const tag = mark
+      ? `<span class="mia-cell-tag is-advice" aria-hidden="true">${esc(mark.text)}</span>`
+      : value === mine ? '<span class="mia-cell-tag" aria-hidden="true">Rolled</span>' : '';
+    const text = `<span class="mia-cell-value">${esc(label(value))}</span>${tag}`;
     if (!picking) return `<span class="${cls.join(' ')}">${text}</span>`;
     const selected = pick.value === value;
-    const name = `${label(value)}${value === mine ? ', your roll' : ''}`;
+    const name = `${label(value)}${value === mine ? ', your roll' : ''}${mark ? (mark.text === 'Best' ? ', best move' : `, solver plays ${mark.text}`) : ''}`;
     return `<button type="button" class="${cls.join(' ')}" data-pick="${value}" data-key="pick-${value}" aria-pressed="${selected}" aria-label="${esc(name)}"${i <= floor ? ' disabled' : ''}>${text}</button>`;
   }).join('');
   const color = claim ? ` style="--seat-color: ${seatColor(claim.seat)}"` : '';
@@ -139,10 +160,14 @@ function noteHTML(state, canAct) {
   return `<p class="mia-note${tone ? ` ${tone}` : ''}">${esc(text)}</p>`;
 }
 
-function actionsHTML(state, canAct, outcome) {
+function actionsHTML(state, canAct, outcome, marks = new Map()) {
   if (outcome) return '';
-  const btn = (text, action, key, primary = false, disabled = false) =>
-    `<button type="button" class="btn btn--lg${primary ? ' btn--primary' : ''}" data-key="${key}" data-act='${esc(JSON.stringify(action))}'${disabled || !canAct ? ' disabled' : ''}>${esc(text)}</button>`;
+  const btn = (text, action, key, primary = false, disabled = false) => {
+    const mark = canAct && action.type !== 'announce' ? marks.get(actionKey(action)) : null;
+    const tag = mark ? `<span class="mia-advice-tag" aria-hidden="true">${esc(mark.text)}</span>` : '';
+    const aria = mark ? ` aria-label="${esc(`${text}, ${mark.text === 'Best' ? 'best move' : `solver plays ${mark.text}`}`)}"` : '';
+    return `<button type="button" class="btn btn--lg${primary ? ' btn--primary' : ''}${mark ? ` mia-advised${mark.best ? ' is-best' : ''}` : ''}" data-key="${key}" data-act='${esc(JSON.stringify(action))}'${aria}${disabled || !canAct ? ' disabled' : ''}>${esc(text)}${tag}</button>`;
+  };
   let buttons = '';
   if (state.phase === 'roll') buttons = btn('Roll', { type: 'roll' }, 'roll', true);
   else if (state.phase === 'decide' && state.claim.value === MIA) buttons = btn('Call', { type: 'call' }, 'call') + btn('Concede', { type: 'concede' }, 'concede', true);
@@ -158,6 +183,7 @@ function actionsHTML(state, canAct, outcome) {
 
 function render(board, ctx) {
   const { state, actor, canAct, rolled, outcome } = ctx;
+  const marks = canAct ? adviceMarks(ctx.advice) : new Map();
   const picking = canAct && state.phase === 'announce' && Boolean(state.dice);
   if (picking) syncPick(state);
   let fresh = false;
@@ -176,10 +202,10 @@ function render(board, ctx) {
         ${claimHTML(state)}
       </div>
       <div class="mia-pick">
-        ${ladderHTML(state, picking)}
+        ${ladderHTML(state, picking, marks)}
         ${noteHTML(state, canAct)}
       </div>
-      ${actionsHTML(state, canAct, outcome)}
+      ${actionsHTML(state, canAct, outcome, marks)}
     </div>`;
 }
 

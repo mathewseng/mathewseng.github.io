@@ -307,6 +307,26 @@
   box-shadow: none;
 }
 
+/* Best move (from the table’s strip): a ring on the button, a dot on the face. */
+.ld-actions .btn[data-advised="true"]:not(:disabled) {
+  box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--good);
+}
+
+.ld-face {
+  position: relative;
+}
+
+.ld-face[data-advised="true"]::after {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--good);
+  content: "";
+}
+
 .ld-actions .btn--primary {
   min-width: 168px;
 }

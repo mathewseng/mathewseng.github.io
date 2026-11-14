@@ -249,158 +249,381 @@ export function apply(previous, seat, action, rng) {
   throw new Error('Unknown move.');
 }
 
-// ---------- Turn values for the hard bot ----------
-// V(t, k): the expected points a turn banks when it holds t and is about to
-// choose between banking and rolling k dice, playing perfectly after that.
-// Every roll's outcomes are dice multisets with multinomial weights; a keep is
-// any valid set-aside (only the best score for each number of dice used
-// matters, since V grows with t); a Farkle banks 0; hot dice roll six again.
+// ---------- Solver ----------
+// Every score is a multiple of 50, so the solver counts in units of 50 and is exact on that grid.
+export const UNIT = 50;
 
-export const STEP = 50;
-export const CAP = 10000;
-const SLOTS = CAP / STEP;
-
-let rollTables = null;
-function outcomeTables() {
-  if (rollTables) return rollTables;
-  rollTables = [null];
+// Each roll of k dice, grouped by what it offers: every distinct (points, dice left) pair a valid
+// set-aside gives. All of them stay, not just the most points: near the target a smaller turn
+// total can be worth more (banking 4,950 of 5,000 makes the rival cross first and gives you the
+// last turn). Rolls that offer the same choices merge (462 six-dice rolls become 124 groups).
+let profileSets = null;
+export function rollProfiles() {
+  if (profileSets) return profileSets;
+  const packs = [null];
+  const pF = new Float64Array(7);
   for (let k = 1; k <= 6; k += 1) {
-    const outcomes = diceOutcomes(k);
-    const p = new Float64Array(outcomes.length);
-    const best = new Int32Array(outcomes.length * 7); // best[o * 7 + used]: top score using `used` dice
-    outcomes.forEach((outcome, o) => {
-      p[o] = outcome.p;
+    const groups = new Map();
+    for (const outcome of diceOutcomes(k)) {
+      const seen = new Set();
+      const choices = [];
       eachSubset(faceCounts(outcome.dice), (sub, used) => {
         const points = scoreCounts(sub);
-        if (points > best[o * 7 + used]) best[o * 7 + used] = points;
+        const left = used === k ? 6 : k - used;
+        if (!points || seen.has(points * 8 + left)) return;
+        seen.add(points * 8 + left);
+        choices.push([points / UNIT, left]);
       });
+      choices.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+      if (!choices.length) {
+        pF[k] += outcome.p;
+        continue;
+      }
+      const key = choices.join(';');
+      const group = groups.get(key);
+      if (group) group.p += outcome.p;
+      else groups.set(key, { p: outcome.p, choices });
+    }
+    const list = [...groups.values()];
+    const prob = new Float64Array(list.length);
+    const off = new Int32Array(list.length + 1);
+    const count = list.reduce((total, group) => total + group.choices.length, 0);
+    const pts = new Int32Array(count);
+    const next = new Int32Array(count);
+    let j = 0;
+    list.forEach((group, i) => {
+      prob[i] = group.p;
+      off[i] = j;
+      for (const [points, left] of group.choices) {
+        pts[j] = points;
+        next[j] = left;
+        j += 1;
+      }
     });
-    rollTables.push({ n: outcomes.length, p, best });
+    off[list.length] = j;
+    packs.push({ n: list.length, prob, off, pts, next });
   }
-  return rollTables;
+  profileSets = { packs, pF };
+  return profileSets;
 }
 
-function roller(tables, k, ti, value) {
-  const { n, p, best } = tables[k];
-  let total = 0;
-  for (let o = 0; o < n; o += 1) {
-    let q = 0; // a Farkle banks nothing
-    for (let used = 1; used <= k; used += 1) {
-      const points = best[o * 7 + used];
-      if (!points) continue;
-      const v = value(ti + points / STEP, used === k ? 6 : k - used);
-      if (v > q) q = v;
-    }
-    total += p[o] * q;
-  }
-  return total;
-}
-
-// `floor`: the smallest turn total that may bank (the opening minimum, or a push when behind).
-const valueTables = new Map();
-export function valueTable(floor = 0) {
-  if (valueTables.has(floor)) return valueTables.get(floor);
-  const tables = outcomeTables();
-  const V = new Float64Array((SLOTS + 1) * 7);
-  const R = new Float64Array((SLOTS + 1) * 7);
-  const value = (ti, k) => (ti >= SLOTS ? ti * STEP : V[ti * 7 + k]);
-  for (let ti = SLOTS; ti >= 0; ti -= 1) {
-    const t = ti * STEP;
+// One turn for fixed banked scores, solved backwards over the turn total t (units) from `top`
+// down to `from`. bank(t) is what banking t is worth; it may bank once t >= minBank; a Farkle is
+// worth f. Values carry a linear part in f (value = a + c·f, the choices made at the given f) so
+// the generator can solve a pair of score states exactly; at run time only a + c·f is used.
+// The caller picks `top` so that banking is optimal from there on (V = bank for t >= top).
+export function solveTurn({ from = 0, top, bank, minBank, f }) {
+  const { packs, pF } = rollProfiles();
+  const span = Math.max(0, top - from);
+  const RA = new Float64Array(span * 7);
+  const RC = new Float64Array(span * 7);
+  const VA = new Float64Array(span * 7);
+  const VC = new Float64Array(span * 7);
+  const banks = new Float64Array(span + 61);
+  for (let i = 0; i < banks.length; i += 1) banks[i] = bank(from + i);
+  for (let t = top - 1; t >= from; t -= 1) {
+    const base = (t - from) * 7;
     for (let k = 1; k <= 6; k += 1) {
-      const r = ti === SLOTS ? t : roller(tables, k, ti, value);
-      R[ti * 7 + k] = r;
-      V[ti * 7 + k] = t > 0 && t >= floor ? Math.max(t, r) : r;
+      const { n, prob, off, pts, next } = packs[k];
+      let ra = 0;
+      let rc = pF[k];
+      for (let i = 0; i < n; i += 1) {
+        let best = -Infinity;
+        let ba = 0;
+        let bc = 0;
+        for (let j = off[i]; j < off[i + 1]; j += 1) {
+          const tt = t + pts[j];
+          let a;
+          let c;
+          if (tt >= top) {
+            a = banks[tt - from];
+            c = 0;
+          } else {
+            const at = (tt - from) * 7 + next[j];
+            a = VA[at];
+            c = VC[at];
+          }
+          const v = a + c * f;
+          if (v > best) {
+            best = v;
+            ba = a;
+            bc = c;
+          }
+        }
+        ra += prob[i] * ba;
+        rc += prob[i] * bc;
+      }
+      RA[base + k] = ra;
+      RC[base + k] = rc;
+      const b = banks[t - from];
+      if (t >= minBank && b >= ra + rc * f) {
+        VA[base + k] = b;
+        VC[base + k] = 0;
+      } else {
+        VA[base + k] = ra;
+        VC[base + k] = rc;
+      }
     }
   }
-  const table = {
-    floor,
-    // Expected banked points from rolling k dice while holding t.
-    roll: (t, k) => (t >= CAP ? t : R[(t / STEP) * 7 + k]),
-    value: (t, k) => (t >= CAP ? t : V[(t / STEP) * 7 + k]),
+  // Rolling k dice with turn total t; past `top` every next state banks.
+  const roll = (t, k) => {
+    if (t >= from && t < top) return RA[(t - from) * 7 + k] + RC[(t - from) * 7 + k] * f;
+    const { n, prob, off, pts } = packs[k];
+    let total = pF[k] * f;
+    for (let i = 0; i < n; i += 1) {
+      let best = -Infinity;
+      for (let j = off[i]; j < off[i + 1]; j += 1) best = Math.max(best, bank(t + pts[j]));
+      total += prob[i] * best;
+    }
+    return total;
   };
-  valueTables.set(floor, table);
-  if (valueTables.size > 24) valueTables.delete(valueTables.keys().next().value);
+  return { from, top, f, bank, minBank, RA, RC, VA, VC, roll, start: from === 0 ? { a: RA[6], c: RC[6] } : null };
+}
+
+// The last player of a final round: G(n, k) is the chance to finish ahead of a score n units
+// above their banked score plus turn total, rolling k dice, with a tie counting as half.
+// Banking ahead wins; banking level ties; a Farkle loses. G(n, 6) below 1e-15 counts as 0.
+let finalSlots = null;
+export function finalTable() {
+  if (finalSlots) return finalSlots;
+  const { packs, pF } = rollProfiles();
+  const rows = [];
+  const tie = new Float64Array(7);
+  for (let k = 1; k <= 6; k += 1) tie[k] = Math.max(0.5, 1 - pF[k]);
+  const value = (n, k) => (n < 0 ? 1 : n === 0 ? tie[k] : rows[n][k]);
+  for (let n = 1; ; n += 1) {
+    const row = new Float64Array(7);
+    rows[n] = row;
+    for (let k = 1; k <= 6; k += 1) {
+      const { n: groups, prob, off, pts, next } = packs[k];
+      let total = 0;
+      for (let i = 0; i < groups; i += 1) {
+        let best = 0;
+        for (let j = off[i]; j < off[i + 1]; j += 1) best = Math.max(best, value(n - pts[j], next[j]));
+        total += prob[i] * best;
+      }
+      row[k] = total;
+    }
+    if (row[6] < 1e-15) break;
+  }
+  const limit = rows.length - 1;
+  finalSlots = { limit, value: (n, k = 6) => (n > limit ? 0 : value(n, k)) };
+  return finalSlots;
+}
+
+// ---------- Two-player win tables ----------
+// data/farkle-<target>-<opening>.bin (built by scripts/solve.mjs) holds W(b, d): the chance that
+// the player about to start a turn with b banked wins against d (units of 50, b and d below the
+// target), as little-endian Float64 at index b·T + d. Mid-turn values follow exactly by solving
+// that one turn backwards over the turn total (winTurn).
+const winTables = new Map();
+const winLoaded = new Map();
+const tableKey = (target, opening) => `${target}-${opening}`;
+
+async function readWinTable(target, opening) {
+  const url = new URL(`./data/farkle-${tableKey(target, opening)}.bin`, import.meta.url);
+  let bytes;
+  if (typeof window === 'undefined') {
+    const { readFile } = await import('node:fs/promises');
+    const file = await readFile(url);
+    bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+  } else {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Farkle table ${tableKey(target, opening)} did not load (${response.status}).`);
+    bytes = await response.arrayBuffer();
+  }
+  const T = target / UNIT;
+  if (bytes.byteLength !== T * T * 8) throw new Error(`Farkle table ${tableKey(target, opening)} has the wrong size.`);
+  const view = new DataView(bytes);
+  const W = new Float64Array(T * T);
+  for (let i = 0; i < W.length; i += 1) W[i] = view.getFloat64(i * 8, true);
+  const table = { target, opening, T, W };
+  winLoaded.set(tableKey(target, opening), table);
   return table;
 }
 
-// reach(d, k): the chance a turn gains at least d more points before a Farkle
-// when about to roll k dice, choosing every keep for that chance. It depends
-// only on the gap, so one table serves every final-round target.
-const REACH_SLOTS = 400; // gaps up to 20,000
-let reachSlots = null;
-export function reachTable() {
-  if (reachSlots) return reachSlots;
-  const tables = outcomeTables();
-  const P = new Float64Array((REACH_SLOTS + 1) * 7);
-  const value = (di, k) => (di <= 0 ? 1 : P[di * 7 + k]);
-  for (let di = 1; di <= REACH_SLOTS; di += 1) {
-    for (let k = 1; k <= 6; k += 1) {
-      const { n, p, best } = tables[k];
-      let total = 0;
-      for (let o = 0; o < n; o += 1) {
-        let q = 0;
-        for (let used = 1; used <= k; used += 1) {
-          const points = best[o * 7 + used];
-          if (!points) continue;
-          const v = value(di - points / STEP, used === k ? 6 : k - used);
-          if (v > q) q = v;
-        }
-        total += p[o] * q;
-      }
-      P[di * 7 + k] = total;
-    }
+export function loadWinTable(target, opening) {
+  const key = tableKey(target, opening);
+  if (!winTables.has(key)) {
+    const pending = readWinTable(target, opening);
+    pending.catch(() => winTables.delete(key));
+    winTables.set(key, pending);
   }
-  reachSlots = { reach: (gap, k) => (gap <= 0 ? 1 : gap > REACH_SLOTS * STEP ? 0 : P[Math.ceil(gap / STEP) * 7 + k]) };
-  return reachSlots;
+  return winTables.get(key);
 }
 
-// Banking a total at or past the target starts the final round, so its worth is
-// the chance that no one else beats it in one turn. When rivals sit close, a
-// bigger total is worth the risk: cross(t, k) compares banking with rolling on,
-// from turn total t0 upward. `afterFarkle` is a rough chance to win anyway.
-const CROSS_SLOTS = 60;
-function crossTable(state, seat, t0, afterFarkle) {
-  const { reach } = reachTable();
-  const mine = state.scores[seat];
-  const others = state.scores.filter((_, i) => i !== seat);
-  const bankWins = (t) => others.reduce((chance, score) => chance * (1 - reach(mine + t - score + STEP, 6)), 1);
-  const tables = outcomeTables();
-  const V = new Float64Array((CROSS_SLOTS + 1) * 7);
-  const R = new Float64Array((CROSS_SLOTS + 1) * 7);
-  const value = (si, k) => (si >= CROSS_SLOTS ? bankWins(t0 + si * STEP) : V[si * 7 + k]);
-  for (let si = CROSS_SLOTS; si >= 0; si -= 1) {
-    const bank = bankWins(t0 + si * STEP);
-    for (let k = 1; k <= 6; k += 1) {
-      let r = bank;
-      if (si < CROSS_SLOTS) {
-        const { n, p, best } = tables[k];
-        r = 0;
-        for (let o = 0; o < n; o += 1) {
-          let q = -1; // stays -1 on a Farkle
-          for (let used = 1; used <= k; used += 1) {
-            const points = best[o * 7 + used];
-            if (points) q = Math.max(q, value(si + points / STEP, used === k ? 6 : k - used));
-          }
-          r += p[o] * (q < 0 ? afterFarkle : q);
-        }
-      }
-      R[si * 7 + k] = r;
-      V[si * 7 + k] = Math.max(bank, r);
-    }
+// How the turn of the player with b against d (units) is scored, given W (filled for every
+// state the turn can bank into) and f, the chance to win after a Farkle (1 − W(d, b)).
+export function winSetup({ T, W, b, d, f, openingUnits }) {
+  const { value } = finalTable();
+  const { pF } = rollProfiles();
+  const bank = (t) => (b + t < T ? 1 - W[d * T + b + t] : 1 - value(b + t - d, 6));
+  const bound = 1 - pF[6] * (1 - f); // no roll is worth more than this
+  let top = Math.max(1, T - b);
+  while (bank(top) < bound && b + top - d <= finalTable().limit) top += 1;
+  return { bank, top, minBank: b > 0 ? 1 : Math.max(1, openingUnits), f };
+}
+
+export function winTurn(table, b, d, from = 0) {
+  const { T, W, opening } = table;
+  const f = 1 - W[d * T + b];
+  return solveTurn({ from, ...winSetup({ T, W, b, d, f, openingUnits: opening / UNIT }) });
+}
+
+// ---------- Expected points per turn ----------
+// The exact turn that maximises expected banked points, for tables of three or more. `floor` is
+// the smallest total that may bank (the opening minimum). Past 50,000 banking is always best.
+export const EV_TOP = 1000;
+const evTables = new Map();
+export function valueTable(floor = 0) {
+  if (!evTables.has(floor)) {
+    const turn = solveTurn({ top: EV_TOP, bank: (t) => t * UNIT, minBank: Math.max(1, Math.ceil(floor / UNIT)), f: 0 });
+    evTables.set(floor, {
+      floor,
+      turn,
+      roll: (t, k) => turn.roll(t / UNIT, k),
+      value: (t, k) => (t >= EV_TOP * UNIT ? t : turn.VA[(t / UNIT) * 7 + k]),
+    });
   }
+  return evTables.get(floor);
+}
+
+// ---------- Best move ----------
+
+const canonical = (action) => (Array.isArray(action.faces) ? action.faces : (action.dice || [])).slice().sort((a, b) => a - b).join(' ');
+
+export function sameAction(a, b) {
+  if (!a || !b || a.type !== b.type) return false;
+  if (a.type !== 'keep') return true;
+  if (a.then !== b.then) return false;
+  if (Array.isArray(a.faces) !== Array.isArray(b.faces)) return JSON.stringify(a) === JSON.stringify(b);
+  return canonical(a) === canonical(b);
+}
+
+const pct = (p) => `${(Math.min(1, Math.max(0, p)) * 100).toFixed(1)}% to win`;
+const points = (v) => {
+  const rounded = Math.round(v * 10) / 10;
+  const [whole, tenth] = rounded.toFixed(1).split('.');
+  return `+${fmt(Number(whole))}${tenth === '0' ? '' : `.${tenth}`} expected`;
+};
+const diceCount = (n) => (n === 1 ? '1 die' : `${n} dice`);
+
+// The players who still get a final-round turn after `seat`.
+function finalRest(state, seat) {
+  const rest = [];
+  let s = seat;
+  for (let i = 1; i < state.finalLeft; i += 1) {
+    s = nextSeat(state, s);
+    rest.push(s);
+  }
+  return rest;
+}
+
+const turnCache = new Map();
+function cached(key, build) {
+  if (!turnCache.has(key)) {
+    turnCache.set(key, build());
+    if (turnCache.size > 16) turnCache.delete(turnCache.keys().next().value);
+  }
+  return turnCache.get(key);
+}
+
+// How this decision is scored: the solved turn and how to read and label its values.
+function evaluator(state, seat) {
+  const mine = state.scores[seat];
+  const openingUnits = mine === 0 ? Math.ceil(state.opening / UNIT) : 0;
+  const minBank = Math.max(1, openingUnits);
+  const b = mine / UNIT;
+  const key = `${state.target}:${state.opening}:${state.scores.join(',')}:${seat}:${state.finalLeft}`;
+  if (state.finalLeft !== null) {
+    const { value, limit } = finalTable();
+    const { pF } = rollProfiles();
+    const leader = Math.max(...state.scores.filter((_, i) => i !== seat)) / UNIT;
+    const rest = finalRest(state, seat).map((i) => state.scores[i] / UNIT);
+    const bank = (t) => {
+      const total = b + t;
+      if (total < leader) return 0;
+      let p = total === leader ? 0.5 : 1;
+      for (const s of rest) p *= 1 - (total - s > limit ? 0 : value(total - s, 6));
+      return p;
+    };
+    const turn = cached(`final:${key}`, () => {
+      let top = Math.max(1, leader - b);
+      while (bank(top) < 1 - pF[6] && b + top - leader <= limit) top += 1;
+      return solveTurn({ top: top + 1, bank, minBank, f: 0 });
+    });
+    const two = state.names.length === 2;
+    return {
+      turn,
+      metric: 'Chance to win',
+      exact: two,
+      note: two
+        ? 'Exact: your chance to finish ahead of the leader on this last turn, with a tie counting as half.'
+        : 'Your chance to finish on top if everyone still to play tries to beat you, with a tie counting as half.',
+      display: pct,
+    };
+  }
+  if (state.names.length === 2) {
+    const table = winLoaded.get(tableKey(state.target, state.opening));
+    if (!table) return { load: loadWinTable(state.target, state.opening) };
+    const d = state.scores[1 - seat] / UNIT;
+    return {
+      turn: cached(`win:${key}`, () => winTurn(table, b, d)),
+      metric: 'Chance to win',
+      exact: true,
+      note: 'Exact two-player solution: your chance to win if both players play this way from here, worked out for every score.',
+      display: pct,
+    };
+  }
+  const table = valueTable(openingUnits * UNIT);
   return {
-    bank: bankWins,
-    roll: (t, k) => {
-      const si = (t - t0) / STEP;
-      return si >= CROSS_SLOTS ? bankWins(t) : R[si * 7 + k];
-    },
+    turn: table.turn,
+    metric: 'Expected turn points',
+    exact: true,
+    note: 'With three or more players this maximises the points the turn is expected to bank; it does not weigh the race to the target. Win chances are solved for two players and the final round.',
+    display: points,
   };
+}
+
+function adviseNow(state, seat) {
+  const solver = evaluator(state, seat);
+  if (solver.load) return solver.load.then(() => adviseNow(state, seat));
+  const { turn, metric, exact, note, display } = solver;
+  const base = { metric, exact, note };
+  if (state.phase !== 'choose') {
+    const roll = { action: { type: 'roll' }, label: 'Roll six dice', display: display(turn.roll(0, 6)), value: turn.roll(0, 6) };
+    return { ...base, best: roll.action, options: [roll] };
+  }
+  const t = state.turnTotal / UNIT;
+  const k = state.roll.length;
+  const options = [];
+  for (const option of scoringOptions(state.roll)) {
+    const t2 = t + option.points / UNIT;
+    const left = k - option.used || 6;
+    const faces = option.faces.join(' ');
+    const make = (then, value, label) => options.push({
+      action: { type: 'keep', dice: option.dice.slice(), then, faces: option.faces.slice() },
+      label,
+      value,
+      display: display(value),
+    });
+    if (t2 >= turn.minBank) make('bank', turn.bank(t2), `Keep ${faces} and bank ${fmt(t2 * UNIT)}`);
+    make('roll', turn.roll(t2, left), `Keep ${faces} and roll ${left === 6 && option.used === k ? `all six again` : diceCount(left)}`);
+  }
+  // Stable: ties keep the order above (most points first, banking before rolling).
+  options.sort((x, y) => y.value - x.value);
+  return { ...base, best: options[0].action, options };
+}
+
+// The solver's ranked moves. A Promise only while a two-player table loads.
+export function advise(state, seat) {
+  if (state.winners || actor(state) !== seat) return null;
+  return adviseNow(state, seat);
 }
 
 // ---------- Bots ----------
 
 const keep = (option, then) => ({ type: 'keep', dice: option.dice.slice(), then });
-const round250 = (value) => Math.round(value / 250) * 250;
 
 function botContext(state, seat) {
   const mine = state.scores[seat];
@@ -433,77 +656,6 @@ function setKeep(options, roll) {
     || options[0];
 }
 
-// Keeps the best (option, then) seen; a later choice must be strictly better, so banking wins ties.
-function chooser() {
-  let best = null;
-  return {
-    consider(option, then, v) {
-      if (!best || v > best.v + 1e-9) best = { option, then, v };
-    },
-    move: () => keep(best.option, best.then),
-  };
-}
-
-function hardMove(state, options, ctx) {
-  const { t, k, mine, rival } = ctx;
-  const left = (option) => (k - option.used) || 6;
-
-  if (ctx.final) {
-    const need = rival - mine + STEP; // turn points that beat the leader
-    const winning = options.filter((option) => t + option.points >= need);
-    if (winning.length) {
-      if (ctx.lastToAct) return keep(winning[0], 'bank');
-      // Others still play after this turn: a bigger lead is harder to beat.
-      const table = valueTable(0);
-      const pick = chooser();
-      for (const option of winning) {
-        const t2 = t + option.points;
-        pick.consider(option, 'bank', t2);
-        pick.consider(option, 'roll', table.roll(t2, left(option)));
-      }
-      return pick.move();
-    }
-    const { reach } = reachTable();
-    let best = options[0];
-    let bestP = -1;
-    for (const option of options) {
-      const p = reach(need - t - option.points, left(option));
-      if (p > bestP + 1e-12) { best = option; bestP = p; }
-    }
-    return keep(best, 'roll');
-  }
-
-  // Far behind while a rival nears the target: only a bigger turn keeps the game alive.
-  const scale = ctx.target / 10000;
-  let floor = ctx.opening;
-  if (rival >= ctx.target - 2000 * scale && rival - mine >= 1500 * scale) {
-    floor = Math.max(floor, round250(Math.min((rival - mine) / 2, 2500 * scale)));
-  }
-  const table = valueTable(floor);
-  const pick = chooser();
-  for (const option of options) {
-    const t2 = t + option.points;
-    if (t2 >= floor) pick.consider(option, 'bank', t2);
-    pick.consider(option, 'roll', table.roll(t2, left(option)));
-  }
-  return pick.move();
-}
-
-// Hard, once a bank would reach the target: bank unless the others are likely to
-// beat that total on their final turns and rolling on wins more often.
-function crossMove(state, seat, options, ctx) {
-  const afterFarkle = 0.5 + 0.5 * Math.tanh((ctx.mine - ctx.rival) / 3000);
-  const table = crossTable(state, seat, ctx.t, afterFarkle);
-  const pick = chooser();
-  for (const option of options) {
-    const t2 = ctx.t + option.points;
-    if (ctx.mine + t2 < ctx.target) continue;
-    pick.consider(option, 'bank', table.bank(t2));
-    pick.consider(option, 'roll', table.roll(t2, (ctx.k - option.used) || 6));
-  }
-  return pick.move();
-}
-
 function normalMove(state, options, ctx) {
   const top = options[0];
   const t2 = ctx.t + top.points;
@@ -520,21 +672,23 @@ function easyMove(state, options, ctx, rng) {
   const top = options[0];
   const t2 = ctx.t + top.points;
   if (ctx.final) return keep(top, ctx.mine + t2 > ctx.rival ? 'bank' : 'roll');
-  const bankAt = 300 + STEP * Math.floor(rng() * 3);
+  const bankAt = 300 + UNIT * Math.floor(rng() * 3);
   return keep(top, t2 >= bankAt && t2 >= ctx.opening ? 'bank' : 'roll');
 }
 
+// Hard plays the solver's best move (a Promise while the two-player table loads).
 export function bot(state, seat, level, rng = Math.random) {
+  if (level === 'hard') {
+    const advice = advise(state, seat);
+    return typeof advice?.then === 'function' ? advice.then((result) => result.best) : advice.best;
+  }
   if (state.phase !== 'choose') return { type: 'roll' };
   const options = scoringOptions(state.roll);
   const ctx = botContext(state, seat);
   const top = options[0];
-  const crosses = !ctx.final && ctx.mine + ctx.t + top.points >= ctx.target && ctx.t + top.points >= ctx.opening;
-  if (crosses && level === 'hard') return crossMove(state, seat, options, ctx);
-  // Every other level banks a turn that reaches the target; all of them bank a final-round win.
-  if (crosses) return keep(top, 'bank');
+  // Easy and normal bank a turn that reaches the target, and a final-round win.
+  if (!ctx.final && ctx.mine + ctx.t + top.points >= ctx.target && ctx.t + top.points >= ctx.opening) return keep(top, 'bank');
   if (ctx.final && ctx.lastToAct && ctx.mine + ctx.t + top.points > ctx.rival) return keep(top, 'bank');
-  if (level === 'hard') return hardMove(state, options, ctx);
   if (level === 'easy') return easyMove(state, options, ctx, rng);
   return normalMove(state, options, ctx);
 }
@@ -583,6 +737,8 @@ export const game = {
   apply,
   view: (state) => state,
   bot,
+  advise,
+  sameAction,
   pace: (state, action) => (action.type === 'roll' ? (state.last?.kind === 'farkle' ? 1500 : 800) : 1100),
   summary: (state, seat) => `${fmt(state.scores[seat])}${seat === state.turn && state.turnTotal && !state.winners ? ` +${fmt(state.turnTotal)}` : ''}`,
   status,

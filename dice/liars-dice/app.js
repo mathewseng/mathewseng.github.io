@@ -1,5 +1,5 @@
-import { mountTable, dieHTML, diceHTML, esc, seatColor, icon } from '../table.js?v=20261114';
-import { game, bidText, countText, bidProblem, minimumBid, minFace, diceInPlay, isMatch } from './engine.mjs?v=20261114';
+import { mountTable, dieHTML, diceHTML, esc, seatColor, icon } from '../table.js?v=20261115';
+import { game, bidText, countText, bidProblem, minimumBid, minFace, diceInPlay, isMatch } from './engine.mjs?v=20261115';
 
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
@@ -22,12 +22,21 @@ function defaultDraft(state, seat) {
   return { quantity: 1, face: best };
 }
 
-function currentDraft(state, seat) {
+// The solver’s recommended bid, when the best-move strip is on and it is a bid.
+const advisedBid = (state, advice) => {
+  const best = advice?.best;
+  return best?.type === 'bid' && !bidProblem(state, best.quantity, best.face) ? best : null;
+};
+
+// Until the player changes it, the draft follows the recommended bid.
+function currentDraft(state, seat, advice = null) {
   const key = `${state.rollId}:${state.bids.length}:${seat}`;
   if (!draft || draft.key !== key || bidProblem(state, draft.quantity, draft.face)) {
     const start = defaultDraft(state, seat);
-    draft = start ? { key, ...start } : null;
+    draft = start ? { key, ...start, touched: false } : null;
   }
+  const advised = advisedBid(state, advice);
+  if (draft && advised && !draft.touched) Object.assign(draft, { quantity: advised.quantity, face: advised.face });
   return draft;
 }
 
@@ -43,12 +52,14 @@ function setQuantity(state, quantity) {
   if (!face) return false;
   draft.quantity = quantity;
   draft.face = face;
+  draft.touched = true;
   return true;
 }
 
 function setFace(state, face) {
   if (!draft || bidProblem(state, draft.quantity, face)) return false;
   draft.face = face;
+  draft.touched = true;
   return true;
 }
 
@@ -121,11 +132,16 @@ function resultLine(state) {
   return `<p class="ld-result">${esc(called)} <strong>${esc(verdict)}</strong></p>`;
 }
 
-function pickerHTML(state, seat, canAct) {
-  const current = currentDraft(state, seat);
-  if (!current) {
-    return `<div class="dt-actions ld-actions"><button type="button" class="btn btn--lg" data-key="liar" data-act='{"type":"liar"}'${canAct ? '' : ' disabled'}>Liar!</button></div>`;
-  }
+// The best-move marking: a ring on the recommended Bid or Liar button and a dot
+// on the recommended face. Only while the strip is on (ctx.advice is set).
+const advisedAttr = (on, label) => (on ? ` data-advised="true" aria-description="${esc(label)}"` : '');
+
+function pickerHTML(state, seat, canAct, advice) {
+  const current = currentDraft(state, seat, advice);
+  const best = canAct ? advice?.best : null;
+  const liarBest = best?.type === 'liar';
+  const liarButton = (enabled) => `<button type="button" class="btn btn--lg ld-liar" data-key="liar" data-act='{"type":"liar"}'${advisedAttr(liarBest, 'Best move')}${enabled ? '' : ' disabled'}>Liar!</button>`;
+  if (!current) return `<div class="dt-actions ld-actions">${liarButton(canAct)}</div>`;
   const { quantity, face } = current;
   const total = diceInPlay(state);
   const canDown = canAct && quantity > 1 && lowestFace(state, quantity - 1) > 0;
@@ -133,9 +149,11 @@ function pickerHTML(state, seat, canAct) {
   const faces = [];
   for (let f = minFace(state); f <= 6; f += 1) {
     const legal = canAct && !bidProblem(state, quantity, f);
-    faces.push(`<button type="button" class="btn ld-face" data-face="${f}" data-key="face-${f}" aria-pressed="${f === face}" aria-label="Face ${f}"${legal ? '' : ' disabled'}>${faceHTML(f)}</button>`);
+    const advised = best?.type === 'bid' && best.face === f;
+    faces.push(`<button type="button" class="btn ld-face" data-face="${f}" data-key="face-${f}" aria-pressed="${f === face}" aria-label="Face ${f}${advised ? ', best move' : ''}"${advised ? ' data-advised="true"' : ''}${legal ? '' : ' disabled'}>${faceHTML(f)}</button>`);
   }
   const action = JSON.stringify({ type: 'bid', quantity, face });
+  const bidBest = best?.type === 'bid' && best.quantity === quantity && best.face === face;
   return `<div class="ld-picker" role="group" aria-label="Your bid">
     <div class="ld-controls">
       <div class="ld-qty" role="group" aria-label="Quantity">
@@ -146,8 +164,8 @@ function pickerHTML(state, seat, canAct) {
       <div class="ld-faces" role="group" aria-label="Face">${faces.join('')}</div>
     </div>
     <div class="dt-actions ld-actions">
-      <button type="button" class="btn btn--primary btn--lg" data-key="bid" data-act='${esc(action)}'${canAct ? '' : ' disabled'}>Bid ${esc(bidText(quantity, face))}</button>
-      <button type="button" class="btn btn--lg" data-key="liar" data-act='{"type":"liar"}'${canAct && state.bid ? '' : ' disabled'}>Liar!</button>
+      <button type="button" class="btn btn--primary btn--lg ld-bid-button" data-key="bid" data-act='${esc(action)}'${advisedAttr(bidBest, 'Best move')}${canAct ? '' : ' disabled'}>Bid ${esc(bidText(quantity, face))}</button>
+      ${liarButton(canAct && state.bid)}
     </div>
   </div>`;
 }
@@ -164,7 +182,7 @@ function render(board, ctx) {
   let mine = '';
   if (seat >= 0) {
     const hand = state.dice[seat] || [];
-    const markFace = open ? state.result?.face : canAct ? currentDraft(state, seat)?.face : state.bid?.face;
+    const markFace = open ? state.result?.face : canAct ? currentDraft(state, seat, ctx.advice)?.face : state.bid?.face;
     const handHTML = hand.length
       ? diceHTML(hand, { rolling: ctx.rolled, mark: (k) => markFace != null && isMatch(markFace, hand[k], state.wild), className: 'ld-hand-dice' })
       : '';
@@ -182,7 +200,7 @@ function render(board, ctx) {
       ? `<div class="dt-actions ld-actions"><button type="button" class="btn btn--primary btn--lg" data-key="next" data-act='{"type":"next"}'${canAct ? '' : ' disabled'}>Next round</button></div>`
       : `<p class="ld-next">${esc(`${state.names[state.turn]} to open round ${state.round + 1}.`)}</p>`;
   } else if (state.phase === 'bid' && seat >= 0 && state.counts[seat] > 0) {
-    controls = pickerHTML(state, seat, canAct);
+    controls = pickerHTML(state, seat, canAct, ctx.advice);
   }
 
   board.innerHTML = `

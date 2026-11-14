@@ -1,5 +1,5 @@
-import { mountTable, diceHTML, esc, seatColor } from '../table.js?v=20261114';
-import { game, fmt, scoreSelection, scorableDice } from './engine.mjs?v=20261114';
+import { mountTable, diceHTML, esc, seatColor } from '../table.js?v=20261115';
+import { game, fmt, scoreSelection, scorableDice } from './engine.mjs?v=20261115';
 
 // The dice picked to set aside: local to this screen, cleared with every new roll or turn.
 let picked = new Set();
@@ -34,7 +34,33 @@ function selection(state, canAct) {
   };
 }
 
-const keepAct = (dice, then) => esc(JSON.stringify({ type: 'keep', dice, then }));
+// Actions carry the faces too, so the table can tell equivalent keeps apart from different ones.
+const keepAction = (roll, dice, then) => ({ type: 'keep', dice, then, faces: dice.map((i) => roll[i]).sort((a, b) => a - b) });
+const keepAct = (roll, dice, then) => esc(JSON.stringify(keepAction(roll, dice, then)));
+
+// What the best move asks of this screen: which unpicked dice to set aside (picked dice already
+// count toward its faces) and which button to press for the current selection.
+function guidance(advice, sel) {
+  const best = advice?.best;
+  if (!best) return { marks: null, then: null };
+  if (best.type !== 'keep' || !sel.roll) return { marks: null, then: best.type === 'roll' ? 'roll' : null };
+  const need = [0, 0, 0, 0, 0, 0, 0];
+  for (const face of best.faces) need[face] += 1;
+  for (const i of sel.dice) if (need[sel.roll[i]] > 0) need[sel.roll[i]] -= 1;
+  const marks = sel.roll.map((face, i) => {
+    if (sel.dice.includes(i) || need[face] <= 0) return false;
+    need[face] -= 1;
+    return true;
+  });
+  // For a selection of its own, the better of keeping it and rolling or banking it.
+  let then = best.then;
+  if (sel.dice.length) {
+    const faces = keepAction(sel.roll, sel.dice, 'roll').faces.join(' ');
+    const mine = sel.points ? advice.options.find((option) => option.action.faces?.join(' ') === faces) : null;
+    then = mine ? mine.action.then : null;
+  }
+  return { marks, then };
+}
 
 function caption(state, ctx, sel) {
   const { canAct } = ctx;
@@ -56,6 +82,7 @@ function caption(state, ctx, sel) {
 function render(board, ctx) {
   const { state, canAct, rolled } = ctx;
   const sel = selection(state, canAct);
+  const guide = canAct ? guidance(ctx.advice, sel) : { marks: null, then: null };
   const over = Boolean(state.winners);
   const lanes = state.names.map((name, i) => {
     const banked = state.scores[i];
@@ -75,9 +102,9 @@ function render(board, ctx) {
     dice = diceHTML(sel.roll, {
       select: canAct,
       held: (i) => picked.has(i),
-      mark: (i) => canAct && scorable[i] && !picked.has(i),
+      mark: (i) => (guide.marks ? guide.marks[i] : canAct && scorable[i] && !picked.has(i)),
       rolling: rolled,
-      aria: (i) => `Die ${i + 1} showing ${sel.roll[i]}${picked.has(i) ? ', set aside' : scorable[i] ? ', can score' : ''}`,
+      aria: (i) => `Die ${i + 1} showing ${sel.roll[i]}${picked.has(i) ? ', set aside' : guide.marks?.[i] ? ', best move sets it aside' : scorable[i] ? ', can score' : ''}`,
       key: 'die',
     });
   } else if (farkle) {
@@ -92,10 +119,12 @@ function render(board, ctx) {
     : '<p class="fk-empty">Nothing set aside yet.</p>';
 
   const choosing = state.phase === 'choose';
+  const advised = (then) => (guide.then === then ? ' is-advised' : '');
+  const tip = (then) => (guide.then === then ? '<span class="visually-hidden"> (best move)</span>' : '');
   const actions = choosing
-    ? `<button type="button" class="btn btn--primary btn--lg" data-key="go" data-act='${keepAct(sel.dice, 'roll')}'${sel.canKeep ? '' : ' disabled'}>Keep and roll${sel.points ? ` ${sel.left}` : ''}</button>
-       <button type="button" class="btn btn--lg" data-key="bank" data-act='${keepAct(sel.dice, 'bank')}'${sel.canBank ? '' : ' disabled'}>Bank${sel.points ? ` ${fmt(sel.total)}` : ''}</button>`
-    : `<button type="button" class="btn btn--primary btn--lg" data-key="go" data-act='{"type":"roll"}'${canAct ? '' : ' disabled'}>Roll</button>`;
+    ? `<button type="button" class="btn btn--primary btn--lg${advised('roll')}" data-key="go" data-act='${keepAct(sel.roll, sel.dice, 'roll')}'${sel.canKeep ? '' : ' disabled'}>Keep and roll${sel.points ? ` ${sel.left}` : ''}${tip('roll')}</button>
+       <button type="button" class="btn btn--lg${advised('bank')}" data-key="bank" data-act='${keepAct(sel.roll, sel.dice, 'bank')}'${sel.canBank ? '' : ' disabled'}>Bank${sel.points ? ` ${fmt(sel.total)}` : ''}${tip('bank')}</button>`
+    : `<button type="button" class="btn btn--primary btn--lg${advised('roll')}" data-key="go" data-act='{"type":"roll"}'${canAct ? '' : ' disabled'}>Roll${tip('roll')}</button>`;
 
   board.innerHTML = `
     <div class="fk">
@@ -146,8 +175,8 @@ function key(event, ctx) {
     return;
   }
   const sel = selection(state, true);
-  if (k === 'r' && sel.canKeep) ctx.act({ type: 'keep', dice: sel.dice, then: 'roll' });
-  if (k === 'b' && sel.canBank) ctx.act({ type: 'keep', dice: sel.dice, then: 'bank' });
+  if (k === 'r' && sel.canKeep) ctx.act(keepAction(sel.roll, sel.dice, 'roll'));
+  if (k === 'b' && sel.canBank) ctx.act(keepAction(sel.roll, sel.dice, 'bank'));
 }
 
 mountTable(game, { render, click, key });

@@ -1,8 +1,12 @@
-import { mountTable, dieHTML, diceHTML, esc, seatColor } from '../table.js?v=20261114';
-import { game } from './engine.mjs?v=20261114';
+import { mountTable, dieHTML, diceHTML, esc, seatColor } from '../table.js?v=20261115';
+import { game } from './engine.mjs?v=20261115';
 
 function render(board, ctx) {
   const { state, canAct, rolled } = ctx;
+  // The solver's pick gets a quiet ring and tag while the best move is showing.
+  const best = canAct && ctx.advice?.options?.length > 1 ? ctx.advice.best?.type : '';
+  const tag = (type) => (best === type ? ' <span class="pig-best-tag" aria-hidden="true">Best</span>' : '');
+  const bestClass = (type) => (best === type ? ' pig-best' : '');
   const target = state.target;
   const lanes = state.names.map((name, i) => {
     const banked = state.scores[i];
@@ -33,8 +37,8 @@ function render(board, ctx) {
         </div>
       </div>
       <div class="dt-actions">
-        <button type="button" class="btn btn--primary btn--lg" data-key="roll" data-act='{"type":"roll"}'${canAct ? '' : ' disabled'}>Roll</button>
-        <button type="button" class="btn btn--lg" data-key="hold" data-act='{"type":"hold"}'${canAct && state.turnTotal > 0 ? '' : ' disabled'}>Hold${state.turnTotal ? ` ${state.turnTotal}` : ''}</button>
+        <button type="button" class="btn btn--primary btn--lg${bestClass('roll')}" data-key="roll" data-act='{"type":"roll"}'${canAct ? '' : ' disabled'}>Roll${tag('roll')}</button>
+        <button type="button" class="btn btn--lg${bestClass('hold')}" data-key="hold" data-act='{"type":"hold"}'${canAct && state.turnTotal > 0 ? '' : ' disabled'}>Hold${state.turnTotal ? ` ${state.turnTotal}` : ''}${tag('hold')}</button>
       </div>
     </div>`;
 }
