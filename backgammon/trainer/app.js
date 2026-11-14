@@ -36,7 +36,6 @@ import {
   DraftBoard,
   saveDialog,
   showError,
-  dialog,
   confirmDialog,
   hideCardButton,
   pressVerb,
@@ -462,29 +461,23 @@ function panel() {
         onPreview: previewCandidate,
         selected: previewIndex,
       }),
-      button(
-        "Original position",
-        () => {
-          preview = clone(exercise.state);
-          previewIndex = -1;
-          render();
-        },
-        "ghost",
-      ),
-      el(
-        "p",
-        { class: "muted small" },
-        `Source: ${exercise.provenance?.kind || "your saved decision"}. Fresh on-device ${result.settings.name} analysis. ${exercise.reviewStatus || ""}`,
-      ),
     );
-    if (result.type === "checker")
+    // Only checker answers preview other positions, so only they need a way back.
+    if (result.type === "checker") {
+      const note = observation(result.candidates[0].steps);
       p.append(
-        el(
-          "p",
-          { class: "notice" },
-          observation(result.candidates[0].steps),
+        button(
+          "Original position",
+          () => {
+            preview = clone(exercise.state);
+            previewIndex = -1;
+            render();
+          },
+          "ghost",
         ),
       );
+      if (note) p.append(el("p", { class: "notice" }, note));
+    }
     p.append(...session, rules);
   }
 }
@@ -499,10 +492,10 @@ function observation(steps) {
     hits = after.bar[1 - before.turn] - before.bar[1 - before.turn],
     off = after.off[before.turn] - before.off[before.turn];
   return hits
-    ? `Observable result: the leading evaluated move hits ${hits} opposing checker${hits > 1 ? "s" : ""}. The equity comparison is the engine’s estimate.`
+    ? `Observable result: the leading evaluated move hits ${hits} opposing checker${hits > 1 ? "s" : ""}.`
     : off
       ? `Observable result: the leading evaluated move bears off ${off} checker${off > 1 ? "s" : ""}.`
-      : "Compare the resulting points and exposed blots on the board. The ranking is an engine estimate; no single strategic explanation is implied.";
+      : null;
 }
 async function submit(decision) {
   if (busy || revealed) return;
@@ -562,14 +555,6 @@ async function hint() {
     const r = await analysis.run(exercise.state, { preset: "quick" });
     const clue = r.type === "checker" ? r.candidates[0].notation : CUBE_LABELS[r.action] || r.action;
     hintText = clue;
-    dialog(
-      "Study hint",
-      el(
-        "p",
-        {},
-        `The leading Quick decision is ${clue}. This attempt will be recorded as assisted.`,
-      ),
-    );
   } catch (e) {
     if (e.name !== "AbortError") showError(e);
   } finally {

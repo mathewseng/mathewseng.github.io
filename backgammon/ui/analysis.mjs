@@ -56,13 +56,14 @@ export function resultView(
   { onPreview = () => {}, limit = 5, source = null, previous = null, selected } = {},
 ) {
   const node = el("div", { class: "stack" });
-  const insight = comparisonSummary(result, previous);
+  // The note describes the evaluated list, so it goes under that heading.
+  const insight = comparisonSummary(result, previous), comparison = [];
   if (insight && (insight.changed !== null || insight.close))
-    node.append(
+    comparison.push(
       el(
         "p",
         { class: "notice small", id: "analysis-comparison" },
-        `${insight.changed === true ? "Best move changed since " + insight.previousName + ". " : insight.changed === false ? "Best move unchanged since " + insight.previousName + ". " : ""}${insight.close ? (result.method === "rollout" ? "Leaders overlap within sampling uncertainty." : "Close decision · under 0.020 equity apart.") : ""}`.trim(),
+        `${insight.changed === true ? "Best move changed since " + insight.previousName + ". " : insight.changed === false ? "Best move unchanged since " + insight.previousName + ". " : ""}${insight.close ? (result.method === "rollout" ? "Leaders overlap within sampling uncertainty." : "Top two within 0.020.") : ""}`.trim(),
       ),
     );
   if (result.method === "reference")
@@ -181,7 +182,7 @@ export function resultView(
         return b;
       });
     list.append(...rows(limit));
-    node.append(el("h2", {}, "Evaluated moves"), list);
+    node.append(el("h2", {}, "Evaluated moves"), ...comparison, list);
     if (result.candidates.length > limit)
       node.append(
         button(

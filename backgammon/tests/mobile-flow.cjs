@@ -42,10 +42,8 @@ module.exports = async function mobileFlow(browser, base, out, name) {
     await page.setViewportSize({width:390,height:844});
     const decision = await page.locator("#subtitle").textContent();
     await page.locator(".trainer-help").getByRole("button",{name:"Hint",exact:true}).tap();
-    const hint = page.getByRole("dialog",{name:"Study hint",exact:true});
-    await hint.waitFor();
-    assert.ok((await hint.textContent()).includes("assisted"));
-    await hint.getByRole("button",{name:"Close",exact:true}).tap();
+    await page.waitForFunction(()=>document.querySelector("#message").textContent.includes("Hint:"));
+    assert.equal(await page.locator("dialog[open]").count(),0,"the hint stays inline, off the board");
     assert.equal(await page.locator("#subtitle").textContent(),decision,"hint does not skip the exercise");
     await page.locator(".trainer-help").getByRole("button",{name:"Skip",exact:true}).tap();
     await page.waitForFunction(()=>document.querySelector("#subtitle").textContent.startsWith("2 of 5"));

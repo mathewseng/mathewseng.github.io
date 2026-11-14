@@ -177,9 +177,12 @@ module.exports = async function optionsUX(browser, base, out, browserName) {
     );
     assert.match(await page.locator("#practice-rules").innerText(), /Jacoby/);
     await page.locator("#cube-take").click();
-    await page
-      .getByRole("button", { name: "Original position", exact: true })
-      .waitFor({ timeout: 45000 });
+    await page.locator("#next-exercise").waitFor({ timeout: 45000 });
+    assert.equal(
+      await page.getByRole("button", { name: "Original position", exact: true }).count(),
+      0,
+      "cube answers have no other position to return from",
+    );
     await shot("trainer-raccoon");
     const engine = await page.evaluate(async () => {
       const { EngineClient } = await import("/backgammon/engine/client.mjs"),
