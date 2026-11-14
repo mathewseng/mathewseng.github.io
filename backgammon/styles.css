@@ -446,6 +446,23 @@ details .stack {
   opacity: 0.34;
 }
 
+/* Very narrow phones: headings shrink to the S / G / BG keys. */
+@media (max-width: 380px) {
+  .chance-table {
+    column-gap: 6px;
+    font-size: 12px;
+  }
+
+  .chance-table .chance-head > span {
+    font-size: 0;
+  }
+
+  .chance-table .chance-head > span::after {
+    content: attr(data-short);
+    font-size: 10.5px;
+  }
+}
+
 /* Short landscape phones: the same table, tightened to spare the move list. */
 @media (max-height: 500px) and (orientation: landscape) {
   .chance-table {

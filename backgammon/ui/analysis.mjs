@@ -32,7 +32,7 @@ export function chanceLines(probabilities, player, { table = false } = {}) {
       segment(rows[0], "backgammon"), segment(rows[0], "plainGammon"), segment(rows[0], "single"),
       segment(rows[1], "single"), segment(rows[1], "plainGammon"), segment(rows[1], "backgammon")),
     el("span", { class: "chance-head", "aria-hidden": "true" },
-      el("span", {}), ...CHANCES.map(([, name]) => el("span", {}, name))),
+      el("span", {}), ...CHANCES.map(([, name, key]) => el("span", { "data-short": key }, name))),
     ...rows.map((row) =>
       el(
         "span",
