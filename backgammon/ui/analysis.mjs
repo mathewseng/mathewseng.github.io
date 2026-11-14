@@ -41,8 +41,7 @@ export function chanceLines(probabilities, player, { table = false } = {}) {
         ...CHANCES.map(([kind, name, key]) =>
           el("span", { class: "chance-cell", "data-chance": kind, "aria-label": `${name} ${percentage(row[kind])}` },
             el("span", { class: "chance-key muted" }, `${key} `),
-            // Short landscape dialogs show the rounded figure instead.
-            el("span", { class: "chance-value", "data-short": `${Math.round(row[kind] * 100)}${kind === "win" ? "%" : ""}` }, percentage(row[kind])))),
+            percentage(row[kind]))),
       ),
     ),
   );

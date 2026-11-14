@@ -334,148 +334,127 @@ details .stack {
   margin: 4px 0;
 }
 
-@media not ((max-height: 500px) and (orientation: landscape)) {
-  .chance-table {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) repeat(4, auto);
-    gap: 1px 16px;
-    align-items: baseline;
-    font-size: 13px;
-    line-height: 1.3;
-  }
+.chance-table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(4, auto);
+  gap: 1px 16px;
+  align-items: baseline;
+  font-size: 13px;
+  line-height: 1.3;
+}
 
-  .chance-table .chance-head,
-  .chance-table .chance-line {
-    display: contents;
+.chance-table .chance-head,
+.chance-table .chance-line {
+  display: contents;
+}
+
+.chance-table .chance-head > span {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.chance-table .chance-key {
+  display: none;
+}
+
+.chance-table .chance-cell {
+  text-align: right;
+}
+
+.chance-table .chance-cell[data-chance="win"] {
+  font-weight: 700;
+}
+
+.chance-table .chance-cell:not([data-chance="win"]) {
+  color: var(--muted);
+}
+
+.chance-table .chance-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.chance-table .chance-name::before {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--bg-seat-0);
+}
+
+.chance-table .chance-line[data-chance-player="1"] .chance-name::before {
+  background: var(--bg-seat-1);
+}
+
+/* Player 0's outcomes run in from the left, player 1's from the right;
+   single games meet at the boundary and the rarer, bigger wins fade
+   toward the ends. */
+.chance-table .chance-bar {
+  position: relative;
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 2px;
+  height: 8px;
+  margin-bottom: 4px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.chance-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 1px solid var(--bg);
+  opacity: 0.55;
+}
+
+.chance-segment {
+  flex: 0 1 0;
+  min-width: 0;
+  background: var(--bg-seat-0);
+}
+
+.chance-segment[data-chance-player="1"] {
+  background: var(--bg-seat-1);
+}
+
+.chance-segment[data-chance="plainGammon"] {
+  opacity: 0.62;
+}
+
+.chance-segment[data-chance="backgammon"] {
+  opacity: 0.34;
+}
+
+/* Short landscape phones: the same table, tightened to spare the move list. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .chance-table {
+    gap: 0 14px;
+    font-size: 12px;
+    line-height: 1.25;
   }
 
   .chance-table .chance-head > span {
-    color: var(--muted);
-    font-size: 10.5px;
-    font-weight: 600;
-    text-align: right;
-    white-space: nowrap;
+    font-size: 10px;
   }
 
-  .chance-table .chance-key {
-    display: none;
-  }
-
-  .chance-table .chance-cell {
-    text-align: right;
-  }
-
-  .chance-table .chance-cell[data-chance="win"] {
-    font-weight: 700;
-  }
-
-  .chance-table .chance-cell:not([data-chance="win"]) {
-    color: var(--muted);
-  }
-
-  .chance-table .chance-name {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    color: var(--ink);
-  }
-
-  .chance-table .chance-name::before {
-    content: "";
-    flex: none;
-    width: 9px;
-    height: 9px;
-    border: 1px solid var(--line-strong);
-    border-radius: 50%;
-    background: var(--bg-seat-0);
-  }
-
-  .chance-table .chance-line[data-chance-player="1"] .chance-name::before {
-    background: var(--bg-seat-1);
-  }
-
-  /* Player 0's outcomes run in from the left, player 1's from the right;
-     single games meet at the boundary and the rarer, bigger wins fade
-     toward the ends. */
   .chance-table .chance-bar {
-    position: relative;
-    display: flex;
-    grid-column: 1 / -1;
-    gap: 2px;
-    height: 8px;
-    margin-bottom: 4px;
-    border-radius: var(--r-pill);
-    overflow: hidden;
-  }
-
-  .chance-bar::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    border-left: 1px solid var(--bg);
-    opacity: 0.55;
-  }
-
-  .chance-segment {
-    flex: 0 1 0;
-    min-width: 0;
-    background: var(--bg-seat-0);
-  }
-
-  .chance-segment[data-chance-player="1"] {
-    background: var(--bg-seat-1);
-  }
-
-  .chance-segment[data-chance="plainGammon"] {
-    opacity: 0.62;
-  }
-
-  .chance-segment[data-chance="backgammon"] {
-    opacity: 0.34;
-  }
-}
-
-/* Short landscape phones have no spare height: both players share one line
-   above the move list. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .review-chances .chance-lines {
-    flex-flow: row nowrap;
-    gap: 0 14px;
-    font-size: 11px;
-    line-height: 1.2;
-  }
-
-  .review-chances .chance-line {
-    flex-wrap: nowrap;
-    gap: 0 6px;
-  }
-
-  .review-chances .chance-name {
-    min-width: 0;
-  }
-
-  .review-chances .chance-cell[data-chance="win"] {
-    font-weight: 700;
-  }
-
-  .review-chances .chance-cell[data-chance="win"] .chance-key {
-    display: none;
-  }
-
-  .review-chances .chance-value {
-    font-size: 0;
-  }
-
-  .review-chances .chance-value::after {
-    content: attr(data-short);
-    font-size: 11px;
+    height: 6px;
+    margin-bottom: 2px;
   }
 
   .review-chances {
-    margin: -2px 0 0;
+    margin: 0 0 2px;
   }
 }
 
@@ -1262,9 +1241,54 @@ button kbd.keycap,
     writing-mode: horizontal-tb;
   }
 
+  /* Chances at each end; the meter sits between them with the equity number
+     centred beneath it, marked with the leading player's colour. */
+  .equity-reading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-content: center;
+    gap: 3px 10px;
+    padding: 0 6px;
+  }
+
+  .equity-top-chances {
+    grid-area: 1 / 1 / 3 / 2;
+  }
+
+  .equity-bottom-chances {
+    grid-area: 1 / 3 / 3 / 4;
+  }
+
+  .equity-meter {
+    grid-area: 1 / 2;
+    align-self: end;
+  }
+
   .equity-number {
-    flex: 0 0 40px;
-    width: 40px;
+    display: flex;
+    grid-area: 2 / 2;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: auto;
+  }
+
+  .equity-bar[data-state="ready"] .equity-number:not(:empty)::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    background: var(--equity-bottom);
+  }
+
+  .equity-bar[data-state="ready"] .equity-top-number:not(:empty)::before {
+    background: var(--equity-top);
+  }
+
+  .equity-number:empty {
+    visibility: hidden;
   }
 
   .equity-chances {
