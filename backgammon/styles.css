@@ -395,7 +395,7 @@ details .stack {
 }
 
 /* Player 0's outcomes run in from the left, player 1's from the right;
-   single games meet at the boundary and the rarer, bigger wins fade
+   single games meet where their shares do and the rarer, bigger wins fade
    toward the ends. */
 .chance-table .chance-bar {
   position: relative;
@@ -406,16 +406,6 @@ details .stack {
   margin-bottom: 4px;
   border-radius: var(--r-pill);
   overflow: hidden;
-}
-
-.chance-bar::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  border-left: 1px solid var(--bg);
-  opacity: 0.55;
 }
 
 .chance-segment {
@@ -1160,6 +1150,15 @@ button kbd.keycap,
   background: var(--equity-bottom);
 }
 
+.equity-meter::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  border-top: 1px solid var(--line);
+}
+
 .equity-bar:not([data-state="ready"]) .equity-meter {
   background: repeating-linear-gradient(135deg, var(--surface) 0 5px, var(--line) 5px 7px);
 }
@@ -1306,6 +1305,15 @@ button kbd.keycap,
     right: 0;
     width: var(--equity-fraction);
     height: 100%;
+  }
+
+  .equity-meter::after {
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 100%;
+    border-top: 0;
+    border-left: 1px solid var(--line);
   }
 
   .equity-retry {
