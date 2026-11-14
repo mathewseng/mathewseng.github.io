@@ -3137,7 +3137,7 @@ async function evaluateDecision(action) {
         return;
       }
       const f = decisionFeedback(result, job.source);
-      warningCopy.textContent = `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate.`;
+      warningCopy.textContent = `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} vs the best play.`;
       if (!checker) job.dialog.querySelector(".primary").disabled = false;
       return; // Keep the player's review open; never confirm behind the dialog.
     }
@@ -3148,7 +3148,7 @@ async function evaluateDecision(action) {
         el(
           "p",
           {},
-          `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} ${f.units} at ${result.settings.name}. This is an estimate.`,
+          `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} vs the best play.`,
         ),
         warningActions(),
         {warning:true, dismissible:true, onDismiss:onClose},
