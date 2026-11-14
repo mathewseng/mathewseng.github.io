@@ -2251,10 +2251,10 @@ export class Board {
     const active = !preview && !editor && !hideDice && (prompt.auto || prompt.skipping || prompt.raceAuto);
     const ready = !preview && !editor && !hideDice && prompt.ready && this.state?.phase === 'roll';
     const main = preview ? 'Move preview' : editor ? 'Position editor' :
-      active ? (prompt.skipping ? 'Skipping to your choice' : prompt.raceAuto ? 'Auto play on' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to roll` : '';
+      active ? (prompt.skipping ? 'Skipping to your choice' : prompt.raceAuto ? 'Auto play on' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to ${prompt.pass ? 'pass' : 'roll'}` : '';
     const detail = active ? (prompt.skipping ? `${touch ? 'Tap' : 'Click'} to stop` : `Double ${touch ? 'tap' : 'click'} to skip`) :
       ready && prompt.canAutoPlay ? `Double ${touch ? 'tap' : 'click'} to auto play` :
-        ready && prompt.canAutoRoll ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
+        ready && prompt.canAutoRoll && !prompt.pass ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
     // Roll instructions sit in the roller's own dice lane, which the previous
     // roll leaves free. While dice are visible, keep the auto-roll stop label
     // in the unused lane so it never overlaps the rolling dice.

@@ -229,11 +229,11 @@ function renderResultCard(s) {
     el("strong", { class: "stat-value" }, value, ...(extra ? [el("small", {}, extra)] : [])));
   resultCard.replaceChildren(
     hideCardButton(resultCard, "Hide the result to see the board", () => { hiddenResult = key; }),
-    el("p", { class: "bg-result-kind" }, r.matchOver ? "Match complete" : why ? `Game ${s.gameNumber} · ${why}` : `Game ${s.gameNumber} over`),
-    el("h2", {}, `${winner} ${winner === "You" ? "win" : "wins"} a ${level}`),
+    el("p", { class: "bg-result-kind" }, r.matchOver ? `Game ${s.gameNumber} · ${why || level}` : why ? `Game ${s.gameNumber} · ${why}` : `Game ${s.gameNumber} over`),
+    el("h2", {}, `${winner} ${winner === "You" ? "win" : "wins"} ${r.matchOver ? "the match" : `a ${level}`}`),
     el("div", { class: "stat-strip game-over-stats" },
       stat("Points", `+${r.points}`, winner),
-      stat("Score", `${s.scores[0]}–${s.scores[1]}`, s.matchLength ? `of ${s.matchLength}` : "unlimited"),
+      stat("Score", `${s.scores[r.winner]}–${s.scores[1 - r.winner]}`, s.matchLength ? `of ${s.matchLength}` : "unlimited"),
       stat("Cube", String(s.cube.value), s.cube.owner === null ? "centred" : names()[s.cube.owner]),
     ),
     losses,
@@ -510,10 +510,11 @@ function placeConfirm() {
   const confirm = $("confirm");
   boardConfirm.replaceChildren(...(confirm ? [confirm] : []));
   if (!model()?.started) { turnTools.remove(); return; }
-  const hint = $("hint") || button("Hint", showHint, "", {id:"hint", disabled:!myTurn(state()) || botBusy || committing || !!assistanceJob || !["roll","move","double"].includes(state().phase)});
-  const ended = state().phase === "over";
-  turnTools.classList.toggle("game-ended", ended);
-  turnTools.replaceChildren(...(ended ? [] : [hint]), allControls);
+  // The live Hint comes from actions() on rolled turns; elsewhere it holds its slot, disabled.
+  const hint = $("hint") || button("Hint", showHint, "", {id:"hint", disabled:true});
+  const ended = state().phase === "over", hinted = !ended && config.mode === "computer";
+  turnTools.classList.toggle("game-ended", !hinted);
+  turnTools.replaceChildren(...(hinted ? [hint] : []), allControls);
   helpActions.append(analysisJump, draftKeys);
   if (desktopTable.matches) actions.append(turnTools);
   else {
@@ -1092,7 +1093,7 @@ function scheduleRaceAutoPlay() {
           result = await analysis.engine.analyze(s,{preset:'expert',priority:5});
         if (!ready()) return;
         action = clearRaceCubeAction(s,result);
-        if (!action) { raceAutoPlay.reset(); return; }
+        if (!action) { raceAutoPlay.reset(); toast('Auto play stopped. Choose your cube action.'); return; }
         evaluation = {source:clone(s),result:gradeCube(s,result,action.type)};
       }
       if (ready()) await commit(action,evaluation);
@@ -1663,7 +1664,7 @@ function actions() {
     // During automatic cube checking, the caption is the stop control. The
     // manual Take/Drop faces return as soon as it stops, without covering it.
     if (race && s.phase === 'double') cubeReplies.hidden = true;
-    ui.board.setRollPrompt({ready:rollReady && !blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,
+    ui.board.setRollPrompt({ready:rollReady && !(closedOutCheck?.pending && closedOutCheck.key === closedOutKey(s)),pass:blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,
       canAutoPlay:config.mode === 'computer' && bearingOffRace(s) && !model().reviewingTurn,
       auto:!!active,skipping:barAutoRoll.skipping || raceAutoPlay.skipping,raceAuto:!!race});
     ui.board.container.classList.toggle("roll-ready", rollReady);
@@ -2053,12 +2054,13 @@ function renderActions() {
     const previous = m.events.at(-1);
     const closed = blockedBarRoll(s);
     const prefs = readSettings();
+    const checking = closed && prefs.closedOutPassing === 'bad-double' && closedOutCheck?.key === closedOutKey(s) && closedOutCheck.pending;
     const keycap = action => prefs.keyboardEnabled && prefs.shortcuts[action]?.length
       ? shortcutBadge(prefs.shortcuts[action][0]) : "";
     $("message").replaceChildren(
-      closed ? `All six entries blocked · ${prefs.closedOutPassing === 'bad-double' && closedOutCheck?.key === closedOutKey(s) && closedOutCheck.pending ? 'checking cube…' : canDouble(s) ? 'Double or pass without rolling' : 'Pass without rolling'}`
+      closed ? `${names()[s.turn]} · ${checking ? 'checking cube…' : `${pressVerb()} board to pass`}`
         : `${previous?.automatic ? (previous.action.steps?.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · ${pressVerb()} board to roll`,
-      ...(closed ? [] : [keycap("roll")]),
+      ...(checking ? [] : [keycap("roll")]),
       ...(canDouble(s) ? [" · Cube to double", keycap("double")] : []),
     );
     a.append(
@@ -2080,7 +2082,7 @@ function renderActions() {
         : draft.current().bar[s.turn]
           ? "Enter from the bar first."
           : "Use all playable dice, then confirm."
-      : `${names()[s.turn]} is moving`;
+      : `${names()[s.turn]} ${names()[s.turn] === "You" ? "are" : "is"} moving`;
     $("message").replaceChildren(mine ? draft.progressMessage(instruction) : instruction);
     if (config.mode === "computer" && myTurn(s))
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
