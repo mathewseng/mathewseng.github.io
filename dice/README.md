@@ -45,6 +45,8 @@ export const game = {
   needsPrivacy(state, seat),      // hidden games: does this decision show private dice? (optional)
   revealLabel: 'Show my dice',    // hidden games: the hand-over button (optional)
   recover(spectatorView, rng),    // hidden games: rebuild a playable state after a host hand-over
+  advise(view, seat),             // → the solver's ranked moves for this decision (or a Promise)
+  sameAction(a, b),               // optional: are two actions the same move (default: equal JSON)
   summary(view, seat),            // → short text for the players list ("42", "3 dice")
   status(view, seat, { canAct }), // → one line over the board
   outcome(state),                 // → null, or { winners: [seats], text }
@@ -61,6 +63,18 @@ State rules:
   third-person present verb (“You won”, “You to roll”, not “You wins”).
 - `level` is `easy`, `normal` or `hard`. Hard plays the strongest strategy the engine has; easy
   makes visible mistakes.
+
+### Best move
+
+`advise(view, seat)` returns `{ best, options, metric, exact, note }`: `options` is every legal move
+(or every sensible one when there are hundreds) as `{ action, label, display }`, ranked best first,
+with `display` the solver’s value (“54.2% to win”, “+11.4 expected”); `metric` names that value;
+`exact: false` marks a probability estimate rather than a proven optimum. The table shows the best
+move in a strip under the status line while it is your turn (each viewer can hide it), passes it to
+the board as `ctx.advice`, and after your move says whether it matched the best move. Hard bots play
+`advise(...).best`; `bot` and `advise` may return Promises while a solver table loads. Solver data
+lives in `dice/<game>/data/` (published), and the scripts that build it in `dice/<game>/scripts/`
+(not published).
 
 ### Board contract
 

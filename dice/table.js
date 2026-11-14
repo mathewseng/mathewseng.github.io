@@ -112,6 +112,9 @@ export function mountTable(game, ui = {}) {
   let botTimer = null;
   let pendingSince = 0;
   let toastTimer = null;
+  let adviceOn = storage.get('dice.advice', true) !== false;
+  const adviceCache = new Map();
+  let review = null;
 
   const savedMatch = () => { const value = storage.get(keys.match); return value?.game === game.id && value.state ? value : null; };
   const invite = location.hash.replace('#', '').toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 6);
@@ -128,6 +131,7 @@ export function mountTable(game, ui = {}) {
       <div class="dt-layout">
         <section class="dt-stage" aria-label="Table">
           <div class="dt-status" id="dt-status" role="status" aria-live="polite"></div>
+          <div class="dt-advice" id="dt-advice" hidden></div>
           <div class="dt-board" id="dt-board"></div>
           <div class="dt-curtain" id="dt-curtain" hidden></div>
         </section>
@@ -489,6 +493,65 @@ export function mountTable(game, ui = {}) {
     return match.seats.filter((other) => other.kind === 'human').length > 1 ? 'This device' : seat.name === 'You' ? '' : 'You';
   }
 
+  // ---------- Best move ----------
+  // game.advise(view, seat) → { best, options: [{ action, label, display }], metric, exact, note }
+  // (or a Promise of it). Options are ranked best first.
+  const adviceKey = (seat) => `${match.id}:${match.rev}:${seat}`;
+  const sameAction = (a, b) => (game.sameAction ? game.sameAction(a, b) : JSON.stringify(a) === JSON.stringify(b));
+
+  function adviceFor(seat) {
+    if (!game.advise || seat < 0) return null;
+    const key = adviceKey(seat);
+    if (adviceCache.has(key)) return adviceCache.get(key);
+    adviceCache.set(key, 'pending');
+    const state = shownState(seat);
+    setTimeout(() => {
+      Promise.resolve()
+        .then(() => game.advise(state, seat))
+        .then((advice) => advice || null, (error) => { console.error(error); return null; })
+        .then((advice) => {
+          adviceCache.set(key, advice);
+          if (adviceCache.size > 40) adviceCache.delete(adviceCache.keys().next().value);
+          if (match && adviceKey(seat) === key) renderTable();
+        });
+    }, 0);
+    return 'pending';
+  }
+
+  function optionValue(advice, action) {
+    return advice?.options?.find((option) => sameAction(option.action, action)) || null;
+  }
+
+  function noteReview(advice, action) {
+    if (!advice || advice === 'pending' || !advice.best) { review = null; return; }
+    const best = advice.options?.[0] || { action: advice.best, label: advice.label || 'Best move', display: '' };
+    const chosen = optionValue(advice, action);
+    review = sameAction(best.action, action) || (chosen && best.display && chosen.display === best.display)
+      ? { good: true, text: `Your last move was the best move${best.display ? ` (${best.display})` : ''}.` }
+      : { good: false, text: `Best was ${best.label}${best.display ? ` (${best.display})` : ''}. You played ${chosen ? `${chosen.label}${chosen.display ? ` (${chosen.display})` : ''}` : 'something else'}.` };
+  }
+
+  function renderAdvice(seat, canAct) {
+    const strip = $('dt-advice');
+    if (!game.advise || seat < 0) { strip.hidden = true; return null; }
+    strip.hidden = false;
+    const advice = canAct ? adviceFor(seat) : null;
+    const toggle = `<button type="button" class="btn btn--ghost dt-advice-toggle" id="dt-advice-toggle" data-key="advice-toggle" aria-pressed="${adviceOn}">${adviceOn ? 'Hide best move' : 'Show best move'}</button>`;
+    let body = '';
+    if (adviceOn && canAct) {
+      if (advice === 'pending') body = '<p class="dt-advice-line dt-muted">Solving…</p>';
+      else if (advice?.options?.length) {
+        const [best, ...rest] = advice.options;
+        body = `<p class="dt-advice-line"><span class="dt-muted">Best move</span> <strong>${esc(best.label)}</strong>${best.display ? ` <span class="dt-advice-value">${esc(best.display)}</span>` : ''}</p>
+          ${rest.length ? `<details class="dt-advice-more"><summary>${advice.metric ? esc(advice.metric) : 'Other moves'}${advice.exact === false ? ' · estimate' : ''}</summary><ol>${advice.options.slice(0, 8).map((option, i) => `<li${i === 0 ? ' class="is-best"' : ''}><span>${esc(option.label)}</span><span>${esc(option.display || '')}</span></li>`).join('')}</ol>${advice.note ? `<p class="dt-muted">${esc(advice.note)}</p>` : ''}</details>` : ''}`;
+      }
+    } else if (adviceOn && review) {
+      body = `<p class="dt-advice-line ${review.good ? 'is-good' : 'is-off'}">${esc(review.text)}</p>`;
+    }
+    strip.innerHTML = `${body || '<p class="dt-advice-line dt-muted">' + (adviceOn ? 'The best move shows on your turn.' : 'Best move hidden.') + '</p>'}${toggle}`;
+    return adviceOn && advice && advice !== 'pending' ? advice : null;
+  }
+
   function renderTable() {
     if (!match) return;
     const view = match.state;
@@ -515,10 +578,12 @@ export function mountTable(game, ui = {}) {
     $('dt-curtain').hidden = curtain < 0;
     board.hidden = curtain >= 0;
     if (curtain >= 0) {
+      $('dt-advice').hidden = true;
       $('dt-curtain').innerHTML = `<p>${esc(view.names[curtain])}, it is your turn.</p><button type="button" class="btn btn--primary btn--lg" id="dt-reveal" data-key="reveal">${esc(game.revealLabel || 'Show my dice')}</button><p class="dt-muted">Everyone else, look away.</p>`;
     } else {
       const focusKey = document.activeElement && board.contains(document.activeElement) ? document.activeElement.dataset.key : null;
       const ctx = context(shown, seat, actor, canAct, rolled, outcome);
+      ctx.advice = renderAdvice(seat, canAct);
       ui.render(board, ctx);
       paintDice(board);
       if (focusKey) board.querySelector(`[data-key="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
@@ -575,6 +640,11 @@ export function mountTable(game, ui = {}) {
       board.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
     } else if (target.id === 'dt-new' || target.id === 'dt-setup-again') {
       backToSetup();
+    } else if (target.id === 'dt-advice-toggle') {
+      adviceOn = !adviceOn;
+      storage.set('dice.advice', adviceOn);
+      renderTable();
+      $('dt-advice-toggle')?.focus({ preventScroll: true });
     } else if (target.id === 'dt-rematch') {
       rematch();
     } else if (target.id === 'dt-leave') {
@@ -616,6 +686,7 @@ export function mountTable(game, ui = {}) {
   function act(action) {
     if (!isCanAct()) return;
     const seat = perspective().actor;
+    if (game.advise) noteReview(adviceCache.get(adviceKey(seat)), action);
     if (isOnline() && !room.isHost) {
       try {
         room.sendAction({ type: 'move', action, rev: match.rev });
@@ -662,18 +733,20 @@ export function mountTable(game, ui = {}) {
     if (actor < 0 || match.seats[actor].kind !== 'bot') return;
     const rev = match.rev;
     const level = match.seats[actor].level || 'normal';
-    let action;
-    try {
-      action = game.bot(game.view(state, actor), actor, level, cryptoRng);
-    } catch (error) {
-      console.error(error);
-      return;
-    }
-    const delay = (game.pace ? game.pace(state, action) : 900) * (document.hidden ? 0.3 : 1);
-    botTimer = setTimeout(() => {
-      if (!match || match.rev !== rev) return;
-      commit(actor, action);
-    }, delay);
+    const started = Date.now();
+    // A bot may think asynchronously (a solver table can still be loading).
+    Promise.resolve()
+      .then(() => game.bot(game.view(state, actor), actor, level, cryptoRng))
+      .then((action) => {
+        if (!match || match.rev !== rev || !action) return;
+        const delay = (game.pace ? game.pace(state, action) : 900) * (document.hidden ? 0.3 : 1);
+        clearTimeout(botTimer);
+        botTimer = setTimeout(() => {
+          if (!match || match.rev !== rev) return;
+          commit(actor, action);
+        }, Math.max(0, delay - (Date.now() - started)));
+      })
+      .catch((error) => console.error(error));
   }
 
   // ---------- Online ----------
