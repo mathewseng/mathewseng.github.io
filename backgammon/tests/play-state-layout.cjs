@@ -142,7 +142,7 @@ module.exports = async (browser, base, out, name) => {
           // on a short landscape phone. Exercise each end-of-game destination.
           for(const selector of ['#next-game','#game-review','.board-actions a[href*="library"],#actions a[href*="library"]','#all-controls']) {
             const button=page.locator(selector);await button.scrollIntoViewIfNeeded();
-            const b=await button.boundingBox();assert.ok(b.width>=90&&b.height>=44,`${layout}/${kind}: ${selector} usable`);
+            const b=await button.boundingBox();assert.ok(b.width>=(layout==='desktop'?72:90)&&b.height>=44,`${layout}/${kind}: ${selector} usable`);
           }
           await page.locator('#game-review').click();
           await page.locator('dialog[open]').waitFor();await inspect(kind+'-review');

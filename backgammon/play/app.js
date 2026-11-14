@@ -222,12 +222,14 @@ function renderResultCard(s) {
   const scrollTop = resultCard.scrollTop;
   const winner = names()[r.winner];
   const level = { 1: "single game", 2: "gammon", 3: "backgammon" }[r.level] || "game";
+  const why = { "cube pass": `${names()[1 - r.winner]} passed`, "certain bearoff": "Certain result",
+    resignation: `${names()[1 - r.winner]} resigned` }[r.reason];
   const stat = (label, value, extra) => el("div", { class: "stat" },
     el("span", { class: "stat-label" }, label),
     el("strong", { class: "stat-value" }, value, ...(extra ? [el("small", {}, extra)] : [])));
   resultCard.replaceChildren(
     hideCardButton(resultCard, "Hide the result to see the board", () => { hiddenResult = key; }),
-    el("p", { class: "bg-result-kind" }, r.matchOver ? "Match complete" : `Game ${s.gameNumber} over`),
+    el("p", { class: "bg-result-kind" }, r.matchOver ? "Match complete" : why ? `Game ${s.gameNumber} · ${why}` : `Game ${s.gameNumber} over`),
     el("h2", {}, `${winner} ${winner === "You" ? "win" : "wins"} a ${level}`),
     el("div", { class: "stat-strip game-over-stats" },
       stat("Points", `+${r.points}`, winner),
@@ -516,16 +518,21 @@ function placeConfirm() {
   if (desktopTable.matches) actions.append(turnTools);
   else {
     boardActions.append(turnTools);
-    if ((phonePortrait.matches || landscapeTable.matches) && actions.childElementCount)
-      boardActions.prepend(...actions.children);
-    if ((phonePortrait.matches || landscapeTable.matches) &&
+    const phone = phonePortrait.matches || landscapeTable.matches;
+    // Waiting rows go below Hint and Controls so those taps never land on Cancel.
+    const waiting = phone && state().phase !== "resign" && !model()?.undoRequest &&
+      (botBusy || assistanceJob?.kind === "submit");
+    if (phone && actions.childElementCount)
+      boardActions[waiting ? "append" : "prepend"](...actions.children);
+    if (phone &&
       (state().phase === "resign" || model()?.undoRequest || botBusy || assistanceJob?.kind === "submit" ||
        (config.mode === "online" && (!online.ready || model()?.recovery)))) {
       tableActionStatus.textContent = state().phase === "resign"
         ? `${names()[state().turn]} offers ${state().pending.level * state().cube.value} points.`
         : model()?.undoRequest ? `${names()[model().undoRequest.by]} requests an undo.`
         : $("message").textContent;
-      boardActions.prepend(tableActionStatus);
+      if (waiting) turnTools.after(tableActionStatus);
+      else boardActions.prepend(tableActionStatus);
     }
   }
   placeCubeReplies();
@@ -2137,11 +2144,11 @@ function renderActions() {
         "primary",
         { id: "next-game" },
       ),
-      button("Game review", showSessionReview, "", { id: "game-review" }),
+      button("Review", showSessionReview, "", { id: "game-review", "aria-label": "Game review" }),
       el(
         "a",
-        { href: "/backgammon/library/#games", class: "btn btn--ghost button ghost" },
-        "Session Library",
+        { href: "/backgammon/library/#games", class: "btn btn--ghost button ghost", "aria-label": "Session Library" },
+        "Library",
       ),
     );
   }
