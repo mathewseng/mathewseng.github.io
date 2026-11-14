@@ -149,10 +149,13 @@ module.exports = async function parity(browser, base, out, name) {
         await page
           .getByLabel("Notes", { exact: true })
           .fill("Edited on mobile");
-        await page
-          .getByRole("button", { name: "Save changes", exact: true })
-          .click();
         await close();
+        // Closing the sheet saves the edit; there is no Save button.
+        await page.waitForFunction(async () => {
+          const st = await import("/backgammon/core/storage.mjs");
+          const { items } = await st.listItemSummaries({ query: "Parity position" });
+          return items[0]?.notes === "Edited on mobile";
+        });
         await page.setViewportSize({ width: 1366, height: 768 });
         assert.equal(
           await page.getByLabel("Notes", { exact: true }).inputValue(),

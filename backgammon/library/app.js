@@ -58,7 +58,7 @@ await startUpdates();
 resumedAfterUpdate();
 const pageProgress = readPageProgress();
 shell("library", "Library");
-let cursor = null, nextCursor = null, listGeneration = 0, selectionGeneration = 0, previewBoard = null;
+let cursor = null, nextCursor = null, listGeneration = 0, selectionGeneration = 0, previewBoard = null, saveEdits = async () => {};
 let items = [],
   selected = null,
   query = "",
@@ -76,6 +76,11 @@ $("toolbar").prepend(
   button("Import", importDialog, "ghost"),
   button("Export", exportDialog, "ghost", { id: "export-library" }),
 );
+// Edits also save when the Details sheet closes: Escape and swipe-down close
+// it without blurring the field. `close` does not bubble, hence capture.
+document.addEventListener("close", (e) => {
+  if (e.target.id === "details-dialog") saveEdits();
+}, true);
 function exportDialog() {
   dialog(
     "Export from this browser",
@@ -257,6 +262,7 @@ function renderList() {
 }
 async function choose(item) {
   const token = ++selectionGeneration;
+  await saveEdits();
   const loaded = await get('items',item.id);
   if (token !== selectionGeneration) return;
   selected = loaded;
@@ -272,6 +278,7 @@ async function choose(item) {
 }
 function inspector() {
   previewBoard?.destroy(); previewBoard = null;
+  saveEdits = async () => {};
   const p = $("panel");
   p.replaceChildren();
   if (!selected) {
@@ -301,20 +308,44 @@ function inspector() {
     });
     pageProgress.fields = null;
   }
-  // The inspector is grouped: Open, Edit, Export, then a separated Danger
-  // zone; the opening action stays the first reachable control.
-  const section = (name, title, heading = true) =>
-    heading
-      ? el("section", { class: `library-group library-group--${name}`, "aria-labelledby": `library-${name}-title` },
-          el("h3", { class: "library-group-title", id: `library-${name}-title` }, title))
-      : el("section", { class: `library-group library-group--${name}`, "aria-label": title });
-  const openGroup = section("open", "Open", false),
-    editGroup = section("edit", "Edit", false),
+  // The inspector is grouped: Open, Edit, Export, then Delete; the opening
+  // action stays the first reachable control.
+  const section = (name, title) =>
+    el("section", { class: `library-group library-group--${name}`, "aria-label": title });
+  const openGroup = section("open", "Open"),
+    editGroup = section("edit", "Edit"),
     exportGroup = section("export", "Export"),
-    dangerGroup = section("danger", "Danger zone");
+    dangerGroup = section("danger", "Delete"),
+    heading = el("h2", { class: "library-selected-title" }, item.title);
+  // Fields save on their own when they change, before another item opens and
+  // when the Details sheet closes; unchanged fields write nothing.
+  saveEdits = async () => {
+    const edits = {
+      title: title.value.trim() || "Untitled",
+      notes: notes.value,
+      tags: tags.value
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+      collection: group.value.trim(),
+    };
+    if (Object.entries(edits).every(([k, v]) => String(v) === String(item[k]))) return;
+    Object.assign(item, edits, { updatedAt: Date.now() });
+    heading.textContent = item.title;
+    try {
+      await put("items", { ...item });
+    } catch (e) {
+      return showError(e);
+    }
+    // A press on a row blurs the field first; redraw the list only after the
+    // press ends, or its click would land on a replaced row.
+    if (list.matches(":active"))
+      await new Promise((r) => addEventListener("pointerup", () => setTimeout(r), { once: true }));
+    refresh(false);
+  };
+  [title, notes, tags, group].forEach((n) => n.addEventListener("change", () => saveEdits()));
   p.append(
-    el("p", { class: "library-selected-kind" }, KIND_NAMES[item.kind] || item.kind),
-    el("h2", { class: "library-selected-title" }, item.title),
+    heading,
     openGroup,
     editGroup,
     exportGroup,
@@ -384,25 +415,6 @@ function inspector() {
     field("Notes", notes),
     field("Tags", tags),
     field("Collection", group),
-    button(
-      "Save changes",
-      async () => {
-        await put("items", {
-          ...item,
-          title: title.value.trim() || "Untitled",
-          notes: notes.value,
-          tags: tags.value
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
-          collection: group.value.trim(),
-          updatedAt: Date.now(),
-        });
-        toast("Updated.");
-        await refresh();
-      },
-      "primary",
-    ),
   );
   exportGroup.append(
     button("Export item", () =>
@@ -413,20 +425,30 @@ function inspector() {
     ),
   );
   dangerGroup.append(
-    el("p", { class: "muted small" }, "Deleting removes the item from this browser only. Exported copies are unaffected."),
     button(
       "Delete",
-      () =>
-        confirmDialog(
+      () => {
+        const ask = confirmDialog(
           "Delete this item?",
           `“${item.title}” will be removed from this browser’s Library.`,
           async () => {
+            const at = [...$("items").querySelectorAll(".library-item")].findIndex((r) => r.getAttribute("aria-pressed") === "true");
             await remove("items", item.id);
             selected = null;
             await refresh();
+            document.getElementById("details-dialog")?.close();
+            p.scrollTop = 0;
+            toast("Deleted.");
+            // Focus the row that took the deleted one's place once the
+            // confirm closes (the page behind it is inert until then).
+            ask.addEventListener("close", () => {
+              const rows = $("items").querySelectorAll(".library-item");
+              (rows[Math.max(0, Math.min(at, rows.length - 1))] || $("main")).focus();
+            }, { once: true });
           },
           { verb: "Delete", danger: true },
-        ),
+        );
+      },
       "danger",
     ),
   );

@@ -43,11 +43,12 @@ export function historyExplorer(model, { onReturn } = {}) {
     "aria-label": "Game variations",
   });
   const pages = el("span", { class: "muted small", "aria-live": "polite" });
-  const summary = el(
+  // The draft and Return exist only where the caller can restore a position.
+  const summary = onReturn ? el(
     "p",
     { class: "muted small history-tree-summary" },
     "Preview committed positions; your draft stays on the table. Returning keeps both lines.",
-  );
+  ) : null;
   const error = el("p", { class: "error", role: "alert", hidden: true });
   let selected = tree.current,
     page = 0,

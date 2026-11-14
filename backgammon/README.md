@@ -161,7 +161,7 @@ Solver edits checker placement by explicitly transferring checkers to/from the o
 
 **Every started local/computer/online session saves automatically** after committed actions in the existing Backgammon IndexedDB, including unfinished games and every game within a match or unlimited session. No cookies or accounts are required. Each online participant keeps their own copy. Existing saved notes/titles survive automatic updates. Play → Details → **All game history** and Library’s **Game history** filter open the archive. **Export → Game history** downloads all stored matches as an importable Library JSON backup; **Export this match** downloads one full match. Older sessions that were never saved cannot be reconstructed.
 
-Library supports search across names/notes/tags, collections, rename, notes, confirmed deletion, per-item exports and validated atomic backup merge/replace. Limits: 8 MB per backup, 2 MB per item, 2,000 imported items. All work is local to this browser; storage can be evicted and is not cross-device backup. Export important work.
+Library supports search across names/notes/tags, collections, rename and notes (saved automatically), confirmed deletion, per-item exports and validated atomic backup merge/replace. Limits: 8 MB per backup, 2 MB per item, 2,000 imported items. All work is local to this browser; storage can be evicted and is not cross-device backup. Export important work.
 
 ## Online assumptions
 
