@@ -40,6 +40,7 @@ import {
   dialog,
   confirmDialog,
   hideCardButton,
+  pressVerb,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
 import { StudyStrip, closeStudyPanel } from "../ui/study-strip.mjs";
@@ -201,6 +202,7 @@ function render() {
       : preview && exercise && boardKey(preview) !== boardKey(exercise.state)
         ? "Return to the original position to see decision equity."
         : "",
+    note: !revealed ? "Shown after you submit" : preview && exercise && boardKey(preview) !== boardKey(exercise.state) ? "Back to the original" : "",
   });
   if (!exercise) {
     practiceHelp.hidden = true;
@@ -239,7 +241,7 @@ function draftLine() {
   const line = $("draft-line");
   if (!exercise || busy || revealed || exercise.state.phase !== "move") line.textContent = "";
   else if (!draft.hint && draft.draft.length && draft.complete())
-    line.textContent = "Tap a used die to undo its move.";
+    line.textContent = `${pressVerb()} a used die to undo its move.`;
 }
 function actions() {
   draftLine();

@@ -1163,6 +1163,38 @@ button kbd.keycap,
   background: repeating-linear-gradient(135deg, var(--surface) 0 5px, var(--line) 5px 7px);
 }
 
+/* An unavailable rail is an empty slot that says why, not a striped bar. */
+.equity-bar[data-state="unavailable"] .equity-meter {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: transparent;
+}
+
+.equity-note {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.equity-note:empty {
+  display: none;
+}
+
+.equity-bar[data-state="loading"] .equity-note {
+  color: var(--ink);
+  text-shadow: 0 0 3px var(--bg), 0 0 3px var(--bg);
+}
+
 .equity-bar:not([data-state="ready"]) .equity-fill {
   display: none;
 }
@@ -1253,6 +1285,17 @@ button kbd.keycap,
   .equity-meter {
     grid-area: 1 / 2;
     align-self: end;
+  }
+
+  .equity-note {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+
+  .equity-bar:not([data-state="ready"]) .equity-meter {
+    grid-row: 1 / 3;
+    align-self: center;
+    height: 20px;
   }
 
   .equity-number {

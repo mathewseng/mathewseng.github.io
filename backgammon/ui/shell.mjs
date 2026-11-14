@@ -50,6 +50,8 @@ import { releaseStatus } from "./release-status.mjs";
 import { TouchMoves } from "./touch-moves.mjs";
 import { installDialogBehavior } from "./dialog-behavior.mjs";
 export const $ = (id) => document.getElementById(id);
+// "Tap" on touch screens, "Click" with a mouse or trackpad.
+export const pressVerb = () => (matchMedia("(pointer: coarse)").matches ? "Tap" : "Click");
 export function el(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -1478,20 +1480,20 @@ export class DraftBoard {
       : this.hint ||
         (switchEntry
           ? switchEntry.origin === "bar"
-            ? "Tap ↔ to revise this checker’s entry. ↶ returns to the bar."
-            : "Tap ↔ to revise this checker’s dice. ↶ returns to the starting point."
+            ? `${pressVerb()} ↔ to revise this checker’s entry. ↶ returns to the bar.`
+            : `${pressVerb()} ↔ to revise this checker’s dice. ↶ returns to the starting point.`
           : this.enabled && this.state.phase === "move"
             ? this.advanced && !this.complete()
-              ? `Click a checker or destination · using die ${this.activeDie() ?? "–"}.`
+              ? `${pressVerb()} a checker or destination · using die ${this.activeDie() ?? "–"}.`
               : this.complete()
               ? this.draft.length
-                ? "Ready to confirm. Tap a used die to undo its move."
+                ? `Ready to confirm. ${pressVerb()} a used die to undo its move.`
                 : "All entries are blocked. Confirm to pass your turn."
               : this.selected !== null
                 ? display.moveHints
-                  ? "Tap or drag to a highlighted point. Arrow targets move back."
-                  : "Tap a destination or drag the selected checker."
-                : "Tap a checker to select; tap an open part of a point to play there."
+                  ? `${pressVerb()} or drag to a highlighted point. Arrow targets move back.`
+                  : `${pressVerb()} a destination or drag the selected checker.`
+                : `${pressVerb()} a checker to select; ${pressVerb().toLowerCase()} an open part of a point to play there.`
             : this.draft.length
               ? notation(this.draft, this.state.turn)
               : this.lastMove

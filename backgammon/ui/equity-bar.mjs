@@ -30,7 +30,10 @@ export class EquityBar {
     this.reveal.innerHTML = `<span class="equity-reveal-label" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span>Equity</span></span>`;
     this.meter = element("span", "equity-meter");
     this.fill = element("span", "equity-fill");
-    this.meter.append(this.fill);
+    // Says why the rail is empty (hidden until you submit, analyze first...).
+    this.note = element("span", "equity-note");
+    this.note.setAttribute("aria-hidden", "true");
+    this.meter.append(this.fill, this.note);
     this.label = element("span", "equity-number equity-bottom-number");
     this.topLabel = element("span", "equity-number equity-top-number");
     // The group announces the complete reading, including its perspective.
@@ -165,8 +168,9 @@ export class EquityBar {
       this.position();
     });
   }
-  paint(status, reading = null, reason = "") {
+  paint(status, reading = null, reason = "", note = "") {
     this.reading = reading;
+    this.note.textContent = reading ? "" : status === "loading" ? "Evaluating…" : note;
     this.node.dataset.state = status;
     this.retry.hidden = status !== "error";
     const orientation = readSettings().orientation === 1 ? 1 : 0;
@@ -196,7 +200,7 @@ export class EquityBar {
         `${playerName(row.player)} wins ${percent(row.win)}: single ${percent(row.single)}, gammon ${percent(row.plainGammon)}, backgammon ${percent(row.backgammon)}.`).join(" ")}` : "";
       this.node.title = `${reading.choice}: ${playerName(orientation)} equity ${equity.toFixed(3)} ${reading.units} · ${reading.setting}.${spoken} The fill is equity relative to the leader’s average win.`;
     } else {
-      this.label.textContent = status === "loading" ? "…" : "—";
+      this.label.textContent = status === "loading" || note ? "" : "—";
       this.topLabel.textContent = "";
       this.node.title = reason;
     }
@@ -218,6 +222,7 @@ export class EquityBar {
       result,
       auto = false,
       blocked = "",
+      note = "",
       submitted = null,
       engine = this.engine,
       beforeDecision = false,
@@ -232,6 +237,7 @@ export class EquityBar {
         "unavailable",
         null,
         blocked || "Equity is available during a checker or cube decision.",
+        blocked ? note : "No decision",
       );
       return;
     }
@@ -250,6 +256,7 @@ export class EquityBar {
         "unavailable",
         null,
         "Analyze or reveal this position to see equity.",
+        note || "Analyze to see",
       );
       return;
     }

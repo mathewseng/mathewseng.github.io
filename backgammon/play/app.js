@@ -104,7 +104,7 @@ import {
 } from "../core/practice.mjs";
 import { installPlayShortcuts, decorateShortcuts } from "../ui/shortcuts.mjs";
 import { reducedMotion, motionDuration } from "../ui/motion.mjs";
-import { preferences } from "../ui/shell.mjs";
+import { preferences, pressVerb } from "../ui/shell.mjs";
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
@@ -1608,6 +1608,7 @@ function actions() {
         : !table?.started || opening.active
           ? "Start a game and finish the opening roll to see equity."
           : "",
+    note: config.mode !== "computer" ? "Off in this game" : !table?.started || opening.active ? "After the opening roll" : "",
   });
   renderActions();
   try {
@@ -2048,7 +2049,7 @@ function renderActions() {
       ? shortcutBadge(prefs.shortcuts[action][0]) : "";
     $("message").replaceChildren(
       closed ? `All six entries blocked · ${prefs.closedOutPassing === 'bad-double' && closedOutCheck?.key === closedOutKey(s) && closedOutCheck.pending ? 'checking cube…' : canDouble(s) ? 'Double or pass without rolling' : 'Pass without rolling'}`
-        : `${previous?.automatic ? (previous.action.steps?.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · Tap board to roll`,
+        : `${previous?.automatic ? (previous.action.steps?.length ? "Forced turn played · " : "No legal move · automatic pass · ") : ""}${names()[s.turn]} · ${pressVerb()} board to roll`,
       ...(closed ? [] : [keycap("roll")]),
       ...(canDouble(s) ? [" · Cube to double", keycap("double")] : []),
     );
