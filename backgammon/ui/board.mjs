@@ -2060,7 +2060,9 @@ export class Board {
       children.push(off);
     }
     if (s.rules.cube) {
-      const cubeLabel = s.cube.value === 1 && !cubeOneAsOne ? 64 : s.cube.value;
+      // A pending offer shows the turned cube, matching the Take button.
+      const offered = s.phase === "double" && !editor;
+      const cubeLabel = offered ? s.cube.value * 2 : s.cube.value === 1 && !cubeOneAsOne ? 64 : s.cube.value;
       // An owned cube sits toward the middle of its side's rail, leaving the
       // lane beside the tray free for bear-off taps.
       const cy =
@@ -2071,7 +2073,7 @@ export class Board {
             : 240;
       const cube = svg("g", {
         class: "board-cube",
-        "aria-label": `Doubling cube ${s.cube.value}${this.cubeEnabled ? ", offer double" : ""}`,
+        "aria-label": `Doubling cube ${offered ? `${cubeLabel}, offered` : s.cube.value}${this.cubeEnabled ? ", offer double" : ""}`,
         ...(this.cubeEnabled ? { role: "button", tabindex: 0 } : {}),
       });
       cube.append(

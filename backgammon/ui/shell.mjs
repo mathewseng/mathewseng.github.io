@@ -20,6 +20,7 @@ import {
   clone,
   boardKey,
   decisionPlayer,
+  offerName,
   blockedBarRoll,
   distance,
 } from "../core/rules.mjs";
@@ -734,7 +735,9 @@ export function players(s, names = ["White", "Black"]) {
         }),
         el("strong", { title: names[p] }, names[p]),
         active ? el("span", { class: "player-status badge badge--accent badge--plain" },
-          blockedBarRoll(s) ? "Closed out" : s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply") : null,
+          blockedBarRoll(s) ? "Closed out" : s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply")
+        : s.phase === "double" && s.pending?.by === p ? el("span", { class: "player-status badge badge--accent badge--plain" },
+          `${offerName(s)}s to ${s.cube.value * 2}`) : null,
       ),
       el(
         "span",
@@ -1497,7 +1500,7 @@ export class DraftBoard {
             : this.draft.length
               ? notation(this.draft, this.state.turn)
               : this.lastMove
-                ? `Last move${this.lastMove.dice?.length ? ` · rolled ${this.lastMove.dice.join("–")}` : ""} · ${notation(this.lastMove.steps, this.lastMove.player)}${this.lastMove.steps.length ? " · ghosts show previous locations" : ""}`
+                ? `Last move${this.lastMove.dice?.length ? ` · rolled ${[...this.lastMove.dice].sort((a, b) => b - a).join("–")}` : ""} · ${notation(this.lastMove.steps, this.lastMove.player)}`
                 : "");
   }
   picker() {

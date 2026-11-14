@@ -131,7 +131,7 @@ module.exports = async function mobileSheets(browser, base, out, name) {
       scrollTo(0,0);
     });
     assert.equal(await page.locator("#opponent .player-status").textContent(),"To reply");
-    assert.equal(await page.locator("#player .player-status").count(),0);
+    assert.equal(await page.locator("#player .player-status").textContent(),"Doubles to 2");
     await shot("cube-turn-status");
     assert.deepEqual(errors,[]);
     return {browser:name,viewports:7,readableTurnStatus:true,backdropDismissal:true,formsProtected:true,nestedScrollLock:true,scrollAndDraftPreserved:true};
