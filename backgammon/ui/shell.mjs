@@ -635,7 +635,9 @@ export async function preferences() {
   d.classList.add("settings-dialog");
   // Keep navigation outside the scrolling editor: tabs and Close must always
   // remain reachable on a phone, including with its software keyboard open.
-  d.querySelector(".dialog-header").after(tabs);
+  // Tabs share the title row (phones wrap them onto their own row), so the
+  // editor keeps the height on short landscape screens.
+  d.querySelector(".dialog-header .close").before(tabs);
   d.addEventListener("close", () =>
     dispatchEvent(new Event("bg-settings")),
   );
