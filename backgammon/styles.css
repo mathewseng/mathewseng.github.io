@@ -5420,6 +5420,20 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
   display: none;
 }
 
+/* Skins restyle every .tile; the Play copy beside the board stays unframed
+   in each of them. Phones frame it as its own card (section 8). */
+@media (min-width: 641px) {
+  html[data-skin] .hub-feature > a.tile,
+  html[data-skin] .hub-feature > a.tile:is(:hover, :focus-visible, :active) {
+    translate: 0 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 .hub-board-frame {
   --card-width: 0;
   display: grid;

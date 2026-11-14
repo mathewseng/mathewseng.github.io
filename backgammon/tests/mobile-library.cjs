@@ -30,8 +30,9 @@ module.exports = async function mobileLibrary(browser, base, out, name) {
     await page.reload();
     await page.locator(".library-session-players").waitFor();
     assert.match(await page.locator('.library-session-player[data-player="0"]').textContent(), /0\.000 EV lost/);
-    assert.match(await page.locator('.library-session-player[data-player="1"]').textContent(), /— EV lost/);
-    assert.match(await page.locator(".library-session-count").textContent(), /1 game · 1 evaluated · 2 unreviewed/);
+    assert.equal(await page.locator('.library-session-player[data-player="1"]').count(), 0, "a player without graded decisions shows no loss");
+    assert.equal(await page.locator(".library-session-count").textContent(), "1 evaluated · 2 unreviewed");
+    assert.match(await page.locator(".library-item-meta").first().textContent(), /^Game 1 · .* · in progress$/);
     for (const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1366,768]]) {
       await page.setViewportSize({width,height});
       await page.locator(".library-layout").evaluate(e => e.scrollTop = 0);

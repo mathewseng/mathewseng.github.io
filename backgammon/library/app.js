@@ -47,7 +47,9 @@ function kindIcon(kind) {
   span.innerHTML = `<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">${ICONS[kind] || ICONS.position}</svg>`;
   return span;
 }
-const KIND_NAMES = { match: "Session", position: "Position", mistake: "Mistake", collection: "Collection" };
+const KIND_NAMES = { match: "Game", position: "Position", mistake: "Mistake", collection: "Collection" };
+// Play adds these to every saved game; the names already say who played.
+const PLAY_TAGS = ["played", "computer", "local", "online"];
 
 // Let the document finish loading while the service-worker gate runs.
 // Only start the tool after the gate has finished or allowed offline use.
@@ -205,6 +207,8 @@ function renderList() {
   // Rows are real buttons with a pressed state for the selected item; their
   // content is phrasing content (spans), the title a <strong>.
   for (const item of shown) {
+    const match = item.kind === "match", games = item.gameCount || 1;
+    const tags = match ? item.tags.filter((t) => !PLAY_TAGS.includes(t)) : item.tags;
     const row = el(
       "button",
       {
@@ -222,28 +226,27 @@ function renderList() {
         el(
           "span",
           { class: "library-item-meta" },
-          `${KIND_NAMES[item.kind] || item.kind} · ${new Date(item.updatedAt).toLocaleDateString()}${item.status ? " · " + item.status.replaceAll("-", " ") : ""}${item.tags.length ? " · " + item.tags.join(", ") : ""}`,
+          `${match ? (games > 1 ? `${games} games` : `Game ${item.gameNumber}`) : KIND_NAMES[item.kind] || item.kind} · ${new Date(item.updatedAt).toLocaleDateString()}${item.status ? " · " + item.status.replaceAll("-", " ") : ""}${tags.length ? " · " + tags.join(", ") : ""}`,
         ),
       ),
     );
-    if (item.kind === "match") {
+    if (match) {
       const totals = selected?.id === item.id ? selected.decisionSummary : item.decisionSummary;
       const summary = el("span", { class: "library-session-summary" });
       if (totals) {
-        const games = item.gameCount || 1;
-        summary.append(
-          el("span", { class: "library-session-players" }, ...totals.map((t, player) =>
+        // A player's loss shows once any of their decisions has a grade.
+        const evaluated = totals.reduce((n, t) => n + t.evaluated, 0);
+        if (evaluated)
+          summary.append(el("span", { class: "library-session-players" }, ...totals.flatMap((t, player) => t.evaluated ? [
             el("span", { class: "library-session-player", "data-player": player },
               el("strong", {}, item.names?.[player] || (player ? "Black" : "White")),
-              el("span", {}, t.money && t.lossUnits !== "normalized-equity" ? "Open to see EV loss" : `${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV lost" : "equity lost"}`),
-            ))),
-          el("span", { class: "library-session-count" },
-            `${games} ${games === 1 ? "game" : "games"} · ${totals.reduce((n, t) => n + t.evaluated, 0)} evaluated · ${totals.reduce((n, t) => n + t.pending, 0)} unreviewed`),
-        );
+              el("span", {}, t.money && t.lossUnits !== "normalized-equity" ? "Open to see EV loss" : `${t.loss.toFixed(3)} ${t.money ? "EV lost" : "equity lost"}`),
+            )] : [])));
+        summary.append(el("span", { class: "library-session-count" },
+          `${evaluated ? evaluated + " evaluated · " : ""}${totals.reduce((n, t) => n + t.pending, 0)} unreviewed`));
       }
       if (!totals)
         summary.append(el("span", { class: "library-session-count" }, `${item.eventCount} saved actions`));
-      if (item.gameCount === 1) summary.prepend(el("span", {class:"library-session-count"}, `Game ${item.gameNumber}`));
       row.lastElementChild.append(summary);
     }
     parent.append(row);
@@ -319,7 +322,7 @@ function inspector() {
   );
   if (item.kind !== "collection")
     openGroup.append(button(
-      item.kind === "match" ? "Review match in Solver" : "Open in Solver",
+      item.kind === "match" ? "Review in Solver" : "Open in Solver",
       () => (location.href = `/backgammon/solver/?item=${encodeURIComponent(item.id)}`),
       item.kind === "match" ? "" : "primary",
       { class: item.kind === "match" ? "library-open" : "primary library-open" },
