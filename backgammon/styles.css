@@ -5612,7 +5612,7 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .library-filters input {
+  .library-filters > input:first-child {
     grid-column: 1 / -1;
   }
 
@@ -6801,7 +6801,7 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .library-filters input {
+  .library-filters > input:first-child {
     grid-column: 1 / -1;
   }
 
@@ -7364,7 +7364,8 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
   }
 }
 
-/* The hub on phones: the three study tiles come before the decorative board. */
+/* The hub on phones: Play and the three study tiles come before the offline
+   download and the decorative board. */
 @media (max-width: 640px) {
   .hub-backgammon .hub-main {
     display: flex;
@@ -7408,16 +7409,21 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     order: 3;
   }
 
+  .hub-backgammon .hub-main > .hub-update,
+  .hub-backgammon .hub-main > .offline-install {
+    order: 4;
+  }
+
   .hub-backgammon .hub-board-frame {
     display: grid;
-    order: 4;
+    order: 5;
     padding: 8px;
     border: 1px solid var(--line);
     border-radius: var(--r-md);
   }
 
   .hub-backgammon .group-more {
-    order: 5;
+    order: 6;
   }
 
   .hub-backgammon .hero .facts {

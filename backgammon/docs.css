@@ -835,6 +835,13 @@
     justify-content: flex-start;
   }
 
+  /* Six tabs fit a phone row, as on the app pages. */
+  .docs-topbar .tool-nav a {
+    flex: 1 0 auto;
+    justify-content: center;
+    padding-inline: 4px;
+  }
+
   .docs-head {
     padding-top: 20px;
   }
