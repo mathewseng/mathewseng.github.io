@@ -311,6 +311,8 @@ module.exports = async function historyReturn(browser, base, out, name) {
     assert.deepEqual((await saved()).state, fixture.sources[1]);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.locator("#review-session").click();
+    // The list opens on the current human side (now player 1); All shows player 0's decisions.
+    await page.locator('.session-review [data-history-filter="all"]').click();
     await page
       .locator(".session-decisions")
       .getByRole("button", { name: "Return to this position" })

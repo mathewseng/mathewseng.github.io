@@ -11,6 +11,7 @@ import { PRESETS } from "../engine/metadata.mjs";
 import { EngineClient } from "../engine/client.mjs";
 import { historyExplorer } from "./history-tree.mjs";
 import { decisionReview } from "./decision-review.mjs";
+import { returnIcon } from "./return-icon.mjs";
 export function sessionReview(
   model,
   {
@@ -29,7 +30,11 @@ export function sessionReview(
   let preset = PRESETS[model.config?.reviewStrength]
     ? model.config.reviewStrength
     : "deep";
+  // Against GNUbg the list starts with the player's own decisions, as in Play.
+  const viewer = model.config?.mode === "computer" && [0, 1].includes(model.config.humanSide)
+    ? model.config.humanSide : null;
   let rows = decisionHistory(snapshot),
+    sideFilter = viewer === null ? "all" : "self",
     busy = false,
     closed = false,
     generation = 0;
@@ -49,6 +54,31 @@ export function sessionReview(
       (r) => gameNumber === null || r.game === gameNumber,
     );
     const games = [...new Set(rows.map((r) => r.game))];
+    const sideOf = (r) => (r.player === viewer ? "self" : "opponent");
+    const listed = shown.filter((r) => sideFilter === "all" || sideOf(r) === sideFilter);
+    const filters = viewer === null ? [] : [el(
+      "div",
+      { class: "history-filters", role: "group", "aria-label": "Filter decisions" },
+      ...["all", "self", "opponent"].map((value) => {
+        const player = value === "self" ? viewer : 1 - viewer;
+        const label = value === "all" ? "All" : names[player];
+        const count = value === "all" ? shown.length : shown.filter((r) => sideOf(r) === value).length;
+        const control = button("", () => {
+          sideFilter = value;
+          render();
+          body.querySelector(`[data-history-filter="${value}"]`)?.focus();
+        }, "", {
+          "data-history-filter": value,
+          "data-player": value === "all" ? null : player,
+          "aria-pressed": value === sideFilter,
+          "aria-label": `${label} · ${count} decision${count === 1 ? "" : "s"}`,
+          title: label,
+        });
+        control.append(el("span", { class: "history-filter-label" }, label),
+          el("span", { class: "history-filter-count", "aria-hidden": true }, count));
+        return control;
+      }),
+    )];
     const totals = el(
       "div",
       { class: "session-totals" },
@@ -123,23 +153,30 @@ export function sessionReview(
       actions,
       totals,
       status,
-      el(
-        "p",
-        { class: "muted small" },
-        "Totals include evaluated decisions only, separately for each player. Money losses use each decision’s original cube, in session points. Match totals are normalized equity loss, not PR. Mixed strengths are labeled per decision.",
-      ),
+      ...filters,
       el(
         "div",
         { class: "session-decisions", role: "list" },
-        ...shown.map((r) => {
+        ...listed.map((r) => {
+          const title = el(
+            "span",
+            {},
+            `Game ${r.game} · ${r.index + 1} · ${names[r.player]} · ${r.label}`,
+          );
+          const back = onReturn && button(
+            "",
+            async () => {
+              await onReturn(r);
+              d.close();
+            },
+            "ghost btn--icon",
+            { "aria-label": "Return to this position", title: "Return to this position" },
+          );
+          back?.append(returnIcon());
           const row = el(
             "div",
             { class: "session-decision", role: "listitem" },
-            el(
-              "span",
-              {},
-              `Game ${r.game} · ${r.index + 1} · ${names[r.player]} · ${r.label}`,
-            ),
+            back ? el("div", { class: "row spread" }, title, back) : title,
           );
           if (r.feedback)
             row.append(
@@ -161,17 +198,6 @@ export function sessionReview(
                 "span",
                 { class: "muted small" },
                 r.forced ? "Forced · no choice" : "Not analyzed",
-              ),
-            );
-          if (onReturn)
-            row.append(
-              button(
-                "Return to this position",
-                async () => {
-                  await onReturn(r);
-                  d.close();
-                },
-                "ghost",
               ),
             );
           return row;

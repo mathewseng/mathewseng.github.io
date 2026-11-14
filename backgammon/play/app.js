@@ -562,7 +562,9 @@ const helpActions = el("div", {
 const allControls = button("Controls", () => {
   if (document.querySelector(".practice-controls-dialog")) return;
   const menu = el("div", {class:"stack"}, helpActions,
-    button("Settings · playing style, board & shortcuts", () => { d.close(); preferences(); }),
+    el("div", {class:"pair"},
+      button("How to play", () => { d.close(); showHowToPlay(); }),
+      button("Settings", () => { d.close(); preferences(); })),
     el("nav", {class:"controls-nav", "aria-label":"Backgammon navigation"},
       ...[["/backgammon/","Hub"],["/backgammon/trainer/","Trainer"],["/backgammon/solver/","Solver"],["/backgammon/library/","Library"]]
         .map(([href,label]) => el("a", {href, onclick: label === "Solver" ? (event) => { event.preventDefault(); d.close(); openSolver(); } : undefined}, label))));
@@ -2458,39 +2460,6 @@ function panel() {
     );
   if (m.started)
     p.append(
-      button(
-        "How to play",
-        () =>
-          dialog(
-            "Moving your checkers",
-            el(
-              "div",
-              { class: "stack" },
-              el(
-                "p",
-                {},
-                "Tap a checker disc to select it; tap it again to deselect. Tap the open part of a highlighted point to move there, or drag the checker. With no selected route, the open point area plays the nearest checker; if nobody can land, it selects a movable checker on that point. Blocked checkers cannot be selected. Destination numbers show the dice used.",
-              ),
-              el(
-                "p",
-                {},
-                "Use both dice whenever possible; doubles give four moves. You may move the same checker more than once. A point with two or more opposing checkers is blocked; landing on a single opposing checker sends it to the bar.",
-              ),
-              el(
-                "p",
-                {},
-                "Checkers on the bar must enter first. Once all your checkers are home, move them into the OFF tray to bear off.",
-              ),
-              el(
-                "p",
-                {},
-                "Moves with choices remain a draft until Confirm turn. Undo reverses one step; Reset restores the whole draft. Undo last turn restores a committed choice; human opponents must agree. Forced turns and blocked passes play automatically and cannot be undone. Details has a legal-move selector.",
-              ),
-              el("a", { href: "/backgammon/controls/", target: "_blank", rel: "noopener" }, "Clicks & highlights flowcharts ↗"),
-            ),
-          ),
-        "ghost",
-      ),
       el("h2", {}, "History"),
       el(
         "ol",
@@ -2502,6 +2471,40 @@ function panel() {
           .map((event) => el("li", {}, eventText(event))),
       ),
     );
+}
+// Describe the playing style the player actually has, in their pointer's verb.
+function showHowToPlay() {
+  const press = pressVerb(), lower = press.toLowerCase();
+  dialog(
+    "Moving your checkers",
+    el(
+      "div",
+      { class: "stack" },
+      el(
+        "p",
+        {},
+        `${readSettings().interactionMode === "advanced"
+          ? `${press} a checker to move it by the highlighted die, or ${lower} a point to bring the nearest checker there. You can also drag.`
+          : `${press} a checker disc to select it; ${lower} it again to deselect. ${press} the open part of a highlighted point to move there, or drag the checker.`} ${press} the button between the dice to switch dice; after a move, it takes back one step. ${press} a used die to undo its move.`,
+      ),
+      el(
+        "p",
+        {},
+        "Use both dice whenever possible; doubles give four moves. You may move the same checker more than once. A point with two or more opposing checkers is blocked; landing on a single opposing checker sends it to the bar.",
+      ),
+      el(
+        "p",
+        {},
+        "Checkers on the bar must enter first. Once all your checkers are home, move them into the OFF tray to bear off.",
+      ),
+      el(
+        "p",
+        {},
+        "Moves with choices remain a draft until Confirm turn. Undo last turn restores a committed choice; human opponents must agree. Forced turns and blocked passes play automatically and cannot be undone. Details has a legal-move selector.",
+      ),
+      el("a", { href: "/backgammon/controls/", target: "_blank", rel: "noopener" }, "Clicks & highlights flowcharts ↗"),
+    ),
+  );
 }
 function eventText(e) {
   const a = e.action;

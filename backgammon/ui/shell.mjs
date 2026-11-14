@@ -544,7 +544,7 @@ export async function preferences() {
     el("div", {class:"motion-settings"}, field("Animation speed", motion),
       el("div", {class:"row spread small muted"}, el("span", {}, "Instant"), motionValue, el("span", {}, "0.25×"))),
     field("Playing style", interaction),
-    el("p", { class: "muted small" }, "Advanced: click a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice. S switches dice before moving; after a move, S undoes one draft step. Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode."),
+    el("p", { class: "muted small" }, `Advanced: ${pressVerb().toLowerCase()} a checker to play the selected die, or a destination to move there. Direct moves take priority over combined dice.${matchMedia("(pointer: coarse)").matches ? "" : " S switches dice before moving; after a move, S undoes one draft step."} Beginner: select a checker, then choose from highlighted destinations. Dragging works in either mode.`),
     field("Board orientation", orient),
     el("label", { class: "check" }, numbers, "Show point numbers"),
     el("label", { class: "check" }, el("input", {
