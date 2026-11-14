@@ -1160,15 +1160,6 @@ button kbd.keycap,
   background: var(--equity-bottom);
 }
 
-.equity-meter::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  border-top: 1px solid var(--line);
-}
-
 .equity-bar:not([data-state="ready"]) .equity-meter {
   background: repeating-linear-gradient(135deg, var(--surface) 0 5px, var(--line) 5px 7px);
 }
@@ -1315,15 +1306,6 @@ button kbd.keycap,
     right: 0;
     width: var(--equity-fraction);
     height: 100%;
-  }
-
-  .equity-meter::after {
-    top: 0;
-    left: 50%;
-    width: 0;
-    height: 100%;
-    border-top: 0;
-    border-left: 1px solid var(--line);
   }
 
   .equity-retry {

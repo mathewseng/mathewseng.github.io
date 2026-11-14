@@ -9,14 +9,14 @@ exports.assertVerticalEquity = async page => {
     return {rail:rect(node),meter:rect(meter),fill:rect(fill),
       labels:[...node.querySelectorAll('.equity-number')].map(n=>({...rect(n),text:n.textContent})),
       fraction:parseFloat(fill.style.getPropertyValue('--equity-fraction'))/100,
-      middleLeft:getComputedStyle(meter,'::after').left};
+      middle:getComputedStyle(meter,'::after').content};
   });
   const {rail,meter,fill,labels:[top,bottom],fraction}=geometry;
   const close=(a,b)=>Math.abs(a-b)<1.1, message=JSON.stringify(geometry);
   assert.ok(meter.width>=14 && meter.height>meter.width, message);
   assert.ok(close(fill.left,meter.left+1) && close(fill.right,meter.right-1), 'both colors fill the entire track: '+message);
   assert.ok(close(fill.height,(meter.height-2)*fraction) && close(fill.bottom,meter.bottom-1),message);
-  assert.equal(geometry.middleLeft,'0px','midpoint line spans the whole track');
+  assert.equal(geometry.middle,'none','the track has no midpoint line');
   assert.ok(top.bottom<meter.top && bottom.top>meter.bottom,'values sit above/below the track: '+message);
   for(const label of [top,bottom]) {
     assert.ok(close(label.left+label.width/2,meter.left+meter.width/2),'values are centered: '+message);
