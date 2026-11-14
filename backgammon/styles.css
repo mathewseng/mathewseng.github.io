@@ -5150,13 +5150,19 @@ button.library-item {
 }
 
 @media (max-width: 700px) and (min-height: 501px) {
-  .dialog.bg-dialog.dialog--sheet[open]:not([data-keyboard]) {
+  /* Decision warnings dock like sheets, leaving the move under review visible. */
+  .dialog.bg-dialog.dialog--sheet[open]:not([data-keyboard]),
+  .dialog.bg-dialog.decision-warning[open]:not([data-keyboard]) {
     top: auto;
     margin: 0 auto;
     max-height: var(--dialog-available-height);
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
   }
+  /* The grab handle swipes a sheet down (dialog-behavior.mjs): its head
+     takes the whole touch gesture, including the handle above it. */
+  .bg-dialog.dialog--sheet::before { pointer-events: none; }
+  .bg-dialog.dialog--sheet .dialog-head { touch-action: none; }
 }
 
 @starting-style {
@@ -7766,6 +7772,8 @@ html.skin-shader .docs-toc--sticky {
   }
   .decision-dialog .decision-content { display: flex; flex-direction: column; overflow-y: auto; gap: 4px; }
   .decision-dialog .decision-content > :is(h3, .decision-best) { display: none; }
+  /* The ranked moves lead this short column; depth and chances follow. */
+  .decision-dialog .decision-content > .review-moves { order: -1; }
   .decision-dialog .decision-content > .muted.small { font-size: var(--t-xs); }
   .decision-dialog .decision-position { gap: 4px; }
   .decision-dialog .decision-choices .btn { flex: 1; padding: 4px; font-size: var(--t-xs); }

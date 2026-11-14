@@ -62,4 +62,34 @@ export function installDialogBehavior(dialog, { dismissible = false, onDismiss =
     }
   });
   dialog.addEventListener("pointercancel", () => { start = null; });
+
+  // A phone bottom sheet draws a grab handle, so a downward swipe on its head
+  // follows the finger and dismisses it; a short swipe springs back.
+  if (!dialog.classList.contains("dialog--sheet")) return;
+  let drag;
+  const docked = matchMedia("(max-width: 700px) and (min-height: 501px)");
+  dialog.addEventListener("pointerdown", event => {
+    drag = event.pointerType === "touch" && event.isPrimary && docked.matches &&
+      !dialog.hasAttribute("data-keyboard") &&
+      event.target.closest?.(".dialog-head") && !event.target.closest("button, a, input, select, [role=tab]")
+      ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
+  });
+  dialog.addEventListener("pointermove", event => {
+    if (drag?.id !== event.pointerId) return;
+    dialog.style.transition = "none";
+    dialog.style.translate = `0 ${Math.max(0, event.clientY - drag.y)}px`;
+  });
+  const release = event => {
+    const swipe = drag;
+    drag = null;
+    if (swipe?.id !== event.pointerId) return;
+    dialog.style.transition = dialog.style.translate = "";
+    const dy = event.clientY - swipe.y;
+    if (event.type === "pointerup" && dialog.open && dy > 64 && dy > Math.abs(event.clientX - swipe.x)) {
+      onDismiss();
+      if (dialog.open) dialog.close();
+    }
+  };
+  dialog.addEventListener("pointerup", release);
+  dialog.addEventListener("pointercancel", release);
 }
