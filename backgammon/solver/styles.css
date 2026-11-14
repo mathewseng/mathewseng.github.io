@@ -104,6 +104,8 @@
   gap: 6px;
 }
 .app[data-page="solver"] .study-preview-controls > .btn { padding-inline: 8px; }
+/* Room for Original before it appears, so → stays under a repeated tap. */
+.app[data-page="solver"] .study-strip:has(> .study-preview-controls:not([hidden])) > .study-strip-heading { min-height: 44px; }
 
 .solver-controls .action-buttons {
   width: 100%;

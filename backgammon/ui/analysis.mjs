@@ -144,7 +144,7 @@ export function resultView(
           el(
             "div",
             { class: "row spread" },
-            el("span", {}, `${i + 1}. ${c.notation}`),
+            el("span", {}, `${i + 1}. ${c.notation}${result.actual && c.key === result.actual.key ? " · played" : ""}`),
             el(
               "strong",
               { class: "value" },

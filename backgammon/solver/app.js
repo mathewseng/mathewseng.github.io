@@ -422,20 +422,14 @@ function render() {
   if (!busy || progress.hidden) setProgress();
   $("subtitle").textContent = review
     ? `${review.title} · event ${index}/${review.events.length}`
-    : preview
-      ? "Alternative preview · original position preserved"
-      : `${source.matchLength ? source.matchLength + "-point match" : "Unlimited points"} · ${source.phase === "double" ? `${offerName(source)} to ${source.cube.value * 2}` : source.dice.length ? source.dice.join("–") : "pre-roll"} · cube ${source.cube.value}`;
+    : `${source.matchLength ? source.matchLength + "-point match" : "Unlimited points"} · ${source.phase === "double" ? `${offerName(source)} to ${source.cube.value * 2}` : source.dice.length ? source.dice.join("–") : "pre-roll"} · cube ${source.cube.value}`;
   $("message").textContent = emptySetup ? `Choose a color, then ${pressVerb().toLowerCase()} points to place checkers.` : problems.length
     ? problems.join(" ")
     : editing
       ? ""
-      : preview
-        ? "Preview only. Return to the original to edit."
-        : busy
-          ? "Analyzing this position with GNUbg…"
-          : result?.type === "cube"
-            ? `GNUbg: ${result.action} · ${analysisDepthLabel(result)}`
-            : "";
+      : busy
+        ? "Analyzing this position with GNUbg…"
+        : "";
   $("message").classList.toggle("error", !!problems.length && !emptySetup);
   const editLabel = editing ? "Done editing" : "Edit position";
   if (editControl.textContent !== editLabel)
@@ -464,6 +458,8 @@ function render() {
   } else sourceControl.remove();
   $("panel-toggle").textContent = result ? "Results" : "Details";
   for(const control of quickAnalysis.querySelectorAll('button')) control.disabled=!!problems.length||!!review;
+  // Review analyzes each event with Analyze; the presets would only sit dimmed.
+  quickAnalysis.hidden = !!review;
   for(const control of quickAnalysis.querySelectorAll('[data-analyze-preset]'))
     control.setAttribute('aria-pressed',String(control.dataset.analyzePreset===analysis.preset));
   quickAnalysis.title = `Current analysis: ${analysis.preset === 'auto' ? 'Auto' : analysis.preset === 'puretd' ? 'PureTD money' : analysis.preset === 'puretd-wide' ? 'PureTD wide' : PRESETS[analysis.preset]?.name}`;
@@ -579,6 +575,14 @@ function panel(problems) {
     );
   into = analysisGroup;
   // Results come first: they are what the player opened this for.
+  if (result?.actual || result?.actualDecision)
+    add(
+      el(
+        "div",
+        { class: "notice" },
+        `Played ${result.actual?.notation || result.decision?.actual?.notation} · Δ ${equity(-result.error)}`,
+      ),
+    );
   if (result)
     add(
       resultView(result, {
@@ -682,14 +686,6 @@ function panel(problems) {
         "a",
         { href: "/backgammon/reports/" },
         "Engine accuracy & speed report",
-      ),
-    );
-  if (result?.actual || result?.actualDecision)
-    add(
-      el(
-        "div",
-        { class: "notice" },
-        `Played move loss: ${equity(result.error)} normalized equity.`,
       ),
     );
   into = saveGroup;
@@ -806,12 +802,9 @@ function contextDialog(focus) {
         field("Player on roll / doubler", turn),
         field("Decision", phase),
       ),
-      el(
-        "div",
-        { class: "pair" },
-        field("First die", d1),
-        field("Second die", d2),
-      ),
+      // Six dice faces need a full row each; half a pair crowds their pips.
+      field("First die", d1),
+      field("Second die", d2),
       // Eleven cube values fit two short rows, not a tower in half a pair.
       field("Cube value (accepted stake)", cube),
       field("Cube owner", owner),
