@@ -2,6 +2,7 @@
 import { el, button, openPanel } from "./shell.mjs";
 import { equity, percentage } from "./analysis.mjs";
 import { boardKey } from "../core/rules.mjs";
+import { analysisDepthLabel } from "../core/analysis-insight.mjs";
 
 // Keep previews beside the board on phones. These are the same evaluated
 // candidates used by the full results panel; choosing one never edits a game.
@@ -23,10 +24,10 @@ export class StudyStrip {
     });
     this.heading = el("strong");
     this.value = el("span", { class: "study-preview-value", role: "status" });
-    this.current = dropdown ? null : button('Original position', () => openPanel(), 'study-current', {'aria-label':'Compare evaluated moves'});
+    this.current = dropdown ? null : button('Original position', showResults, 'study-current', {'aria-label':'Compare evaluated moves'});
     this.original = dropdown ? null : button('Original', () => this.choose(-1), 'study-original', {'aria-label':'Show original position'});
     this.chooser = el("div", { class: "study-preview-controls" }, this.previous, this.current || this.select, this.next);
-    this.details = button("Compare cube options", () => openPanel(), "ghost");
+    this.details = button("Compare cube options", showResults, "ghost");
     this.node = el("section", { class: "study-strip", hidden: true, "aria-label": "Position review" },
       el("div", { class: "study-strip-heading" }, this.heading, this.original),
       this.chooser, this.value, this.details);
@@ -76,7 +77,7 @@ export class StudyStrip {
     this.previous.disabled = chosen < 0;
     this.next.disabled = chosen >= this.candidates.length - 1;
     if (isChecker) {
-      this.heading.textContent = `${result.settings.name} · move previews`;
+      this.heading.textContent = `${analysisDepthLabel(result)} · move previews`;
       if (earlierPreview) {
         this.value.textContent = "This preview was not retained at the current depth.";
         return;
@@ -89,14 +90,22 @@ export class StudyStrip {
     } else {
       const name = { roll: "No double", double: "Double", take: "Take", pass: "Pass", beaver: "Beaver", raccoon: "Raccoon" };
       this.heading.textContent = result.available === false ? "Cube unavailable" : `Best: ${name[result.action] || result.action}`;
-      this.value.textContent = `${result.settings.name} · ${result.mwc == null ? equity(result.equity) : percentage(result.mwc)} ${units}`;
+      this.value.textContent = `${analysisDepthLabel(result)} · ${result.mwc == null ? equity(result.equity) : percentage(result.mwc)} ${units}`;
     }
   }
 }
 
+// Show the evaluated list itself: in place when the inspector is on screen,
+// otherwise in the details sheet.
+function showResults() {
+  const inspector = document.getElementById("inspector");
+  const inline = inspector?.contains(document.getElementById("panel")) && getComputedStyle(inspector).display !== "none";
+  if (!inline) openPanel();
+  requestAnimationFrame(() => document.querySelector("#panel .list")?.scrollIntoView({ block: "nearest" }));
+}
+
 export function closeStudyPanel() {
-  // A preview selected in the phone drawer should reveal the board, not hide
-  // the outcome behind that drawer. Desktop keeps its in-place inspector.
-  if (matchMedia("(max-width: 820px), (max-height: 500px)").matches)
-    document.getElementById("details-dialog")?.close();
+  // A preview selected in the details sheet should reveal the board, not hide
+  // the outcome behind that sheet. The inline inspector stays where it is.
+  document.getElementById("details-dialog")?.close();
 }

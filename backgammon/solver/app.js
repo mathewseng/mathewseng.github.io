@@ -35,6 +35,7 @@ import {
   pressVerb,
 } from "../ui/shell.mjs";
 import { AnalysisPanel, resultView, equity } from "../ui/analysis.mjs";
+import { analysisDepthLabel } from "../core/analysis-insight.mjs";
 import { clearPosition, swapPositionColors } from "../core/position-editor.mjs";
 import { PositionEditor } from "../ui/position-editor.mjs";
 import { choiceButtons } from "../ui/choice-buttons.mjs";
@@ -228,7 +229,11 @@ const analyzeControl = button(
   "primary",
   { id: "analyze" },
 );
-const sourceControl = button("Source", () => {
+// Match review steps from below the board too, so phones need not open the
+// details sheet for every event.
+const reviewPrevious = button("Previous", () => seek(Math.max(0, index - 1)), "", { id: "review-previous" });
+const reviewNext = button("Next", () => seek(Math.min(review.events.length, index + 1)), "", { id: "review-next" });
+const sourceControl = button("Original", () => {
   preview = null;
   previewIndex = -1;
   render();
@@ -394,7 +399,7 @@ function render() {
       editing || problems.length
         ? "Finish editing a valid position to see equity."
         : preview
-          ? "Return to Source to see its equity."
+          ? "Return to the original to see its equity."
           : "",
     note: editing || problems.length ? "Finish editing" : preview ? "Preview" : "",
   });
@@ -409,21 +414,19 @@ function render() {
   $("subtitle").textContent = review
     ? `${review.title} · event ${index}/${review.events.length}`
     : preview
-      ? "Alternative preview · source position preserved"
+      ? "Alternative preview · original position preserved"
       : `${source.matchLength ? source.matchLength + "-point match" : "Unlimited points"} · ${source.phase === "double" ? `${offerName(source)} to ${source.cube.value * 2}` : source.dice.length ? source.dice.join("–") : "pre-roll"} · cube ${source.cube.value}`;
   $("message").textContent = emptySetup ? `Choose a color, then ${pressVerb().toLowerCase()} points to place checkers.` : problems.length
     ? problems.join(" ")
     : editing
       ? ""
       : preview
-        ? "Preview only. Return to the source to edit."
+        ? "Preview only. Return to the original to edit."
         : busy
           ? "Analyzing this position with GNUbg…"
-          : result?.type === "checker"
-            ? `Best evaluated: ${result.candidates[0].notation} · ${result.settings.name}`
-            : result?.type === "cube"
-              ? `GNUbg: ${result.action} · ${result.settings.name}`
-              : "";
+          : result?.type === "cube"
+            ? `GNUbg: ${result.action} · ${analysisDepthLabel(result)}`
+            : "";
   $("message").classList.toggle("error", !!problems.length && !emptySetup);
   const editLabel = editing ? "Done editing" : "Edit position";
   if (editControl.textContent !== editLabel)
@@ -437,6 +440,16 @@ function render() {
     !!problems.length || !["move", "roll", "double"].includes(source.phase);
   if (!editControl.isConnected)
     $("actions").append(editControl, analyzeControl);
+  // Review replaces the (disabled) editor button with event stepping.
+  editControl.hidden = !!review;
+  if (review) {
+    reviewPrevious.disabled = index === 0;
+    reviewNext.disabled = index === review.events.length;
+    if (!reviewPrevious.isConnected) editControl.before(reviewPrevious, reviewNext);
+  } else {
+    reviewPrevious.remove();
+    reviewNext.remove();
+  }
   if (preview) {
     if (!sourceControl.isConnected) $("actions").prepend(sourceControl);
   } else sourceControl.remove();
@@ -497,13 +510,13 @@ function panel(problems) {
       "nav",
       { class: "solver-sections", "aria-label": "Inspector sections" },
       el("span", { class: "solver-sections-label", "aria-hidden": "true" }, "Jump to"),
-      ...[[positionGroup, "Position"], [analysisGroup, "Analysis"], [saveGroup, "Save"]].map(([node, label]) =>
+      ...[[analysisGroup, "Analysis"], [positionGroup, "Position"], [saveGroup, "Save"]].map(([node, label]) =>
         button(label, () => node.scrollIntoView({ block: "start", behavior: "instant" }), "ghost", {
           "aria-label": `${label} section`, "aria-controls": node.id,
         })),
     ),
-    positionGroup,
     analysisGroup,
+    positionGroup,
     saveGroup,
   );
   let into = positionGroup;
@@ -556,6 +569,16 @@ function panel(problems) {
       }),
     );
   into = analysisGroup;
+  // Results come first: they are what the player opened this for.
+  if (result)
+    add(
+      resultView(result, {
+        source,
+        previous: previousResult,
+        onPreview: previewCandidate,
+        selected: previewIndex,
+      }),
+    );
   add(
     el(
       "details",
@@ -589,15 +612,6 @@ function panel(problems) {
     ),
     analysis.status,
   );
-  if (result)
-    add(
-      resultView(result, {
-        source,
-        previous: previousResult,
-        onPreview: previewCandidate,
-        selected: previewIndex,
-      }),
-    );
   if (!editing)
     add(
       el(

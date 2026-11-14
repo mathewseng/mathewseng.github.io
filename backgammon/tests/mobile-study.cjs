@@ -27,7 +27,7 @@ module.exports = async function mobileStudy(browser, base, out, name) {
     await page.getByLabel("Analysis strength",{exact:true}).locator('[data-choice="deep"]').tap();
     await page.locator("#details-dialog .close").tap();
     await page.locator("#analyze").tap();
-    await page.waitForFunction(()=>document.querySelector("#analyze")?.textContent==="Analyze"&&document.querySelector("#message")?.textContent.includes("· Deep"));
+    await page.waitForFunction(()=>document.querySelector("#analyze")?.textContent==="Analyze"&&document.querySelector(".study-strip-heading strong")?.textContent==="2 ply · move previews");
     const source = await saved();
     for (const [width,height] of [[320,568],[375,667],[390,844],[430,932]]) {
       await page.setViewportSize({width,height});

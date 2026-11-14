@@ -41,6 +41,6 @@ export function comparisonSummary(result, previous = null) {
     changed: previous?.candidates?.[0]
       ? previous.candidates[0].key !== best.key
       : null,
-    previousName: previous?.settings.name,
+    previousName: previous ? analysisDepthLabel(previous) : undefined,
   };
 }

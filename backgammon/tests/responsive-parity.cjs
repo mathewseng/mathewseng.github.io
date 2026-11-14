@@ -96,7 +96,8 @@ module.exports = async function parity(browser, base, out, name) {
           })
           .click();
       if (route === "solver") await page.locator("#edit-position").click();
-      await page.locator("#panel-toggle").click();
+      if (await page.locator("#panel-toggle").isVisible())
+        await page.locator("#panel-toggle").click();
       await exerciseControls();
       const expected = await inventory();
       await close();

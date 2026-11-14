@@ -438,7 +438,8 @@ export function openPanel() {
   if (existing?.open) { existing.querySelector(".close").focus(); return; }
   const body = $("panel"),
     home = $("inspector");
-  const d = dialog("Details", body, [], { sheet: true });
+  // Title the sheet with the button that opened it (Results, Setup, …).
+  const d = dialog($("panel-toggle")?.textContent.trim() || "Details", body, [], { sheet: true });
   d.id = "details-dialog";
   d.classList.add("drawer");
   d.addEventListener("close", () => home.append(body));
