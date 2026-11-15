@@ -234,9 +234,10 @@ module.exports = async function decisionUX(
         document.querySelector("#analyze-session").textContent ===
         "Analyze unreviewed decisions",
     );
-    assert.match(
+    // Totals leave out zero counts, so nothing reads "unreviewed" once done.
+    assert.doesNotMatch(
       await page.locator(".session-totals").innerText(),
-      /0 unreviewed/,
+      /unreviewed/,
     );
     await page
       .getByRole("dialog")
@@ -244,13 +245,13 @@ module.exports = async function decisionUX(
       .click();
     await page.goto(base + "/backgammon/library/#games");
     await page
-      .getByRole("button", { name: "Open GNUbg vs You", exact: true })
+      .getByRole("button", { name: /^GNUbg vs You / })
       .click();
     await shot("session-library");
     await page.locator("#review-decisions").click();
     assert.match(
       await page.locator(".session-totals").innerText(),
-      /1 evaluated · 0 unreviewed/,
+      /^1 evaluated(?: · \d+ forced)?$/m,
     );
     await shot("saved-review");
     // Imported/exported backup retains evaluations, and live autosave retains review additions.

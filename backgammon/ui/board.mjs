@@ -2250,8 +2250,9 @@ export class Board {
     const prompt = this.rollPrompt || {}, touch = this.touchInput.matches;
     const active = !preview && !editor && !hideDice && (prompt.auto || prompt.skipping || prompt.raceAuto);
     const ready = !preview && !editor && !hideDice && prompt.ready && this.state?.phase === 'roll';
-    const main = preview ? 'Move preview' : editor ? 'Position editor' :
-      active ? (prompt.skipping ? 'Skipping to your choice' : prompt.raceAuto ? 'Auto play on' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to ${prompt.pass ? 'pass' : 'roll'}` : '';
+    // Previews and the editor are named by their page; a passive in-board
+    // label would be too small to read on phones.
+    const main = active ? (prompt.skipping ? 'Skipping to your choice' : prompt.raceAuto ? 'Auto play on' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to ${prompt.pass ? 'pass' : 'roll'}` : '';
     const detail = active ? (prompt.skipping ? `${touch ? 'Tap' : 'Click'} to stop` : `Double ${touch ? 'tap' : 'click'} to skip`) :
       ready && prompt.canAutoPlay ? `Double ${touch ? 'tap' : 'click'} to auto play` :
         ready && prompt.canAutoRoll && !prompt.pass ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
@@ -2267,6 +2268,7 @@ export class Board {
     node.dataset.skipping = String(!!prompt.skipping);
     node.setAttribute('role', active || ready ? 'button' : 'img');
     node.setAttribute('tabindex', active || ready ? '0' : '-1');
+    node.setAttribute('aria-hidden', String(!main));
     node.setAttribute('aria-label', [main,detail,active && !prompt.skipping ? `${touch ? 'Tap' : 'Click'} once to stop` : ''].filter(Boolean).join('. '));
     if (!main) return;
     if (active || ready) node.append(svg('rect', {class:'board-caption-hit',x:x-174,y:291,width:348,height:80,rx:12,fill:'transparent'}));

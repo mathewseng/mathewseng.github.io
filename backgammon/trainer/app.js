@@ -68,10 +68,14 @@ let catalog = [],
   busy = false,
   preview = null,
   previewIndex = -1;
-// Per-decision results of this visit, for the progress stepper and the
-// session summary (in memory only: the stored practice record is unchanged).
+// Per-decision results of this session, for the progress stepper and the
+// session summary. The work record keeps them so a reload does too.
 let sessionLog = [];
+// A finished session is never resumed; the next visit starts a new one.
+let finished = false;
 const LOSS_THRESHOLD = 0.02;
+// A set smaller than the chosen length ends after each position once.
+const total = () => Math.min(length, pool.length || length);
 const steps = el("ol", { class: "trainer-steps", "aria-label": "Session progress" });
 $("subtitle").after(steps);
 const summaryCard = el("section", { class: "bg-result-card trainer-summary", hidden: true, "aria-label": "Session summary" });
@@ -115,8 +119,9 @@ try {
     length = saved.length;
   }
   await begin();
-  if (saved && pool.some((i) => i.id === saved.exerciseId)) {
+  if (saved && saved.count < total() && pool.some((i) => i.id === saved.exerciseId)) {
     count = saved.count;
+    sessionLog = saved.sessionLog || [];
     exercise = pool.find((i) => i.id === saved.exerciseId);
     revealed = !!saved.revealed;
     hinted = !!saved.hinted;
@@ -128,6 +133,8 @@ try {
     draft.set(exercise.state, legalPaths(exercise.state), !revealed);
     draft.draft = saved.draft || [];
     render();
+    // begin() cancelled its fresh decision; that is not news here.
+    analysis.status.textContent = "";
   }
 } catch (e) {
   showError(e);
@@ -135,7 +142,7 @@ try {
   $("actions").append(button("Retry", () => location.reload(), "primary"));
 }
 keepPageProgress(() =>
-  exercise
+  exercise && !finished
     ? {
         exerciseId: exercise.id,
         filter,
@@ -147,6 +154,7 @@ keepPageProgress(() =>
         hint: hintText,
         answer,
         result,
+        sessionLog,
       }
     : null,
 );
@@ -154,6 +162,7 @@ async function begin() {
   analysis.cancel();
   count = 0;
   sessionLog = [];
+  finished = false;
   summaryCard.hidden = true;
   const mistakes = (await practiceItems())
     .map((i) => ({ ...i, topic: "mistakes" }));
@@ -202,7 +211,9 @@ async function next() {
   render();
 }
 function render() {
-  study.set(exercise && revealed ? result : null, preview || (revealed ? draft.current() : null));
+  // The original position is the strip's own first choice, not a preview.
+  const shown = preview || (revealed ? draft.current() : null);
+  study.set(exercise && revealed ? result : null, shown && exercise && boardKey(shown) === boardKey(exercise.state) ? null : shown);
   $("panel-toggle").textContent = revealed ? "Results" : "Practice";
   ui.equityBar.set({
     state: exercise?.state,
@@ -238,7 +249,7 @@ function render() {
   draft.enabled = !revealed && !busy;
   draft.render();
   $("subtitle").textContent =
-    `${count + 1} of ${length} · ${exercise.state.matchLength ? exercise.state.matchLength + "-point match" : "Unlimited points"}`;
+    `${count + 1} of ${total()} · ${exercise.state.matchLength ? exercise.state.matchLength + "-point match" : "Unlimited points"}`;
   renderSteps();
   actions();
   panel();
@@ -253,7 +264,18 @@ function draftLine() {
   else if (!draft.hint && draft.draft.length && draft.complete())
     line.textContent = `${pressVerb()} a used die to undo its move.`;
 }
+// Rebuilding the rows detaches the focused button, so keyboard and
+// screen-reader players get focus back on its replacement or the next step.
 function actions() {
+  const rows = [practiceHelp, $("actions")],
+    had = document.activeElement,
+    label = rows.some((r) => r.contains(had)) ? had.textContent.trim() : null;
+  fillActions();
+  if (label === null || had.isConnected) return;
+  const live = rows.flatMap((r) => [...r.querySelectorAll("button:not(:disabled)")]);
+  (live.find((b) => b.textContent.trim() === label) || $("next-exercise") || live[0])?.focus({ preventScroll: true });
+}
+function fillActions() {
   draftLine();
   practiceHelp.replaceChildren();
   practiceHelp.hidden = !exercise || busy || revealed;
@@ -289,7 +311,7 @@ function actions() {
         }),
       ),
       button(
-        count + 1 >= length ? "Finish session" : "Next decision",
+        count + 1 >= total() ? "Finish session" : "Next decision",
         finishOrNext,
         "primary",
         { id: "next-exercise" },
@@ -304,8 +326,12 @@ function actions() {
       : s.phase === "double"
         ? `${offerName(s)} to ${s.cube.value * 2}. ${playerName(decisionPlayer(s))} to decide.`
         : "Would you double or roll?";
-  $("message").replaceChildren(s.phase === "move"
-    ? draft.progressMessage(instruction, "Ready to submit") : instruction);
+  const line = s.phase === "move"
+    ? draft.progressMessage(instruction, "Ready to submit") : instruction;
+  // A hint asked for mid-move stays beside the drafted steps.
+  if (hintText && s.phase === "move" && draft.draft.length)
+    line.append(el("span", {}, `Hint: ${hintText}`));
+  $("message").replaceChildren(line);
   practiceHelp.append(button("Hint", hint, "ghost"));
   if (s.phase === "move")
     practiceHelp.append(
@@ -380,7 +406,10 @@ function panel() {
           [20, "20 decisions"],
         ],
         length,
-        (v) => (length = Number(v)),
+        (v) => {
+          length = Number(v);
+          !busy && count >= total() ? finish() : render();
+        },
       ),
     ),
   ];
@@ -466,15 +495,7 @@ function panel() {
     if (result.type === "checker") {
       const note = observation(result.candidates[0].steps);
       p.append(
-        button(
-          "Original position",
-          () => {
-            preview = clone(exercise.state);
-            previewIndex = -1;
-            render();
-          },
-          "ghost",
-        ),
+        button("Original position", () => previewCandidate(null), "ghost"),
       );
       if (note) p.append(el("p", { class: "notice" }, note));
     }
@@ -544,7 +565,7 @@ async function skip() {
   await recordPractice(exercise.id, { skip: true, hint: hinted });
   sessionLog[count] = { topic: exercise.topic, skipped: true, hinted };
   count++;
-  count >= length ? finish() : next();
+  count >= total() ? finish() : next();
 }
 async function hint() {
   if (busy || revealed || !exercise) return;
@@ -564,10 +585,12 @@ async function hint() {
 }
 function finishOrNext() {
   count++;
-  if (count >= length) finish();
+  if (count >= total()) finish();
   else next();
 }
 function finish() {
+  finished = true;
+  put("work", { id: "trainer", filter, length }).catch(showError);
   analysis.cancel();
   study.set(null);
   practiceHelp.hidden = true;
@@ -576,7 +599,9 @@ function finish() {
   draft.set({ ...draft.current(), phase: "over", dice: [] }, [], false);
   ui.equityBar.set({ state: null, blocked: "Session complete", note: "" });
   $("message").replaceChildren(el("span", { class: "sr-only" }, "Session complete"));
+  const refocus = [practiceHelp, $("actions")].some((r) => r.contains(document.activeElement));
   $("actions").replaceChildren(button("Practice again", begin, "primary"));
+  if (refocus) $("actions").firstChild.focus({ preventScroll: true });
   renderSteps(true);
   const s = sessionSummary();
   const stat = (label, value) =>
@@ -595,9 +620,6 @@ function finish() {
     hideCardButton(summaryCard, "Hide the summary to see the board"),
     el("h2", {}, `${s.answered} answered`),
     stats(),
-    ...(s.recorded < count
-      ? [el("p", { class: "muted small" }, `${count - s.recorded} earlier decision${count - s.recorded === 1 ? " was" : "s were"} answered before this page loaded and ${count - s.recorded === 1 ? "is" : "are"} not in this summary.`)]
-      : []),
   );
   summaryCard.hidden = false;
   $("panel").replaceChildren(
@@ -634,7 +656,6 @@ function sessionSummary() {
   const entries = sessionLog.filter(Boolean),
     answered = entries.filter((e) => !e.skipped);
   return {
-    recorded: entries.length,
     answered: answered.length,
     average: answered.reduce((n, e) => n + e.error, 0) / (answered.length || 1),
     within: answered.filter((e) => e.error < LOSS_THRESHOLD).length,
@@ -647,7 +668,7 @@ function sessionSummary() {
 // the recorded result (with a text label, never colour alone).
 function renderSteps(done = false) {
   steps.replaceChildren(
-    ...Array.from({ length }, (_, i) => {
+    ...Array.from({ length: total() }, (_, i) => {
       const entry = sessionLog[i],
         current = !done && i === count,
         state = entry
@@ -666,7 +687,7 @@ function renderSteps(done = false) {
 }
 
 async function savePractice() {
-  if (!exercise) return;
+  if (!exercise || finished) return;
   try {
     await put("work", {
       id: "trainer",
@@ -680,6 +701,7 @@ async function savePractice() {
       hint: hintText,
       answer,
       result,
+      sessionLog,
     });
   } catch (e) {
     showError(e);

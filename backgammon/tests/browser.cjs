@@ -184,8 +184,7 @@ const server = http.createServer((req, res) => {
         await page.goto(base + "/backgammon/library/");
         await page
           .getByRole("button", {
-            name: "Open Browser-tested cube",
-            exact: true,
+            name: /^Browser-tested cube /,
           })
           .click();
         await shot("library-populated");

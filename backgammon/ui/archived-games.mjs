@@ -83,7 +83,7 @@ export function archivedGames({onReturn} = {}) {
     const groups = groupDecisionTurns(rows.filter(row => context.filter === 'all' ||
       (row.player === context.viewer ? 'self' : 'opponent') === context.filter));
     entry.body.replaceChildren(...groups.map(group => historyTurn(group, {
-      names:item.names || context.names, viewer:context.viewer, local:context.mode === 'local',
+      names:item.names || context.names, viewer:context.viewer, local:context.mode !== 'online',
       actions:row => actions(item.id, row.index),
     })));
     if (!groups.length) entry.body.append(el('p', {class:'muted'}, 'No decisions from this player in this game.'));

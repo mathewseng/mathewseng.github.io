@@ -28,10 +28,10 @@ export function decorateShortcuts(root) {
 export function shortcutControls() {
   const root = el("div", { class: "stack" }),
     inputs = new Map(),
-    error = el("p", { class: "error", role: "alert" });
+    error = el("p", { class: "error shortcut-error", role: "alert" });
   // Each edit saves once every binding is valid, as board colors do, so
   // closing Settings never drops a change.
-  const commit = () => {
+  const commit = (event) => {
     const bindings = Object.fromEntries(
       [...inputs].map(([id, input]) => [
         id,
@@ -44,7 +44,11 @@ export function shortcutControls() {
     );
     const errors = shortcutErrors(bindings);
     error.textContent = errors.join(" ");
-    if (!errors.length) saveSettings({ shortcuts: bindings });
+    if (errors.length) event?.target?.setAttribute("aria-invalid", "true");
+    else {
+      for (const input of inputs.values()) input.removeAttribute("aria-invalid");
+      saveSettings({ shortcuts: bindings });
+    }
   };
   const enabled = el("input", {
     type: "checkbox",
@@ -88,8 +92,10 @@ export function shortcutControls() {
       { class: "row" },
       button("Restore default shortcuts", () => {
         saveSettings({ shortcuts: DEFAULT_SHORTCUTS });
-        for (const [id, input] of inputs)
+        for (const [id, input] of inputs) {
           input.value = DEFAULT_SHORTCUTS[id].join(", ");
+          input.removeAttribute("aria-invalid");
+        }
         error.textContent = "";
       }),
     ),

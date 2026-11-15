@@ -233,7 +233,6 @@ function renderList() {
       {
         type: "button",
         class: "library-item",
-        "aria-label": `Open ${item.title}`,
         "aria-pressed": selected?.id === item.id,
         onClick: () => choose(item),
       },
@@ -286,7 +285,13 @@ async function choose(item) {
     const rows = decisionHistory(selected);
     selected.decisionSummary = [0, 1].map(player => decisionTotals(rows, player));
   }
+  // Rebuilding the rows drops the focused one: keep the list where it was and
+  // move focus to the chosen row, which the Details sheet returns to on close.
+  const focused = $("items").contains(document.activeElement), top = list.scrollTop, y = scrollY;
   renderList();
+  list.scrollTop = top;
+  scrollTo(scrollX, y);
+  if (focused) $("items").querySelector('.library-item[aria-pressed="true"]')?.focus({ preventScroll: true });
   inspector();
   if (getComputedStyle($("inspector")).display === "none") openPanel();
 }

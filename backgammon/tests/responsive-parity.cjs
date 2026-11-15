@@ -91,8 +91,7 @@ module.exports = async function parity(browser, base, out, name) {
       if (route === "library")
         await page
           .getByRole("button", {
-            name: "Open Parity position",
-            exact: true,
+            name: /^Parity position /,
           })
           .click();
       if (route === "solver") await page.locator("#edit-position").click();
@@ -142,8 +141,7 @@ module.exports = async function parity(browser, base, out, name) {
         await page.setViewportSize({ width: 390, height: 844 });
         await page
           .getByRole("button", {
-            name: "Open Parity position",
-            exact: true,
+            name: /^Parity position /,
           })
           .click();
         await page

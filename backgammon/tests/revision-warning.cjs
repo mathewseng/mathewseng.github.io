@@ -113,6 +113,25 @@ module.exports=async function revisionWarning(browser,base,out,name){
         assert.equal((await read()).game.events.length,count,'a late grade cannot submit a second action');
         assert.equal(await page.locator('dialog[open]').count(),0);
       } else if(response==='reset') {
+        await page.setViewportSize({width:430,height:932});
+        await page.waitForFunction(() => {
+          const warning = document.querySelector('.checker-warning[data-thumb-positioned]');
+          const board = document.querySelector('.board-slot > .bg-board');
+          return warning && warning.getBoundingClientRect().top >= board.getBoundingClientRect().bottom + 8;
+        });
+        const reach = await page.evaluate(() => {
+          const board = document.querySelector('.board-slot > .bg-board').getBoundingClientRect();
+          const warning = document.querySelector('.checker-warning').getBoundingClientRect();
+          const buttons = [...document.querySelectorAll('.checker-warning .dialog-foot button')].map(n => {
+            const r = n.getBoundingClientRect();
+            return {center:r.y+r.height/2,height:r.height};
+          });
+          return {boardBottom:board.bottom,top:warning.top,bottom:warning.bottom,height:innerHeight,buttons};
+        });
+        assert.ok(reach.top >= reach.boardBottom + 8, 'the complete board remains visible above the warning');
+        assert.ok(reach.bottom < reach.height - 80, 'the warning does not sit against the home indicator');
+        assert.ok(reach.buttons.every(b => b.height >= 48 && b.center > reach.height*.55 && b.center < reach.height*.85),
+          'all four actions fit the lower-middle thumb area on iPhone 14 Pro Max');
         const buttons=await page.locator('.checker-warning .dialog-foot button').evaluateAll(nodes=>nodes.map(n=>({text:n.textContent,x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y,width:n.getBoundingClientRect().width})));
         assert.deepEqual(buttons.map(b=>b.text),['Hint','Play best','Reset','Play anyway']);
         assert.ok(await page.locator('.checker-warning .dialog-body').evaluate(n=>n.scrollHeight<=n.clientHeight+1),

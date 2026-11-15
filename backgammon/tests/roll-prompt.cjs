@@ -136,7 +136,7 @@ module.exports=async(browser,base,out,name)=>{
           b.render(s,options);labels.push(host.querySelector('.board-caption').textContent);
         }
         b.destroy();return labels;
-      }),['','Move preview','Position editor']);
+      }),['','',''],'previews and the editor draw no in-board label');
       assert.deepEqual(errors,[]);
       report.push({touch,cpuSlowdown:touch&&name==='chromium'?4:1,skipToChoice:true,skipElapsed,singleRoll:true,repeatedUntilAllEntered:true,partialEntryContinues:true,dialogPauseAndResume:true,manualStop:true,requiresBlockedEntry:true});
     } finally {await context.close();}

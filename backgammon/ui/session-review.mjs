@@ -84,20 +84,18 @@ export function sessionReview(
       { class: "session-totals" },
       ...[0, 1].map((p) => {
         const t = decisionTotals(shown, p);
+        // Like Library rows: a loss once anything is graded, no zero counts.
+        const counts = [t.evaluated && `${t.evaluated} evaluated`, t.pending && `${t.pending} unreviewed`, t.forced && `${t.forced} forced`].filter(Boolean).join(" · ");
         return el(
           "div",
           {},
           el("strong", {}, names[p]),
-          el(
+          t.evaluated ? el(
             "p",
             {},
-            `${t.evaluated ? t.loss.toFixed(3) : "—"} ${t.money ? "EV lost" : "normalized equity lost"}`,
-          ),
-          el(
-            "span",
-            { class: "muted small" },
-            `${t.evaluated} evaluated · ${t.pending} unreviewed · ${t.forced} forced`,
-          ),
+            `${t.loss.toFixed(3)} ${t.money ? "EV lost" : "normalized equity lost"}`,
+          ) : null,
+          counts ? el("p", { class: "muted small" }, counts) : null,
         );
       }),
     );

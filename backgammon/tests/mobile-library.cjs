@@ -54,7 +54,7 @@ module.exports = async function mobileLibrary(browser, base, out, name) {
       await page.getByLabel("Search Library",{exact:true}).fill("long saved");
       await page.waitForFunction(()=>document.querySelectorAll('.library-item').length===1);
       assert.equal(await page.locator(".library-item").count(),1);
-      await page.getByRole("button",{name:`Open ${fixture.position}`,exact:true}).tap();
+      await page.getByRole("button",{name:new RegExp(`^${fixture.position} `)}).tap();
       const open = page.getByRole("button",{name:"Open in Solver",exact:true});
       const bounds = await open.boundingBox();
       assert.ok(bounds.y >= 0 && bounds.y+bounds.height <= height+1 && bounds.height >=44,"opening a saved position is the first reachable action");
@@ -72,7 +72,7 @@ module.exports = async function mobileLibrary(browser, base, out, name) {
     await page.locator('.empty').waitFor();
     assert.match(await page.locator(".empty").textContent(), /No matching items/);
     await page.getByLabel("Search Library",{exact:true}).fill("long saved");
-    await page.getByRole("button",{name:`Open ${fixture.position}`,exact:true}).tap();
+    await page.getByRole("button",{name:new RegExp(`^${fixture.position} `)}).tap();
     await page.getByRole("button",{name:"Open in Solver",exact:true}).tap();
     await page.waitForURL(/\/backgammon\/solver\/\?item=/);
     await page.locator("#analyze").waitFor();

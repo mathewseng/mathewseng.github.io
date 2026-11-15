@@ -466,10 +466,14 @@ function renderReviewStatus() {
   if (reviewStatus.hidden) return;
   const pending = decisionHistory(game).filter(r => !r.feedback ||
     (!r.forced && r.attempts.some(attempt => !attempt.feedback))).length;
+  const text = autoReview.error ? `Analysis paused: ${autoReview.error}` : pending
+    ? `${autoReview.job ? "Analyzing" : "Queued for analysis"} · ${pending} decision${pending === 1 ? "" : "s"} remaining`
+    : "Both players’ decisions are analyzed automatically.";
+  // Every render calls this; replacing an unchanged line would announce it again.
+  if (reviewStatus.dataset.text === text) return;
+  reviewStatus.dataset.text = text;
   reviewStatus.replaceChildren(
-    el("span", {}, autoReview.error ? `Analysis paused: ${autoReview.error}` : pending
-      ? `${autoReview.job ? "Analyzing" : "Queued for analysis"} · ${pending} decision${pending === 1 ? "" : "s"} remaining`
-      : "Both players’ decisions are analyzed automatically."),
+    el("span", {}, text),
     ...(autoReview.error ? [button("Retry analysis", () => autoReview.retry(), "ghost")] : []),
   );
 }
@@ -1159,6 +1163,10 @@ function render() {
   playersButton.hidden = !m?.started || config.mode === "online";
   playersButton.disabled = committing;
   draft.lastMove = lastMove(m);
+  // GNUbg's take is named on its strip until your automatic roll lands.
+  const reply = m?.events?.at(-1);
+  draft.taker = config.mode === "computer" && s.phase === "roll" && reply?.action.type === "take" &&
+    reply.actor !== config.humanSide ? reply.actor : null;
   const previous = ui.board.state;
   const motionKey = `${m?.id}:${s.sequence}`;
   const freshEvent =
@@ -1267,6 +1275,7 @@ function advanceAcceptedCube() {
         !myTurn(state()) || committing || assistanceJob || document.hidden) return;
     commit({ type: "roll" }).catch(showError);
   }, motionDuration(420));
+  actions(); // Replace the roll prompt these dice will not wait for.
   return true;
 }
 function advanceOpening() {
@@ -1750,7 +1759,7 @@ function actions() {
     // During automatic cube checking, the caption is the stop control. The
     // manual Take/Drop faces return as soon as it stops, without covering it.
     if (race && s.phase === 'double') cubeReplies.hidden = true;
-    ui.board.setRollPrompt({ready:rollReady && !(closedOutCheck?.pending && closedOutCheck.key === closedOutKey(s)),pass:blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,
+    ui.board.setRollPrompt({ready:rollReady && !acceptedCubeKey && !(closedOutCheck?.pending && closedOutCheck.key === closedOutKey(s)),pass:blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,
       canAutoPlay:config.mode === 'computer' && bearingOffRace(s) && !model().reviewingTurn,
       auto:!!active,skipping:barAutoRoll.skipping || raceAutoPlay.skipping,raceAuto:!!race});
     ui.board.container.classList.toggle("roll-ready", rollReady);
@@ -2149,11 +2158,14 @@ function renderActions() {
       ? shortcutBadge(prefs.shortcuts[action][0]) : "";
     // Name whose turn was automatic; only the player on roll gets instructions.
     const auto = previous?.automatic ? `${names()[previous.actor]}: ${previous.action.steps?.length ? "forced turn" : "no legal move"} · ` : "";
+    // After a take the doubler's dice roll by themselves: name the take instead.
+    const taken = !!acceptedCubeKey && previous?.action.type === "take";
     $("message").replaceChildren(
-      !myTurn(s) ? `${auto}${names()[s.turn]} to ${closed ? "pass" : "roll"}`
+      taken ? `${names()[previous.actor]} takes.`
+        : !myTurn(s) ? `${auto}${names()[s.turn]} to ${closed ? "pass" : "roll"}`
         : closed ? `${names()[s.turn]} · ${checking ? 'checking cube…' : `${pressVerb()} board to pass`}`
         : `${auto}${names()[s.turn]} · ${pressVerb()} board to roll`,
-      ...(checking || !myTurn(s) ? [] : [keycap("roll")]),
+      ...(taken || checking || !myTurn(s) ? [] : [keycap("roll")]),
       ...(canDouble(s) && myTurn(s) ? [" · Cube to double", keycap("double")] : []),
     );
     a.append(
@@ -2175,7 +2187,10 @@ function renderActions() {
         : draft.current().bar[s.turn]
           ? "Enter from the bar first."
           : "Use all playable dice, then confirm."
-      : `${names()[s.turn]} ${names()[s.turn] === "You" ? "are" : "is"} moving`;
+      // A confirmed move being checked shows itself, not a generic waiting line.
+      : assistanceJob?.kind === "submit" && draft.draft.length
+        ? notation(draft.draft, s.turn)
+        : `${names()[s.turn]} ${names()[s.turn] === "You" ? "are" : "is"} moving`;
     $("message").replaceChildren(mine ? draft.progressMessage(instruction) : instruction);
     if (config.mode === "computer" && myTurn(s))
       a.append(button("Hint", showHint, "", { id: "hint", disabled: !mine }));
@@ -2815,7 +2830,7 @@ function renderFeedback() {
   const sideOf = row => row.player === viewer ? "self" : "opponent";
   for (const [value, control] of feedbackFilterButtons) {
     const player = value === "self" ? viewer : 1 - viewer;
-    const label = value === "all" ? "All" : config.mode === "local"
+    const label = value === "all" ? "All" : config.mode !== "online"
       ? names()[player] : value === "self" ? "You" : "Opponent";
     const count = value === "all" ? rows.length : rows.filter(row => sideOf(row) === value).length;
     control.setAttribute("aria-pressed", String(value === feedbackFilter));
@@ -2874,7 +2889,7 @@ function renderFeedback() {
     }
     entry.signature = signature;
     entry.node = historyTurn(group, {
-      names: names(), viewer, local: config.mode === "local", reviewIndex,
+      names: names(), viewer, local: config.mode !== "online", reviewIndex,
       actions: row => historyDecisionActions(entry, row.index, m.id, sideOf(group) === "opponent"),
       pending: row => config.mode === "computer"
         ? (autoReview.job?.row.index === row.index ? "Analyzing…" : autoReview.error ? "Analysis paused" : "Analysis queued")
@@ -3016,6 +3031,11 @@ function assistance(kind) {
   else {
     ui.board.options.interactive = false;
     ui.board.svg.querySelectorAll('[role="button"]').forEach(node => node.setAttribute('aria-disabled', 'true'));
+    // The undo tip and die switch no longer respond; Revise/Reset/close redraw them.
+    if (state().phase === "move") {
+      $("draft-line").textContent = notation(draft.draft, state().turn);
+      ui.board.svg.querySelector(".dice-switch")?.setAttribute("visibility", "hidden");
+    }
   }
   actions();
   return job;

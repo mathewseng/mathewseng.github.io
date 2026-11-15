@@ -53,6 +53,8 @@ export function probabilityView(c, player) {
     return el("p", {class:"muted small"}, "This model estimates cubeful equity directly. It does not produce win or gammon probabilities.");
   return chanceLines(c.probabilities, player, { table: true });
 }
+// Results whose full move list the player has opened.
+const expanded = new WeakSet();
 export function resultView(
   result,
   { onPreview = () => {}, limit = 5, source = null, previous = null, selected } = {},
@@ -183,18 +185,25 @@ export function resultView(
         }
         return b;
       });
-    list.append(...rows(limit));
+    // Pages rebuild this list on every preview: keep it expanded and keep the
+    // previewed row in it.
+    const shown = expanded.has(result) ? result.candidates.length
+      : Math.max(limit, Number.isInteger(selected) ? selected + 1 : 0);
+    list.append(...rows(shown));
     node.append(el("h2", {}, "Evaluated moves"), ...comparison, list);
-    if (result.candidates.length > limit)
-      node.append(
-        button(
-          `Show all ${result.candidates.length} moves`,
-          (e) => {
-            list.replaceChildren(...rows(result.candidates.length));
-          },
-          "ghost",
-        ),
+    if (result.candidates.length > shown) {
+      const more = button(
+        `Show all ${result.candidates.length} moves`,
+        () => {
+          expanded.add(result);
+          list.replaceChildren(...rows(result.candidates.length));
+          more.remove();
+          list.children[shown]?.focus({ preventScroll: true });
+        },
+        "ghost",
       );
+      node.append(more);
+    }
     if (source)
       node.append(
         el(
@@ -288,10 +297,12 @@ export class AnalysisPanel {
     const onStatus = (type, text) => {
         clearInterval(this.elapsedTimer);
         if (type === "busy") {
-          const started = performance.now();
+          const started = performance.now(), elapsed = el("span", { "aria-hidden": "true" });
+          // The counter is shown but not announced every second.
           this.elapsedTimer = setInterval(() => {
-            if (!this.status.textContent.includes("trials per alternative"))
-              this.status.textContent = `${text} · ${Math.floor((performance.now() - started) / 1000)} s elapsed`;
+            if (this.status.textContent.includes("trials per alternative")) return;
+            elapsed.textContent = ` · ${Math.floor((performance.now() - started) / 1000)} s elapsed`;
+            if (!elapsed.isConnected) this.status.append(elapsed);
           }, 1000);
         }
         this.status.classList.toggle(
@@ -302,7 +313,7 @@ export class AnalysisPanel {
         // errors need the status line.
         const done = type === "ready" && text === "Analysis complete";
         this.status.hidden = done;
-        this.status.textContent = done ? "" : text;
+        if (this.status.textContent !== (done ? "" : text)) this.status.textContent = done ? "" : text;
       };
     this.engine = new EngineClient({onStatus});
     this.moneyEngine = new EngineClient({onStatus, openingBook:null,

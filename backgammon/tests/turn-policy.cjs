@@ -153,7 +153,7 @@ module.exports = async function turnPolicy(
     const second = await wait((s) => s?.game.id !== original.id);
     await page.goto(base + "/backgammon/library/#games");
     await page
-      .getByRole("button", { name: "Open My recorded game", exact: true })
+      .getByRole("button", { name: /^My recorded game / })
       .waitFor();
     assert.equal(
       await page.getByLabel("Item type", { exact: true }).inputValue(),
@@ -183,7 +183,7 @@ module.exports = async function turnPolicy(
     );
     await page.reload();
     await page
-      .getByRole("button", { name: "Open My recorded game", exact: true })
+      .getByRole("button", { name: /^My recorded game / })
       .waitFor();
     await shot("history");
     for (const width of [320, 375]) {

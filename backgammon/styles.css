@@ -75,6 +75,12 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Taps that roll or double land on the board container: no full-board flash. */
+.board-slot,
+.bg-board {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button,
 a {
   touch-action: manipulation;
@@ -4389,6 +4395,23 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   text-align: center;
 }
 
+/* An outline, because skins restyle the field border. */
+.shortcut-points input[aria-invalid="true"]:not(:focus-visible),
+.shortcut-actions input[aria-invalid="true"]:not(:focus-visible) {
+  outline: 2px solid var(--bad);
+  outline-offset: -2px;
+}
+
+/* A conflict stays in view at the foot of the scrolling tab. */
+.shortcut-error:not(:empty) {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 0;
+  background: var(--surface);
+}
+
 /* Position editor (ui/position-editor.mjs): the board is the input, with
    stable, thumb-sized supplies and actions beneath it. */
 .position-editor:not([hidden]) {
@@ -5248,6 +5271,11 @@ html.bg-dialog-open {
   outline: none;
 }
 
+/* The refresh page needs the network (ui/updates.mjs sets data-offline). */
+html[data-offline] a[href="/backgammon/refresh/"] {
+  display: none;
+}
+
 .dialog textarea {
   width: 100%;
   min-height: 96px;
@@ -5938,6 +5966,7 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
 
   .app .tool-nav a {
     flex: 1 0 auto;
+    min-width: 44px;
     justify-content: center;
     padding-inline: 4px;
   }
@@ -7039,6 +7068,24 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     display: none;
   }
 
+  /* Trainer keeps its session stepper, under Practice/Tools. */
+  .app[data-page="trainer"] .tool-head > div:first-child {
+    display: block;
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    right: 0;
+  }
+
+  .app[data-page="trainer"] .tool-head > div:first-child > :not(.trainer-steps) {
+    display: none;
+  }
+
+  .app[data-page="trainer"] .trainer-steps {
+    width: 100%;
+    margin: 0;
+  }
+
   .play-page.live-table #toolbar,
   .app:is([data-page="trainer"], [data-page="solver"]) #toolbar {
     justify-content: flex-end;
@@ -7597,6 +7644,14 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     gap: 0 12px;
     margin-top: 2px;
   }
+
+  /* Six tabs fit a phone row, as on the app and docs pages. */
+  .hub-backgammon .hub-tool-tabs a {
+    flex: 1 0 auto;
+    min-width: 44px;
+    justify-content: center;
+    padding-inline: 4px;
+  }
 }
 
 /* ======================================================================
@@ -8037,6 +8092,17 @@ html.skin-shader .docs-toc--sticky {
 }
 .checker-warning .dialog-foot > button { min-width: 0; padding-inline: 10px; }
 
+@media (max-width: 700px) and (orientation: portrait) {
+  /* Keep the board in view and the decision beside its lower edge, rather
+     than parking short warnings against the home indicator on tall phones. */
+  .dialog.bg-dialog.decision-warning[data-thumb-positioned][open]:not([data-keyboard]) {
+    top: var(--decision-top);
+    bottom: auto;
+    margin: 0 auto;
+  }
+  .decision-warning .dialog-foot > button { min-height: 48px; }
+}
+
 .board-cube-replies {
   position: absolute;
   z-index: 5;
@@ -8108,7 +8174,8 @@ html.skin-shader .docs-toc--sticky {
 }
 
 /* Even the short Play label retains a complete touch target in every skin. */
-.app .topbar .tool-nav a { min-width: 44px; }
+.app .topbar .tool-nav a,
+.docs-topbar .tool-nav a { min-width: 44px; }
 @media (max-width: 380px) {
   .app .topbar:has(.tool-nav) { padding-inline: 4px; }
   .app .topbar .tool-nav { gap: 1px; }
@@ -8227,7 +8294,7 @@ html[data-focus-navigation="true"] .board-confirm #confirm:focus-visible {
 @media (max-width: 600px) and (orientation: portrait) {
   .play-page.live-table .turn-tools > .btn { height: 48px; padding: 6px 10px; }
   .play-page.live-table .board-actions:has(> .turn-tools.game-ended) > .btn,
-  .play-page.live-table .turn-tools.game-ended > .btn { min-height: 44px; height: 44px; }
+  .play-page.live-table .turn-tools.game-ended > .btn { min-height: 44px; height: 44px; font-size: var(--t-md); }
   .play-page.live-table:has(#next-game) .action-area { --summary-height: 180px; }
   .play-page.live-table .board-actions { gap: 8px; }
 }

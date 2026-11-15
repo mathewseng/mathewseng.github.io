@@ -69,6 +69,9 @@ let source = initialState({ phase: "move", dice: [3, 1], matchLength: 0 }),
   reviewResults = new Map(),
   busy = false,
   analysisEpoch = 0,
+  // The epochs of a running match-review batch and rollout.
+  batchEpoch = -1,
+  rolloutEpoch = -1,
   sourceContext = null,
   openedPosition = false,
   openedItem = null,
@@ -371,6 +374,8 @@ function autoAnalyze() {
 function changed() {
   analysisEpoch++;
   analysis.cancel();
+  // Only a Cancel the player chose needs to say so.
+  analysis.status.hidden = true;
   busy = false;
   result = null;
   previousResult = null;
@@ -405,6 +410,9 @@ function render() {
   ui.equityBar.set({
     state: source,
     result,
+    // Review rails show the best continuation, like the strip; the played
+    // move and its loss are in Results.
+    beforeDecision: !!review,
     blocked:
       editing || problems.length
         ? "Finish editing a valid position to see equity."
@@ -424,13 +432,14 @@ function render() {
   $("subtitle").textContent = review
     ? `${review.title} · event ${index}/${review.events.length}`
     : `${source.matchLength ? source.matchLength + "-point match" : "Unlimited points"} · ${source.phase === "double" ? `${offerName(source)} to ${source.cube.value * 2}` : source.dice.length ? source.dice.join("–") : "pre-roll"} · cube ${source.cube.value}`;
-  $("message").textContent = emptySetup ? `Choose a color, then ${pressVerb().toLowerCase()} points to place checkers.` : problems.length
+  const message = emptySetup ? `Choose a color, then ${pressVerb().toLowerCase()} points to place checkers.` : problems.length
     ? problems.join(" ")
     : editing
       ? ""
       : busy
-        ? "Analyzing this position with GNUbg…"
+        ? batchEpoch === analysisEpoch ? "Analyzing remaining decisions…" : "Analyzing this position with GNUbg…"
         : "";
+  if ($("message").textContent !== message) $("message").textContent = message;
   $("message").classList.toggle("error", !!problems.length && !emptySetup);
   const editLabel = editing ? "Done editing" : "Edit position";
   if (editControl.textContent !== editLabel)
@@ -440,15 +449,19 @@ function render() {
   const analyzeLabel = busy ? "Cancel" : "Analyze";
   if (analyzeControl.textContent !== analyzeLabel)
     analyzeControl.textContent = analyzeLabel;
-  analyzeControl.disabled =
-    !!problems.length || !["move", "roll", "double"].includes(source.phase);
+  analyzeControl.disabled = !busy &&
+    (!!problems.length || !["move", "roll", "double"].includes(source.phase));
   if (!editControl.isConnected)
     $("actions").append(editControl, analyzeControl);
   // Review replaces the (disabled) editor button with event stepping.
   editControl.hidden = !!review;
   if (review) {
+    const focused = document.activeElement;
     reviewPrevious.disabled = index === 0;
     reviewNext.disabled = index === review.events.length;
+    // Keep keyboard focus on the stepper when one end is reached.
+    if (focused === reviewNext && reviewNext.disabled) reviewPrevious.focus();
+    else if (focused === reviewPrevious && reviewPrevious.disabled) reviewNext.focus();
     if (!reviewPrevious.isConnected) editControl.before(reviewPrevious, reviewNext);
   } else {
     reviewPrevious.remove();
@@ -656,7 +669,10 @@ function panel(problems) {
         ...(rolloutUnsupported(source)
           ? [el("p", { class: "notice" }, rolloutUnsupported(source))]
           : [
-              button(
+              // A running rollout stops where it was started, in the sheet too.
+              busy && rolloutEpoch === analysisEpoch
+                ? button("Cancel rollout", cancel, "", { id: "start-rollout" })
+                : button(
                 checkpoint
                   ? `Resume / extend · ${checkpoint.completed} saved trials`
                   : "Start rollout",
@@ -873,6 +889,8 @@ function contextDialog(focus) {
           if (problems.length) throw new Error(problems.join(' '));
           d.close();
           editor.commit(next);
+          // A what-if context answers itself, as Done editing and Import do.
+          if (!editing) { closeStudyPanel(); autoAnalyze(); }
         },
         "primary",
       ),
@@ -883,9 +901,14 @@ function contextDialog(focus) {
     (focus==='cube'?cube:len).closest('.field').scrollIntoView({block:'start'}));
 }
 function xgidDialog() {
+  // XGID has no opening-tie doubling or raccoons, which never change a
+  // position in play: export the nearest standard rules. Share keeps them.
+  const rules = rulesOf(source),
+    standard = !rules.automaticDoubles && [0, 1].includes(rules.immediateRedoubles),
+    exported = standard ? source : { ...source, rules: { ...rules, automaticDoubles: 0, immediateRedoubles: rules.immediateRedoubles ? 1 : 0 } };
   let value = "";
   try {
-    value = toXGID(source);
+    value = toXGID(exported);
   } catch {}
   const text = el("textarea", {
     value,
@@ -899,20 +922,17 @@ function xgidDialog() {
       "div",
       { class: "stack" },
       text,
-      el(
-        "p",
-        { class: "muted small" },
-        "Verified standard XGID: board, dice, turn, cube, scores and Crawford. Jacoby and beavers are rejected.",
-      ),
+      standard ? null : el("p", { class: "muted small" }, "XGID leaves out opening-tie doubles and raccoons."),
     ),
     [
-      button("Copy XGID", () => copy(toXGID(source))),
+      button("Copy XGID", () => copy(toXGID(exported))),
       button(
         "Import",
         () => {
           source = fromXGID(text.value);
           editor.reset();
           d.close();
+          closeStudyPanel();
           changed();
           autoAnalyze();
         },
@@ -968,6 +988,7 @@ async function rollOut() {
   if (reason) throw new Error(reason);
   const token = ++analysisEpoch,
     key = positionKey(source);
+  rolloutEpoch = token;
   busy = true;
   preview = null;
   render();
@@ -1013,15 +1034,20 @@ function cancel() {
   render();
 }
 function seek(i) {
-  analysisEpoch++;
-  analysis.cancel();
+  // A running batch keeps going while the player browses its results.
+  const batching = busy && batchEpoch === analysisEpoch;
+  if (!batching) {
+    analysisEpoch++;
+    analysis.cancel();
+    analysis.status.hidden = true;
+  }
   index = i;
   source = clone(replay(review.initial, review.events)[i]);
   checkpoint = null;
   previousResult = null;
   result = presentAnalysis(source, reviewResults.get(i) || null);
   preview = null;
-  busy = false;
+  busy = batching;
   render();
   if (!result) autoAnalyze();
 }
@@ -1078,11 +1104,12 @@ async function progressive() {
   if (!review) return;
   analysis.cancel();
   const token = ++analysisEpoch;
+  batchEpoch = token;
   busy = true;
   render();
-  const states = replay(review.initial, review.events);
+  const states = replay(review.initial, review.events), start = index;
   try {
-    for (let i = index; i < review.events.length; i++) {
+    for (let i = start; i < review.events.length; i++) {
       if (!["move", "roll", "double"].includes(states[i].phase)) continue;
       const event = review.events[i];
       if (
@@ -1105,8 +1132,9 @@ async function progressive() {
       if (answer.type === "cube" && answer.available !== false)
         Object.assign(answer, gradeCube(states[i], answer, event.action.type));
       reviewResults.set(i, answer);
-      setProgress((i + 1 - index) / Math.max(1, review.events.length - index));
-      analysis.status.textContent = `Completed ${reviewResults.size} decisions · event ${i + 1}/${review.events.length}`;
+      if (i === index && !result) { result = presentAnalysis(source, answer); render(); }
+      setProgress((i + 1 - start) / Math.max(1, review.events.length - start));
+      analysis.status.textContent = `Completed ${reviewResults.size} decisions · event ${i}/${review.events.length}`;
       if (!busy) break;
     }
   } catch (e) {
@@ -1115,6 +1143,7 @@ async function progressive() {
   if (token === analysisEpoch) {
     busy = false;
     render();
+    if (!result) autoAnalyze();
   }
 }
 function showReviewErrors() {
@@ -1122,7 +1151,7 @@ function showReviewErrors() {
     .filter(([, r]) => r.error > 0.005)
     .map(([i, r]) =>
       button(
-        `Event ${i + 1} · ${r.type === "cube" ? "cube" : "checker"} loss ${equity(r.error)}`,
+        `Event ${i} · ${r.type === "cube" ? "cube" : "checker"} Δ ${equity(-r.error)}`,
         () => {
           d.close();
           seek(i);

@@ -73,7 +73,7 @@ module.exports = async function solverMobile(browser, base, out, name) {
         !document.querySelector('.study-strip').hidden,null,{timeout:60000});
       await page.getByRole('button',{name:'Next move preview',exact:true}).tap();
       await page.getByRole('button',{name:'Show original position',exact:true}).tap();
-      await page.getByRole('button',{name:'Compare evaluated moves',exact:true}).tap();
+      await page.locator('.study-current').tap();
       await page.locator('#details-dialog').waitFor();
       await page.locator('#details-dialog .list-row').first().tap();
       await page.waitForFunction(() => !document.querySelector('#details-dialog[open]'));
@@ -85,7 +85,7 @@ module.exports = async function solverMobile(browser, base, out, name) {
         return preview.bottom <= search.top + 1;
       }), 'move previews appear before additional searches');
       if (width > height) {
-        const preview = await page.getByRole('button',{name:'Compare evaluated moves',exact:true}).boundingBox();
+        const preview = await page.locator('.study-current').boundingBox();
         assert.ok(preview.y >= 0 && preview.y + preview.height <= height, 'landscape preview is visible without scrolling');
       }
       await page.screenshot({path:path.join(out,`${name}-solver-mobile-results-${width}.png`),fullPage:true});

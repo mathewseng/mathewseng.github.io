@@ -176,6 +176,11 @@ export class EquityBar {
     this.reading = reading;
     this.note.textContent = reading ? "" : status === "loading" ? "Evaluating…" : note;
     this.node.dataset.state = status;
+    // An empty rail ignores activation, so keyboards skip it; the group
+    // label still says why it is empty.
+    const empty = status === "unavailable";
+    this.hide.tabIndex = empty ? -1 : 0;
+    this.hide.setAttribute("aria-disabled", String(empty));
     this.retry.hidden = status !== "error";
     const orientation = readSettings().orientation === 1 ? 1 : 0;
     this.node.style.setProperty(

@@ -4,6 +4,9 @@ import { equity, percentage } from "./analysis.mjs";
 import { boardKey } from "../core/rules.mjs";
 import { analysisDepthLabel } from "../core/analysis-insight.mjs";
 
+// The value line is a status region: rewriting unchanged text announces it again.
+const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
+
 // Keep previews beside the board on phones. These are the same evaluated
 // candidates used by the full results panel; choosing one never edits a game.
 export class StudyStrip {
@@ -24,7 +27,7 @@ export class StudyStrip {
     });
     this.heading = el("strong");
     this.value = el("span", { class: "study-preview-value", role: "status" });
-    this.current = dropdown ? null : button('Original position', showResults, 'study-current', {'aria-label':'Compare evaluated moves'});
+    this.current = dropdown ? null : button('Original position', showResults, 'study-current', {title:'Compare evaluated moves'});
     this.original = dropdown ? null : button('Original', () => this.choose(-1), 'study-original', {'aria-label':'Show original position'});
     this.chooser = el("div", { class: "study-preview-controls" }, this.previous, this.current || this.select, this.next);
     this.details = button("Compare cube options", showResults, "ghost");
@@ -40,6 +43,7 @@ export class StudyStrip {
   set(result, preview) {
     this.node.hidden = !result;
     if (!result) { this.result = null; return; }
+    const focused = document.activeElement;
     const isChecker = result.type === "checker";
     this.chooser.hidden = !isChecker;
     this.details.hidden = isChecker;
@@ -76,21 +80,33 @@ export class StudyStrip {
     }
     this.previous.disabled = chosen < 0;
     this.next.disabled = chosen >= this.candidates.length - 1;
+    // Keep keyboard focus in the strip when the control in use reaches an end
+    // or hides.
+    if (focused === this.next && this.next.disabled) this.previous.focus();
+    else if (focused === this.previous && this.previous.disabled) (this.current || this.select).focus();
+    else if (this.original && focused === this.original && this.original.hidden) this.current.focus();
     if (isChecker) {
       this.heading.textContent = `${analysisDepthLabel(result)} · move previews`;
       if (earlierPreview) {
-        this.value.textContent = "This preview was not retained at the current depth.";
+        setText(this.value, "This preview was not retained at the current depth.");
         return;
       }
       const candidate = this.candidates[Math.max(0, chosen)];
       const value = candidate?.mwc == null ? equity(candidate?.equity ?? 0) : percentage(candidate.mwc);
-      this.value.textContent = candidate
+      const text = candidate
         ? `${chosen < 0 ? "Best: " + candidate.notation + " · " : ""}${value} ${units}${chosen > 0 ? " · Δ " + equity(candidate.equity - result.candidates[0].equity) : ""}`
         : "No checker moves available.";
+      const spokenMove = candidate && chosen >= 0 ? `${candidate.notation} · ` : "";
+      if (this.value.textContent !== spokenMove + text)
+        this.value.replaceChildren(...(spokenMove ? [el("span", { class: "sr-only" }, spokenMove)] : []), text);
     } else {
       const name = { roll: "No double", double: "Double", take: "Take", pass: "Pass", beaver: "Beaver", raccoon: "Raccoon" };
       this.heading.textContent = result.available === false ? "Cube unavailable" : `Best: ${name[result.action] || result.action}`;
-      this.value.textContent = `${analysisDepthLabel(result)} · ${result.mwc == null ? equity(result.equity) : percentage(result.mwc)} ${units}`;
+      const reply = result.outcomes && { take: 1, pass: 2 }[result.action];
+      const flip = reply && (result.decision?.player ?? result.decisionPlayer ?? 1 - result.perspective) !== result.perspective;
+      const mwc = reply ? result.outcomesMWC?.[reply] : result.mwc;
+      const value = reply && mwc == null ? (flip ? -1 : 1) * result.outcomes[reply] : result.equity;
+      setText(this.value, `${analysisDepthLabel(result)} · ${mwc == null ? equity(value) : percentage(flip ? 1 - mwc : mwc)} ${units}`);
     }
   }
 }

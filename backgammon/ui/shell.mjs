@@ -724,7 +724,7 @@ export function about() {
     ),
   );
 }
-export function players(s, names = ["White", "Black"]) {
+export function players(s, names = ["White", "Black"], taker = null) {
   const orientation = readSettings().orientation;
   for (const [id, p] of [
     ["opponent", 1 - orientation],
@@ -756,7 +756,8 @@ export function players(s, names = ["White", "Black"]) {
           "aria-hidden": true,
         }),
         el("strong", { title: names[p] }, names[p]),
-        active ? el("span", { class: "player-status badge badge--accent badge--plain" },
+        p === taker ? el("span", { class: "player-status badge badge--accent badge--plain" }, "Takes")
+        : active ? el("span", { class: "player-status badge badge--accent badge--plain" },
           blockedBarRoll(s) ? "Closed out" : s.phase === "roll" ? "To roll" : s.phase === "move" ? "To move" : "To reply")
         : s.phase === "double" && s.pending?.by === p ? el("span", { class: "player-status badge badge--accent badge--plain" },
           `${offerName(s)}s to ${s.cube.value * 2}`) : null,
@@ -1499,10 +1500,10 @@ export class DraftBoard {
         ? this.previewTrace?.state === this.preview ? this.previewTrace.trace : null
         : this.lastMove,
     });
-    players(s, this.names);
+    players(s, this.names, this.taker);
     $("draft-line").setAttribute("role", "status");
     const switchEntry = display.moveHints && moves.find((route) => route.switchDie);
-    $("draft-line").textContent = this.preview
+    const line = this.preview
       ? "Preview only · original position is unchanged"
       : this.hint ||
         (switchEntry
@@ -1526,11 +1527,15 @@ export class DraftBoard {
               : this.lastMove
                 ? `Last move${this.lastMove.dice?.length ? ` · rolled ${[...this.lastMove.dice].sort((a, b) => b - a).join("–")}` : ""} · ${notation(this.lastMove.steps, this.lastMove.player)}`
                 : "");
+    // Pointer coaching stays on screen without being read aloud, and an
+    // unchanged line is not rewritten (which would announce it again).
+    $("draft-line").setAttribute("aria-live", /^(Last move|Preview only)/.test(line) ? "polite" : "off");
+    if ($("draft-line").textContent !== line) $("draft-line").textContent = line;
   }
   picker() {
     const options = this.candidates(),
       switches = this.entrySwitches();
-    return select(
+    const picker = select(
       [
         ["", "Choose a legal step…"],
         ...options.map((st, i) => [
@@ -1547,7 +1552,10 @@ export class DraftBoard {
         if (v.startsWith("switch-"))
           this.moveRoute(switches[Number(v.slice(7))]);
         else if (v !== "") this.move(options[Number(v)]);
+        requestAnimationFrame(() => document.getElementById("move-picker")?.focus({ preventScroll: true }));
       },
     );
+    picker.id = "move-picker";
+    return picker;
   }
 }

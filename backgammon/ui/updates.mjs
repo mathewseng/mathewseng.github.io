@@ -50,6 +50,12 @@ async function workerVersion(worker) {
 export function startUpdates({ onStatus = () => {} } = {}) {
   if (started) return started;
   if (!("serviceWorker" in navigator)) return Promise.resolve();
+  // The refresh page is network-only (sw.js): styles.css hides links to it
+  // while the browser reports it is offline.
+  const markOffline = () => document.documentElement?.toggleAttribute("data-offline", !navigator.onLine);
+  markOffline();
+  addEventListener("online", markOffline);
+  addEventListener("offline", markOffline);
   started = new Promise((resolve) => {
     let registration,
       gate = true,
