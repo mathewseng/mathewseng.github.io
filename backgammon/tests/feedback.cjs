@@ -155,17 +155,17 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
 
     await page.locator("#preferences").click();
     await page
-      .getByRole("tab", { name: "Display & controls", exact: true })
+      .getByRole("tab", { name: "Sounds", exact: true })
       .click();
     const volume = page.getByRole("slider", {
-      name: "Sound volume",
+      name: "Volume",
       exact: true,
     });
     await volume.focus();
     await page.keyboard.press("Home");
     assert.equal(
       await page
-        .getByRole("button", { name: "Preview sounds", exact: true })
+        .getByRole("button", { name: "Preview roll dice", exact: true })
         .isDisabled(),
       true,
     );
@@ -173,7 +173,7 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
     for (let n = 0; n < 6; n++) await page.keyboard.press("ArrowLeft");
     assert.equal(await volume.inputValue(), "70");
     await page
-      .getByRole("button", { name: "Preview sounds", exact: true })
+      .getByRole("button", { name: "Preview roll dice", exact: true })
       .click();
     await shot("settings-desktop");
     const sizes =

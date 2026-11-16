@@ -512,6 +512,9 @@ const server = http.createServer((req, res) => {
         report.feedbackUX.push(
           await run("feedback", browser, base, out, browserName),
         );
+        (report.soundEditor ||= []).push(
+          await run("sound-editor", browser, base, out, browserName),
+        );
         report.appearanceUX ||= [];
         report.appearanceUX.push(
           await run("appearance",

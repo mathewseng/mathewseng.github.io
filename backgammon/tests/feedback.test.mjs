@@ -5,6 +5,8 @@ import {
   synthesizeCue,
   normalizeSound,
   DEFAULT_SOUND,
+  SOUND_STYLES,
+  SOUND_ACTIONS,
 } from "../core/sound.mjs";
 import { SoundPlayer } from "../ui/sound.mjs";
 import { checkerFlight, checkerDrop } from "../ui/motion.mjs";
@@ -22,12 +24,38 @@ test("sound preferences migrate safely and bound volume without accepting truthy
   assert.deepEqual(normalizeSound({ enabled: false, volume: 120 }), {
     enabled: false,
     volume: 100,
+    effects: {},
   });
   assert.deepEqual(normalizeSound({ enabled: true, volume: -4 }), {
     enabled: true,
     volume: 0,
+    effects: {},
   });
   assert.equal(normalizeSound({ volume: 38.8 }).volume, 39);
+});
+test("per-action sound choices migrate and reject unknown actions and styles", () => {
+  assert.deepEqual(normalizeSound({effects:{move:"wood",hit:"off",roll:"classic",cube:"missing",bogus:"glass"}}).effects,
+    {move:"wood",hit:"off"});
+  assert.deepEqual(SOUND_ACTIONS.map(action=>action.id).sort(), Object.keys(CUES).sort());
+});
+test("every selectable timbre is distinct, bounded and deterministic for every action", () => {
+  for (const name of Object.keys(CUES)) {
+    const fingerprints = new Set();
+    for (const {id} of SOUND_STYLES) {
+      const samples = synthesizeCue(name, 48000, id);
+      assert.deepEqual(samples, synthesizeCue(name, 48000, id));
+      assert.ok(samples.length / 48000 < 0.65);
+      let energy = 0;
+      for (const value of samples) {
+        assert.ok(Number.isFinite(value) && Math.abs(value) < 0.8);
+        energy += value * value;
+      }
+      assert.equal(samples.at(-1), 0);
+      assert.equal(energy === 0, id === "off");
+      fingerprints.add(`${samples.length}:${energy}`);
+    }
+    assert.equal(fingerprints.size, SOUND_STYLES.length);
+  }
 });
 test("every original cue is deterministic, finite, non-silent, bounded and fades to zero", () => {
   const fingerprints = new Set();
@@ -153,6 +181,24 @@ test("audio is lazy, never queues blocked cues and releases bounded voices on mu
   assert.equal(player.buffers.size, 0);
   assert.equal(player.voices.size, 0);
   assert.equal(ctx.state, "closed");
+});
+test("playback uses each action’s chosen sound, updates cached choices, and skips silent actions", async () => {
+  const ctx = context();
+  let pref = normalizeSound({effects:{move:"wood", hit:"off"}}), clock=0;
+  const player = new SoundPlayer({createContext:()=>ctx,preferences:()=>pref,visible:()=>true,now:()=>clock});
+  await player.unlock();
+  assert.equal(player.play("move"), true);
+  const wood = ctx.sources.at(-1).buffer;
+  assert.equal(player.play("hit"), false);
+  pref = normalizeSound({...pref,effects:{move:"glass"}});
+  clock += 50;
+  assert.equal(player.play("move"), true);
+  assert.notEqual(ctx.sources.at(-1).buffer, wood);
+  pref = normalizeSound({...pref,effects:{move:"wood"}});
+  clock += 50;
+  assert.equal(player.play("move"), true);
+  assert.equal(ctx.sources.at(-1).buffer, wood);
+  player.destroy();
 });
 test("opening die cues recover after 35 ms even when the audio sample clock stalls", async () => {
   const ctx = context();

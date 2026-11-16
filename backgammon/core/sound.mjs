@@ -1,7 +1,34 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Original, deterministic sound synthesis. No recordings, downloads or game RNG.
-export const DEFAULT_SOUND = Object.freeze({ enabled: true, volume: 35 });
+export const SOUND_STYLES = Object.freeze([
+  { id: "classic", label: "Classic", description: "Soft, familiar table sounds" },
+  { id: "felt", label: "Felt", description: "Muted and rounded" },
+  { id: "wood", label: "Wood", description: "Warm, hollow taps" },
+  { id: "glass", label: "Glass", description: "Light, clear chimes" },
+  { id: "digital", label: "Digital", description: "Clean, short pulses" },
+  { id: "off", label: "Silent", description: "No sound for this action" },
+]);
+export const SOUND_ACTIONS = Object.freeze([
+  { id: "select", label: "Select checker", group: "Checkers" },
+  { id: "move", label: "Move checker", group: "Checkers" },
+  { id: "hit", label: "Hit checker", group: "Checkers" },
+  { id: "off", label: "Bear off", group: "Checkers" },
+  { id: "undo", label: "Undo move", group: "Checkers" },
+  { id: "reset", label: "Reset turn", group: "Checkers" },
+  { id: "roll", label: "Roll dice", group: "Dice" },
+  { id: "die", label: "Opening die", group: "Dice" },
+  { id: "confirm", label: "Confirm turn", group: "Game" },
+  { id: "cube", label: "Doubling cube", group: "Game" },
+  { id: "finish", label: "Game over", group: "Game" },
+]);
+export const DEFAULT_SOUND = Object.freeze({ enabled: true, volume: 35, effects: Object.freeze({}) });
+export const soundStyle = (value, action) => value?.effects?.[action] || "classic";
 export function normalizeSound(value) {
+  const effects = {};
+  for (const { id } of SOUND_ACTIONS) {
+    const style = value?.effects?.[id];
+    if (style !== "classic" && SOUND_STYLES.some(option => option.id === style)) effects[id] = style;
+  }
   return {
     enabled:
       typeof value?.enabled === "boolean"
@@ -11,6 +38,7 @@ export function normalizeSound(value) {
       typeof value?.volume === "number" && Number.isFinite(value.volume)
         ? Math.round(Math.max(0, Math.min(100, value.volume)))
         : DEFAULT_SOUND.volume,
+    effects,
   };
 }
 
@@ -51,11 +79,20 @@ export const CUES = Object.freeze({
   ],
 });
 
-export function synthesizeCue(name, sampleRate) {
+export function synthesizeCue(name, sampleRate, style = "classic") {
   if (!CUES[name]) throw new Error("Unknown sound cue.");
+  if (!SOUND_STYLES.some(option => option.id === style)) throw new Error("Unknown sound style.");
   if (!Number.isFinite(sampleRate) || sampleRate < 8000 || sampleRate > 192000)
     throw new Error("Unsupported audio sample rate.");
-  const contacts = CUES[name];
+  if (style === "off") return new Float32Array(1);
+  const timbre = {
+    classic: { pitch: 1, decay: 1, body: 0.28, noise: 0.5, overtone: 0 },
+    felt: { pitch: 0.55, decay: 0.65, body: 0.24, noise: 0.16, overtone: 0 },
+    wood: { pitch: 0.72, decay: 0.85, body: 0.3, noise: 0.32, overtone: 0.12 },
+    glass: { pitch: 1.7, decay: 1.35, body: 0.23, noise: 0.04, overtone: 0.09 },
+    digital: { pitch: 1.15, decay: 0.55, body: 0.23, noise: 0, overtone: 0.06 },
+  }[style];
+  const contacts = CUES[name].map(c => ({ ...c, frequency: c.frequency * timbre.pitch, decay: c.decay * timbre.decay }));
   const length = Math.ceil(
     (Math.max(...contacts.map((c) => c.at + c.decay * 5)) + 0.008) * sampleRate,
   );
@@ -72,9 +109,10 @@ export function synthesizeCue(name, sampleRate) {
       smooth += ((seed >>> 0) / 2147483648 - 1 - smooth) * 0.22;
       const attack = Math.min(1, t / 0.0015);
       const body =
-        Math.sin(2 * Math.PI * c.frequency * t) * Math.exp(-t / c.decay);
+        (Math.sin(2 * Math.PI * c.frequency * t) * timbre.body +
+          Math.sin(2 * Math.PI * c.frequency * 2.73 * t) * timbre.overtone) * Math.exp(-t / c.decay);
       const tick = smooth * Math.exp(-t / 0.006);
-      samples[start + i] += c.level * attack * (body * 0.28 + tick * 0.5);
+      samples[start + i] += c.level * attack * (body + tick * timbre.noise);
     }
   }
   // Soft limiting protects against contact overlap. Fade the end to zero.

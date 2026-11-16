@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { readSettings, saveSettings } from "../core/storage.mjs";
-import { synthesizeCue, normalizeSound } from "../core/sound.mjs";
+import { synthesizeCue, normalizeSound, soundStyle } from "../core/sound.mjs";
 
 let localPreference = null;
 export const soundPreferences = () => localPreference || readSettings().sound;
@@ -83,10 +83,13 @@ export class SoundPlayer {
   }
   play(name) {
     const value = this.preferences(),
-      ctx = this.context;
+      ctx = this.context,
+      style = soundStyle(value, name),
+      key = `${name}:${style}`;
     if (
       !value.enabled ||
       !value.volume ||
+      style === "off" ||
       !this.visible() ||
       ctx?.state !== "running"
     )
@@ -94,15 +97,15 @@ export class SoundPlayer {
     // Debounce UI events against elapsed page time. The audio device's sample
     // clock can stall while its context still reports "running".
     const now = this.now();
-    if (now - (this.last.get(name) ?? -Infinity) < 35) return false;
+    if (now - (this.last.get(key) ?? -Infinity) < 35) return false;
     let source;
     try {
-      let buffer = this.buffers.get(name);
+      let buffer = this.buffers.get(key);
       if (!buffer) {
-        const samples = synthesizeCue(name, ctx.sampleRate);
+        const samples = synthesizeCue(name, ctx.sampleRate, style);
         buffer = ctx.createBuffer(1, samples.length, ctx.sampleRate);
         buffer.copyToChannel(samples, 0);
-        this.buffers.set(name, buffer);
+        this.buffers.set(key, buffer);
       }
       if (this.voices.size >= 8)
         this.release(this.voices.values().next().value);
@@ -111,7 +114,7 @@ export class SoundPlayer {
       source.connect(this.master);
       source.onended = () => this.release(source);
       this.voices.add(source);
-      this.last.set(name, now);
+      this.last.set(key, now);
       source.start();
       return true;
     } catch {

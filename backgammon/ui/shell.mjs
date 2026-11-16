@@ -512,34 +512,9 @@ export async function preferences() {
     motion.setAttribute("aria-valuetext", label);
   };
   updateMotion();
-  const sounds = el("input", {
-    type: "checkbox",
-    checked: s.sound.enabled,
-    onChange: (e) => changeSound({ enabled: e.target.checked }),
-  });
-  const volumeText = el("output", {}, `${s.sound.volume}%`);
-  const volume = el("input", {
-    type: "range",
-    min: 0,
-    max: 100,
-    step: 5,
-    value: s.sound.volume,
-    onInput: (e) => changeSound({ volume: Number(e.target.value) }),
-  });
-  const previewSound = button("Preview sounds", async () => {
-    await sound.unlock();
-    sound.play("roll");
-  });
-  const updateSounds = () => {
-    const value = soundPreferences();
-    sounds.checked = value.enabled;
-    volume.value = value.volume;
-    volumeText.textContent = `${value.volume}%`;
-    volume.setAttribute("aria-valuetext", `${value.volume} percent`);
-    previewSound.disabled = !value.enabled || value.volume === 0;
-  };
-  updateSounds();
-  addEventListener("bg-sound", updateSounds);
+  const { soundControls } = await import("./sound-editor.mjs");
+  const audio = soundControls(changeSound);
+  audio.hidden = true;
   const display = el(
     "div",
     { class: "stack settings-display" },
@@ -579,18 +554,6 @@ export async function preferences() {
       onChange: e => { saveSettings({analysisAhead:e.target.checked}); dispatchEvent(new Event("bg-settings")); }}), "Analyze ahead in computer games"),
     el("p", {class:"muted small"}, "Prepare feedback while you choose, then explore likely replies using spare engine time. Future work is limited to 24 positions or 20 seconds between decisions and pauses when this tab is hidden. Uses more battery; never predicts or changes your actual dice."),
     el(
-      "div",
-      { class: "sound-settings stack" },
-      el("label", { class: "check" }, sounds, "Sound effects"),
-      field("Sound volume", volume),
-      el("div", { class: "row spread" }, volumeText, previewSound),
-      el(
-        "p",
-        { class: "muted small" },
-        "Quiet checker, dice and cube sounds. Background tabs stay silent.",
-      ),
-    ),
-    el(
       "p",
       { class: "muted small" },
       "Settings apply across all four tools.",
@@ -610,11 +573,12 @@ export async function preferences() {
   const colors = appearanceControls();
   colors.hidden = true;
   const tabs = el("div", { class: "segmented settings-tabs" });
-  const sections = [colors, display, keys];
+  const sections = [colors, display, audio, keys];
   let selectTab;
   for (const [label, shortLabel, section] of [
     ["Board colors", "Board", colors],
     ["Display & controls", "Display", display],
+    ["Sounds", "Sounds", audio],
     ...(touchOnly ? [] : [["Keyboard", "Keyboard", keys]]),
   ]) {
     const tab = button(
@@ -623,6 +587,7 @@ export async function preferences() {
         colors.hidden = section !== colors;
         display.hidden = section !== display;
         keys.hidden = section !== keys;
+        audio.hidden = section !== audio;
         selectTab(tab);
         d.querySelector(".dialog-body").scrollTop = 0;
       },
@@ -647,6 +612,7 @@ export async function preferences() {
       { class: "settings-content" },
       colors,
       display,
+      audio,
       keys,
     ),
     [],
@@ -662,7 +628,7 @@ export async function preferences() {
     dispatchEvent(new Event("bg-settings")),
   );
   d.addEventListener("close", () =>
-    removeEventListener("bg-sound", updateSounds),
+    audio.dispose(),
   );
   d.addEventListener("close", () => colors.dispose());
   d.addEventListener("close", () => release.dispose());
