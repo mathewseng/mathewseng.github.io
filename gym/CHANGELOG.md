@@ -2,6 +2,11 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-11-15 — Push Workout
+
+- Logged the 7 PM, 80-minute session with all seven exercises and ascending pushdown loads.
+- Preserved unspecified equipment details and load conventions; latest-session charts load the new record automatically.
+
 ## 2026-10-07 — October 6 Pull Workout
 
 - Logged the 10:30 PM, 50-minute pull session and separate 15-minute sauna.

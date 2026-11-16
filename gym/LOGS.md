@@ -1476,6 +1476,20 @@ Totals: **28 completed sets, 280 completed reps, and 6,800 lb entered-load volum
 
 ---
 
+# 28. Push Workout — November 15, 2026
+
+Start: 7:00 PM. Duration: 80 minutes.
+
+- Bench: 85 lb × 8, 8, 8
+- Incline bench: 55 lb × 8, 8, 10
+- Tricep dumbbell extension: 10 lb × 10, 10, 10
+- Cable lateral raise: 10 lb × 10, 10, 10, 10
+- Cable front raise: 10 lb × 10, 10, 10, 10
+- Cable tricep pushdown: 10 reps each at 30, 35, 40 lb (reported as “10x30/35/40lb”)
+- Cable ab crunch: 70 lb × 10, 10, 10
+
+23 completed sets, 220 reps, 7,720 lb entered-load volume. Bench exercises mapped to established Smith history; equipment and bar inclusion not reconfirmed. Dumbbell extension variation and per-hand convention, cable setups, effort, and symptom ratings were not supplied.
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench

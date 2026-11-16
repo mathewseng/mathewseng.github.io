@@ -1,0 +1,212 @@
+{
+  "id": "push-2026-11-15",
+  "date": "2026-11-15",
+  "startTime": "19:00",
+  "durationMinutes": 80,
+  "type": "push",
+  "title": "November 15 Push Workout",
+  "chronologyIndex": 28,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Bench",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-15-smith-flat-bench-1",
+          "weightLb": 85,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-smith-flat-bench-2",
+          "weightLb": 85,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-smith-flat-bench-3",
+          "weightLb": 85,
+          "reps": 8,
+          "completed": true
+        }
+      ],
+      "notes": "Bench mapped to established Smith flat-bench history; equipment and bar inclusion not reconfirmed."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Incline Bench",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-15-smith-incline-bench-1",
+          "weightLb": 55,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-smith-incline-bench-2",
+          "weightLb": 55,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-smith-incline-bench-3",
+          "weightLb": 55,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Mapped to established Smith incline history; equipment and bar inclusion not reconfirmed."
+    },
+    {
+      "exerciseId": "dumbbell-triceps-extension",
+      "name": "Dumbbell Triceps Extension",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-15-dumbbell-triceps-extension-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-dumbbell-triceps-extension-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-dumbbell-triceps-extension-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Overhead versus lying variation and per-hand versus total load not specified.",
+      "equipment": "Dumbbells"
+    },
+    {
+      "exerciseId": "cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-15-cable-lateral-raise-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-cable-lateral-raise-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-cable-lateral-raise-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-cable-lateral-raise-4",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Unilateral versus bilateral setup and per-side convention not specified.",
+      "equipment": "Cable machine"
+    },
+    {
+      "exerciseId": "cable-front-raise",
+      "name": "Cable Front Raise",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-15-cable-front-raise-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-cable-front-raise-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-cable-front-raise-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-cable-front-raise-4",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Unilateral versus bilateral setup and per-side convention not specified.",
+      "equipment": "Cable machine"
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Cable Triceps Pushdown",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-15-triceps-pushdown-1",
+          "weightLb": 30,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-triceps-pushdown-2",
+          "weightLb": 35,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-triceps-pushdown-3",
+          "weightLb": 40,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Interpreted 10x30/35/40lb as 10 reps at each load; attachment not specified.",
+      "equipment": "Cable machine"
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-15-cable-ab-crunch-1",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-cable-ab-crunch-2",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-15-cable-ab-crunch-3",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Setup not specified.",
+      "equipment": "Cable machine"
+    }
+  ],
+  "notes": "23 completed sets, 220 reps, 7,720 lb entered-load volume. No warm-ups, RIR, readiness, soreness, or pain ratings supplied. Ambiguous per-side loads are not doubled."
+}
