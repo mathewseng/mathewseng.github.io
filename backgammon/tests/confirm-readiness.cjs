@@ -53,7 +53,7 @@ module.exports=async function confirmReadiness(browser,base,out,name){
     assert.equal((await page.evaluate(async()=>(await(await import('/backgammon/core/storage.mjs')).get('work','play')).game.events.length)),0);
     assert.equal(await page.evaluate(()=>requested.readyOnly),true);
     if(mode==='pending-revise'){
-     await page.getByRole('button',{name:'Revise',exact:true}).tap();
+     await page.locator('.decision-prompt .close').tap();
      await page.evaluate(()=>finishCheck(.05));await page.waitForTimeout(100);
      assert.ok(await page.locator('#confirm').isEnabled());
      await waitWork(page,w=>w.game.events.length===0&&w.draft.length>0);

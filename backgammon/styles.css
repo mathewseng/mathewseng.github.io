@@ -363,7 +363,7 @@ details .stack {
 
 .chance-table {
   display: grid;
-  grid-template-columns: max-content repeat(4, minmax(0, auto));
+  grid-template-columns: minmax(0, 1fr) repeat(4, max-content);
   justify-content: space-between;
   gap: 1px 10px;
   align-items: baseline;
@@ -389,6 +389,8 @@ details .stack {
 }
 
 .chance-table .chance-cell {
+  /* Reserve a complete percentage even when Safari reflows a fallback font. */
+  min-width: 6ch;
   text-align: right;
 }
 
@@ -401,8 +403,10 @@ details .stack {
 }
 
 .chance-table .chance-name {
+  min-width: 0;
   max-width: 8em;
   overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -3386,9 +3390,9 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
 }
 
 @container (max-width: 599px) {
-  /* Narrow columns: split evenly so each player's chances fit in two lines. */
+  /* Narrow history: leave twice the room for checker moves and revisions. */
   .history-turn-decisions[data-paired="true"] {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   }
   .play-feedback .history-turn-decisions[data-paired="true"] > :is(.feedback-review, .feedback-pending) {
     grid-template-columns: minmax(0, 1fr);
@@ -8092,16 +8096,6 @@ html.skin-shader .docs-toc--sticky {
 }
 .checker-warning .dialog-foot > button { min-width: 0; padding-inline: 10px; }
 
-@media (max-width: 700px) and (orientation: portrait) {
-  /* Keep the board in view and the decision beside its lower edge, rather
-     than parking short warnings against the home indicator on tall phones. */
-  .dialog.bg-dialog.decision-warning[data-thumb-positioned][open]:not([data-keyboard]) {
-    top: var(--decision-top);
-    bottom: auto;
-    margin: 0 auto;
-  }
-  .decision-warning .dialog-foot > button { min-height: 48px; }
-}
 
 .board-cube-replies {
   position: absolute;
@@ -8507,4 +8501,91 @@ html[data-focus-navigation="true"] .board-confirm #confirm:focus-visible {
   .play-page.landscape-table .landscape-dock { gap: 6px; padding: 6px 8px; }
   .play-page.landscape-table .player-strip { min-height: 30px; padding: 3px 6px; }
   .play-page.landscape-table .player-strip .player-stats { display: none; }
+}
+
+/* Decision review stays in the same reading path as the submitted checkers. */
+.decision-review-slot[hidden] { display: none; }
+.decision-prompt:not(.inline-decision-review) { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.inline-decision-review {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+}
+.inline-decision-review:focus { outline: none; }
+.inline-decision-review .dialog-head { display: contents; }
+.inline-decision-review .dialog-head h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.inline-decision-review .close { grid-column: 2; grid-row: 1; width: 44px; min-height: 44px; }
+.inline-decision-review .dialog-body {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+  font-size: var(--t-md);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+.inline-decision-review p { margin: 0; }
+.inline-decision-review .dialog-foot {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.inline-decision-review .dialog-foot > .btn { width: 100%; min-width: 0; min-height: 48px; padding: 8px; }
+
+@media (max-width: 700px) and (orientation: portrait) {
+  /* During play, page switching lives in the pages button. The table gets the
+     space that a persistent navigation row and duplicate title used to take. */
+  .play-page.live-table > .topbar { min-height: 52px; }
+  .play-page.live-table .topbar .tool-nav { display: none; }
+  .play-page.live-table #landscape-pages { display: inline-flex; }
+  .play-page.live-table .tool-head h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .play-page.live-table .tool-head .subtitle { display: block; margin: 0; }
+  .play-page.live-table .stage,
+  .play-page.live-table:has(.board-slot.has-equity-bar) .stage {
+    grid-template-rows: auto max-content auto auto auto auto;
+    align-content: start;
+  }
+  .play-page.live-table .decision-review-slot { grid-row: 3; width: 100%; min-width: 0; }
+  .play-page.live-table #player { grid-row: 4; }
+  .play-page.live-table .board-actions { grid-row: 5; }
+  .play-page.live-table .action-area {
+    grid-row: 6;
+    align-self: start;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+  }
+  .play-page.live-table .mobile-game-summary .history-game-detail {
+    max-height: min(320px, 40dvh);
+  }
+  .play-page.live-table .stage:has(.inline-decision-review) > #player,
+  .play-page.live-table .stage:has(.inline-decision-review) .board-actions,
+  .play-page.live-table .stage:has(.inline-decision-review) > .action-area { display: none; }
 }

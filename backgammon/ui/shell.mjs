@@ -1498,7 +1498,7 @@ export class DraftBoard {
       hideDice: !!this.hideDice,
       lastMove: this.preview
         ? this.previewTrace?.state === this.preview ? this.previewTrace.trace : null
-        : this.lastMove,
+        : this.reviewTrace || this.lastMove,
     });
     players(s, this.names, this.taker);
     $("draft-line").setAttribute("role", "status");

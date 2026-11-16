@@ -696,11 +696,11 @@ Review uses one ranked preview list, opening on the best move. The Position row 
 
 Depth buttons request fixed local GNUbg searches up to 6 ply. Manual 5- and 6-ply searches extend the screened Research comparison, retaining its finalists through each intervening depth; automatic play remains 3–4 ply. Estimates use Auto’s forecast when available, otherwise approximate growth from measured computation. Without local timing, a rough prior starts at 1.5 seconds for 2 ply and grows ×8 per additional ply; measured timings replace it. Cached/book retrieval times are never treated as search speed. Every button shows an approximate duration, not a deadline. See `docs/bg10-release.json` for the rebuilt scalar/SIMD bindings and corresponding source. Progress counts completed positions at the displayed search stage; cube native calls remain indeterminate. A cancelled, failed or closed search cannot replace the last complete comparison. The modal owns at most one worker and releases it on close.
 
-Game summaries in history are always expanded. Portrait phones open the current-game
-summary in the table footer by default, showing initial/accepted checker totals and
-averages plus cube totals and mistake counts. Its disclosure stays at the bottom;
-the footer reserves the same height when collapsed, so the board, player names and
-pip counts never move. Very short screens scroll the summary internally as needed.
+Game summaries in history are always expanded. Portrait Play starts the current-game
+summary collapsed just below the turn controls. Opening it shows initial/accepted
+checker totals and averages plus cube totals and mistake counts. The summary grows
+in page flow without moving or resizing the board, player names or pip counts;
+short screens scroll its contents internally as needed.
 Hint and Controls remain available in the rail above it; while GNUbg thinks or a
 move is checked, the status and Cancel appear below them. Undo turn, analysis/history
 and other secondary actions live in Controls. Confirm sits in the left-hand open
@@ -729,7 +729,7 @@ the controls and summary below it instead of shrinking the board; taller phones 
 keep the summary at the bottom of the viewport. Same-device games have a player switch in the summary. Scrolling
 below the table reaches analysis.
 Short portrait screens keep Settings but tuck navigation into Controls.
-The costly-checker warning offers Hint and Play best above Reset and Play anyway; on phones in portrait it docks at the bottom so the move stays visible. Its close icon returns to revising; Play anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
+The costly-checker warning offers Hint and Play best above Reset and Play anyway; on portrait phones it sits inline below the board with no backdrop, alongside the submitted move’s arrows. Its close icon returns to revising; Play anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
 Hint preserves the draft; Play best returns drafted checkers before replaying.
 A drag can start anywhere in an occupied movable point and lifts its top checker.
 New installs default to Liquid Chrome styling with the Plum board palette;
@@ -760,4 +760,4 @@ through the numeric ceiling, scoring, ownership, replay and saved links.
 stacked labels in portrait/landscape/desktop, persisted chains and editor context,
 exact take/drop stakes, and real-WASM values in Chromium, Firefox and WebKit.
 
-On portrait phones, short decision warnings sit immediately below the visible board when space permits, with 48px actions in the lower-middle reach area. Smaller visual viewports and keyboards retain the safe-area dialog layout.
+Portrait Play uses an inline decision review below the board: the EV loss, Hint, Play best, Reset and Play anyway remain beside the submitted checkers and their move arrows. Revise returns to the editable draft. Pending grades, unavailable feedback and cube warnings use the same area. Rotation keeps the pending decision and switches to the standard modal on wide layouts. During portrait play, the pages button replaces the persistent navigation row; the game summary starts collapsed and expands in normal page flow.

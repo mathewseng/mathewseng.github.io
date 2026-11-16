@@ -33,7 +33,7 @@ module.exports=async(browser,base,out,name)=>{
     const tap=async(x,y)=>layout==='desktop'?page.mouse.click(x,y):page.touchscreen.tap(x,y);
     const roll=()=>tap(board.x+board.width*.72,board.y+board.height*.5);
     await roll();
-    const modal=page.getByRole('dialog',{name:'Review before confirming?',exact:true});
+    const modal=page.locator('.decision-prompt');
     await modal.waitFor();
     assert.equal(await modal.evaluate(n=>getComputedStyle(n).opacity),'1','the warning is immediately visible when it blocks play');
     if(!cached)await page.evaluate(()=>window.finishCube());
@@ -50,7 +50,8 @@ module.exports=async(browser,base,out,name)=>{
     await page.locator('#board.roll-ready').waitFor();
     await roll();await modal.waitFor();
     await page.evaluate(()=>{window.oldCubeCompletion=window.finishCube;});
-    await tap(4,viewport.height-4);
+    if(layout==='portrait') await modal.locator('.close').click();
+    else await tap(4,viewport.height-4);
     await modal.waitFor({state:'detached'});
     await page.evaluate(()=>window.oldCubeCompletion());
     await page.waitForTimeout(80);
@@ -58,7 +59,7 @@ module.exports=async(browser,base,out,name)=>{
     await page.locator('#board.roll-ready').waitFor();
     await roll();await modal.waitFor();
     if(!cached)await page.evaluate(()=>window.finishCube());
-    await page.waitForFunction(()=>!document.querySelector('dialog[open] .primary')?.disabled);
+    await page.waitForFunction(()=>!document.querySelector('.decision-prompt .primary')?.disabled);
     await modal.getByRole('button',{name:'Confirm anyway',exact:true}).click();
     const committed=await waitWork(page,w=>w?.game.events.length>0);
     assert.equal(committed.game.events[0].action.type,'roll');

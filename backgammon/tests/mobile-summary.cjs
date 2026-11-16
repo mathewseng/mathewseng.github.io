@@ -26,7 +26,8 @@ module.exports=async(browser,base,out,name)=>{
   await page.locator('#resume-match').tap();
   const summary=page.locator('#mobile-game-summary'),history=page.locator('#move-feedback .history-game-card[data-game="1"]');
   await summary.waitFor();
-  assert.equal(await summary.evaluate(n=>n.open),true,'running summary opens by default');
+  assert.equal(await summary.evaluate(n=>n.open),false,'running summary starts compact');
+  await summary.locator(':scope > summary').tap();
   assert.equal(await summary.locator('[data-loss-kind="checker"] [data-stage="accepted"] strong').innerText(),'0.010');
   assert.equal(await history.count(),0,'analysis does not duplicate the current game summary');
   assert.ok(await page.locator('#move-feedback .history-turn').count()>0,'current game decisions remain available');
@@ -115,6 +116,6 @@ module.exports=async(browser,base,out,name)=>{
   }
 
   assert.deepEqual(errors,[]);
-  return {noDuplicateCurrentSummary:true,defaultExpanded:true,utilityToggle:true,widthFirstPortrait:true,normalPageFlow:true,layouts};
+  return {noDuplicateCurrentSummary:true,defaultExpanded:false,utilityToggle:true,widthFirstPortrait:true,normalPageFlow:true,layouts};
  }finally{await ctx.close();}
 };

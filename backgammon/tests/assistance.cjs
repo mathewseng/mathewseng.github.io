@@ -505,9 +505,9 @@ module.exports = async function assistanceUX(
       assetMode = "hold";
       await page.locator("#confirm").click();
       await waitHeld();
-      const pendingReview = page.getByRole('dialog', {name:'Review before confirming?',exact:true});
+      const pendingReview = page.locator('.decision-prompt');
       assert.match(await pendingReview.innerText(), /Still calculating EV/);
-      await pendingReview.getByRole('button',{name:'Revise',exact:true}).click();
+      await pendingReview.locator('.close').click();
       await page.waitForFunction(() => !document.querySelector('#confirm')?.disabled);
       assert.deepEqual((await saved()).draft, pending.draft);
       assert.deepEqual((await saved()).game.state, pending.game.state);
@@ -519,7 +519,7 @@ module.exports = async function assistanceUX(
       await page.waitForFunction(() => document.querySelector('#pending-move-loss')?.textContent.includes('EV unavailable'));
       assert.deepEqual((await saved()).game.state, pending.game.state);
       await shot("feedback-error");
-      await pendingReview.getByRole('button',{name:'Confirm without feedback',exact:true}).click();
+      await pendingReview.getByRole('button',{name:'Play anyway',exact:true}).click();
       await waitSaved(
         (s) => s?.game.events.length === pending.game.events.length + 1,
       );

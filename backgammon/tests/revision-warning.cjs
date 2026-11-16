@@ -34,7 +34,7 @@ module.exports=async function revisionWarning(browser,base,out,name){
       await page.locator('#resume-match').click();
       await page.locator('#confirm').click();
       if(loss>.002){
-        await page.getByRole('dialog').getByRole('heading',{name:'Review before confirming?'}).waitFor();
+        await page.getByRole('region',{name:'Review before confirming?',exact:true}).waitFor();
         // The pending warning opens before grading. This case tests revising a
         // completed grade; the unlisted cases below cover revision while pending.
         await waitWork(page,w=>w?.game.initialDecision?.evaluation?.result?.error===loss);
@@ -84,10 +84,11 @@ module.exports=async function revisionWarning(browser,base,out,name){
       await page.evaluate(()=>{window.submittedDice=[...document.querySelectorAll('#board .board-die-face')];});
       await page.locator('#confirm').click();
       await page.locator('#pending-move-loss').waitFor();
-      assert.ok(await page.evaluate(()=>submittedDice.every((node,i)=>node===document.querySelectorAll('#board .board-die-face')[i])),
-        'Confirm keeps the submitted board and its animation nodes while grading');
-      assert.ok(await page.locator('#board [role="button"]').evaluateAll(nodes=>nodes.every(node=>node.getAttribute('aria-disabled')==='true')),
-        'the retained board is locked until the player revises or confirms');
+      assert.ok(await page.locator('#board .move-arrow-line').count() > 0,
+        'the submitted move has visible arrows while the grade is pending');
+      assert.equal(await page.locator('dialog[open]').count(), 0, 'portrait review is inline');
+      assert.ok(await page.evaluate(() => !document.documentElement.classList.contains('bg-dialog-open')),
+        'portrait review does not dim or lock page scrolling');
       assert.match(await page.locator('#pending-move-loss').textContent(),/Still calculating EV/);
       assert.equal((await read()).game.events.length,0);
       if(response==='zero'||response==='threshold') {
@@ -115,10 +116,18 @@ module.exports=async function revisionWarning(browser,base,out,name){
       } else if(response==='reset') {
         await page.setViewportSize({width:430,height:932});
         await page.waitForFunction(() => {
-          const warning = document.querySelector('.checker-warning[data-thumb-positioned]');
+          const warning = document.querySelector('.checker-warning.inline-decision-review');
           const board = document.querySelector('.board-slot > .bg-board');
           return warning && warning.getBoundingClientRect().top >= board.getBoundingClientRect().bottom + 8;
         });
+        await page.evaluate(() => { window.pendingReviewNode = document.querySelector('.decision-prompt'); });
+        await page.setViewportSize({width:844,height:390});
+        await page.locator('dialog[open] .decision-prompt').waitFor();
+        assert.ok(await page.evaluate(() => pendingReviewNode === document.querySelector('.decision-prompt')),
+          'rotation retains the same pending grade and actions');
+        assert.equal((await read()).game.events.length, 0, 'rotation never commits a pending decision');
+        await page.setViewportSize({width:430,height:932});
+        await page.locator('.inline-decision-review').waitFor();
         const reach = await page.evaluate(() => {
           const board = document.querySelector('.board-slot > .bg-board').getBoundingClientRect();
           const warning = document.querySelector('.checker-warning').getBoundingClientRect();
@@ -130,7 +139,7 @@ module.exports=async function revisionWarning(browser,base,out,name){
         });
         assert.ok(reach.top >= reach.boardBottom + 8, 'the complete board remains visible above the warning');
         assert.ok(reach.bottom < reach.height - 80, 'the warning does not sit against the home indicator');
-        assert.ok(reach.buttons.every(b => b.height >= 48 && b.center > reach.height*.55 && b.center < reach.height*.85),
+        assert.ok(reach.buttons.every(b => b.height >= 48 && b.center > reach.height*.45 && b.center < reach.height*.8),
           'all four actions fit the lower-middle thumb area on iPhone 14 Pro Max');
         const buttons=await page.locator('.checker-warning .dialog-foot button').evaluateAll(nodes=>nodes.map(n=>({text:n.textContent,x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y,width:n.getBoundingClientRect().width})));
         assert.deepEqual(buttons.map(b=>b.text),['Hint','Play best','Reset','Play anyway']);

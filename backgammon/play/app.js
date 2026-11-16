@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { decisionPrompt } from "../ui/decision-prompt.mjs";
+import { moveTrace } from "../core/move-trace.mjs";
 import { ProgressWriter } from "../core/progress-writer.mjs";
 import { nextGameTable, archivedTable } from '../core/game-archive.mjs';
 import { clearHistoryStates } from '../core/history-states.mjs';
@@ -170,6 +172,8 @@ function confirmIcon() {
 ui.board.container.append(boardConfirm);
 ui.board.container.before(boardWorkspace);
 boardWorkspace.append(ui.board.container, boardActions);
+const decisionSlot = el("div", { class: "decision-review-slot", hidden: true });
+boardActions.before(decisionSlot);
 // Game result card: an overlay in the board slot (like the opening roll)
 // naming the result level, the score change and the cube.
 const resultCard = el("section", { class: "bg-result-card game-over-card", hidden: true, "aria-label": "Game result" });
@@ -381,9 +385,9 @@ reviewArea.append(el("header", { class: "review-header" },
     $("panel-toggle").focus({ preventScroll: true });
   }, "ghost"),
 ));
-// Portrait reserves the same footer height whether its summary is open or closed.
+// Portrait keeps the summary collapsed until the player asks for its details.
 const phonePortrait = matchMedia("(max-width: 600px) and (orientation: portrait)");
-const mobileSummary = el("details", { id: "mobile-game-summary", class: "mobile-game-summary", hidden: true, open: true });
+const mobileSummary = el("details", { id: "mobile-game-summary", class: "mobile-game-summary", hidden: true });
 const mobileSummaryHeading = el("summary", { "aria-label": "Game summary" });
 const mobileSummaryBody = el("div", { class: "history-game-detail" });
 mobileSummary.append(mobileSummaryHeading, mobileSummaryBody);
@@ -2993,6 +2997,7 @@ function releaseAssistance() {
   const job = assistanceJob;
   if (!job) return;
   assistanceJob = null;
+  draft.reviewTrace = null;
   // Closing/revising a warning still leaves the table in use. Cancel obsolete
   // answers without throwing away a warm engine needed by the next action.
   if (!job.done) analysis.cancel({releaseWorker:false});
@@ -3208,6 +3213,13 @@ async function evaluateDecision(action) {
     button("Revise", onClose),
     button("Confirm anyway", () => finish(completedResult), "primary", {disabled: !completedResult}),
   ];
+  const warning = (title, content, buttons) => {
+    if (checker && draft.draft.length) {
+      draft.reviewTrace = moveTrace(draft.current(), job.source.turn, draft.draft, job.source.dice);
+      draft.render();
+    }
+    return decisionPrompt(title, content, buttons, { container: decisionSlot, checker });
+  };
   const configureWarning = () => {
     const close = job.dialog.querySelector(".close");
     close.setAttribute("aria-label", "Revise");
@@ -3229,8 +3241,7 @@ async function evaluateDecision(action) {
     warningCopy = el("p", { role: "status", id: "pending-move-loss" },
       checker ? "Still calculating EV. Review your move or play it now."
         : "Checking the cube decision before rolling…");
-    job.dialog = dialog("Review before confirming?", warningCopy, warningActions(),
-      {warning:true, dismissible:true, onDismiss:onClose});
+    job.dialog = warning("Review before confirming?", warningCopy, warningActions());
     configureWarning();
   };
   // The rail's checking status answers the tap at once. Most grades land
@@ -3280,7 +3291,7 @@ async function evaluateDecision(action) {
     }
     if (config.warning && needsRevisionWarning(result.error)) {
       const f = decisionFeedback(result, job.source);
-      job.dialog = dialog(
+      job.dialog = warning(
         "Review before confirming?",
         el(
           "p",
@@ -3288,7 +3299,6 @@ async function evaluateDecision(action) {
           lossCopy(f),
         ),
         warningActions(),
-        {warning:true, dismissible:true, onDismiss:onClose},
       );
       configureWarning();
     } else await finish(result);
@@ -3309,23 +3319,12 @@ async function evaluateDecision(action) {
       }
       return;
     }
-    job.dialog = dialog(
-      "Move feedback unavailable",
-      el(
-        "div",
-        { class: "stack" },
-        el("p", { role: "alert" }, error.message),
-        el(
-          "p",
-          {},
-          "Your decision has not been played. You can continue without feedback or cancel and try again.",
-        ),
-      ),
-      [
-        button("Keep editing", () => job.dialog.close()),
-        button("Confirm without feedback", () => finish(), "primary"),
-      ],
-    );
+    warningCopy = el("p", { role: "status", id: "pending-move-loss" },
+      `EV unavailable: ${error.message}. ${checker ? "Play anyway" : "Confirm without feedback"} continues without feedback.`);
+    job.dialog = warning("Move feedback unavailable", warningCopy, checker ? warningActions() : [
+      button("Keep editing", onClose),
+      button("Confirm without feedback", () => finish(), "primary"),
+    ]);
     job.dialog.addEventListener("close", onClose, { once: true });
   }
 }

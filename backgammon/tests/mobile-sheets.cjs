@@ -1,4 +1,3 @@
-const { showPlayControls } = require("./play-helpers.cjs");
 const assert = require("node:assert/strict"), path = require("node:path");
 
 module.exports = async function mobileSheets(browser, base, out, name) {
@@ -27,9 +26,11 @@ module.exports = async function mobileSheets(browser, base, out, name) {
     await page.goto(base+`/backgammon/play/#resume=${id}`);
     await page.reload();
     await page.locator("#confirm").waitFor();
-    await showPlayControls(page);
-    await page.getByLabel("Select a checker",{exact:true}).selectOption("12");
-    await page.getByLabel("Move selected checker",{exact:true}).selectOption("8");
+    await page.locator("#panel-toggle").tap();
+    const picker = page.locator("#draft-controls select");
+    const move = await picker.locator("option").filter({hasText:/^13\/9 · die 4$/}).getAttribute("value");
+    await picker.selectOption(move);
+    await page.locator("#details-dialog .close").tap();
     // The draft is saved after a paint (play/app.js saveDraftAfterPaint); wait for it.
     let before = await work();
     for (let i=0; i<100 && before.draft.length!==1; i++) { await page.waitForTimeout(50); before = await work(); }
@@ -39,8 +40,9 @@ module.exports = async function mobileSheets(browser, base, out, name) {
       await page.evaluate(()=>scrollTo(0,0));
       const strip=await page.locator("#player").evaluate(row=>{
         const name=row.querySelector("strong").getBoundingClientRect(), badge=row.querySelector(".player-status").getBoundingClientRect(), stats=row.querySelector(".player-stats").getBoundingClientRect();
+        const separate = (a,b) => a.right <= b.left + .5 || b.right <= a.left + .5 || a.bottom <= b.top + .5 || b.bottom <= a.top + .5;
         return {text:row.querySelector(".player-status").textContent, badgeVisible:badge.width>0,
-          noOverlap:name.right<=badge.left && (!stats.width || badge.right<=stats.left), right:Math.max(badge.right,stats.right),width:innerWidth};
+          noOverlap:separate(name,badge) && (!stats.width || separate(badge,stats)), right:Math.max(badge.right,stats.right),width:innerWidth};
       });
       assert.equal(strip.text,"To move");
       assert.ok(strip.badgeVisible && strip.noOverlap && strip.right<=strip.width, `long names never cover turn status or score: ${width}x${height} ${JSON.stringify(strip)}`);
@@ -96,6 +98,7 @@ module.exports = async function mobileSheets(browser, base, out, name) {
     assert.equal(await page.locator("#inspector > #panel").count(),1);
     assert.deepEqual(await work(),before,"sheets never change saved dice or draft steps");
 
+    await page.locator("#all-controls").tap();
     await page.locator("#analysis-jump").tap();
     const scroll = await page.evaluate(()=>scrollY);
     assert.ok(scroll>0);
