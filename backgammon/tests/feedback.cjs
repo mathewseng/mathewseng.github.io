@@ -163,17 +163,14 @@ module.exports = async function feedbackUX(browser, base, out, browserName) {
     });
     await volume.focus();
     await page.keyboard.press("Home");
-    assert.equal(
-      await page
-        .getByRole("button", { name: "Preview roll dice", exact: true })
-        .isDisabled(),
-      true,
-    );
+    await page.getByRole("button", {name:"Roll dice: Classic",exact:true}).click();
+    assert.equal(await page.evaluate(async () => (await import("/backgammon/ui/sound.mjs")).sound.voices.size), 0);
+    await volume.focus();
     await page.keyboard.press("End");
     for (let n = 0; n < 6; n++) await page.keyboard.press("ArrowLeft");
     assert.equal(await volume.inputValue(), "70");
     await page
-      .getByRole("button", { name: "Preview roll dice", exact: true })
+      .getByRole("button", { name: "Roll dice: Classic", exact: true })
       .click();
     await shot("settings-desktop");
     const sizes =

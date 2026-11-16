@@ -23,18 +23,31 @@ module.exports = async function soundEditor(browser, base, out, name) {
       await editor.waitFor();
       assert.equal(await editor.locator(".sound-action").count(), 11);
       assert.equal(await page.getByLabel("Volume", {exact:true}).inputValue(), "35");
-      await page.getByLabel("Apply to all actions", {exact:true}).selectOption("wood");
-      await page.getByLabel("Hit checker sound", {exact:true}).selectOption("off");
-      assert.equal(await page.getByLabel("Apply to all actions", {exact:true}).inputValue(), "custom");
-      assert.ok(await page.getByRole("button", {name:"Preview hit checker",exact:true}).isDisabled());
-      await page.getByRole("button", {name:"Preview move checker",exact:true}).click();
+      const choice = (action, style) => page.getByRole("button", {name:`${action}: ${style}`,exact:true});
+      assert.equal(await editor.locator("select").count(), 0, "all sound choices are directly tappable");
+      await page.evaluate(async () => {
+        const {sound} = await import("/backgammon/ui/sound.mjs");
+        window.soundPreviews = [];
+        const play = sound.play.bind(sound);
+        sound.play = name => { const result = play(name); if(result) soundPreviews.push(name); return result; };
+      });
+      await choice("Hit checker", "Silent").click();
+      await choice("Move checker", "Glass").click();
+      await page.waitForFunction(() => soundPreviews.length === 1);
+      await choice("Move checker", "Wood").click();
+      await page.waitForFunction(() => soundPreviews.length === 2);
+      await choice("Move checker", "Wood").click();
+      await page.waitForFunction(() => soundPreviews.length === 3);
+      assert.deepEqual(await page.evaluate(() => soundPreviews), ["move","move","move"], "each tap plays immediately, including the selected choice");
+      assert.equal(await choice("Move checker", "Wood").getAttribute("aria-pressed"), "true");
+      assert.equal(await choice("Move checker", "Glass").getAttribute("aria-pressed"), "false");
       await page.waitForFunction(() => /Move checker · Wood/.test(document.querySelector(".sound-status").textContent));
       const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem("backgammon.v1.settings")).sound);
       assert.equal((await stored()).effects.move, "wood");
       assert.equal((await stored()).effects.hit, "off");
       for (const row of await editor.locator(".sound-action").all()) {
         await row.scrollIntoViewIfNeeded();
-        for (const control of await row.locator("select,button").all()) {
+        for (const control of await row.locator("button").all()) {
           const bounds = await control.boundingBox();
           assert.ok(bounds.width >= 44 && bounds.height >= 44, "44px sound controls");
         }
@@ -50,18 +63,26 @@ module.exports = async function soundEditor(browser, base, out, name) {
       await page.screenshot({path:shot});
       screenshots.push(shot);
       await page.getByRole("checkbox", {name:"Sound effects",exact:true}).uncheck();
-      assert.ok(await page.getByRole("button", {name:"Preview roll dice",exact:true}).isDisabled());
+      const previews = await page.evaluate(() => soundPreviews.length);
+      await choice("Roll dice", "Felt").click();
+      assert.equal(await page.evaluate(() => soundPreviews.length), previews, "muted or zero-volume choices save silently");
       await page.getByRole("button", {name:"Reset choices",exact:true}).click();
       assert.deepEqual(await stored(), {enabled:false,volume:35,effects:{}});
       await page.getByRole("checkbox", {name:"Sound effects",exact:true}).check();
       await page.getByLabel("Volume", {exact:true}).fill("0");
-      assert.ok(await page.getByRole("button", {name:"Preview roll dice",exact:true}).isDisabled());
-      await page.getByLabel("Move checker sound", {exact:true}).selectOption("glass");
+      await choice("Roll dice", "Digital").click();
+      assert.equal(await page.evaluate(() => soundPreviews.length), previews);
+      await editor.locator(".sound-bulk summary").click();
+      await choice("All actions", "Felt").click();
+      const all = await stored();
+      assert.equal(Object.keys(all.effects).length, 11);
+      assert.ok(Object.values(all.effects).every(style => style === "felt"));
+      await choice("Move checker", "Glass").click();
       await page.locator(".settings-dialog .close").click();
       await page.reload();
       await page.locator("#preferences").click();
       await page.getByRole("tab", {name:"Sounds",exact:true}).click();
-      assert.equal(await page.getByLabel("Move checker sound", {exact:true}).inputValue(), "glass");
+      assert.equal(await choice("Move checker", "Glass").getAttribute("aria-pressed"), "true");
       assert.equal(await page.getByLabel("Volume", {exact:true}).inputValue(), "0");
       assert.deepEqual(errors, []);
     } finally { await context.close(); }
