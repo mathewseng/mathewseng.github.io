@@ -490,6 +490,8 @@ function placeReview() {
   app.classList.toggle("live-table", started);
   app.classList.toggle("setup-table", !started);
   placeLandscapeDock(started);
+  if (desktopTable.matches) document.querySelector('.action-area').prepend(decisionSlot);
+  else boardActions.before(decisionSlot);
   // Keep the visible board anchored to its top edge when turn controls change
   // the available height. Review boards retain their centered presentation.
   ui.board.svg.setAttribute('preserveAspectRatio', started ? 'xMidYMin meet' : 'xMidYMid meet');
@@ -597,6 +599,11 @@ const draft = new DraftBoard(ui.board, () => {
   autoDraft();
   prethink.update();
 });
+draft.beforeChange = () => {
+  // Revise before the mutation renders, so its normal move/undo animation and
+  // dice state are preserved. A late grade belongs only to the old draft.
+  if (assistanceJob?.revisable) releaseAssistance();
+};
 draft.shortcutsEnabled = true;
 const prethink = new Prethink({
   engine: analysis.engine,
@@ -1194,7 +1201,7 @@ function render() {
     myTurn(s) &&
     !botBusy &&
     !committing &&
-    !assistanceJob &&
+    (!assistanceJob || assistanceJob.revisable) &&
     automaticDraft?.source !== s &&
     !opening.active &&
     s.phase === "move" &&
@@ -3200,21 +3207,23 @@ async function evaluateDecision(action) {
     showHint({ result, playBest });
   };
   const warningActions = () => checker ? [
-    button("Hint", () => openHint()),
-    button("Play best", () => openHint(true)),
+    button("Hint", () => openHint(), "", {"data-review-action":"hint"}),
+    button("Play best", () => openHint(true), "", {"data-review-action":"best"}),
     button("Reset", () => {
       if (!activeAssistance(job)) return;
       releaseAssistance();
       unlockDraft();
       draft.reset();
-    }),
-    button("Play anyway", () => finish(completedResult), "primary"),
+    }, "", {"data-review-action":"reset"}),
+    button("Play anyway", () => finish(completedResult), "", {"data-review-action":"anyway"}),
   ] : [
     button("Revise", onClose),
     button("Confirm anyway", () => finish(completedResult), "primary", {disabled: !completedResult}),
   ];
   const warning = (title, content, buttons) => {
     if (checker && draft.draft.length) {
+      job.revisable = true;
+      draft.enabled = true;
       draft.reviewTrace = moveTrace(draft.current(), job.source.turn, draft.draft, job.source.dice);
       draft.render();
     }
@@ -3222,19 +3231,21 @@ async function evaluateDecision(action) {
   };
   const configureWarning = () => {
     const close = job.dialog.querySelector(".close");
-    close.setAttribute("aria-label", "Revise");
-    close.title = "Revise your decision";
+    close?.setAttribute("aria-label", "Revise");
+    if (close) close.title = "Revise your decision";
     // Native close events are queued; cancel before a late solver result can
     // accept the decision the player just dismissed.
-    close.addEventListener("click", onClose);
+    close?.addEventListener("click", onClose);
     if (checker) {
       job.dialog.classList.add("checker-warning");
     }
     job.dialog.addEventListener("close", onClose, { once: true });
   };
   // A cube warning names the better action; "play" is the checker word.
-  const lossCopy = f => `${f.label} ${f.loss < 0.01 ? f.loss.toFixed(4) : f.value} vs ${
-    checker ? "the best play" : f.best.action === "pass" ? "Drop" : f.best.notation}.`;
+  const lossCopy = f => el("span", {}, `${f.label} `,
+    el("strong", {class:"decision-review-loss", "data-loss-tone":f.tone},
+      f.loss < 0.01 ? f.loss.toFixed(4) : f.value),
+    ` vs ${checker ? "the best play" : f.best.action === "pass" ? "Drop" : f.best.notation}.`);
   const showPendingWarning = () => {
     if (!config.warning || !activeAssistance(job)) return;
     if (job.dialog) return;
@@ -3285,7 +3296,7 @@ async function evaluateDecision(action) {
         return;
       }
       const f = decisionFeedback(result, job.source);
-      warningCopy.textContent = lossCopy(f);
+      warningCopy.replaceChildren(lossCopy(f));
       if (!checker) job.dialog.querySelector(".primary").disabled = false;
       return; // Keep the player's review open; never confirm behind the dialog.
     }

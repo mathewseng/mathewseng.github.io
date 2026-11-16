@@ -1315,6 +1315,7 @@ export class DraftBoard {
       }
     }
     if (!matchingPaths(this.paths, next).length) return;
+    this.beforeChange?.();
     const before = this.current();
     if (route.entry)
       this.link = { start: this.draft.length, length: route.steps.length,
@@ -1379,6 +1380,7 @@ export class DraftBoard {
       const kept = this.draft.filter((_, i) => i < link.start || i >= link.end);
       if (kept.length === link.start || !matchingPaths(this.paths, kept).length)
         return this.undoTo(link.start);
+      this.beforeChange?.();
       const before = this.current();
       this.draft = kept;
       this.selected = null;
@@ -1389,6 +1391,7 @@ export class DraftBoard {
     }
     const remaining = undoDieDraft(this.state, this.paths, this.draft, index, this.minDraft);
     if (!remaining) return;
+    this.beforeChange?.();
     const before = this.current(), step = this.draft[index],
       count = this.draft.length - remaining.length,
       exact = JSON.stringify(remaining) === JSON.stringify(this.draft.filter((_, i) => i !== index));
@@ -1406,6 +1409,7 @@ export class DraftBoard {
         index < this.minDraft || index >= this.draft.length) return;
     const link = this.linkedSteps();
     if (link && index > link.start && index < link.end) index = link.start;
+    this.beforeChange?.();
     const before = this.current(),
       step = this.draft[index], count = this.draft.length - index;
     this.preview = null;
@@ -1419,6 +1423,7 @@ export class DraftBoard {
     this.onChange({ kind: "undo" });
   }
   reset() {
+    if (this.draft.length > this.minDraft) this.beforeChange?.();
     const before = this.current(),
       changed = this.draft.length > this.minDraft;
     this.preview = null;

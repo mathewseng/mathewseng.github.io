@@ -4,9 +4,9 @@ Portrait play is the primary use case. Keep the checker board, the current decis
 
 ## Changes
 
-- Replaced portrait checker and cube warnings with an inline review below the board and equity strip. EV loss, Hint, Play best, Reset and Play anyway share one compact area with 48px actions. Revise restores the editable draft. There is no backdrop, page scroll lock or focus trap in portrait.
-- Submitted checker moves retain their arrows, departure ghosts and destination outlines while the review is pending or graded. The board remains locked against accidental edits until revision or confirmation.
-- Rotation reuses the same pending review, actions, grade and focused control. Desktop and landscape retain a modal; returning to portrait restores the inline review without submitting or cancelling the move.
+- Replaced portrait checker and cube warnings with an inline review below the board and equity strip. EV loss, Hint, Play best, Reset and Play anyway share one compact area with 48px actions. The board stays editable; moving a checker or undoing with a die clears the review and restores confirmation. There is no backdrop, page scroll lock or focus trap in portrait.
+- Submitted checker moves retain their arrows, departure ghosts and destination outlines while the review is pending or graded. Checker editing remains available; the old review and any late grade are discarded before the first draft change.
+- Rotation reuses the same pending review, actions, grade and focused control. Checker review stays inline in desktop and landscape as well, so the board remains accessible. Cube confirmation keeps its wider-layout modal.
 - Replaced the live portrait navigation row with the existing pages button and removed the duplicate Play heading. Setup still shows the full page navigation. Match context and Details/Tools remain available.
 - Started the game summary collapsed, directly after the turn controls. Expansion grows in page flow; it does not resize or move the board or player strips. Removed the reserved empty footer height.
 - Gave checker history twice the width of its paired cube decision on phones, reducing wrapped notation and large empty cube columns.

@@ -38,8 +38,9 @@ module.exports = async (browser, base) => {
     await page.evaluate(() => reviewFixture.copy.textContent = 'EV lost 0.125 vs the best play.');
     await inline.getByRole('button', {name:'Play best',exact:true}).focus();
     await page.setViewportSize({width:844,height:390});
-    await page.locator('dialog[open] .decision-prompt').waitFor();
-    assert.ok(await page.evaluate(() => document.querySelector('dialog[open]').contains(reviewFixture.prompt)));
+    await inline.waitFor();
+    assert.equal(await page.locator('dialog[open]').count(),0);
+    assert.equal(await inline.locator('.close').count(),0);
     assert.equal(await page.evaluate(() => reviewFixture.closes), 0, 'rotation never revises or commits');
     assert.equal(await page.evaluate(() => document.activeElement.textContent), 'Play best');
     await page.setViewportSize({width:430,height:932});

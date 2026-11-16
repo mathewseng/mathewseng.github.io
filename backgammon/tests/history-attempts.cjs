@@ -49,7 +49,7 @@ module.exports = async (browser, base, out, name) => {
       await resume();
       await page.locator('#confirm').click();
       await waitWork(page,w=>w?.game.initialDecision?.evaluation);
-      await page.locator('.checker-warning .close').click();
+      await page.locator('#board .board-die.consumed').last().click();
       // Reload between attempts to prove that revising does not discard the first choice.
       await hub();
       const expected = await page.evaluate(async () => {

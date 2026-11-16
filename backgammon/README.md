@@ -729,7 +729,7 @@ the controls and summary below it instead of shrinking the board; taller phones 
 keep the summary at the bottom of the viewport. Same-device games have a player switch in the summary. Scrolling
 below the table reaches analysis.
 Short portrait screens keep Settings but tuck navigation into Controls.
-The costly-checker warning offers Hint and Play best above Reset and Play anyway; on portrait phones it sits inline below the board with no backdrop, alongside the submitted move’s arrows. Its close icon returns to revising; Play anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
+The costly-checker warning offers Hint and Play best above Reset and Play anyway; on portrait phones it sits inline below the board with no backdrop, alongside the submitted move’s arrows. Checker reviews have no close icon: checkers and dice undo remain editable, and the first draft change clears the review and restores normal confirmation; Play anyway accepts the submitted move even while grading is pending. A completed grade at or below the 0.002 warning threshold continues automatically.
 Hint preserves the draft; Play best returns drafted checkers before replaying.
 A drag can start anywhere in an occupied movable point and lifts its top checker.
 New installs default to Liquid Chrome styling with the Plum board palette;
@@ -760,4 +760,4 @@ through the numeric ceiling, scoring, ownership, replay and saved links.
 stacked labels in portrait/landscape/desktop, persisted chains and editor context,
 exact take/drop stakes, and real-WASM values in Chromium, Firefox and WebKit.
 
-Portrait Play uses an inline decision review below the board: the EV loss, Hint, Play best, Reset and Play anyway remain beside the submitted checkers and their move arrows. Revise returns to the editable draft. Pending grades, unavailable feedback and cube warnings use the same area. Rotation keeps the pending decision and switches to the standard modal on wide layouts. During portrait play, the pages button replaces the persistent navigation row; the game summary starts collapsed and expands in normal page flow.
+Checker reviews stay inline and editable in every layout. Portrait Play places the review below the board: the EV loss, Hint, Play best, Reset and Play anyway remain beside the submitted checkers and their move arrows. Moving or undoing a checker clears the old review and cancels its pending grade. EV-loss numbers share Analysis’s loss-band colors. Pending grades and unavailable feedback use the same area; cube warnings retain their separate revision controls. Rotation keeps checker reviews inline. During portrait play, the pages button replaces the persistent navigation row; the game summary starts collapsed and expands in normal page flow.

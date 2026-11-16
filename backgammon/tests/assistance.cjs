@@ -507,9 +507,10 @@ module.exports = async function assistanceUX(
       await waitHeld();
       const pendingReview = page.locator('.decision-prompt');
       assert.match(await pendingReview.innerText(), /Still calculating EV/);
-      await pendingReview.locator('.close').click();
-      await page.waitForFunction(() => !document.querySelector('#confirm')?.disabled);
-      assert.deepEqual((await saved()).draft, pending.draft);
+      await page.locator('#board .board-die.consumed').last().click();
+      await waitSaved(s => s?.draft.length < pending.draft.length);
+      assert.ok((await saved()).draft.length < pending.draft.length);
+      await finishDraft();
       assert.deepEqual((await saved()).game.state, pending.game.state);
       await releaseHeld();
       assetMode = "fail";

@@ -18,8 +18,9 @@ export function decisionPrompt(title, content, actions, { container, checker = f
     "aria-label": "Revise", title: "Revise your decision",
   });
   revise.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  if (checker) prompt.classList.add("editable-checker-review");
   prompt.append(
-    el("div", { class: "dialog-head dialog-header" }, el("h2", {}, title), revise),
+    el("div", { class: "dialog-head dialog-header" }, el("h2", {}, title), ...(checker ? [] : [revise])),
     el("div", { class: "dialog-body", id: copyId }, content),
     el("footer", { class: "dialog-foot" }, ...actions),
   );
@@ -46,9 +47,10 @@ export function decisionPrompt(title, content, actions, { container, checker = f
     if (closed) return;
     const focus = prompt.contains(document.activeElement) ? document.activeElement : prompt;
     detachModal();
-    prompt.classList.toggle("inline-decision-review", portrait.matches);
-    container.hidden = !portrait.matches;
-    if (portrait.matches) {
+    const inline = checker || portrait.matches;
+    prompt.classList.toggle("inline-decision-review", inline);
+    container.hidden = !inline;
+    if (inline) {
       prompt.setAttribute("role", "region");
       container.append(prompt);
     } else {
@@ -64,7 +66,7 @@ export function decisionPrompt(title, content, actions, { container, checker = f
     focus.focus({ preventScroll: true });
   }
   prompt.addEventListener("keydown", event => {
-    if (event.key === "Escape" && portrait.matches) {
+    if (event.key === "Escape" && (checker || portrait.matches)) {
       event.preventDefault();
       event.stopPropagation();
       prompt.close();

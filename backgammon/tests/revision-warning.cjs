@@ -40,13 +40,13 @@ module.exports=async function revisionWarning(browser,base,out,name){
         await waitWork(page,w=>w?.game.initialDecision?.evaluation?.result?.error===loss);
         assert.deepEqual(await page.locator('.checker-warning .dialog-foot button').allTextContents(),['Hint','Play best','Reset','Play anyway']);
         assert.equal((await read()).game.events.length,0,'warning leaves turn uncommitted');
-        assert.equal(await page.locator('.checker-warning .close').getAttribute('aria-label'),'Revise');
-        await page.locator('.checker-warning .close').click();
+        assert.equal(await page.locator('.checker-warning .close').count(),0);
+        await page.locator('#board .board-die.consumed').last().click();
         assert.equal((await read()).game.events.length,0);
         const first=(await read()).game.initialDecision;
         assert.equal(first.action.type,'move','first submitted choice survives revision');
         assert.equal(first.evaluation.result.error,loss,'the first grade is saved before acceptance');
-        assert.equal(await page.locator('#confirm').isEnabled(),true);
+        while(await page.locator('#confirm').isDisabled()) await page.locator('#draft-controls select').selectOption({index:1},{force:true});
         await page.locator('#confirm').click();
         await page.getByRole('button',{name:'Play best',exact:true}).click();
       }
@@ -122,7 +122,8 @@ module.exports=async function revisionWarning(browser,base,out,name){
         });
         await page.evaluate(() => { window.pendingReviewNode = document.querySelector('.decision-prompt'); });
         await page.setViewportSize({width:844,height:390});
-        await page.locator('dialog[open] .decision-prompt').waitFor();
+        await page.locator('.editable-checker-review').waitFor();
+        assert.equal(await page.locator('dialog[open]').count(),0);
         assert.ok(await page.evaluate(() => pendingReviewNode === document.querySelector('.decision-prompt')),
           'rotation retains the same pending grade and actions');
         assert.equal((await read()).game.events.length, 0, 'rotation never commits a pending decision');
@@ -157,16 +158,17 @@ module.exports=async function revisionWarning(browser,base,out,name){
         assert.equal(await page.locator('dialog[open]').count(),0);
         assert.equal(await page.locator('#confirm').isEnabled(),false);
       } else if(response==='revise'||response==='revise-late-zero') {
-        assert.equal(await page.locator('.checker-warning .close').getAttribute('aria-label'),'Revise');
+        assert.equal(await page.locator('.checker-warning .close').count(),0);
         if(response==='revise-late-zero') {
-          await page.evaluate(()=>{document.querySelector('.checker-warning .close').click();return window.finishPending(false,0);});
+          await page.locator('#board .board-die.consumed').last().click();
+          await page.evaluate(()=>window.finishPending(false,0));
         } else {
-          await page.locator('.checker-warning .close').click();
+          await page.locator('#board .board-die.consumed').last().click();
           await page.evaluate(()=>window.finishPending());
         }
         await page.waitForTimeout(80);
         assert.equal((await read()).game.events.length,0,'cancelled completion cannot commit');
-        assert.ok(await page.locator('#confirm').isEnabled());
+        assert.ok(await page.locator('#confirm').isDisabled(),'a revised incomplete draft needs its remaining move');
       } else {
         if(response==='complete'||response==='fail') {
           await page.evaluate(fail=>window.finishPending(fail),response==='fail');

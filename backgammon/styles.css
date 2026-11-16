@@ -8589,3 +8589,39 @@ html[data-focus-navigation="true"] .board-confirm #confirm:focus-visible {
   .play-page.live-table .stage:has(.inline-decision-review) .board-actions,
   .play-page.live-table .stage:has(.inline-decision-review) > .action-area { display: none; }
 }
+
+/* Review actions use muted semantic tints; the label always names the action. */
+.decision-prompt [data-review-action="hint"] { --review-tone: var(--family-dice); }
+.decision-prompt [data-review-action="best"] { --review-tone: var(--info); }
+.decision-prompt [data-review-action="reset"] { --review-tone: var(--bad); }
+.decision-prompt [data-review-action="anyway"] { --review-tone: var(--good); }
+.decision-prompt .btn[data-review-action] {
+  background: color-mix(in oklab, var(--review-tone) 14%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--review-tone) 45%, var(--control-border));
+  color: color-mix(in oklab, var(--review-tone) 35%, var(--ink));
+}
+@media (hover: hover) {
+  .decision-prompt .btn[data-review-action]:hover {
+    background: color-mix(in oklab, var(--review-tone) 22%, var(--surface-2));
+  }
+}
+.decision-review-loss { color: var(--loss-color); font-variant-numeric: tabular-nums; }
+.inline-decision-review.editable-checker-review { grid-template-columns: minmax(0, 1fr); }
+.inline-decision-review.editable-checker-review .dialog-body { grid-column: 1 / -1; }
+.inline-decision-review.editable-checker-review .dialog-head { display: none; }
+.play-page .decision-review-slot { min-width: 0; }
+.play-page.desktop-table .decision-review-slot {
+  grid-column: 1 / -1;
+  width: min(100%, 560px);
+  justify-self: center;
+}
+.play-page .stage:has(.editable-checker-review) .board-actions,
+.play-page .stage:has(.editable-checker-review) .action-main,
+.play-page .stage:has(.editable-checker-review) #message,
+.play-page .stage:has(.editable-checker-review) #draft-line { display: none; }
+@media (max-height: 500px) and (min-width: 650px) {
+  .landscape-dock .inline-decision-review .dialog-foot > .btn {
+    padding-inline: 4px;
+    font-size: var(--t-sm);
+  }
+}
