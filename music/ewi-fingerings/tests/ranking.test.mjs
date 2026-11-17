@@ -27,19 +27,21 @@ test('the ranked chart includes each eligible pattern exactly once for each supp
 
 test('E preserves circle binary order and a more comfortable single side key outranks a higher binary value', () => {
   const options = rankedFingerings(64);
-  assert.deepEqual(options.filter(f => f.sideCount === 0).map(f => f.mainValue.toString(2)), ['111110', '111011', '101111']);
-  const pinky = options.find(f => f.bits === '1011100101000');
-  const bis = options.find(f => f.bits === '1111000110000');
-  assert.equal(pinky.sideCount, bis.sideCount);
-  assert.deepEqual([pinky.comfortCost, bis.comfortCost], [0, 1]);
-  assert.ok(pinky.rank < bis.rank);
+  assert.deepEqual(options.slice(0, 3).map(f => f.mainValue.toString(2)), ['111110', '111011', '101111']);
+  const oneFingerPerKey = options.find(f => f.bits === '1011010100000');
+  const sharedFinger = options.find(f => f.bits === '1111100101000');
+  assert.equal(oneFingerPerKey.sideCount, sharedFinger.sideCount);
+  assert.deepEqual([oneFingerPerKey.comfortCost, sharedFinger.comfortCost], [0, 1]);
+  assert.ok(oneFingerPerKey.mainValue < sharedFinger.mainValue);
+  assert.ok(oneFingerPerKey.rank < sharedFinger.rank);
 });
 
-test('fewest keys down reorders G and retains the circle-only priority', () => {
-  assert.deepEqual(rankedFingerings(67).slice(0, 3).map(f => f.heldCount), [3, 4, 3]);
-  const held = rankedFingerings(67, 'held');
-  assert.deepEqual(held.slice(0, 3).map(f => f.heldCount), [3, 3, 3]);
-  const firstSide = held.findIndex(f => f.sideCount > 0);
-  assert.equal(firstSide, 9);
-  assert.ok(held.slice(firstSide).every(f => f.sideCount > 0));
+test('bis counts toward total keys down and comfort and ranks ahead of other side touches', () => {
+  const options = rankedFingerings(64);
+  const bis = options.find(f => f.bits === '1111000110000');
+  assert.equal(bis.sideCount, 0);
+  assert.equal(bis.sideValue, 0);
+  assert.equal(bis.heldCount, 6);
+  assert.equal(bis.comfortCost, 1);
+  assert.ok(bis.rank < options.find(f => f.sideCount > 0).rank);
 });

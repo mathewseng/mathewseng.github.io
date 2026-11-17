@@ -38,9 +38,6 @@ select { max-width: 100%; appearance: none; padding-right: 30px; background-imag
 .note-picker button.accidental { color: var(--muted); }
 .note-picker button:hover { border-color: var(--control-border); background: var(--surface-2); }
 .note-picker button[aria-pressed="true"] { background: var(--ewi-accent); color: var(--on-accent); border-color: var(--ewi-accent); }
-.octave-control { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.octave-control > div { display: flex; gap: 4px; }
-.octave-control button { width: 44px; background: transparent; color: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r-sm); font-size: 20px; }
 .helper { color: var(--muted); font-size: var(--t-sm); line-height: 1.5; margin-top: 12px; }
 .explorer-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
 .btn { min-height: 44px; font-weight: 600; }
@@ -59,8 +56,7 @@ select { max-width: 100%; appearance: none; padding-right: 30px; background-imag
 .stage-heading { display: flex; justify-content: space-between; align-items: center; }
 .stage-heading h2 { font-size: 44px; font-weight: 600; letter-spacing: -1.5px; line-height: 1.1; margin-top: 2px; }
 .small-label { display: block; font-size: var(--t-xs); color: var(--muted); line-height: 1.5; }
-.stage-meta { display: grid; gap: 5px; font-size: var(--t-sm); text-align: right; }
-.stage-meta span + span { color: var(--muted); font-family: var(--font-mono); }
+.stage-meta { font-size: var(--t-sm); text-align: right; }
 .main-diagram { flex: 1; min-height: 260px; display: grid; place-items: center; }
 .desktop-instrument { display: flex; justify-content: center; height: 100%; width: 100%; min-height: 0; }
 .mobile-instrument { display: none; }
@@ -91,16 +87,13 @@ select { max-width: 100%; appearance: none; padding-right: 30px; background-imag
 .roller-track span.current { background: var(--ewi-accent); color: var(--on-accent); border-color: var(--ewi-accent); font-weight: 700; }
 .stage-caption { color: var(--muted); font-size: var(--t-xs); min-height: 36px; }
 .alternate-panel { display: flex; flex-direction: column; min-height: 0; padding: 28px 0 16px 24px; }
-.count { margin-inline-start: auto; color: var(--muted); font-family: var(--font-mono); }
-.ranking-sort { max-width: 64%; min-width: 0; }
-.ranking-sort select { width: 100%; font-size: var(--t-xs); }
+.count { color: var(--muted); font: var(--t-xs) var(--font-mono); }
 .comparison-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 12px 0 8px; font-size: var(--t-xs); color: var(--muted); }
 .comparison-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.ranking-order { margin-inline-start: auto; }
 .chart-key-labels, .alternate { display: grid; grid-template-columns: 32px minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .chart-key-labels { padding: 0 9px 6px; color: var(--muted); font-size: var(--t-xs); }
-.chart-key-groups { display: grid; grid-template-columns: 46% 54%; text-align: center; }
-#chart-key-numbers { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)) .46fr repeat(7, minmax(0, 1fr)); margin-top: 2px; text-align: center; font-variant-numeric: tabular-nums; }
-#chart-key-numbers span:nth-child(7) { grid-column: 8; }
+#chart-key-numbers svg { display: block; width: 100%; }
 .chart-key-labels > span:last-child { text-align: center; }
 .alternates { overflow: auto; padding: 2px; }
 .alternate { width: 100%; min-height: 44px; text-align: left; color: var(--ink); background: transparent; border: 1px solid transparent; border-bottom-color: var(--line); padding: 1px 6px; border-radius: 4px; }
@@ -213,22 +206,17 @@ select { max-width: 100%; appearance: none; padding-right: 30px; background-imag
   .workspace-nav { gap: 18px; }
   .workspace-nav button { font-size: var(--t-sm); white-space: nowrap; padding-block: 10px; }
   .workspace { display: flex; flex-direction: column; min-height: 0; }
-  .note-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 8px 0; overflow: visible; }
-  .note-controls > .section-title { grid-column: 2; grid-row: 2; }
-  .note-controls > .section-title h2 { display: none; }
+  .note-controls { display: grid; gap: 6px; padding: 8px 0; overflow: visible; }
   .spelling select { min-height: 44px; }
-  .note-picker { grid-column: 1 / -1; grid-row: 1; grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 0; }
+  .note-picker { grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 0; }
   .note-picker button { min-width: 0; min-height: 44px; font-size: 16px; }
-  .octave-control { grid-column: 1; grid-row: 2; justify-content: flex-start; margin: 0; gap: 8px; font-size: var(--t-sm); }
-  #octave { min-width: 66px; }
-  #octave-down, #octave-up, .note-controls > .helper, .scope-note { display: none; }
+  .note-controls > .helper, .scope-note { display: none; }
   .instrument-stage { order: 2; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px; margin: 12px 0; overflow: visible; }
   .stage-heading { gap: 12px; }
   .stage-heading > div:first-child { display: flex; align-items: baseline; gap: 8px; }
   .stage-heading > div:first-child > .small-label { display: none; }
   .stage-heading h2 { font-size: 24px; letter-spacing: -.5px; }
   .stage-meta { text-align: left; flex: 1; font-size: var(--t-xs); }
-  .stage-meta span + span { display: none; }
   .detail-toggle { display: block; min-height: 44px; padding: 6px 10px; border: 1px solid var(--control-border); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); font-size: var(--t-xs); }
   .instrument-stage:not(.expanded) .stage-details { display: none; }
   .main-diagram { height: auto; min-height: 0; padding: 16px 0; }
@@ -242,7 +230,6 @@ select { max-width: 100%; appearance: none; padding-right: 30px; background-imag
   .explorer-actions { margin-top: 12px; }
   .alternate-panel { order: 1; padding: 8px 0 0; max-height: none; }
   .alternate-panel h2 { font-size: 16px; }
-  .ranking-sort select { font-size: 16px; padding-left: 8px; }
   .comparison-legend { margin: 6px 0; }
   .alternates { overflow: visible; }
   .planner { display: block; height: auto; min-height: 0; padding-top: 24px; }

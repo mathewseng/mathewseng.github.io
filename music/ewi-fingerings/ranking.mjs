@@ -1,8 +1,10 @@
 import { KEYS, supportsMidi } from './engine.mjs?v=20261117-ranking';
 import { isEligibleFingering, keyPitch } from './key-rules.mjs?v=20261117-ranking';
 
-export const MAIN_KEYS = [0, 2, 3, 7, 8, 9];
-export const SIDE_KEYS = [1, 4, 5, 6, 10, 11, 12];
+const MAIN_KEYS = [0, 2, 3, 7, 8, 9];
+// K2 is a roll of the left index finger. It counts toward held keys and comfort,
+// while the separate side-key group drives the primary sort and binary ties.
+const SIDE_KEYS = [4, 5, 6, 10, 11, 12];
 
 const byFinger = new Map();
 KEYS.forEach(({ finger }, index) => {
@@ -25,12 +27,12 @@ for (let mask = 0; mask < 2 ** KEYS.length; mask++) {
   const sideCount = countHeld(sideBits);
   if (!byPitch.has(midi)) byPitch.set(midi, []);
   byPitch.get(midi).push({
-    bits, sideCount, comfortCost, heldCount: countHeld(mainBits) + sideCount,
+    bits, sideCount, comfortCost, heldCount: countHeld(bits),
     mainValue: parseInt(mainBits, 2), sideValue: parseInt(sideBits, 2),
   });
 }
 
-export function rankedFingerings(midi, order = 'side') {
+export function rankedFingerings(midi) {
   if (!supportsMidi(midi)) return [];
   const options = [];
   for (let shift = -2; shift <= 4; shift++) {
@@ -39,9 +41,7 @@ export function rankedFingerings(midi, order = 'side') {
     }
   }
   options.sort((a, b) =>
-    Number(a.sideCount > 0) - Number(b.sideCount > 0)
-    || (order === 'held' ? a.heldCount - b.heldCount : 0)
-    || a.sideCount - b.sideCount
+    a.sideCount - b.sideCount
     || a.comfortCost - b.comfortCost
     || b.mainValue - a.mainValue
     || b.sideValue - a.sideValue);

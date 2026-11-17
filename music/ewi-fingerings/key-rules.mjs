@@ -34,7 +34,7 @@ export function keyPitch(bits, register = 0) {
   ];
   return { midi: 73 + contributions.reduce((sum, n) => sum + n, 0) + register * 12, contributions };
 }
-// Apply to playing suggestions. The Key Explorer still models individual sensors.
+// The UI applies this fingering rule separately from the raw pitch calculation.
 export function isEligibleFingering(bits) {
   return bits[1] !== '1' || bits[0] === '1';
 }
