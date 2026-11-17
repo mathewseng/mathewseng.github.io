@@ -2,20 +2,24 @@
 // fingering set; conditional logic and the K5/K7 shared sensor are documented in
 // Ingo Scherzinger, DynaSample EWI Basics (2020–2023), page 4.
 export const KEY_RULES = [
-  ['−2 / −3', 'Conditional', '−3 with K3 held and K2 clear; otherwise −2.', 'K3 changes its contribution when K1 changes.'],
-  ['−1 / 0', 'Conditional', '0 when K1 and K3 are both held; otherwise −1.', 'The bis key is ignored with K1 + K3.'],
-  ['−1 / −2', 'Conditional', '−2 with K1 held and K2 clear; otherwise −1.', 'K1 changes K3; K2 can offset part of the change.'],
-  ['−2 / −3', 'Conditional', '−3 with K8 held; otherwise −2.', 'K8 contributes an extra −1 when K4 is held.'],
-  ['+1 / 0', 'Linked', '0 when K7 is held; otherwise +1.', 'K5 and K7 share one raise input; together they add +1, not +2.'],
-  ['−1', 'Fixed', 'Always −1.', 'Independent of the other note keys.'],
-  ['+1 / 0', 'Linked', '0 when K5 is held; otherwise +1.', 'K7 and K5 share one raise input; together they add +1, not +2.'],
-  ['−1 / −2', 'Conditional', '−2 with K4 held; otherwise −1.', 'The right index key changes its contribution with K4.'],
-  ['−1', 'Fixed', 'Always −1.', 'Independent of the other note keys.'],
-  ['−2', 'Fixed', 'Always −2.', 'Independent of the other note keys.'],
-  ['+1', 'Fixed', 'Always +1.', 'Independent of the other note keys, including K5 + K7.'],
-  ['−1', 'Fixed', 'Always −1.', 'Independent of the other note keys.'],
-  ['−2', 'Fixed', 'Always −2.', 'Independent of the other note keys.'],
-].map(([effect, kind, condition, why]) => ({ effect, kind, condition, why }));
+  [-2, 'Conditional', 'With K3 held and K2 clear, lowers 3 semitones. If K2 is held, adding K1 lowers the usual 2 semitones.', ['K3: −3', '+ K2: −2']],
+  [-1, 'Conditional', 'Ignored (0) when K1 and K3 are both held.', ['K1+K3: 0']],
+  [-2, 'Conditional', 'Lowers only 1 semitone when K1 is released or K2 is held.', ['No K1: −1', 'K2: −1']],
+  [-2, 'Conditional', 'With K8 held, lowers 3 semitones because K8 also changes.', ['K8: −3']],
+  [1, 'Linked', 'Ignored (0) when K7 is already held; they share one raise input.', ['K7: 0']],
+  [-1, 'Fixed', 'None; independent of the other note keys.', []],
+  [1, 'Linked', 'Ignored (0) when K5 is already held; they share one raise input.', ['K5: 0']],
+  [-2, 'Conditional', 'Lowers only 1 semitone when K4 is released.', ['No K4: −1']],
+  [-1, 'Fixed', 'None; independent of the other note keys.', []],
+  [-2, 'Fixed', 'None; independent of the other note keys.', []],
+  [1, 'Fixed', 'None; independent of the other note keys, including K5 and K7.', []],
+  [-1, 'Fixed', 'None; independent of the other note keys.', []],
+  [-2, 'Fixed', 'None; independent of the other note keys.', []],
+].map(([usual, kind, exceptions, badges]) => ({
+  usual, kind, exceptions, badges: badges.map(text => text.replace(': ', ':')),
+  color: usual > 0 ? 'up-one' : usual === -1 ? 'down-one' : 'down-two',
+  usualText: `${usual > 0 ? 'Raises' : 'Lowers'} ${Math.abs(usual)} semitone${Math.abs(usual) === 1 ? ' (half step)' : 's (whole step)'}.`,
+}));
 
 export function keyPitch(bits, register = 0) {
   if (!/^[01]{13}$/.test(bits)) throw new Error('A fingering needs 13 touch states.');

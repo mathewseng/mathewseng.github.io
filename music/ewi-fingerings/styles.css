@@ -357,3 +357,47 @@ select { max-width: 100%; appearance: none; padding-right: 30px; background-imag
   .key-rule-table td, .key-rule-table tbody th { padding: 12px 4px; }
   .key-rule-table tbody th > span { font-size: var(--t-xs); }
 }
+
+/* Register groups keep octave-overlap alternatives together without hiding rows. */
+.register-group > h3 { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; color: var(--muted); font: 12px/1.4 var(--font-mono); }
+.register-group + .register-group { margin-top: 8px; }
+.register-group > h3 span:last-child { font-family: var(--font-sans); }
+
+/* Function colors describe the usual change; fill describes held state. */
+.effect-down-two { --key-color: var(--info); }
+.effect-down-one { --key-color: var(--family-dice); }
+.effect-up-one { --key-color: var(--good); }
+.flood-down-two { flood-color: var(--info); }
+.flood-down-one { flood-color: var(--family-dice); }
+.flood-up-one { flood-color: var(--good); }
+.key-function-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 16px; color: var(--muted); font-size: var(--t-xs); }
+.key-function-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.key-function-legend i { width: 12px; height: 12px; border-radius: 3px; background: var(--key-color); }
+.key-function-legend .exception-legend i { background: none; border: 1px dashed var(--muted); }
+.real-ewi .effect-down-two .key-image { filter: url(#ewi-key-down-two); }
+.real-ewi .effect-down-one .key-image { filter: url(#ewi-key-down-one); }
+.real-ewi .effect-up-one .key-image { filter: url(#ewi-key-up-one); }
+.real-ewi .key-image { opacity: .6; }
+.real-ewi .on .key-image { opacity: 1; }
+.real-ewi .key-number-button { fill: color-mix(in srgb, var(--key-color) 12%, var(--surface)); stroke: var(--key-color); }
+.real-ewi .on .key-number-button { fill: var(--key-color); stroke: var(--key-color); }
+.real-ewi .conditional-key .key-number-button { stroke-dasharray: 5 3; }
+.real-ewi .diagram-key.inspect .key-number-button { stroke: var(--key-color); stroke-width: 2.5; }
+.real-ewi .key-leader { stroke: var(--key-color); }
+.real-ewi .key-number-text { fill: var(--ink); font-size: 22px; }
+.real-ewi .on .key-number-text, .real-ewi .on .key-dependency { fill: var(--on-accent); }
+.key-dependency { fill: var(--ink); font: 18px var(--font-mono); text-anchor: middle; dominant-baseline: central; }
+.physical-conditional { fill: none; stroke: var(--key-color); stroke-width: 1.2; stroke-dasharray: 3 2; pointer-events: none; }
+.key-controls .key-state-button, .key-rule-table .key-state-button { border-color: var(--key-color); background: color-mix(in srgb, var(--key-color) 12%, var(--surface)); color: var(--ink); }
+.key-controls .key-state-button[aria-pressed="true"], .key-rule-table .key-state-button[aria-pressed="true"] { background: var(--key-color); border-color: var(--key-color); color: var(--on-accent); }
+.key-controls .conditional-key, .key-rule-table .conditional-key { border-style: dashed; }
+.usual-rule { color: var(--key-color); }
+.rule-usual-text, .rule-exception { display: block; }
+.key-rule-table td .rule-usual-text { font-family: var(--font-sans); font-weight: 500; white-space: normal; }
+.rule-exception { margin-top: 4px; color: var(--muted); }
+.key-reference { grid-template-columns: 220px minmax(0, 1fr); }
+.key-readout { position: sticky; top: 8px; align-self: start; }
+@media (max-width: 700px) {
+  .key-reference { grid-template-columns: minmax(0, 1fr) 124px; }
+  .key-function-legend { gap: 8px 12px; margin-top: 12px; }
+}

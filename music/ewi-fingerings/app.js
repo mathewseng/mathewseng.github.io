@@ -1,14 +1,17 @@
 import { KEY_RULES, keyPitch, keyEffect, toggleKey, signedSteps } from './key-rules.mjs';
+import { KEY_ARTWORK, KEY_RATIOS, INSTRUMENT_KEYS, KEY_CALLOUTS } from './instrument-layout.mjs';
 import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs';
 
 const $ = id => document.getElementById(id);
-const storageKey = 'ewi-practice-v1';
-const state = { midi: 67, selected: null, flats: false, view: 'explore', melody: [71, 72, 74, 72, 71], plan: null, step: 1, locks: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
+const storageKey = 'ewi-practice-v2';
+const state = { midi: 67, selected: null, flats: true, view: 'explore', melody: [71, 72, 74, 72, 71], plan: null, step: 1, locks: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
 try {
-  const saved = JSON.parse(localStorage.getItem(storageKey));
+  const current = localStorage.getItem(storageKey);
+  const saved = JSON.parse(current || localStorage.getItem('ewi-practice-v1'));
+  // v1 persisted the implicit sharps default; migrate note / melody, then use flats.
   if (saved && candidates(saved.midi).length) state.midi = saved.midi;
-  if (typeof saved?.flats === 'boolean') state.flats = saved.flats;
+  if (current && typeof saved?.flats === 'boolean') state.flats = saved.flats;
   if (typeof saved?.phrase === 'string' && saved.phrase.length < 1000) $('melody').value = saved.phrase;
 } catch { /* Storage is optional in private browsing and offline wrappers. */ }
 function save() {
@@ -32,10 +35,8 @@ function showView(view) {
 }
 
 // Reuse the original EWI artwork, including the crescent bis key and angled levers.
-const keyArtwork = ['circle-key', 'left-index-key', 'circle-key', 'circle-key',
-  'left-pinky-key-1', 'left-pinky-key-2', 'right-index-key', 'circle-key',
-  'circle-key', 'circle-key', 'right-pinky-key-1', 'right-pinky-key-2', 'right-pinky-key-3'];
-const keyRatios = [1, 39 / 119, 1, 1, 75 / 175, 78 / 225, 75 / 175, 1, 1, 1, 63 / 161, 68 / 208, 86 / 275];
+const keyArtwork = KEY_ARTWORK;
+const keyRatios = KEY_RATIOS;
 const stripX = [16, 35, 64, 96, 125, 146, 172, 196, 228, 260, 287, 311, 335];
 const stripHeights = [26, 29, 26, 26, 38, 46, 38, 26, 26, 26, 34, 44, 56];
 function keyImage(index, x, y, height) {
@@ -88,37 +89,44 @@ function renderExplorer() {
   $('held-description').textContent = `Touch ${keyList(selected.bits)}. Keep the other note keys clear.`;
   $('variant-count').textContent = `${options.length} choices`;
   $('chart-key-labels').innerHTML = `<span>No.</span>${keyLabels()}<span>Thumb</span>`;
-  $('alternates').innerHTML = options.map((f, i) => `<button class="alternate" type="button" data-fingering="${f.id}" aria-pressed="${f.id === selected.id}" aria-label="${variantLabel(f, i)}, register ${registerName(f.shift)}. Touch ${keyList(f.bits)}"><span class="alternate-label" title="${variantLabel(f, i)}">${f.main ? 'Main' : i + 1}<span class="sr-only"> ${variantLabel(f, i)}</span></span>${mini(f)}<span class="alternate-register">${registerName(f.shift)}</span><span class="alternate-caption">${variantLabel(f, i)}. Touch ${keyList(f.bits)}${f.bits[11] === '1' && f.bits[12] === '1' ? ' · bridge K12 + K13' : ''}${f.bits[4] === '1' && f.bits[5] === '1' ? ' · bridge K5 + K6' : ''}</span></button>`).join('');
+  const registers = [...new Set(options.map(f => f.shift))].sort((a, b) => a - b);
+  $('alternates').innerHTML = registers.map(shift => {
+    const group = options.filter(f => f.shift === shift);
+    return `<section class="register-group" data-register="${shift}" aria-label="Register ${registerName(shift)} fingerings"><h3><span>Register ${registerName(shift)}</span><span>${group.length} choices</span></h3>${group.map(f => {
+      const i = options.indexOf(f);
+      return `<button class="alternate" type="button" data-fingering="${f.id}" aria-pressed="${f.id === selected.id}" aria-label="${variantLabel(f, i)}, register ${registerName(f.shift)}. Touch ${keyList(f.bits)}"><span class="alternate-label" title="${variantLabel(f, i)}">${f.main ? 'Main' : i + 1}<span class="sr-only"> ${variantLabel(f, i)}</span></span>${mini(f)}<span class="alternate-register">${registerName(f.shift)}</span><span class="alternate-caption">${variantLabel(f, i)}. Touch ${keyList(f.bits)}${f.bits[11] === '1' && f.bits[12] === '1' ? ' · bridge K12 + K13' : ''}${f.bits[4] === '1' && f.bits[5] === '1' ? ' · bridge K5 + K6' : ''}</span></button>`;
+    }).join('')}</section>`;
+  }).join('');
   save();
 }
 function selectNote(midi) {
   if (!candidates(midi).length) return;
   stopAudio(); state.midi = midi; state.selected = null; renderExplorer();
 }
-// Front key positions follow Akai's reference drawing: the bis key sits
-// below K1, the pinky levers cross the body, and K7 is the offset side key.
-const realKeyPositions = [[150, 205], [150, 235], [150, 265], [150, 325], [148, 367], [153, 391],
-  [133, 445], [150, 475], [150, 535], [150, 595], [145, 642], [151, 666], [158, 691]];
-const callouts = [[45, 190], [255, 225], [45, 265], [45, 340], [255, 345], [255, 415],
-  [45, 435], [255, 490], [45, 515], [45, 590], [45, 665], [255, 665], [45, 735]];
+// All key centres and sizes share one manufacturer-reference transform.
+function keyClasses(index, held) {
+  const rule = KEY_RULES[index];
+  return `effect-${rule.color} ${rule.kind === 'Fixed' ? '' : 'conditional-key'} ${held ? 'on' : ''}`;
+}
 function realInstrument(bits) {
-  return `<svg class="real-ewi" viewBox="0 0 300 780" role="group" aria-label="EWI4000s front note keys; tap a key to hold or release it">
+  return `<svg class="real-ewi" viewBox="0 0 320 860" role="group" aria-label="EWI4000s note keys, proportional manufacturer-reference layout; numbered controls are enlarged">
     <defs><linearGradient id="ewi-silver"><stop offset="0" class="metal-edge"/><stop offset=".35" class="metal-face"/><stop offset=".7" class="metal-face"/><stop offset="1" class="metal-edge"/></linearGradient></defs>
-    <path class="real-mouthpiece" d="M130 12 Q150 3 170 12 L175 59 H125Z"/>
-    <rect class="real-neck" x="123" y="48" width="54" height="45" rx="7"/>
-    <path class="real-body" d="M112 82 Q150 73 188 82 L194 694 L186 741 H114 L106 694Z"/>
-    <path class="real-inset" d="M126 167 Q150 160 174 167 V605 Q174 621 150 621 Q126 621 126 605Z"/>
-    <text class="real-model" x="150" y="124">EWI4000s</text>
-    <rect class="real-neck" x="113" y="735" width="74" height="15" rx="3"/>
-    <rect class="real-neck" x="177" y="420" width="8" height="13" rx="2"/><rect class="real-neck" x="177" y="441" width="8" height="13" rx="2"/>
+    <path class="real-mouthpiece" d="M140 12 Q160 3 180 12 L185 59 H135Z"/>
+    <rect class="real-neck" x="133" y="48" width="54" height="45" rx="7"/>
+    <path class="real-body" d="M112 82 Q160 73 208 82 L208 745 L198 780 H122 L112 745Z"/>
+    <path class="real-inset" d="M140 167 Q160 160 180 167 V620 Q180 633 160 633 Q140 633 140 620Z"/>
+    <text class="real-model" x="160" y="124">EWI4000s</text>
+    <rect class="real-neck" x="121" y="773" width="78" height="15" rx="3"/>
     ${KEYS.map((key, i) => {
-      const [x, y] = realKeyPositions[i], [cx, cy] = callouts[i], held = bits[i] === '1';
-      const height = keyRatios[i] === 1 ? 40 : [40, 39, 40, 40, 51, 60, 47, 40, 40, 40, 45, 55, 65][i];
-      return `<g class="diagram-key ${held ? 'on' : ''} ${state.key === i ? 'inspect' : ''}" role="button" tabindex="0" data-key="${i}" aria-pressed="${held}" aria-label="${key.id}, ${key.finger}, ${held ? 'held, tap to release' : 'released, tap to hold'}">
-        <line class="key-leader" x1="${cx < 150 ? cx + 28 : cx - 28}" y1="${cy}" x2="${x}" y2="${y}"/>
-        <g transform="translate(${x} ${y}) rotate(90)">${keyImage(i, 0, 0, height)}</g>
-        <rect class="key-number-button" x="${cx - 33}" y="${cy - 33}" width="66" height="66" rx="8"/>
-        <text class="key-number-text" x="${cx}" y="${cy + 1}">${key.id}</text>
+      const geometry = INSTRUMENT_KEYS[i], { x, y, width, height } = geometry;
+      const [cx, cy] = KEY_CALLOUTS[i], held = bits[i] === '1', rule = KEY_RULES[i];
+      return `<g class="diagram-key ${keyClasses(i, held)} ${state.key === i ? 'inspect' : ''}" role="button" tabindex="0" data-key="${i}" data-usual="${rule.usual}" aria-pressed="${held}" aria-label="${key.id}, ${key.finger}. Usually ${rule.usualText} Exceptions: ${rule.exceptions} ${held ? 'Held, tap to release.' : 'Released, tap to hold.'}">
+        <title>${key.id}: ${rule.usualText} Exceptions: ${rule.exceptions}</title>
+        <line class="key-leader" x1="${cx < 160 ? cx + 46 : cx - 46}" y1="${cy}" x2="${x}" y2="${y}"/>
+        <g class="physical-key" transform="translate(${x} ${y}) rotate(90)">${keyImage(i, 0, 0, height)}${rule.kind !== 'Fixed' ? `<rect class="physical-conditional" x="${-width / 2 - 1.5}" y="${-height / 2 - 1.5}" width="${width + 3}" height="${height + 3}" rx="3"/>` : ''}</g>
+        <rect class="key-number-button" x="${cx - 46}" y="${cy - 38}" width="92" height="76" rx="8"/>
+        <text class="key-number-text" x="${cx}" y="${cy - (rule.badges.length ? 21 : 4)}">${key.id} ${signedSteps(rule.usual)}</text>
+        ${rule.badges.map((badge, j) => `<text class="key-dependency" x="${cx}" y="${cy + 3 + j * 22}">${badge}</text>`).join('')}
       </g>`;
     }).join('')}</svg>`;
 }
@@ -134,13 +142,14 @@ function renderKeyExplorer() {
   $('key-range').hidden = midi <= 111;
   $('key-range').textContent = 'Above this guide’s verified MIDI range; lower the thumb register to match a verified pitch.';
   $('hear-keys').disabled = midi > 111;
-  $('key-picker').innerHTML = KEYS.map((k, i) => `<button type="button" data-key="${i}" aria-label="${k.id}, ${k.finger}, ${state.keyBits[i] === '1' ? 'held, release' : 'released, hold'}" aria-pressed="${state.keyBits[i] === '1'}">${k.id}</button>`).join('');
+  $('key-picker').innerHTML = KEYS.map((k, i) => `<button type="button" class="key-state-button ${keyClasses(i, state.keyBits[i] === '1')}" data-key="${i}" aria-label="${k.id}, ${k.finger}, ${state.keyBits[i] === '1' ? 'held, release' : 'released, hold'}" aria-pressed="${state.keyBits[i] === '1'}">${k.id}</button>`).join('');
   const key = KEYS[state.key], rule = KEY_RULES[state.key], effect = keyEffect(state.keyBits, state.key, state.keyRegister);
-  $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Adding this key</dt><dd>${rule.effect} semitones <span class="rule-kind">${rule.kind}</span></dd></div><div><dt>Rule</dt><dd>${rule.condition}</dd></div><div><dt>With your other keys</dt><dd>${name(effect.from)} → ${name(effect.to)} (${signedSteps(effect.delta)})</dd></div></dl>`;
+  $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Usually</dt><dd class="usual-rule effect-${rule.color}">${rule.usualText}</dd></div><div><dt>Exceptions</dt><dd>${rule.exceptions}</dd></div><div><dt>With your other keys</dt><dd>${name(effect.from)} → ${name(effect.to)} (${signedSteps(effect.delta)})</dd></div></dl>`;
+  $('key-preset').options[1].textContent = `Open ${name(73)}`;
   $('key-rule-rows').innerHTML = KEYS.map((k, i) => {
     const rule = KEY_RULES[i], effect = keyEffect(state.keyBits, i, state.keyRegister);
     if (state.keyFilter === 'fixed' && rule.kind !== 'Fixed' || state.keyFilter === 'interacting' && rule.kind === 'Fixed') return '';
-    return `<tr class="${state.keyBits[i] === '1' ? 'held' : ''}"><th scope="row"><button type="button" data-key="${i}" aria-pressed="${state.keyBits[i] === '1'}" aria-label="${k.id}, ${state.keyBits[i] === '1' ? 'release' : 'hold'}">${k.id}</button><span>${k.finger}</span></th><td><strong>${rule.effect}</strong><span class="rule-kind">${rule.kind}</span></td><td>${rule.condition}<span class="rule-example">Now: ${name(effect.from)} → ${name(effect.to)} (${signedSteps(effect.delta)})</span></td></tr>`;
+    return `<tr class="${state.keyBits[i] === '1' ? 'held' : ''}"><th scope="row"><button type="button" class="key-state-button ${keyClasses(i, state.keyBits[i] === '1')}" data-key="${i}" aria-pressed="${state.keyBits[i] === '1'}" aria-label="${k.id}, ${state.keyBits[i] === '1' ? 'release' : 'hold'}">${k.id}</button><span>${k.finger}</span></th><td><strong class="usual-rule effect-${rule.color}">${signedSteps(rule.usual)}</strong><span class="rule-kind">${rule.kind}</span></td><td><strong class="rule-usual-text">${rule.usualText}</strong><span class="rule-exception">Exceptions: ${rule.exceptions}</span><span class="rule-example">Now: ${name(effect.from)} → ${name(effect.to)} (${signedSteps(effect.delta)})</span></td></tr>`;
   }).join('');
 }
 function selectGuideKey(index, restoreFocus = false, origin = 'guide-diagram') {

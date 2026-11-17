@@ -6,11 +6,11 @@
   <meta name="description" content="Explore 85 standard Akai EWI fingerings, learn every note key, and plan easier melody fingerings with octave-aware transitions.">
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261031">
   <link rel="stylesheet" href="../../shared/app.css?v=20261031">
-  <link rel="stylesheet" href="styles.css?v=20261117-keys">
+  <link rel="stylesheet" href="styles.css?v=20261117-registers">
   <title>EWI Fingerings · Music</title>
 </head>
 <body>
-  <svg class="key-filters" width="0" height="0" aria-hidden="true" focusable="false"><defs><filter id="ewi-key-gold" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%"><feFlood class="key-gold" result="tint"/><feComposite in="tint" in2="SourceAlpha" operator="in" result="color"/><feBlend in="color" in2="SourceGraphic" mode="multiply"/></filter></defs></svg>
+  <svg class="key-filters" width="0" height="0" aria-hidden="true" focusable="false"><defs><filter id="ewi-key-gold" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%"><feFlood class="key-gold" result="tint"/><feComposite in="tint" in2="SourceAlpha" operator="in" result="color"/><feBlend in="color" in2="SourceGraphic" mode="multiply"/></filter><filter id="ewi-key-down-two" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%"><feFlood class="flood-down-two" result="tint"/><feComposite in="tint" in2="SourceAlpha" operator="in" result="color"/><feBlend in="color" in2="SourceGraphic" mode="multiply"/></filter><filter id="ewi-key-down-one" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%"><feFlood class="flood-down-one" result="tint"/><feComposite in="tint" in2="SourceAlpha" operator="in" result="color"/><feBlend in="color" in2="SourceGraphic" mode="multiply"/></filter><filter id="ewi-key-up-one" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%"><feFlood class="flood-up-one" result="tint"/><feComposite in="tint" in2="SourceAlpha" operator="in" result="color"/><feBlend in="color" in2="SourceGraphic" mode="multiply"/></filter></defs></svg>
   <a class="skip-link" href="#main">Skip to fingerings</a>
   <header class="legacy-header" data-project-path="/music/ewi-fingerings/">
     <nav aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/music/">Music</a><span aria-hidden="true">/</span><strong>EWI Fingerings</strong></nav>
@@ -25,7 +25,7 @@
     </nav>
     <section id="explore" class="workspace" aria-label="Fingering explorer">
       <div class="note-controls">
-        <div class="section-title"><h2>Choose a note</h2><label class="spelling"><span class="sr-only">Note spelling</span><select id="spelling"><option value="sharps">♯ Sharps</option><option value="flats">♭ Flats</option></select></label></div>
+        <div class="section-title"><h2>Choose a note</h2><label class="spelling"><span class="sr-only">Note spelling</span><select id="spelling"><option value="flats" selected>♭ Flats</option><option value="sharps">♯ Sharps</option></select></label></div>
         <div id="note-picker" class="note-picker" aria-label="Pitch class"></div>
         <div class="octave-control"><label for="octave">Octave</label><div><button type="button" id="octave-down" aria-label="Lower note octave">−</button><select id="octave"></select><button type="button" id="octave-up" aria-label="Raise note octave">+</button></div></div>
         <p class="helper">Octave numbers follow middle C = C4. The thumb position is shown separately.</p>
@@ -57,24 +57,25 @@
       <nav class="guide-nav" aria-label="Guide sections"><a href="#note-keys">Key explorer</a><a href="#key-rules">Key rules</a><a href="#thumb-technique">Octaves</a><a href="#expression">Expression</a><a href="#getting-started">Getting started</a><a href="#sources">Sources</a></nav>
       <div class="guide-content">
         <section id="note-keys"><h2>Play the keys</h2><p>Tap a sensor or K-number to hold it. Tap again to release.</p>
+          <div class="key-function-legend" aria-label="Key function colors"><span class="effect-down-two"><i></i>−2 whole step</span><span class="effect-down-one"><i></i>−1 half step</span><span class="effect-up-one"><i></i>+1 half step</span><span class="exception-legend"><i></i>Dashed = exception / linked</span><span>Solid fill = held</span><span>Small labels: other key → changed effect</span></div>
           <div class="key-reference">
-            <div class="real-instrument"><div id="guide-diagram"></div><p class="helper">Front view, mouthpiece up.<br>Tap the key shapes or their numbered buttons.</p></div>
+            <div class="real-instrument"><div id="guide-diagram"></div><p class="helper">Proportional keywork; body shortened.<br>Factory pinky positions are shown; these three keys are adjustable. Numbered controls are enlarged.</p></div>
             <div class="key-readout">
-              <div class="live-pitch" aria-live="polite"><span class="small-label">Your fingering plays</span><strong id="key-note">C♯5</strong><span id="key-midi" class="small-label">MIDI 73</span></div>
+              <div class="live-pitch" aria-live="polite"><span class="small-label">Your fingering plays</span><strong id="key-note">D♭5</strong><span id="key-midi" class="small-label">MIDI 73</span></div>
               <div id="key-staff"></div>
-              <div class="key-settings"><label for="key-register">Thumb register<select id="key-register"><option value="4">+4</option><option value="3">+3</option><option value="2">+2</option><option value="1">+1</option><option value="0" selected>0</option><option value="-1">−1</option><option value="-2">−2</option></select></label><label for="key-spelling">Spelling<select id="key-spelling"><option value="sharps">Sharps</option><option value="flats">Flats</option></select></label></div>
+              <div class="key-settings"><label for="key-register">Thumb register<select id="key-register"><option value="4">+4</option><option value="3">+3</option><option value="2">+2</option><option value="1">+1</option><option value="0" selected>0</option><option value="-1">−1</option><option value="-2">−2</option></select></label><label for="key-spelling">Spelling<select id="key-spelling"><option value="flats" selected>Flats</option><option value="sharps">Sharps</option></select></label></div>
               <div class="key-explorer-actions"><button type="button" class="btn" id="hear-keys">Hear note</button><button type="button" class="btn" id="clear-keys">Release all</button></div>
               <p id="key-range" class="helper" hidden></p>
               <p id="key-held" class="helper">No note keys held.</p>
-              <label class="key-preset-label" for="key-preset"><span>Load a familiar fingering</span><select id="key-preset"><option value="">Choose a starting point</option><option value="0000000000000">Open C♯5</option><option value="0010000000000">C5, K3 only</option><option value="1011000000000">G4</option><option value="0000101000000">K5 + K7, shared raise</option><option value="1011000111000">D4</option><option value="1011000111001">Low C4</option></select></label>
+              <label class="key-preset-label" for="key-preset"><span>Load a familiar fingering</span><select id="key-preset"><option value="">Choose a starting point</option><option value="0000000000000">Open D♭5</option><option value="0010000000000">C5, K3 only</option><option value="1011000000000">G4</option><option value="0000101000000">K5 + K7, shared raise</option><option value="1011000111000">D4</option><option value="1011000111001">Low C4</option></select></label>
             </div>
             <div class="key-controls"><div id="key-picker" class="key-picker"></div><article id="key-detail" class="key-detail" aria-live="polite"></article></div>
           </div>
           <p class="helper">Chart pitch: middle C = C4 / MIDI 60, no transposition. The letter and staff use the same pitch calculation. A preset’s octave shift may change what your EWI sounds.</p>
         </section>
-        <section id="key-rules"><h2>What does each key change?</h2><p>Most keys subtract or add semitones to the open C♯. Several interact. “Adding it” means holding every other key unchanged. One semitone is one half step; two are a whole step.</p>
+        <section id="key-rules"><h2>What does each key change?</h2><p>Most keys subtract or add semitones to the open D♭ (C♯). Several interact. “Adding it” means holding every other key unchanged. One semitone is one half step; two are a whole step.</p>
           <div class="rule-toolbar"><label for="key-rule-filter">Show<select id="key-rule-filter"><option value="all">All 13 keys</option><option value="interacting">Conditional / linked</option><option value="fixed">Always the same change</option></select></label><span class="helper">The examples update with your held keys.</span></div>
-          <table class="key-rule-table"><caption class="sr-only">Change when adding each key, conditions, and an example using the currently held keys</caption><thead><tr><th scope="col">Key</th><th scope="col">Adding it<br><span>semitones</span></th><th scope="col">Rule & current example</th></tr></thead><tbody id="key-rule-rows"></tbody></table>
+          <table class="key-rule-table"><caption class="sr-only">Change when adding each key, conditions, and an example using the currently held keys</caption><thead><tr><th scope="col">Key</th><th scope="col">Usually<br><span>semitones</span></th><th scope="col">Rule & current example</th></tr></thead><tbody id="key-rule-rows"></tbody></table>
           <p class="helper">K1 contributes −2, but also changes K3’s contribution. K4 contributes −2, but also changes K8’s contribution. The table reports the total change you hear, including these interactions. The thumb adds or subtracts exactly 12 per register step.</p>
           <p class="helper">Rules: <a href="https://dynasample.com/downloads/EWI_Basics.pdf">Ingo Scherzinger / DynaSample, EWI Basics, page 4</a>. The pitch model is cross-checked against every library fingering.</p>
         </section>
@@ -98,6 +99,6 @@
     <p id="app-status" class="app-status" role="status" aria-live="polite"></p>
     <noscript><p>This interactive chart needs JavaScript. You can still use the <a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">complete reference PDF</a>.</p></noscript>
   </main>
-  <script type="module" src="app.js?v=20261117-keys"></script>
+  <script type="module" src="app.js?v=20261117-registers"></script>
 </body>
 </html>
