@@ -2,6 +2,11 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-11-16 — Pull Workout
+
+- Logged the 11:15 PM, 65-minute pull session, preserving all five cable-row loads and unspecified setup details.
+- Added a distinct preacher dumbbell curl exercise.
+
 ## 2026-11-15 — Push Workout
 
 - Logged the 7 PM, 80-minute session with all seven exercises and ascending pushdown loads.

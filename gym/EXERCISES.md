@@ -29,6 +29,7 @@ Exercise identifiers are stable keys. A Smith-machine press and a free-weight ba
 - `triceps-pushdown`
 - `overhead-triceps-extension`
 - `spider-curl`
+- `preacher-dumbbell-curl`
 - `incline-curl`
 - `hammer-curl`
 - `dumbbell-curl`

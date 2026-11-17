@@ -288,6 +288,17 @@ export const exercises: ExerciseDefinition[] = [
     notes: "Record equipment and loading convention.",
   }),
   defineExercise({
+    id: "preacher-dumbbell-curl",
+    canonicalName: "Preacher Dumbbell Curl",
+    aliases: [],
+    category: "arms",
+    muscleGroups: ["biceps", "brachialis"],
+    equipment: ["dumbbells", "preacher bench"],
+    weightMayBePerSide: true,
+    defaultRepRange: [8, 15],
+    notes: "Record weight per hand and unilateral versus bilateral setup.",
+  }),
+  defineExercise({
     id: "spider-curl",
     canonicalName: "Spider Curl",
     aliases: [],

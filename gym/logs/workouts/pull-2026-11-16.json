@@ -1,0 +1,195 @@
+{
+  "id": "pull-2026-11-16",
+  "date": "2026-11-16",
+  "startTime": "23:15",
+  "durationMinutes": 65,
+  "type": "pull",
+  "title": "November 16 Pull Workout",
+  "chronologyIndex": 29,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-16-strict-pull-up-1",
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "2026-11-16-strict-pull-up-2",
+          "reps": 3,
+          "completed": true
+        },
+        {
+          "id": "2026-11-16-strict-pull-up-3",
+          "reps": 2,
+          "completed": true
+        },
+        {
+          "id": "2026-11-16-strict-pull-up-4",
+          "reps": 2,
+          "completed": true
+        }
+      ],
+      "notes": "Strict form not reconfirmed."
+    },
+    {
+      "exerciseId": "standing-cable-row",
+      "name": "Cable Row",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-16-standing-cable-row-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 35
+        },
+        {
+          "id": "2026-11-16-standing-cable-row-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 60
+        },
+        {
+          "id": "2026-11-16-standing-cable-row-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 70
+        },
+        {
+          "id": "2026-11-16-standing-cable-row-4",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 80
+        },
+        {
+          "id": "2026-11-16-standing-cable-row-5",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 90
+        }
+      ],
+      "notes": "Mapped to earlier cable-row history; seated versus standing, attachment, and per-side convention unconfirmed. All five sets preserved; warm-up status not supplied."
+    },
+    {
+      "exerciseId": "reverse-cable-fly",
+      "name": "Reverse Cable Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-16-reverse-cable-fly-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 10
+        },
+        {
+          "id": "2026-11-16-reverse-cable-fly-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 10
+        },
+        {
+          "id": "2026-11-16-reverse-cable-fly-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 10
+        },
+        {
+          "id": "2026-11-16-reverse-cable-fly-4",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 10
+        }
+      ],
+      "notes": "Setup and per-side convention unconfirmed."
+    },
+    {
+      "exerciseId": "incline-curl",
+      "name": "Incline Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-16-incline-curl-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15
+        },
+        {
+          "id": "2026-11-16-incline-curl-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15
+        },
+        {
+          "id": "2026-11-16-incline-curl-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15
+        }
+      ],
+      "notes": "Per-hand versus total loading not explicitly supplied."
+    },
+    {
+      "exerciseId": "spider-curl",
+      "name": "Spider Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-16-spider-curl-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 20
+        },
+        {
+          "id": "2026-11-16-spider-curl-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 20
+        },
+        {
+          "id": "2026-11-16-spider-curl-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 20
+        }
+      ],
+      "notes": "Per-hand versus total loading not explicitly supplied."
+    },
+    {
+      "exerciseId": "preacher-dumbbell-curl",
+      "name": "Preacher Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-16-preacher-dumbbell-curl-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15
+        },
+        {
+          "id": "2026-11-16-preacher-dumbbell-curl-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15
+        },
+        {
+          "id": "2026-11-16-preacher-dumbbell-curl-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15
+        }
+      ],
+      "notes": "Per-hand versus total loading not explicitly supplied."
+    }
+  ],
+  "notes": "22 completed sets, 192 reps, and 5,350 lb entered-load volume. Bodyweight pull-ups excluded from external-load volume; ambiguous per-side loads not doubled. No RIR or numeric readiness, soreness, or pain ratings supplied."
+}

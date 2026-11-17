@@ -1490,6 +1490,19 @@ Start: 7:00 PM. Duration: 80 minutes.
 
 23 completed sets, 220 reps, 7,720 lb entered-load volume. Bench exercises mapped to established Smith history; equipment and bar inclusion not reconfirmed. Dumbbell extension variation and per-hand convention, cable setups, effort, and symptom ratings were not supplied.
 
+# 29. Pull Workout — November 16, 2026
+
+Start: 11:15 PM. Duration: 65 minutes.
+
+- Pull ups: 5, 3, 2, 2
+- Cable row: 10 reps each at 35, 60, 70, 80, 90 lb (reported as “10x35/60/70/80/90lb”)
+- Reverse cable fly: 10 lb × 10, 10, 10, 10
+- Incline dumbbell curl: 15 lb × 10, 10, 10
+- Spider dumbbell curl: 20 lb × 10, 10, 10
+- Preacher dumbbell curl: 15 lb × 10, 10, 10
+
+22 completed sets, 192 reps, 5,350 lb entered-load volume. Pull-up strict form, cable-row position and attachment, per-side load conventions, warm-up status, effort, and symptom ratings were not supplied. Cable row uses the existing standing-cable-row history mapping with position unconfirmed.
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
