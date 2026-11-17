@@ -1,8 +1,10 @@
+import { KEY_RULES, keyPitch, keyEffect, toggleKey, signedSteps } from './key-rules.mjs';
+import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'ewi-practice-v1';
-const state = { midi: 67, selected: null, flats: false, view: 'explore', melody: [71, 72, 74, 72, 71], plan: null, step: 1, locks: {}, key: 0 };
+const state = { midi: 67, selected: null, flats: false, view: 'explore', melody: [71, 72, 74, 72, 71], plan: null, step: 1, locks: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
 try {
   const saved = JSON.parse(localStorage.getItem(storageKey));
   if (saved && candidates(saved.midi).length) state.midi = saved.midi;
@@ -29,31 +31,40 @@ function showView(view) {
   say('');
 }
 
-// Schematic front layout. Labels are Akai's K1..K13, not finger numbers.
-const positions = [[142, 91], [80, 91], [142, 153], [142, 215], [216, 215], [278, 215],
-  [80, 310], [142, 310], [142, 372], [142, 434], [216, 396], [278, 396], [278, 458]];
+// Reuse the original EWI artwork, including the crescent bis key and angled levers.
+const keyArtwork = ['circle-key', 'left-index-key', 'circle-key', 'circle-key',
+  'left-pinky-key-1', 'left-pinky-key-2', 'right-index-key', 'circle-key',
+  'circle-key', 'circle-key', 'right-pinky-key-1', 'right-pinky-key-2', 'right-pinky-key-3'];
+const keyRatios = [1, 39 / 119, 1, 1, 75 / 175, 78 / 225, 75 / 175, 1, 1, 1, 63 / 161, 68 / 208, 86 / 275];
+const stripX = [16, 35, 64, 96, 125, 146, 172, 196, 228, 260, 287, 311, 335];
+const stripHeights = [26, 29, 26, 26, 38, 46, 38, 26, 26, 26, 34, 44, 56];
+function keyImage(index, x, y, height) {
+  const width = height * keyRatios[index];
+  return `<image class="key-image" href="${keyArtwork[index]}.png" x="${x - width / 2}" y="${y - height / 2}" width="${width}" height="${height}"/>`;
+}
+const positions = [[142, 91], [102, 91], [142, 153], [142, 215], [216, 215], [278, 215],
+  [90, 310], [142, 310], [142, 372], [142, 434], [216, 396], [278, 396], [278, 458]];
 function diagram(fingering, { interactive = false, highlighted = -1, before = null } = {}) {
   const bits = fingering.bits;
   const label = `Front keys: touch ${keyList(bits)}. Other note keys released.`;
-  return `<svg class="ewi-diagram" viewBox="0 0 330 510" ${interactive ? 'role="group" aria-label="Select a note key to learn its function"' : `role="img" aria-label="${label}"`}>
+  return `<svg class="ewi-diagram" viewBox="0 0 330 530" ${interactive ? 'role="group" aria-label="Select a note key to learn its function"' : `role="img" aria-label="${label}"`}>
     <path class="instrument-body" d="M108 60 Q108 47 122 47 H162 Q176 47 176 60 V474 Q176 491 158 491 H126 Q108 491 108 474Z"/>
     <path class="instrument-mouth" d="M126 47 L130 12 Q142 5 154 12 L158 47Z"/>
     <text class="diagram-hand" x="10" y="30">LEFT HAND</text><text class="diagram-hand" x="10" y="277">RIGHT HAND</text>
     ${KEYS.map((key, i) => {
-      const [x, y] = positions[i];
-      const shape = [0, 2, 3, 7, 8, 9].includes(i) ? `<circle class="key-face" r="23"/>` : `<rect class="key-face" x="-23" y="-23" width="46" height="46" rx="${i === 1 ? 19 : 8}"/>`;
+      const [x, y] = positions[i], round = keyRatios[i] === 1;
+      const height = round ? 46 : i === 12 ? 70 : 56;
       return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''} ${i === highlighted ? 'inspect' : ''} ${before && before.bits[i] !== bits[i] ? 'changed' : ''}" transform="translate(${x} ${y})" ${interactive ? `role="button" tabindex="0" data-key="${i}" aria-label="${key.id}, ${key.finger}, ${key.name}" aria-pressed="${i === highlighted}"` : ''}>
-        <rect class="key-hit" x="-28" y="-28" width="56" height="56" rx="8"/>${shape}<text y="0">${key.id}</text>${bits[i] === '1' ? '<circle class="touch-mark" cx="0" cy="15" r="2"/>' : ''}</g>`;
+        <rect class="key-hit" x="-28" y="-28" width="56" height="56" rx="8"/>${keyImage(i, 0, 0, height)}<text class="${round ? 'round-label' : 'lever-label'}" y="${round ? 0 : height / 2 + 14}">${key.id}</text></g>`;
     }).join('')}</svg>`;
 }
+function keyLabels() {
+  return `<svg viewBox="0 0 350 22" aria-hidden="true">${KEYS.map((_, i) => `<text class="mini-key-label" x="${stripX[i]}" y="16">${i + 1}</text>`).join('')}</svg>`;
+}
 function mini(fingering, before = null, labelled = false) {
-  // Same schematic, rotated into a horizontal strip; filled = touched.
-  return `<svg class="mini-diagram" viewBox="0 0 340 ${labelled ? 88 : 80}" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
-    const x = [14, 30, 54, 80, 107, 125, 151, 169, 195, 221, 248, 276, 305][i];
-    const y = [40, 22, 40, 40, 24, 24, 20, 40, 40, 40, 40, 40, 40][i];
-    const round = [0, 2, 3, 7, 8, 9].includes(i);
-    return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${round ? `<circle class="key-face" cx="${x}" cy="${y}" r="10"/>` : `<rect class="key-face" x="${x - 5}" y="${y - 15}" width="10" height="30" rx="4"/>`}</g>${labelled ? `<text class="mini-key-label" x="${x}" y="68">${i + 1}</text>` : ''}`;
-  }).join('')}${labelled ? '<text class="mini-hand-label" x="12" y="85">LEFT HAND</text><text class="mini-hand-label" x="164" y="85">RIGHT HAND</text>' : ''}</svg>`;
+  return `<svg class="mini-diagram" viewBox="0 0 350 ${labelled ? 88 : 64}" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
+    return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${keyImage(i, stripX[i], 32, stripHeights[i])}${before && before.bits[i] !== fingering.bits[i] ? `<rect class="change-outline" x="${stripX[i] - stripHeights[i] * keyRatios[i] / 2 - 2}" y="${32 - stripHeights[i] / 2 - 2}" width="${stripHeights[i] * keyRatios[i] + 4}" height="${stripHeights[i] + 4}" rx="3"/>` : ''}</g>${labelled ? `<text class="mini-key-label" x="${stripX[i]}" y="80">${i + 1}</text>` : ''}`;
+  }).join('')}</svg>`;
 }
 function variantLabel(f, index) { return f.main ? 'Main fingering' : `${f.base < 62 ? 'Low extension' : f.base > 73 ? 'High extension' : 'Alternate'} ${index + 1}`; }
 function renderExplorer() {
@@ -76,21 +87,66 @@ function renderExplorer() {
   $('roller-track').innerHTML = [4, 3, 2, 1, 0, -1, -2].map(shift => `<span class="${shift === selected.shift ? 'current' : ''}" ${shift === selected.shift ? 'aria-current="true"' : ''}>${registerName(shift)}</span>`).join('');
   $('held-description').textContent = `Touch ${keyList(selected.bits)}. Keep the other note keys clear.`;
   $('variant-count').textContent = `${options.length} choices`;
-  $('alternates').innerHTML = options.map((f, i) => `<button class="alternate" type="button" data-fingering="${f.id}" aria-pressed="${f.id === selected.id}" aria-label="${variantLabel(f, i)}, register ${registerName(f.shift)}. Touch ${keyList(f.bits)}"><span class="alternate-title"><strong>${variantLabel(f, i)}</strong><span>Reg ${registerName(f.shift)}</span></span>${mini(f)}<span class="alternate-caption">Touch ${keyList(f.bits)}${f.bits[11] === '1' && f.bits[12] === '1' ? ' · bridge K12 + K13' : ''}${f.bits[4] === '1' && f.bits[5] === '1' ? ' · bridge K5 + K6' : ''}</span></button>`).join('');
+  $('chart-key-labels').innerHTML = `<span>No.</span>${keyLabels()}<span>Thumb</span>`;
+  $('alternates').innerHTML = options.map((f, i) => `<button class="alternate" type="button" data-fingering="${f.id}" aria-pressed="${f.id === selected.id}" aria-label="${variantLabel(f, i)}, register ${registerName(f.shift)}. Touch ${keyList(f.bits)}"><span class="alternate-label" title="${variantLabel(f, i)}">${f.main ? 'Main' : i + 1}<span class="sr-only"> ${variantLabel(f, i)}</span></span>${mini(f)}<span class="alternate-register">${registerName(f.shift)}</span><span class="alternate-caption">${variantLabel(f, i)}. Touch ${keyList(f.bits)}${f.bits[11] === '1' && f.bits[12] === '1' ? ' · bridge K12 + K13' : ''}${f.bits[4] === '1' && f.bits[5] === '1' ? ' · bridge K5 + K6' : ''}</span></button>`).join('');
   save();
 }
 function selectNote(midi) {
   if (!candidates(midi).length) return;
   stopAudio(); state.midi = midi; state.selected = null; renderExplorer();
 }
-function selectGuideKey(index, restoreFocus = false) {
-  state.key = index;
-  const key = KEYS[index];
-  const example = { bits: KEYS.map((_, i) => i === index ? '1' : '0').join('') };
-  $('guide-diagram').innerHTML = diagram(example, { interactive: true, highlighted: index });
-  $('key-picker').innerHTML = KEYS.map((k, i) => `<button type="button" data-key="${i}" aria-label="${k.id}, ${k.finger}, ${k.name}" aria-pressed="${i === index}">${k.id}</button>`).join('');
-  $('key-detail').innerHTML = `<h3>${key.id} · ${key.name}</h3><span class="finger">${key.finger}</span><p>${key.detail}</p>`;
-  if (restoreFocus) $('guide-diagram').querySelector(`[data-key="${index}"]`).focus();
+// Front key positions follow Akai's reference drawing: the bis key sits
+// below K1, the pinky levers cross the body, and K7 is the offset side key.
+const realKeyPositions = [[150, 205], [150, 235], [150, 265], [150, 325], [148, 367], [153, 391],
+  [133, 445], [150, 475], [150, 535], [150, 595], [145, 642], [151, 666], [158, 691]];
+const callouts = [[45, 190], [255, 225], [45, 265], [45, 340], [255, 345], [255, 415],
+  [45, 435], [255, 490], [45, 515], [45, 590], [45, 665], [255, 665], [45, 735]];
+function realInstrument(bits) {
+  return `<svg class="real-ewi" viewBox="0 0 300 780" role="group" aria-label="EWI4000s front note keys; tap a key to hold or release it">
+    <defs><linearGradient id="ewi-silver"><stop offset="0" class="metal-edge"/><stop offset=".35" class="metal-face"/><stop offset=".7" class="metal-face"/><stop offset="1" class="metal-edge"/></linearGradient></defs>
+    <path class="real-mouthpiece" d="M130 12 Q150 3 170 12 L175 59 H125Z"/>
+    <rect class="real-neck" x="123" y="48" width="54" height="45" rx="7"/>
+    <path class="real-body" d="M112 82 Q150 73 188 82 L194 694 L186 741 H114 L106 694Z"/>
+    <path class="real-inset" d="M126 167 Q150 160 174 167 V605 Q174 621 150 621 Q126 621 126 605Z"/>
+    <text class="real-model" x="150" y="124">EWI4000s</text>
+    <rect class="real-neck" x="113" y="735" width="74" height="15" rx="3"/>
+    <rect class="real-neck" x="177" y="420" width="8" height="13" rx="2"/><rect class="real-neck" x="177" y="441" width="8" height="13" rx="2"/>
+    ${KEYS.map((key, i) => {
+      const [x, y] = realKeyPositions[i], [cx, cy] = callouts[i], held = bits[i] === '1';
+      const height = keyRatios[i] === 1 ? 40 : [40, 39, 40, 40, 51, 60, 47, 40, 40, 40, 45, 55, 65][i];
+      return `<g class="diagram-key ${held ? 'on' : ''} ${state.key === i ? 'inspect' : ''}" role="button" tabindex="0" data-key="${i}" aria-pressed="${held}" aria-label="${key.id}, ${key.finger}, ${held ? 'held, tap to release' : 'released, tap to hold'}">
+        <line class="key-leader" x1="${cx < 150 ? cx + 28 : cx - 28}" y1="${cy}" x2="${x}" y2="${y}"/>
+        <g transform="translate(${x} ${y}) rotate(90)">${keyImage(i, 0, 0, height)}</g>
+        <rect class="key-number-button" x="${cx - 33}" y="${cy - 33}" width="66" height="66" rx="8"/>
+        <text class="key-number-text" x="${cx}" y="${cy + 1}">${key.id}</text>
+      </g>`;
+    }).join('')}</svg>`;
+}
+function renderKeyExplorer() {
+  const midi = keyPitch(state.keyBits, state.keyRegister).midi;
+  $('guide-diagram').innerHTML = realInstrument(state.keyBits);
+  $('key-note').textContent = name(midi);
+  $('key-midi').textContent = `MIDI ${midi}`;
+  $('key-staff').innerHTML = staffSvg(midi, state.flats);
+  $('key-register').value = state.keyRegister;
+  $('key-spelling').value = state.flats ? 'flats' : 'sharps';
+  $('key-held').textContent = `Held: ${keyList(state.keyBits)}.`;
+  $('key-range').hidden = midi <= 111;
+  $('key-range').textContent = 'Above this guide’s verified MIDI range; lower the thumb register to match a verified pitch.';
+  $('hear-keys').disabled = midi > 111;
+  $('key-picker').innerHTML = KEYS.map((k, i) => `<button type="button" data-key="${i}" aria-label="${k.id}, ${k.finger}, ${state.keyBits[i] === '1' ? 'held, release' : 'released, hold'}" aria-pressed="${state.keyBits[i] === '1'}">${k.id}</button>`).join('');
+  const key = KEYS[state.key], rule = KEY_RULES[state.key], effect = keyEffect(state.keyBits, state.key, state.keyRegister);
+  $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Adding this key</dt><dd>${rule.effect} semitones <span class="rule-kind">${rule.kind}</span></dd></div><div><dt>Rule</dt><dd>${rule.condition}</dd></div><div><dt>With your other keys</dt><dd>${name(effect.from)} → ${name(effect.to)} (${signedSteps(effect.delta)})</dd></div></dl>`;
+  $('key-rule-rows').innerHTML = KEYS.map((k, i) => {
+    const rule = KEY_RULES[i], effect = keyEffect(state.keyBits, i, state.keyRegister);
+    if (state.keyFilter === 'fixed' && rule.kind !== 'Fixed' || state.keyFilter === 'interacting' && rule.kind === 'Fixed') return '';
+    return `<tr class="${state.keyBits[i] === '1' ? 'held' : ''}"><th scope="row"><button type="button" data-key="${i}" aria-pressed="${state.keyBits[i] === '1'}" aria-label="${k.id}, ${state.keyBits[i] === '1' ? 'release' : 'hold'}">${k.id}</button><span>${k.finger}</span></th><td><strong>${rule.effect}</strong><span class="rule-kind">${rule.kind}</span></td><td>${rule.condition}<span class="rule-example">Now: ${name(effect.from)} → ${name(effect.to)} (${signedSteps(effect.delta)})</span></td></tr>`;
+  }).join('');
+}
+function selectGuideKey(index, restoreFocus = false, origin = 'guide-diagram') {
+  stopAudio(); state.key = index; state.keyBits = toggleKey(state.keyBits, index); $('key-preset').value = '';
+  renderKeyExplorer();
+  if (restoreFocus) $(origin).querySelector(`[data-key="${index}"]`).focus({ preventScroll: true });
 }
 function calculate({ preserveLocks = false } = {}) {
   stopAudio();
@@ -205,7 +261,7 @@ $('note-picker').addEventListener('keydown', event => {
   const index = buttons.indexOf(event.target), next = buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length];
   next.click();
 });
-$('spelling').addEventListener('change', () => { state.flats = $('spelling').value === 'flats'; renderExplorer(); if (state.plan) renderPlan(); });
+$('spelling').addEventListener('change', () => { state.flats = $('spelling').value === 'flats'; renderExplorer(); renderKeyExplorer(); if (state.plan) renderPlan(); });
 $('octave').addEventListener('change', () => selectNote((Number($('octave').value) + 1) * 12 + pc()));
 $('octave-down').addEventListener('click', () => selectNote(state.midi - 12));
 $('octave-up').addEventListener('click', () => selectNote(state.midi + 12));
@@ -216,6 +272,11 @@ $('alternates').addEventListener('click', event => {
   $('alternates').querySelector(`[data-fingering="${state.selected}"]`).focus({ preventScroll: true });
 });
 $('hear-note').addEventListener('click', hearNote);
+$('detail-toggle').addEventListener('click', () => {
+  const expanded = document.querySelector('.instrument-stage').classList.toggle('expanded');
+  $('detail-toggle').setAttribute('aria-expanded', String(expanded));
+  $('detail-toggle').textContent = expanded ? 'Hide details' : 'Show details';
+});
 $('add-note').addEventListener('click', () => {
   const input = $('melody');
   if (input.value.trim().split(/[\s,;|]+/).filter(Boolean).length >= 64) { say('The phrase already has 64 notes. Remove a note in the planner first.'); return; }
@@ -240,9 +301,19 @@ $('step-variant').addEventListener('change', () => { state.locks[state.step] = $
 $('unlock').addEventListener('click', () => { state.locks = {}; calculate(); });
 $('play-phrase').addEventListener('click', playPhrase);
 $('tempo').addEventListener('input', stopAudio);
-$('key-picker').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) { const index = Number(button.dataset.key); selectGuideKey(index); $('key-picker').children[index].focus(); } });
+$('key-picker').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), true, 'key-picker'); });
 $('guide-diagram').addEventListener('click', event => { const key = event.target.closest('[data-key]'); if (key) selectGuideKey(Number(key.dataset.key), true); });
 $('guide-diagram').addEventListener('keydown', event => { const key = event.target.closest('[data-key]'); if (key && ['Enter', ' '].includes(event.key)) { event.preventDefault(); selectGuideKey(Number(key.dataset.key), true); } });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopAudio(); });
 window.addEventListener('pagehide', stopAudio);
-renderExplorer(); selectGuideKey(0);
+$('key-rule-rows').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), true, 'key-rule-rows'); });
+$('key-register').addEventListener('change', () => { stopAudio(); state.keyRegister = Number($('key-register').value); renderKeyExplorer(); });
+$('key-spelling').addEventListener('change', () => { state.flats = $('key-spelling').value === 'flats'; renderKeyExplorer(); renderExplorer(); if (state.plan) renderPlan(); });
+$('key-rule-filter').addEventListener('change', () => { state.keyFilter = $('key-rule-filter').value; renderKeyExplorer(); });
+$('key-preset').addEventListener('change', () => { if ($('key-preset').value) { stopAudio(); state.keyBits = $('key-preset').value; state.keyRegister = 0; renderKeyExplorer(); } });
+$('clear-keys').addEventListener('click', () => { stopAudio(); state.keyBits = '0000000000000'; $('key-preset').value = ''; renderKeyExplorer(); });
+$('hear-keys').addEventListener('click', async () => {
+  stopAudio(); const generation = playbackGeneration;
+  try { const context = await getAudio(); if (generation !== playbackGeneration) return; const midi = keyPitch(state.keyBits, state.keyRegister).midi; if (midi > 111) return; tone(context, midi, context.currentTime, .6); say(`Reference tone: ${name(midi)}.`); } catch (error) { say(error.message); }
+});
+renderExplorer(); renderKeyExplorer();

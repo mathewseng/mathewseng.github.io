@@ -2,9 +2,15 @@
 
 A static practice tool for **Akai EWI4000s, standard EWI (Ei) mode** at `/music/ewi-fingerings/`.
 
-- `fingerings.mjs`: 85 documented K1–K13 bit patterns, ordered from written B♭3 through D5. `1` means skin contact. Data was checked against all nine pages of [OneWatt's 2009 chart](https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf). Two old transcription errors were corrected (the second low C and fifth D); the missing ninth A alternate was restored. This selection does not exhaust every redundant combination the hardware accepts.
+- `fingerings.mjs`: 85 documented K1–K13 bit patterns, ordered from written B♭3 through D5. `1` means skin contact. Data was checked against all nine pages of [OneWatt's 2009 chart](https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf). The fifth D transcription was corrected and the missing ninth A alternate restored. The source’s second low-C diagram conflicts with the documented pitch rules: this library keeps K10 held for that C. All 85 stored entries are checked against the pitch model. This selection does not exhaust every redundant combination the hardware accepts.
+- `key-rules.mjs`: standard Ei pitch model for all 8,192 touch combinations. DynaSample’s EWI Basics (page 4) documents the conditional K2/K3/K8 logic and K5/K7 shared raise. K1/K4 also have variable total toggle effects because they alter K3/K8. Tests exhaustively validate the expected effect sets and cross-check all 85 reference fingerings.
+- `notation.mjs`: enharmonic staff placement, treble/bass clefs, ledger lines and octave marks. Clefs and accidentals use a 5 KB, four-glyph Bravura subset renamed EWI Notation under the SIL OFL; source and license are in `assets/notation-license.txt`.
 - `engine.mjs`: register-aware candidates, parsing, key changes and dynamic programming over a whole phrase. Akai main fingerings receive a configurable familiarity preference. A state is `(pattern, register)`, not just pitch class; overlapping low/high extensions can avoid a thumb change. Locks fix an individual choice and recompute the rest. Each key change costs 1; additional thumb, pinky and unfamiliarity costs are visible in the UI. It is a movement heuristic, not a model of timing, fingering glitches or anatomy.
-- `app.js`: explorer, 13-key inspector, melody editor, optional Web Audio reference tones and guarded local persistence. It uses no third-party runtime libraries or network requests. Font and colour tokens come from the shared site shell.
+- `app.js`: explorer, 13-key inspector, melody editor, optional Web Audio reference tones and guarded local persistence. It uses no third-party runtime libraries or external network requests. Font and colour tokens come from the shared site shell.
+
+On phones, the compact comparison chart comes before the selected-fingering inspector. Eight or more complete G fingering rows fit at 375×812; selected-note details expand below the chart. The diagrams reuse the original PNG key artwork, preserving crescent and angled lever shapes, with a gold tint for touched keys and silver for released keys. Key numbers align across rows, and the right column always shows the thumb register. The same artwork is used in the key guide and melody planner.
+
+The Key explorer latches multiple keys on the instrument or numbered controls, displays a shared-calculation letter/MIDI/staff result, and provides fixed/conditional/linked rules with live before/after examples. It is a software model, not a connection to or exhaustive hardware measurement of the instrument.
 
 ## Register convention
 
@@ -14,6 +20,7 @@ The 4000s and 5000 manuals document the same 13-key standard chart. The playing 
 
 ## Sources
 
+- [Ingo Scherzinger / DynaSample, EWI Basics](https://dynasample.com/downloads/EWI_Basics.pdf), page 4: conditional keys and shared raise input.
 - [OneWatt alternate fingering chart](https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf), pages 1–9. The original PDF carries its personal-use notice; this site links to it and renders its own schematic from factual key states.
 - [Akai EWI4000s reference manual](https://cdn.inmusicbrands.com/akai/ewi-4000/ewi4000s_refmanual_revd_00.pdf_2b1b7872139bd77b89740a52cbb86d99.pdf), printed pages 5–17 and 37–38.
 - [Akai EWI5000 user guide](https://cdn.inmusicbrands.com/akai/ewi5000/EWI5000-UserGuide-v1.0.pdf_6b0a349fd5e4a543bc738d9634196b60.pdf), printed pages 5–10, 35–36 and 38–39.
@@ -21,7 +28,7 @@ The 4000s and 5000 manuals document the same 13-key standard chart. The playing 
 ## Checks
 
 ```sh
-node --test music/ewi-fingerings/tests/engine.test.mjs
+node --test music/ewi-fingerings/tests/*.test.mjs
 node music/ewi-fingerings/tests/browser.cjs
 SHELL_PAGES=/music/ewi-fingerings/ node scripts/shell-browser.cjs --site .
 ```

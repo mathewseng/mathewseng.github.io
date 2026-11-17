@@ -10,6 +10,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
   const browser = await launchQuietBrowser(process.env.EWI_BROWSER === 'webkit' ? webkit : chromium);
   const failures = [];
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  page.setDefaultTimeout(10000);
   page.on('pageerror', error => failures.push(error.message));
   fs.mkdirSync('/tmp/ewi-redesign', { recursive: true });
   try {
@@ -18,6 +19,18 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('#selected-note').textContent(), 'G4');
     assert.equal(await page.locator('.alternate').count(), 9);
     await page.screenshot({ path: '/tmp/ewi-redesign/after-desktop.png' });
+    assert.equal(await page.locator('.alternate').first().locator('image').count(), 13, 'all 13 keys use the original artwork');
+    assert.match(await page.locator('.alternate').first().locator('image').nth(1).getAttribute('href'), /left-index-key\.png$/);
+    await page.setViewportSize({ width: 375, height: 812 });
+    const visibleChoices = await page.locator('.alternate').evaluateAll(elements => elements.filter(el => {
+      const rect = el.getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight;
+    }).length);
+    assert.ok(visibleChoices >= 8, `phone should show at least eight complete G fingerings, saw ${visibleChoices}`);
+    assert.equal(await page.locator('#fingering-detail').isVisible(), false);
+    await page.locator('#detail-toggle').click();
+    assert.equal(await page.locator('#fingering-detail').isVisible(), true);
+    await page.locator('#detail-toggle').click();
+    await page.setViewportSize({ width: 1440, height: 900 });
 
     // Note selection, chromatic spelling, octave offsets, and low/high overlap.
     await page.locator('[data-pitch="0"]').click();
@@ -78,8 +91,44 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('.phrase-step').count(), 64);
     await page.locator('[data-phrase="B4 C5 D5 C5 B4"]').click();
 
+    // Latching input, live staff, and examples must agree across key interactions.
+    await page.getByRole('button', { name: 'Key explorer', exact: true }).click();
+    assert.equal(await page.locator('#key-note').textContent(), 'D♭5');
+    await page.locator('#guide-diagram [data-key="2"] .key-number-button').click();
+    assert.equal(await page.locator('#key-note').textContent(), 'C5');
+    await page.locator('#guide-diagram [data-key="0"] .key-number-button').click();
+    assert.equal(await page.locator('#key-note').textContent(), 'A4');
+    assert.match(await page.locator('#key-detail').textContent(), /C5 → A4 \(−3\)/);
+    await page.locator('#guide-diagram [data-key="1"] .key-number-button').click();
+    assert.equal(await page.locator('#key-note').textContent(), 'A4', 'bis is ignored with K1 and K3');
+    await page.locator('#clear-keys').click();
+    await page.locator('#guide-diagram [data-key="4"] .key-image').click();
+    await page.locator('#guide-diagram [data-key="6"] .key-number-button').click();
+    assert.equal(await page.locator('#key-note').textContent(), 'D5', 'shared raise does not add twice');
+    await page.locator('#key-picker [data-key="10"]').click();
+    assert.equal(await page.locator('#key-note').textContent(), 'E♭5');
+    await page.selectOption('#key-preset', '1011000000000');
+    await page.selectOption('#key-register', '1');
+    assert.equal(await page.locator('#key-note').textContent(), 'G5');
+    assert.match(await page.locator('#key-staff svg').getAttribute('aria-label'), /G5 on treble clef/);
+    await page.selectOption('#key-preset', '1011000111001');
+    assert.equal(await page.locator('#key-note').textContent(), 'C4');
+    assert.equal(await page.locator('#key-staff .staff-ledger').count(), 1);
+    await page.selectOption('#key-register', '-1');
+    assert.match(await page.locator('#key-staff svg').getAttribute('aria-label'), /C3 on bass clef/);
+    await page.selectOption('#key-rule-filter', 'interacting');
+    assert.equal(await page.locator('#key-rule-rows tr').count(), 7);
+    await page.selectOption('#key-rule-filter', 'fixed');
+    assert.equal(await page.locator('#key-rule-rows tr').count(), 6);
+    await page.selectOption('#key-rule-filter', 'all');
+    await page.selectOption('#key-register', '0');
+    await page.locator('#clear-keys').click();
+    await page.selectOption('#key-register', '4');
+    assert.equal(await page.locator('#key-range').isVisible(), true);
+    assert.equal(await page.locator('#hear-keys').isDisabled(), true);
+    await page.selectOption('#key-register', '0');
+
     // Keyboard and click access to every key description.
-    await page.getByRole('button', { name: 'Keys & technique', exact: true }).click();
     for (let i = 0; i < 13; i++) {
       await page.locator(`#key-picker [data-key="${i}"]`).click();
       assert.match(await page.locator('#key-detail h3').textContent(), new RegExp(`^K${i + 1} ·`));
@@ -94,7 +143,11 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       await page.setViewportSize(viewport);
       for (const view of ['explore', 'plan', 'guide']) {
         await page.locator(`[data-view="${view}"]`).click();
-        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${view} overflows ${viewport.width}`);
+        const overflow = await page.evaluate(() => ({
+          width: innerWidth, scroll: document.documentElement.scrollWidth, x: scrollX,
+          outside: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1 && el.getBoundingClientRect().width).slice(0, 8).map(el => ({ tag: el.tagName, id: el.id, right: Math.round(el.getBoundingClientRect().right) })),
+        }));
+        assert.ok(overflow.scroll <= overflow.width, `${view} overflows ${viewport.width}: ${JSON.stringify(overflow)}`);
         const tiny = await page.locator(`#${view} button:visible, #${view} select:visible, #${view} textarea:visible`).evaluateAll(elements => elements.filter(el => {
           const rect = el.getBoundingClientRect(); return rect.width < 43.5 || rect.height < 43.5;
         }).map(el => el.id || el.textContent.slice(0, 20)));

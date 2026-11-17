@@ -14,8 +14,8 @@ test('85 unique chart patterns, 13 keys, and no conflicting pitch assignments', 
   for (let pc = 0; pc < 12; pc++) assert.equal(candidates(60 + pc).filter(f => f.main).length, 1);
 });
 
-test('corrected low C and D patterns and recovered A alternate retain source pitches', () => {
-  assert.equal(FINGERINGS.find(f => f.bits === '1011010110010').base, 60);
+test('low C and D corrections and recovered A alternate retain the verified pitches', () => {
+  assert.equal(FINGERINGS.find(f => f.bits === '1011010111010').base, 60);
   assert.equal(FINGERINGS.find(f => f.bits === '1001000111001').base, 62);
   assert.equal(FINGERINGS.find(f => f.bits === '0010000011000').base, 69);
   assert.equal(FINGERINGS.find(f => f.bits === '1011000111001').base, 60);

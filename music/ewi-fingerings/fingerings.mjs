@@ -1,11 +1,13 @@
 // Standard Akai EWI (Ei) mode only. K1..K13, 1 = touched.
 // Transcribed against all nine pages of OneWatt (2009), linked in the UI.
 // Base pitches follow the written chart: Bb3 through D5; middle C = MIDI 60.
+// The second low-C entry keeps K10 touched: the source drawing with K10 clear
+// evaluates to D under the documented native-mode rules.
 // The chart is a documented selection, not every possible equivalent combination.
 export const PATTERNS = [
   ["1011010111011"], // MIDI 58
   ["1011010111001"], // MIDI 59
-  ["1011000111001", "1011010110010"], // MIDI 60
+  ["1011000111001", "1011010111010"], // MIDI 60
   ["1011000111010", "1011010111000", "1011100111001"], // MIDI 61
   ["1011000111000", "1011000110001", "1011000101010", "1011000011001", "1001000111001"], // MIDI 62
   ["1011000111100", "1011100111000", "1011000101000", "1001010111000", "1001000111010"], // MIDI 63
