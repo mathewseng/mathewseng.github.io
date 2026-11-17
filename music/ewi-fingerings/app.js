@@ -1,7 +1,8 @@
-import { KEY_RULES, keyPitch, keyEffect, toggleKey, signedSteps } from './key-rules.mjs';
+import { KEY_RULES, keyPitch, keyEffect, toggleKey, signedSteps } from './key-rules.mjs?v=20261117-ranking';
 import { KEY_ARTWORK, KEY_RATIOS, INSTRUMENT_KEYS, KEY_CALLOUTS } from './instrument-layout.mjs';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261117-ranking';
+import { MAIN_KEYS, SIDE_KEYS, rankedFingerings } from './ranking.mjs?v=20261117-ranking';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'ewi-practice-v2';
@@ -10,12 +11,13 @@ try {
   const current = localStorage.getItem(storageKey);
   const saved = JSON.parse(current || localStorage.getItem('ewi-practice-v1'));
   // v1 persisted the implicit sharps default; migrate note / melody, then use flats.
-  if (saved && candidates(saved.midi).length) state.midi = saved.midi;
+  if (supportsMidi(saved?.midi)) state.midi = saved.midi;
   if (current && typeof saved?.flats === 'boolean') state.flats = saved.flats;
+  if (saved?.rankOrder === 'held') $('fingering-sort').value = 'held';
   if (typeof saved?.phrase === 'string' && saved.phrase.length < 1000) $('melody').value = saved.phrase;
 } catch { /* Storage is optional in private browsing and offline wrappers. */ }
 function save() {
-  try { localStorage.setItem(storageKey, JSON.stringify({ midi: state.midi, flats: state.flats, phrase: $('melody').value })); } catch { /* Optional. */ }
+  try { localStorage.setItem(storageKey, JSON.stringify({ midi: state.midi, flats: state.flats, rankOrder: $('fingering-sort').value, phrase: $('melody').value })); } catch { /* Optional. */ }
 }
 const keyList = bits => KEYS.filter((_, i) => bits[i] === '1').map(k => k.id).join(', ') || 'none';
 const name = midi => noteName(midi, state.flats);
@@ -59,49 +61,99 @@ function diagram(fingering, { interactive = false, highlighted = -1, before = nu
         <rect class="key-hit" x="-28" y="-28" width="56" height="56" rx="8"/>${keyImage(i, 0, 0, height)}<text class="${round ? 'round-label' : 'lever-label'}" y="${round ? 0 : height / 2 + 14}">${key.id}</text></g>`;
     }).join('')}</svg>`;
 }
-function keyLabels() {
-  return `<svg viewBox="0 0 350 22" aria-hidden="true">${KEYS.map((_, i) => `<text class="mini-key-label" x="${stripX[i]}" y="16">${i + 1}</text>`).join('')}</svg>`;
-}
 function mini(fingering, before = null, labelled = false) {
   return `<svg class="mini-diagram" viewBox="0 0 350 ${labelled ? 88 : 64}" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
     return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${keyImage(i, stripX[i], 32, stripHeights[i])}${before && before.bits[i] !== fingering.bits[i] ? `<rect class="change-outline" x="${stripX[i] - stripHeights[i] * keyRatios[i] / 2 - 2}" y="${32 - stripHeights[i] / 2 - 2}" width="${stripHeights[i] * keyRatios[i] + 4}" height="${stripHeights[i] + 4}" rx="3"/>` : ''}</g>${labelled ? `<text class="mini-key-label" x="${stripX[i]}" y="80">${i + 1}</text>` : ''}`;
   }).join('')}</svg>`;
 }
 function variantLabel(f, index) { return f.main ? 'Main fingering' : `${f.base < 62 ? 'Low extension' : f.base > 73 ? 'High extension' : 'Alternate'} ${index + 1}`; }
-function renderExplorer() {
-  const options = candidates(state.midi);
-  const selected = options.find(f => f.id === state.selected) || options[0];
-  state.selected = selected.id;
-  $('spelling').value = state.flats ? 'flats' : 'sharps';
-  $('note-picker').innerHTML = (state.flats ? FLATS : SHARPS).map((n, i) => {
-    const midi = (octave() + 1) * 12 + i;
-    return `<button type="button" data-pitch="${i}" class="${[1, 3, 6, 8, 10].includes(i) ? 'accidental' : ''}" aria-label="${n}${octave()}" aria-pressed="${i === pc()}" ${candidates(midi).length ? '' : 'disabled'}>${n}</button>`;
+const chartKeys = [...MAIN_KEYS, ...SIDE_KEYS];
+const chartKeyX = chartKeys.map((_, i) => 13 + 26 * i + (i >= MAIN_KEYS.length ? 12 : 0));
+const pageSize = 12;
+let ranked = [], shownNote, shownOrder;
+const additional = new Map();
+const countLabel = number => number.toLocaleString('en-US');
+
+function chartRow(f) {
+  const label = `Rank ${f.rank}, register ${registerName(f.shift)}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.`;
+  const images = chartKeys.map((key, i) =>
+    `<g class="diagram-key ${f.bits[key] === '1' ? 'on' : ''}">${keyImage(key, chartKeyX[i], 29, stripHeights[key])}</g>`
+  ).join('');
+  return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}"><span class="alternate-label">${f.rank}</span><svg class="mini-diagram" viewBox="0 0 350 58" aria-hidden="true">${images}</svg><span class="alternate-held">${f.heldCount}</span></button>`;
+}
+
+function renderAdditional(details, page) {
+  const group = additional.get(Number(details.dataset.more));
+  const start = page * pageSize;
+  const end = Math.min(start + pageSize, group.length);
+  const body = details.querySelector('.additional-rows');
+  body.innerHTML = `${group.slice(start, end).map(chartRow).join('')}<div class="additional-pagination">
+    <button type="button" class="btn" data-page="${page - 1}" ${page === 0 ? 'disabled' : ''}>Previous</button>
+    <span role="status">${start + 1}–${end} of ${countLabel(group.length)}</span>
+    <button type="button" class="btn" data-page="${page + 1}" ${end === group.length ? 'disabled' : ''}>Next</button>
+    </div>`;
+}
+
+function renderChart(order) {
+  ranked = rankedFingerings(state.midi, order);
+  shownNote = state.midi;
+  shownOrder = order;
+  state.selected = ranked[0].rank;
+  additional.clear();
+  $('variant-count').textContent = `${countLabel(ranked.length)} choices`;
+  const groups = new Map();
+  for (const fingering of ranked) {
+    if (!groups.has(fingering.shift)) groups.set(fingering.shift, []);
+    groups.get(fingering.shift).push(fingering);
+  }
+  $('alternates').innerHTML = [...groups].sort(([a], [b]) => a - b).map(([shift, group]) => {
+    const mainOnly = group.filter(f => f.sideCount === 0);
+    const measure = order === 'held' ? 'heldCount' : 'sideCount';
+    const visible = mainOnly.length ? mainOnly : group.filter(f => f[measure] === group[0][measure]).slice(0, 3);
+    const more = group.filter(f => !visible.includes(f));
+    additional.set(shift, more);
+    return `<section class="register-group" data-register="${shift}" aria-label="Register ${registerName(shift)} fingerings">
+      <h3><span>Register ${registerName(shift)}</span><span>${mainOnly.length ? '' : 'Side keys required'}</span></h3>
+      <div class="ranked-rows">${visible.map(chartRow).join('')}</div>
+      ${more.length ? `<details class="additional-fingerings" data-more="${shift}"><summary>${countLabel(more.length)} ${mainOnly.length ? 'side-key' : 'more'} fingerings</summary><div class="additional-rows"></div></details>` : ''}
+    </section>`;
   }).join('');
-  $('octave').innerHTML = Array.from({ length: 8 }, (_, i) => i + 1).map(n => `<option value="${n}" ${n === octave() ? 'selected' : ''} ${candidates((n + 1) * 12 + pc()).length ? '' : 'disabled'}>${n}</option>`).join('');
-  $('octave-down').disabled = !candidates(state.midi - 12).length;
-  $('octave-up').disabled = !candidates(state.midi + 12).length;
-  $('selected-note').textContent = name(state.midi);
-  $('selected-midi').textContent = `MIDI ${state.midi}`;
-  $('selected-variant').textContent = variantLabel(selected, options.indexOf(selected));
+  $('alternates').scrollTop = 0;
+  $('alternates').querySelectorAll('[data-more]').forEach(details => {
+    details.addEventListener('toggle', () => {
+      if (details.isConnected && details.open && !details.querySelector('.additional-rows').hasChildNodes()) renderAdditional(details, 0);
+    });
+  });
+}
+
+function renderSelectedFingering(selected) {
+  $('selected-variant').textContent = `Rank ${selected.rank}`;
   $('main-diagram').innerHTML = `<div class="desktop-instrument">${diagram(selected)}</div><div class="mobile-instrument">${mini(selected, null, true)}<span class="small-label">Keys K1–K13, from mouthpiece to bell</span></div>`;
   $('thumb-label').textContent = `Register ${registerName(selected.shift)}`;
   $('roller-track').innerHTML = [4, 3, 2, 1, 0, -1, -2].map(shift => `<span class="${shift === selected.shift ? 'current' : ''}" ${shift === selected.shift ? 'aria-current="true"' : ''}>${registerName(shift)}</span>`).join('');
   $('held-description').textContent = `Touch ${keyList(selected.bits)}. Keep the other note keys clear.`;
-  $('variant-count').textContent = `${options.length} choices`;
-  $('chart-key-labels').innerHTML = `<span>No.</span>${keyLabels()}<span>Thumb</span>`;
-  const registers = [...new Set(options.map(f => f.shift))].sort((a, b) => a - b);
-  $('alternates').innerHTML = registers.map(shift => {
-    const group = options.filter(f => f.shift === shift);
-    return `<section class="register-group" data-register="${shift}" aria-label="Register ${registerName(shift)} fingerings"><h3><span>Register ${registerName(shift)}</span><span>${group.length} choices</span></h3>${group.map(f => {
-      const i = options.indexOf(f);
-      return `<button class="alternate" type="button" data-fingering="${f.id}" aria-pressed="${f.id === selected.id}" aria-label="${variantLabel(f, i)}, register ${registerName(f.shift)}. Touch ${keyList(f.bits)}"><span class="alternate-label" title="${variantLabel(f, i)}">${f.main ? 'Main' : i + 1}<span class="sr-only"> ${variantLabel(f, i)}</span></span>${mini(f)}<span class="alternate-register">${registerName(f.shift)}</span><span class="alternate-caption">${variantLabel(f, i)}. Touch ${keyList(f.bits)}${f.bits[11] === '1' && f.bits[12] === '1' ? ' · bridge K12 + K13' : ''}${f.bits[4] === '1' && f.bits[5] === '1' ? ' · bridge K5 + K6' : ''}</span></button>`;
-    }).join('')}</section>`;
+  $('ranking-detail').textContent = `${selected.heldCount} keys down · ${selected.sideCount} side · ${selected.comfortCost} extra touches sharing a finger`;
+}
+
+function renderExplorer() {
+  const order = $('fingering-sort').value;
+  if (shownNote !== state.midi || shownOrder !== order) renderChart(order);
+  $('spelling').value = state.flats ? 'flats' : 'sharps';
+  $('note-picker').innerHTML = (state.flats ? FLATS : SHARPS).map((n, i) => {
+    const midi = (octave() + 1) * 12 + i;
+    return `<button type="button" data-pitch="${i}" class="${[1, 3, 6, 8, 10].includes(i) ? 'accidental' : ''}" aria-label="${n}${octave()}" aria-pressed="${i === pc()}" ${supportsMidi(midi) ? '' : 'disabled'}>${n}</button>`;
   }).join('');
+  $('octave').innerHTML = Array.from({ length: 8 }, (_, i) => i + 1).map(n => `<option value="${n}" ${n === octave() ? 'selected' : ''} ${supportsMidi((n + 1) * 12 + pc()) ? '' : 'disabled'}>${n}</option>`).join('');
+  $('octave-down').disabled = !supportsMidi(state.midi - 12);
+  $('octave-up').disabled = !supportsMidi(state.midi + 12);
+  $('selected-note').textContent = name(state.midi);
+  $('selected-midi').textContent = `MIDI ${state.midi}`;
+  renderSelectedFingering(ranked[state.selected - 1]);
   save();
 }
 function selectNote(midi) {
-  if (!candidates(midi).length) return;
-  stopAudio(); state.midi = midi; state.selected = null; renderExplorer();
+  if (!supportsMidi(midi)) return;
+  stopAudio(); state.midi = midi; renderExplorer();
 }
 // All key centres and sizes share one manufacturer-reference transform.
 function keyClasses(index, held) {
@@ -274,11 +326,22 @@ $('spelling').addEventListener('change', () => { state.flats = $('spelling').val
 $('octave').addEventListener('change', () => selectNote((Number($('octave').value) + 1) * 12 + pc()));
 $('octave-down').addEventListener('click', () => selectNote(state.midi - 12));
 $('octave-up').addEventListener('click', () => selectNote(state.midi + 12));
+$('fingering-sort').addEventListener('change', renderExplorer);
 $('alternates').addEventListener('click', event => {
-  const button = event.target.closest('[data-fingering]'); if (!button) return;
-  const top = $('alternates').scrollTop; state.selected = button.dataset.fingering; renderExplorer();
-  $('alternates').scrollTop = top;
-  $('alternates').querySelector(`[data-fingering="${state.selected}"]`).focus({ preventScroll: true });
+  const button = event.target.closest('[data-fingering]');
+  if (button) {
+    $('alternates').querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
+    button.setAttribute('aria-pressed', 'true');
+    state.selected = Number(button.dataset.fingering);
+    renderSelectedFingering(ranked[state.selected - 1]);
+    return;
+  }
+  const page = event.target.closest('[data-page]');
+  if (page) {
+    const details = page.closest('[data-more]');
+    renderAdditional(details, Number(page.dataset.page));
+    details.querySelector('.additional-rows .alternate').focus();
+  }
 });
 $('hear-note').addEventListener('click', hearNote);
 $('detail-toggle').addEventListener('click', () => {
@@ -325,4 +388,5 @@ $('hear-keys').addEventListener('click', async () => {
   stopAudio(); const generation = playbackGeneration;
   try { const context = await getAudio(); if (generation !== playbackGeneration) return; const midi = keyPitch(state.keyBits, state.keyRegister).midi; if (midi > 111) return; tone(context, midi, context.currentTime, .6); say(`Reference tone: ${name(midi)}.`); } catch (error) { say(error.message); }
 });
+$('chart-key-numbers').innerHTML = chartKeys.map(key => `<span>${key + 1}</span>`).join('');
 renderExplorer(); renderKeyExplorer();

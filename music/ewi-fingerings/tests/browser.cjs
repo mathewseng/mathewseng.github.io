@@ -21,7 +21,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('.alternate').count(), 9);
     await page.screenshot({ path: '/tmp/ewi-redesign/after-desktop.png' });
     assert.equal(await page.locator('.alternate').first().locator('image').count(), 13, 'all 13 keys use the original artwork');
-    assert.match(await page.locator('.alternate').first().locator('image').nth(1).getAttribute('href'), /left-index-key\.png$/);
+    assert.match(await page.locator('.alternate').first().locator('image').nth(6).getAttribute('href'), /left-index-key\.png$/);
     await page.setViewportSize({ width: 375, height: 812 });
     const visibleChoices = await page.locator('.alternate').evaluateAll(elements => elements.filter(el => {
       const rect = el.getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight;
@@ -33,13 +33,30 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('#detail-toggle').click();
     await page.setViewportSize({ width: 1440, height: 900 });
 
+    // Ranked results start with circles, paginate side keys, and preserve a selected expanded row.
+    assert.deepEqual((await page.locator('.alternate-held').allTextContents()).slice(0, 3), ['3', '4', '3']);
+    await page.selectOption('#fingering-sort', 'held');
+    assert.deepEqual((await page.locator('.alternate-held').allTextContents()).slice(0, 3), ['3', '3', '3']);
+    await page.selectOption('#fingering-sort', 'side');
+    await page.locator('[data-pitch="4"]').click();
+    assert.equal(await page.locator('.alternate').count(), 3);
+    assert.equal(await page.locator('.additional-fingerings summary').textContent(), '557 side-key fingerings');
+    await page.locator('.additional-fingerings summary').click();
+    await page.waitForSelector('.additional-rows .alternate');
+    assert.equal(await page.locator('.additional-rows .alternate').count(), 12);
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    assert.equal(await page.locator('.additional-pagination [role="status"]').textContent(), '13–24 of 557');
+    await page.locator('.additional-rows .alternate').first().click();
+    assert.equal(await page.locator('.additional-fingerings').getAttribute('open'), '');
+    assert.equal(await page.locator('#selected-variant').textContent(), 'Rank 16');
+
     // Note selection, chromatic spelling, octave offsets, and low/high overlap.
     await page.locator('[data-pitch="0"]').click();
-    assert.equal(await page.locator('.alternate').count(), 7);
-    assert.deepEqual(await page.locator('.register-group').evaluateAll(groups => groups.map(g => [g.dataset.register, g.querySelectorAll('.alternate').length])), [['-1', 5], ['0', 2]]);
-    await page.locator('.alternate').filter({ hasText: 'Low extension' }).first().click();
+    assert.equal(await page.locator('.alternate').count(), 4);
+    assert.deepEqual(await page.locator('.register-group').evaluateAll(groups => groups.map(g => [g.dataset.register, g.querySelectorAll('.alternate').length])), [['-1', 3], ['0', 1]]);
+    await page.locator('[data-register="0"] .alternate').click();
     assert.equal(await page.locator('#thumb-label').textContent(), 'Register 0');
-    await page.locator('.alternate').filter({ hasText: 'Main fingering' }).click();
+    await page.locator('[data-register="-1"] .alternate').first().click();
     assert.equal(await page.locator('#thumb-label').textContent(), 'Register -1');
     await page.selectOption('#spelling', 'flats');
     await page.locator('[data-pitch="1"]').click();

@@ -91,22 +91,29 @@ select { max-width: 100%; appearance: none; padding-right: 30px; background-imag
 .roller-track span.current { background: var(--ewi-accent); color: var(--on-accent); border-color: var(--ewi-accent); font-weight: 700; }
 .stage-caption { color: var(--muted); font-size: var(--t-xs); min-height: 36px; }
 .alternate-panel { display: flex; flex-direction: column; min-height: 0; padding: 28px 0 16px 24px; }
-.count { color: var(--muted); font-family: var(--font-mono); font-size: var(--t-sm); }
+.count { margin-inline-start: auto; color: var(--muted); font-family: var(--font-mono); }
+.ranking-sort { max-width: 64%; min-width: 0; }
+.ranking-sort select { width: 100%; font-size: var(--t-xs); }
 .comparison-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 12px 0 8px; font-size: var(--t-xs); color: var(--muted); }
 .comparison-legend > span { display: inline-flex; align-items: center; gap: 5px; }
-.chart-key-labels { display: grid; grid-template-columns: 38px minmax(0, 1fr) 36px; gap: 6px; align-items: center; padding: 0 6px 6px; color: var(--muted); font-size: var(--t-xs); }
-.chart-key-labels svg { display: block; width: 100%; }
+.chart-key-labels, .alternate { display: grid; grid-template-columns: 32px minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
+.chart-key-labels { padding: 0 9px 6px; color: var(--muted); font-size: var(--t-xs); }
+.chart-key-groups { display: grid; grid-template-columns: 46% 54%; text-align: center; }
+#chart-key-numbers { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)) .46fr repeat(7, minmax(0, 1fr)); margin-top: 2px; text-align: center; font-variant-numeric: tabular-nums; }
+#chart-key-numbers span:nth-child(7) { grid-column: 8; }
 .chart-key-labels > span:last-child { text-align: center; }
 .alternates { overflow: auto; padding: 2px; }
-.alternate { display: grid; grid-template-columns: 38px minmax(0, 1fr) 36px; gap: 6px; align-items: center; width: 100%; min-height: 48px; text-align: left; color: var(--ink); background: transparent; border: 1px solid transparent; border-bottom-color: var(--line); padding: 2px 6px; border-radius: 4px; }
+.alternate { width: 100%; min-height: 44px; text-align: left; color: var(--ink); background: transparent; border: 1px solid transparent; border-bottom-color: var(--line); padding: 1px 6px; border-radius: 4px; }
 .alternate:hover { background: var(--surface-2); }
 .alternate[aria-pressed="true"] { border-color: var(--ewi-accent); background: var(--ewi-accent-soft); }
-.alternate-label { font-size: var(--t-xs); font-weight: 650; color: var(--muted); }
+.alternate-label { font: 12px var(--font-mono); color: var(--muted); text-align: center; }
 .alternate[aria-pressed="true"] .alternate-label { color: var(--ewi-accent); }
-.alternate-register { font: 14px var(--font-mono); color: var(--ink); text-align: center; }
+.alternate-held { font: 14px var(--font-mono); color: var(--ink); text-align: center; }
 .mini-diagram { width: 100%; height: auto; display: block; }
 .mini-key-label { fill: var(--muted); font: 17px var(--font-mono); text-anchor: middle; }
-.alternate-caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.additional-fingerings > summary { display: list-item; min-height: 44px; align-content: center; padding: 8px; color: var(--ewi-accent); font-size: var(--t-sm); cursor: pointer; }
+.additional-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding: 6px; color: var(--muted); font-size: var(--t-xs); }
+.additional-pagination .btn { padding-inline: 8px; }
 .planner { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 32px; padding-top: 28px; height: calc(100dvh - 248px); min-height: 480px; }
 .planner-input, .planner-output { overflow-y: auto; padding: 0 4px 28px; }
 .planner-input > p { color: var(--muted); margin-top: 8px; font-size: var(--t-sm); }
@@ -235,6 +242,7 @@ select { max-width: 100%; appearance: none; padding-right: 30px; background-imag
   .explorer-actions { margin-top: 12px; }
   .alternate-panel { order: 1; padding: 8px 0 0; max-height: none; }
   .alternate-panel h2 { font-size: 16px; }
+  .ranking-sort select { font-size: 16px; padding-left: 8px; }
   .comparison-legend { margin: 6px 0; }
   .alternates { overflow: visible; }
   .planner { display: block; height: auto; min-height: 0; padding-top: 24px; }

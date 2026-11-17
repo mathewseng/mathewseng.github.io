@@ -1,4 +1,5 @@
 import { PATTERNS } from './fingerings.mjs';
+import { isEligibleFingering } from './key-rules.mjs?v=20261117-ranking';
 
 export const SHARPS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 export const FLATS = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
@@ -30,9 +31,10 @@ export function noteName(midi, flats = false) {
   return `${(flats ? FLATS : SHARPS)[((midi % 12) + 12) % 12]}${Math.floor(midi / 12) - 1}`;
 }
 export function registerName(shift) { return shift > 0 ? `+${shift}` : String(shift); }
+export function supportsMidi(midi) { return Number.isInteger(midi) && midi >= 34 && midi <= 111; }
 export function candidates(midi) {
-  if (!Number.isInteger(midi) || midi < 34 || midi > 111) return [];
-  return FINGERINGS.filter(f => (midi - f.base) % 12 === 0).map(f => ({ ...f, shift: (midi - f.base) / 12 }))
+  if (!supportsMidi(midi)) return [];
+  return FINGERINGS.filter(f => isEligibleFingering(f.bits) && (midi - f.base) % 12 === 0).map(f => ({ ...f, shift: (midi - f.base) / 12 }))
     .filter(f => f.shift >= -2 && f.shift <= 4)
     .sort((a, b) => Number(b.main) - Number(a.main) || Math.abs(a.shift) - Math.abs(b.shift) || a.id.localeCompare(b.id));
 }

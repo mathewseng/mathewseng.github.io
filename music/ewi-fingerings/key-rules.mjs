@@ -34,6 +34,10 @@ export function keyPitch(bits, register = 0) {
   ];
   return { midi: 73 + contributions.reduce((sum, n) => sum + n, 0) + register * 12, contributions };
 }
+// Apply to playing suggestions. The Key Explorer still models individual sensors.
+export function isEligibleFingering(bits) {
+  return bits[1] !== '1' || bits[0] === '1';
+}
 export function toggleKey(bits, index) {
   if (!/^[01]{13}$/.test(bits) || !Number.isInteger(index) || index < 0 || index > 12) throw new Error('Choose a note key K1–K13.');
   return bits.slice(0, index) + (bits[index] === '1' ? '0' : '1') + bits.slice(index + 1);
