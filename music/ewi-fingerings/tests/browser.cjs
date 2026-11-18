@@ -78,12 +78,9 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.ok(positions[1][1] < positions[0][1], 'the black key is above the white keys');
     assert.ok(Math.abs(positions[1][0] - (positions[0][0] + positions[2][0]) / 2) < 1, 'the black key is centered between the neighboring white keys');
     const referenceGeometry = await keyGeometry('#main-diagram svg');
-    const [, , , roundLength] = referenceGeometry[0];
-    const [, , , k5Length] = referenceGeometry[4];
-    const [, , , k6Length] = referenceGeometry[5];
-    const [, , , k7Length] = referenceGeometry[6];
-    assert.ok(k7Length > roundLength * 1.7 && k5Length < k7Length && k7Length < k6Length,
-      'the three middle levers match the relative lengths seen on the EWI4000s');
+    const widths = referenceGeometry.map(([, , width]) => Math.round(width / .52 * 10) / 10);
+    assert.deepEqual(widths, [47, 56, 47, 47, 77, 101, 81, 47, 47, 47, 70, 91, 116.5],
+      'key widths match the measured proportions in the manual');
     assert.deepEqual(await keyGeometry('.ranked-rows .alternate svg'), referenceGeometry);
     await page.setViewportSize({ width: 1280, height: 800 });
     await checkFingeringLayout();
@@ -270,15 +267,17 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       const use = key.querySelector('use');
       const symbol = document.querySelector(use.getAttribute('href'));
       const face = symbol.querySelector('.key-face');
-      const scale = use.width.baseVal.value / symbol.viewBox.baseVal.width;
-      const transform = key.transform.baseVal.consolidate().matrix;
+      const viewBox = symbol.viewBox.baseVal;
+      const scale = use.width.baseVal.value / viewBox.width;
+      const transform = key.transform.baseVal.getItem(0).matrix;
       const onLeft = line.parentElement.parentElement.querySelector(`[data-key="${i}"]`).classList.contains('key-callout-left');
       const isFarther = onLeft ? (a, b) => a < b : (a, b) => a > b;
       let edge = { x: onLeft ? Infinity : -Infinity, y: 0 };
       const perimeter = face.getTotalLength();
       for (let sample = 0; sample < 720; sample++) {
         const point = face.getPointAtLength(perimeter * sample / 720);
-        const position = new DOMPoint(point.x * scale + use.x.baseVal.value, point.y * scale + use.y.baseVal.value);
+        const position = new DOMPoint((point.x - viewBox.x) * scale + use.x.baseVal.value,
+          (point.y - viewBox.y) * scale + use.y.baseVal.value);
         const mapped = position.matrixTransform(transform);
         if (isFarther(mapped.x, edge.x)) edge = mapped;
       }

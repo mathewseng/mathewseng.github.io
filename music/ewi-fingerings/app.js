@@ -1,5 +1,5 @@
 import { KEY_RULES, isEligibleFingering, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-key-labels';
-import { KEY_SYMBOLS, KEY_LAYOUT, keySideEdge } from './key-artwork.mjs?v=20261118-key-edges';
+import { KEY_SYMBOLS, KEY_LAYOUT, keySideEdge } from './key-artwork.mjs?v=20261118-manual-keys';
 import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-layout';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
@@ -100,20 +100,20 @@ function showView(view) {
 }
 
 function physicalKeys(bits, { interactive = false, before } = {}) {
-  return KEY_LAYOUT.map(({ shape, x, y, width, height, angle }, i) => {
+  return KEY_LAYOUT.map(({ shape, x, y, width, height }, i) => {
     const interactiveKey = interactive ? ` data-key-shape="${i}"` : '';
     const keyShape = `<use class="key-shape" href="#ewi-key-${shape}" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}"/>`;
     const hitTarget = interactive && i === 1
       ? `<rect fill="transparent" x="${-width / 2 - 1}" y="${-height / 2 - 2}" width="${width + 2}" height="${height + 4}"/>` : '';
     const outline = before && before[i] !== bits[i]
       ? `<rect class="change-outline" x="${-width / 2 - 2}" y="${-height / 2 - 2}" width="${width + 4}" height="${height + 4}" rx="3"/>` : '';
-    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(${angle})"${interactiveKey}>${keyShape}${outline}${hitTarget}</g>`;
+    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y})"${interactiveKey}>${keyShape}${outline}${hitTarget}</g>`;
   }).join('');
 }
 function keyDiagram(bits, { horizontal = false, before, decorative = false, viewBox } = {}) {
   const keys = physicalKeys(bits, { before });
   const accessibility = decorative ? 'aria-hidden="true"' : `role="img" aria-label="Touch ${keyList(bits)}"`;
-  const box = viewBox ?? (horizontal ? '16 -222 387 113' : '109 16 113 387');
+  const box = viewBox ?? (horizontal ? '16 -216 387 113' : '103 16 113 387');
   return `<svg class="${horizontal ? 'mini-diagram' : 'upright-diagram'}" viewBox="${box}" ${accessibility}>${horizontal ? `<g transform="rotate(-90)">${keys}</g>` : keys}</svg>`;
 }
 function renderMoveMatrix() {
@@ -200,7 +200,7 @@ function chartCard(f) {
   const label = `Rank ${f.rank}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than rank 1.` : ''}`;
   return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}">
     <span class="alternate-label">#${f.rank}</span><span class="alternate-count"><span class="alternate-held">${f.heldCount}</span><span class="alternate-count-suffix"> down</span></span>
-    ${keyDiagram(f.bits, { horizontal: true, decorative: true, viewBox: '16 -210.5 387 100' })}
+    ${keyDiagram(f.bits, { horizontal: true, decorative: true, viewBox: '16 -209.5 387 100' })}
   </button>`;
 }
 
