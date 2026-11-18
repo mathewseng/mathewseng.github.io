@@ -1,0 +1,163 @@
+{
+  "id": "legs-2026-11-17",
+  "date": "2026-11-17",
+  "startTime": "22:35",
+  "durationMinutes": 70,
+  "type": "legs",
+  "title": "November 17 Legs Workout",
+  "chronologyIndex": 30,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "smith-squat",
+      "name": "Squat",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-17-smith-squat-1",
+          "weightLb": 115,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-smith-squat-2",
+          "weightLb": 115,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-smith-squat-3",
+          "weightLb": 115,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Mapped to the existing Smith squat history. Equipment and bar inclusion not reconfirmed."
+    },
+    {
+      "exerciseId": "romanian-deadlift",
+      "name": "Romanian Deadlift",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-17-romanian-deadlift-1",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-romanian-deadlift-2",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-romanian-deadlift-3",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-romanian-deadlift-4",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-romanian-deadlift-5",
+          "weightLb": 75,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Equipment not reconfirmed."
+    },
+    {
+      "exerciseId": "cable-glute-kickback",
+      "name": "Cable Donkey Kick",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-17-cable-glute-kickback-1",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-cable-glute-kickback-2",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-cable-glute-kickback-3",
+          "weightLb": 20,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Reps per leg and whether both sides were completed are unspecified.",
+      "equipment": "Cable machine"
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-17-cable-ab-crunch-1",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-cable-ab-crunch-2",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-cable-ab-crunch-3",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Setup unspecified.",
+      "equipment": "Cable machine"
+    },
+    {
+      "exerciseId": "calf-raise",
+      "name": "Calf Raise",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-17-calf-raise-1",
+          "weightLb": 50,
+          "reps": 20,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-calf-raise-2",
+          "weightLb": 50,
+          "reps": 20,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-calf-raise-3",
+          "weightLb": 50,
+          "reps": 20,
+          "completed": true
+        },
+        {
+          "id": "2026-11-17-calf-raise-4",
+          "weightLb": 50,
+          "reps": 20,
+          "completed": true
+        }
+      ],
+      "notes": "Equipment, stance, and total versus per-hand loading were not reconfirmed."
+    }
+  ],
+  "notes": "18 completed sets, 220 entered reps, and 13,900 lb entered-load volume. Unspecified per-side loads and reps are counted as entered. No warm-up status, RIR, or readiness or pain ratings supplied."
+}

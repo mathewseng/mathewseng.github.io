@@ -2,6 +2,10 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-11-17 — Legs Workout
+
+- Logged the 10:35 PM, 70-minute legs session, including five RDL sets and four calf-raise sets.
+
 ## 2026-11-16 — Pull Workout
 
 - Logged the 11:15 PM, 65-minute pull session, preserving all five cable-row loads and unspecified setup details.

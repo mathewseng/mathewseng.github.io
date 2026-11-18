@@ -1503,6 +1503,18 @@ Start: 11:15 PM. Duration: 65 minutes.
 
 22 completed sets, 192 reps, 5,350 lb entered-load volume. Pull-up strict form, cable-row position and attachment, per-side load conventions, warm-up status, effort, and symptom ratings were not supplied. Cable row uses the existing standing-cable-row history mapping with position unconfirmed.
 
+# 30. Legs Workout — November 17, 2026
+
+Start: 10:35 PM. Duration: 70 minutes.
+
+- Squat: 115 lb × 10, 10, 10
+- RDL: 75 lb × 10, 10, 10, 10, 10
+- Cable donkey kick: 20 lb × 10, 10, 10
+- Cable ab crunch: 70 lb × 10, 10, 10
+- Calf raise: 50 lb × 20, 20, 20, 20
+
+18 completed sets, 220 entered reps, and 13,900 lb entered-load volume. Squat uses the existing Smith squat history with equipment unconfirmed. RDL and calf-raise equipment, calf-raise load convention, and cable kick reps per leg were not specified.
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench
