@@ -30,6 +30,14 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('[data-view="explore"]').click();
     await page.waitForSelector('.alternate');
   }
+  function fingeringRowPositions() {
+    return page.locator('.ranked-rows .alternate').evaluateAll(rows => rows.map(row =>
+      [row, ...row.children, ...row.querySelectorAll('use')].map(element => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return [x + scrollX, y + scrollY, width, height].map(value => Math.round(value * 10) / 10);
+      })
+    ));
+  }
   async function checkFingeringLayout() {
     assert.equal(await page.locator('#explore .upright-diagram').count(), 0);
     const gap = await page.locator('.ranked-rows .alternate').evaluateAll(cards => {
@@ -95,26 +103,31 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     const mobileRows = await page.locator('.ranked-rows .alternate').evaluateAll(buttons => buttons.map(button => {
       const { top, bottom, height } = button.getBoundingClientRect();
       const diagram = button.querySelector('svg').getBoundingClientRect();
-      return { top, height, selected: button.ariaPressed === 'true', proportion: diagram.width / innerWidth, diagramHeight: diagram.height, visible: top >= 0 && bottom <= innerHeight };
+      return { top, height, proportion: diagram.width / innerWidth, visible: top >= 0 && bottom <= innerHeight };
     }));
     assert.equal(new Set(mobileRows.map(row => row.top)).size, 12, 'each fingering has its own row on a phone');
     assert.ok(mobileRows.every(row => row.height >= 44 && row.proportion >= 2 / 3 && row.proportion <= 3 / 4),
       'mobile diagrams fill two-thirds to three-quarters of the screen');
-    assert.ok(mobileRows.filter(row => !row.selected).every(row => row.height <= .8 * row.diagramHeight),
-      'unselected mobile rows remain compact');
+    assert.ok(mobileRows.every(row => row.height === mobileRows[0].height && row.height < 80),
+      'all mobile rows are compact and have equal heights');
     assert.ok(mobileRows.filter(row => row.visible).length >= 6, 'the phone shows at least six enlarged rows before scrolling');
     const selectedRow = page.locator('.ranked-rows .alternate[aria-pressed="true"]');
+    const initialPositions = await fingeringRowPositions();
     for (const rank of ['1', '2']) {
       await page.locator(`[data-fingering="${rank}"]`).click();
-      const clearance = await selectedRow.evaluate(row => {
+      assert.deepEqual(await fingeringRowPositions(), initialPositions, 'selection keeps every row element in place');
+      const padding = await selectedRow.evaluate(row => {
         const border = row.getBoundingClientRect();
-        return Math.min(...[...row.querySelectorAll('use')].map(key => {
-          const bounds = key.getBoundingClientRect();
-          return Math.min(bounds.top - border.top, border.bottom - bounds.bottom,
-            bounds.left - border.left, border.right - bounds.right);
-        }));
+        const keys = [...row.querySelectorAll('use')].map(key => key.getBoundingClientRect());
+        return [
+          Math.min(...keys.map(key => key.top)) - border.top,
+          border.bottom - Math.max(...keys.map(key => key.bottom)),
+          Math.min(...keys.map(key => key.left)) - border.left,
+          border.right - Math.max(...keys.map(key => key.right)),
+        ];
       });
-      assert.ok(clearance >= 2, `rank ${rank} has space between its keys and selection border`);
+      assert.ok(Math.min(...padding) >= 2, `rank ${rank} has space between its keys and selection border`);
+      assert.ok(Math.abs(padding[0] - padding[1]) < 1, `rank ${rank} has balanced vertical padding`);
     }
     await page.locator('.ranked-rows .alternate').last().scrollIntoViewIfNeeded();
     assert.ok(await page.locator('.ranked-rows .alternate').last().evaluate(button => button.getBoundingClientRect().bottom <= innerHeight));
@@ -123,8 +136,14 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('#fingering-detail').isVisible(), true);
     const previewWidth = await page.locator('#main-diagram svg').evaluate(svg => svg.getBoundingClientRect().width / innerWidth);
     assert.ok(previewWidth >= 2 / 3 && previewWidth <= 3 / 4, 'the selected mobile preview uses the same wide scale');
+    await page.locator('[data-pitch="0"]').click();
+    const expandedPositions = await fingeringRowPositions();
+    await page.locator('[data-register="0"] .ranked-rows .alternate').first().click();
+    assert.equal(await page.locator('#thumb-offset').isVisible(), true);
+    assert.deepEqual(await fingeringRowPositions(), expandedPositions, 'the expanded preview with a thumb offset keeps the rows in place');
     await page.locator('#detail-toggle').click();
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.locator('[data-pitch="7"]').click();
 
     // Ranked results start with circles and bis, then paginate the other side keys.
     assert.deepEqual((await page.locator('.alternate-held').allTextContents()).slice(0, 3), ['3', '4', '3']);

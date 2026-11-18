@@ -110,10 +110,10 @@ function physicalKeys(bits, { interactive = false, before } = {}) {
     return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(${angle})"${interactiveKey}>${keyShape}${outline}${hitTarget}</g>`;
   }).join('');
 }
-function keyDiagram(bits, { horizontal = false, before, decorative = false } = {}) {
+function keyDiagram(bits, { horizontal = false, before, decorative = false, viewBox } = {}) {
   const keys = physicalKeys(bits, { before });
   const accessibility = decorative ? 'aria-hidden="true"' : `role="img" aria-label="Touch ${keyList(bits)}"`;
-  const box = horizontal ? '16 -222 387 113' : '109 16 113 387';
+  const box = viewBox ?? (horizontal ? '16 -222 387 113' : '109 16 113 387');
   return `<svg class="${horizontal ? 'mini-diagram' : 'upright-diagram'}" viewBox="${box}" ${accessibility}>${horizontal ? `<g transform="rotate(-90)">${keys}</g>` : keys}</svg>`;
 }
 function renderMoveMatrix() {
@@ -200,7 +200,7 @@ function chartCard(f) {
   const label = `Rank ${f.rank}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than rank 1.` : ''}`;
   return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}">
     <span class="alternate-label">#${f.rank}</span><span class="alternate-count"><span class="alternate-held">${f.heldCount}</span><span class="alternate-count-suffix"> down</span></span>
-    ${keyDiagram(f.bits, { horizontal: true, decorative: true })}
+    ${keyDiagram(f.bits, { horizontal: true, decorative: true, viewBox: '16 -210.5 387 100' })}
   </button>`;
 }
 
