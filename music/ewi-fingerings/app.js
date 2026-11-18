@@ -2,7 +2,7 @@ import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from
 import { KEY_ARTWORK, KEY_RATIOS, INSTRUMENT_KEYS, KEY_CALLOUTS } from './instrument-layout.mjs';
 import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261117-handoff';
-import { rankedFingerings } from './ranking.mjs?v=20261117-handoff';
+import { rankedFingerings } from './ranking.mjs?v=20261118-bis';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'ewi-practice-v2';
@@ -141,7 +141,7 @@ function renderSelectedFingering(selected) {
   $('thumb-label').textContent = `Register ${registerName(selected.shift)}`;
   $('roller-track').innerHTML = [4, 3, 2, 1, 0, -1, -2].map(shift => `<span class="${shift === selected.shift ? 'current' : ''}" ${shift === selected.shift ? 'aria-current="true"' : ''}>${registerName(shift)}</span>`).join('');
   $('held-description').textContent = `Touch ${keyList(selected.bits)}. Keep the other note keys clear.`;
-  $('ranking-detail').textContent = `${selected.heldCount} keys down · ${selected.sideCount} side touches · ${selected.comfortCost} extra touches sharing a finger`;
+  $('ranking-detail').textContent = `${selected.heldCount} keys down · ${selected.sideCount} side touches · comfort penalty ${selected.comfortCost}`;
 }
 
 function renderExplorer() {

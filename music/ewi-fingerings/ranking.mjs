@@ -1,9 +1,7 @@
 import { KEYS, supportsMidi } from './engine.mjs?v=20261117-handoff';
 import { isEligibleFingering, keyPitch } from './key-rules.mjs?v=20261117-ranking';
 
-const MAIN_KEYS = [0, 2, 3, 7, 8, 9];
-// K2 is a roll of the left index finger. It counts toward held keys and comfort,
-// while the separate side-key group drives the primary sort and binary ties.
+const MAIN_KEYS = [0, 1, 2, 3, 7, 8, 9];
 const SIDE_KEYS = [4, 5, 6, 10, 11, 12];
 
 const byFinger = new Map();
@@ -22,12 +20,15 @@ for (let mask = 0; mask < 2 ** KEYS.length; mask++) {
   const { midi } = keyPitch(bits);
   const mainBits = readGroup(bits, MAIN_KEYS);
   const sideBits = readGroup(bits, SIDE_KEYS);
-  // Each extra sensor under the same finger asks for a roll or a bridge.
-  const comfortCost = sharedFingers.reduce((cost, keys) => cost + Math.max(0, countHeld(readGroup(bits, keys)) - 1), 0);
+  const heldCount = countHeld(bits);
+  // The standalone K1 + bis roll is one index-finger gesture. Other
+  // patterns pay for each extra sensor held by the same finger.
+  const bisOnly = heldCount === 2 && bits.startsWith('11');
+  const comfortCost = bisOnly ? 0 : sharedFingers.reduce((cost, keys) => cost + Math.max(0, countHeld(readGroup(bits, keys)) - 1), 0);
   const sideCount = countHeld(sideBits);
   if (!byPitch.has(midi)) byPitch.set(midi, []);
   byPitch.get(midi).push({
-    bits, sideCount, comfortCost, heldCount: countHeld(bits),
+    bits, sideCount, comfortCost, heldCount,
     mainValue: parseInt(mainBits, 2), sideValue: parseInt(sideBits, 2),
   });
 }

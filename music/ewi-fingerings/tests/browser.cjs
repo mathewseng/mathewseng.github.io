@@ -37,6 +37,9 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
 
     // Ranked results start with circles and bis, then paginate the other side keys.
     assert.deepEqual((await page.locator('.alternate-held').allTextContents()).slice(0, 3), ['3', '4', '3']);
+    await page.locator('[data-pitch="10"]').click();
+    assert.match(await page.locator('.alternate').first().getAttribute('aria-label'), /^Rank 1, register 0, 2 keys down\. Touch K1, K2\.$/);
+    assert.match(await page.locator('#ranking-detail').textContent(), /2 keys down · 0 side touches/);
     await page.locator('[data-pitch="4"]').click();
     assert.equal(await page.locator('.alternate').count(), 6);
     assert.equal(await page.locator('.additional-fingerings summary').textContent(), '554 side-key fingerings');
