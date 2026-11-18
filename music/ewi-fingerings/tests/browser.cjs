@@ -21,6 +21,27 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     }
     assert.equal(Number(await page.locator('#key-register').textContent()), target);
   }
+  async function checkChartSpacing(rowSelector) {
+    const layout = await page.locator(rowSelector).first().evaluate(row => {
+      function centers(elements) {
+        return [...elements].map(element => {
+          const { x, width } = element.getBoundingClientRect();
+          return x + width / 2;
+        });
+      }
+      const strip = row.querySelector('.compact-keys');
+      const { x, width } = strip.getBoundingClientRect();
+      const keys = centers(strip.children);
+      const labels = centers(document.querySelector('#chart-key-numbers').children);
+      return {
+        offsets: keys.map(center => (center - x) / width),
+        error: Math.max(...keys.map((center, i) => Math.abs(center - labels[i]))),
+      };
+    });
+    assert.ok(layout.error < 1, 'K1–K13 headings line up with their keys');
+    assert.ok(layout.offsets[1] - layout.offsets[0] < layout.offsets[3] - layout.offsets[2], 'Bis sits closer to K1 than the round keys sit to one another');
+    return layout.offsets;
+  }
   try {
     await page.goto(site.base + '/music/ewi-fingerings/');
     await page.waitForSelector('.alternate');
@@ -43,6 +64,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.ok(Math.abs(positions[1][0] - (positions[0][0] + positions[2][0]) / 2) < 1, 'the black key is centered between the neighboring white keys');
     assert.deepEqual(await page.locator('#chart-key-numbers span').allTextContents(), Array.from({ length: 13 }, (_, i) => String(i + 1)));
     await page.setViewportSize({ width: 1280, height: 800 });
+    const chartOffsets = await checkChartSpacing('.ranked-rows .alternate');
     for (let key = 0; key < 12; key++) {
       await page.locator(`[data-pitch="${key}"]`).click();
       const last = await page.locator('.ranked-rows .alternate').last().boundingBox();
@@ -54,6 +76,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.ok(melodyButton.y + melodyButton.height <= 800, 'adding the selected fingering fits without scrolling');
     await page.locator('[data-pitch="7"]').click();
     await page.setViewportSize({ width: 375, height: 812 });
+    await checkChartSpacing('.ranked-rows .alternate');
     const visibleChoices = await page.locator('.alternate').evaluateAll(elements => elements.filter(el => {
       const rect = el.getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight;
     }).length);
@@ -75,6 +98,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('.additional-fingerings summary').click();
     await page.waitForSelector('.additional-rows .alternate');
     assert.equal(await page.locator('.additional-rows .alternate').count(), 12);
+    await checkChartSpacing('.additional-rows .alternate');
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     assert.equal(await page.locator('.additional-pagination [role="status"]').textContent(), '13–24 of 406');
     await page.locator('.additional-rows .alternate').first().click();
@@ -105,6 +129,11 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.match(await page.locator('#melody').inputValue(), / E♭4$/);
     await page.getByRole('button', { name: 'Across the break', exact: true }).click();
     assert.equal(await page.locator('.phrase-step').count(), 5);
+    const plannerOffsets = await page.locator('.phrase-step .mini-diagram').first().evaluate(strip =>
+      [...strip.querySelectorAll('use')].map(key => (key.x.baseVal.value + key.width.baseVal.value / 2) / strip.viewBox.baseVal.width)
+    );
+    assert.ok(chartOffsets.every((offset, i) => Math.abs(offset - plannerOffsets[i]) < .001),
+      'the chart and Melody Planner use the same relative key positions');
     await page.screenshot({ path: '/tmp/ewi-redesign/planner-desktop.png' });
     await page.locator('#melody').fill('G4 G5');
     await page.locator('#melody-form').getByRole('button', { name: 'Find fingerings' }).click();

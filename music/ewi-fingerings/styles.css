@@ -71,8 +71,12 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 .comparison-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .chart-key-labels, .alternate { display: grid; grid-template-columns: 32px minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .chart-key-labels { padding: 2px 7px; color: var(--muted); font-size: var(--t-xs); }
-.compact-keys { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); align-items: center; text-align: center; font: 12px var(--font-mono); color: var(--muted); }
-.compact-keys svg { display: block; width: 100%; height: 34px; max-width: 32px; margin: auto; }
+.compact-keys { display: block; position: relative; height: 34px; text-align: center; font: 12px/16px var(--font-mono); color: var(--muted); }
+.compact-keys > span { position: absolute; left: var(--key-position); translate: -50% 0; }
+.compact-keys > .diagram-key { width: min(8%, 32px); }
+.compact-keys svg { display: block; width: 100%; height: 34px; }
+.numbered-keys { height: 50px; }
+#chart-key-numbers { height: 16px; }
 .chart-key-labels > span { text-align: center; }
 .alternates { padding-block: 2px; }
 .alternate { width: 100%; min-height: 44px; text-align: left; color: var(--ink); background: transparent; border: 1px solid transparent; border-bottom-color: var(--line); padding: 1px 6px; border-radius: 4px; }

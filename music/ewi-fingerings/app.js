@@ -95,8 +95,10 @@ function showView(view) {
   say('');
 }
 
+const stripWidth = 350;
 const stripX = [16, 35, 64, 96, 125, 146, 172, 196, 228, 260, 287, 311, 335];
 const stripHeights = [26, 29, 26, 26, 38, 46, 38, 26, 26, 26, 34, 44, 56];
+const stripPosition = index => `style="--key-position:${stripX[index] / stripWidth * 100}%"`;
 function keyShape(index, x, y, height) {
   const width = height * KEY_RATIOS[index];
   return `<use class="key-shape" href="#ewi-key-${KEY_ARTWORK[index]}" x="${x - width / 2}" y="${y - height / 2}" width="${width}" height="${height}"/>`;
@@ -105,12 +107,12 @@ function keyGlyph(index) {
   return `<svg viewBox="0 0 28 36" aria-hidden="true">${keyShape(index, 14, 18, Math.min(34, stripHeights[index]))}</svg>`;
 }
 function compactKeys(bits, showNumbers = false) {
-  return `<span class="compact-keys" aria-hidden="true">${KEYS.map((key, i) =>
-    `<span class="diagram-key ${bits[i] === '1' ? 'on' : ''}">${keyGlyph(i)}${showNumbers ? `<span>${i + 1}</span>` : ''}</span>`
+  return `<span class="compact-keys${showNumbers ? ' numbered-keys' : ''}" aria-hidden="true">${stripX.map((_, i) =>
+    `<span class="diagram-key ${bits[i] === '1' ? 'on' : ''}" ${stripPosition(i)}>${keyGlyph(i)}${showNumbers ? `<span>${i + 1}</span>` : ''}</span>`
   ).join('')}</span>`;
 }
 function mini(fingering, before = null) {
-  return `<svg class="mini-diagram" viewBox="0 0 350 64" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
+  return `<svg class="mini-diagram" viewBox="0 0 ${stripWidth} 64" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
     return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${keyShape(i, stripX[i], 32, stripHeights[i])}${before && before.bits[i] !== fingering.bits[i] ? `<rect class="change-outline" x="${stripX[i] - stripHeights[i] * KEY_RATIOS[i] / 2 - 2}" y="${32 - stripHeights[i] / 2 - 2}" width="${stripHeights[i] * KEY_RATIOS[i] + 4}" height="${stripHeights[i] + 4}" rx="3"/>` : ''}</g>`;
   }).join('')}</svg>`;
 }
@@ -674,6 +676,6 @@ $('hear-keys').addEventListener('click', async () => {
   stopAudio(); const generation = playbackGeneration;
   try { const context = await getAudio(); if (generation !== playbackGeneration) return; const midi = keyPitch(state.keyBits, state.keyRegister).midi; if (midi > 111) return; tone(context, midi, context.currentTime, .6); say(`Reference tone: ${name(midi)}.`); } catch (error) { say(error.message); }
 });
-$('chart-key-numbers').innerHTML = KEYS.map((_, i) => `<span>${i + 1}</span>`).join('');
+$('chart-key-numbers').innerHTML = stripX.map((_, i) => `<span ${stripPosition(i)}>${i + 1}</span>`).join('');
 $('key-symbols').innerHTML = KEY_SYMBOLS;
 renderExplorer(); renderKeyExplorer();
