@@ -1,0 +1,251 @@
+.vision-shell {
+  max-width: 1440px;
+  width: calc(100% - clamp(28px, 6vw, 112px));
+}
+
+.vision-topbar {
+  border-bottom: 1px solid var(--line);
+}
+
+.vision-topbar .crumbs a {
+  min-height: 44px;
+}
+
+.vision-heading {
+  padding-block: clamp(1.3rem, 3.7vw, 3.55rem) clamp(1.15rem, 2.6vw, 2.35rem);
+}
+
+.vision-heading h1 {
+  font-size: clamp(2rem, 5vw, 4.15rem);
+  letter-spacing: -0.055em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.vision-heading p {
+  margin-top: 0.75rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.vision-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(12rem, 20vw, 17.5rem);
+  gap: clamp(0.85rem, 2.7vw, 2.6rem);
+  padding-bottom: 1.5rem;
+}
+
+.vision-stage {
+  min-width: 0;
+}
+
+.vision-player {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  animation: vision-appear var(--d-base) ease-out both;
+}
+
+.vision-player video {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.vision-play {
+  display: grid;
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: clamp(3rem, 6vw, 4.5rem);
+  aspect-ratio: 1;
+  place-items: center;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  transition: scale var(--d-fast), box-shadow var(--d-fast);
+}
+
+.vision-play::before {
+  content: "";
+  margin-inline-start: 0.18em;
+  border-block: 0.54em solid transparent;
+  border-left: 0.82em solid currentColor;
+  font-size: 1.5rem;
+}
+
+.vision-play:is(:hover, :focus-visible) {
+  scale: 1.07;
+  box-shadow: 0 0 0 0.4rem var(--accent-soft);
+}
+
+.vision-caption {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.65rem;
+}
+
+.vision-caption h2 {
+  font-size: 1.38rem;
+}
+
+.vision-caption p {
+  margin-top: 0.15rem;
+}
+
+.vision-caption p, .vision-error {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.vision-error {
+  margin-top: 0.65rem;
+  color: var(--warn);
+}
+
+.vision-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  flex: none;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.vision-download:hover {
+  text-decoration: underline;
+}
+
+.vision-session {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.6rem;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+
+.vision-session h2 {
+  font-size: 1rem;
+  letter-spacing: -0.012em;
+}
+
+.vision-queue time {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vision-queue ol {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  border-block: 1px solid var(--line);
+}
+
+.vision-queue li + li {
+  border-top: 1px solid var(--line);
+}
+
+.vision-queue li a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: clamp(0.45rem, 1vw, 0.9rem);
+  align-items: center;
+  min-height: 54px;
+  padding: 0.48rem 0.55rem;
+  border-inline-start: 2px solid transparent;
+  text-decoration: none;
+  font-size: 0.91rem;
+  font-weight: 640;
+  transition: background var(--d-fast), color var(--d-fast);
+}
+
+.vision-queue li a:hover {
+  background: var(--surface-2);
+}
+
+.vision-queue li a[aria-current] {
+  border-inline-start-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.vision-queue img {
+  display: block;
+  border-radius: var(--r-sm);
+}
+
+.vision-page [hidden] {
+  display: none;
+}
+
+@keyframes vision-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 699px) {
+  .vision-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vision-queue {
+    margin-top: 0.55rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 480px) {
+  .vision-topbar {
+    min-height: 44px;
+    padding-block: 0;
+  }
+
+  .vision-layout {
+    grid-template-columns: minmax(0, min(63%, calc((100svh - 125px) * 16 / 9))) minmax(0, 1fr);
+  }
+
+  .vision-queue li a {
+    min-height: 44px;
+    padding-block: 0.22rem;
+  }
+
+  .vision-queue img {
+    width: 44px;
+    height: 33px;
+  }
+
+  .vision-heading {
+    padding-block: 0.6rem 0.85rem;
+  }
+
+  .vision-heading h1 {
+    font-size: 1.8rem;
+  }
+
+  .vision-heading p {
+    margin-top: 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vision-player {
+    animation: none;
+  }
+
+  .vision-play, .vision-queue li a {
+    transition: none;
+  }
+}

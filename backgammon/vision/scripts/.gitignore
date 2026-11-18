@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+.DS_Store
+*.mp4
+*.mov
+*.jpg
+*.png
+*.gz
+*.npz
+*.onnx
+*.pt
+*.joblib
+site-solver/
+artifacts/

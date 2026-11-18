@@ -1,0 +1,16 @@
+# Backgammon Vision
+
+The [player](https://mathewseng.github.io/backgammon/vision/) shows the five
+Office-3 game replays from November 17, 2026. Add `?game=1` through `?game=5`
+to link to a specific game.
+
+The 1080p video files are assets on the
+[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v4).
+The published site contains the viewer and stills from the replays. The media
+loads over the network on playback.
+
+The [vision pipeline](scripts/README.txt) contains the source used to reconstruct
+the game state, score the decisions with GNUbg, and render the overlays. Site
+assembly excludes this research code. The local footage, model weights and
+generated game state used by the pipeline live in the artifact directory
+described in the pipeline README.

@@ -1,0 +1,8 @@
+av
+joblib
+numpy
+onnx
+opencv-python
+pillow
+scikit-learn
+torch

@@ -1,0 +1,11 @@
+[
+  {
+    "clip": 45,
+    "first": 1048,
+    "last": 1206,
+    "dice": [4, 4],
+    "centers": [[342.875, 331.375], [372, 230]],
+    "status": "reviewed",
+    "note": "The independently reviewed two stationary dice both show four. A later checker detection is compatible with another roll, so it cannot override the visible faces."
+  }
+]
