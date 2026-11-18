@@ -70,6 +70,12 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.ok(positions[1][1] < positions[0][1], 'the black key is above the white keys');
     assert.ok(Math.abs(positions[1][0] - (positions[0][0] + positions[2][0]) / 2) < 1, 'the black key is centered between the neighboring white keys');
     const referenceGeometry = await keyGeometry('#main-diagram svg');
+    const [, , , roundLength] = referenceGeometry[0];
+    const [, , , k5Length] = referenceGeometry[4];
+    const [, , , k6Length] = referenceGeometry[5];
+    const [, , , k7Length] = referenceGeometry[6];
+    assert.ok(k7Length > roundLength * 1.7 && k5Length < k7Length && k7Length < k6Length,
+      'the three middle levers match the relative lengths seen on the EWI4000s');
     assert.deepEqual(await keyGeometry('.ranked-rows .alternate svg'), referenceGeometry);
     await page.setViewportSize({ width: 1280, height: 800 });
     await checkFingeringLayout();
@@ -89,14 +95,27 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     const mobileRows = await page.locator('.ranked-rows .alternate').evaluateAll(buttons => buttons.map(button => {
       const { top, bottom, height } = button.getBoundingClientRect();
       const diagram = button.querySelector('svg').getBoundingClientRect();
-      return { top, height, proportion: diagram.width / innerWidth, diagramHeight: diagram.height, visible: top >= 0 && bottom <= innerHeight };
+      return { top, height, selected: button.ariaPressed === 'true', proportion: diagram.width / innerWidth, diagramHeight: diagram.height, visible: top >= 0 && bottom <= innerHeight };
     }));
     assert.equal(new Set(mobileRows.map(row => row.top)).size, 12, 'each fingering has its own row on a phone');
     assert.ok(mobileRows.every(row => row.height >= 44 && row.proportion >= 2 / 3 && row.proportion <= 3 / 4),
       'mobile diagrams fill two-thirds to three-quarters of the screen');
-    assert.ok(mobileRows.every(row => row.height <= .8 * row.diagramHeight),
-      'mobile row height is tighter than the full diagram');
+    assert.ok(mobileRows.filter(row => !row.selected).every(row => row.height <= .8 * row.diagramHeight),
+      'unselected mobile rows remain compact');
     assert.ok(mobileRows.filter(row => row.visible).length >= 6, 'the phone shows at least six enlarged rows before scrolling');
+    const selectedRow = page.locator('.ranked-rows .alternate[aria-pressed="true"]');
+    for (const rank of ['1', '2']) {
+      await page.locator(`[data-fingering="${rank}"]`).click();
+      const clearance = await selectedRow.evaluate(row => {
+        const border = row.getBoundingClientRect();
+        return Math.min(...[...row.querySelectorAll('use')].map(key => {
+          const bounds = key.getBoundingClientRect();
+          return Math.min(bounds.top - border.top, border.bottom - bounds.bottom,
+            bounds.left - border.left, border.right - bounds.right);
+        }));
+      });
+      assert.ok(clearance >= 2, `rank ${rank} has space between its keys and selection border`);
+    }
     await page.locator('.ranked-rows .alternate').last().scrollIntoViewIfNeeded();
     assert.ok(await page.locator('.ranked-rows .alternate').last().evaluate(button => button.getBoundingClientRect().bottom <= innerHeight));
     assert.equal(await page.locator('#fingering-detail').isVisible(), false);
@@ -229,11 +248,9 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('#clear-keys').click();
     assert.deepEqual(await page.locator('#pitch-drop-table tbody tr').evaluateAll(rows =>
       rows.map(row => [...row.querySelectorAll('button')].map(button => Number(button.textContent.replace('−', '-'))))
-    ), [[0, -1, -2, -4], [-1, -2, -3, -5], [-1, -2, -3, -5], [-2, -3, -4, -6], [-2, -3, -4, -6], [-3, -4, -5, -7], [-4, -5, -6, -8]]);
+    ), [[0, -1, -2, -4], [-1, -2, -3, -5], [-2, -3, -4, -6], [-3, -4, -5, -7], [-4, -5, -6, -8]]);
     assert.deepEqual(await keyGeometry('#pitch-drop-keys svg'), referenceGeometry);
     await page.locator('#pitch-drop-table [aria-pressed="true"]').focus();
-    await page.keyboard.press('ArrowDown');
-    assert.equal(await page.locator('#pitch-drop-table [aria-pressed="true"]').getAttribute('aria-label'), 'K2, −1 semitone');
     await page.keyboard.press('ArrowDown');
     assert.equal(await page.locator('#pitch-drop-table [aria-pressed="true"]').getAttribute('aria-label'), 'K3, −1 semitone');
     await page.locator('#pitch-drop-table button').last().click();
@@ -263,7 +280,8 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('#key-picker [data-key="1"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#key-held').textContent(), 'Held: K2.');
     assert.equal(await page.locator('#key-note').textContent(), 'C5');
-    assert.equal(await page.locator('#pitch-drop-total').textContent(), '−1 semitone');
+    assert.equal(await page.locator('#pitch-drop-preview').isVisible(), false);
+    assert.equal(await page.locator('#pitch-drop-table [aria-pressed="true"]').count(), 0);
     await page.locator('#key-rule-rows [data-key="1"]').press('Enter');
     assert.equal(await page.locator('#key-note').textContent(), 'D♭5');
     await page.locator('#key-picker [data-key="2"]').click();

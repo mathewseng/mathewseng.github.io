@@ -1,5 +1,5 @@
-import { KEY_RULES, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-bis';
-import { KEY_ARTWORK, KEY_RATIOS, KEY_SYMBOLS, KEY_LAYOUT } from './key-artwork.mjs?v=20261118-keys';
+import { KEY_RULES, isEligibleFingering, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-bis';
+import { KEY_SYMBOLS, KEY_LAYOUT } from './key-artwork.mjs?v=20261118-key-geometry';
 import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-layout';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
@@ -99,25 +99,21 @@ function showView(view) {
   say('');
 }
 
-function keyShape(index, x, y, height) {
-  const width = height * KEY_RATIOS[index];
-  return `<use class="key-shape" href="#ewi-key-${KEY_ARTWORK[index]}" x="${x - width / 2}" y="${y - height / 2}" width="${width}" height="${height}"/>`;
-}
 function physicalKeys(bits, { interactive = false, before } = {}) {
-  return KEY_LAYOUT.map(({ x, y, height }, i) => {
+  return KEY_LAYOUT.map(({ shape, x, y, width, height, angle }, i) => {
     const interactiveKey = interactive ? ` data-key-shape="${i}"` : '';
-    const width = height * KEY_RATIOS[i];
+    const keyShape = `<use class="key-shape" href="#ewi-key-${shape}" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}"/>`;
     const hitTarget = interactive && i === 1
       ? `<rect fill="transparent" x="${-width / 2 - 1}" y="${-height / 2 - 2}" width="${width + 2}" height="${height + 4}"/>` : '';
     const outline = before && before[i] !== bits[i]
       ? `<rect class="change-outline" x="${-width / 2 - 2}" y="${-height / 2 - 2}" width="${width + 4}" height="${height + 4}" rx="3"/>` : '';
-    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(90)"${interactiveKey}>${keyShape(i, 0, 0, height)}${outline}${hitTarget}</g>`;
+    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(${angle})"${interactiveKey}>${keyShape}${outline}${hitTarget}</g>`;
   }).join('');
 }
 function keyDiagram(bits, { horizontal = false, before, decorative = false } = {}) {
   const keys = physicalKeys(bits, { before });
   const accessibility = decorative ? 'aria-hidden="true"' : `role="img" aria-label="Touch ${keyList(bits)}"`;
-  const box = horizontal ? '16 -222 380 113' : '109 16 113 380';
+  const box = horizontal ? '16 -222 387 113' : '109 16 113 387';
   return `<svg class="${horizontal ? 'mini-diagram' : 'upright-diagram'}" viewBox="${box}" ${accessibility}>${horizontal ? `<g transform="rotate(-90)">${keys}</g>` : keys}</svg>`;
 }
 function renderMoveMatrix() {
@@ -307,7 +303,7 @@ function renderPitchDropTable() {
       const held = group.filter((_, index) => mask & (1 << index));
       const bits = keyPattern(held);
       return { held, bits, steps: pitchDrop(bits) };
-    }).filter(({ bits }) => !hasRedundantBis(bits)).sort((a, b) => b.steps - a.steps);
+    }).filter(({ bits }) => isEligibleFingering(bits)).sort((a, b) => b.steps - a.steps);
   }
   const [rows, columns] = pitchDropGroups.map(combinations);
   const label = ({ held, steps }) => `<span>${held.map(i => KEYS[i].id).join(' + ') || 'Open'}</span><small>${signedSteps(steps)}</small>`;
@@ -326,7 +322,10 @@ function updatePitchDropPreview() {
   const bits = keyPattern(pitchDropKeys.filter(i => state.keyBits[i] === '1'));
   const table = $('pitch-drop-table');
   table.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
-  table.querySelector(`[data-combination="${bits}"]`).setAttribute('aria-pressed', 'true');
+  const cell = table.querySelector(`[data-combination="${bits}"]`);
+  $('pitch-drop-preview').hidden = !cell;
+  if (!cell) return;
+  cell.setAttribute('aria-pressed', 'true');
   $('pitch-drop-keys').innerHTML = keyDiagram(bits, { decorative: true });
   $('pitch-drop-total').textContent = describeDrop(pitchDrop(bits));
   $('pitch-drop-held').textContent = bits === openKeys ? 'Open' : keyList(bits);

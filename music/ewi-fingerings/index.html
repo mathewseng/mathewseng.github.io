@@ -6,7 +6,7 @@
   <meta name="description" content="Explore ranked Akai EWI4000s fingerings, learn every note key, and plan easier melody fingerings with octave-aware transitions.">
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261031">
   <link rel="stylesheet" href="../../shared/app.css?v=20261031">
-  <link rel="stylesheet" href="styles.css?v=20261118-tight-rows">
+  <link rel="stylesheet" href="styles.css?v=20261118-key-geometry">
   <title>EWI Fingerings · Music</title>
 </head>
 <body>
@@ -101,12 +101,12 @@
           <div class="section-title"><h2 id="pitch-drop-heading">Pitch drops</h2><span class="small-label">Semitones from open</span></div>
           <div class="pitch-drop-layout">
             <table id="pitch-drop-table"></table>
-            <div class="pitch-drop-preview">
+            <div id="pitch-drop-preview" class="pitch-drop-preview">
               <div id="pitch-drop-keys"></div>
               <div aria-live="polite"><strong id="pitch-drop-total"></strong><span class="small-label" id="pitch-drop-held"></span></div>
             </div>
           </div>
-          <p class="small-label">Choose a total to try those keys. K2 alone drops one semitone.</p>
+          <p class="small-label">Choose a total to try those keys.</p>
         </section>
         <section id="key-rules"><h2>Key rules</h2>
           <div class="rule-toolbar"><div class="choice-buttons" role="group" aria-label="Filter key rules"><button type="button" data-rule-filter="all" aria-pressed="true">All keys</button><button type="button" data-rule-filter="interacting" aria-pressed="false" aria-label="Conditional and linked keys">Conditional</button><button type="button" data-rule-filter="fixed" aria-pressed="false">Fixed</button></div></div>
@@ -147,6 +147,6 @@
     <p id="app-status" class="app-status" role="status" aria-live="polite"></p>
     <noscript><p>This interactive chart needs JavaScript. You can still use the <a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">OneWatt reference chart</a>.</p></noscript>
   </main>
-  <script type="module" src="app.js?v=20261118-header-spelling"></script>
+  <script type="module" src="app.js?v=20261118-key-geometry"></script>
 </body>
 </html>

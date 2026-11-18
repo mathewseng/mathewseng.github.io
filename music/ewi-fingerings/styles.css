@@ -189,6 +189,7 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
     justify-self: center;
     z-index: 1;
   }
+  .alternate[aria-pressed="true"] .mini-diagram { margin-block: 0; }
   .alternate-count-suffix { display: none; }
   .comparison-legend { margin: 6px 0; }
   .comparison-legend > .chart-count-legend { display: inline; margin-inline-start: auto; padding-inline-end: 6px; }
