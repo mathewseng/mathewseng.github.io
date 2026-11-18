@@ -106,11 +106,11 @@
               <div aria-live="polite"><strong id="pitch-drop-total"></strong><span class="small-label" id="pitch-drop-held"></span></div>
             </div>
           </div>
-          <p class="small-label">Choose a total to try those keys. K2 needs K1 and drops out when K3 is held.</p>
+          <p class="small-label">Choose a total to try those keys. Use K2 with K1 and leave K3 up.</p>
         </section>
         <section id="key-rules"><h2>Key rules</h2>
           <div class="rule-toolbar"><div class="choice-buttons" role="group" aria-label="Filter key rules"><button type="button" data-rule-filter="all" aria-pressed="true">All keys</button><button type="button" data-rule-filter="interacting" aria-pressed="false" aria-label="Conditional and linked keys">Conditional</button><button type="button" data-rule-filter="fixed" aria-pressed="false">Fixed</button></div></div>
-          <table class="key-rule-table"><caption class="sr-only">Change when adding each key, conditions, and an example using the currently held keys</caption><thead><tr><th scope="col">Key</th><th scope="col">Usually<br><span>semitones</span></th><th scope="col">Exceptions & live effect</th></tr></thead><tbody id="key-rule-rows"></tbody></table>
+          <table class="key-rule-table"><caption class="sr-only">Individual key contributions, conditions, and net pitch changes using the currently held keys</caption><thead><tr><th scope="col">Key</th><th scope="col">Adds<br><span>semitones</span></th><th scope="col">Conditions & net change when added</th></tr></thead><tbody id="key-rule-rows"></tbody></table>
         </section>
         <section id="thumb-technique"><h2>Octave rollers</h2><p>Register 0 is the gap between the textured rollers. Move the left thumb one gap toward the mouthpiece to go up an octave.</p><div class="octave-examples"><div><strong>G4 → G5</strong><p>Keep the front keys and move your thumb up one gap.</p></div><div><strong>C♯5 → D5</strong><p>Touch K5 or K7 from open C♯5 to leave your thumb in place.</p></div></div></section>
         <section id="expression"><h2>Other controls</h2><div class="control-reference">
@@ -147,6 +147,6 @@
     <p id="app-status" class="app-status" role="status" aria-live="polite"></p>
     <noscript><p>This interactive chart needs JavaScript. You can still use the <a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">OneWatt reference chart</a>.</p></noscript>
   </main>
-  <script type="module" src="app.js?v=20261118-combinations"></script>
+  <script type="module" src="app.js?v=20261118-contributions"></script>
 </body>
 </html>

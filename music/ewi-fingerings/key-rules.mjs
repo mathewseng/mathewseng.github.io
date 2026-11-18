@@ -2,14 +2,14 @@
 // fingering set; conditional logic and the K5/K7 shared sensor are documented in
 // Ingo Scherzinger, DynaSample EWI Basics (2020–2023), page 4.
 export const KEY_RULES = [
-  [-2, 'Conditional', 'With K3 held and K2 clear, lowers 3 semitones. If K2 is held, adding K1 lowers the usual 2 semitones.', ['K3: −3', '+ K2: −2']],
-  [-1, 'Conditional', 'Requires K1. Ignored (0) when K3 is also held.', ['Needs K1', 'K1+K3: 0']],
-  [-2, 'Conditional', 'Lowers only 1 semitone when K1 is released or K2 is held.', ['No K1: −1', 'K2: −1']],
-  [-2, 'Conditional', 'With K8 held, lowers 3 semitones because K8 also changes.', ['K8: −3']],
-  [1, 'Linked', 'Ignored (0) when K7 is already held; they share one raise input.', ['K7: 0']],
+  [-2, 'Fixed', 'None.', []],
+  [-1, 'Conditional', 'Use bis with K1 and leave K3 up. K3 cancels bis.', ['Needs K1', 'K3: 0']],
+  [-2, 'Conditional', 'Contributes −1 with K1 up and −2 with K1 down.', ['K1 up: −1']],
+  [-2, 'Fixed', 'None.', []],
+  [1, 'Fixed', 'None.', []],
   [-1, 'Fixed', 'None; independent of the other note keys.', []],
-  [1, 'Linked', 'Ignored (0) when K5 is already held; they share one raise input.', ['K5: 0']],
-  [-2, 'Conditional', 'Lowers only 1 semitone when K4 is released.', ['No K4: −1']],
+  [1, 'Linked', 'Adds +1 with K5 up and 0 with K5 down. The pair shares one +1 raise.', ['K5 down: 0']],
+  [-2, 'Conditional', 'Contributes −1 with K4 up and −2 with K4 down.', ['K4 up: −1']],
   [-1, 'Fixed', 'None; independent of the other note keys.', []],
   [-2, 'Fixed', 'None; independent of the other note keys.', []],
   [1, 'Fixed', 'None; independent of the other note keys, including K5 and K7.', []],

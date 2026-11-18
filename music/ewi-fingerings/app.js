@@ -1,4 +1,4 @@
-import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-keys';
+import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-contributions';
 import { KEY_ARTWORK, KEY_RATIOS, KEY_SYMBOLS, KEY_LAYOUT } from './key-artwork.mjs?v=20261118-keys';
 import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-layout';
@@ -347,13 +347,13 @@ function renderKeyExplorer() {
   renderKeyMap();
   updatePitchDropPreview();
   const key = KEYS[state.key], rule = KEY_RULES[state.key];
-  $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Usually</dt><dd class="usual-rule effect-${rule.color}">${rule.usualText}</dd></div><div><dt>Exceptions</dt><dd>${rule.exceptions}</dd></div><div><dt>With your other keys</dt><dd>${guideKeyExample(state.key)}</dd></div></dl>`;
+  $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Usual contribution</dt><dd class="usual-rule effect-${rule.color}">${rule.usualText}</dd></div><div><dt>Conditions</dt><dd>${rule.exceptions}</dd></div><div><dt>Net change when added</dt><dd>${guideKeyExample(state.key)}</dd></div></dl>`;
   $('key-rule-rows').innerHTML = KEYS.map((k, i) => {
     const rule = KEY_RULES[i];
     if (state.keyFilter === 'fixed' && rule.kind !== 'Fixed' || state.keyFilter === 'interacting' && rule.kind === 'Fixed') return '';
     const held = state.keyBits[i] === '1';
     const exception = rule.kind === 'Fixed' ? '' : `<span class="rule-exception">${rule.exceptions}</span>`;
-    return `<tr><th scope="row"><button type="button" class="key-state-button ${keyClasses(i, held)}" data-key="${i}" aria-pressed="${held}" aria-label="${k.id}, ${held ? 'release' : 'hold'}">${k.id}</button><span>${k.finger}</span></th><td><strong class="usual-rule effect-${rule.color}">${signedSteps(rule.usual)}</strong><span class="rule-kind">${rule.kind}</span></td><td>${exception}<span class="rule-example">Now: ${guideKeyExample(i)}</span></td></tr>`;
+    return `<tr><th scope="row"><button type="button" class="key-state-button ${keyClasses(i, held)}" data-key="${i}" aria-pressed="${held}" aria-label="${k.id}, ${held ? 'release' : 'hold'}">${k.id}</button><span>${k.finger}</span></th><td><strong class="usual-rule effect-${rule.color}">${signedSteps(rule.usual)}</strong><span class="rule-kind">${rule.kind}</span></td><td>${exception}<span class="rule-example">${guideKeyExample(i)}</span></td></tr>`;
   }).join('');
 }
 function renderKeyMap() {
@@ -374,7 +374,7 @@ function renderKeyMap() {
   const buttons = labels.map(({ key, rule, blue, y }, i) => {
     const held = state.keyBits[i] === '1';
     const conditions = rule.badges.map(badge => `<span>${badge}</span>`).join('');
-    return `<button type="button" class="key-state-button key-callout ${blue ? 'key-callout-left' : 'key-callout-right'} ${keyClasses(i, held)} ${state.key === i ? 'inspected' : ''}" style="--callout-top:${y / height * 100}%" data-key="${i}" aria-label="${key.id}, ${key.finger}. Usually ${rule.usualText} ${rule.exceptions}" aria-pressed="${held}">
+    return `<button type="button" class="key-state-button key-callout ${blue ? 'key-callout-left' : 'key-callout-right'} ${keyClasses(i, held)} ${state.key === i ? 'inspected' : ''}" style="--callout-top:${y / height * 100}%" data-key="${i}" aria-label="${key.id}, ${key.finger}. Usual contribution. ${rule.usualText}${rule.kind === 'Fixed' ? '' : ' ' + rule.exceptions}" aria-pressed="${held}">
       <span class="key-callout-name">${key.id}</span><span class="key-callout-effect">${signedSteps(rule.usual)}</span>
       ${conditions ? `<span class="key-dependencies">${conditions}</span>` : ''}
     </button>`;

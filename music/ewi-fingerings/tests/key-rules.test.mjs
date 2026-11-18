@@ -22,28 +22,35 @@ test('conditional key effects are total audible changes, not just fixed contribu
   assert.equal(keyEffect(bits(8), 3).delta, -3, 'K4 changes a held K8');
   assert.equal(keyEffect(bits(4), 7).delta, -2);
   assert.equal(keyEffect(bits(), 7).delta, -1);
+  const { midi, contributions } = keyPitch(bits(4, 8));
+  assert.deepEqual([contributions[3], contributions[7]], [-2, -2]);
+  assert.equal(midi - keyPitch(bits()).midi, -4);
 });
 
 test('K5 and K7 are one shared raise, while K11 can add another semitone', () => {
   assert.equal(keyPitch(bits(5)).midi, 74);
   assert.equal(keyPitch(bits(7)).midi, 74);
-  assert.equal(keyPitch(bits(5, 7)).midi, 74);
+  const { midi, contributions } = keyPitch(bits(5, 7));
+  assert.equal(midi, 74);
+  assert.deepEqual([contributions[4], contributions[6]], [1, 0]);
   assert.equal(keyPitch(bits(5, 7, 11)).midi, 75);
   assert.equal(keyEffect(bits(5), 6).delta, 0);
 });
 
-test('every possible input stays within documented effect sets and fixed keys remain fixed', () => {
+test('every possible input stays within the documented net changes and fixed contributions', () => {
   const actual = Array.from({ length: 13 }, () => new Set());
   const expected = [[-3, -2], [-1, 0], [-2, -1], [-3, -2], [0, 1], [-1], [0, 1], [-2, -1], [-1], [-2], [1], [-1], [-2]];
   for (let mask = 0; mask < 8192; mask++) {
     const pattern = mask.toString(2).padStart(13, '0');
-    const { midi } = keyPitch(pattern);
+    const { midi, contributions } = keyPitch(pattern);
     assert.ok(midi >= 58 && midi <= 75);
-    for (let i = 0; i < 13; i++) actual[i].add(keyEffect(pattern, i).delta);
+    for (const [i, rule] of KEY_RULES.entries()) {
+      actual[i].add(keyEffect(pattern, i).delta);
+      if (rule.kind === 'Fixed' && pattern[i] === '1') assert.equal(contributions[i], rule.usual, `K${i + 1}`);
+    }
   }
   actual.forEach((set, i) => {
     assert.deepEqual([...set].sort((a, b) => a - b), expected[i], `K${i + 1}`);
-    assert.equal(KEY_RULES[i].kind === 'Fixed', set.size === 1, `K${i + 1} fixed classification`);
   });
 });
 
