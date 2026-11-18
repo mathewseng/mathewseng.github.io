@@ -88,14 +88,15 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.deepEqual(await keyGeometry('.ranked-rows .alternate svg'), referenceGeometry);
     const mobileRows = await page.locator('.ranked-rows .alternate').evaluateAll(buttons => buttons.map(button => {
       const { top, bottom, height } = button.getBoundingClientRect();
-      const svg = button.querySelector('svg');
-      const proportion = svg.getBoundingClientRect().width / innerWidth;
-      return { top, height, proportion, visible: top >= 0 && bottom <= innerHeight };
+      const diagram = button.querySelector('svg').getBoundingClientRect();
+      return { top, height, proportion: diagram.width / innerWidth, diagramHeight: diagram.height, visible: top >= 0 && bottom <= innerHeight };
     }));
     assert.equal(new Set(mobileRows.map(row => row.top)).size, 12, 'each fingering has its own row on a phone');
     assert.ok(mobileRows.every(row => row.height >= 44 && row.proportion >= 2 / 3 && row.proportion <= 3 / 4),
       'mobile diagrams fill two-thirds to three-quarters of the screen');
-    assert.ok(mobileRows.filter(row => row.visible).length >= 4, 'the phone shows multiple enlarged rows before scrolling');
+    assert.ok(mobileRows.every(row => row.height <= .8 * row.diagramHeight),
+      'mobile row height is tighter than the full diagram');
+    assert.ok(mobileRows.filter(row => row.visible).length >= 6, 'the phone shows at least six enlarged rows before scrolling');
     await page.locator('.ranked-rows .alternate').last().scrollIntoViewIfNeeded();
     assert.ok(await page.locator('.ranked-rows .alternate').last().evaluate(button => button.getBoundingClientRect().bottom <= innerHeight));
     assert.equal(await page.locator('#fingering-detail').isVisible(), false);
