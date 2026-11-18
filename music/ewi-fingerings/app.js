@@ -1,8 +1,8 @@
-import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261117-ranking';
-import { KEY_ARTWORK, KEY_RATIOS, INSTRUMENT_KEYS, KEY_CALLOUTS } from './instrument-layout.mjs';
+import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-compact';
+import { KEY_ARTWORK, KEY_RATIOS } from './key-artwork.mjs';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261117-handoff';
-import { rankedFingerings } from './ranking.mjs?v=20261118-bis';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261118-compact';
+import { rankedFingerings } from './ranking.mjs?v=20261118-compact';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'ewi-practice-v2';
@@ -38,7 +38,9 @@ function updateChartActions() {
   $('hear-note').textContent = midi === undefined ? 'Hear note' : `Hear ${name(midi)}`;
 }
 function showView(view) {
-  stopAudio(); state.view = view;
+  stopAudio();
+  const changed = state.view !== view;
+  state.view = view;
   ['explore', 'plan', 'guide'].forEach(id => { $(id).hidden = id !== view; });
   document.querySelectorAll('[data-view]').forEach(button => {
     const active = button.dataset.view === view;
@@ -46,6 +48,7 @@ function showView(view) {
   });
   if (view === 'plan' && !state.plan) calculate();
   if (view === 'explore') updateChartActions();
+  if (changed) window.scrollTo(0, 0);
   say('');
 }
 
@@ -58,29 +61,18 @@ function keyImage(index, x, y, height) {
   const width = height * keyRatios[index];
   return `<image class="key-image" href="${keyArtwork[index]}.png" x="${x - width / 2}" y="${y - height / 2}" width="${width}" height="${height}"/>`;
 }
-function stripKeyNumbers(y) {
-  return stripX.map((x, i) => `<text class="mini-key-label" x="${x}" y="${y}">${i + 1}</text>`).join('');
+function keyGlyph(index) {
+  return `<svg viewBox="0 0 28 36" aria-hidden="true">${keyImage(index, 14, 18, Math.min(34, stripHeights[index] * .8))}</svg>`;
 }
-const positions = [[142, 91], [102, 91], [142, 153], [142, 215], [216, 215], [278, 215],
-  [90, 310], [142, 310], [142, 372], [142, 434], [216, 396], [278, 396], [278, 458]];
-function diagram(fingering, { interactive = false, highlighted = -1, before = null } = {}) {
-  const bits = fingering.bits;
-  const label = `Front keys: touch ${keyList(bits)}. Other note keys released.`;
-  return `<svg class="ewi-diagram" viewBox="0 0 330 530" ${interactive ? 'role="group" aria-label="Select a note key to learn its function"' : `role="img" aria-label="${label}"`}>
-    <path class="instrument-body" d="M108 60 Q108 47 122 47 H162 Q176 47 176 60 V474 Q176 491 158 491 H126 Q108 491 108 474Z"/>
-    <path class="instrument-mouth" d="M126 47 L130 12 Q142 5 154 12 L158 47Z"/>
-    <text class="diagram-hand" x="10" y="30">LEFT HAND</text><text class="diagram-hand" x="10" y="277">RIGHT HAND</text>
-    ${KEYS.map((key, i) => {
-      const [x, y] = positions[i], round = keyRatios[i] === 1;
-      const height = round ? 46 : i === 12 ? 70 : 56;
-      return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''} ${i === highlighted ? 'inspect' : ''} ${before && before.bits[i] !== bits[i] ? 'changed' : ''}" transform="translate(${x} ${y})" ${interactive ? `role="button" tabindex="0" data-key="${i}" aria-label="${key.id}, ${key.finger}, ${key.name}" aria-pressed="${i === highlighted}"` : ''}>
-        <rect class="key-hit" x="-28" y="-28" width="56" height="56" rx="8"/>${keyImage(i, 0, 0, height)}<text class="${round ? 'round-label' : 'lever-label'}" y="${round ? 0 : height / 2 + 14}">${key.id}</text></g>`;
-    }).join('')}</svg>`;
+function compactKeys(bits, showNumbers = false) {
+  return `<span class="compact-keys" aria-hidden="true">${KEYS.map((key, i) =>
+    `<span class="diagram-key ${bits[i] === '1' ? 'on' : ''}">${keyGlyph(i)}${showNumbers ? `<span>${i + 1}</span>` : ''}</span>`
+  ).join('')}</span>`;
 }
-function mini(fingering, before = null, labelled = false) {
-  return `<svg class="mini-diagram" viewBox="0 0 350 ${labelled ? 88 : 64}" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
+function mini(fingering, before = null) {
+  return `<svg class="mini-diagram" viewBox="0 0 350 64" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
     return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${keyImage(i, stripX[i], 32, stripHeights[i])}${before && before.bits[i] !== fingering.bits[i] ? `<rect class="change-outline" x="${stripX[i] - stripHeights[i] * keyRatios[i] / 2 - 2}" y="${32 - stripHeights[i] / 2 - 2}" width="${stripHeights[i] * keyRatios[i] + 4}" height="${stripHeights[i] + 4}" rx="3"/>` : ''}</g>`;
-  }).join('')}${labelled ? stripKeyNumbers(80) : ''}</svg>`;
+  }).join('')}</svg>`;
 }
 function variantLabel(f, index) { return f.main ? 'Main fingering' : `${f.base < 62 ? 'Low extension' : f.base > 73 ? 'High extension' : 'Alternate'} ${index + 1}`; }
 const pageSize = 12;
@@ -90,7 +82,7 @@ const countLabel = number => number.toLocaleString('en-US');
 
 function chartRow(f) {
   const label = `Rank ${f.rank}, register ${registerName(f.shift)}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.`;
-  return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}"><span class="alternate-label">${f.rank}</span>${mini(f)}<span class="alternate-held">${f.heldCount}</span></button>`;
+  return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}"><span class="alternate-label">${f.rank}</span>${compactKeys(f.bits)}<span class="alternate-held">${f.heldCount}</span></button>`;
 }
 
 function renderAdditional(details, page) {
@@ -127,7 +119,7 @@ function renderChart() {
       ${more.length ? `<details class="additional-fingerings" data-more="${shift}"><summary>${countLabel(more.length)} ${withoutSide.length ? 'side-key' : 'more'} fingerings</summary><div class="additional-rows"></div></details>` : ''}
     </section>`;
   }).join('');
-  $('alternates').scrollTop = 0;
+  if ($('alternates').getBoundingClientRect().top < 0) window.scrollTo(0, 0);
   $('alternates').querySelectorAll('[data-more]').forEach(details => {
     details.addEventListener('toggle', () => {
       if (details.isConnected && details.open && !details.querySelector('.additional-rows').hasChildNodes()) renderAdditional(details, 0);
@@ -137,7 +129,7 @@ function renderChart() {
 
 function renderSelectedFingering(selected) {
   $('selected-variant').textContent = `Rank ${selected.rank}`;
-  $('main-diagram').innerHTML = `<div class="desktop-instrument">${diagram(selected)}</div><div class="mobile-instrument">${mini(selected, null, true)}<span class="small-label">Keys K1–K13, from mouthpiece to bell</span></div>`;
+  $('main-diagram').innerHTML = compactKeys(selected.bits, true);
   $('thumb-label').textContent = `Register ${registerName(selected.shift)}`;
   $('roller-track').innerHTML = [4, 3, 2, 1, 0, -1, -2].map(shift => `<span class="${shift === selected.shift ? 'current' : ''}" ${shift === selected.shift ? 'aria-current="true"' : ''}>${registerName(shift)}</span>`).join('');
   $('held-description').textContent = `Touch ${keyList(selected.bits)}. Keep the other note keys clear.`;
@@ -156,52 +148,31 @@ function renderExplorer() {
   renderSelectedFingering(ranked[state.selected - 1]);
   save();
 }
-// All key centres and sizes share one manufacturer-reference transform.
 function keyClasses(index, held) {
   const rule = KEY_RULES[index];
   return `effect-${rule.color} ${rule.kind === 'Fixed' ? '' : 'conditional-key'} ${held ? 'on' : ''}`;
 }
-function realInstrument(bits) {
-  return `<svg class="real-ewi" viewBox="0 0 320 860" role="group" aria-label="EWI4000s note keys, proportional manufacturer-reference layout; numbered controls are enlarged">
-    <defs><linearGradient id="ewi-silver"><stop offset="0" class="metal-edge"/><stop offset=".35" class="metal-face"/><stop offset=".7" class="metal-face"/><stop offset="1" class="metal-edge"/></linearGradient></defs>
-    <path class="real-mouthpiece" d="M140 12 Q160 3 180 12 L185 59 H135Z"/>
-    <rect class="real-neck" x="133" y="48" width="54" height="45" rx="7"/>
-    <path class="real-body" d="M112 82 Q160 73 208 82 L208 745 L198 780 H122 L112 745Z"/>
-    <path class="real-inset" d="M140 167 Q160 160 180 167 V620 Q180 633 160 633 Q140 633 140 620Z"/>
-    <text class="real-model" x="160" y="124">EWI4000s</text>
-    <rect class="real-neck" x="121" y="773" width="78" height="15" rx="3"/>
-    ${KEYS.map((key, i) => {
-      const geometry = INSTRUMENT_KEYS[i], { x, y, width, height } = geometry;
-      const [cx, cy] = KEY_CALLOUTS[i], held = bits[i] === '1', rule = KEY_RULES[i];
-      return `<g class="diagram-key ${keyClasses(i, held)} ${state.key === i ? 'inspect' : ''}" role="button" tabindex="0" data-key="${i}" data-usual="${rule.usual}" aria-pressed="${held}" aria-label="${key.id}, ${key.finger}. Usually ${rule.usualText} Exceptions: ${rule.exceptions} ${held ? 'Held, tap to release.' : 'Released, tap to hold.'}">
-        <title>${key.id}: ${rule.usualText} Exceptions: ${rule.exceptions}</title>
-        <line class="key-leader" x1="${cx < 160 ? cx + 46 : cx - 46}" y1="${cy}" x2="${x}" y2="${y}"/>
-        <g class="physical-key" transform="translate(${x} ${y}) rotate(90)">${keyImage(i, 0, 0, height)}${rule.kind !== 'Fixed' ? `<rect class="physical-conditional" x="${-width / 2 - 1.5}" y="${-height / 2 - 1.5}" width="${width + 3}" height="${height + 3}" rx="3"/>` : ''}</g>
-        <rect class="key-number-button" x="${cx - 46}" y="${cy - 38}" width="92" height="76" rx="8"/>
-        <text class="key-number-text" x="${cx}" y="${cy - (rule.badges.length ? 21 : 4)}">${key.id} ${signedSteps(rule.usual)}</text>
-        ${rule.badges.map((badge, j) => `<text class="key-dependency" x="${cx}" y="${cy + 3 + j * 22}">${badge}</text>`).join('')}
-      </g>`;
-    }).join('')}</svg>`;
-}
 function toggleGuideKey(bits, index) {
   const next = toggleKey(bits, index);
   if (isEligibleFingering(next)) return next;
-  // K2 cannot start a new touch by itself. Releasing K1 also releases K2.
-  return index === 1 ? bits : `00${next.slice(2)}`;
+  // A blocked bis press leaves the other keys alone. K1 or K3 can release K2.
+  return index === 1 ? bits : next[0] + '0' + next.slice(2);
+}
+function bisHint(bits) {
+  return bits[0] === '0' ? 'Hold K1 to use K2.' : 'K2 has no effect while K1 and K3 are held.';
 }
 function guideKeyExample(index) {
   const bits = state.keyBits;
   const other = toggleGuideKey(bits, index);
-  if (bits === other) return 'Hold K1 to use K2.';
+  if (bits === other) return bisHint(bits);
   const [off, on] = bits[index] === '1' ? [other, bits] : [bits, other];
   const from = keyPitch(off, state.keyRegister).midi;
   const to = keyPitch(on, state.keyRegister).midi;
-  const together = index === 0 && on[1] === '1' ? ' · K1 and K2 together' : '';
+  const together = index !== 1 && off[1] !== on[1] ? ' · K2 also changes' : '';
   return `${name(from)} → ${name(to)} (${signedSteps(to - from)})${together}`;
 }
 function renderKeyExplorer() {
   const midi = keyPitch(state.keyBits, state.keyRegister).midi;
-  $('guide-diagram').innerHTML = realInstrument(state.keyBits);
   $('key-note').textContent = name(midi);
   $('key-midi').textContent = `MIDI ${midi}`;
   $('key-staff').innerHTML = staffSvg(midi, state.flats);
@@ -211,7 +182,13 @@ function renderKeyExplorer() {
   $('key-range').hidden = midi <= 111;
   $('key-range').textContent = 'Above this guide’s verified MIDI range; lower the thumb register to match a verified pitch.';
   $('hear-keys').disabled = midi > 111;
-  $('key-picker').innerHTML = KEYS.map((k, i) => `<button type="button" class="key-state-button ${keyClasses(i, state.keyBits[i] === '1')}" data-key="${i}" aria-label="${k.id}, ${k.finger}, ${state.keyBits[i] === '1' ? 'held, release' : 'released, hold'}" aria-pressed="${state.keyBits[i] === '1'}">${k.id}</button>`).join('');
+  $('key-picker').innerHTML = KEYS.map((key, i) => {
+    const held = state.keyBits[i] === '1', rule = KEY_RULES[i];
+    return `<button type="button" class="key-state-button key-tile ${keyClasses(i, held)} ${state.key === i ? 'inspected' : ''}" data-key="${i}" aria-label="${key.id}, ${key.finger}. Usually ${rule.usualText} ${rule.exceptions}" aria-pressed="${held}">
+      ${keyGlyph(i)}<span class="key-tile-label">${key.id} <span>${signedSteps(rule.usual)}</span></span>
+      <span class="key-dependencies">${rule.badges.map(badge => `<span>${badge}</span>`).join('')}</span>
+    </button>`;
+  }).join('');
   const key = KEYS[state.key], rule = KEY_RULES[state.key];
   $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Usually</dt><dd class="usual-rule effect-${rule.color}">${rule.usualText}</dd></div><div><dt>Exceptions</dt><dd>${rule.exceptions}</dd></div><div><dt>With your other keys</dt><dd>${guideKeyExample(state.key)}</dd></div></dl>`;
   $('key-preset').options[1].textContent = `Open ${name(73)}`;
@@ -221,15 +198,15 @@ function renderKeyExplorer() {
     return `<tr class="${state.keyBits[i] === '1' ? 'held' : ''}"><th scope="row"><button type="button" class="key-state-button ${keyClasses(i, state.keyBits[i] === '1')}" data-key="${i}" aria-pressed="${state.keyBits[i] === '1'}" aria-label="${k.id}, ${state.keyBits[i] === '1' ? 'release' : 'hold'}">${k.id}</button><span>${k.finger}</span></th><td><strong class="usual-rule effect-${rule.color}">${signedSteps(rule.usual)}</strong><span class="rule-kind">${rule.kind}</span></td><td><strong class="rule-usual-text">${rule.usualText}</strong><span class="rule-exception">Exceptions: ${rule.exceptions}</span><span class="rule-example">Now: ${guideKeyExample(i)}</span></td></tr>`;
   }).join('');
 }
-function selectGuideKey(index, restoreFocus = false, origin = 'guide-diagram') {
+function selectGuideKey(index, origin) {
   stopAudio();
   state.key = index;
   const next = toggleGuideKey(state.keyBits, index);
-  say(next === state.keyBits ? 'Hold K1 to use K2.' : '');
+  say(next === state.keyBits ? bisHint(state.keyBits) : '');
   state.keyBits = next;
   $('key-preset').value = '';
   renderKeyExplorer();
-  if (restoreFocus) $(origin).querySelector(`[data-key="${index}"]`).focus({ preventScroll: true });
+  $(origin).querySelector(`[data-key="${index}"]`)?.focus({ preventScroll: true });
 }
 function keepUnchangedChoices(melody) {
   let prefix = 0;
@@ -450,12 +427,10 @@ $('step-variant').addEventListener('change', () => {
 $('unlock').addEventListener('click', () => { state.locks = {}; calculate(); });
 $('play-phrase').addEventListener('click', playPhrase);
 $('tempo').addEventListener('input', stopAudio);
-$('key-picker').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), true, 'key-picker'); });
-$('guide-diagram').addEventListener('click', event => { const key = event.target.closest('[data-key]'); if (key) selectGuideKey(Number(key.dataset.key), true); });
-$('guide-diagram').addEventListener('keydown', event => { const key = event.target.closest('[data-key]'); if (key && ['Enter', ' '].includes(event.key)) { event.preventDefault(); selectGuideKey(Number(key.dataset.key), true); } });
+$('key-picker').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), 'key-picker'); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopAudio(); });
 window.addEventListener('pagehide', stopAudio);
-$('key-rule-rows').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), true, 'key-rule-rows'); });
+$('key-rule-rows').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), 'key-rule-rows'); });
 $('key-register').addEventListener('change', () => { stopAudio(); state.keyRegister = Number($('key-register').value); renderKeyExplorer(); });
 $('key-spelling').addEventListener('change', () => { state.flats = $('key-spelling').value === 'flats'; renderKeyExplorer(); renderExplorer(); if (state.plan) renderPlan(); });
 $('key-rule-filter').addEventListener('change', () => { state.keyFilter = $('key-rule-filter').value; renderKeyExplorer(); });
@@ -465,5 +440,5 @@ $('hear-keys').addEventListener('click', async () => {
   stopAudio(); const generation = playbackGeneration;
   try { const context = await getAudio(); if (generation !== playbackGeneration) return; const midi = keyPitch(state.keyBits, state.keyRegister).midi; if (midi > 111) return; tone(context, midi, context.currentTime, .6); say(`Reference tone: ${name(midi)}.`); } catch (error) { say(error.message); }
 });
-$('chart-key-numbers').innerHTML = `<svg viewBox="0 0 350 22">${stripKeyNumbers(17)}</svg>`;
+$('chart-key-numbers').innerHTML = KEYS.map((_, i) => `<span>${i + 1}</span>`).join('');
 renderExplorer(); renderKeyExplorer();

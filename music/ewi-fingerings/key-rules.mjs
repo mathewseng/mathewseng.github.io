@@ -36,7 +36,7 @@ export function keyPitch(bits, register = 0) {
 }
 // The UI applies this fingering rule separately from the raw pitch calculation.
 export function isEligibleFingering(bits) {
-  return bits[1] !== '1' || bits[0] === '1';
+  return bits[1] !== '1' || (bits[0] === '1' && bits[2] !== '1');
 }
 export function toggleKey(bits, index) {
   if (!/^[01]{13}$/.test(bits) || !Number.isInteger(index) || index < 0 || index > 12) throw new Error('Choose a note key K1–K13.');

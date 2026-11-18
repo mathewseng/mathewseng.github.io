@@ -4,8 +4,8 @@ const { chromium, devices, webkit } = require('playwright');
 const { launchQuietBrowser } = require('../../../scripts/quiet-browser.cjs');
 const { serveSite } = require('../../../scripts/site-pages.cjs');
 
-const imported = 'chart-1111000000000';
-const chartTouch = 'Touch K1, K2, K3, K4';
+const imported = 'chart-1101000010000';
+const chartTouch = 'Touch K1, K2, K4, K9';
 
 async function check(browser, url, mobile) {
   const context = await browser.newContext(mobile ? devices['iPhone 13'] : { viewport: { width: 1440, height: 900 } });
@@ -29,10 +29,10 @@ async function check(browser, url, mobile) {
     const melody = page.locator('#melody');
     await melody.fill('G4 A5');
     await activate('[data-view="explore"]');
-    assert.deepEqual(await page.locator('#chart-key-numbers text').allTextContents(), Array.from({ length: 13 }, (_, i) => String(i + 1)));
+    assert.deepEqual(await page.locator('#chart-key-numbers span').allTextContents(), Array.from({ length: 13 }, (_, i) => String(i + 1)));
     await activate('[data-fingering="10"]');
     if (mobile) await activate('#detail-toggle');
-    assert.match(await page.locator('#held-description').textContent(), /Touch K1, K2, K3, K4/);
+    assert.match(await page.locator('#held-description').textContent(), /Touch K1, K2, K4, K9/);
     assert.match(await page.locator('#ranking-detail').textContent(), /4 keys down · 0 side touches/);
     assert.equal(await page.locator('#add-note').textContent(), 'Add G5 to melody');
     await activate('#add-note');

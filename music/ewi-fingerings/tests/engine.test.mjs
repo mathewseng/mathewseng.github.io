@@ -81,13 +81,14 @@ test('locked choices remain fixed while the rest of the phrase optimizes', () =>
 });
 
 test('an imported chart row can be locked an octave up and still follows the bis rule', () => {
-  const bits = '1111000000000';
+  const bits = '1101000010000';
   assert.ok(!candidates(79).some(f => f.bits === bits));
   const imported = candidates(79, bits).find(f => f.bits === bits);
   assert.equal(imported.shift, 1);
   const result = optimize([67, 81, 79], undefined, { 2: imported.id }, { 2: bits });
   assert.deepEqual(result.path[2], imported);
   assert.ok(!candidates(72, '0100000000000').some(f => f.bits.startsWith('01')));
+  assert.ok(!candidates(79, '1111000000000').some(f => f.bits.startsWith('111')));
   assert.ok(!candidates(81, bits).some(f => f.bits === bits), 'wrong pitch');
   assert.ok(!candidates(36, '0010000000000').some(f => f.bits === '0010000000000'), 'would require register −3');
 });
