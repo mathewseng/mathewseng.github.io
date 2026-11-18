@@ -259,9 +259,12 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.ok(lastKey.y + lastKey.height <= 900, 'all key controls fit on desktop');
     assert.equal(await page.locator('#key-picker .conditional-key').count(), 4);
     assert.equal(await page.locator('#key-picker button.effect-up-one').count(), 3);
-    assert.equal(await page.locator('#key-picker button.effect-down-one').count(), 4);
-    assert.equal(await page.locator('#key-picker .key-callout-left.effect-down-two').count(), 6);
-    assert.equal(await page.locator('#key-picker .key-callout-right.effect-down-two').count(), 0);
+    assert.equal(await page.locator('#key-picker button.effect-down-one').count(), 6);
+    assert.equal(await page.locator('#key-picker button.effect-down-two').count(), 4);
+    assert.deepEqual(await page.locator('#key-picker .key-callout-left .key-callout-name').allTextContents(),
+      ['K1', 'K3', 'K4', 'K8', 'K9', 'K10']);
+    assert.deepEqual(await page.locator('#key-picker .key-callout-right .key-callout-name').allTextContents(),
+      ['K2', 'K5', 'K6', 'K7', 'K11', 'K12', 'K13']);
     await page.locator('#key-picker [data-key-shape="0"] use').click();
     assert.equal(await page.locator('#key-picker [data-key="0"]').getAttribute('aria-pressed'), 'true');
     await page.locator('#clear-keys').click();
@@ -285,11 +288,17 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       assert.equal(await row.locator('.rule-kind').textContent(), 'Fixed');
       assert.equal(await row.locator('.rule-exception').count(), 0);
     }
-    assert.match(await page.locator('#key-picker [data-key="2"] .key-dependencies').textContent(), /K1 up:−1/);
-    assert.match(await page.locator('#key-picker [data-key="6"] .key-dependencies').textContent(), /K5 down:0/);
-    assert.match(await page.locator('#key-picker [data-key="7"] .key-dependencies').textContent(), /K4 up:−1/);
+    for (const [index, contribution, condition] of [[1, '−1', 'K1+K3: 0'], [2, '−1', 'K1: −2'], [6, '+1', 'K5: 0'], [7, '−1', 'K4: −2']]) {
+      const label = page.locator(`#key-picker [data-key="${index}"]`);
+      assert.equal(await label.locator('.key-callout-effect').textContent(), contribution);
+      assert.equal(await label.locator('.key-dependencies').textContent(), condition);
+      const row = page.locator('#key-rule-rows tr').nth(index);
+      assert.equal(await row.locator('.usual-rule').textContent(), contribution);
+      assert.equal(await row.locator('.rule-exception').textContent(), condition);
+    }
     assert.deepEqual(await page.locator('#key-detail dt').allTextContents(), ['Usual contribution', 'Conditions', 'Net change when added']);
     await page.locator('#key-picker [data-key="7"]').click();
+    assert.equal(await page.locator('#key-detail dd').nth(1).textContent(), 'K4: −2');
     await page.locator('#key-picker [data-key="3"]').click();
     assert.match(await page.locator('#key-detail .usual-rule').textContent(), /Lowers 2 semitones/);
     assert.match(await page.locator('#key-detail dd').last().textContent(), /C5 → A4 \(−3\)/);

@@ -4,19 +4,19 @@
 export const KEY_RULES = [
   [-2, 'Fixed', 'None.', []],
   [-1, 'Conditional', 'K2 works by itself. Holding K1 and K3 together cancels K2.', ['K1+K3: 0']],
-  [-2, 'Conditional', 'Contributes −1 with K1 up and −2 with K1 down.', ['K1 up: −1']],
+  [-1, 'Conditional', 'Contributes −2 when K1 is held.', ['K1: −2']],
   [-2, 'Fixed', 'None.', []],
   [1, 'Fixed', 'None.', []],
   [-1, 'Fixed', 'None; independent of the other note keys.', []],
-  [1, 'Linked', 'Adds +1 with K5 up and 0 with K5 down. The pair shares one +1 raise.', ['K5 down: 0']],
-  [-2, 'Conditional', 'Contributes −1 with K4 up and −2 with K4 down.', ['K4 up: −1']],
+  [1, 'Linked', 'Contributes 0 when K5 is held. The pair shares one +1 raise.', ['K5: 0']],
+  [-1, 'Conditional', 'Contributes −2 when K4 is held.', ['K4: −2']],
   [-1, 'Fixed', 'None; independent of the other note keys.', []],
   [-2, 'Fixed', 'None; independent of the other note keys.', []],
   [1, 'Fixed', 'None; independent of the other note keys, including K5 and K7.', []],
   [-1, 'Fixed', 'None; independent of the other note keys.', []],
   [-2, 'Fixed', 'None; independent of the other note keys.', []],
 ].map(([usual, kind, exceptions, badges]) => ({
-  usual, kind, exceptions, badges: badges.map(text => text.replace(': ', ':')),
+  usual, kind, exceptions, badges,
   color: usual > 0 ? 'up-one' : usual === -1 ? 'down-one' : 'down-two',
   usualText: `${usual > 0 ? 'Raises' : 'Lowers'} ${Math.abs(usual)} semitone${Math.abs(usual) === 1 ? ' (half step)' : 's (whole step)'}.`,
 }));
