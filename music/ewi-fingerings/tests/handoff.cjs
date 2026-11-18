@@ -75,6 +75,19 @@ async function check(browser, url, mobile) {
     await activate(mobile ? '#key-picker [data-key-shape="1"] rect' : '#key-picker [data-key="1"]');
     assert.equal(await page.locator('#key-held').textContent(), 'Held: K2.');
     assert.equal(await page.locator('#key-note').textContent(), 'C5');
+    if (mobile) {
+      assert.equal(await page.locator('html').evaluate(root => getComputedStyle(root).touchAction), 'manipulation');
+      const key = page.locator('#key-picker [data-key-shape="0"] use');
+      const center = await key.boundingBox();
+      const x = center.x + center.width / 2;
+      const y = center.y + center.height / 2;
+      const scale = await page.evaluate(() => visualViewport.scale);
+      await page.touchscreen.tap(x, y);
+      assert.equal(await page.locator('#key-held').textContent(), 'Held: K1, K2.');
+      await page.touchscreen.tap(x, y);
+      assert.equal(await page.locator('#key-held').textContent(), 'Held: K2.');
+      assert.equal(await page.evaluate(() => visualViewport.scale), scale);
+    }
     assert.deepEqual(failures, []);
   } finally {
     await context.close();

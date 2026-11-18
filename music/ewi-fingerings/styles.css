@@ -1,4 +1,5 @@
 @font-face { font-family: "EWI Notation"; src: url("assets/ewi-notation.woff2") format("woff2"); font-display: swap; }
+html, body { touch-action: manipulation; }
 body { --ewi-accent: var(--warn); --ewi-accent-soft: var(--warn-soft); background: var(--page); font-size: var(--t-md); }
 body::before, body::after { display: none; }
 button, textarea, input { font: inherit; }
