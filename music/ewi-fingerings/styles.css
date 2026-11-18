@@ -11,7 +11,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .legacy-header nav { display: flex; gap: 14px; align-items: center; font-size: var(--t-sm); }
 .legacy-header a { color: var(--muted); text-decoration: none; padding: 8px 0; }
 .legacy-header a:hover { color: var(--ink); }
-.project-dates { display: flex; gap: 16px; color: var(--muted); font-size: var(--t-xs); }
+.project-dates { display: flex; gap: 16px; margin-inline-start: auto; color: var(--muted); font-size: var(--t-xs); }
+#workspace-spelling { margin-inline-start: 16px; flex-wrap: nowrap; }
 .ewi-app { max-width: 1320px; margin: auto; padding: 0 28px; }
 .page-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 8px; }
 h1 { font-size: 23px; line-height: 1.2; letter-spacing: -.8px; font-weight: 750; }
@@ -69,6 +70,7 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 .count { color: var(--muted); font: var(--t-xs) var(--font-mono); }
 .comparison-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 5px 0; font-size: var(--t-xs); color: var(--muted); }
 .comparison-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.comparison-legend > .chart-count-legend { display: none; }
 .alternates { padding-block: 2px; }
 .fingering-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 4px 6px; }
 .alternate { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "rank count" "diagram diagram"; gap: 2px; min-width: 0; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 3px 6px 4px; border-radius: var(--r-sm); }
@@ -156,6 +158,7 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
   .legacy-header a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
   .legacy-header nav { gap: 8px; font-size: var(--t-xs); }
   .project-dates { display: none; }
+  #workspace-spelling { margin-inline-start: auto; }
   .ewi-app { padding: 0 12px; }
   .page-heading { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
   .workspace-nav { gap: 18px; }
@@ -171,14 +174,17 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
   .stage-meta { text-align: left; flex: 1; font-size: var(--t-xs); }
   .detail-toggle { display: block; min-height: 44px; padding: 6px 10px; border: 1px solid var(--control-border); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); font-size: var(--t-xs); }
   .instrument-stage:not(.expanded) .stage-details { display: none; }
+  .main-diagram .mini-diagram { width: min(100%, 75vw); max-height: none; margin-inline: auto; }
   .stage-caption { min-height: 0; }
   .explorer-actions { margin-top: 12px; }
   .alternate-panel { order: 1; padding-top: 8px; }
   .alternate-panel h2 { font-size: 16px; }
   .fingering-grid { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-  .alternate { grid-template-columns: 40px minmax(0, 1fr) 56px; grid-template-areas: "rank diagram count"; align-items: center; padding-block: 0; }
-  .alternate .mini-diagram { height: 42px; }
+  .alternate { grid-template-columns: 34px minmax(0, 1fr) 20px; grid-template-areas: "rank diagram count"; align-items: center; padding: 0 5px; }
+  .alternate .mini-diagram { height: auto; max-width: 75vw; justify-self: center; }
+  .alternate-count-suffix { display: none; }
   .comparison-legend { margin: 6px 0; }
+  .comparison-legend > .chart-count-legend { display: inline; margin-inline-start: auto; padding-inline-end: 6px; }
   .planner { display: flex; flex-direction: column; height: auto; min-height: 0; gap: 14px; padding-top: 12px; }
   .planner-input { display: contents; }
   .planner-tuning { order: 2; }
@@ -221,7 +227,7 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 .staff-clef { fill: var(--ink); font: 48px "EWI Notation"; }
 .staff-accidental { fill: var(--ink); font: 48px "EWI Notation"; text-anchor: middle; }
 .staff-octave { fill: var(--muted); font: 13px var(--font-sans); }
-.key-settings { grid-column: 1 / -1; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.key-settings { grid-column: 1 / -1; }
 .thumb-stepper { display: flex; align-items: center; gap: 6px; text-align: center; }
 .thumb-stepper .btn { min-width: 44px; padding-inline: 8px; }
 .thumb-stepper output { display: block; min-width: 48px; font: 600 14px var(--font-mono); }
@@ -270,7 +276,6 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
   .key-result { grid-template-columns: minmax(110px, .55fr) minmax(0, 1fr); }
   #key-staff { max-width: 150px; }
   .key-picker { justify-self: center; }
-  .key-settings { justify-content: flex-start; }
   .rule-toolbar { display: block; }
   .rule-toolbar .helper { margin-top: 10px; }
   .key-rule-table thead th:first-child { width: 62px; }

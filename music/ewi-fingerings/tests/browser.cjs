@@ -47,9 +47,11 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('[data-view="guide"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#guide').isVisible(), true);
     assert.equal(await page.locator('#explore').isVisible(), false);
+    assert.equal(await page.locator('#workspace-spelling').isVisible(), true);
     assert.deepEqual(await page.locator('.workspace-nav button').allTextContents(),
       ['Key explorer', 'Fingerings', 'Note moves', 'Melody']);
     await openFingerings();
+    assert.equal(await page.locator('#workspace-spelling').isVisible(), false);
     assert.equal(await page.locator('#explore [data-spelling="flats"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#selected-note').textContent(), 'G');
     assert.equal(await page.locator('select').count(), 0);
@@ -86,16 +88,21 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.deepEqual(await keyGeometry('.ranked-rows .alternate svg'), referenceGeometry);
     const mobileRows = await page.locator('.ranked-rows .alternate').evaluateAll(buttons => buttons.map(button => {
       const { top, bottom, height } = button.getBoundingClientRect();
-      return { top, bottom, height, visible: top >= 0 && bottom <= innerHeight };
+      const svg = button.querySelector('svg');
+      const proportion = svg.getBoundingClientRect().width / innerWidth;
+      return { top, height, proportion, visible: top >= 0 && bottom <= innerHeight };
     }));
     assert.equal(new Set(mobileRows.map(row => row.top)).size, 12, 'each fingering has its own row on a phone');
-    assert.ok(mobileRows.every(row => row.height >= 44 && row.height <= 46), 'mobile rows are compact and touchable');
-    assert.ok(mobileRows.filter(row => row.visible).length >= 8, 'the phone shows at least eight complete rows at once');
+    assert.ok(mobileRows.every(row => row.height >= 44 && row.proportion >= 2 / 3 && row.proportion <= 3 / 4),
+      'mobile diagrams fill two-thirds to three-quarters of the screen');
+    assert.ok(mobileRows.filter(row => row.visible).length >= 4, 'the phone shows multiple enlarged rows before scrolling');
     await page.locator('.ranked-rows .alternate').last().scrollIntoViewIfNeeded();
     assert.ok(await page.locator('.ranked-rows .alternate').last().evaluate(button => button.getBoundingClientRect().bottom <= innerHeight));
     assert.equal(await page.locator('#fingering-detail').isVisible(), false);
     await page.locator('#detail-toggle').click();
     assert.equal(await page.locator('#fingering-detail').isVisible(), true);
+    const previewWidth = await page.locator('#main-diagram svg').evaluate(svg => svg.getBoundingClientRect().width / innerWidth);
+    assert.ok(previewWidth >= 2 / 3 && previewWidth <= 3 / 4, 'the selected mobile preview uses the same wide scale');
     await page.locator('#detail-toggle').click();
     await page.setViewportSize({ width: 1440, height: 900 });
 
@@ -337,11 +344,35 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('#move-matrix [data-from="58"][data-to="75"]').click();
     assert.match(await page.locator('#move-result h2').textContent(), /B♭3 → E♭5/);
     assert.equal(await page.locator('#move-matrix [aria-pressed="true"]').textContent(), '11');
+    await page.locator('[data-move-option="1"]').click();
+    await page.locator('#workspace-spelling [data-spelling="sharps"]').click();
+    assert.equal(await page.locator('#move-result h2').textContent(), 'A♯3 → D♯5');
+    assert.equal(await page.locator('[data-move-option="1"]').getAttribute('aria-pressed'), 'true');
+    await page.locator('[data-view="plan"]').click();
+    assert.equal(await page.locator('#workspace-spelling [data-spelling="sharps"]').getAttribute('aria-pressed'), 'true');
+    await page.locator('#workspace-spelling [data-spelling="flats"]').click();
+    await page.locator('[data-view="moves"]').click();
+    assert.equal(await page.locator('#move-result h2').textContent(), 'B♭3 → E♭5');
 
     for (const viewport of [{ width: 375, height: 812 }, { width: 844, height: 390 }, { width: 320, height: 740 }, { width: 768, height: 1024 }]) {
       await page.setViewportSize(viewport);
       for (const view of ['explore', 'plan', 'guide', 'moves']) {
         await page.locator(`[data-view="${view}"]`).click();
+        assert.equal(await page.locator('#workspace-spelling').isVisible(), view !== 'explore');
+        if (view === 'explore' && viewport.width <= 375) {
+          const proportion = await page.locator('.ranked-rows .alternate svg').first()
+            .evaluate(svg => svg.getBoundingClientRect().width / innerWidth);
+          assert.ok(proportion >= 2 / 3 && proportion <= 3 / 4, `wide diagrams fit at ${viewport.width}px`);
+        }
+        if (view !== 'explore') {
+          const header = await page.locator('#workspace-spelling').evaluate(group => {
+            const bounds = group.getBoundingClientRect();
+            const breadcrumb = group.parentElement.querySelector('nav').getBoundingClientRect();
+            const inset = parseFloat(getComputedStyle(group.parentElement).paddingRight);
+            return { insetError: Math.abs(innerWidth - inset - bounds.right), overlaps: bounds.left < breadcrumb.right };
+          });
+          assert.ok(header.insetError < 1 && !header.overlaps, `spelling controls fit at the right on ${view} at ${viewport.width}px`);
+        }
         const overflow = await page.evaluate(() => ({
           width: innerWidth, scroll: document.documentElement.scrollWidth, x: scrollX,
           outside: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1 && el.getBoundingClientRect().width).slice(0, 8).map(el => ({ tag: el.tagName, id: el.id, right: Math.round(el.getBoundingClientRect().right) })),

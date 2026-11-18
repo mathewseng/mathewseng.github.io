@@ -88,6 +88,7 @@ function showView(view) {
   const changed = state.view !== view;
   state.view = view;
   ['explore', 'plan', 'guide', 'moves'].forEach(id => { $(id).hidden = id !== view; });
+  $('workspace-spelling').hidden = view === 'explore';
   document.querySelectorAll('[data-view]').forEach(button => {
     const active = button.dataset.view === view;
     button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));
@@ -134,10 +135,10 @@ function renderMoveMatrix() {
       }).join('')}</tr>`;
     }).join('')}
     </tbody>`;
-  selectMovePair(moveSelection.from, moveSelection.to);
+  selectMovePair(moveSelection.from, moveSelection.to, moveSelection.option);
 }
-function selectMovePair(from, to) {
-  Object.assign(moveSelection, { from, to, option: 0, result: bestNoteMoves(from, to) });
+function selectMovePair(from, to, option = 0) {
+  Object.assign(moveSelection, { from, to, option, result: bestNoteMoves(from, to) });
   const matrix = $('move-matrix');
   const previous = matrix.querySelector('[aria-pressed="true"]');
   if (previous) {
@@ -203,7 +204,7 @@ function chartCard(f) {
   const offset = f.shift - ranked[0].shift;
   const label = `Rank ${f.rank}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than rank 1.` : ''}`;
   return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}">
-    <span class="alternate-label">#${f.rank}</span><span class="alternate-count"><span class="alternate-held">${f.heldCount}</span> down</span>
+    <span class="alternate-label">#${f.rank}</span><span class="alternate-count"><span class="alternate-held">${f.heldCount}</span><span class="alternate-count-suffix"> down</span></span>
     ${keyDiagram(f.bits, { horizontal: true, decorative: true })}
   </button>`;
 }
