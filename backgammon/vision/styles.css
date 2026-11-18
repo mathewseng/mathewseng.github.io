@@ -214,7 +214,7 @@
   }
 
   .vision-layout {
-    grid-template-columns: minmax(0, min(63%, calc((100svh - 125px) * 16 / 9))) minmax(0, 1fr);
+    grid-template-columns: minmax(0, min(63%, calc((100svh - 140px) * 16 / 9))) minmax(0, 1fr);
   }
 
   .vision-queue li a {
