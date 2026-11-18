@@ -88,7 +88,6 @@ function showView(view) {
   const changed = state.view !== view;
   state.view = view;
   ['explore', 'plan', 'guide', 'moves'].forEach(id => { $(id).hidden = id !== view; });
-  $('workspace-spelling').hidden = view === 'explore';
   document.querySelectorAll('[data-view]').forEach(button => {
     const active = button.dataset.view === view;
     button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));

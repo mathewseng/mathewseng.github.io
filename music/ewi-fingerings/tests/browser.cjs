@@ -48,11 +48,11 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('#guide').isVisible(), true);
     assert.equal(await page.locator('#explore').isVisible(), false);
     assert.equal(await page.locator('#workspace-spelling').isVisible(), true);
+    assert.equal(await page.getByRole('group', { name: 'Note spelling', exact: true }).count(), 1);
     assert.deepEqual(await page.locator('.workspace-nav button').allTextContents(),
       ['Key explorer', 'Fingerings', 'Note moves', 'Melody']);
     await openFingerings();
-    assert.equal(await page.locator('#workspace-spelling').isVisible(), false);
-    assert.equal(await page.locator('#explore [data-spelling="flats"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('#workspace-spelling [data-spelling="flats"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#selected-note').textContent(), 'G');
     assert.equal(await page.locator('select').count(), 0);
     assert.equal(await page.locator('#melody').inputValue(), 'C4 D4 E4 F4 G4 A4 B4 C5');
@@ -133,7 +133,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('#thumb-offset').textContent(), 'Thumb 1 octave higher than rank 1.');
     await page.locator('[data-register="-1"] .alternate').first().click();
     assert.equal(await page.locator('#thumb-offset').isVisible(), false);
-    await page.locator('#explore [data-spelling="flats"]').click();
+    await page.locator('#workspace-spelling [data-spelling="flats"]').click();
     await page.locator('[data-pitch="1"]').click();
     assert.equal(await page.locator('#selected-note').textContent(), 'D♭');
     assert.equal(await page.locator('#hear-note').textContent(), 'Hear D♭4');
@@ -358,21 +358,19 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       await page.setViewportSize(viewport);
       for (const view of ['explore', 'plan', 'guide', 'moves']) {
         await page.locator(`[data-view="${view}"]`).click();
-        assert.equal(await page.locator('#workspace-spelling').isVisible(), view !== 'explore');
+        assert.equal(await page.locator('#workspace-spelling').isVisible(), true);
         if (view === 'explore' && viewport.width <= 375) {
           const proportion = await page.locator('.ranked-rows .alternate svg').first()
             .evaluate(svg => svg.getBoundingClientRect().width / innerWidth);
           assert.ok(proportion >= 2 / 3 && proportion <= 3 / 4, `wide diagrams fit at ${viewport.width}px`);
         }
-        if (view !== 'explore') {
-          const header = await page.locator('#workspace-spelling').evaluate(group => {
-            const bounds = group.getBoundingClientRect();
-            const breadcrumb = group.parentElement.querySelector('nav').getBoundingClientRect();
-            const inset = parseFloat(getComputedStyle(group.parentElement).paddingRight);
-            return { insetError: Math.abs(innerWidth - inset - bounds.right), overlaps: bounds.left < breadcrumb.right };
-          });
-          assert.ok(header.insetError < 1 && !header.overlaps, `spelling controls fit at the right on ${view} at ${viewport.width}px`);
-        }
+        const header = await page.locator('#workspace-spelling').evaluate(group => {
+          const bounds = group.getBoundingClientRect();
+          const breadcrumb = group.parentElement.querySelector('nav').getBoundingClientRect();
+          const inset = parseFloat(getComputedStyle(group.parentElement).paddingRight);
+          return { insetError: Math.abs(innerWidth - inset - bounds.right), overlaps: bounds.left < breadcrumb.right };
+        });
+        assert.ok(header.insetError < 1 && !header.overlaps, `spelling controls fit at the right on ${view} at ${viewport.width}px`);
         const overflow = await page.evaluate(() => ({
           width: innerWidth, scroll: document.documentElement.scrollWidth, x: scrollX,
           outside: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1 && el.getBoundingClientRect().width).slice(0, 8).map(el => ({ tag: el.tagName, id: el.id, right: Math.round(el.getBoundingClientRect().right) })),
@@ -411,9 +409,9 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('[data-pitch="7"]').click();
     await page.reload(); await openFingerings();
     assert.equal(await page.locator('#selected-note').textContent(), 'G');
-    await page.locator('#explore [data-spelling="sharps"]').click();
+    await page.locator('#workspace-spelling [data-spelling="sharps"]').click();
     await page.reload(); await openFingerings();
-    assert.equal(await page.locator('#explore [data-spelling="sharps"]').getAttribute('aria-pressed'), 'true', 'spelling survives reload');
+    assert.equal(await page.locator('#workspace-spelling [data-spelling="sharps"]').getAttribute('aria-pressed'), 'true', 'spelling survives reload');
     await page.evaluate(() => {
       localStorage.removeItem('ewi-practice-v3');
       localStorage.removeItem('ewi-practice-v2');
