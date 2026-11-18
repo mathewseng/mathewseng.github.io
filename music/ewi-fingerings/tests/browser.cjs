@@ -130,8 +130,19 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('.phrase-step').count(), 8);
     assert.equal(await page.locator('#melody-error').isVisible(), false);
     await page.locator('#open-scales').click();
+    await page.getByRole('button', { name: 'Church modes', exact: true }).click();
+    assert.deepEqual(await page.locator('[data-scale-type]').allTextContents(), [
+      'Ionian (Major)', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian (Natural minor)', 'Locrian',
+    ]);
     await page.locator('[data-scale-root="2"]').click();
-    await page.locator('[data-scale-group="4"]').click();
+    await page.getByRole('button', { name: 'Dorian', exact: true }).click();
+    assert.equal(await page.locator('#melody').inputValue(), 'D4 E4 F4 G4 A4 B4 C5 D5');
+    await page.locator('#open-scales').click();
+    await page.getByRole('button', { name: 'Common', exact: true }).click();
+    await page.getByRole('button', { name: 'Chromatic', exact: true }).click();
+    assert.equal(await page.locator('.phrase-step').count(), 13);
+    await page.locator('#open-scales').click();
+    await page.getByRole('button', { name: 'Custom', exact: true }).click();
     await page.locator('[data-scale-offset="1"]').click();
     await page.locator('[data-use-custom]').click();
     assert.equal(await page.locator('#melody').inputValue(), 'D4 E♭4 E4 G♭4 G4 A4 B4 D♭5 D5');
@@ -246,6 +257,25 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
         }).map(el => el.id || el.textContent.slice(0, 20)));
         assert.deepEqual(tiny, [], `small touch targets ${view} ${viewport.width}`);
         if (viewport.width === 375) await page.screenshot({ path: `/tmp/ewi-redesign/${view}-mobile.png`, fullPage: true });
+      }
+      if (viewport.height > viewport.width) {
+        await page.locator('[data-view="plan"]').click();
+        await page.locator('#open-scales').click();
+        await page.getByRole('button', { name: 'Church modes', exact: true }).click();
+        const layout = await page.locator('#scale-library').evaluate(dialog => {
+          const bounds = dialog.getBoundingClientRect();
+          return {
+            overflow: dialog.scrollHeight - dialog.clientHeight,
+            cramped: [...dialog.querySelectorAll('button')].flatMap(button => {
+              const rect = button.getBoundingClientRect();
+              return rect.width < 43.5 || rect.height < 43.5 || rect.right > bounds.right
+                ? [{ label: button.textContent, width: rect.width, height: rect.height, right: rect.right - bounds.right }]
+                : [];
+            }),
+          };
+        });
+        assert.deepEqual(layout, { overflow: 0, cramped: [] }, `scale controls fit ${viewport.width}px portrait`);
+        await page.locator('#close-scales').click();
       }
     }
     // A normal persistence reload, and a privacy mode where storage throws.

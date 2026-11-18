@@ -347,7 +347,14 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 #scale-library::backdrop { background: color-mix(in srgb, var(--page) 82%, transparent); }
 .scale-controls { display: grid; gap: 12px; margin-top: 10px; }
 .scale-controls .small-label { margin-bottom: 4px; }
+#scale-roots, #scale-groups { display: grid; }
+#scale-roots { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+#scale-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#scale-roots button, #scale-groups button { min-width: 0; white-space: normal; padding-inline: 4px; }
 #scale-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-#scale-options .btn { min-width: 0; white-space: normal; text-align: center; padding-inline: 6px; line-height: 1.2; }
+#scale-options .btn { min-width: 0; white-space: normal; text-align: start; padding-inline: 10px; line-height: 1.2; }
 #scale-options > .choice-buttons { grid-column: 1 / -1; }
 #scale-options [data-use-custom] { justify-self: start; grid-column: 1 / -1; }
+@media (max-width: 360px) {
+  #scale-library { width: calc(100% - 12px); max-width: 100%; padding: 8px; }
+}

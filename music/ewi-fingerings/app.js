@@ -4,7 +4,7 @@ import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261118-layout';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
 import { bestNoteMoves, noteMoveCounts } from './note-moves.mjs?v=20261118-layout';
-import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-layout';
+import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-scales';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'ewi-practice-v3';
@@ -166,6 +166,7 @@ function renderScaleLibrary() {
     `<button type="button" data-scale-group="${i}" aria-pressed="${group === i}">${label}</button>`
   ).join('');
   const family = SCALE_GROUPS[group];
+  $('scale-options').setAttribute('aria-label', family ? family[0] : 'Custom scale');
   $('scale-options').innerHTML = family
     ? family[1].map(([label], i) => `<button type="button" class="btn" data-scale-type="${i}">${label}</button>`).join('')
     : `<div class="choice-buttons" role="group" aria-label="Notes in the scale">
@@ -632,8 +633,8 @@ $('scale-library').addEventListener('click', event => {
     button.setAttribute('aria-pressed', String(scaleSelection.custom.has(offset)));
   }
 });
-navigateButtons('scale-roots', '[data-scale-root]', { ArrowLeft: -1, ArrowRight: 1 });
-navigateButtons('scale-groups', '[data-scale-group]', { ArrowLeft: -1, ArrowRight: 1 });
+navigateButtons('scale-roots', '[data-scale-root]', { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -6, ArrowDown: 6 });
+navigateButtons('scale-groups', '[data-scale-group]', { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3 });
 $('play-phrase').addEventListener('click', playPhrase);
 $('tempo').addEventListener('input', stopAudio);
 $('key-picker').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), 'key-picker'); });
