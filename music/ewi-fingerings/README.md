@@ -1,6 +1,7 @@
 # EWI fingerings
 
 A static practice tool for **Akai EWI4000s, standard EWI (Ei) mode** at `/music/ewi-fingerings/`.
+Key Explorer opens by default. On phones, Fingerings stacks the horizontal diagrams one per row.
 
 - `fingerings.mjs`: 85 reference K1–K13 bit patterns, ordered from written B♭3 through D5. `1` means skin contact. Data was checked against all nine pages of [OneWatt's 2009 chart](https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf). The fifth D transcription was corrected and the missing ninth A alternate restored. The source’s second low-C diagram conflicts with the documented pitch rules: this library keeps K10 held for that C. All 85 stored entries are checked against the pitch model. The Melody tab uses eligible entries from this chart.
 - `key-rules.mjs`: standard Ei pitch model for all 8,192 touch combinations. DynaSample’s EWI Basics (page 4) documents the conditional K2/K3/K8 logic and K5/K7 shared raise. K1 and K4 each contribute a fixed −2 semitones. Adding them can also change K3 and K8 respectively, which the live net pitch change includes. The shared +1 is counted under K5 when both K5 and K7 are held. Tests exhaustively validate the expected effects and cross-check all 85 reference fingerings.

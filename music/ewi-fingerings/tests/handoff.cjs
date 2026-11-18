@@ -25,6 +25,8 @@ async function check(browser, url, mobile) {
   const activate = selector => mobile ? page.locator(selector).tap() : page.locator(selector).press('Enter');
   try {
     await page.goto(url);
+    assert.equal(await page.locator('[data-view="guide"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('#key-picker').isVisible(), true);
     await activate('[data-view="plan"]');
     const melody = page.locator('#melody');
     await melody.fill('G4 A5');

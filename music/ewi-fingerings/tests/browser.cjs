@@ -26,6 +26,10 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       [key.parentElement.getAttribute('transform'), key.getAttribute('href'), key.width.baseVal.value, key.height.baseVal.value]
     ));
   }
+  async function openFingerings() {
+    await page.locator('[data-view="explore"]').click();
+    await page.waitForSelector('.alternate');
+  }
   async function checkFingeringLayout() {
     assert.equal(await page.locator('#explore .upright-diagram').count(), 0);
     const gap = await page.locator('.ranked-rows .alternate').evaluateAll(cards => {
@@ -40,9 +44,12 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
   }
   try {
     await page.goto(site.base + '/music/ewi-fingerings/');
-    await page.waitForSelector('.alternate');
+    assert.equal(await page.locator('[data-view="guide"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('#guide').isVisible(), true);
+    assert.equal(await page.locator('#explore').isVisible(), false);
     assert.deepEqual(await page.locator('.workspace-nav button').allTextContents(),
       ['Key explorer', 'Fingerings', 'Note moves', 'Melody']);
+    await openFingerings();
     assert.equal(await page.locator('#explore [data-spelling="flats"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#selected-note').textContent(), 'G');
     assert.equal(await page.locator('select').count(), 0);
@@ -77,10 +84,15 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.setViewportSize({ width: 375, height: 812 });
     await checkFingeringLayout();
     assert.deepEqual(await keyGeometry('.ranked-rows .alternate svg'), referenceGeometry);
-    const visibleChoices = await page.locator('.alternate').evaluateAll(elements => elements.filter(el => {
-      const rect = el.getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight;
-    }).length);
-    assert.equal(visibleChoices, 12, 'all default G fingerings fit on a portrait phone');
+    const mobileRows = await page.locator('.ranked-rows .alternate').evaluateAll(buttons => buttons.map(button => {
+      const { top, bottom, height } = button.getBoundingClientRect();
+      return { top, bottom, height, visible: top >= 0 && bottom <= innerHeight };
+    }));
+    assert.equal(new Set(mobileRows.map(row => row.top)).size, 12, 'each fingering has its own row on a phone');
+    assert.ok(mobileRows.every(row => row.height >= 44 && row.height <= 46), 'mobile rows are compact and touchable');
+    assert.ok(mobileRows.filter(row => row.visible).length >= 8, 'the phone shows at least eight complete rows at once');
+    await page.locator('.ranked-rows .alternate').last().scrollIntoViewIfNeeded();
+    assert.ok(await page.locator('.ranked-rows .alternate').last().evaluate(button => button.getBoundingClientRect().bottom <= innerHeight));
     assert.equal(await page.locator('#fingering-detail').isVisible(), false);
     await page.locator('#detail-toggle').click();
     assert.equal(await page.locator('#fingering-detail').isVisible(), true);
@@ -366,22 +378,22 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     // A normal persistence reload, and a privacy mode where storage throws.
     await page.getByRole('button', { name: 'Fingerings', exact: true }).click();
     await page.locator('[data-pitch="7"]').click();
-    await page.reload(); await page.waitForSelector('.alternate');
+    await page.reload(); await openFingerings();
     assert.equal(await page.locator('#selected-note').textContent(), 'G');
     await page.locator('#explore [data-spelling="sharps"]').click();
-    await page.reload(); await page.waitForSelector('.alternate');
+    await page.reload(); await openFingerings();
     assert.equal(await page.locator('#explore [data-spelling="sharps"]').getAttribute('aria-pressed'), 'true', 'spelling survives reload');
     await page.evaluate(() => {
       localStorage.removeItem('ewi-practice-v3');
       localStorage.removeItem('ewi-practice-v2');
       localStorage.setItem('ewi-practice-v1', JSON.stringify({ midi: 73, flats: false, phrase: 'C4 D4' }));
     });
-    await page.reload(); await page.waitForSelector('.alternate');
+    await page.reload(); await openFingerings();
     assert.equal(await page.locator('#selected-note').textContent(), 'D♭', 'old implicit sharp default migrates to flats');
     assert.equal(await page.locator('#hear-note').textContent(), 'Hear D♭4', 'saved octave maps to the chart reference');
     assert.equal(await page.locator('#melody').inputValue(), 'C4 D4');
     await page.addInitScript(() => Object.defineProperty(window, 'localStorage', { get() { throw new Error('Disabled by browser'); } }));
-    await page.reload(); await page.waitForSelector('.alternate');
+    await page.reload(); await openFingerings();
     assert.equal(await page.locator('#selected-note').textContent(), 'G');
     assert.deepEqual(failures, []);
     console.log('PASS: pitch-class chart, bis constraint, all 13 keys, global phrase planning, locks, audio, privacy fallback, and four responsive layouts.');

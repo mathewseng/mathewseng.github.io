@@ -71,14 +71,15 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 .comparison-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .alternates { padding-block: 2px; }
 .fingering-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 4px 6px; }
-.alternate { display: grid; gap: 2px; min-width: 0; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 3px 6px 4px; border-radius: var(--r-sm); }
+.alternate { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "rank count" "diagram diagram"; gap: 2px; min-width: 0; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 3px 6px 4px; border-radius: var(--r-sm); }
 .alternate:hover { background: var(--surface-2); }
 .alternate[aria-pressed="true"] { border-color: var(--ewi-accent); background: var(--ewi-accent-soft); }
-.alternate-meta { display: flex; justify-content: space-between; gap: 2px; font: 12px/1.4 var(--font-mono); color: var(--muted); }
-.alternate-label { color: var(--ink); }
+.alternate-label, .alternate-count { font: 12px/1.4 var(--font-mono); }
+.alternate-label { grid-area: rank; text-align: left; }
+.alternate-count { grid-area: count; color: var(--muted); text-align: right; }
 .alternate[aria-pressed="true"] .alternate-label { color: var(--ewi-accent); }
 .mini-diagram { width: 100%; height: auto; display: block; }
-.alternate .mini-diagram { height: 52px; }
+.alternate .mini-diagram { grid-area: diagram; height: 52px; }
 .additional-fingerings > summary { display: list-item; min-height: 44px; align-content: center; padding: 8px; color: var(--ewi-accent); font-size: var(--t-sm); cursor: pointer; }
 .additional-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding: 6px; color: var(--muted); font-size: var(--t-xs); }
 .additional-pagination .btn { padding-inline: 8px; }
@@ -174,9 +175,9 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
   .explorer-actions { margin-top: 12px; }
   .alternate-panel { order: 1; padding-top: 8px; }
   .alternate-panel h2 { font-size: 16px; }
-  .fingering-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
-  .alternate { padding-block: 1px; }
-  .alternate .mini-diagram { height: 46px; }
+  .fingering-grid { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .alternate { grid-template-columns: 40px minmax(0, 1fr) 56px; grid-template-areas: "rank diagram count"; align-items: center; padding-block: 0; }
+  .alternate .mini-diagram { height: 42px; }
   .comparison-legend { margin: 6px 0; }
   .planner { display: flex; flex-direction: column; height: auto; min-height: 0; gap: 14px; padding-top: 12px; }
   .planner-input { display: contents; }

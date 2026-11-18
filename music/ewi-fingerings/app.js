@@ -13,7 +13,7 @@ const openKeys = '0'.repeat(KEYS.length);
 const openPitch = keyPitch(openKeys).midi;
 const pitchDropGroups = [[0, 1, 2], [3, 7]];
 const pitchDropKeys = pitchDropGroups.flat();
-const state = { pitch: 7, selected: null, flats: true, view: 'explore', melody: parseMelody(defaultPhrase), usePhraseOctave: false, plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: openKeys, keyRegister: 0, keyFilter: 'all' };
+const state = { pitch: 7, selected: null, flats: true, view: 'guide', melody: parseMelody(defaultPhrase), usePhraseOctave: false, plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: openKeys, keyRegister: 0, keyFilter: 'all' };
 const referenceMidi = () => 60 + state.pitch;
 const pianoColumn = [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13];
 const pianoPlacement = pitch => `class="${pianoColumn[pitch] % 2 === 0 ? 'accidental' : ''}" style="--piano-column:${pianoColumn[pitch]}"`;
@@ -203,7 +203,7 @@ function chartCard(f) {
   const offset = f.shift - ranked[0].shift;
   const label = `Rank ${f.rank}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than rank 1.` : ''}`;
   return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}">
-    <span class="alternate-meta"><span class="alternate-label">#${f.rank}</span><span><span class="alternate-held">${f.heldCount}</span> down</span></span>
+    <span class="alternate-label">#${f.rank}</span><span class="alternate-count"><span class="alternate-held">${f.heldCount}</span> down</span>
     ${keyDiagram(f.bits, { horizontal: true, decorative: true })}
   </button>`;
 }
