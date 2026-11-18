@@ -194,7 +194,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.getByRole('button', { name: 'Key explorer', exact: true }).click();
     assert.equal(await page.locator('#key-note').textContent(), 'D♭5');
     assert.equal(await page.locator('#key-picker .key-map use').count(), 13);
-    assert.equal(await page.locator('#key-picker .key-map rect, #key-picker .key-map path').count(), 0, 'the map contains keys and leader lines');
+    assert.equal(await page.locator('#key-picker .key-map > rect, #key-picker .key-map > path').count(), 0, 'the map has no instrument body');
     assert.deepEqual(await page.locator('#key-picker [data-key-shape]').evaluateAll(keys => keys.map(key => key.getAttribute('transform'))),
       await page.locator('#main-diagram .diagram-key').evaluateAll(keys => keys.map(key => key.getAttribute('transform'))));
     const lastKey = await page.locator('#key-picker button').last().boundingBox();
@@ -209,9 +209,11 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('#clear-keys').click();
     assert.deepEqual(await page.locator('#pitch-drop-table tbody tr').evaluateAll(rows =>
       rows.map(row => [...row.querySelectorAll('button')].map(button => Number(button.textContent.replace('−', '-'))))
-    ), [[0, -1, -2, -4], [-1, -2, -3, -5], [-2, -3, -4, -6], [-3, -4, -5, -7], [-4, -5, -6, -8]]);
+    ), [[0, -1, -2, -4], [-1, -2, -3, -5], [-1, -2, -3, -5], [-2, -3, -4, -6], [-2, -3, -4, -6], [-3, -4, -5, -7], [-4, -5, -6, -8]]);
     assert.deepEqual(await keyGeometry('#pitch-drop-keys svg'), referenceGeometry);
     await page.locator('#pitch-drop-table [aria-pressed="true"]').focus();
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await page.locator('#pitch-drop-table [aria-pressed="true"]').getAttribute('aria-label'), 'K2, −1 semitone');
     await page.keyboard.press('ArrowDown');
     assert.equal(await page.locator('#pitch-drop-table [aria-pressed="true"]').getAttribute('aria-label'), 'K3, −1 semitone');
     await page.locator('#pitch-drop-table button').last().click();
@@ -237,9 +239,13 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.match(await page.locator('#key-detail dd').last().textContent(), /C5 → A4 \(−3\)/);
     assert.equal(await page.locator('#pitch-drop-total').textContent(), '−4 semitones');
     await page.locator('#clear-keys').click();
-    await page.locator('#key-picker [data-key="1"]').click();
-    assert.equal(await page.locator('#key-picker [data-key="1"]').getAttribute('aria-pressed'), 'false');
-    assert.match(await page.locator('#key-detail').textContent(), /Hold K1 to use K2/);
+    await page.locator('#key-picker [data-key-shape="1"] rect').click();
+    assert.equal(await page.locator('#key-picker [data-key="1"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('#key-held').textContent(), 'Held: K2.');
+    assert.equal(await page.locator('#key-note').textContent(), 'C5');
+    assert.equal(await page.locator('#pitch-drop-total').textContent(), '−1 semitone');
+    await page.locator('#key-rule-rows [data-key="1"]').press('Enter');
+    assert.equal(await page.locator('#key-note').textContent(), 'D♭5');
     await page.locator('#key-picker [data-key="2"]').click();
     assert.equal(await page.locator('#key-note').textContent(), 'C5');
     await page.locator('#key-picker [data-key="0"]').click();
@@ -253,10 +259,14 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('#key-picker [data-key="1"]').getAttribute('aria-pressed'), 'false');
     assert.equal(await page.locator('#key-note').textContent(), 'C5');
     await page.locator('#clear-keys').click();
-    // Holding K3 strips an already held bis from the redundant combination.
+    await page.locator('#key-picker [data-key="1"]').press('Enter');
+    await page.locator('#key-picker [data-key="2"]').click();
+    assert.equal(await page.locator('#key-held').textContent(), 'Held: K2, K3.');
+    assert.equal(await page.locator('#key-note').textContent(), 'B4');
+    await page.locator('#key-picker [data-key="2"]').click();
     await page.locator('#key-picker [data-key="0"]').click();
-    await page.locator('#key-picker [data-key="1"]').click();
     assert.equal(await page.locator('#key-note').textContent(), 'B♭4');
+    // Holding K3 with K1 releases the now redundant bis.
     await page.locator('#key-picker [data-key="2"]').click();
     assert.equal(await page.locator('#key-picker [data-key="1"]').getAttribute('aria-pressed'), 'false');
     assert.equal(await page.locator('#key-note').textContent(), 'A4');

@@ -228,7 +228,7 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 #key-held, #key-range { margin-top: 0; }
 .key-picker { grid-area: keys; position: relative; width: min(100%, 350px); }
 .key-map { display: block; width: 100%; height: auto; }
-.key-map [data-key-shape] .key-shape { cursor: pointer; }
+.key-map [data-key-shape] { cursor: pointer; }
 .key-leader { stroke: var(--key-color); stroke-width: 1; opacity: .45; }
 .key-leader.on { opacity: .85; }
 .key-callout { position: absolute; top: var(--callout-top); translate: 0 -50%; width: 28.2%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; align-items: center; gap: 2px 3px; padding: 4px 6px; border: 1px solid; border-radius: var(--r-sm); text-align: left; }

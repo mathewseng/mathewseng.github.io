@@ -1,4 +1,4 @@
-import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-contributions';
+import { KEY_RULES, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-bis';
 import { KEY_ARTWORK, KEY_RATIOS, KEY_SYMBOLS, KEY_LAYOUT } from './key-artwork.mjs?v=20261118-keys';
 import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-layout';
@@ -107,9 +107,11 @@ function physicalKeys(bits, { interactive = false, before } = {}) {
   return KEY_LAYOUT.map(({ x, y, height }, i) => {
     const interactiveKey = interactive ? ` data-key-shape="${i}"` : '';
     const width = height * KEY_RATIOS[i];
+    const hitTarget = interactive && i === 1
+      ? `<rect fill="transparent" x="${-width / 2 - 1}" y="${-height / 2 - 2}" width="${width + 2}" height="${height + 4}"/>` : '';
     const outline = before && before[i] !== bits[i]
       ? `<rect class="change-outline" x="${-width / 2 - 2}" y="${-height / 2 - 2}" width="${width + 4}" height="${height + 4}" rx="3"/>` : '';
-    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(90)"${interactiveKey}>${keyShape(i, 0, 0, height)}${outline}</g>`;
+    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(90)"${interactiveKey}>${keyShape(i, 0, 0, height)}${outline}${hitTarget}</g>`;
   }).join('');
 }
 function keyDiagram(bits, { horizontal = false, before, decorative = false } = {}) {
@@ -276,19 +278,16 @@ function keyClasses(index, held) {
   const rule = KEY_RULES[index];
   return `effect-${rule.color} ${rule.kind === 'Fixed' ? '' : 'conditional-key'} ${held ? 'on' : ''}`;
 }
+const hasRedundantBis = bits => bits.startsWith('111');
+const redundantBisHint = 'K2 has no effect while K1 and K3 are held.';
 function toggleGuideKey(bits, index) {
   const next = toggleKey(bits, index);
-  if (isEligibleFingering(next)) return next;
-  // A blocked bis press leaves the other keys alone. K1 or K3 can release K2.
-  return index === 1 ? bits : next[0] + '0' + next.slice(2);
-}
-function bisHint(bits) {
-  return bits[0] === '0' ? 'Hold K1 to use K2.' : 'K2 has no effect while K1 and K3 are held.';
+  return hasRedundantBis(next) ? '101' + next.slice(3) : next;
 }
 function guideKeyExample(index) {
   const bits = state.keyBits;
   const other = toggleGuideKey(bits, index);
-  if (bits === other) return bisHint(bits);
+  if (bits === other) return redundantBisHint;
   const [off, on] = bits[index] === '1' ? [other, bits] : [bits, other];
   const from = keyPitch(off, state.keyRegister).midi;
   const to = keyPitch(on, state.keyRegister).midi;
@@ -308,7 +307,7 @@ function renderPitchDropTable() {
       const held = group.filter((_, index) => mask & (1 << index));
       const bits = keyPattern(held);
       return { held, bits, steps: pitchDrop(bits) };
-    }).filter(({ bits }) => isEligibleFingering(bits)).sort((a, b) => b.steps - a.steps);
+    }).filter(({ bits }) => !hasRedundantBis(bits)).sort((a, b) => b.steps - a.steps);
   }
   const [rows, columns] = pitchDropGroups.map(combinations);
   const label = ({ held, steps }) => `<span>${held.map(i => KEYS[i].id).join(' + ') || 'Open'}</span><small>${signedSteps(steps)}</small>`;
@@ -385,7 +384,7 @@ function selectGuideKey(index, origin) {
   stopAudio();
   state.key = index;
   const next = toggleGuideKey(state.keyBits, index);
-  say(next === state.keyBits ? bisHint(state.keyBits) : '');
+  say(next === state.keyBits ? redundantBisHint : '');
   state.keyBits = next;
   renderKeyExplorer();
   $(origin).querySelector(`[data-key="${index}"]`)?.focus({ preventScroll: true });

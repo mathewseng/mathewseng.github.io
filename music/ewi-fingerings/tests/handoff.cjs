@@ -69,6 +69,10 @@ async function check(browser, url, mobile) {
     await activate('#melody-form button[type=submit]');
     assert.match(await page.locator('[data-step="0"]').getAttribute('aria-label'), /G4, locked/);
     assert.equal(await page.locator('[data-step="0"] svg').getAttribute('aria-label'), chartTouch);
+    await activate('[data-view="guide"]');
+    await activate(mobile ? '#key-picker [data-key-shape="1"] rect' : '#key-picker [data-key="1"]');
+    assert.equal(await page.locator('#key-held').textContent(), 'Held: K2.');
+    assert.equal(await page.locator('#key-note').textContent(), 'C5');
     assert.deepEqual(failures, []);
   } finally {
     await context.close();

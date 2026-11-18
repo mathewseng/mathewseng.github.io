@@ -3,7 +3,7 @@
 // Ingo Scherzinger, DynaSample EWI Basics (2020–2023), page 4.
 export const KEY_RULES = [
   [-2, 'Fixed', 'None.', []],
-  [-1, 'Conditional', 'Use bis with K1 and leave K3 up. K3 cancels bis.', ['Needs K1', 'K3: 0']],
+  [-1, 'Conditional', 'K2 works by itself. Holding K1 and K3 together cancels K2.', ['K1+K3: 0']],
   [-2, 'Conditional', 'Contributes −1 with K1 up and −2 with K1 down.', ['K1 up: −1']],
   [-2, 'Fixed', 'None.', []],
   [1, 'Fixed', 'None.', []],
@@ -34,7 +34,7 @@ export function keyPitch(bits, register = 0) {
   ];
   return { midi: 73 + contributions.reduce((sum, n) => sum + n, 0) + register * 12, contributions };
 }
-// The UI applies this fingering rule separately from the raw pitch calculation.
+// Ranked fingering suggestions use bis with K1 as a playing preference.
 export function isEligibleFingering(bits) {
   return bits[1] !== '1' || (bits[0] === '1' && bits[2] !== '1');
 }

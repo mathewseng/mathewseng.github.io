@@ -16,6 +16,8 @@ test('conditional key effects are total audible changes, not just fixed contribu
   assert.equal(keyPitch(bits()).midi, 73);
   assert.equal(keyEffect(bits(3), 0).delta, -3, 'adding K1 to K3 also changes K3');
   assert.equal(keyEffect(bits(2, 3), 0).delta, -2, 'bis offset changes the K1 total');
+  assert.equal(keyEffect(bits(), 1).delta, -1, 'K2 alone lowers one semitone');
+  assert.equal(keyEffect(bits(3), 1).delta, -1, 'K2 still lowers with K3 when K1 is up');
   assert.equal(keyEffect(bits(1, 3), 1).delta, 0, 'K2 ignored when K1 and K3 held');
   assert.equal(keyEffect(bits(1), 2).delta, -2);
   assert.equal(keyEffect(bits(1, 2), 2).delta, -1);
