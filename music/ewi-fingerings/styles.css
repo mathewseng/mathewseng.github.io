@@ -59,8 +59,8 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 .stage-heading h2 { font-size: 28px; font-weight: 600; letter-spacing: -1.5px; line-height: 1.1; margin-top: 2px; }
 .small-label { display: block; font-size: var(--t-xs); color: var(--muted); line-height: 1.5; }
 .stage-meta { font-size: var(--t-sm); text-align: right; }
-.selected-fingering { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; align-items: center; }
-.main-diagram svg { display: block; width: 100%; height: auto; }
+.selected-fingering { display: grid; gap: 6px; }
+.main-diagram .mini-diagram { max-height: 80px; }
 .selected-fingering-copy { display: grid; gap: 6px; }
 .legend-key { width: 10px; height: 10px; background: var(--surface-2); border: 1px solid var(--muted); border-radius: 50%; }
 .legend-key.touched { background: var(--ewi-accent); border-color: var(--ewi-accent); }
@@ -70,15 +70,15 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 .comparison-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 5px 0; font-size: var(--t-xs); color: var(--muted); }
 .comparison-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .alternates { padding-block: 2px; }
-.fingering-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; }
-.alternate { display: grid; gap: 4px; min-width: 0; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 5px; border-radius: var(--r-sm); }
+.fingering-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 4px 6px; }
+.alternate { display: grid; gap: 2px; min-width: 0; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 3px 6px 4px; border-radius: var(--r-sm); }
 .alternate:hover { background: var(--surface-2); }
 .alternate[aria-pressed="true"] { border-color: var(--ewi-accent); background: var(--ewi-accent-soft); }
 .alternate-meta { display: flex; justify-content: space-between; gap: 2px; font: 12px/1.4 var(--font-mono); color: var(--muted); }
 .alternate-label { color: var(--ink); }
 .alternate[aria-pressed="true"] .alternate-label { color: var(--ewi-accent); }
-.alternate .upright-diagram { display: block; width: 100%; height: 166px; }
 .mini-diagram { width: 100%; height: auto; display: block; }
+.alternate .mini-diagram { height: 52px; }
 .additional-fingerings > summary { display: list-item; min-height: 44px; align-content: center; padding: 8px; color: var(--ewi-accent); font-size: var(--t-sm); cursor: pointer; }
 .additional-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding: 6px; color: var(--muted); font-size: var(--t-xs); }
 .additional-pagination .btn { padding-inline: 8px; }
@@ -174,9 +174,9 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
   .explorer-actions { margin-top: 12px; }
   .alternate-panel { order: 1; padding-top: 8px; }
   .alternate-panel h2 { font-size: 16px; }
-  .fingering-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .alternate { padding-inline: 3px; }
-  .alternate .upright-diagram { height: 144px; }
+  .fingering-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .alternate { padding-block: 1px; }
+  .alternate .mini-diagram { height: 46px; }
   .comparison-legend { margin: 6px 0; }
   .planner { display: flex; flex-direction: column; height: auto; min-height: 0; gap: 14px; padding-top: 12px; }
   .planner-input { display: contents; }
@@ -280,10 +280,6 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 /* Register groups keep octave-overlap alternatives together without hiding rows. */
 .register-group > h3 { padding: 4px 6px; color: var(--muted); font: 12px/1.4 var(--font-mono); }
 .register-group + .register-group { margin-top: 8px; }
-@media (min-width: 1050px) {
-  .alternates:has(> .register-group + .register-group) { display: grid; grid-template-columns: minmax(0, 1fr) 166px; gap: 10px; align-items: start; }
-  .register-group + .register-group { margin-top: 0; }
-}
 
 /* Function colors describe the usual change; fill describes held state. */
 .effect-down-two { --key-color: var(--info); }

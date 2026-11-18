@@ -29,7 +29,7 @@ async function check(browser, url, mobile) {
     const melody = page.locator('#melody');
     await melody.fill('G4 A5');
     await activate('[data-view="explore"]');
-    assert.equal(await page.locator('[data-fingering="10"] .upright-diagram use').count(), 13);
+    assert.equal(await page.locator('[data-fingering="10"] .mini-diagram use').count(), 13);
     await activate('[data-fingering="10"]');
     if (mobile) await activate('#detail-toggle');
     assert.match(await page.locator('#held-description').textContent(), /Touch K1, K2, K4, K9/);

@@ -26,9 +26,23 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       [key.parentElement.getAttribute('transform'), key.getAttribute('href'), key.width.baseVal.value, key.height.baseVal.value]
     ));
   }
+  async function checkFingeringLayout() {
+    assert.equal(await page.locator('#explore .upright-diagram').count(), 0);
+    const gap = await page.locator('.ranked-rows .alternate').evaluateAll(cards => {
+      const first = cards[0].getBoundingClientRect();
+      const next = cards.map(card => card.getBoundingClientRect()).find(box => box.top > first.top + 1);
+      return next.top - first.bottom;
+    });
+    assert.ok(gap >= 0 && gap <= 6, `fingering rows have a compact gap, got ${gap}px`);
+    for (const selector of ['#main-diagram', '.ranked-rows .alternate']) {
+      assert.equal(await page.locator(`${selector} .mini-diagram > g`).first().getAttribute('transform'), 'rotate(-90)');
+    }
+  }
   try {
     await page.goto(site.base + '/music/ewi-fingerings/');
     await page.waitForSelector('.alternate');
+    assert.deepEqual(await page.locator('.workspace-nav button').allTextContents(),
+      ['Key explorer', 'Fingerings', 'Note moves', 'Melody']);
     assert.equal(await page.locator('#explore [data-spelling="flats"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#selected-note').textContent(), 'G');
     assert.equal(await page.locator('select').count(), 0);
@@ -49,6 +63,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     const referenceGeometry = await keyGeometry('#main-diagram svg');
     assert.deepEqual(await keyGeometry('.ranked-rows .alternate svg'), referenceGeometry);
     await page.setViewportSize({ width: 1280, height: 800 });
+    await checkFingeringLayout();
     for (let key = 0; key < 12; key++) {
       await page.locator(`[data-pitch="${key}"]`).click();
       const last = await page.locator('.ranked-rows .alternate').last().boundingBox();
@@ -60,11 +75,12 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.ok(melodyButton.y + melodyButton.height <= 800, 'adding the selected fingering fits without scrolling');
     await page.locator('[data-pitch="7"]').click();
     await page.setViewportSize({ width: 375, height: 812 });
+    await checkFingeringLayout();
     assert.deepEqual(await keyGeometry('.ranked-rows .alternate svg'), referenceGeometry);
     const visibleChoices = await page.locator('.alternate').evaluateAll(elements => elements.filter(el => {
       const rect = el.getBoundingClientRect(); return rect.top >= 0 && rect.bottom <= innerHeight;
     }).length);
-    assert.ok(visibleChoices >= 8, `phone should show at least eight complete G fingerings, saw ${visibleChoices}`);
+    assert.equal(visibleChoices, 12, 'all default G fingerings fit on a portrait phone');
     assert.equal(await page.locator('#fingering-detail').isVisible(), false);
     await page.locator('#detail-toggle').click();
     assert.equal(await page.locator('#fingering-detail').isVisible(), true);
@@ -83,6 +99,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.waitForSelector('.additional-rows .alternate');
     assert.equal(await page.locator('.additional-rows .alternate').count(), 12);
     assert.deepEqual(await keyGeometry('.additional-rows .alternate svg'), referenceGeometry);
+    assert.equal(await page.locator('.additional-rows .upright-diagram').count(), 0);
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     assert.equal(await page.locator('.additional-pagination [role="status"]').textContent(), '13–24 of 406');
     await page.locator('.additional-rows .alternate').first().click();

@@ -6,7 +6,7 @@
   <meta name="description" content="Explore ranked Akai EWI4000s fingerings, learn every note key, and plan easier melody fingerings with octave-aware transitions.">
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261031">
   <link rel="stylesheet" href="../../shared/app.css?v=20261031">
-  <link rel="stylesheet" href="styles.css?v=20261118-combinations">
+  <link rel="stylesheet" href="styles.css?v=20261118-horizontal">
   <title>EWI Fingerings · Music</title>
 </head>
 <body>
@@ -19,10 +19,10 @@
   <main id="main" tabindex="-1" class="ewi-app">
     <div class="page-heading"><div><h1>EWI fingerings</h1></div><span class="mode-label">EWI4000s · Standard mode <b>Ei</b></span></div>
     <nav class="workspace-nav" aria-label="Practice tools">
-      <button class="active" type="button" data-view="explore" aria-pressed="true">Fingerings</button>
-      <button type="button" data-view="plan" aria-pressed="false">Melody planner</button>
       <button type="button" data-view="guide" aria-pressed="false">Key explorer</button>
+      <button class="active" type="button" data-view="explore" aria-pressed="true">Fingerings</button>
       <button type="button" data-view="moves" aria-pressed="false">Note moves</button>
+      <button type="button" data-view="plan" aria-pressed="false">Melody</button>
     </nav>
     <section id="explore" class="workspace" aria-label="Fingering explorer">
       <div class="workspace-sidebar">
@@ -54,7 +54,7 @@
         <div id="alternates" class="alternates"></div>
       </div>
     </section>
-    <section id="plan" class="planner" hidden aria-label="Melody planner">
+    <section id="plan" class="planner" hidden aria-label="Melody">
       <div class="planner-input">
         <div class="planner-editor">
           <form id="melody-form"><div class="section-title"><label for="melody">Melody</label><button type="button" class="btn" id="open-scales" aria-haspopup="dialog">Scales</button></div><textarea id="melody" rows="2" spellcheck="false" aria-describedby="melody-error">C4 D4 E4 F4 G4 A4 B4 C5</textarea><p id="melody-error" class="error" role="alert" hidden></p><button class="btn btn--primary" type="submit">Find fingerings</button></form>
@@ -147,6 +147,6 @@
     <p id="app-status" class="app-status" role="status" aria-live="polite"></p>
     <noscript><p>This interactive chart needs JavaScript. You can still use the <a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">OneWatt reference chart</a>.</p></noscript>
   </main>
-  <script type="module" src="app.js?v=20261118-contributions"></script>
+  <script type="module" src="app.js?v=20261118-horizontal"></script>
 </body>
 </html>

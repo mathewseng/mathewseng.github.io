@@ -202,7 +202,7 @@ function chartCard(f) {
   const label = `Rank ${f.rank}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than rank 1.` : ''}`;
   return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}">
     <span class="alternate-meta"><span class="alternate-label">#${f.rank}</span><span><span class="alternate-held">${f.heldCount}</span> down</span></span>
-    ${keyDiagram(f.bits, { decorative: true })}
+    ${keyDiagram(f.bits, { horizontal: true, decorative: true })}
   </button>`;
 }
 
@@ -252,7 +252,7 @@ function renderChart() {
 
 function renderSelectedFingering(selected) {
   $('selected-variant').textContent = `Rank ${selected.rank}`;
-  $('main-diagram').innerHTML = keyDiagram(selected.bits);
+  $('main-diagram').innerHTML = keyDiagram(selected.bits, { horizontal: true });
   const offset = selected.shift - ranked[0].shift;
   $('thumb-offset').hidden = offset === 0;
   $('thumb-offset').textContent = offset ? thumbOffset(offset) + ' than rank 1.' : '';
