@@ -227,7 +227,8 @@ function renderChart() {
     if (!groups.has(fingering.shift)) groups.set(fingering.shift, []);
     groups.get(fingering.shift).push(fingering);
   }
-  $('alternates').innerHTML = [...groups].map(([shift, group]) => {
+  // For the same sounding note, a higher front-key pitch needs a lower thumb shift.
+  $('alternates').innerHTML = [...groups].sort(([a], [b]) => a - b).map(([shift, group]) => {
     const withoutSide = group.filter(f => f.sideCount === 0);
     const visible = withoutSide.length ? withoutSide : group.filter(f => f.sideCount === group[0].sideCount).slice(0, 3);
     const more = group.filter(f => !visible.includes(f));

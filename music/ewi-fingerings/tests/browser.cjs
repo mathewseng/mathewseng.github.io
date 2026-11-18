@@ -175,6 +175,13 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('#hear-note').textContent(), 'Hear D♭4');
     await page.locator('#hear-note').click();
     assert.match(await page.locator('#app-status').textContent(), /Reference tone: D♭4/);
+    for (const pitch of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
+      await page.locator(`[data-pitch="${pitch}"]`).click();
+      const shifts = await page.locator('.register-group').evaluateAll(groups => groups.map(group => Number(group.dataset.register)));
+      const expected = pitch <= 3 ? [-1, 0] : pitch >= 10 ? [0, 1] : [0];
+      assert.deepEqual(shifts, expected, `pitch class ${pitch} shows the highest neutral-position fingering first`);
+      assert.equal(await page.locator('#selected-variant').textContent(), 'Rank 1');
+    }
     await page.locator('[data-pitch="2"]').focus();
     await page.keyboard.press('ArrowRight');
     assert.equal(await page.locator('#selected-note').textContent(), 'E♭');
