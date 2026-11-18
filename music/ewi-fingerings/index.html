@@ -6,11 +6,11 @@
   <meta name="description" content="Explore ranked Akai EWI4000s fingerings, learn every note key, and plan easier melody fingerings with octave-aware transitions.">
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261031">
   <link rel="stylesheet" href="../../shared/app.css?v=20261031">
-  <link rel="stylesheet" href="styles.css?v=20261118-scales">
+  <link rel="stylesheet" href="styles.css?v=20261118-keys">
   <title>EWI Fingerings · Music</title>
 </head>
 <body>
-  <svg class="key-filters" width="0" height="0" aria-hidden="true" focusable="false"><defs><filter id="ewi-key-gold" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%"><feFlood class="key-gold" result="tint"/><feComposite in="tint" in2="SourceAlpha" operator="in" result="color"/><feBlend in="color" in2="SourceGraphic" mode="multiply"/></filter></defs></svg>
+  <svg id="key-symbols" width="0" height="0" aria-hidden="true" focusable="false"></svg>
   <a class="skip-link" href="#main">Skip to fingerings</a>
   <header class="legacy-header" data-project-path="/music/ewi-fingerings/">
     <nav aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/music/">Music</a><span aria-hidden="true">/</span><strong>EWI Fingerings</strong></nav>
@@ -31,12 +31,16 @@
           <div id="note-picker" class="note-picker" role="group" aria-label="Notes"></div>
         </div>
         <div class="instrument-stage">
-          <div class="stage-heading"><div><span class="small-label">Selected note</span><h2 id="selected-note">G</h2></div><span id="selected-variant" class="stage-meta">Rank 1</span><button id="detail-toggle" class="detail-toggle" type="button" aria-expanded="false" aria-controls="fingering-detail">Show details</button></div>
+          <div class="stage-heading"><h2 id="selected-note">G</h2><span id="selected-variant" class="stage-meta">Rank 1</span><button id="detail-toggle" class="detail-toggle" type="button" aria-expanded="false" aria-controls="fingering-detail">Show keys</button></div>
           <div id="fingering-detail" class="stage-details">
-            <div id="main-diagram" class="main-diagram"></div>
-            <p class="small-label" id="thumb-offset" hidden></p>
-            <p class="stage-caption" id="held-description"></p>
-            <p class="small-label" id="ranking-detail"></p>
+            <div class="selected-fingering">
+              <div id="main-diagram" class="main-diagram"></div>
+              <div class="selected-fingering-copy">
+                <p class="stage-caption" id="held-description"></p>
+                <p class="small-label" id="thumb-offset" hidden></p>
+                <p class="small-label" id="ranking-detail"></p>
+              </div>
+            </div>
             <div class="explorer-actions"><button type="button" class="btn btn--primary" id="add-note">Add G4 to melody</button><button type="button" class="btn" id="hear-note">Hear G4</button></div>
           </div>
         </div>
@@ -46,7 +50,7 @@
       </div>
       <div class="alternate-panel">
         <div class="section-title"><h2>All fingerings</h2><span id="variant-count" class="count"></span></div>
-        <div class="comparison-legend"><span><i class="legend-key touched"></i>Touch</span><span><i class="legend-key"></i>Release</span><span class="ranking-order">Fewer side touches first</span></div>
+        <div class="comparison-legend"><span><i class="legend-key touched"></i>Touch</span><span><i class="legend-key"></i>Release</span></div>
         <div class="chart-key-labels">
           <span>Rank</span>
           <div id="chart-key-numbers" class="compact-keys" aria-hidden="true"></div>
@@ -58,7 +62,7 @@
     <section id="plan" class="planner" hidden aria-label="Melody planner">
       <div class="planner-input">
         <div class="planner-editor">
-          <form id="melody-form"><div class="section-title"><label for="melody">Melody</label><button type="button" class="btn" id="open-scales" aria-haspopup="dialog">Scales</button></div><textarea id="melody" rows="2" spellcheck="false" aria-describedby="melody-hint melody-error">C4 D4 E4 F4 G4 A4 B4 C5</textarea><p id="melody-hint" class="helper">Use notes with octaves, e.g. C4 F♯4 B♭3.</p><p id="melody-error" class="error" role="alert" hidden></p><button class="btn btn--primary" type="submit">Find fingerings</button></form>
+          <form id="melody-form"><div class="section-title"><label for="melody">Melody</label><button type="button" class="btn" id="open-scales" aria-haspopup="dialog">Scales</button></div><textarea id="melody" rows="2" spellcheck="false" aria-describedby="melody-error">C4 D4 E4 F4 G4 A4 B4 C5</textarea><p id="melody-error" class="error" role="alert" hidden></p><button class="btn btn--primary" type="submit">Find fingerings</button></form>
           <div class="phrase-examples"><button type="button" data-phrase="B4 C5 D5 C5 B4">Across the break</button><button type="button" data-phrase="G3 G4 D5 G5 D5 G4 G3">Octave jumps</button></div>
         </div>
         <div class="planner-tuning">
@@ -70,16 +74,15 @@
           </fieldset>
         </div>
       </div>
-      <div class="planner-output"><div class="section-title"><h2>Fingering path</h2><div class="playback"><label for="tempo">BPM <input id="tempo" type="number" min="30" max="240" value="90"></label><button type="button" id="play-phrase" class="btn">Play phrase</button></div></div><div id="plan-summary" class="plan-summary" role="status"></div><div id="phrase-steps" class="phrase-steps"></div><div class="transition-inspector"><h3 id="transition-title">Next move</h3><div id="transition-diagrams" class="transition-diagrams"></div><div id="transition-detail"></div><div class="variant-options"><p id="variant-label" class="small-label">Fingering for this note</p><div id="step-variant" class="choice-buttons" role="group" aria-labelledby="variant-label" tabindex="-1"></div></div><button type="button" class="text-button" id="unlock">Reset all choices</button></div><details class="method"><summary>How to read this recommendation</summary><p>Touch and release lists describe the move into the selected note. Locking a fingering recalculates the rest of the phrase around it.</p><p>The planner uses documented fingerings and choices you add from the chart. Adding a chart fingering locks that step. Playback uses standard EWI mode without transposition.</p></details></div>
+      <div class="planner-output"><div class="section-title"><h2>Fingering path</h2><div class="playback"><label for="tempo">BPM <input id="tempo" type="number" min="30" max="240" value="90"></label><button type="button" id="play-phrase" class="btn">Play phrase</button></div></div><div id="plan-summary" class="plan-summary" role="status"></div><div id="phrase-steps" class="phrase-steps"></div><div class="transition-inspector"><h3 id="transition-title">Next move</h3><div id="transition-diagrams" class="transition-diagrams"></div><div id="transition-detail"></div><div class="variant-options"><p id="variant-label" class="small-label">Fingering for this note</p><div id="step-variant" class="choice-buttons" role="group" aria-labelledby="variant-label" tabindex="-1"></div></div><button type="button" class="text-button" id="unlock">Reset all choices</button></div></div>
     </section>
     <section id="guide" class="guide" hidden aria-label="Keys and playing guide">
-      <nav class="guide-nav" aria-label="Guide sections"><a href="#note-keys">Key explorer</a><a href="#key-rules">Key rules</a><a href="#thumb-technique">Octaves</a><a href="#expression">Expression</a><a href="#getting-started">Getting started</a><a href="#sources">Sources</a></nav>
+      <nav class="guide-nav" aria-label="Guide sections"><a href="#note-keys">Key explorer</a><a href="#key-rules">Key rules</a><a href="#thumb-technique">Octaves</a><a href="#expression">Other controls</a><a href="#getting-started">Setup</a><a href="#sources">Sources</a></nav>
       <div class="guide-content">
-        <section id="note-keys"><h2>Play the keys</h2><p>K2 needs K1. It is redundant when K3 is held.</p>
-          <p class="key-function-legend">Dashed: conditional or linked. Filled: held.</p>
+        <section id="note-keys"><div class="section-title key-explorer-title"><h2>Play the keys</h2><span class="small-label">Dashed labels indicate conditions</span></div>
           <div class="key-reference">
             <div class="key-result">
-              <div class="live-pitch" aria-live="polite"><span class="small-label">Pitch</span><strong id="key-note">D♭5</strong><span id="key-midi" class="small-label">MIDI 73</span></div>
+              <div class="live-pitch" aria-live="polite"><strong id="key-note">D♭5</strong><span id="key-midi" class="small-label">MIDI 73</span></div>
               <div id="key-staff"></div>
               <div class="key-settings">
                 <div class="thumb-stepper" role="group" aria-label="Thumb register">
@@ -99,33 +102,30 @@
             <article id="key-detail" class="key-detail" aria-live="polite"></article>
           </div>
         </section>
-        <section id="key-rules"><h2>What does each key change?</h2><p>Effects are in semitones. The examples use your held keys.</p>
+        <section id="key-rules"><h2>Key rules</h2>
           <div class="rule-toolbar"><div class="choice-buttons" role="group" aria-label="Filter key rules"><button type="button" data-rule-filter="all" aria-pressed="true">All keys</button><button type="button" data-rule-filter="interacting" aria-pressed="false" aria-label="Conditional and linked keys">Conditional</button><button type="button" data-rule-filter="fixed" aria-pressed="false">Fixed</button></div></div>
-          <table class="key-rule-table"><caption class="sr-only">Change when adding each key, conditions, and an example using the currently held keys</caption><thead><tr><th scope="col">Key</th><th scope="col">Usually<br><span>semitones</span></th><th scope="col">Rule & current example</th></tr></thead><tbody id="key-rule-rows"></tbody></table>
-          <p class="helper">K1 contributes −2, but also changes K3’s contribution. K4 contributes −2, but also changes K8’s contribution. The table reports the total change you hear, including these interactions. The thumb adds or subtracts exactly 12 per register step.</p>
-          <p class="helper">Rules: <a href="https://dynasample.com/downloads/EWI_Basics.pdf">Ingo Scherzinger / DynaSample, EWI Basics, page 4</a>. The pitch model is cross-checked against every library fingering.</p>
+          <table class="key-rule-table"><caption class="sr-only">Change when adding each key, conditions, and an example using the currently held keys</caption><thead><tr><th scope="col">Key</th><th scope="col">Usually<br><span>semitones</span></th><th scope="col">Exceptions & live effect</th></tr></thead><tbody id="key-rule-rows"></tbody></table>
         </section>
-        <section id="thumb-technique"><h2>Octaves without the guesswork</h2><p>Keep the left thumb in a gap between rollers. The gap between the two textured rollers is register 0; move toward the mouthpiece to go up. This guide uses the manual’s relative positions, −2 through +4.</p><div class="octave-examples"><div><strong>Same note, next octave</strong><p>Keep the note keys; move the thumb one register up. G4 → G5 needs no front-key changes.</p></div><div><strong>Crossing C♯ → D</strong><p>The open C♯ fingering sits at the top of a register. Main D uses the next register up. An alternate high D or low C♯ can avoid this thumb move.</p></div></div><p>Use the planner to compare thumb moves. A transposed patch can change the sounding notes.</p></section>
-        <section id="expression"><h2>What the other controls do</h2><div class="control-reference">
-          <article><h3>Breath sensor</h3><p>Air pressure shapes level and tone. Tongue gently to separate notes; keep air steady for connected phrases.</p></article>
-          <article><h3>Mouthpiece / bite</h3><p>Gentle bite pressure adds vibrato or pitch expression. Avoid hard biting; the mouthpiece contains a sensor.</p></article>
-          <article><h3>Ground plates</h3><p>Rest the right thumb on the neutral grounding area; keep the left thumb on the rollers while playing.</p></article>
-          <article><h3>Pitch-bend plates</h3><p>Right-thumb contact with the upper or lower plate bends pitch up or down. Stay centered for unbent notes.</p></article>
-          <article><h3>Glide plate</h3><p>Left-thumb contact activates portamento between pitches. Avoid brushing it when practicing clean octave changes.</p></article>
-          <article><h3>Hold</h3><p>Sustains a note or sends an assigned control message, depending on the setting. Turn it off for plain melody practice.</p></article>
-          <article><h3>Octave / Interval</h3><p>The 4000s Octave and 5000 Interval buttons add a second voice or an assigned function. They are separate from the thumb rollers.</p></article>
-          <article><h3>Transpose</h3><p>Shifts the sounding pitch while the fingering stays the same. Turn it off when matching this chart.</p></article>
-          <article><h3>Program & setup</h3><p>Program chooses the sound; Setup changes instrument behavior. On the 5000, Hold increases values and Interval decreases them.</p></article>
-          <article><h3>FX & sensor knobs</h3><p>FX selects effect settings. The covered adjustment knobs set breath, glide, bend and vibrato response; use the manual’s calibration procedure.</p></article>
-        </div><p class="helper">Button assignments and sensor settings depend on model and firmware. The linked manuals cover sound editing, connections, calibration, effects and MIDI.</p></section>
-        <section id="getting-started"><h2>Start playing</h2><ol class="practice-list"><li><strong>Connect and hear it.</strong><p>Power the 4000s using batteries or its specified adapter. Use PHONES for headphones or LINE OUT for an amp/interface. MIDI OUT sends performance messages, not audio; a computer needs a MIDI interface.</p></li><li><strong>Choose standard EWI mode.</strong><p>On the 4000s/5000, use Setup → fingering (Fn) → EWI (Ei). The diagrams here do not apply to sax, flute, oboe, EVI or reversed EVI mode.</p></li><li><strong>Support the instrument.</strong><p>Use the neck strap. Keep hands relaxed, fingers close to the sensors and thumbs in playing contact.</p></li><li><strong>Learn one chromatic set.</strong><p>Start with the main fingerings. Add alternatives when a particular transition is awkward.</p></li><li><strong>Practice the move slowly.</strong><p>Loop two notes before a whole phrase. Coordinate the thumb and fingers; then increase speed.</p></li></ol><h3>If something sounds wrong</h3><p>Check fingering mode, transpose, accidental bend/glide contact, and Hold/Interval first. If unintended notes remain, consult your model’s touch sensitivity and note-delay settings. More note delay can hide uneven finger changes but adds latency.</p></section>
-        <section id="sources"><h2>Sources & coverage</h2><p>The Fingering Explorer generates every matching pitch-model pattern in the supported registers and leaves out K2 when K1 is released or when K1 and K3 are both held. The Melody Planner uses a subset of patterns from OneWatt’s chart and marks Akai’s standard choices as main fingerings. The Key Explorer applies the same bis rule to held keys.</p><ul class="source-list"><li><a href="https://dynasample.com/downloads/EWI_Basics.pdf">DynaSample: EWI Basics (PDF)</a><span>Ingo Scherzinger’s explanation of conditional EWI keys and the shared K5/K7 input, page 4.</span></li><li><a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">OneWatt: EWI Fingering, 2009 (PDF)</a><span>All documented alternate patterns; hosted by Patchman Music.</span></li><li><a href="https://cdn.inmusicbrands.com/akai/ewi-4000/ewi4000s_refmanual_revd_00.pdf_2b1b7872139bd77b89740a52cbb86d99.pdf">Akai EWI4000s reference manual (PDF)</a><span>Playing, controls, fingering modes, keys K1–K13 and relative rollers; printed pages 5–17 and 37–38.</span></li><li><a href="https://cdn.inmusicbrands.com/akai/ewi5000/EWI5000-UserGuide-v1.0.pdf_6b0a349fd5e4a543bc738d9634196b60.pdf">Akai EWI5000 user guide (PDF)</a><span>Playing, controls, settings and standard EWI chart; printed pages 5–10, 35–36 and 38–39.</span></li></ul><p class="helper">EWI Solo, EWI USB and other wind controllers have model-specific controls and ranges. Verify their own manuals before applying this guide. Audio here is a simple reference tone, not an EWI sound engine or MIDI connection.</p></section>
+        <section id="thumb-technique"><h2>Octave rollers</h2><p>Register 0 is the gap between the textured rollers. Move the left thumb one gap toward the mouthpiece to go up an octave.</p><div class="octave-examples"><div><strong>G4 → G5</strong><p>Keep the front keys and move your thumb up one gap.</p></div><div><strong>C♯5 → D5</strong><p>Touch K5 or K7 from open C♯5 to leave your thumb in place.</p></div></div></section>
+        <section id="expression"><h2>Other controls</h2><div class="control-reference">
+          <article><h3>Breath sensor</h3><p>Air pressure shapes volume and tone.</p></article>
+          <article><h3>Bite sensor</h3><p>Light pressure on the mouthpiece controls vibrato or pitch.</p></article>
+          <article><h3>Ground plates</h3><p>Rest the right thumb on the center plate and the left thumb on the rollers.</p></article>
+          <article><h3>Pitch bend</h3><p>Touch the plate above or below the right thumb to bend pitch up or down.</p></article>
+          <article><h3>Glide</h3><p>Touch the left-thumb glide plate for portamento.</p></article>
+          <article><h3>Hold</h3><p>Sustains a note or sends an assigned control message.</p></article>
+          <article><h3>Octave / Interval</h3><p>Adds a second voice or performs the assigned function.</p></article>
+          <article><h3>Transpose</h3><p>Offsets sounding pitch. Set it to zero to match the chart.</p></article>
+          <article><h3>Program & setup</h3><p>Program selects the sound. Setup changes instrument settings.</p></article>
+          <article><h3>FX & sensor knobs</h3><p>FX selects effects. The covered knobs adjust breath, glide, bend and vibrato response.</p></article>
+        </div></section>
+        <section id="getting-started"><h2>Setup</h2><ol class="practice-list"><li>Connect headphones to PHONES or an amp to LINE OUT. Use a MIDI interface for MIDI OUT.</li><li>Select Setup → Fingering (Fn) → EWI (Ei).</li><li>Use the neck strap and rest both thumbs in playing position.</li></ol><p>For unexpected pitches, check transpose, bend plates, Hold and Octave. For stray notes, check touch sensitivity and note delay.</p></section>
+        <section id="sources"><h2>Sources</h2><ul class="source-list"><li><a href="https://dynasample.com/downloads/EWI_Basics.pdf">DynaSample EWI Basics (PDF)</a><span>Conditional keys and the K5/K7 input, p. 4.</span></li><li><a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">OneWatt fingering chart (PDF)</a><span>Alternate fingerings.</span></li><li><a href="https://cdn.inmusicbrands.com/akai/ewi-4000/ewi4000s_refmanual_revd_00.pdf_2b1b7872139bd77b89740a52cbb86d99.pdf">Akai EWI4000s manual (PDF)</a><span>Controls and EWI fingerings, pp. 5–17 and 37–38.</span></li><li><a href="https://cdn.inmusicbrands.com/akai/ewi5000/EWI5000-UserGuide-v1.0.pdf_6b0a349fd5e4a543bc738d9634196b60.pdf">Akai EWI5000 manual (PDF)</a><span>Controls and EWI fingerings, pp. 5–10, 35–36 and 38–39.</span></li></ul></section>
       </div>
     </section>
     <section id="moves" class="note-moves" hidden aria-label="Note moves">
       <div class="move-matrix-panel">
-        <div class="section-title"><h2>Fewest key toggles</h2><span class="small-label">From ↓ · To →</span></div>
-        <p class="small-label">Same octave, fixed thumb</p>
+        <div class="section-title"><h2>Fewest key toggles</h2><span class="small-label">Fixed thumb · From ↓ To →</span></div>
         <div class="matrix-scroll"><table id="move-matrix" class="move-matrix"></table></div>
       </div>
       <article id="move-result" class="move-result"></article>
@@ -133,7 +133,7 @@
     <dialog id="scale-library" aria-labelledby="scales-heading">
       <div class="section-title"><h2 id="scales-heading">Scales</h2><button type="button" class="btn" id="close-scales">Close</button></div>
       <div class="scale-controls">
-        <div><p class="small-label">Root</p><div class="choice-buttons" id="scale-roots" role="group" aria-label="Scale root"></div></div>
+        <div><p class="small-label">Root</p><div class="note-picker" id="scale-roots" role="group" aria-label="Scale root"></div></div>
         <div><p class="small-label">Scale family</p><div class="choice-buttons" id="scale-groups" role="group" aria-label="Scale family"></div></div>
         <div id="scale-options" role="group"></div>
       </div>
@@ -141,6 +141,6 @@
     <p id="app-status" class="app-status" role="status" aria-live="polite"></p>
     <noscript><p>This interactive chart needs JavaScript. You can still use the <a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">OneWatt reference chart</a>.</p></noscript>
   </main>
-  <script type="module" src="app.js?v=20261118-scales"></script>
+  <script type="module" src="app.js?v=20261118-keys"></script>
 </body>
 </html>

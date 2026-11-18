@@ -3,7 +3,7 @@
 // Ingo Scherzinger, DynaSample EWI Basics (2020–2023), page 4.
 export const KEY_RULES = [
   [-2, 'Conditional', 'With K3 held and K2 clear, lowers 3 semitones. If K2 is held, adding K1 lowers the usual 2 semitones.', ['K3: −3', '+ K2: −2']],
-  [-1, 'Conditional', 'Ignored (0) when K1 and K3 are both held.', ['K1+K3: 0']],
+  [-1, 'Conditional', 'Requires K1. Ignored (0) when K3 is also held.', ['Needs K1', 'K1+K3: 0']],
   [-2, 'Conditional', 'Lowers only 1 semitone when K1 is released or K2 is held.', ['No K1: −1', 'K2: −1']],
   [-2, 'Conditional', 'With K8 held, lowers 3 semitones because K8 also changes.', ['K8: −3']],
   [1, 'Linked', 'Ignored (0) when K7 is already held; they share one raise input.', ['K7: 0']],

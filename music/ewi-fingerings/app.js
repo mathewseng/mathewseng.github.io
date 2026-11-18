@@ -1,9 +1,9 @@
-import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-layout';
-import { KEY_ARTWORK, KEY_RATIOS } from './key-artwork.mjs';
+import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-keys';
+import { KEY_ARTWORK, KEY_RATIOS, KEY_SYMBOLS, KEY_LAYOUT } from './key-artwork.mjs?v=20261118-keys';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261118-layout';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-layout';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
-import { bestNoteMoves, noteMoveCounts } from './note-moves.mjs?v=20261118-layout';
+import { bestNoteMoves, noteMoveCounts, MOVE_PITCHES } from './note-moves.mjs?v=20261118-keys';
 import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-scales';
 
 const $ = id => document.getElementById(id);
@@ -11,7 +11,9 @@ const storageKey = 'ewi-practice-v3';
 const defaultPhrase = scalePhrase(0, SCALE_GROUPS[0][1][0][1]);
 const state = { pitch: 7, selected: null, flats: true, view: 'explore', melody: parseMelody(defaultPhrase), usePhraseOctave: false, plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
 const referenceMidi = () => 60 + state.pitch;
-const moveSelection = { from: 10, to: 11, option: 0, result: null };
+const pianoColumn = [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13];
+const pianoPlacement = pitch => `class="${pianoColumn[pitch] % 2 === 0 ? 'accidental' : ''}" style="--piano-column:${pianoColumn[pitch]}"`;
+const moveSelection = { from: 70, to: 71, option: 0, result: null };
 const scaleSelection = { root: 0, group: 0, custom: new Set(SCALE_GROUPS[0][1][0][1]) };
 try {
   const current = localStorage.getItem(storageKey);
@@ -35,7 +37,7 @@ const weights = () => Object.fromEntries(
   [...document.querySelectorAll('[data-weight][aria-pressed="true"]')].map(button => [button.dataset.weight, Number(button.dataset.value)])
 );
 function markChoice(button) {
-  button.closest('.choice-buttons').querySelectorAll('button').forEach(choice => {
+  button.closest('.choice-buttons, .note-picker').querySelectorAll('button').forEach(choice => {
     choice.setAttribute('aria-pressed', String(choice === button));
   });
 }
@@ -93,17 +95,14 @@ function showView(view) {
   say('');
 }
 
-// Reuse the original EWI artwork, including the crescent bis key and angled levers.
-const keyArtwork = KEY_ARTWORK;
-const keyRatios = KEY_RATIOS;
 const stripX = [16, 35, 64, 96, 125, 146, 172, 196, 228, 260, 287, 311, 335];
 const stripHeights = [26, 29, 26, 26, 38, 46, 38, 26, 26, 26, 34, 44, 56];
-function keyImage(index, x, y, height) {
-  const width = height * keyRatios[index];
-  return `<image class="key-image" href="${keyArtwork[index]}.png" x="${x - width / 2}" y="${y - height / 2}" width="${width}" height="${height}"/>`;
+function keyShape(index, x, y, height) {
+  const width = height * KEY_RATIOS[index];
+  return `<use class="key-shape" href="#ewi-key-${KEY_ARTWORK[index]}" x="${x - width / 2}" y="${y - height / 2}" width="${width}" height="${height}"/>`;
 }
 function keyGlyph(index) {
-  return `<svg viewBox="0 0 28 36" aria-hidden="true">${keyImage(index, 14, 18, Math.min(34, stripHeights[index] * .8))}</svg>`;
+  return `<svg viewBox="0 0 28 36" aria-hidden="true">${keyShape(index, 14, 18, Math.min(34, stripHeights[index]))}</svg>`;
 }
 function compactKeys(bits, showNumbers = false) {
   return `<span class="compact-keys" aria-hidden="true">${KEYS.map((key, i) =>
@@ -112,17 +111,28 @@ function compactKeys(bits, showNumbers = false) {
 }
 function mini(fingering, before = null) {
   return `<svg class="mini-diagram" viewBox="0 0 350 64" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
-    return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${keyImage(i, stripX[i], 32, stripHeights[i])}${before && before.bits[i] !== fingering.bits[i] ? `<rect class="change-outline" x="${stripX[i] - stripHeights[i] * keyRatios[i] / 2 - 2}" y="${32 - stripHeights[i] / 2 - 2}" width="${stripHeights[i] * keyRatios[i] + 4}" height="${stripHeights[i] + 4}" rx="3"/>` : ''}</g>`;
+    return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${keyShape(i, stripX[i], 32, stripHeights[i])}${before && before.bits[i] !== fingering.bits[i] ? `<rect class="change-outline" x="${stripX[i] - stripHeights[i] * KEY_RATIOS[i] / 2 - 2}" y="${32 - stripHeights[i] / 2 - 2}" width="${stripHeights[i] * KEY_RATIOS[i] + 4}" height="${stripHeights[i] + 4}" rx="3"/>` : ''}</g>`;
   }).join('')}</svg>`;
 }
+function physicalKeys(bits, interactive = false) {
+  return KEY_LAYOUT.map(({ x, y, height }, i) => {
+    const interactiveKey = interactive ? ` data-key-shape="${i}"` : '';
+    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(90)"${interactiveKey}>${keyShape(i, 0, 0, height)}</g>`;
+  }).join('');
+}
 function renderMoveMatrix() {
-  const pitches = state.flats ? FLATS : SHARPS;
-  const head = pitches.map(pitch => `<th scope="col">${pitch}</th>`).join('');
-  $('move-matrix').innerHTML = `<caption class="sr-only">Minimum key toggles at a fixed thumb position. Starting notes in rows, destination notes in columns.</caption>
+  const head = MOVE_PITCHES.map(midi => `<th scope="col" class="${midi % 12 === 0 ? 'octave-edge' : ''}">${name(midi)}</th>`).join('');
+  $('move-matrix').innerHTML = `<caption class="sr-only">Minimum key toggles at a fixed thumb position. Starting notes in rows, destination notes in columns, highest to lowest.</caption>
     <thead><tr><td></td>${head}</tr></thead><tbody>
-    ${noteMoveCounts().map((row, from) => `<tr><th scope="row">${pitches[from]}</th>${row.map((count, to) => count === null
-      ? '<td class="same-note" aria-label="Same note">–</td>'
-      : `<td><button type="button" data-from="${from}" data-to="${to}" data-toggles="${count}" aria-label="${pitches[from]} to ${pitches[to]}, ${count} key toggles" aria-pressed="false" tabindex="-1">${count}</button></td>`).join('')}</tr>`).join('')}
+    ${noteMoveCounts().map((row, r) => {
+      const from = MOVE_PITCHES[r];
+      return `<tr class="${from % 12 === 0 ? 'octave-edge' : ''}"><th scope="row">${name(from)}</th>${row.map((count, c) => {
+        const to = MOVE_PITCHES[c];
+        return count === null
+          ? '<td class="same-note" aria-label="Same note">–</td>'
+          : `<td><button type="button" data-from="${from}" data-to="${to}" data-toggles="${count}" aria-label="${name(from)} to ${name(to)}, ${count} key toggles" aria-pressed="false" tabindex="-1">${count}</button></td>`;
+      }).join('')}</tr>`;
+    }).join('')}
     </tbody>`;
   selectMovePair(moveSelection.from, moveSelection.to);
 }
@@ -141,12 +151,11 @@ function selectMovePair(from, to) {
 }
 function renderMoveResult() {
   const { from, to, option, result } = moveSelection;
-  const pitches = state.flats ? FLATS : SHARPS;
   const move = result.options[option];
   const diff = changes(move.from, move.to);
-  const line = (pitch, f) => `<div class="move-key-line"><div><strong>${pitches[pitch]}</strong><span class="small-label">Rank ${f.rank}</span></div>${compactKeys(f.bits, true)}</div>`;
+  const line = (pitch, f) => `<div class="move-key-line"><div><strong>${name(pitch)}</strong><span class="small-label">Rank ${f.rank}</span></div>${compactKeys(f.bits, true)}</div>`;
   $('move-result').innerHTML = `
-    <div class="section-title"><h2 aria-live="polite">${pitches[from]} → ${pitches[to]}</h2><span class="move-count">${result.toggles} key ${result.toggles === 1 ? 'toggle' : 'toggles'}</span></div>
+    <div class="section-title"><h2 aria-live="polite">${name(from)} → ${name(to)}</h2><span class="move-count">${result.toggles} key ${result.toggles === 1 ? 'toggle' : 'toggles'}</span></div>
     <div class="move-choices">
       <span class="small-label">${result.total > result.options.length ? 'Simplest ' + result.options.length + ' of ' + countLabel(result.total) : 'Best fingerings'}</span>
       <div class="choice-buttons" role="group" aria-label="Best transition options">${result.options.map((_, index) => `<button type="button" data-move-option="${index}" aria-pressed="${option === index}" aria-label="Option ${index + 1}">${index + 1}</button>`).join('')}</div>
@@ -160,7 +169,7 @@ function renderScaleLibrary() {
   const { root, group, custom } = scaleSelection;
   const pitches = state.flats ? FLATS : SHARPS;
   $('scale-roots').innerHTML = pitches.map((pitch, i) =>
-    `<button type="button" data-scale-root="${i}" aria-pressed="${root === i}">${pitch}</button>`
+    `<button type="button" data-scale-root="${i}" ${pianoPlacement(i)} aria-pressed="${root === i}">${pitch}</button>`
   ).join('');
   $('scale-groups').innerHTML = [...SCALE_GROUPS.map(([label]) => label), 'Custom'].map((label, i) =>
     `<button type="button" data-scale-group="${i}" aria-pressed="${group === i}">${label}</button>`
@@ -169,8 +178,11 @@ function renderScaleLibrary() {
   $('scale-options').setAttribute('aria-label', family ? family[0] : 'Custom scale');
   $('scale-options').innerHTML = family
     ? family[1].map(([label], i) => `<button type="button" class="btn" data-scale-type="${i}">${label}</button>`).join('')
-    : `<div class="choice-buttons" role="group" aria-label="Notes in the scale">
-      ${pitches.map((_, i) => `<button type="button" data-scale-offset="${i}" aria-pressed="${custom.has(i)}" ${i === 0 ? 'disabled' : ''}>${pitches[(root + i) % 12]}</button>`).join('')}
+    : `<div class="note-picker" role="group" aria-label="Notes in the scale">
+      ${pitches.map((_, i) => {
+        const pitch = (root + i) % 12;
+        return `<button type="button" data-scale-offset="${i}" ${pianoPlacement(pitch)} aria-pressed="${custom.has(i)}" ${i === 0 ? 'disabled' : ''}>${pitches[pitch]}</button>`;
+      }).join('')}
       </div><button type="button" class="btn btn--primary" data-use-custom>Use custom scale</button>`;
 }
 function useScale(offsets) {
@@ -239,7 +251,7 @@ function renderChart() {
 
 function renderSelectedFingering(selected) {
   $('selected-variant').textContent = `Rank ${selected.rank}`;
-  $('main-diagram').innerHTML = compactKeys(selected.bits, true);
+  $('main-diagram').innerHTML = `<svg viewBox="109 16 113 380" role="img" aria-label="Front keys in playing position. Touch ${keyList(selected.bits)}.">${physicalKeys(selected.bits)}</svg>`;
   const offset = selected.shift - ranked[0].shift;
   $('thumb-offset').hidden = offset === 0;
   $('thumb-offset').textContent = offset ? thumbOffset(offset) + ' than rank 1.' : '';
@@ -252,7 +264,7 @@ function renderExplorer() {
   const noteNames = state.flats ? FLATS : SHARPS;
   updateSpellingButtons();
   $('note-picker').innerHTML = noteNames.map((n, i) =>
-    `<button type="button" data-pitch="${i}" class="${[1, 3, 6, 8, 10].includes(i) ? 'accidental' : ''}" aria-pressed="${i === state.pitch}">${n}</button>`
+    `<button type="button" data-pitch="${i}" ${pianoPlacement(i)} aria-pressed="${i === state.pitch}">${n}</button>`
   ).join('');
   $('selected-note').textContent = noteNames[state.pitch];
   updateChartActions();
@@ -294,26 +306,41 @@ function renderKeyExplorer() {
   $('key-range').hidden = midi <= 111;
   $('key-range').textContent = 'Above this guide’s verified MIDI range; lower the thumb register to match a verified pitch.';
   $('hear-keys').disabled = midi > 111;
-  function keyTile(key, i) {
-    const held = state.keyBits[i] === '1', rule = KEY_RULES[i];
-    const conditions = rule.badges.map(badge => `<span>${badge}</span>`).join('');
-    return `<button type="button" class="key-state-button key-tile ${keyClasses(i, held)} ${state.key === i ? 'inspected' : ''}" data-key="${i}" aria-label="${key.id}, ${key.finger}. Usually ${rule.usualText} ${rule.exceptions}" aria-pressed="${held}">
-      <span class="key-tile-name">${key.id}</span><span class="key-tile-effect">${signedSteps(rule.usual)}</span>
-      ${keyGlyph(i)}
-      ${conditions ? `<span class="key-dependencies">${conditions}</span>` : ''}
-    </button>`;
-  }
-  $('key-picker').innerHTML = [[true, '−2 semitones'], [false, '−1 or +1 semitone']].map(([blue, label]) => {
-    const tiles = KEYS.map((key, i) => (KEY_RULES[i].usual === -2) === blue ? keyTile(key, i) : '').join('');
-    return `<div class="key-family" role="group" aria-label="${label}"><span class="small-label">${label}</span><div class="key-family-keys">${tiles}</div></div>`;
-  }).join('');
+  renderKeyMap();
   const key = KEYS[state.key], rule = KEY_RULES[state.key];
   $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Usually</dt><dd class="usual-rule effect-${rule.color}">${rule.usualText}</dd></div><div><dt>Exceptions</dt><dd>${rule.exceptions}</dd></div><div><dt>With your other keys</dt><dd>${guideKeyExample(state.key)}</dd></div></dl>`;
   $('key-rule-rows').innerHTML = KEYS.map((k, i) => {
     const rule = KEY_RULES[i];
     if (state.keyFilter === 'fixed' && rule.kind !== 'Fixed' || state.keyFilter === 'interacting' && rule.kind === 'Fixed') return '';
-    return `<tr class="${state.keyBits[i] === '1' ? 'held' : ''}"><th scope="row"><button type="button" class="key-state-button ${keyClasses(i, state.keyBits[i] === '1')}" data-key="${i}" aria-pressed="${state.keyBits[i] === '1'}" aria-label="${k.id}, ${state.keyBits[i] === '1' ? 'release' : 'hold'}">${k.id}</button><span>${k.finger}</span></th><td><strong class="usual-rule effect-${rule.color}">${signedSteps(rule.usual)}</strong><span class="rule-kind">${rule.kind}</span></td><td><strong class="rule-usual-text">${rule.usualText}</strong><span class="rule-exception">Exceptions: ${rule.exceptions}</span><span class="rule-example">Now: ${guideKeyExample(i)}</span></td></tr>`;
+    const held = state.keyBits[i] === '1';
+    const exception = rule.kind === 'Fixed' ? '' : `<span class="rule-exception">${rule.exceptions}</span>`;
+    return `<tr><th scope="row"><button type="button" class="key-state-button ${keyClasses(i, held)}" data-key="${i}" aria-pressed="${held}" aria-label="${k.id}, ${held ? 'release' : 'hold'}">${k.id}</button><span>${k.finger}</span></th><td><strong class="usual-rule effect-${rule.color}">${signedSteps(rule.usual)}</strong><span class="rule-kind">${rule.kind}</span></td><td>${exception}<span class="rule-example">Now: ${guideKeyExample(i)}</span></td></tr>`;
   }).join('');
+}
+function renderKeyMap() {
+  const height = 424;
+  let left = 36, right = 36;
+  const labels = KEYS.map((key, i) => {
+    const rule = KEY_RULES[i];
+    const blue = rule.usual === -2;
+    const y = blue ? left : right;
+    if (blue) left += 70;
+    else right += 60;
+    return { key, rule, blue, y };
+  });
+  const leaders = labels.map(({ rule, blue, y }, i) => {
+    const physical = KEY_LAYOUT[i];
+    return `<line class="key-leader effect-${rule.color} ${state.keyBits[i] === '1' ? 'on' : ''}" x1="${blue ? 93 : 237}" y1="${y}" x2="${physical.x}" y2="${physical.y}"/>`;
+  }).join('');
+  const buttons = labels.map(({ key, rule, blue, y }, i) => {
+    const held = state.keyBits[i] === '1';
+    const conditions = rule.badges.map(badge => `<span>${badge}</span>`).join('');
+    return `<button type="button" class="key-state-button key-callout ${blue ? 'key-callout-left' : 'key-callout-right'} ${keyClasses(i, held)} ${state.key === i ? 'inspected' : ''}" style="--callout-top:${y / height * 100}%" data-key="${i}" aria-label="${key.id}, ${key.finger}. Usually ${rule.usualText} ${rule.exceptions}" aria-pressed="${held}">
+      <span class="key-callout-name">${key.id}</span><span class="key-callout-effect">${signedSteps(rule.usual)}</span>
+      ${conditions ? `<span class="key-dependencies">${conditions}</span>` : ''}
+    </button>`;
+  }).join('');
+  $('key-picker').innerHTML = `<svg class="key-map" viewBox="0 0 330 ${height}" aria-hidden="true">${leaders}${physicalKeys(state.keyBits, true)}</svg>${buttons}`;
 }
 function selectGuideKey(index, origin) {
   stopAudio();
@@ -362,9 +389,7 @@ function routeStats(path) {
 }
 function renderPlan() {
   const path = state.plan.path, stats = routeStats(path);
-  const baseline = state.melody.map(midi => candidates(midi)[0]);
-  const saving = Math.max(0, routeCost(baseline, weights()) - state.plan.cost);
-  $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb octave steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span><span>${Object.keys(state.locks).length ? 'Includes your locked choices' : `${Number(saving.toFixed(2))} lower score than default choices`}</span>`;
+  $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb octave steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span>`;
   $('phrase-steps').innerHTML = path.map((f, i) => `<button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-label="Step ${i + 1}: ${name(state.melody[i])}${state.locks[i] ? ', locked' : ''}"><span class="step-heading"><b>${name(state.melody[i])}</b><span>${i + 1}${state.locks[i] ? ' / locked' : ''}</span></span>${mini(f)}<span class="step-caption">${i ? `${changes(path[i - 1], f).keys} key changes` : 'Start here'}</span></button>`).join('');
   renderTransition();
 }
@@ -383,7 +408,7 @@ function renderTransition() {
   $('transition-diagrams').innerHTML = i ? panel(from, state.melody[i - 1]) + '<span class="transition-arrow" aria-hidden="true">→</span>' + panel(to, state.melody[i], from) : panel(to, state.melody[i]);
   if (i) {
     const diff = changes(from, to);
-    $('transition-detail').innerHTML = `<div class="move-grid"><div><strong>Touch</strong><p>${diff.touch.join(', ') || 'No new keys'}</p></div><div><strong>Release</strong><p>${diff.release.join(', ') || 'No keys'}</p></div><div><strong>Keep touching</strong><p>${diff.keep.join(', ') || 'No keys'}</p></div></div><p class="thumb-move">${diff.rollers ? `Left thumb: ${diff.direction > 0 ? 'up toward the mouthpiece' : 'down away from the mouthpiece'} ${diff.rollers} ${diff.rollers === 1 ? 'octave' : 'octaves'}.` : 'Keep your thumb in place.'} Dashed key outlines mark changes.</p>`;
+    $('transition-detail').innerHTML = `<div class="move-grid"><div><strong>Touch</strong><p>${diff.touch.join(', ') || 'No new keys'}</p></div><div><strong>Release</strong><p>${diff.release.join(', ') || 'No keys'}</p></div><div><strong>Keep touching</strong><p>${diff.keep.join(', ') || 'No keys'}</p></div></div><p class="thumb-move">${diff.rollers ? `Left thumb: ${diff.direction > 0 ? 'up toward the mouthpiece' : 'down away from the mouthpiece'} ${diff.rollers} ${diff.rollers === 1 ? 'octave' : 'octaves'}.` : 'Keep your thumb in place.'}</p>`;
   } else {
     $('transition-detail').innerHTML = `<p class="thumb-move">Touch ${keyList(to.bits)}.</p>`;
   }
@@ -494,7 +519,7 @@ $('hear-note').addEventListener('click', hearNote);
 $('detail-toggle').addEventListener('click', () => {
   const expanded = document.querySelector('.instrument-stage').classList.toggle('expanded');
   $('detail-toggle').setAttribute('aria-expanded', String(expanded));
-  $('detail-toggle').textContent = expanded ? 'Hide details' : 'Show details';
+  $('detail-toggle').textContent = expanded ? 'Hide keys' : 'Show keys';
 });
 $('add-note').addEventListener('click', () => {
   const input = $('melody');
@@ -574,7 +599,7 @@ $('move-matrix').addEventListener('click', event => {
 });
 $('move-matrix').addEventListener('keydown', event => {
   const cell = event.target.closest('[data-from]');
-  const arrow = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[event.key];
+  const arrow = { ArrowUp: [1, 0], ArrowDown: [-1, 0], ArrowLeft: [0, 1], ArrowRight: [0, -1] }[event.key];
   if (!cell || !arrow) return;
   event.preventDefault();
   const [dy, dx] = arrow;
@@ -633,11 +658,14 @@ $('scale-library').addEventListener('click', event => {
     button.setAttribute('aria-pressed', String(scaleSelection.custom.has(offset)));
   }
 });
-navigateButtons('scale-roots', '[data-scale-root]', { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -6, ArrowDown: 6 });
+navigateButtons('scale-roots', '[data-scale-root]', { ArrowLeft: -1, ArrowRight: 1 });
 navigateButtons('scale-groups', '[data-scale-group]', { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3 });
 $('play-phrase').addEventListener('click', playPhrase);
 $('tempo').addEventListener('input', stopAudio);
-$('key-picker').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), 'key-picker'); });
+$('key-picker').addEventListener('click', event => {
+  const target = event.target.closest('[data-key], [data-key-shape]');
+  if (target) selectGuideKey(Number(target.dataset.key ?? target.dataset.keyShape), 'key-picker');
+});
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopAudio(); });
 window.addEventListener('pagehide', stopAudio);
 $('key-rule-rows').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), 'key-rule-rows'); });
@@ -647,4 +675,5 @@ $('hear-keys').addEventListener('click', async () => {
   try { const context = await getAudio(); if (generation !== playbackGeneration) return; const midi = keyPitch(state.keyBits, state.keyRegister).midi; if (midi > 111) return; tone(context, midi, context.currentTime, .6); say(`Reference tone: ${name(midi)}.`); } catch (error) { say(error.message); }
 });
 $('chart-key-numbers').innerHTML = KEYS.map((_, i) => `<span>${i + 1}</span>`).join('');
+$('key-symbols').innerHTML = KEY_SYMBOLS;
 renderExplorer(); renderKeyExplorer();

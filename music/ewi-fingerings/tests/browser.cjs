@@ -30,8 +30,17 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('#melody').inputValue(), 'C4 D4 E4 F4 G4 A4 B4 C5');
     assert.equal(await page.locator('.alternate').count(), 12);
     await page.screenshot({ path: '/tmp/ewi-redesign/after-desktop.png' });
-    assert.equal(await page.locator('.alternate').first().locator('image').count(), 13, 'all 13 keys use the original artwork');
-    assert.match(await page.locator('.alternate').first().locator('image').nth(1).getAttribute('href'), /left-index-key\.png$/);
+    assert.equal(await page.locator('.alternate').first().locator('use').count(), 13);
+    assert.equal(await page.locator('.alternate').first().locator('use').nth(1).getAttribute('href'), '#ewi-key-bis');
+    assert.equal(await page.locator('#main-diagram use').count(), 13);
+    assert.equal(await page.locator('#key-symbols symbol').count(), 8);
+    const positions = await page.locator('#note-picker button').evaluateAll(buttons => buttons.slice(0, 3).map(button => {
+      const { x, y, width } = button.getBoundingClientRect();
+      return [x + width / 2, y];
+    }));
+    assert.equal(positions[0][1], positions[2][1]);
+    assert.ok(positions[1][1] < positions[0][1], 'the black key is above the white keys');
+    assert.ok(Math.abs(positions[1][0] - (positions[0][0] + positions[2][0]) / 2) < 1, 'the black key is centered between the neighboring white keys');
     assert.deepEqual(await page.locator('#chart-key-numbers span').allTextContents(), Array.from({ length: 13 }, (_, i) => String(i + 1)));
     await page.setViewportSize({ width: 1280, height: 800 });
     for (let key = 0; key < 12; key++) {
@@ -157,17 +166,24 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     // Latching input, live staff, and examples must agree across key interactions.
     await page.getByRole('button', { name: 'Key explorer', exact: true }).click();
     assert.equal(await page.locator('#key-note').textContent(), 'D♭5');
-    assert.equal(await page.locator('#key-picker button image').count(), 13);
+    assert.equal(await page.locator('#key-picker .key-map use').count(), 13);
+    assert.equal(await page.locator('#key-picker .key-map rect, #key-picker .key-map path').count(), 0, 'the map contains keys and leader lines');
+    assert.deepEqual(await page.locator('#key-picker [data-key-shape]').evaluateAll(keys => keys.map(key => key.getAttribute('transform'))),
+      await page.locator('#main-diagram .diagram-key').evaluateAll(keys => keys.map(key => key.getAttribute('transform'))));
     const lastKey = await page.locator('#key-picker button').last().boundingBox();
     assert.ok(lastKey.y + lastKey.height <= 900, 'all key controls fit on desktop');
     assert.equal(await page.locator('#key-picker .conditional-key').count(), 7);
-    assert.equal(await page.locator('#key-picker .effect-up-one').count(), 3);
-    assert.equal(await page.locator('#key-picker .effect-down-one').count(), 4);
-    assert.equal(await page.locator('#key-picker .key-family').first().locator('.effect-down-two').count(), 6);
-    assert.equal(await page.locator('#key-picker .key-family').last().locator('.effect-down-two').count(), 0);
+    assert.equal(await page.locator('#key-picker button.effect-up-one').count(), 3);
+    assert.equal(await page.locator('#key-picker button.effect-down-one').count(), 4);
+    assert.equal(await page.locator('#key-picker .key-callout-left.effect-down-two').count(), 6);
+    assert.equal(await page.locator('#key-picker .key-callout-right.effect-down-two').count(), 0);
+    await page.locator('#key-picker [data-key-shape="0"] use').click();
+    assert.equal(await page.locator('#key-picker [data-key="0"]').getAttribute('aria-pressed'), 'true');
+    await page.locator('#clear-keys').click();
     assert.match((await page.locator('#key-picker [data-key="0"] .key-dependencies').allTextContents()).join(' '), /K3:−3/);
     assert.deepEqual(await page.locator('#key-detail dt').allTextContents(), ['Usually', 'Exceptions', 'With your other keys']);
-    assert.equal(await page.locator('#key-rule-rows tr').first().locator('td').last().locator(':scope > *').first().getAttribute('class'), 'rule-usual-text');
+    assert.equal(await page.locator('#key-rule-rows tr').first().locator('.usual-rule').textContent(), '−2');
+    assert.match(await page.locator('#key-rule-rows tr').first().locator('.rule-exception').textContent(), /K3 held/);
     await page.locator('#key-picker [data-key="1"]').click();
     assert.equal(await page.locator('#key-picker [data-key="1"]').getAttribute('aria-pressed'), 'false');
     assert.match(await page.locator('#key-detail').textContent(), /Hold K1 to use K2/);
@@ -233,13 +249,18 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.screenshot({ path: '/tmp/ewi-redesign/guide-desktop.png' });
 
     await page.locator('[data-view="moves"]').click();
-    assert.equal(await page.locator('#move-matrix button').count(), 132);
-    assert.match(await page.locator('#move-result').textContent(), /B♭ → B/);
+    assert.equal(await page.locator('#move-matrix button').count(), 306);
+    assert.equal(await page.locator('#move-matrix th[scope="row"]').first().textContent(), 'E♭5');
+    assert.equal(await page.locator('#move-matrix th[scope="row"]').last().textContent(), 'B♭3');
+    assert.match(await page.locator('#move-result').textContent(), /B♭4 → B4/);
     assert.match(await page.locator('#move-result .move-grid').textContent(), /ReleaseK2/);
-    await page.locator('#move-matrix [data-from="0"][data-to="11"]').click();
+    await page.locator('#move-matrix [data-from="60"][data-to="71"]').click();
     assert.equal(await page.locator('#move-matrix [aria-pressed="true"]').textContent(), '5');
     await page.keyboard.press('ArrowLeft');
-    assert.match(await page.locator('#move-result').textContent(), /C → B♭/);
+    assert.match(await page.locator('#move-result').textContent(), /C4 → C5/);
+    await page.locator('#move-matrix [data-from="58"][data-to="75"]').click();
+    assert.match(await page.locator('#move-result h2').textContent(), /B♭3 → E♭5/);
+    assert.equal(await page.locator('#move-matrix [aria-pressed="true"]').textContent(), '11');
 
     for (const viewport of [{ width: 375, height: 812 }, { width: 844, height: 390 }, { width: 320, height: 740 }, { width: 768, height: 1024 }]) {
       await page.setViewportSize(viewport);
