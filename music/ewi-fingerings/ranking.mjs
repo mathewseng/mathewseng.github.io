@@ -1,5 +1,5 @@
-import { KEYS, supportsMidi } from './engine.mjs?v=20261118-compact';
-import { isEligibleFingering, keyPitch } from './key-rules.mjs?v=20261118-compact';
+import { KEYS, supportsMidi } from './engine.mjs?v=20261118-layout';
+import { isEligibleFingering, keyPitch } from './key-rules.mjs?v=20261118-layout';
 
 const MAIN_KEYS = [0, 1, 2, 3, 7, 8, 9];
 const SIDE_KEYS = [4, 5, 6, 10, 11, 12];

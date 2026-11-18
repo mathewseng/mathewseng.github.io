@@ -1,5 +1,5 @@
 import { PATTERNS } from './fingerings.mjs';
-import { isEligibleFingering, keyPitch } from './key-rules.mjs?v=20261118-compact';
+import { isEligibleFingering, keyPitch } from './key-rules.mjs?v=20261118-layout';
 
 export const SHARPS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 export const FLATS = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];

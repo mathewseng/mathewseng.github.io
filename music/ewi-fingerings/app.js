@@ -1,27 +1,67 @@
-import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-compact';
+import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-layout';
 import { KEY_ARTWORK, KEY_RATIOS } from './key-artwork.mjs';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261118-compact';
-import { rankedFingerings } from './ranking.mjs?v=20261118-compact';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261118-layout';
+import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
+import { bestNoteMoves, noteMoveCounts } from './note-moves.mjs?v=20261118-layout';
+import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-layout';
 
 const $ = id => document.getElementById(id);
-const storageKey = 'ewi-practice-v2';
-const state = { pitch: 7, selected: null, flats: true, view: 'explore', melody: [71, 72, 74, 72, 71], plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
+const storageKey = 'ewi-practice-v3';
+const defaultPhrase = scalePhrase(0, SCALE_GROUPS[0][1][0][1]);
+const state = { pitch: 7, selected: null, flats: true, view: 'explore', melody: parseMelody(defaultPhrase), usePhraseOctave: false, plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
 const referenceMidi = () => 60 + state.pitch;
+const moveSelection = { from: 10, to: 11, option: 0, result: null };
+const scaleSelection = { root: 0, group: 0, custom: new Set(SCALE_GROUPS[0][1][0][1]) };
 try {
   const current = localStorage.getItem(storageKey);
-  const saved = JSON.parse(current || localStorage.getItem('ewi-practice-v1'));
+  const versioned = current || localStorage.getItem('ewi-practice-v2');
+  const saved = JSON.parse(versioned || localStorage.getItem('ewi-practice-v1'));
   // v1 persisted the implicit sharps default; migrate note / melody, then use flats.
   if (supportsMidi(saved?.midi)) state.pitch = saved.midi % 12;
-  if (current && typeof saved?.flats === 'boolean') state.flats = saved.flats;
-  if (typeof saved?.phrase === 'string' && saved.phrase.length < 1000) $('melody').value = saved.phrase;
+  if (versioned && typeof saved?.flats === 'boolean') state.flats = saved.flats;
+  if (typeof saved?.phrase === 'string' && saved.phrase.length < 1000
+    && (current || saved.phrase !== 'B4 C5 D5 C5 B4')) {
+    $('melody').value = saved.phrase;
+    state.usePhraseOctave = saved.usePhraseOctave ?? true;
+  }
 } catch { /* Storage is optional in private browsing and offline wrappers. */ }
 function save() {
-  try { localStorage.setItem(storageKey, JSON.stringify({ midi: referenceMidi(), flats: state.flats, phrase: $('melody').value })); } catch { /* Optional. */ }
+  try { localStorage.setItem(storageKey, JSON.stringify({ midi: referenceMidi(), flats: state.flats, phrase: $('melody').value, usePhraseOctave: state.usePhraseOctave })); } catch { /* Optional. */ }
 }
 const keyList = bits => KEYS.filter((_, i) => bits[i] === '1').map(k => k.id).join(', ') || 'none';
 const name = midi => noteName(midi, state.flats);
-const weights = () => ({ roller: Number($('roller-weight').value), pinky: Number($('pinky-weight').value), unfamiliar: Number($('familiar-weight').value) });
+const weights = () => Object.fromEntries(
+  [...document.querySelectorAll('[data-weight][aria-pressed="true"]')].map(button => [button.dataset.weight, Number(button.dataset.value)])
+);
+function markChoice(button) {
+  button.closest('.choice-buttons').querySelectorAll('button').forEach(choice => {
+    choice.setAttribute('aria-pressed', String(choice === button));
+  });
+}
+function navigateButtons(container, selector, arrows) {
+  $(container).addEventListener('keydown', event => {
+    const step = arrows[event.key];
+    const current = event.target.closest(selector);
+    if (!current || (step === undefined && !['Home', 'End'].includes(event.key))) return;
+    const buttons = [...$(container).querySelectorAll(selector)].filter(button => button.getClientRects().length);
+    const index = buttons.indexOf(current);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : index + step;
+    event.preventDefault();
+    const button = buttons[Math.min(buttons.length - 1, Math.max(0, next))];
+    button.focus();
+    button.click();
+  });
+}
+function updateSpellingButtons() {
+  document.querySelectorAll('[data-spelling]').forEach(button => {
+    button.setAttribute('aria-pressed', String((button.dataset.spelling === 'flats') === state.flats));
+  });
+}
+function thumbOffset(shift) {
+  const steps = Math.abs(shift);
+  return `Thumb ${steps} octave${steps === 1 ? '' : 's'} ${shift > 0 ? 'higher' : 'lower'}`;
+}
 function say(message) { $('app-status').textContent = message; }
 function melodyDraft() {
   const input = $('melody').value.trim();
@@ -29,7 +69,7 @@ function melodyDraft() {
 }
 function chartMidi(melody) {
   const last = melody.at(-1);
-  return last === undefined ? referenceMidi() : last - last % 12 + state.pitch;
+  return !state.usePhraseOctave || last === undefined ? referenceMidi() : last - last % 12 + state.pitch;
 }
 function updateChartActions() {
   let midi;
@@ -41,13 +81,14 @@ function showView(view) {
   stopAudio();
   const changed = state.view !== view;
   state.view = view;
-  ['explore', 'plan', 'guide'].forEach(id => { $(id).hidden = id !== view; });
+  ['explore', 'plan', 'guide', 'moves'].forEach(id => { $(id).hidden = id !== view; });
   document.querySelectorAll('[data-view]').forEach(button => {
     const active = button.dataset.view === view;
     button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));
   });
   if (view === 'plan' && !state.plan) calculate();
   if (view === 'explore') updateChartActions();
+  if (view === 'moves') renderMoveMatrix();
   if (changed) window.scrollTo(0, 0);
   say('');
 }
@@ -74,14 +115,80 @@ function mini(fingering, before = null) {
     return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${keyImage(i, stripX[i], 32, stripHeights[i])}${before && before.bits[i] !== fingering.bits[i] ? `<rect class="change-outline" x="${stripX[i] - stripHeights[i] * keyRatios[i] / 2 - 2}" y="${32 - stripHeights[i] / 2 - 2}" width="${stripHeights[i] * keyRatios[i] + 4}" height="${stripHeights[i] + 4}" rx="3"/>` : ''}</g>`;
   }).join('')}</svg>`;
 }
+function renderMoveMatrix() {
+  const pitches = state.flats ? FLATS : SHARPS;
+  const head = pitches.map(pitch => `<th scope="col">${pitch}</th>`).join('');
+  $('move-matrix').innerHTML = `<caption class="sr-only">Minimum key toggles at a fixed thumb position. Starting notes in rows, destination notes in columns.</caption>
+    <thead><tr><td></td>${head}</tr></thead><tbody>
+    ${noteMoveCounts().map((row, from) => `<tr><th scope="row">${pitches[from]}</th>${row.map((count, to) => count === null
+      ? '<td class="same-note" aria-label="Same note">–</td>'
+      : `<td><button type="button" data-from="${from}" data-to="${to}" data-toggles="${count}" aria-label="${pitches[from]} to ${pitches[to]}, ${count} key toggles" aria-pressed="false" tabindex="-1">${count}</button></td>`).join('')}</tr>`).join('')}
+    </tbody>`;
+  selectMovePair(moveSelection.from, moveSelection.to);
+}
+function selectMovePair(from, to) {
+  Object.assign(moveSelection, { from, to, option: 0, result: bestNoteMoves(from, to) });
+  const matrix = $('move-matrix');
+  const previous = matrix.querySelector('[aria-pressed="true"]');
+  if (previous) {
+    previous.setAttribute('aria-pressed', 'false');
+    previous.tabIndex = -1;
+  }
+  const chosen = matrix.querySelector(`[data-from="${from}"][data-to="${to}"]`);
+  chosen.setAttribute('aria-pressed', 'true');
+  chosen.tabIndex = 0;
+  renderMoveResult();
+}
+function renderMoveResult() {
+  const { from, to, option, result } = moveSelection;
+  const pitches = state.flats ? FLATS : SHARPS;
+  const move = result.options[option];
+  const diff = changes(move.from, move.to);
+  const line = (pitch, f) => `<div class="move-key-line"><div><strong>${pitches[pitch]}</strong><span class="small-label">Rank ${f.rank}</span></div>${compactKeys(f.bits, true)}</div>`;
+  $('move-result').innerHTML = `
+    <div class="section-title"><h2 aria-live="polite">${pitches[from]} → ${pitches[to]}</h2><span class="move-count">${result.toggles} key ${result.toggles === 1 ? 'toggle' : 'toggles'}</span></div>
+    <div class="move-choices">
+      <span class="small-label">${result.total > result.options.length ? 'Simplest ' + result.options.length + ' of ' + countLabel(result.total) : 'Best fingerings'}</span>
+      <div class="choice-buttons" role="group" aria-label="Best transition options">${result.options.map((_, index) => `<button type="button" data-move-option="${index}" aria-pressed="${option === index}" aria-label="Option ${index + 1}">${index + 1}</button>`).join('')}</div>
+    </div>
+    <div class="move-grid"><div><strong>Touch</strong><p>${diff.touch.join(', ') || 'None'}</p></div><div><strong>Release</strong><p>${diff.release.join(', ') || 'None'}</p></div></div>
+    ${line(from, move.from)}
+    ${line(to, move.to)}`;
+}
 function variantLabel(f, index) { return f.main ? 'Main fingering' : `${f.base < 62 ? 'Low extension' : f.base > 73 ? 'High extension' : 'Alternate'} ${index + 1}`; }
+function renderScaleLibrary() {
+  const { root, group, custom } = scaleSelection;
+  const pitches = state.flats ? FLATS : SHARPS;
+  $('scale-roots').innerHTML = pitches.map((pitch, i) =>
+    `<button type="button" data-scale-root="${i}" aria-pressed="${root === i}">${pitch}</button>`
+  ).join('');
+  $('scale-groups').innerHTML = [...SCALE_GROUPS.map(([label]) => label), 'Custom'].map((label, i) =>
+    `<button type="button" data-scale-group="${i}" aria-pressed="${group === i}">${label}</button>`
+  ).join('');
+  const family = SCALE_GROUPS[group];
+  $('scale-options').innerHTML = family
+    ? family[1].map(([label], i) => `<button type="button" class="btn" data-scale-type="${i}">${label}</button>`).join('')
+    : `<div class="choice-buttons" role="group" aria-label="Notes in the scale">
+      ${pitches.map((_, i) => `<button type="button" data-scale-offset="${i}" aria-pressed="${custom.has(i)}" ${i === 0 ? 'disabled' : ''}>${pitches[(root + i) % 12]}</button>`).join('')}
+      </div><button type="button" class="btn btn--primary" data-use-custom>Use custom scale</button>`;
+}
+function useScale(offsets) {
+  $('melody').value = scalePhrase(scaleSelection.root, offsets, state.flats);
+  state.usePhraseOctave = false;
+  state.step = 1;
+  state.locks = {};
+  state.chartChoices = {};
+  $('scale-library').close();
+  calculate();
+}
 const pageSize = 12;
 let ranked = [], shownPitch;
 const additional = new Map();
 const countLabel = number => number.toLocaleString('en-US');
 
 function chartRow(f) {
-  const label = `Rank ${f.rank}, register ${registerName(f.shift)}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.`;
+  const offset = f.shift - ranked[0].shift;
+  const label = `Rank ${f.rank}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than rank 1.` : ''}`;
   return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}"><span class="alternate-label">${f.rank}</span>${compactKeys(f.bits)}<span class="alternate-held">${f.heldCount}</span></button>`;
 }
 
@@ -108,13 +215,15 @@ function renderChart() {
     if (!groups.has(fingering.shift)) groups.set(fingering.shift, []);
     groups.get(fingering.shift).push(fingering);
   }
-  $('alternates').innerHTML = [...groups].sort(([a], [b]) => a - b).map(([shift, group]) => {
+  $('alternates').innerHTML = [...groups].map(([shift, group]) => {
     const withoutSide = group.filter(f => f.sideCount === 0);
     const visible = withoutSide.length ? withoutSide : group.filter(f => f.sideCount === group[0].sideCount).slice(0, 3);
     const more = group.filter(f => !visible.includes(f));
     additional.set(shift, more);
-    return `<section class="register-group" data-register="${shift}" aria-label="Register ${registerName(shift)} fingerings">
-      <h3><span>Register ${registerName(shift)}</span><span>${withoutSide.length ? '' : 'Side keys required'}</span></h3>
+    const offset = shift - ranked[0].shift;
+    const heading = offset ? thumbOffset(offset) + ' than rank 1' : 'Rank 1 thumb position';
+    return `<section class="register-group" data-register="${shift}">
+      ${groups.size > 1 ? `<h3>${heading}</h3>` : ''}
       <div class="ranked-rows">${visible.map(chartRow).join('')}</div>
       ${more.length ? `<details class="additional-fingerings" data-more="${shift}"><summary>${countLabel(more.length)} ${withoutSide.length ? 'side-key' : 'more'} fingerings</summary><div class="additional-rows"></div></details>` : ''}
     </section>`;
@@ -130,16 +239,17 @@ function renderChart() {
 function renderSelectedFingering(selected) {
   $('selected-variant').textContent = `Rank ${selected.rank}`;
   $('main-diagram').innerHTML = compactKeys(selected.bits, true);
-  $('thumb-label').textContent = `Register ${registerName(selected.shift)}`;
-  $('roller-track').innerHTML = [4, 3, 2, 1, 0, -1, -2].map(shift => `<span class="${shift === selected.shift ? 'current' : ''}" ${shift === selected.shift ? 'aria-current="true"' : ''}>${registerName(shift)}</span>`).join('');
-  $('held-description').textContent = `Touch ${keyList(selected.bits)}. Keep the other note keys clear.`;
+  const offset = selected.shift - ranked[0].shift;
+  $('thumb-offset').hidden = offset === 0;
+  $('thumb-offset').textContent = offset ? thumbOffset(offset) + ' than rank 1.' : '';
+  $('held-description').textContent = `Touch ${keyList(selected.bits)}.`;
   $('ranking-detail').textContent = `${selected.heldCount} keys down · ${selected.sideCount} side touches · comfort penalty ${selected.comfortCost}`;
 }
 
 function renderExplorer() {
   if (shownPitch !== state.pitch) renderChart();
   const noteNames = state.flats ? FLATS : SHARPS;
-  $('spelling').value = state.flats ? 'flats' : 'sharps';
+  updateSpellingButtons();
   $('note-picker').innerHTML = noteNames.map((n, i) =>
     `<button type="button" data-pitch="${i}" class="${[1, 3, 6, 8, 10].includes(i) ? 'accidental' : ''}" aria-pressed="${i === state.pitch}">${n}</button>`
   ).join('');
@@ -176,22 +286,28 @@ function renderKeyExplorer() {
   $('key-note').textContent = name(midi);
   $('key-midi').textContent = `MIDI ${midi}`;
   $('key-staff').innerHTML = staffSvg(midi, state.flats);
-  $('key-register').value = state.keyRegister;
-  $('key-spelling').value = state.flats ? 'flats' : 'sharps';
+  $('key-register').textContent = registerName(state.keyRegister);
+  document.querySelector('[data-register-step="-1"]').disabled = state.keyRegister <= -2;
+  document.querySelector('[data-register-step="1"]').disabled = state.keyRegister >= 4;
   $('key-held').textContent = `Held: ${keyList(state.keyBits)}.`;
   $('key-range').hidden = midi <= 111;
   $('key-range').textContent = 'Above this guide’s verified MIDI range; lower the thumb register to match a verified pitch.';
   $('hear-keys').disabled = midi > 111;
-  $('key-picker').innerHTML = KEYS.map((key, i) => {
+  function keyTile(key, i) {
     const held = state.keyBits[i] === '1', rule = KEY_RULES[i];
+    const conditions = rule.badges.map(badge => `<span>${badge}</span>`).join('');
     return `<button type="button" class="key-state-button key-tile ${keyClasses(i, held)} ${state.key === i ? 'inspected' : ''}" data-key="${i}" aria-label="${key.id}, ${key.finger}. Usually ${rule.usualText} ${rule.exceptions}" aria-pressed="${held}">
-      ${keyGlyph(i)}<span class="key-tile-label">${key.id} <span>${signedSteps(rule.usual)}</span></span>
-      <span class="key-dependencies">${rule.badges.map(badge => `<span>${badge}</span>`).join('')}</span>
+      <span class="key-tile-name">${key.id}</span><span class="key-tile-effect">${signedSteps(rule.usual)}</span>
+      ${keyGlyph(i)}
+      ${conditions ? `<span class="key-dependencies">${conditions}</span>` : ''}
     </button>`;
+  }
+  $('key-picker').innerHTML = [[true, '−2 semitones'], [false, '−1 or +1 semitone']].map(([blue, label]) => {
+    const tiles = KEYS.map((key, i) => (KEY_RULES[i].usual === -2) === blue ? keyTile(key, i) : '').join('');
+    return `<div class="key-family" role="group" aria-label="${label}"><span class="small-label">${label}</span><div class="key-family-keys">${tiles}</div></div>`;
   }).join('');
   const key = KEYS[state.key], rule = KEY_RULES[state.key];
   $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Usually</dt><dd class="usual-rule effect-${rule.color}">${rule.usualText}</dd></div><div><dt>Exceptions</dt><dd>${rule.exceptions}</dd></div><div><dt>With your other keys</dt><dd>${guideKeyExample(state.key)}</dd></div></dl>`;
-  $('key-preset').options[1].textContent = `Open ${name(73)}`;
   $('key-rule-rows').innerHTML = KEYS.map((k, i) => {
     const rule = KEY_RULES[i];
     if (state.keyFilter === 'fixed' && rule.kind !== 'Fixed' || state.keyFilter === 'interacting' && rule.kind === 'Fixed') return '';
@@ -204,7 +320,6 @@ function selectGuideKey(index, origin) {
   const next = toggleGuideKey(state.keyBits, index);
   say(next === state.keyBits ? bisHint(state.keyBits) : '');
   state.keyBits = next;
-  $('key-preset').value = '';
   renderKeyExplorer();
   $(origin).querySelector(`[data-key="${index}"]`)?.focus({ preventScroll: true });
 }
@@ -248,26 +363,38 @@ function renderPlan() {
   const path = state.plan.path, stats = routeStats(path);
   const baseline = state.melody.map(midi => candidates(midi)[0]);
   const saving = Math.max(0, routeCost(baseline, weights()) - state.plan.cost);
-  $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb register steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span><span>${Object.keys(state.locks).length ? 'Includes your locked choices' : `${Number(saving.toFixed(2))} lower score than default choices`}</span>`;
-  $('phrase-steps').innerHTML = path.map((f, i) => `<button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" aria-label="Step ${i + 1}: ${name(state.melody[i])}, register ${registerName(f.shift)}${state.locks[i] ? ', locked' : ''}"><span class="step-heading"><b>${name(state.melody[i])}</b><span>${i + 1}${state.locks[i] ? ' / locked' : ''}</span></span>${mini(f)}<span class="step-caption">Register ${registerName(f.shift)}<br>${i ? `${changes(path[i - 1], f).keys} key changes` : 'Start here'}</span></button>`).join('');
+  $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb octave steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span><span>${Object.keys(state.locks).length ? 'Includes your locked choices' : `${Number(saving.toFixed(2))} lower score than default choices`}</span>`;
+  $('phrase-steps').innerHTML = path.map((f, i) => `<button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-label="Step ${i + 1}: ${name(state.melody[i])}${state.locks[i] ? ', locked' : ''}"><span class="step-heading"><b>${name(state.melody[i])}</b><span>${i + 1}${state.locks[i] ? ' / locked' : ''}</span></span>${mini(f)}<span class="step-caption">${i ? `${changes(path[i - 1], f).keys} key changes` : 'Start here'}</span></button>`).join('');
   renderTransition();
+}
+function updatePhraseSteps(playing = false) {
+  $('phrase-steps').querySelectorAll('[data-step]').forEach((button, i) => {
+    const current = i === state.step;
+    button.setAttribute('aria-pressed', String(current));
+    button.tabIndex = current ? 0 : -1;
+    button.classList.toggle('playing', playing && current);
+  });
 }
 function renderTransition() {
   const i = state.step, path = state.plan.path, to = path[i], from = path[Math.max(0, i - 1)];
   $('transition-title').textContent = i ? `${name(state.melody[i - 1])} → ${name(state.melody[i])}` : `Start on ${name(state.melody[0])}`;
-  const panel = (f, midi, previous) => `<div class="transition-note"><strong>${name(midi)}</strong><span class="small-label">Register ${registerName(f.shift)}</span>${mini(f, previous)}</div>`;
+  const panel = (f, midi, previous) => `<div class="transition-note"><strong>${name(midi)}</strong>${mini(f, previous)}</div>`;
   $('transition-diagrams').innerHTML = i ? panel(from, state.melody[i - 1]) + '<span class="transition-arrow" aria-hidden="true">→</span>' + panel(to, state.melody[i], from) : panel(to, state.melody[i]);
   if (i) {
     const diff = changes(from, to);
-    $('transition-detail').innerHTML = `<div class="move-grid"><div><strong>Touch</strong><p>${diff.touch.join(', ') || 'No new keys'}</p></div><div><strong>Release</strong><p>${diff.release.join(', ') || 'No keys'}</p></div><div><strong>Keep touching</strong><p>${diff.keep.join(', ') || 'No keys'}</p></div></div><p class="thumb-move">${diff.rollers ? `Left thumb: ${diff.direction > 0 ? 'up toward the mouthpiece' : 'down away from the mouthpiece'} ${diff.rollers} register ${diff.rollers === 1 ? 'step' : 'steps'} (${registerName(from.shift)} → ${registerName(to.shift)}).` : `Keep the left thumb in register ${registerName(to.shift)}.`} Dashed key outlines mark changes.</p>`;
+    $('transition-detail').innerHTML = `<div class="move-grid"><div><strong>Touch</strong><p>${diff.touch.join(', ') || 'No new keys'}</p></div><div><strong>Release</strong><p>${diff.release.join(', ') || 'No keys'}</p></div><div><strong>Keep touching</strong><p>${diff.keep.join(', ') || 'No keys'}</p></div></div><p class="thumb-move">${diff.rollers ? `Left thumb: ${diff.direction > 0 ? 'up toward the mouthpiece' : 'down away from the mouthpiece'} ${diff.rollers} ${diff.rollers === 1 ? 'octave' : 'octaves'}.` : 'Keep your thumb in place.'} Dashed key outlines mark changes.</p>`;
   } else {
-    $('transition-detail').innerHTML = `<p class="thumb-move">Touch ${keyList(to.bits)} and set the left thumb to register ${registerName(to.shift)}.</p>`;
+    $('transition-detail').innerHTML = `<p class="thumb-move">Touch ${keyList(to.bits)}.</p>`;
   }
   const options = candidates(state.melody[i], state.chartChoices[i]);
-  const label = (f, index) => `${f.fromChart ? `From chart · ${keyList(f.bits)}` : variantLabel(f, index)} · register ${registerName(f.shift)} · ${f.bits.split('1').length - 1} keys`;
-  const suggested = state.locks[i] ? 'Use suggested fingering (unlock)' : `Suggested · ${label(to, options.findIndex(f => f.id === to.id))}`;
-  $('step-variant').innerHTML = `<option value="">${suggested}</option>` + options.map((f, j) => `<option value="${f.id}">${label(f, j)}</option>`).join('');
-  $('step-variant').value = state.locks[i] ?? '';
+  const lock = state.locks[i] ?? '';
+  const choice = (id, text, label) =>
+    `<button type="button" data-fingering-choice="${id}" aria-pressed="${id === lock}" aria-label="${label}" title="${label}">${text}</button>`;
+  $('step-variant').innerHTML = choice('', 'Auto', 'Use suggested fingering') + options.map((f, j) => {
+    const offset = f.shift - to.shift;
+    const label = `${f.fromChart ? 'From chart' : variantLabel(f, j)}. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than the current choice.` : ''}`;
+    return choice(f.id, f.fromChart ? 'Chart' : f.main ? 'Main' : j + 1, label);
+  }).join('');
   $('unlock').disabled = !Object.keys(state.locks).length;
 }
 
@@ -319,7 +446,7 @@ async function playPhrase() {
       tone(context, midi, start + i * duration, duration * .85);
       audioTimers.push(setTimeout(() => {
         state.step = i;
-        document.querySelectorAll('.phrase-step').forEach((el, j) => { el.classList.toggle('playing', i === j); el.setAttribute('aria-pressed', String(i === j)); });
+        updatePhraseSteps(true);
         const step = $('phrase-steps').children[i];
         $('phrase-steps').scrollTo({ left: Math.max(0, step.offsetLeft - $('phrase-steps').offsetLeft - 16), behavior: 'instant' });
         renderTransition();
@@ -346,7 +473,6 @@ $('note-picker').addEventListener('keydown', event => {
   const index = buttons.indexOf(event.target), next = buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length];
   next.click();
 });
-$('spelling').addEventListener('change', () => { state.flats = $('spelling').value === 'flats'; renderExplorer(); renderKeyExplorer(); if (state.plan) renderPlan(); });
 $('alternates').addEventListener('click', event => {
   const button = event.target.closest('[data-fingering]');
   if (button) {
@@ -400,6 +526,7 @@ $('add-note').addEventListener('click', () => {
 });
 $('melody-form').addEventListener('submit', event => { event.preventDefault(); calculate(); });
 $('melody').addEventListener('input', () => {
+  state.usePhraseOctave = true;
   stopAudio(); state.plan = null; $('phrase-steps').innerHTML = '';
   document.querySelector('.transition-inspector').hidden = true;
   $('plan-summary').textContent = 'Melody changed. Choose Find fingerings to update the path.';
@@ -407,35 +534,113 @@ $('melody').addEventListener('input', () => {
 });
 document.querySelectorAll('[data-phrase]').forEach(button => button.addEventListener('click', () => {
   $('melody').value = button.dataset.phrase;
+  state.usePhraseOctave = false;
   state.step = 1;
   state.locks = {};
   state.chartChoices = {};
   calculate();
 }));
-document.querySelectorAll('.preferences select').forEach(input => input.addEventListener('change', calculate));
 $('phrase-steps').addEventListener('click', event => {
   const button = event.target.closest('[data-step]'); if (!button) return;
   stopAudio(); state.step = Number(button.dataset.step);
-  document.querySelectorAll('.phrase-step').forEach((el, i) => el.setAttribute('aria-pressed', String(i === state.step))); renderTransition();
+  updatePhraseSteps();
+  renderTransition();
 });
-$('step-variant').addEventListener('change', () => {
-  const choice = $('step-variant').value;
+navigateButtons('phrase-steps', '[data-step]', { ArrowLeft: -1, ArrowRight: 1 });
+navigateButtons('alternates', '[data-fingering]', { ArrowUp: -1, ArrowDown: 1 });
+$('step-variant').addEventListener('click', event => {
+  const button = event.target.closest('[data-fingering-choice]');
+  if (!button) return;
+  const choice = button.dataset.fingeringChoice;
   if (choice) state.locks[state.step] = choice;
   else delete state.locks[state.step];
-  calculate();
+  if (calculate()) $('step-variant').querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
 });
+document.querySelectorAll('[data-weight]').forEach(button => button.addEventListener('click', () => {
+  markChoice(button);
+  calculate();
+}));
+document.querySelectorAll('[data-spelling]').forEach(button => button.addEventListener('click', () => {
+  state.flats = button.dataset.spelling === 'flats';
+  renderExplorer();
+  renderKeyExplorer();
+  if (state.plan) renderPlan();
+  if (moveSelection.result) renderMoveMatrix();
+}));
+$('move-matrix').addEventListener('click', event => {
+  const cell = event.target.closest('[data-from]');
+  if (cell) selectMovePair(Number(cell.dataset.from), Number(cell.dataset.to));
+});
+$('move-matrix').addEventListener('keydown', event => {
+  const cell = event.target.closest('[data-from]');
+  const arrow = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[event.key];
+  if (!cell || !arrow) return;
+  event.preventDefault();
+  const [dy, dx] = arrow;
+  let from = Number(cell.dataset.from) + dy, to = Number(cell.dataset.to) + dx;
+  if (from === to) { from += dy; to += dx; }
+  const next = $('move-matrix').querySelector(`[data-from="${from}"][data-to="${to}"]`);
+  if (next) {
+    selectMovePair(from, to);
+    next.focus();
+  }
+});
+$('move-result').addEventListener('click', event => {
+  const button = event.target.closest('[data-move-option]');
+  if (!button) return;
+  moveSelection.option = Number(button.dataset.moveOption);
+  renderMoveResult();
+  $('move-result').querySelector('[data-move-option][aria-pressed="true"]').focus({ preventScroll: true });
+});
+document.querySelectorAll('[data-register-step]').forEach(button => button.addEventListener('click', () => {
+  stopAudio();
+  state.keyRegister += Number(button.dataset.registerStep);
+  renderKeyExplorer();
+}));
+document.querySelectorAll('[data-rule-filter]').forEach(button => button.addEventListener('click', () => {
+  state.keyFilter = button.dataset.ruleFilter;
+  markChoice(button);
+  renderKeyExplorer();
+}));
 $('unlock').addEventListener('click', () => { state.locks = {}; calculate(); });
+$('open-scales').addEventListener('click', () => {
+  renderScaleLibrary();
+  $('scale-library').showModal();
+});
+$('close-scales').addEventListener('click', () => $('scale-library').close());
+$('scale-library').addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  const { scaleRoot, scaleGroup, scaleType, scaleOffset, useCustom } = button.dataset;
+  if (scaleType !== undefined) return useScale(SCALE_GROUPS[scaleSelection.group][1][Number(scaleType)][1]);
+  if (useCustom !== undefined) return useScale([...scaleSelection.custom].sort((a, b) => a - b));
+  if (scaleRoot !== undefined) {
+    scaleSelection.root = Number(scaleRoot);
+    markChoice(button);
+    if (scaleSelection.group === SCALE_GROUPS.length) renderScaleLibrary();
+    $('scale-roots').querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
+  }
+  if (scaleGroup !== undefined) {
+    scaleSelection.group = Number(scaleGroup);
+    renderScaleLibrary();
+    $('scale-groups').querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
+  }
+  if (scaleOffset !== undefined) {
+    const offset = Number(scaleOffset);
+    if (scaleSelection.custom.has(offset)) scaleSelection.custom.delete(offset);
+    else scaleSelection.custom.add(offset);
+    button.setAttribute('aria-pressed', String(scaleSelection.custom.has(offset)));
+  }
+});
+navigateButtons('scale-roots', '[data-scale-root]', { ArrowLeft: -1, ArrowRight: 1 });
+navigateButtons('scale-groups', '[data-scale-group]', { ArrowLeft: -1, ArrowRight: 1 });
 $('play-phrase').addEventListener('click', playPhrase);
 $('tempo').addEventListener('input', stopAudio);
 $('key-picker').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), 'key-picker'); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopAudio(); });
 window.addEventListener('pagehide', stopAudio);
 $('key-rule-rows').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), 'key-rule-rows'); });
-$('key-register').addEventListener('change', () => { stopAudio(); state.keyRegister = Number($('key-register').value); renderKeyExplorer(); });
-$('key-spelling').addEventListener('change', () => { state.flats = $('key-spelling').value === 'flats'; renderKeyExplorer(); renderExplorer(); if (state.plan) renderPlan(); });
-$('key-rule-filter').addEventListener('change', () => { state.keyFilter = $('key-rule-filter').value; renderKeyExplorer(); });
-$('key-preset').addEventListener('change', () => { if ($('key-preset').value) { stopAudio(); state.keyBits = $('key-preset').value; state.keyRegister = 0; renderKeyExplorer(); } });
-$('clear-keys').addEventListener('click', () => { stopAudio(); state.keyBits = '0000000000000'; $('key-preset').value = ''; renderKeyExplorer(); });
+$('clear-keys').addEventListener('click', () => { stopAudio(); state.keyBits = '0000000000000'; renderKeyExplorer(); });
 $('hear-keys').addEventListener('click', async () => {
   stopAudio(); const generation = playbackGeneration;
   try { const context = await getAudio(); if (generation !== playbackGeneration) return; const midi = keyPitch(state.keyBits, state.keyRegister).midi; if (midi > 111) return; tone(context, midi, context.currentTime, .6); say(`Reference tone: ${name(midi)}.`); } catch (error) { say(error.message); }
