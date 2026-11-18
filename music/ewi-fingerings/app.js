@@ -1,12 +1,12 @@
 import { KEY_RULES, keyPitch, isEligibleFingering, toggleKey, signedSteps } from './key-rules.mjs?v=20261117-ranking';
 import { KEY_ARTWORK, KEY_RATIOS, INSTRUMENT_KEYS, KEY_CALLOUTS } from './instrument-layout.mjs';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261117-ranking';
-import { rankedFingerings } from './ranking.mjs?v=20261117-pitch-chart';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, routeCost, parseMelody } from './engine.mjs?v=20261117-handoff';
+import { rankedFingerings } from './ranking.mjs?v=20261117-handoff';
 
 const $ = id => document.getElementById(id);
 const storageKey = 'ewi-practice-v2';
-const state = { pitch: 7, selected: null, flats: true, view: 'explore', melody: [71, 72, 74, 72, 71], plan: null, step: 1, locks: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
+const state = { pitch: 7, selected: null, flats: true, view: 'explore', melody: [71, 72, 74, 72, 71], plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
 const referenceMidi = () => 60 + state.pitch;
 try {
   const current = localStorage.getItem(storageKey);
@@ -23,6 +23,20 @@ const keyList = bits => KEYS.filter((_, i) => bits[i] === '1').map(k => k.id).jo
 const name = midi => noteName(midi, state.flats);
 const weights = () => ({ roller: Number($('roller-weight').value), pinky: Number($('pinky-weight').value), unfamiliar: Number($('familiar-weight').value) });
 function say(message) { $('app-status').textContent = message; }
+function melodyDraft() {
+  const input = $('melody').value.trim();
+  return input ? parseMelody(input) : [];
+}
+function chartMidi(melody) {
+  const last = melody.at(-1);
+  return last === undefined ? referenceMidi() : last - last % 12 + state.pitch;
+}
+function updateChartActions() {
+  let midi;
+  try { midi = chartMidi(melodyDraft()); } catch { /* The planner reports invalid input. */ }
+  $('add-note').textContent = midi === undefined ? 'Add to melody' : `Add ${name(midi)} to melody`;
+  $('hear-note').textContent = midi === undefined ? 'Hear note' : `Hear ${name(midi)}`;
+}
 function showView(view) {
   stopAudio(); state.view = view;
   ['explore', 'plan', 'guide'].forEach(id => { $(id).hidden = id !== view; });
@@ -31,6 +45,7 @@ function showView(view) {
     button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));
   });
   if (view === 'plan' && !state.plan) calculate();
+  if (view === 'explore') updateChartActions();
   say('');
 }
 
@@ -137,9 +152,7 @@ function renderExplorer() {
     `<button type="button" data-pitch="${i}" class="${[1, 3, 6, 8, 10].includes(i) ? 'accidental' : ''}" aria-pressed="${i === state.pitch}">${n}</button>`
   ).join('');
   $('selected-note').textContent = noteNames[state.pitch];
-  const reference = name(referenceMidi());
-  $('add-note').textContent = `Add ${reference} to melody`;
-  $('hear-note').textContent = `Hear ${reference}`;
+  updateChartActions();
   renderSelectedFingering(ranked[state.selected - 1]);
   save();
 }
@@ -218,15 +231,23 @@ function selectGuideKey(index, restoreFocus = false, origin = 'guide-diagram') {
   renderKeyExplorer();
   if (restoreFocus) $(origin).querySelector(`[data-key="${index}"]`).focus({ preventScroll: true });
 }
-function calculate({ preserveLocks = false } = {}) {
+function keepUnchangedChoices(melody) {
+  let prefix = 0;
+  while (prefix < melody.length && melody[prefix] === state.melody[prefix]) prefix++;
+  for (const choices of [state.locks, state.chartChoices]) {
+    for (const step of Object.keys(choices)) if (Number(step) >= prefix) delete choices[step];
+  }
+  state.melody = melody;
+}
+function calculate() {
   stopAudio();
   try {
     const melody = parseMelody($('melody').value);
+    keepUnchangedChoices(melody);
     if (melody.length < 2) throw new Error('Add one more note to compare a transition.');
-    if (!preserveLocks) state.locks = {};
-    const plan = optimize(melody, weights(), state.locks);
+    const plan = optimize(melody, weights(), state.locks, state.chartChoices);
     if (!plan) throw new Error('A locked fingering is unavailable. Reset your choices and try again.');
-    state.melody = melody; state.plan = plan;
+    state.plan = plan;
     state.step = Math.min(Math.max(0, state.step), melody.length - 1);
     $('melody-error').hidden = true; $('melody').removeAttribute('aria-invalid');
     $('phrase-steps').hidden = false; document.querySelector('.transition-inspector').hidden = false;
@@ -265,8 +286,11 @@ function renderTransition() {
   } else {
     $('transition-detail').innerHTML = `<p class="thumb-move">Touch ${keyList(to.bits)} and set the left thumb to register ${registerName(to.shift)}.</p>`;
   }
-  const options = candidates(state.melody[i]);
-  $('step-variant').innerHTML = options.map((f, j) => `<option value="${f.id}" ${f.id === to.id ? 'selected' : ''}>${variantLabel(f, j)} · register ${registerName(f.shift)} · ${f.bits.split('1').length - 1} keys</option>`).join('');
+  const options = candidates(state.melody[i], state.chartChoices[i]);
+  const label = (f, index) => `${f.fromChart ? `From chart · ${keyList(f.bits)}` : variantLabel(f, index)} · register ${registerName(f.shift)} · ${f.bits.split('1').length - 1} keys`;
+  const suggested = state.locks[i] ? 'Use suggested fingering (unlock)' : `Suggested · ${label(to, options.findIndex(f => f.id === to.id))}`;
+  $('step-variant').innerHTML = `<option value="">${suggested}</option>` + options.map((f, j) => `<option value="${f.id}">${label(f, j)}</option>`).join('');
+  $('step-variant').value = state.locks[i] ?? '';
   $('unlock').disabled = !Object.keys(state.locks).length;
 }
 
@@ -296,12 +320,18 @@ function tone(context, midi, at, duration) {
 }
 async function hearNote() {
   stopAudio(); const generation = playbackGeneration;
-  const midi = referenceMidi();
-  try { const context = await getAudio(); if (generation !== playbackGeneration) return; tone(context, midi, context.currentTime, .6); say(`Reference tone: ${name(midi)}.`); } catch (error) { say(error.message); }
+  try {
+    const midi = chartMidi(melodyDraft());
+    if (!supportsMidi(midi)) throw new Error(`${name(midi)} is outside the chart's supported range.`);
+    const context = await getAudio();
+    if (generation !== playbackGeneration) return;
+    tone(context, midi, context.currentTime, .6);
+    say(`Reference tone: ${name(midi)}.`);
+  } catch (error) { say(error.message); }
 }
 async function playPhrase() {
   if ($('play-phrase').textContent === 'Stop') { stopAudio(); return; }
-  if (!calculate({ preserveLocks: true })) return;
+  if (!calculate()) return;
   const generation = playbackGeneration;
   try {
     const context = await getAudio(); if (generation !== playbackGeneration) return;
@@ -364,26 +394,59 @@ $('detail-toggle').addEventListener('click', () => {
 });
 $('add-note').addEventListener('click', () => {
   const input = $('melody');
-  if (input.value.trim().split(/[\s,;|]+/).filter(Boolean).length >= 64) { say('The phrase already has 64 notes. Remove a note in the planner first.'); return; }
-  const reference = name(referenceMidi());
-  input.value = `${input.value.trim()} ${reference}`.trim(); state.step = input.value.split(/[\s,;|]+/).filter(Boolean).length - 1;
-  state.plan = null; showView('plan'); calculate(); say(`Added ${reference} to your melody.`);
+  let melody;
+  try { melody = melodyDraft(); } catch {
+    showView('plan');
+    input.focus();
+    return;
+  }
+  if (melody.length >= 64) { say('The phrase already has 64 notes. Remove a note in the planner first.'); return; }
+  const midi = chartMidi(melody);
+  const { bits } = ranked[state.selected - 1];
+  const picked = candidates(midi, bits).find(f => f.bits === bits);
+  const note = name(midi);
+  if (!picked) {
+    say(`This fingering cannot play ${note} in the supported registers. Change the last octave in the melody or choose another fingering.`);
+    return;
+  }
+  keepUnchangedChoices(melody);
+  state.step = melody.length;
+  state.chartChoices[state.step] = bits;
+  state.locks[state.step] = picked.id;
+  state.melody = [...melody, midi];
+  input.value = `${input.value.trim()} ${note}`.trim();
+  state.plan = null;
+  showView('plan');
+  (state.plan ? $('step-variant') : input).focus();
+  save();
+  say(`Added ${note} and locked its fingering.`);
 });
 $('melody-form').addEventListener('submit', event => { event.preventDefault(); calculate(); });
 $('melody').addEventListener('input', () => {
-  stopAudio(); state.plan = null; state.locks = {}; $('phrase-steps').innerHTML = '';
+  stopAudio(); state.plan = null; $('phrase-steps').innerHTML = '';
   document.querySelector('.transition-inspector').hidden = true;
   $('plan-summary').textContent = 'Melody changed. Choose Find fingerings to update the path.';
   $('melody-error').hidden = true; $('melody').removeAttribute('aria-invalid'); save();
 });
-document.querySelectorAll('[data-phrase]').forEach(button => button.addEventListener('click', () => { $('melody').value = button.dataset.phrase; state.step = 1; calculate(); }));
-document.querySelectorAll('.preferences select').forEach(input => input.addEventListener('change', () => calculate({ preserveLocks: true })));
+document.querySelectorAll('[data-phrase]').forEach(button => button.addEventListener('click', () => {
+  $('melody').value = button.dataset.phrase;
+  state.step = 1;
+  state.locks = {};
+  state.chartChoices = {};
+  calculate();
+}));
+document.querySelectorAll('.preferences select').forEach(input => input.addEventListener('change', calculate));
 $('phrase-steps').addEventListener('click', event => {
   const button = event.target.closest('[data-step]'); if (!button) return;
   stopAudio(); state.step = Number(button.dataset.step);
   document.querySelectorAll('.phrase-step').forEach((el, i) => el.setAttribute('aria-pressed', String(i === state.step))); renderTransition();
 });
-$('step-variant').addEventListener('change', () => { state.locks[state.step] = $('step-variant').value; calculate({ preserveLocks: true }); });
+$('step-variant').addEventListener('change', () => {
+  const choice = $('step-variant').value;
+  if (choice) state.locks[state.step] = choice;
+  else delete state.locks[state.step];
+  calculate();
+});
 $('unlock').addEventListener('click', () => { state.locks = {}; calculate(); });
 $('play-phrase').addEventListener('click', playPhrase);
 $('tempo').addEventListener('input', stopAudio);

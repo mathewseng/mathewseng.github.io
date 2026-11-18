@@ -1,4 +1,4 @@
-import { KEYS, supportsMidi } from './engine.mjs?v=20261117-ranking';
+import { KEYS, supportsMidi } from './engine.mjs?v=20261117-handoff';
 import { isEligibleFingering, keyPitch } from './key-rules.mjs?v=20261117-ranking';
 
 const MAIN_KEYS = [0, 2, 3, 7, 8, 9];

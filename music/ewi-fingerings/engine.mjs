@@ -1,5 +1,5 @@
 import { PATTERNS } from './fingerings.mjs';
-import { isEligibleFingering } from './key-rules.mjs?v=20261117-ranking';
+import { isEligibleFingering, keyPitch } from './key-rules.mjs?v=20261117-ranking';
 
 export const SHARPS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 export const FLATS = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
@@ -32,11 +32,18 @@ export function noteName(midi, flats = false) {
 }
 export function registerName(shift) { return shift > 0 ? `+${shift}` : String(shift); }
 export function supportsMidi(midi) { return Number.isInteger(midi) && midi >= 34 && midi <= 111; }
-export function candidates(midi) {
+export function candidates(midi, chartBits) {
   if (!supportsMidi(midi)) return [];
-  return FINGERINGS.filter(f => isEligibleFingering(f.bits) && (midi - f.base) % 12 === 0).map(f => ({ ...f, shift: (midi - f.base) / 12 }))
+  const choices = FINGERINGS.filter(f => isEligibleFingering(f.bits) && (midi - f.base) % 12 === 0).map(f => ({ ...f, shift: (midi - f.base) / 12 }))
     .filter(f => f.shift >= -2 && f.shift <= 4)
     .sort((a, b) => Number(b.main) - Number(a.main) || Math.abs(a.shift) - Math.abs(b.shift) || a.id.localeCompare(b.id));
+  if (!/^[01]{13}$/.test(chartBits) || !isEligibleFingering(chartBits) || choices.some(f => f.bits === chartBits)) return choices;
+  const base = keyPitch(chartBits).midi;
+  const shift = (midi - base) / 12;
+  if (Number.isInteger(shift) && shift >= -2 && shift <= 4) {
+    choices.push({ id: `chart-${chartBits}`, base, bits: chartBits, shift, main: false, fromChart: true });
+  }
+  return choices;
 }
 export function changes(a, b) {
   const touch = [], release = [], keep = [];
@@ -56,9 +63,9 @@ export function preferenceCost(f, weights = DEFAULT_WEIGHTS) { return f.main ? 0
 
 // Dynamic programming: minimize the complete phrase, not a greedy next-note choice.
 // A lock pins a chosen fingering by ID at a given phrase index.
-export function optimize(melody, weights = DEFAULT_WEIGHTS, locks = {}) {
+export function optimize(melody, weights = DEFAULT_WEIGHTS, locks = {}, chartChoices = {}) {
   if (!melody.length) return { path: [], cost: 0 };
-  const sets = melody.map((midi, i) => candidates(midi).filter(f => !locks[i] || locks[i] === f.id));
+  const sets = melody.map((midi, i) => candidates(midi, chartChoices[i]).filter(f => !locks[i] || locks[i] === f.id));
   if (sets.some(s => !s.length)) return null;
   const layers = [sets[0].map(f => ({ cost: preferenceCost(f, weights), previous: -1 }))];
   for (let i = 1; i < sets.length; i++) {
