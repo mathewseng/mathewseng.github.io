@@ -265,6 +265,26 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       ['K1', 'K3', 'K4', 'K8', 'K9', 'K10']);
     assert.deepEqual(await page.locator('#key-picker .key-callout-right .key-callout-name').allTextContents(),
       ['K2', 'K5', 'K6', 'K7', 'K11', 'K12', 'K13']);
+    const leaderOffsets = await page.locator('#key-picker .key-leader').evaluateAll(lines => lines.map((line, i) => {
+      const key = line.parentElement.querySelector(`[data-key-shape="${i}"]`);
+      const use = key.querySelector('use');
+      const symbol = document.querySelector(use.getAttribute('href'));
+      const face = symbol.querySelector('.key-face');
+      const scale = use.width.baseVal.value / symbol.viewBox.baseVal.width;
+      const transform = key.transform.baseVal.consolidate().matrix;
+      const onLeft = line.parentElement.parentElement.querySelector(`[data-key="${i}"]`).classList.contains('key-callout-left');
+      const isFarther = onLeft ? (a, b) => a < b : (a, b) => a > b;
+      let edge = { x: onLeft ? Infinity : -Infinity, y: 0 };
+      const perimeter = face.getTotalLength();
+      for (let sample = 0; sample < 720; sample++) {
+        const point = face.getPointAtLength(perimeter * sample / 720);
+        const position = new DOMPoint(point.x * scale + use.x.baseVal.value, point.y * scale + use.y.baseVal.value);
+        const mapped = position.matrixTransform(transform);
+        if (isFarther(mapped.x, edge.x)) edge = mapped;
+      }
+      return Math.hypot(edge.x - line.x2.baseVal.value, edge.y - line.y2.baseVal.value);
+    }));
+    assert.ok(leaderOffsets.every(offset => offset < 0.25), `leaders meet the outside edge of each key: ${leaderOffsets}`);
     await page.locator('#key-picker [data-key-shape="0"] use').click();
     assert.equal(await page.locator('#key-picker [data-key="0"]').getAttribute('aria-pressed'), 'true');
     await page.locator('#clear-keys').click();

@@ -1,5 +1,5 @@
 import { KEY_RULES, isEligibleFingering, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-key-labels';
-import { KEY_SYMBOLS, KEY_LAYOUT } from './key-artwork.mjs?v=20261118-key-geometry';
+import { KEY_SYMBOLS, KEY_LAYOUT, keySideEdge } from './key-artwork.mjs?v=20261118-key-edges';
 import { staffSvg } from './notation.mjs';
 import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-layout';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
@@ -366,8 +366,8 @@ function renderKeyMap() {
     return { key, rule, onLeft, y };
   });
   const leaders = labels.map(({ rule, onLeft, y }, i) => {
-    const physical = KEY_LAYOUT[i];
-    return `<line class="key-leader effect-${rule.color} ${state.keyBits[i] === '1' ? 'on' : ''}" x1="${onLeft ? 93 : 237}" y1="${y}" x2="${physical.x}" y2="${physical.y}"/>`;
+    const edge = keySideEdge(KEY_LAYOUT[i], onLeft ? -1 : 1);
+    return `<line class="key-leader effect-${rule.color} ${state.keyBits[i] === '1' ? 'on' : ''}" x1="${onLeft ? 93 : 237}" y1="${y}" x2="${edge.x}" y2="${edge.y}"/>`;
   }).join('');
   const buttons = labels.map(({ key, rule, onLeft, y }, i) => {
     const held = state.keyBits[i] === '1';
