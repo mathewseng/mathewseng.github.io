@@ -9,7 +9,11 @@ import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-scales';
 const $ = id => document.getElementById(id);
 const storageKey = 'ewi-practice-v3';
 const defaultPhrase = scalePhrase(0, SCALE_GROUPS[0][1][0][1]);
-const state = { pitch: 7, selected: null, flats: true, view: 'explore', melody: parseMelody(defaultPhrase), usePhraseOctave: false, plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: '0000000000000', keyRegister: 0, keyFilter: 'all' };
+const openKeys = '0'.repeat(KEYS.length);
+const openPitch = keyPitch(openKeys).midi;
+const pitchDropGroups = [[0, 1, 2], [3, 7]];
+const pitchDropKeys = pitchDropGroups.flat();
+const state = { pitch: 7, selected: null, flats: true, view: 'explore', melody: parseMelody(defaultPhrase), usePhraseOctave: false, plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: openKeys, keyRegister: 0, keyFilter: 'all' };
 const referenceMidi = () => 60 + state.pitch;
 const pianoColumn = [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13];
 const pianoPlacement = pitch => `class="${pianoColumn[pitch] % 2 === 0 ? 'accidental' : ''}" style="--piano-column:${pianoColumn[pitch]}"`;
@@ -95,32 +99,24 @@ function showView(view) {
   say('');
 }
 
-const stripWidth = 350;
-const stripX = [16, 35, 64, 96, 125, 146, 172, 196, 228, 260, 287, 311, 335];
-const stripHeights = [26, 29, 26, 26, 38, 46, 38, 26, 26, 26, 34, 44, 56];
-const stripPosition = index => `style="--key-position:${stripX[index] / stripWidth * 100}%"`;
 function keyShape(index, x, y, height) {
   const width = height * KEY_RATIOS[index];
   return `<use class="key-shape" href="#ewi-key-${KEY_ARTWORK[index]}" x="${x - width / 2}" y="${y - height / 2}" width="${width}" height="${height}"/>`;
 }
-function keyGlyph(index) {
-  return `<svg viewBox="0 0 28 36" aria-hidden="true">${keyShape(index, 14, 18, Math.min(34, stripHeights[index]))}</svg>`;
-}
-function compactKeys(bits, showNumbers = false) {
-  return `<span class="compact-keys${showNumbers ? ' numbered-keys' : ''}" aria-hidden="true">${stripX.map((_, i) =>
-    `<span class="diagram-key ${bits[i] === '1' ? 'on' : ''}" ${stripPosition(i)}>${keyGlyph(i)}${showNumbers ? `<span>${i + 1}</span>` : ''}</span>`
-  ).join('')}</span>`;
-}
-function mini(fingering, before = null) {
-  return `<svg class="mini-diagram" viewBox="0 0 ${stripWidth} 64" role="img" aria-label="Touch ${keyList(fingering.bits)}">${KEYS.map((key, i) => {
-    return `<g class="diagram-key ${fingering.bits[i] === '1' ? 'on' : ''} ${before && before.bits[i] !== fingering.bits[i] ? 'changed' : ''}">${keyShape(i, stripX[i], 32, stripHeights[i])}${before && before.bits[i] !== fingering.bits[i] ? `<rect class="change-outline" x="${stripX[i] - stripHeights[i] * KEY_RATIOS[i] / 2 - 2}" y="${32 - stripHeights[i] / 2 - 2}" width="${stripHeights[i] * KEY_RATIOS[i] + 4}" height="${stripHeights[i] + 4}" rx="3"/>` : ''}</g>`;
-  }).join('')}</svg>`;
-}
-function physicalKeys(bits, interactive = false) {
+function physicalKeys(bits, { interactive = false, before } = {}) {
   return KEY_LAYOUT.map(({ x, y, height }, i) => {
     const interactiveKey = interactive ? ` data-key-shape="${i}"` : '';
-    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(90)"${interactiveKey}>${keyShape(i, 0, 0, height)}</g>`;
+    const width = height * KEY_RATIOS[i];
+    const outline = before && before[i] !== bits[i]
+      ? `<rect class="change-outline" x="${-width / 2 - 2}" y="${-height / 2 - 2}" width="${width + 4}" height="${height + 4}" rx="3"/>` : '';
+    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y}) rotate(90)"${interactiveKey}>${keyShape(i, 0, 0, height)}${outline}</g>`;
   }).join('');
+}
+function keyDiagram(bits, { horizontal = false, before, decorative = false } = {}) {
+  const keys = physicalKeys(bits, { before });
+  const accessibility = decorative ? 'aria-hidden="true"' : `role="img" aria-label="Touch ${keyList(bits)}"`;
+  const box = horizontal ? '16 -222 380 113' : '109 16 113 380';
+  return `<svg class="${horizontal ? 'mini-diagram' : 'upright-diagram'}" viewBox="${box}" ${accessibility}>${horizontal ? `<g transform="rotate(-90)">${keys}</g>` : keys}</svg>`;
 }
 function renderMoveMatrix() {
   const head = MOVE_PITCHES.map(midi => `<th scope="col" class="${midi % 12 === 0 ? 'octave-edge' : ''}">${name(midi)}</th>`).join('');
@@ -155,7 +151,7 @@ function renderMoveResult() {
   const { from, to, option, result } = moveSelection;
   const move = result.options[option];
   const diff = changes(move.from, move.to);
-  const line = (pitch, f) => `<div class="move-key-line"><div><strong>${name(pitch)}</strong><span class="small-label">Rank ${f.rank}</span></div>${compactKeys(f.bits, true)}</div>`;
+  const line = (pitch, f) => `<div class="move-key-line"><div><strong>${name(pitch)}</strong><span class="small-label">Rank ${f.rank}</span></div>${keyDiagram(f.bits, { horizontal: true })}</div>`;
   $('move-result').innerHTML = `
     <div class="section-title"><h2 aria-live="polite">${name(from)} → ${name(to)}</h2><span class="move-count">${result.toggles} key ${result.toggles === 1 ? 'toggle' : 'toggles'}</span></div>
     <div class="move-choices">
@@ -201,10 +197,13 @@ let ranked = [], shownPitch;
 const additional = new Map();
 const countLabel = number => number.toLocaleString('en-US');
 
-function chartRow(f) {
+function chartCard(f) {
   const offset = f.shift - ranked[0].shift;
   const label = `Rank ${f.rank}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than rank 1.` : ''}`;
-  return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}"><span class="alternate-label">${f.rank}</span>${compactKeys(f.bits)}<span class="alternate-held">${f.heldCount}</span></button>`;
+  return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}">
+    <span class="alternate-meta"><span class="alternate-label">#${f.rank}</span><span><span class="alternate-held">${f.heldCount}</span> down</span></span>
+    ${keyDiagram(f.bits, { decorative: true })}
+  </button>`;
 }
 
 function renderAdditional(details, page) {
@@ -212,7 +211,7 @@ function renderAdditional(details, page) {
   const start = page * pageSize;
   const end = Math.min(start + pageSize, group.length);
   const body = details.querySelector('.additional-rows');
-  body.innerHTML = `${group.slice(start, end).map(chartRow).join('')}<div class="additional-pagination">
+  body.innerHTML = `<div class="fingering-grid">${group.slice(start, end).map(chartCard).join('')}</div><div class="additional-pagination">
     <button type="button" class="btn" data-page="${page - 1}" ${page === 0 ? 'disabled' : ''}>Previous</button>
     <span role="status">${start + 1}–${end} of ${countLabel(group.length)}</span>
     <button type="button" class="btn" data-page="${page + 1}" ${end === group.length ? 'disabled' : ''}>Next</button>
@@ -239,7 +238,7 @@ function renderChart() {
     const heading = offset ? thumbOffset(offset) + ' than rank 1' : 'Rank 1 thumb position';
     return `<section class="register-group" data-register="${shift}">
       ${groups.size > 1 ? `<h3>${heading}</h3>` : ''}
-      <div class="ranked-rows">${visible.map(chartRow).join('')}</div>
+      <div class="ranked-rows fingering-grid">${visible.map(chartCard).join('')}</div>
       ${more.length ? `<details class="additional-fingerings" data-more="${shift}"><summary>${countLabel(more.length)} ${withoutSide.length ? 'side-key' : 'more'} fingerings</summary><div class="additional-rows"></div></details>` : ''}
     </section>`;
   }).join('');
@@ -253,7 +252,7 @@ function renderChart() {
 
 function renderSelectedFingering(selected) {
   $('selected-variant').textContent = `Rank ${selected.rank}`;
-  $('main-diagram').innerHTML = `<svg viewBox="109 16 113 380" role="img" aria-label="Front keys in playing position. Touch ${keyList(selected.bits)}.">${physicalKeys(selected.bits)}</svg>`;
+  $('main-diagram').innerHTML = keyDiagram(selected.bits);
   const offset = selected.shift - ranked[0].shift;
   $('thumb-offset').hidden = offset === 0;
   $('thumb-offset').textContent = offset ? thumbOffset(offset) + ' than rank 1.' : '';
@@ -296,6 +295,43 @@ function guideKeyExample(index) {
   const together = index !== 1 && off[1] !== on[1] ? ' · K2 also changes' : '';
   return `${name(from)} → ${name(to)} (${signedSteps(to - from)})${together}`;
 }
+function keyPattern(held) {
+  return KEYS.map((_, i) => held.includes(i) ? '1' : '0').join('');
+}
+function pitchDrop(bits) {
+  return keyPitch(bits).midi - openPitch;
+}
+const describeDrop = steps => `${signedSteps(steps)} ${steps === -1 ? 'semitone' : 'semitones'}`;
+function renderPitchDropTable() {
+  function combinations(group) {
+    return Array.from({ length: 2 ** group.length }, (_, mask) => {
+      const held = group.filter((_, index) => mask & (1 << index));
+      const bits = keyPattern(held);
+      return { held, bits, steps: pitchDrop(bits) };
+    }).filter(({ bits }) => isEligibleFingering(bits)).sort((a, b) => b.steps - a.steps);
+  }
+  const [rows, columns] = pitchDropGroups.map(combinations);
+  const label = ({ held, steps }) => `<span>${held.map(i => KEYS[i].id).join(' + ') || 'Open'}</span><small>${signedSteps(steps)}</small>`;
+  $('pitch-drop-table').innerHTML = `<caption class="sr-only">Total semitones relative to open, smallest drop first on each axis</caption>
+    <colgroup span="1"></colgroup><colgroup span="${columns.length}"></colgroup>
+    <thead><tr><th scope="col" rowspan="2">K1 / K2 / K3</th><th scope="colgroup" colspan="${columns.length}">K4 / K8</th></tr>
+    <tr>${columns.map(column => `<th scope="col">${label(column)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(row => `<tr><th scope="row">${label(row)}</th>${columns.map(column => {
+      const bits = keyPattern([...row.held, ...column.held]);
+      const drop = pitchDrop(bits);
+      const steps = signedSteps(drop);
+      return `<td><button type="button" data-combination="${bits}" style="--drop:${-4 * drop}%" aria-pressed="false" aria-label="${bits === openKeys ? 'Open' : keyList(bits)}, ${describeDrop(drop)}">${steps}</button></td>`;
+    }).join('')}</tr>`).join('')}</tbody>`;
+}
+function updatePitchDropPreview() {
+  const bits = keyPattern(pitchDropKeys.filter(i => state.keyBits[i] === '1'));
+  const table = $('pitch-drop-table');
+  table.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
+  table.querySelector(`[data-combination="${bits}"]`).setAttribute('aria-pressed', 'true');
+  $('pitch-drop-keys').innerHTML = keyDiagram(bits, { decorative: true });
+  $('pitch-drop-total').textContent = describeDrop(pitchDrop(bits));
+  $('pitch-drop-held').textContent = bits === openKeys ? 'Open' : keyList(bits);
+}
 function renderKeyExplorer() {
   const midi = keyPitch(state.keyBits, state.keyRegister).midi;
   $('key-note').textContent = name(midi);
@@ -309,6 +345,7 @@ function renderKeyExplorer() {
   $('key-range').textContent = 'Above this guide’s verified MIDI range; lower the thumb register to match a verified pitch.';
   $('hear-keys').disabled = midi > 111;
   renderKeyMap();
+  updatePitchDropPreview();
   const key = KEYS[state.key], rule = KEY_RULES[state.key];
   $('key-detail').innerHTML = `<h3>${key.id} · ${key.finger}</h3><dl><div><dt>Usually</dt><dd class="usual-rule effect-${rule.color}">${rule.usualText}</dd></div><div><dt>Exceptions</dt><dd>${rule.exceptions}</dd></div><div><dt>With your other keys</dt><dd>${guideKeyExample(state.key)}</dd></div></dl>`;
   $('key-rule-rows').innerHTML = KEYS.map((k, i) => {
@@ -342,7 +379,7 @@ function renderKeyMap() {
       ${conditions ? `<span class="key-dependencies">${conditions}</span>` : ''}
     </button>`;
   }).join('');
-  $('key-picker').innerHTML = `<svg class="key-map" viewBox="0 0 330 ${height}" aria-hidden="true">${leaders}${physicalKeys(state.keyBits, true)}</svg>${buttons}`;
+  $('key-picker').innerHTML = `<svg class="key-map" viewBox="0 0 330 ${height}" aria-hidden="true">${leaders}${physicalKeys(state.keyBits, { interactive: true })}</svg>${buttons}`;
 }
 function selectGuideKey(index, origin) {
   stopAudio();
@@ -392,7 +429,7 @@ function routeStats(path) {
 function renderPlan() {
   const path = state.plan.path, stats = routeStats(path);
   $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb octave steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span>`;
-  $('phrase-steps').innerHTML = path.map((f, i) => `<button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-label="Step ${i + 1}: ${name(state.melody[i])}${state.locks[i] ? ', locked' : ''}"><span class="step-heading"><b>${name(state.melody[i])}</b><span>${i + 1}${state.locks[i] ? ' / locked' : ''}</span></span>${mini(f)}<span class="step-caption">${i ? `${changes(path[i - 1], f).keys} key changes` : 'Start here'}</span></button>`).join('');
+  $('phrase-steps').innerHTML = path.map((f, i) => `<button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-label="Step ${i + 1}: ${name(state.melody[i])}${state.locks[i] ? ', locked' : ''}"><span class="step-heading"><b>${name(state.melody[i])}</b><span>${i + 1}${state.locks[i] ? ' / locked' : ''}</span></span>${keyDiagram(f.bits, { horizontal: true })}<span class="step-caption">${i ? `${changes(path[i - 1], f).keys} key changes` : 'Start here'}</span></button>`).join('');
   renderTransition();
 }
 function updatePhraseSteps(playing = false) {
@@ -406,7 +443,7 @@ function updatePhraseSteps(playing = false) {
 function renderTransition() {
   const i = state.step, path = state.plan.path, to = path[i], from = path[Math.max(0, i - 1)];
   $('transition-title').textContent = i ? `${name(state.melody[i - 1])} → ${name(state.melody[i])}` : `Start on ${name(state.melody[0])}`;
-  const panel = (f, midi, previous) => `<div class="transition-note"><strong>${name(midi)}</strong>${mini(f, previous)}</div>`;
+  const panel = (f, midi, previous) => `<div class="transition-note"><strong>${name(midi)}</strong>${keyDiagram(f.bits, { horizontal: true, before: previous?.bits })}</div>`;
   $('transition-diagrams').innerHTML = i ? panel(from, state.melody[i - 1]) + '<span class="transition-arrow" aria-hidden="true">→</span>' + panel(to, state.melody[i], from) : panel(to, state.melody[i]);
   if (i) {
     const diff = changes(from, to);
@@ -575,7 +612,7 @@ $('phrase-steps').addEventListener('click', event => {
   renderTransition();
 });
 navigateButtons('phrase-steps', '[data-step]', { ArrowLeft: -1, ArrowRight: 1 });
-navigateButtons('alternates', '[data-fingering]', { ArrowUp: -1, ArrowDown: 1 });
+navigateButtons('alternates', '[data-fingering]', { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -1, ArrowRight: 1 });
 $('step-variant').addEventListener('click', event => {
   const button = event.target.closest('[data-fingering-choice]');
   if (!button) return;
@@ -668,14 +705,22 @@ $('key-picker').addEventListener('click', event => {
   const target = event.target.closest('[data-key], [data-key-shape]');
   if (target) selectGuideKey(Number(target.dataset.key ?? target.dataset.keyShape), 'key-picker');
 });
+$('pitch-drop-table').addEventListener('click', event => {
+  const cell = event.target.closest('[data-combination]');
+  if (!cell) return;
+  stopAudio();
+  state.keyBits = cell.dataset.combination;
+  renderKeyExplorer();
+});
+navigateButtons('pitch-drop-table', '[data-combination]', { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -4, ArrowDown: 4 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopAudio(); });
 window.addEventListener('pagehide', stopAudio);
 $('key-rule-rows').addEventListener('click', event => { const button = event.target.closest('[data-key]'); if (button) selectGuideKey(Number(button.dataset.key), 'key-rule-rows'); });
-$('clear-keys').addEventListener('click', () => { stopAudio(); state.keyBits = '0000000000000'; renderKeyExplorer(); });
+$('clear-keys').addEventListener('click', () => { stopAudio(); state.keyBits = openKeys; renderKeyExplorer(); });
 $('hear-keys').addEventListener('click', async () => {
   stopAudio(); const generation = playbackGeneration;
   try { const context = await getAudio(); if (generation !== playbackGeneration) return; const midi = keyPitch(state.keyBits, state.keyRegister).midi; if (midi > 111) return; tone(context, midi, context.currentTime, .6); say(`Reference tone: ${name(midi)}.`); } catch (error) { say(error.message); }
 });
-$('chart-key-numbers').innerHTML = stripX.map((_, i) => `<span ${stripPosition(i)}>${i + 1}</span>`).join('');
 $('key-symbols').innerHTML = KEY_SYMBOLS;
+renderPitchDropTable();
 renderExplorer(); renderKeyExplorer();
