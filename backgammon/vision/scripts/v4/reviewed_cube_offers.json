@@ -1,0 +1,34 @@
+{
+  "1": {
+    "start": 4476,
+    "end": 4536,
+    "offerer": "dark",
+    "response": "take",
+    "receiverSide": "far-side",
+    "source": "office-3-wide_20261117-185229.mp4"
+  },
+  "2": {
+    "start": 5475,
+    "end": 6576,
+    "offerer": "white",
+    "response": null,
+    "receiverSide": "centered",
+    "source": "office-3-wide_20261117-190329.mp4"
+  },
+  "3": {
+    "start": 17691,
+    "end": 21366,
+    "offerer": "white",
+    "response": "take",
+    "receiverSide": "near-side",
+    "source": "office-3-wide_20261117-191729.mp4"
+  },
+  "4": {
+    "start": 9447,
+    "end": 10962,
+    "offerer": "dark",
+    "response": "take",
+    "receiverSide": "far-side",
+    "source": "office-3-wide_20261117-193329.mp4"
+  }
+}

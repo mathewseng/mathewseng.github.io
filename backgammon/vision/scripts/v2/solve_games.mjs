@@ -366,7 +366,7 @@ function reconstruct(clip,colorMap) {
     skips:skips.filter(skip=>!overlaps(skip.start,skip.end))};
 }
 
-function exclusive(probabilities) {
+export function exclusive(probabilities) {
   const [win,winG,winBg,loseG,loseBg]=probabilities;
   return {
     winSingle:Math.max(0,win-winG), winGammon:Math.max(0,winG-winBg), winBackgammon:Math.max(0,winBg),

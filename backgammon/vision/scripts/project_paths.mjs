@@ -12,3 +12,5 @@ export const artifactDir = path.resolve(
 );
 export const solverDir = path.join(artifactDir, "site-solver");
 export const solverUrl = (modulePath) => pathToFileURL(path.join(solverDir, modulePath));
+
+export const replayDir = path.resolve(process.env.OFFICE3_REPLAY_DIR || path.join(artifactDir, "v4-4ply"));

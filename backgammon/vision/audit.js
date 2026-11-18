@@ -1,0 +1,151 @@
+const BOARD = { x: 32, y: 88, width: 928, height: 696, sourceWidth: 560, sourceHeight: 420 };
+const CHECKER = ["#74f4ff", "#ffba72"];
+const DIE = "#87ecac";
+const CUBE = "#fff08c";
+const HAND = "#ef8ccc";
+
+async function loadFrames(number) {
+  const id = number.padStart(2, "0");
+  const response = await fetch(`audit/game-${id}.json.gz`);
+  if (!response.ok) throw new Error("Detection data unavailable");
+  const bytes = await response.arrayBuffer();
+  if (new Uint8Array(bytes, 0, 2)[0] !== 0x1f) {
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  const decoded = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Response(decoded).json();
+}
+
+export function createAudit(player) {
+  const canvas = document.querySelector("#detection-overlay");
+  const status = document.querySelector("#audit-status");
+  const controls = [...document.querySelectorAll("[data-view]")];
+  const fullscreen = document.querySelector("#audit-fullscreen");
+  const stage = canvas.parentElement;
+  const context = canvas.getContext("2d");
+  const cache = new Map();
+  const scale = BOARD.width / BOARD.sourceWidth;
+  let enabled = false, number = "1", source, callback, request = 0;
+
+  function draw(time = player.currentTime) {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (!enabled || !source || player.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+    const frame = Math.floor(time * source.fps + .001);
+    const reading = source.frames[frame];
+    if (!reading) return;
+    const [checkers, dice, cube, hands] = reading;
+    const x = (value) => BOARD.x + value * scale;
+    const y = (value) => BOARD.y + value * BOARD.height / BOARD.sourceHeight;
+    context.lineWidth = 2.6;
+    for (const [left, top, right, bottom] of hands) {
+      context.strokeStyle = HAND;
+      context.strokeRect(x(left), y(top), (right - left) * scale, (bottom - top) * scale);
+    }
+    for (const [cx, cy, side] of checkers) {
+      context.strokeStyle = CHECKER[side];
+      context.beginPath();
+      context.arc(x(cx), y(cy), 14 * scale, 0, 2 * Math.PI);
+      context.stroke();
+    }
+    for (const [cx, cy, value, candidate, score] of dice) {
+      mark(x(cx), y(cy), DIE, value ? `${value} · ${score}%` : `${candidate}?`);
+    }
+    if (cube) {
+      const [cx, cy, face, score] = cube;
+      mark(x(cx), y(cy), CUBE, `Cube ${face || "?"} · ${score}%`);
+    }
+  }
+
+  function mark(x, y, color, label) {
+    context.strokeStyle = color;
+    context.strokeRect(x - 17, y - 17, 34, 34);
+    context.font = "bold 20px system-ui";
+    const w = context.measureText(label).width + 12;
+    const left = Math.min(x + 18, BOARD.x + BOARD.width - w);
+    const top = Math.max(BOARD.y + 1, y - 29);
+    context.fillStyle = "#10151c";
+    context.fillRect(left, top, w, 25);
+    context.fillStyle = color;
+    context.fillText(label, left + 6, top + 19);
+  }
+
+  function updateStatus() {
+    if (!enabled) return;
+    if (!source) return;
+    status.textContent = player.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
+      ? "Play to see detections."
+      : "White (cyan) · Black (amber) · Dice (green) · Cube (yellow) · Hands (pink)";
+  }
+
+  function stopTick() {
+    if (callback === undefined) return;
+    if (player.cancelVideoFrameCallback) player.cancelVideoFrameCallback(callback);
+    else cancelAnimationFrame(callback);
+    callback = undefined;
+  }
+
+  function tick() {
+    stopTick();
+    if (!enabled) return;
+    const next = (_, frame) => {
+      callback = undefined;
+      draw(frame?.mediaTime);
+      tick();
+    };
+    callback = player.requestVideoFrameCallback
+      ? player.requestVideoFrameCallback(next)
+      : requestAnimationFrame(next);
+  }
+
+  async function update() {
+    const id = ++request;
+    source = undefined;
+    canvas.hidden = status.hidden = !enabled;
+    fullscreen.hidden = !enabled || !stage.requestFullscreen;
+    draw();
+    stopTick();
+    if (!enabled) return;
+    status.textContent = "Loading detections…";
+    const pending = cache.get(number) ?? loadFrames(number);
+    const selected = number;
+    cache.delete(number);
+    cache.set(number, pending);
+    if (cache.size > 2) cache.delete(cache.keys().next().value);
+    try {
+      const loaded = await pending;
+      if (id !== request) return;
+      source = loaded;
+      updateStatus();
+      draw();
+      tick();
+    } catch {
+      cache.delete(selected);
+      if (id === request) status.textContent = "Detections unavailable for this game.";
+    }
+  }
+
+  for (const button of controls) {
+    button.addEventListener("click", () => {
+      const next = button.dataset.view === "vision";
+      if (next === enabled) return;
+      enabled = next;
+      for (const control of controls) {
+        control.setAttribute("aria-pressed", String(control === button));
+      }
+      void update();
+    });
+  }
+  fullscreen.addEventListener("click", () => { void stage.requestFullscreen(); });
+  for (const event of ["seeked", "loadeddata", "pause"]) {
+    player.addEventListener(event, () => {
+      updateStatus();
+      draw();
+    });
+  }
+  return {
+    select(game) {
+      number = game;
+      void update();
+    },
+  };
+}

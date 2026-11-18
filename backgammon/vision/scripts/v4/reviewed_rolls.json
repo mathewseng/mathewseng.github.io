@@ -3,9 +3,43 @@
     "clip": 45,
     "first": 1048,
     "last": 1206,
-    "dice": [4, 4],
-    "centers": [[342.875, 331.375], [372, 230]],
+    "dice": [
+      4,
+      4
+    ],
+    "centers": [
+      [
+        342.875,
+        331.375
+      ],
+      [
+        372,
+        230
+      ]
+    ],
     "status": "reviewed",
     "note": "The independently reviewed two stationary dice both show four. A later checker detection is compatible with another roll, so it cannot override the visible faces."
+  },
+  {
+    "clip": 5,
+    "first": 702,
+    "last": 702,
+    "dice": [
+      3,
+      3
+    ],
+    "sourceFrameReview": true,
+    "note": "Two threes were confirmed in the blind face audit. The checker snapshot covers only part of the physical turn."
+  },
+  {
+    "clip": 25,
+    "first": 375,
+    "last": 375,
+    "dice": [
+      2,
+      2
+    ],
+    "sourceFrameReview": true,
+    "note": "Both stationary faces were reviewed as twos. The later checker snapshot must not turn them into ones."
   }
 ]

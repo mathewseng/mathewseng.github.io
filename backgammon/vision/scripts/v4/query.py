@@ -6,9 +6,9 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from project_paths import ARTIFACT_DIR
+from project_paths import REPLAY_DIR
 
-OUT = ARTIFACT_DIR / "v4"
+OUT = REPLAY_DIR
 
 
 def query(game, frame):

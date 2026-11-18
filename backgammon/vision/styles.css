@@ -12,6 +12,11 @@
 }
 
 .vision-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.9rem 1rem;
   padding-block: clamp(1.3rem, 3.7vw, 3.55rem) clamp(1.15rem, 2.6vw, 2.35rem);
 }
 
@@ -47,6 +52,64 @@
   border-radius: var(--r-md);
   background: var(--surface);
   animation: vision-appear var(--d-base) ease-out both;
+}
+
+.vision-modes {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding: 2px;
+  background: var(--surface);
+}
+
+.vision-modes button, #audit-fullscreen {
+  min-height: 44px;
+  padding: 0.35rem 0.9rem;
+  border: 0;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.vision-modes button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.vision-audit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.vision-audit-footer:has(#audit-status[hidden]) {
+  display: none;
+}
+
+#audit-fullscreen {
+  flex: none;
+  color: var(--accent);
+}
+
+#detection-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.vision-player:fullscreen {
+  border: 0;
+  border-radius: 0;
 }
 
 .vision-player video {
@@ -214,7 +277,7 @@
   }
 
   .vision-layout {
-    grid-template-columns: minmax(0, min(63%, calc((100svh - 140px) * 16 / 9))) minmax(0, 1fr);
+    grid-template-columns: minmax(0, min(63%, calc((100svh - 145px) * 16 / 9))) minmax(0, 1fr);
   }
 
   .vision-queue li a {
@@ -228,7 +291,11 @@
   }
 
   .vision-heading {
-    padding-block: 0.6rem 0.85rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.4rem;
+    padding-block: 0.5rem 0.65rem;
   }
 
   .vision-heading h1 {
@@ -237,6 +304,9 @@
 
   .vision-heading p {
     margin-top: 0.25rem;
+    line-height: 1.35;
+    font-size: 0.88rem;
+    text-wrap: pretty;
   }
 }
 

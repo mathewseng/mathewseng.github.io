@@ -1,3 +1,5 @@
+import { createAudit } from "./audit.js";
+
 const player = document.querySelector("#replay");
 const play = document.querySelector("#play-replay");
 const title = document.querySelector("#selected-game");
@@ -9,6 +11,7 @@ const games = new Map(
 );
 const release = new URL("./", download.href);
 let currentGame = "1";
+const audit = createAudit(player);
 
 function selectGame(number) {
   if (!games.has(number)) number = "1";
@@ -31,6 +34,7 @@ function selectGame(number) {
   player.poster = `posters/game-${id}.jpg`;
   player.src = asset;
   player.load();
+  audit.select(number);
   play.hidden = false;
 }
 

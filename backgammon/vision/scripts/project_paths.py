@@ -16,3 +16,5 @@ RECORDING_DIR = local_path(
 CALIBRATION_REPO = local_path(
     "OFFICE3_CALIBRATION_REPO", Path.home() / "Documents/GitHub/gigarepo"
 )
+
+REPLAY_DIR = local_path("OFFICE3_REPLAY_DIR", ARTIFACT_DIR / "v4-4ply")

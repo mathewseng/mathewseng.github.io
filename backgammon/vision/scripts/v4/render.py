@@ -6,13 +6,12 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 import gzip
 import json
-import math
 from pathlib import Path
 import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from project_paths import ARTIFACT_DIR
+from project_paths import ARTIFACT_DIR, REPLAY_DIR
 from v2.render_games import FrameWriter, face
 
 import av
@@ -20,7 +19,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 
-OUT = ARTIFACT_DIR / "v4"
+OUT = REPLAY_DIR
 BASE = ARTIFACT_DIR / "v2"
 FPS = 25
 WIDTH, HEIGHT = 1920, 1080
@@ -38,8 +37,15 @@ AMBER = "#ffd291"
 COLUMNS = (81, 115, 152, 187, 222, 256, 316, 350, 386, 421, 456, 491)
 PLAYER_NAME = {"white": "White", "dark": "Black"}
 PLAYER_TONE = {"white": WHITE, "dark": BLACK}
-PAGE_SIZE = 24
-REVIEW_SECONDS = 4
+TOP_MOVES = 5
+DIE_PIPS = {
+    1: ((0, 0),),
+    2: ((-1, -1), (1, 1)),
+    3: ((-1, -1), (0, 0), (1, 1)),
+    4: ((-1, -1), (1, -1), (-1, 1), (1, 1)),
+    5: ((-1, -1), (1, -1), (0, 0), (-1, 1), (1, 1)),
+    6: ((-1, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (1, 1)),
+}
 
 
 def write(draw, x, y, text, size, fill=TEXT, bold=False, anchor=None):
@@ -71,6 +77,8 @@ def activity(phase, player):
         return f"{name} played"
     if phase == "cube-response":
         return f"{name} to respond"
+    if phase == "cube-result":
+        return "Cube response"
     return {"opening": "Opening toss", "game-closed": "Game finished",
             "between-rolls": "Between rolls"}[phase]
 
@@ -85,15 +93,22 @@ def status_panel(state):
         owner = PLAYER_NAME[roll["player"]]
         label = f"{owner}'s {'last roll' if roll['status'] == 'last' else 'roll'}"
         write(draw, 299, 24, label, 22, PLAYER_TONE[roll["player"]], True)
-        for i, number in enumerate(roll["dice"] or [None, None]):
+        dice = sorted(roll["dice"] or [None, None], key=lambda d: d or 0, reverse=True)
+        for i, number in enumerate(dice):
             x = 557 + i * 57
-            draw.rounded_rectangle((x, 14, x + 50, 62), radius=7, fill="#344252")
-            write(draw, x + 25, 37, number if number is not None else "?", 26, TEXT, True, "mm")
+            is_white = roll["player"] == "white"
+            fill, ink = (WHITE, BG) if is_white else (BG, TEXT)
+            draw.rounded_rectangle((x, 14, x + 50, 62), radius=8, fill=fill, outline=MUTED, width=2)
+            for dx, dy in DIE_PIPS.get(number, ()):
+                px, py = x + 25 + 12 * dx, 38 + 12 * dy
+                draw.ellipse((px - 3.5, py - 3.5, px + 3.5, py + 3.5), fill=ink)
+            if number is None:
+                write(draw, x + 25, 37, "?", 25, ink, True, "mm")
     else:
         write(draw, 299, 24, "Roll pending" if phase in ("pre-roll", "opening") else "Roll", 22, MUTED)
         write(draw, 617, 23, "—", 23, MUTED, anchor="ra")
     write(draw, 709, 25, "Cube", 21, MUTED, True)
-    value = "—" if not cube else str(cube["stake"])
+    value = str(cube["stake"] or cube.get("face") or "—") if cube else "—"
     if cube and cube["offered"]:
         value += f" → {cube['offered']}"
     write(draw, 907, 21, value, 29, AMBER if cube and cube["offered"] else TEXT, True, "ra")
@@ -104,7 +119,7 @@ def equity_panel(position, loss, carried):
     image, draw = card(BW, 166)
     write(draw, 18, 13, "Game equity", 24, bold=True)
     if position and position["equities"]:
-        write(draw, BW - 17, 20, "Last evaluated position · 3 ply" if carried else "Settled position · 3 ply",
+        write(draw, BW - 17, 20, "Last evaluated position" if carried else "Settled position",
               17, MUTED, anchor="ra")
     columns = [(207, "Equity"), (310, "Win"), (424, "Single"), (539, "Gammon"),
                (658, "Backgammon"), (792, "Total EV loss")]
@@ -131,12 +146,12 @@ def notation(value):
     return value.replace("Pass — no legal move", "Pass")
 
 
-def action_panel(state, entry, page=0, review=False):
+def action_panel(state, entry):
     image, draw = card(RW, RH)
     x = 24
     phase, player = state["phase"], state["player"]
     roll = state.get("roll")
-    write(draw, x, 23, "Decision review" if review else "Decision analysis", 25, bold=True)
+    write(draw, x, 23, "Decision analysis", 25, bold=True)
     if not entry:
         line = activity(phase, player)
         write(draw, x, 86, line, 40, PLAYER_TONE.get(player, TEXT), True)
@@ -153,83 +168,82 @@ def action_panel(state, entry, page=0, review=False):
     if state["decision"] == "cube":
         offerer = PLAYER_NAME[entry["offerer"]]
         write(draw, x, 85, f"{offerer} offers {entry['preOfferStake']} → {entry['offeredFace']}", 35, WHITE, True)
-        write(draw, x, 143, activity(phase, player), 24, PLAYER_TONE[player], True)
+        label = activity(phase, player)
+        if phase == "cube-result":
+            label = f"{PLAYER_NAME[player]} takes" if entry.get("reply") == "take" else "Reply unconfirmed"
+        write(draw, x, 143, label, 24, PLAYER_TONE.get(player, MUTED), True)
+        if not entry.get("options"):
+            write(draw, x, 227, "Awaiting a verified board position", 25, MUTED)
+            return bgr(image)
         write(draw, x, 227, "Best cube action", 19, MUTED, True)
         write(draw, x, 263, entry["recommendation"], 40, GREEN, True)
         write(draw, x, 334, f"Best reply   {entry['bestReply']}", 25)
         write(draw, RW - x, 334, f"Offer EV loss   {entry['offerEvLoss']:.3f}", 25, AMBER, True, "ra")
         draw.line((x, 400, RW - x, 400), fill=LINE)
         write(draw, x, 424, "Action", 20, MUTED, True)
-        write(draw, RW - x, 424, "4-ply EV", 20, MUTED, True, "ra")
-        options = [("No redouble", "noDouble"), ("Redouble / take", "take"), ("Redouble / pass", "pass")]
-        for i, (label, key) in enumerate(options):
-            write(draw, x, 474 + i * 55, label, 25)
+        write(draw, RW - x, 424, "EV", 20, MUTED, True, "ra")
+        label = "Double" if entry["preOfferStake"] == 1 else "Redouble"
+        options = [(f"No {label.lower()}", "noDouble"), (f"{label} / take", "take"), (f"{label} / pass", "pass")]
+        for i, (action, key) in enumerate(options):
+            write(draw, x, 474 + i * 55, action, 25)
             write(draw, RW - x, 474 + i * 55, f"{entry['options'][key]:+.3f}", 25, anchor="ra")
         return bgr(image)
 
     player = entry["player"]
-    dice = "–".join(map(str, entry["dice"]))
-    write(draw, x, 70, f"{PLAYER_NAME[player]} {'rolled' if phase == 'played' else 'rolls'} {dice}", 36,
+    dice = "–".join(map(str, sorted(entry["dice"], reverse=True)))
+    write(draw, x, 77, f"{PLAYER_NAME[player]} {'rolled' if phase == 'played' else 'rolls'} {dice}", 38,
           PLAYER_TONE[player], True)
-    write(draw, x, 130, "Best move · 4 ply", 19, MUTED, True)
-    write(draw, x, 163, notation(entry["best"]["notation"]), 33, GREEN, True)
-    write(draw, RW - x, 174, f"{entry['best']['equity']:+.3f} EV", 25, GREEN, True, "ra")
-    if (phase == "played" or review) and entry["played"]:
-        write(draw, x, 216, f"Played   {notation(entry['played']['notation'])}", 21)
+    if "inferred-from-moves" in entry.get("evidence", ""):
+        write(draw, x, 127, "Roll inferred from play", 19, MUTED)
+    moves = entry["actions"][:TOP_MOVES]
+    draw.line((x, 187, RW - x, 187), fill=LINE)
+    write(draw, x, 219, "Top moves", 24, MUTED, True)
+    write(draw, RW - x, 219, "EV", 24, MUTED, True, "ra")
+    for rank, move in enumerate(moves, 1):
+        y = 287 + (rank - 1) * 82
+        played = move["isPlayed"] and phase == "played"
+        if rank == 1 or played:
+            fill = "#25413d" if rank == 1 else "#443d35"
+            draw.rounded_rectangle((x - 5, y - 10, RW - x + 5, y + 43), radius=6, fill=fill)
+        tone = GREEN if rank == 1 else AMBER if played else TEXT
+        write(draw, x + 8, y, rank, 24, tone, True)
+        write(draw, x + 63, y, notation(move["notation"]), 29, tone, rank == 1)
+        write(draw, RW - x, y, f"{move['equity4']:+.3f}", 29, tone, rank == 1, "ra")
+    if phase == "played" and entry["played"]:
+        draw.line((x, 705, RW - x, 705), fill=LINE)
+        played = (f"Played   {notation(entry['played']['notation'])}"
+                  if any(a["isPlayed"] for a in moves) else "Played outside top five")
+        write(draw, x, 733, played, 25)
         loss_label = "EV loss" if entry["countedInGameLoss"] else "Estimated EV loss"
-        write(draw, RW - x, 216, f"{loss_label}   {entry['evLoss']:.3f}", 21, AMBER, True, "ra")
-    draw.line((x, 260, RW - x, 260), fill=LINE)
-    all_moves = entry["actions"]
-    page_count = max(1, math.ceil(len(all_moves) / PAGE_SIZE))
-    moves = all_moves[page * PAGE_SIZE:(page + 1) * PAGE_SIZE]
-    column_width = 417
-    for col in range(math.ceil(len(moves) / 12)):
-        left = x + (column_width + 21) * col
-        write(draw, left, 278, "Legal move", 18, MUTED, True)
-        write(draw, left + 325, 278, "3 ply", 17, MUTED, True, "ra")
-        write(draw, left + column_width, 278, "4 ply", 17, MUTED, True, "ra")
-        for j, move in enumerate(moves[col * 12:(col + 1) * 12]):
-            y = 321 + j * 42
-            played = move["isPlayed"] and (phase == "played" or review)
-            if move["isBest"] or played:
-                draw.rounded_rectangle((left - 5, y - 4, left + column_width + 5, y + 27),
-                                       radius=4, fill="#25413d" if move["isBest"] else "#443d35")
-            tone = GREEN if move["isBest"] else AMBER if played else TEXT
-            write(draw, left, y, notation(move["notation"]), 19, tone, move["isBest"])
-            write(draw, left + 325, y, f"{move['equity3']:+.3f}", 19, anchor="ra")
-            value = f"{move['equity4']:+.3f}" if "equity4" in move else "—"
-            write(draw, left + column_width, y, value, 19, anchor="ra")
-    write(draw, x, 858, f"{len(all_moves)} legal results   ·   Page {page + 1}/{page_count}", 19, TEXT, True)
-    write(draw, x, 889, "All results at 3 ply. The top four and observed move are checked at 4 ply.", 17, MUTED)
-    if page_count > 1 and not review:
-        write(draw, x, 916, "Additional results follow the footage.", 17, MUTED)
+        write(draw, RW - x, 733, f"{loss_label}   {entry['evLoss']:.3f}", 24, AMBER, True, "ra")
     return bgr(image)
 
 
 @lru_cache(maxsize=256)
 def point_marks(counts):
     marks = []
-    for point, (white, black) in enumerate(counts, 1):
-        count = white or black
-        if count == 0:
+    for point, value in enumerate(counts, 1):
+        if not value:
             continue
         x = COLUMNS[12 - point if point <= 12 else point - 13] * BW / 560
-        y = 23 if point <= 12 else BH - 23
-        marks.append((x, y, count, WHITE if white else BLACK))
+        y = 25 if point <= 12 else BH - 25
+        marks.append((x, y, abs(value), value > 0))
     layer = Image.new("RGBA", (BW, BH))
     draw = ImageDraw.Draw(layer)
-    for x, y, count, tone in marks:
-        draw.rounded_rectangle((x - 15, y - 13, x + 15, y + 13), radius=6, fill="#16202b", outline=tone)
-        write(draw, x, y, count, 18, tone, True, "mm")
+    for x, y, count, white in marks:
+        fill, ink, outline = (WHITE, BG, "#56483b") if white else ("#172331", TEXT, BLACK)
+        draw.rounded_rectangle((x - 19, y - 16, x + 19, y + 16), radius=8, fill=fill,
+                               outline=outline, width=2)
+        write(draw, x, y, count, 23, ink, True, "mm")
     rgba = np.asarray(layer)
     ys, xs = np.nonzero(rgba[:, :, 3])
     return ys, xs, rgba[ys, xs, :3][:, ::-1]
 
 
-def board_image(frame, position):
+def board_image(frame, points):
     pixels = cv2.resize(frame.to_ndarray(format="bgr24"), (BW, BH), interpolation=cv2.INTER_LINEAR)
-    if position:
-        y, x, color = point_marks(tuple(map(tuple, position["points"])))
+    if points is not None:
+        y, x, color = point_marks(tuple(points))
         pixels[y, x] = color
     return pixels
 
@@ -249,52 +263,54 @@ def rows(file):
         yield from map(json.loads, stream)
 
 
-def game_frames(game):
+def game_frames(game, start=0):
     for seg in game["segments"]:
+        first = max(seg["firstFrame"], seg["firstFrame"] + start - seg["firstGameFrame"])
+        if first >= seg["lastExclusive"]:
+            continue
         with av.open(str(ARTIFACT_DIR / "board" / seg["source"])) as media:
             media.streams.video[0].codec_context.thread_count = 1
             for frame, image in enumerate(media.decode(video=0)):
                 if frame >= seg["lastExclusive"]:
                     break
-                if frame >= seg["firstFrame"]:
+                if frame >= first:
                     yield seg["firstGameFrame"] + frame - seg["firstFrame"], image
-
-
-def mux_audio(video, source, staging, total_frames):
-    duration = f"{total_frames / FPS:.2f}"
-    subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(video), "-t", duration,
-                    "-i", str(source), "-map", "0:v:0", "-map", "1:a:0", "-c", "copy",
-                    "-movflags", "+faststart", str(staging)], check=True)
-
-
-def review_pages(writer, canvas, number, entries, contexts):
-    for key, entry in entries.items():
-        pixels, pre_state, position = contexts[entry["preMoveFrame"]]
-        canvas[:BY] = header(number, entry["preMoveFrame"], f"Review · Pre-move frame {entry['preMoveFrame']:,}")
-        canvas[BY:BY + BH, BX:BX + BW] = pixels
-        state = {**pre_state, "phase": "played", "player": entry["player"], "decision": int(key), "roll": {
-            "status": "current", "player": entry["player"], "dice": entry["dice"],
-        }}
-        canvas[792:868, BX:BX + BW] = status_panel(state)
-        canvas[882:1048, BX:BX + BW] = equity_panel(position, pre_state["loss"], False)
-        for page in range(1, math.ceil(len(entry["actions"]) / PAGE_SIZE)):
-            canvas[RY:RY + RH, RX:RX + RW] = action_panel(state, entry, page, True)
-            for _ in range(REVIEW_SECONDS * FPS):
-                writer.write(canvas)
 
 
 def render(number, limit, software):
     game = json.loads((BASE / f"game-{number}-analysis.json").read_text())
     prefix = f"game-{number:02}"
     data = json.loads((OUT / f"{prefix}-game.json").read_text())
+    if data["scoringDepth"] != 4:
+        raise ValueError("Replay data must have complete four-ply evaluation")
     footage = game["frames"] if limit is None else min(game["frames"], limit * FPS)
     folder = OUT / "games"
     folder.mkdir(exist_ok=True)
     name = prefix + ("-preview" if limit else "-analysis")
-    temporary = folder / f".{name}-video.mp4"
     staging = folder / f".{name}-mux.mp4"
     final = folder / f"{name}.mp4"
-    writer = FrameWriter(temporary, software)
+    audio = BASE / "games" / f"{prefix}-analysis.mp4"
+    muxer = subprocess.Popen([
+        "ffmpeg", "-nostdin", "-v", "error", "-y", "-f", "mp4", "-i", "pipe:0",
+        "-t", f"{footage / FPS:.2f}", "-i", str(audio),
+        "-map", "0:v:0", "-map", "1:a:0", "-c", "copy",
+        "-movflags", "+faststart", str(staging),
+    ], stdin=subprocess.PIPE)
+    try:
+        frame_count = render_frames(muxer.stdin, data, game, number, footage, software)
+    finally:
+        muxer.stdin.close()
+        status = muxer.wait()
+    if status:
+        raise RuntimeError(f"Game {number} audio mux failed with exit code {status}")
+    staging.replace(final)
+    print(json.dumps({"game": number, "footageFrames": footage, "outputFrames": frame_count,
+                      "video": str(final)}), flush=True)
+
+
+def render_frames(output, data, game, number, footage, software, start=0):
+    prefix = f"game-{number:02}"
+    writer = FrameWriter(output, software, bitrate=2_450_000)
     canvas = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
     canvas[:] = (28, 21, 16)
     board_region = canvas[BY:BY + BH, BX:BX + BW]
@@ -303,12 +319,17 @@ def render(number, limit, software):
     right_region = canvas[RY:RY + RH, RX:RX + RW]
     status_key = right_key = equity_key = None
     evaluated_position = None
-    review_contexts = {}
     decisions = data["decisions"]
-    extra = {key: row for key, row in decisions.items() if key != "cube" and len(row["actions"]) > PAGE_SIZE}
-    capture = {row["preMoveFrame"] for row in extra.values()} if limit is None else set()
 
-    for (index, frame), state in zip(game_frames(game), rows(OUT / f"{prefix}-state.jsonl.gz")):
+    states = rows(OUT / f"{prefix}-state.jsonl.gz")
+    for _ in range(start):
+        state = next(states)
+        position = data["positions"].get(str(state["position"]))
+        if position and position["equities"]:
+            evaluated_position = position
+        if position is None or state["phase"] == "game-closed":
+            evaluated_position = None
+    for (index, frame), state in zip(game_frames(game, start), states):
         if index >= footage:
             break
         if state["frame"] != index:
@@ -318,10 +339,11 @@ def render(number, limit, software):
             evaluated_position = position
         if position is None or state["phase"] == "game-closed":
             evaluated_position = None
-        board_region[:] = board_image(frame, None if state["phase"] == "game-closed" else position)
-        if index in capture:
-            review_contexts[index] = board_region.copy(), state, position
-        if index % FPS == 0:
+        points = state.get("displayPoints")
+        if points is None and position:
+            points = [white - black for white, black in position["points"]]
+        board_region[:] = board_image(frame, None if state["phase"] == "game-closed" else points)
+        if index == start or index % FPS == 0:
             canvas[:BY] = header(number, index)
         key = state["phase"], state["player"], state["roll"], state["cube"]
         if key != status_key:
@@ -336,16 +358,10 @@ def render(number, limit, software):
             right_region[:] = action_panel(state, decisions.get(str(state["decision"])))
             right_key = key
         writer.write(canvas)
-    if writer.frame_count != footage:
-        raise RuntimeError(f"Game {number} has {writer.frame_count} of {footage} requested frames")
-    if limit is None:
-        review_pages(writer, canvas, number, extra, review_contexts)
+    if writer.frame_count != footage - start:
+        raise RuntimeError(f"Game {number} has {writer.frame_count} of {footage - start} requested frames")
     writer.close()
-    mux_audio(temporary, BASE / "games" / f"{prefix}-analysis.mp4", staging, writer.frame_count)
-    staging.replace(final)
-    temporary.unlink()
-    print(json.dumps({"game": number, "footageFrames": footage, "outputFrames": writer.frame_count,
-                      "video": str(final)}), flush=True)
+    return writer.frame_count
 
 
 def main():

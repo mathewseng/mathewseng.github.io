@@ -6,10 +6,10 @@
     <meta name="description" content="Watch five Office-3 backgammon games with detected rolls, cube state, and GNUbg move analysis." />
     <title>Backgammon Vision</title>
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=8d64b2321f9bd926" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=8d64b2321f9bd926" />
-    <link rel="stylesheet" href="styles.css?bgv=8d64b2321f9bd926" />
-    <script type="module" src="app.js?bgv=8d64b2321f9bd926"></script>
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=20ba5c00833b32be" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=20ba5c00833b32be" />
+    <link rel="stylesheet" href="styles.css?bgv=20ba5c00833b32be" />
+    <script type="module" src="app.js?bgv=20ba5c00833b32be"></script>
   </head>
   <body class="vision-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -25,18 +25,29 @@
       </header>
       <main id="main" tabindex="-1">
         <header class="vision-heading">
-          <h1>Backgammon Vision</h1>
-          <p>Five recorded games with checker counts, dice, cube state, and 3–4-ply move analysis.</p>
+          <div>
+            <h1>Backgammon Vision</h1>
+            <p>Five recorded games with checker counts, dice, cube state, and move analysis.</p>
+          </div>
+          <div class="vision-modes" role="group" aria-label="Replay view">
+            <button type="button" data-view="analysis" aria-pressed="true">Analysis</button>
+            <button type="button" data-view="vision" aria-pressed="false">Vision</button>
+          </div>
         </header>
         <div class="vision-layout">
           <section class="vision-stage" aria-labelledby="selected-game">
             <div class="vision-player">
               <video id="replay" controls playsinline preload="none" poster="posters/game-01.jpg"
-                src="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261117-v4/game-01-analysis.mp4"
+                src="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261117-v5/game-01-analysis.mp4"
                 aria-labelledby="selected-game">
                 Your browser does not support embedded video. Use the download link below.
               </video>
+              <canvas id="detection-overlay" width="1920" height="1080" aria-hidden="true" hidden></canvas>
               <button id="play-replay" class="vision-play" type="button" aria-label="Play Game 1" hidden></button>
+            </div>
+            <div class="vision-audit-footer">
+              <p id="audit-status" role="status" hidden></p>
+              <button id="audit-fullscreen" type="button" hidden>Full screen</button>
             </div>
             <div class="vision-caption">
               <div>
@@ -44,7 +55,7 @@
                 <p id="game-note">The recording starts mid-game.</p>
               </div>
               <a id="download-replay" class="vision-download"
-                href="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261117-v4/game-01-analysis.mp4">
+                href="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261117-v5/game-01-analysis.mp4">
                 Download MP4 <span aria-hidden="true">↓</span>
               </a>
             </div>
@@ -61,35 +72,35 @@
               <li>
                 <a href="?game=1" data-game="1" data-note="The recording starts mid-game." aria-current="true">
                   <img src="posters/game-01-thumb.jpg" width="56" height="42" alt="" />
-                  <span>Game 1</span><time datetime="PT10M24S">10:24</time>
+                  <span>Game 1</span><time datetime="PT10M12S">10:12</time>
                 </a>
               </li>
               <li>
                 <a href="?game=2" data-game="2">
                   <img src="posters/game-02-thumb.jpg" width="56" height="42" alt="" />
-                  <span>Game 2</span><time datetime="PT5M41S">5:41</time>
+                  <span>Game 2</span><time datetime="PT5M33S">5:33</time>
                 </a>
               </li>
               <li>
                 <a href="?game=3" data-game="3">
                   <img src="posters/game-03-thumb.jpg" width="56" height="42" alt="" />
-                  <span>Game 3</span><time datetime="PT22M49S">22:49</time>
+                  <span>Game 3</span><time datetime="PT21M45S">21:45</time>
                 </a>
               </li>
               <li>
                 <a href="?game=4" data-game="4">
                   <img src="posters/game-04-thumb.jpg" width="56" height="42" alt="" />
-                  <span>Game 4</span><time datetime="PT23M19S">23:19</time>
+                  <span>Game 4</span><time datetime="PT21M55S">21:55</time>
                 </a>
               </li>
               <li>
                 <a href="?game=5" data-game="5" data-note="Includes the 2 → 4 cube offer and response analysis.">
                   <img src="posters/game-05-thumb.jpg" width="56" height="42" alt="" />
-                  <span>Game 5</span><time datetime="PT16M9S">16:09</time>
+                  <span>Game 5</span><time datetime="PT16M1S">16:01</time>
                 </a>
               </li>
             </ol>
-            <noscript><p><a href="https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v4">View all five MP4s on GitHub</a></p></noscript>
+            <noscript><p><a href="https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v5">View all five MP4s on GitHub</a></p></noscript>
           </nav>
         </div>
       </main>

@@ -19,19 +19,21 @@ Rebuild or inspect the current replay from this directory.
 
     python3 v4/observations.py
     bun v4/reconstruct.mjs
+    bun v4/refine-replay.mjs
+    bun v4/rescore.mjs
     bun v4/verify.mjs
     python3 v4/render.py --jobs 2
     python3 v4/verify_media.py
+    python3 v4/export_audit.py ../audit
     python3 v4/query.py 1 --frame 25
     python3 v4/query.py 5 --seconds 748.88
 
 The observations, reconstruction and rendering commands accept one or more game
-numbers. The final MP4s live in v4/games in the artifact folder. The query resolves
+numbers. The final MP4s live in v4-4ply/games in the artifact folder. The query resolves
 the original source clip, source frame and PTS, the most recent settled checker
 board, current phase, roller, dice, cube, decision and cumulative EV loss at a
 25 fps game frame. The accompanying game JSON has the full EV table and
-distinguishes inferred roll faces from repeated direct observations. The silent
-review cards after the footage show additional action rows for that same roller.
+distinguishes inferred roll faces from repeated direct observations. The video shows the five highest ranked checker moves.
 
 Roll and board state
 
@@ -48,12 +50,19 @@ Roll and board state
   unset. The frame audits and held dice are coverage measurements. They do not
   establish ground-truth accuracy for every turn.
 
-  Every scored legal result is evaluated at 3 ply. The top four and supported
-  played result are evaluated at 4 ply. Inferred rolls can have an estimated
-  loss displayed after play. That loss is excluded from the cumulative total.
-  Equities use centered-at-one cubeful money evaluation where supported and
-  otherwise use cubeless equity. The reviewed redouble uses the labelled
-  cube context explicitly. Match score was unavailable in the footage.
+  The final scorer evaluates every legal result and position at four ply. It
+  reuses exact four-ply outputs for unchanged XGIDs. The EV display omits search
+  depth. Estimated losses on inferred rolls stay outside the cumulative total.
+  Centered, one-unit checker contexts use cubeful money equity. Checker contexts
+  where ownership is unknown use cubeless equity. The reviewed cube offers use
+  their visible stake and ownership context directly.
+
+  Point badges follow individually supported legal checker steps. A saturated
+  five-checker reading is a lower bound for a taller stack. The forecast stays
+  attached to the settled position. An identified pickup gates the next
+  player’s “to roll” caption. Uniquely constrained dice are recovered from the
+  completed checker move. The audit sidecars report the original frame-level
+  vision detections and expose the difference from the inferred replay state.
 
   Game 1 begins with the first captured frame and an open game. Games 2 through
   5 begin at verified opening boards. The original v2 and v3 videos and source

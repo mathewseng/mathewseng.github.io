@@ -20,7 +20,7 @@ function walk(dir) {
     .filter((e) => !e.name.startsWith("."))
     .flatMap((e) =>
       e.isDirectory()
-        ? [
+        ? (dir === join(base, "vision") && e.name === "audit") || [
             "tests",
             "test-results",
             "scripts",

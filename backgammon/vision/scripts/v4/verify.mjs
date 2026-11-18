@@ -2,12 +2,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { artifactDir, solverUrl } from '../project_paths.mjs';
+import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
 
 const { fromXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
-const { boardKey, legalTurns } = await import(solverUrl('backgammon/core/rules.mjs'));
-const dir = path.join(artifactDir, 'v4');
+const { applyStep, boardKey, legalPaths, legalTurns } = await import(solverUrl('backgammon/core/rules.mjs'));
+const dir = replayDir;
 const base = path.join(artifactDir, 'v2');
 const summary = [];
 const read = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
@@ -18,12 +18,29 @@ for (const game of [1, 2, 3, 4, 5]) {
   const rows = rowsFrom(path.join(dir, prefix + '-state.jsonl.gz'));
   assert.equal(rows.length, source.frames);
   assert.equal(data.frames, rows.length);
+  assert.equal(data.scoringDepth, 4);
+  const countPaths = new Map();
+  for (const [id, turn] of data.turns.entries()) {
+    const decision = data.decisions[id + 1];
+    if (!decision || !turn.before) continue;
+    const state = fromXGID(decision.xgid);
+    const slots = new Set();
+    for (const { steps } of legalPaths(state)) {
+      let position = state;
+      for (const step of steps) {
+        position = applyStep(position, step, state.turn);
+        slots.add(position.points.join(','));
+      }
+    }
+    countPaths.set(id + 1, slots);
+  }
 
   let lossIndex = 0;
   let totalLegal = 0;
   const loss = { white: { loss: 0, count: 0 }, dark: { loss: 0, count: 0 } };
   const counts = { checkerBoard: 0, role: 0, currentRoll: 0, completeRoll: 0,
-    cube: 0, missingRollRead: 0, anchoredRollRead: 0, carriedCheckerFrames: 0 };
+    cube: 0, missingRollRead: 0, anchoredRollRead: 0, carriedCheckerFrames: 0, liveCountFrames: 0, tallStackFrames: 0,
+    toRollFrames: 0, cubeOfferFrames: 0 };
   for (const part of source.segments) {
     const raw = rowsFrom(path.join(base, 'state', part.source.replace(/\.mp4$/, '.jsonl.gz')));
     for (let i = part.firstFrame; i < part.lastExclusive; i++) {
@@ -57,7 +74,20 @@ for (const game of [1, 2, 3, 4, 5]) {
         counts.currentRoll++;
         if (row.roll.dice?.every((d) => Number.isInteger(d) && d >= 1 && d <= 6)) counts.completeRoll++;
       }
+      if (row.phase === 'pre-roll') {
+        const previous = data.turns[row.roll.id - 1];
+        assert.notEqual(previous.player, row.player);
+        assert(Number.isInteger(previous.pickupFrame) && previous.pickupFrame <= frame);
+        counts.toRollFrames++;
+      }
+      if (row.displayPoints) {
+        assert.equal(row.displayPoints.length, 24);
+        assert(countPaths.get(row.turn)?.has(row.displayPoints.join(',')));
+        counts.liveCountFrames++;
+        if (row.displayPoints.some((n) => Math.abs(n) > 5)) counts.tallStackFrames++;
+      }
       if (row.cube?.offered) {
+        counts.cubeOfferFrames++;
         assert.equal(row.cube.offered, row.cube.stake * 2);
         assert.equal(row.phase, 'cube-response');
       }
@@ -88,7 +118,10 @@ for (const game of [1, 2, 3, 4, 5]) {
     const legal = legalTurns(state);
     assert.equal(state.turn, decision.player === 'white' ? 0 : 1);
     assert.deepEqual(legal.map((r) => r.key).sort(), decision.actions.map((r) => r.key).sort());
-    assert(decision.actions.slice(0, 4).every((r) => Number.isFinite(r.equity4)));
+    assert.equal(decision.preset.allActions, 4);
+    assert(decision.actions.every((r, i) =>
+      Number.isFinite(r.equity4) && (i === 0 || r.equity4 <= decision.actions[i - 1].equity4)));
+    assert(decision.actions.every((r) => r.equity3 === undefined));
     const best = decision.actions.find((r) => r.isBest);
     assert.equal(best.equity4, Math.max(...decision.actions.map((r) => r.equity4 ?? -Infinity)));
     if (decision.played) assert(decision.actions.some((r) => r.isPlayed && Number.isFinite(r.equity4)));
@@ -102,12 +135,19 @@ for (const game of [1, 2, 3, 4, 5]) {
     }
     totalLegal += legal.length;
   }
+  assert(Object.values(data.positions).every((p) => !p.equities || p.equities.plies === 4));
+  assert(counts.cubeOfferFrames > 0);
   if (game === 1) {
     // The first visible white roll stays stable across drift in both die readings.
     for (const row of rows.slice(0, 465)) {
       assert.equal(row.roll.player, 'white');
       assert.deepEqual(row.roll.dice, [4, 5]);
     }
+  }
+  if (game === 1 || game === 3) {
+    const frame = game === 1 ? 8206 : 14239;
+    const face = game === 1 ? 3 : 2;
+    assert.deepEqual(rows[frame].roll.dice, [face, face]);
   }
   if (game === 4) {
     const row = rows[12341];
