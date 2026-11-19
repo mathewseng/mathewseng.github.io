@@ -87,7 +87,7 @@ function renderReport(report, seek) {
     const checks = Object.values(report.modelChecks);
     const reviewed = checks.reduce((sum, check) => sum + check.reviewed, 0);
     const unreadable = checks.reduce((sum, check) => sum + check.unreadable, 0);
-    section.append(element("p", `${reviewed} frames reviewed across the session. ${unreadable} ambiguous samples were excluded from training and scoring.`, "muted small"));
+    section.append(element("p", `${reviewed} dice and checker samples reviewed across the session. ${unreadable} ambiguous samples were excluded from training and scoring.`, "muted small"));
     const diceBody = report.diceBody;
     if (diceBody) {
       const { baselineCorrect, candidateCorrect, heldOut, pairs, corroboratedPairs, changed } = diceBody;
@@ -189,6 +189,16 @@ function renderReport(report, seek) {
   }
   if (counts.confirmedConsecutive) {
     flagged.append(element("p", "The footage confirms successive throws from the same player. See the timestamped review above.", "muted small"));
+  }
+  if (report.footprintTiming?.shiftedRolls.length) {
+    const { controls, shiftedRolls } = report.footprintTiming;
+    const timingNotes = shiftedRolls.map(roll => {
+      const shift = (roll.previousFrame - roll.frame) / report.fps;
+      return { frame: roll.frame, title: `Roll starts ${Math.abs(shift).toFixed(1)} seconds ${shift > 0 ? "earlier" : "later"}`,
+        detail: `Previous marker ${timecode(roll.previousFrame, report.fps)} · Both dice locations clear at ${timecode(roll.clear, report.fps)}.` };
+    });
+    flagged.append(element("p", `Matching both stationary dice and then the empty board agreed with the reviewed timing in ${controls} rolls.`, "muted small"),
+      reviewList(timingNotes, entry => entry.title));
   }
   if (issues.length) {
     const picker = element("label", "Filter checks ", "vision-report-filter");

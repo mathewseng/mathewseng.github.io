@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v16");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v17");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -28,6 +28,8 @@ const boardTrialPath = path.join(replayDir, "board-witness-training", "validatio
 const boardTrial = fs.existsSync(boardTrialPath) ? read(boardTrialPath) : null;
 const diceTrialPath = path.join(replayDir, "dice-witness-training", "dice-track-validation.json");
 const diceTrial = fs.existsSync(diceTrialPath) ? read(diceTrialPath) : null;
+const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
+const footprintValidation = fs.existsSync(footprintReportPath) ? read(footprintReportPath) : [];
 
 const issueNames = {
   "repeated-player": "Consecutive rolls assigned to the same player",
@@ -254,6 +256,8 @@ function report(number) {
     .filter(entry => entry.text).map(({ frame, text }) => ({ frame, text }))].sort((a, b) => a.frame - b.frame);
   const faceResolutions = (replay.contextRecovery ?? []).filter(entry => entry.diceFrames?.length)
     .map(({ frame, diceFrames }) => ({ frame, frames: diceFrames.length }));
+  const shiftedRolls = (replay.contextRecovery ?? []).filter(entry => entry.kind === "reviewed-turn-order" &&
+    Number.isInteger(entry.previousFrame) && Number.isInteger(entry.clear));
   const report = { game: number, fps: data.fps, counts, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
@@ -265,6 +269,8 @@ function report(number) {
       checkers: boardTrial && { training: boardTrial.extraLabels.train, results: boardTrial.witnessSummary },
       dice: diceTrial && { extraTracks: diceTrial.extraTrainingTracks, frames: diceTrial.trainingFrames, results: diceTrial.summary },
     },
+    footprintTiming: { controls: footprintValidation.filter(item => item.clear !== null).length, shiftedRolls,
+      testedWindows: footprintValidation.filter(item => item.game === number) },
   };
   fs.writeFileSync(path.join(reportDir, prefix + ".json"), JSON.stringify(report) + "\n");
   console.log(prefix, counts, Object.fromEntries(Object.keys(issueNames).map(kind =>

@@ -69,6 +69,20 @@ tracks and dropped from 8 to 5 correct on 10 separately reviewed faces.
 Both read the four newly held-out faces correctly. Replay inference keeps the
 current reader weights. Reports record both trials.
 
+## Roll timing and frozen starting positions
+
+| Game and time | Footage and replay correction |
+| --- | --- |
+| Game 3, 0:42.92–1:29.36 | The previous 1:14 marker was a late read of the same dice. White's 4–3 now starts before either checker moves. The frozen board and resulting two hits verify `8/5 5/1`. A hand leaves one die covered near 1:29. The roll persists until both locations visibly clear. |
+| Game 1, 7:26.64 | Black's 3–1 bears off one checker and advances another to the one-point. Black's off count increases from three to four. The verified checker counts carry through White's fan and establish Black's starting board for the following 4–1. |
+| Game 5, 0:25.44–2:08.52 | White's completed opening move establishes Black's starting position for 6–4. A clear board before pickup verifies `24/20 20/14` and the replay tracks the 0.045 checker EVL. White's later demonstrations during the pause remain outside the roll. |
+
+Matching pixels at both stationary dice locations and comparing them with the
+empty board recovered onset and pickup within the reviewed windows on four
+checks. An occlusion-only window in Game 3 produced no pickup. The time change
+in Game 3 is linked from Reports. The other checks leave the replay intervals
+as reviewed.
+
 ## Opening and overlay review
 
 - Game 3’s opening toss is visible from about 0:03.4. The settled board at
@@ -105,7 +119,7 @@ the actual move and its resulting probabilities.
 In Game 5, Black picks up around 2:08. White moves checkers back and forth
 during the pause around 3:12–3:21 with no settled dice in view. The next
 verified roll is White’s 6–6 at 5:01. The starting checker position for
-Black’s earlier 6–4 still needs a source review.
+Black’s earlier 6–4 is established from White’s opening move.
 
 
 ## Reports and model review

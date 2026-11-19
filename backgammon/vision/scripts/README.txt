@@ -171,6 +171,22 @@ Refresh the context and reviewed episodes
   These outputs add candidate benchmark results to Reports. Model weights
   are saved beside their validation results for further comparison.
 
+  To apply the roll timing follow-up, start from the v17 replay. The timing
+  check matches the dice from later views against the board before the roll.
+  A confirmed pickup matches the empty board at both dice locations.
+
+    python3 v4/dice-footprint-timing.py v4/dice-footprint-controls.json "$prepared-timing.json"
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/reconcile-reviewed-turns.mjs \
+      "$previous" calibration/reviewed-board-witnesses.json '' "$prepared-timing.json"
+    OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs
+    OFFICE3_REPLAY_DIR="$prepared-handoff" bun v4/reconcile-reviewed-turns.mjs \
+      "$output" v4/reviewed-fan-handoff.json
+    OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared-handoff" bun v4/rescore.mjs 1
+
+  Copy the timing output to dice-footprint-validation.json in the scored replay
+  directory. Keep the earlier settled-face and candidate-reader benchmark results
+  with the new replay so Reports can include the earlier model checks.
+
 Manual reader calibration
 
     python3 calibration/sample.py

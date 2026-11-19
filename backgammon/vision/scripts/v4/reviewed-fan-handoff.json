@@ -1,0 +1,6 @@
+{
+  "1": [
+    {"kind":"replace","starts":[453.2],"player":"white","dice":[5,null],"fan":true,"beforeBoard":{"seconds":453.24,"clip":7,"sourceFrame":819,"points":{"1":2,"2":2,"3":3,"4":3,"5":3,"17":1,"20":-2,"22":-4,"23":-2,"24":-3},"bar":[1,0],"off":[0,4]},"afterBoard":{"seconds":454.96,"clip":7,"sourceFrame":862,"points":{"1":2,"2":2,"3":3,"4":3,"5":3,"17":1,"20":-2,"22":-4,"23":-2,"24":-3},"bar":[1,0],"off":[0,4]},"text":"White stays on the bar and the board is unchanged through pickup. One face is five. Carry the verified checker counts from Black’s bear-off."},
+    {"kind":"replace","starts":[455.52],"player":"dark","dice":[4,1],"beforeBoard":{"seconds":454.96,"clip":7,"sourceFrame":862,"points":{"1":2,"2":2,"3":3,"4":3,"5":3,"17":1,"20":-2,"22":-4,"23":-2,"24":-3},"bar":[1,0],"off":[0,4]},"text":"The same verified board from White’s fan supplies Black’s starting position for this throw. The played move remains unconfirmed."}
+  ]
+}

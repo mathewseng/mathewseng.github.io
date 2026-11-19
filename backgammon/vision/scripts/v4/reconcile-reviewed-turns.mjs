@@ -17,6 +17,7 @@ if (!source) throw new Error('Supply the scored input replay directory.');
 const notesFile = process.argv[3] ?? new URL('./reviewed-turn-order.json', import.meta.url);
 const notes = JSON.parse(fs.readFileSync(notesFile));
 const faceEvidence = process.argv[4] ? JSON.parse(fs.readFileSync(process.argv[4])) : {};
+const footprintTimings = process.argv[5] ? JSON.parse(fs.readFileSync(process.argv[5])) : [];
 const read = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
 const frames = seconds => Math.round(seconds * 25);
 const idOf = roll => roll.decision ?? roll.sourceTurns[0];
@@ -221,8 +222,15 @@ async function recover(game, rows, recording) {
   const offer = game.decisions.cube;
   const boundaries = [...breaks, ...(offer ? [offer.startFrame, offer.endFrame] : []), game.ending?.frame ?? rows.length];
   let nextPosition = Math.max(...Object.keys(game.positions).map(Number)) + 1;
-  for (const note of notes[game.game]) {
-    const starts = note.starts?.map(frames) ?? [];
+  for (const reviewed of notes[game.game]) {
+    const starts = reviewed.starts?.map(frames) ?? [];
+    const timing = reviewed.useFootprintTiming && footprintTimings.find(entry =>
+      entry.game === game.game && entry.previousStart === starts[0] && Number.isInteger(entry.clear));
+    if (reviewed.useFootprintTiming) {
+      assert(Number.isInteger(timing?.start) && Number.isInteger(timing?.clear) && timing.start < timing.clear,
+        `No verified dice timing for game ${game.game} at ${reviewed.starts[0]}.`);
+    }
+    const note = timing ? { ...reviewed, start: timing.start / 25, pickup: timing.clear / 25 } : reviewed;
     const index = starts.length ? rolls.findIndex(roll => roll.start === starts[0]) :
       rolls.findIndex(roll => roll.start > frames(note.start));
     assert(index >= 0, JSON.stringify(note));
@@ -266,6 +274,7 @@ async function recover(game, rows, recording) {
     const result = rolls[index];
     changes.push({ kind: 'reviewed-turn-order', frame: result.start, end: result.end, text: note.text,
       ...(note.confirmedDetectorMisread ? { confirmedDetectorMisread: true } : {}),
+      ...(timing ? { previousFrame: starts[0], clear: timing.clear } : {}),
       ...(result.evidence === 'settled-dice-and-legal-result' ?
         { diceFrames: faceEvidence[game.game][result.start].frames } : {}) });
     console.log(game.game, start / 25, note.kind, result.player, result.dice, 'before/after',

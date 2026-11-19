@@ -5,8 +5,6 @@
       "starts": [
         74.32
       ],
-      "start": 42.84,
-      "pickup": 89.48,
       "player": "white",
       "dice": [
         4,
@@ -63,7 +61,8 @@
           0
         ]
       },
-      "text": "White throws at 0:42 and the two dice stay at their original locations until pickup. The 4\u20133 plays 8/5/1 and hits both blots."
+      "text": "White throws around 0:42. The stationary dice place the start more than 31 seconds before the old marker. On 4\u20133, White hits both blots with 8/5 5/1.",
+      "useFootprintTiming": true
     }
   ],
   "5": [

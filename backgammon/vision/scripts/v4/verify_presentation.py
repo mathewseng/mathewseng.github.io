@@ -98,9 +98,11 @@ def verify(number):
         assert roll["decision"] == 1 and 615 not in cubes_at_roll
         assert modes["cube-take"] == ACTION_HOLD
     if number == 5:
-        roll = next(r for r in rolls if r["sourceTurns"] == [3, 4])
-        assert roll["start"] < 73 * 25 < roll["end"]
-        assert roll["dice"] == [6, 4] and roll["decision"] is None
+        roll = next(r for r in rolls if r["start"] == 636)
+        assert roll["start"] < 73 * 25 < roll["end"] == 3213
+        assert roll["dice"] == [6, 4]
+        if roll["decision"] is not None:
+            assert game["decisions"][str(roll["decision"])]["played"]["notation"] == "24/20 20/14"
         assert modes["cube-pass"] == game["frames"] - game["ending"]["frame"]
     return {"game": number, "rolls": len(rolls), "noDoubleDecisions": len(cube_rolls),
             "heldActions": len(counts), "cubeFrames": dict(modes)}
