@@ -39,6 +39,9 @@ def verify(number):
         if number == 3 and frame == 1025:
             assert basis == "After played move"
             assert equity[1]["equity"] == game["decisions"]["1"]["played"]["equity"]
+        if number == 1 and frame == 11340 and roll and roll.get("fan"):
+            assert basis == "Position estimate"
+            assert equity == position["equities"]["players"]
         equity_key = id(equity), basis, closed
         if equity_key not in equity_rendered:
             assert equity_panel(equity, basis, state["loss"], closed).shape == (256, BW, 3)
@@ -57,6 +60,8 @@ def verify(number):
         for action in actions:
             counts[action["kind"], action["frame"]] += 1
             assert action["frame"] <= frame < action["frame"] + ACTION_HOLD
+            if action.get("fan"):
+                assert action["label"] == "fanned"
         if cube_mode:
             modes[cube_mode] += 1
         key = (id(roll), id(wait), cube_mode, opening, state["phase"] == "game-closed",

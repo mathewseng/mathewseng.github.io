@@ -101,8 +101,10 @@ def equity_panel(equities, basis, loss, closed):
     return bgr(image)
 
 
-def notation(value):
-    return value.replace("Pass — no legal move", "Pass")
+def notation(value, fan=False):
+    if value in ("Pass", "Pass — no legal move"):
+        return "No legal entry" if fan else "No legal move"
+    return value
 
 
 def dice_label(dice):
@@ -240,7 +242,8 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
                 write(draw, x, 135, "Roll inferred from play", META, MUTED)
             played = next((move["key"] for move in entry["actions"] if move["isPlayed"]), None)
             selected = played if any(event.get("decision") == roll["decision"] for event in events) else None
-            options = [(move["key"], notation(move["notation"]), move["equity4"]) for move in entry["actions"][:TOP_MOVES]]
+            options = [(move["key"], notation(move["notation"], roll.get("fan")), move["equity4"])
+                       for move in entry["actions"][:TOP_MOVES]]
             draw_table(draw, 182, "Top checker moves", options, selected, 58, numbers=True)
         elif roll.get("fan"):
             write(draw, x, 145, "Fanned · no checker entered", BODY, MUTED)
@@ -258,10 +261,13 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
     elif (featured := next((event for event in reversed(events) if event["kind"] in ("checker", "board-result")), None)):
         player = featured["player"]
         if featured["kind"] == "board-result":
-            write(draw, x, 79, f"{PLAYER_NAME[player]} finished moving", HEADLINE, PLAYER_TONE[player], True)
-            write(draw, x, 135, "Checker position confirmed", BODY, MUTED)
+            result = "fanned" if featured.get("fan") else "finished moving"
+            detail = "No checker entered" if featured.get("fan") else "Checker position confirmed"
+            write(draw, x, 79, f"{PLAYER_NAME[player]} {result}", HEADLINE, PLAYER_TONE[player], True)
+            write(draw, x, 135, detail, BODY, MUTED)
         else:
-            write(draw, x, 79, f"{PLAYER_NAME[player]} played", HEADLINE, PLAYER_TONE[player], True)
+            result = "fanned" if featured.get("fan") else "played"
+            write(draw, x, 79, f"{PLAYER_NAME[player]} {result}", HEADLINE, PLAYER_TONE[player], True)
             rank = featured["rank"]
             write(draw, x, 135, f"{featured['notation']}  ·  Rank {rank}", BODY, MUTED)
             draw_table(draw, 205, "Completed checker move", featured["choices"], featured["played"])
@@ -284,6 +290,7 @@ def viewer_frames(data, states):
     decisions = data["decisions"]
     cube = decisions.get("cube")
     opening_until = roll["start"] if roll and data["game"] > 1 else 0
+    fans = {entry["decision"] for entry in data["presentation"]["rolls"] if entry.get("fan")}
     actions = []
     for event in data["losses"]:
         if event["kind"] == "checker":
@@ -291,16 +298,17 @@ def viewer_frames(data, states):
             plays = decision["actions"]
             rank = next(i for i, move in enumerate(plays) if move["isPlayed"])
             played = plays[rank]
-            choices = [(move["key"], notation(move["notation"]), move["equity4"])
+            fan = event["decision"] in fans
+            choices = [(move["key"], notation(move["notation"], fan), move["equity4"])
                        for move in ([plays[0], played] if rank else [played])]
-            label = notation(played["notation"])
-            actions.append({**event, "label": f"played   {label}", "notation": label,
+            label = notation(played["notation"], fan)
+            actions.append({**event, "label": "fanned" if fan else f"played   {label}", "notation": label, "fan": fan,
                             "rank": rank + 1, "choices": choices, "played": played["key"]})
     for item in data["presentation"]["rolls"]:
         if item["evidence"] == "reviewed-roll-with-confirmed-board":
             turn = data["turns"][item["sourceTurns"][0] - 1]
             actions.append({"frame": turn["resultFrame"], "kind": "board-result", "player": item["player"],
-                            "label": "finished moving"})
+                            "label": "fanned" if item.get("fan") else "finished moving", "fan": item.get("fan", False)})
         if item["end"] - item["start"] < ACTION_HOLD:
             actions.append({"frame": item["start"], "kind": "roll", "player": item["player"], "roll": item,
                             "label": f"rolled   {dice_label(item['dice'])}" + ("  ·  fan" if item.get("fan") else "")})
@@ -382,8 +390,10 @@ def equity_frames(data, frames):
         elif not roll and not mode and (latest := next((event for event in reversed(events)
                                                        if event["kind"] == "checker"), None)):
             equity, basis = move_scores[str(latest["decision"])][1], "After played move"
+        elif estimate:
+            equity, basis = estimate["players"], "Position estimate"
         elif last:
-            equity, basis = last, "Position estimate" if estimate and not roll else "Last scored position"
+            equity, basis = last, "Last scored position"
         else:
             equity, basis = None, "Waiting for a scored position"
         yield items, position, equity, basis, closed

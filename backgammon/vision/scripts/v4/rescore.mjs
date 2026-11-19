@@ -107,7 +107,7 @@ async function main() {
       row.position = byCube.get(key);
     }
     for (const [id, pos] of Object.entries(game.positions)) {
-      if (!pos.equities || !pos.onRoll) continue;
+      if (!pos.onRoll) continue;
       const row = timeline.get(Number(id));
       if (!row || row.phase === 'game-closed') continue;
       const turn = Number(pos.onRoll === 'dark');

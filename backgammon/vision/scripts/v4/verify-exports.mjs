@@ -226,6 +226,21 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.equal(data.decisions[roll.decision].played.notation, '8/5 5/1');
     assert(data.decisions[roll.decision].evLoss > 0);
   }
+  if (number === 3 && replay.contextRecovery.some(entry => entry.previousFrame === 2632 && entry.clear === 3302)) {
+    const first = data.rolls.find(item => item.start === 2385);
+    const dark = data.rolls.find(item => item.start === 3337);
+    const last = data.rolls.find(item => item.start === 3882);
+    assert.deepEqual([first.dice, first.pickup], [[6, 5], 3302]);
+    assert.equal(data.decisions[first.decision].played.notation, '6/1 24/18');
+    assert.deepEqual(first.after, dark.before);
+    assert.deepEqual([dark.dice, dark.pickup, dark.sourceMismatch], [[4, 2], 3833, true]);
+    assert.equal(data.decisions[dark.decision].evLoss, null);
+    assert.deepEqual([last.dice, last.pickup, last.resultFrame], [[2, 1], 4028, 4093]);
+    assert.equal(data.decisions[last.decision].played.notation, '18/16 16/15');
+    const afterPickup = data.changes.findLast(change => change.frame <= 4030);
+    assert.equal(afterPickup.roll, null);
+    assert.deepEqual(last.after.bar, [0, 1]);
+  }
   if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 1283 && entry.confirmedDetectorMisread)) {
     const roll = data.rolls.find(item => item.start === 8436);
     assert.deepEqual(roll.dice, [6, 4]);

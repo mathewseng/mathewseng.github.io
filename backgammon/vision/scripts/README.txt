@@ -187,6 +187,10 @@ Refresh the context and reviewed episodes
   directory. Keep the earlier settled-face and candidate-reader benchmark results
   with the new replay so Reports can include the earlier model checks.
 
+  Apply the next opening and bear-off review to v18 with the same timing file
+  and v4/reviewed-opening-continuity.json. Rescore the complete session so
+  every referenced board with a known roller has a position equity estimate.
+
 Manual reader calibration
 
     python3 calibration/sample.py

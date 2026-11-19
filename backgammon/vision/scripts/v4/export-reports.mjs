@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v17");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v18");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -175,7 +175,7 @@ function report(number) {
     rowsFrom(path.join(rawDir, "state", segment.source.replace(/\.mp4$/, ".jsonl.gz")))
       .slice(segment.firstFrame, segment.lastExclusive).map(row => row.state));
   assert.equal(raw.length, data.frames);
-  const counts = { frames: raw.length, boardObserved: 0, boardReconciled: 0,
+  const counts = { frames: raw.length, boardObserved: 0, boardReconciled: 0, reconstructedBoardFrames: 0, equityFrames: 0,
     coverFrames: 0, rollFrames: 0, diceRead: [0, 0, 0], diceConflictFrames: 0,
     rolls: data.rolls.length, completeRolls: 0, missingFaces: 0, bothFacesMissing: 0,
     availableDecisions: 0, confirmedBoardsWithMissingDice: 0, fans: 0, gradedPlays: 0, legalPlays: 0, observedPickups: 0,
@@ -186,6 +186,13 @@ function report(number) {
     if (reading?.handRegions?.length) counts.coverFrames++;
     if (reading?.position) counts.boardObserved++;
     else if (observedBoard(reading)) counts.boardReconciled++;
+  }
+  for (const [index, state] of data.changes.entries()) {
+    const board = data.positions[state.position];
+    if (!board) continue;
+    const frames = (data.changes[index + 1]?.frame ?? data.frames) - state.frame;
+    counts.reconstructedBoardFrames += frames;
+    if (board.equities) counts.equityFrames += frames;
   }
   const issues = [];
   const add = (kind, roll, frame = roll.start, detail = "") =>

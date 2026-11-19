@@ -60,6 +60,9 @@ function renderReport(report, seek) {
   coverage.append(chart, element("p",
     `Dice coverage uses ${number.format(counts.rollFrames)} frames during reconstructed rolls. Checker coverage uses all ${number.format(counts.frames)} frames, including ${number.format(counts.boardReconciled)} recovered from tray and stack evidence. The detector’s pair disagreed with the replay in ${number.format(counts.diceConflictFrames)} ${conflictLabel}.`,
     "muted small"));
+  if (counts.reconstructedBoardFrames) {
+    coverage.append(element("p", `Equity was evaluated for the reconstructed board in ${number.format(counts.equityFrames)} of ${number.format(counts.reconstructedBoardFrames)} frames with a board.`, "muted small"));
+  }
   fragment.append(coverage);
 
   if (report.modelChecks) {

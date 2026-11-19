@@ -83,6 +83,21 @@ checks. An occlusion-only window in Game 3 produced no pickup. The time change
 in Game 3 is linked from Reports. The other checks leave the replay intervals
 as reviewed.
 
+## Checker equity and the next three turns
+
+| Game and time | Footage and replay correction |
+| --- | --- |
+| Game 1, 7:14 and 7:19 | Black bears two checkers off on 3–1, then plays 6/3 and bears another off on 6–3. The confirmed boards put White on the bar through both turns. |
+| Game 1, 7:33 | White's fan retains Black's newly verified four checkers off. The displayed equity now comes from that board and matches the prior completed move. A checker fan has its own wording in the decision panel. |
+| Game 3, 1:35.40 | The old overlay first showed 6–? at 1:45 and dropped the roll while both dice were still on the table. The confirmed transfers `6/1 24/18` and the visible six establish 6–5. The roll stays visible to pickup at 2:12.08. |
+| Game 3, 2:13.48 | Both dark dice clearly read 4–2. The observed checker arrangement conflicts with the legal results for the verified starting board. The replay shows the roll and leaves its checker loss ungraded. |
+| Game 3, 2:35.28 | White rolls 2–1 and hits the blot on 15. The dice locations clear at 2:41.12, before the later camera frame confirms the hit. The roll and the played-move cue use their own times. |
+
+Every referenced position with a known roller now receives its own equity
+evaluation. Reports count the frames with reconstructed boards that have an
+equity result. The stationary-dice check now covers seven reviewed intervals
+and still abstains during the hand occlusion.
+
 ## Opening and overlay review
 
 - Game 3’s opening toss is visible from about 0:03.4. The settled board at

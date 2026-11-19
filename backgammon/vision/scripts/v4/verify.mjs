@@ -124,6 +124,9 @@ for (const game of [1, 2, 3, 4, 5]) {
       if (row.position !== null) {
         const board = data.positions[row.position];
         assert(board);
+        if (board.onRoll && row.phase !== 'game-closed') {
+          assert.equal(board.equities?.turn, board.onRoll, `Missing position equity in game ${game} at frame ${frame}.`);
+        }
         for (const player of [0, 1]) {
           assert.equal(board.bar[player] + board.borneOff[player] +
             board.points.reduce((sum, point) => sum + point[player], 0), 15);
