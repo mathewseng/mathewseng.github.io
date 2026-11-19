@@ -26,3 +26,23 @@ visual reading. The replay labels the 3–1 as inferred from the checker move.
 Some dice faces and moves remain unresolved in the footage. The Analysis view
 keeps known faces visible and marks an unresolved face with `?`. The Vision
 view still shows the original frame-level detections for auditing.
+
+
+## Reconstruction and scoring review
+
+Seven checker plays now have repeated source-frame support for the board before
+and after the move, a legal resulting position, and an independently observed
+next roller. The recovery uses the first repeated sight of the resulting board
+as its timestamp. Game 2’s 6–1 at 0:29 fills the missing turn. With the duplicate
+3–2 detections grouped into one roll, its Library export replays from the opening
+through Black’s cube pass as a single game.
+
+Checker and position analysis uses the recipient’s cube ownership following the
+confirmed takes in Games 1, 3, and 4. Every candidate was scored at four ply in
+the same cube context as the played move. Scores use the current cube as their
+unit. An unknown owner uses cubeless evaluation. The Game 5 cube response is
+still unresolved.
+
+The public state index, Library replay, and video use the same roll intervals
+and cumulative loss ledger. Verification checks every frame’s state and checks
+the Library analysis totals against the scored replay.

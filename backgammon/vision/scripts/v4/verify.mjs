@@ -35,6 +35,16 @@ for (const game of [1, 2, 3, 4, 5]) {
     countPaths.set(id + 1, slots);
   }
 
+  const recovered = (data.recoveredTurns ?? []).map(({ id, before, after, next, dice }) => {
+    const turn = data.turns[id - 1];
+    const decision = data.decisions[id];
+    assert(decision?.countedInGameLoss, 'Recovered moves must be legal and graded');
+    assert.equal(decision.evidence, 'legal-turn-confirmed-by-following-board');
+    assert.equal(turn.resultFrame, after);
+    assert.deepEqual([...decision.dice].sort((a, b) => b - a), dice);
+    assert(before < after && after < next);
+    return { frame: after, target: JSON.stringify(turn.after), matches: 0 };
+  });
   const opening = boardKey(initialState());
   let postOfferRolls = 0;
   let resetFrames = 0;
@@ -56,6 +66,10 @@ for (const game of [1, 2, 3, 4, 5]) {
     for (let i = part.firstFrame; i < part.lastExclusive; i++) {
       const frame = part.firstGameFrame + i - part.firstFrame;
       const row = rows[frame];
+      for (const entry of recovered) {
+        if (entry.frame <= frame && frame <= entry.frame + 12 &&
+            JSON.stringify(raw[i].state?.position) === entry.target) entry.matches++;
+      }
       if (game === 2 && frame >= data.decisions.cube.startFrame) countReset(raw[i].state);
       assert.equal(row.frame, frame);
       assert.equal(row.clip, part.clip);
@@ -127,6 +141,7 @@ for (const game of [1, 2, 3, 4, 5]) {
       for (let i = part.lastExclusive; resetFrames < 5 && i < raw.length; i++) countReset(raw[i].state);
     }
   }
+  assert(recovered.every(({ matches }) => matches >= 5), 'Recovered boards need repeated source-frame support');
   assert.equal(counts.anchoredRollRead, counts.missingRollRead);
   for (const [key, decision] of Object.entries(data.decisions)) {
     if (key === 'cube') continue;

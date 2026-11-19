@@ -5,7 +5,7 @@ Office-3 game replays from November 17, 2026. Add `?game=1` through `?game=5`
 to link to a specific game.
 
 The 1080p video files are assets on the
-[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v7).
+[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v8).
 The published site contains the viewer and stills from the replays. The media
 loads over the network on playback. **Vision** toggles a frame-aligned overlay
 over the same video element, preserving playback, time, and seeking. The
@@ -16,11 +16,24 @@ stay visible through supported hand occlusions. The recent actions area keeps
 completed checker moves and cube decisions readable when play moves on.
 [Review notes](REVIEW.md) record the footage and timing checks for this update.
 
-Each video has a seekable history below it. Checker moves and cube decisions
-open the same analysis view as Backgammon Play. **Download history** exports a
+Use **Previous decision**, **Next decision**, and **Review** beside the video
+to inspect a play without searching through footage. The seekable history below
+the video opens the same analysis view as Backgammon Play. **Download history** exports a
 Backgammon Library backup. Import it through **Library → Import**. A gap in the board sequence starts a new replay segment. The
 backup includes available board snapshots for unresolved rolls and retains
-timestamped observations in its replay index.
+timestamped observations in its replay index. A physically continuous roll
+appears once even when the detector drops and rediscovers it.
+
+**Frame data** downloads the reconstructed state for the selected video. Number
+frames from zero and find the last `changes` entry whose `frame` is at or before
+the desired frame. Resolve its `position` and `roll` references in the same file.
+Position points run from 1 to 24 and use positive counts for White and negative
+counts for Black. Bar, borne-off counts, and losses are in White, Black order.
+`movingPoints` supplies the in-turn point counts when they differ from the last
+settled board. A null roll means there is no supported current dice pair.
+A null die face means the other face could not be established. An unknown cube
+owner stays explicit even when the face or stake is readable. Use `sources` to
+locate the original camera clip and frame offset.
 
 The [vision pipeline](scripts/README.txt) contains the source used to reconstruct
 the game state, score the decisions with GNUbg, and render the overlays. Site

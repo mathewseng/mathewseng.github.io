@@ -28,6 +28,8 @@ Rebuild or inspect the current replay from this directory.
     python3 v4/verify_media.py
     python3 v4/export_audit.py ../audit
     bun v4/export-history.mjs ../history
+    bun v4/export-frame-data.mjs ../state
+    bun v4/verify-exports.mjs ..
     python3 v4/query.py 1 --frame 25
     python3 v4/query.py 5 --seconds 748.88
 
@@ -56,9 +58,9 @@ Roll and board state
   reuses exact four-ply outputs for unchanged XGIDs. The EV display omits search
   depth. A legal played move contributes once, when it reproduces the observed
   resulting board. Its caption stays visible for two seconds. Confirmed cube
-  actions contribute when they occur. Centered, one-unit checker contexts use
-  cubeful money equity. Checker contexts
-  where ownership is unknown use cubeless equity. The reviewed cube offers use
+  actions contribute when they occur. Checker and position analysis uses the
+  centered cube or the confirmed recipient’s owned cube when available.
+  Positions with unresolved ownership use cubeless equity. The reviewed cube offers use
   their visible stake and ownership context directly.
 
   Point badges follow individually supported legal checker steps. A saturated
@@ -77,3 +79,26 @@ Roll and board state
   Game 1 begins with the first captured frame and an open game. Games 2 through
   5 begin at verified opening boards. The original v2 and v3 videos and source
   footage remain in their respective Downloads folders.
+
+
+Refresh an existing reconstructed replay
+
+  An existing four-ply replay with presentation intervals can be rescored
+  without running the camera model again. Use a separate output directory to
+  keep the original playback files.
+
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/recover-settled.mjs "$previous"
+    OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs
+    export OFFICE3_REPLAY_DIR="$output"
+    bun v4/verify.mjs
+    python3 v4/verify_presentation.py
+    bun v4/export-history.mjs ../history
+    bun v4/export-frame-data.mjs ../state
+    bun v4/verify-exports.mjs ..
+    python3 v4/render.py --jobs 3
+    python3 v4/verify_media.py
+
+  Here previous is the input replay folder, prepared is an intermediate
+  folder, and output is the new replay folder. Recovery verifies stable
+  camera boards and keeps the existing roll intervals. Four-ply scores are
+  reused only when both XGIDs match the complete evaluation context.

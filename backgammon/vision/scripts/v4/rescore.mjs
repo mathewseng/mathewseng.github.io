@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
 import { applyAccounting, writeReplay } from './accounting.mjs';
+import { cubeContext } from './cube-context.mjs';
 import { replayDir, solverUrl } from '../project_paths.mjs';
 import { exclusive, loadEvaluator, rowsFrom, stateFor } from '../v2/solve_games.mjs';
 
@@ -25,20 +26,50 @@ else {
 }
 
 async function main() {
-  const { toXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
+  const { fromXGID, toXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
   const args = process.argv.slice(2);
   const workers = Number(process.env.OFFICE3_SCORE_WORKERS || 8);
   if (!Number.isInteger(workers) || workers < 1) throw new Error('Invalid worker count');
   const numbers = args.length ? args.map(Number) : [1, 2, 3, 4, 5];
   if (numbers.some((n) => !Number.isInteger(n) || n < 1 || n > 5)) throw new Error('Use game numbers 1–5');
-  const sourceDir = path.join(replayDir, 'context');
+  const sourceDir = process.env.OFFICE3_SCORE_SOURCE ?? path.join(replayDir, 'context');
   fs.mkdirSync(replayDir, { recursive: true });
 
   const cached = new Map();
-  const inputFor = (pos, turn, cube) => {
-    const centered = cube?.stake === 1 && cube.side === 'centered' ? cube : null;
-    const state = { ...stateFor(pos, turn, [1, 2], centered), phase: 'roll', dice: [] };
-    return toXGID(state, { engine: true });
+  const withCube = (position, cube) => ({
+    ...position,
+    cube: cube ?? { value: 1, owner: null },
+    rules: { ...position.rules, cube: Boolean(cube) },
+  });
+  const inputFor = (pos, turn, cube) => toXGID(withCube({
+    ...stateFor(pos, turn, [1, 2]), phase: 'roll', dice: [],
+  }, cube), { engine: true });
+  const cacheScores = (game, rows) => {
+    if (game.scoringDepth !== PLIES) return;
+    for (const [id, decision] of Object.entries(game.decisions)) {
+      if (id === 'cube') continue;
+      for (const action of decision.actions) {
+        if (!Number.isFinite(action.equity4) || !action.outcomeProbabilities4) continue;
+        cached.set(decision.xgid + '|' + action.xgid, {
+          equity: action.equity4, chances: action.outcomeProbabilities4,
+        });
+      }
+    }
+    const visited = new Set();
+    for (const row of rows) {
+      if (visited.has(row.position)) continue;
+      visited.add(row.position);
+      const pos = game.positions[row.position];
+      if (pos?.equities?.plies !== PLIES || !pos.onRoll) continue;
+      const turn = Number(pos.onRoll === 'dark');
+      const { equity, chances: win } = pos.equities.players[turn];
+      const { chances: lose } = pos.equities.players[1 - turn];
+      const previousCube = row.cube?.stake === 1 && row.cube.side === 'centered' ? { value: 1, owner: null } : null;
+      cached.set(pos.equities.inputXgid ?? inputFor(pos, turn, previousCube), { equity, chances: {
+        winSingle: win[0], winGammon: win[1], winBackgammon: win[2],
+        loseSingle: lose[0], loseGammon: lose[1], loseBackgammon: lose[2],
+      } });
+    }
   };
   const jobs = new Map();
   const enqueue = (input, result) => {
@@ -53,41 +84,17 @@ async function main() {
     const rows = rowsFrom(path.join(sourceDir, prefix + '-state.jsonl.gz'));
     const positionJobs = new Map();
     const cachedGame = path.join(replayDir, prefix + '-game.json');
-    if (fs.existsSync(cachedGame)) {
-      const prior = JSON.parse(fs.readFileSync(cachedGame));
-      if (prior.scoringDepth === PLIES) {
-        for (const [key, decision] of Object.entries(prior.decisions)) {
-          if (key === 'cube') continue;
-          for (const action of decision.actions) {
-            cached.set(decision.xgid + '|' + action.xgid, {
-              equity: action.equity4, chances: action.outcomeProbabilities4,
-            });
-          }
-        }
-        const priorRows = rowsFrom(path.join(replayDir, prefix + '-state.jsonl.gz'));
-        const visited = new Set();
-        for (const row of priorRows) {
-          if (visited.has(row.position)) continue;
-          visited.add(row.position);
-          const pos = prior.positions[row.position];
-          if (!pos?.equities || !pos.onRoll) continue;
-          const turn = Number(pos.onRoll === 'dark');
-          const { equity, chances: win } = pos.equities.players[turn];
-          const { chances: lose } = pos.equities.players[1 - turn];
-          cached.set(inputFor(pos, turn, row.cube), { equity, chances: {
-            winSingle: win[0], winGammon: win[1], winBackgammon: win[2],
-            loseSingle: lose[0], loseGammon: lose[1], loseBackgammon: lose[2],
-          } });
-        }
-      }
+    cacheScores(game, rows);
+    if (replayDir !== sourceDir && fs.existsSync(cachedGame)) {
+      cacheScores(JSON.parse(fs.readFileSync(cachedGame)), rowsFrom(path.join(replayDir, prefix + '-state.jsonl.gz')));
     }
     const timeline = new Map();
     const byCube = new Map();
     let nextPosition = Math.max(0, ...Object.keys(game.positions).map(Number)) + 1;
     for (const row of rows) {
       if (row.position === null) continue;
-      const centered = row.cube?.stake === 1 && row.cube.side === 'centered';
-      const key = row.position + '|' + centered;
+      const cube = cubeContext(game, row);
+      const key = row.position + '|' + cube?.value + '|' + cube?.owner;
       if (!byCube.has(key)) {
         let id = row.position;
         if (timeline.has(id)) {
@@ -101,15 +108,24 @@ async function main() {
     }
     for (const [id, pos] of Object.entries(game.positions)) {
       if (!pos.equities || !pos.onRoll) continue;
-      const cube = timeline.get(Number(id))?.cube;
+      const row = timeline.get(Number(id));
+      if (!row || row.phase === 'game-closed') continue;
       const turn = Number(pos.onRoll === 'dark');
-      positionJobs.set(id, { turn, job: enqueue(inputFor(pos, turn, cube)) });
+      const inputXgid = inputFor(pos, turn, cubeContext(game, row));
+      positionJobs.set(id, { turn, inputXgid, job: enqueue(inputXgid) });
     }
     const actionJobs = new Map();
     for (const [id, decision] of Object.entries(game.decisions)) {
       if (id === 'cube') continue;
+      const turn = game.turns[Number(id) - 1];
+      const cube = cubeContext(game, rows[turn.start]);
+      decision.xgid = toXGID(withCube(fromXGID(decision.xgid), cube));
+      decision.cube = cube;
+      decision.context = cube ? (cube.owner === null ? 'money-cube-centered-at-one' : 'money-cube-owned') :
+        'cubeless-ownership-or-stake-unresolved';
+      decision.equityUnits = cube ? 'normalized cube equity' : 'cubeless equity';
       for (const action of decision.actions) {
-        if (Number.isFinite(action.equity4) && action.outcomeProbabilities4) continue;
+        action.xgid = toXGID(withCube(fromXGID(action.xgid), cube), { engine: true });
         actionJobs.set(action, enqueue(decision.xgid, action.xgid));
       }
     }
@@ -139,20 +155,20 @@ async function main() {
       decision.played = played ? summary(played) : null;
       decision.evLoss = played ? Math.max(0, best.equity4 - played.equity4) : null;
     }
-    for (const [id, { turn, job }] of positionJobs) {
+    for (const [id, { turn, inputXgid, job }] of positionJobs) {
       const { equity, chances: p } = results.get(job);
       const players = [
         { equity, chances: [p.winSingle, p.winGammon, p.winBackgammon] },
         { equity: -equity, chances: [p.loseSingle, p.loseGammon, p.loseBackgammon] },
       ];
       if (turn === 1) players.reverse();
-      game.positions[id].equities = { turn: game.positions[id].onRoll, plies: PLIES, players };
+      game.positions[id].equities = { turn: game.positions[id].onRoll, plies: PLIES, inputXgid, players };
     }
 
     game.scoringDepth = PLIES;
     applyAccounting(game, rows);
     writeReplay(prefix, game, rows);
-    console.log(prefix, 'scored at four ply', { newActionScores: actionJobs.size, positions: positionJobs.size });
+    console.log(prefix, 'scored at four ply', { actionScores: actionJobs.size, positions: positionJobs.size });
   }
 }
 

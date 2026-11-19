@@ -26,15 +26,17 @@ controlToggle.addEventListener("click", () => {
   setPlaybackControls();
 });
 const audit = createAudit(player);
-const gameHistory = createHistory((time) => {
+const gameHistory = createHistory((time, focusVideo = true) => {
   player.pause();
   player.preload = "metadata";
   player.currentTime = time;
   setPlaybackControls();
   play.hidden = true;
-  player.focus({ preventScroll: true });
-  player.scrollIntoView({ block: "center" });
-});
+  if (focusVideo) {
+    player.focus({ preventScroll: true });
+    player.scrollIntoView({ block: "center" });
+  }
+}, player);
 
 function selectGame(number) {
   if (!games.has(number)) number = "1";

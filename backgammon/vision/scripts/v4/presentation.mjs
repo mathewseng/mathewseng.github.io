@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
 import { loadEvaluator, rowsFrom } from '../v2/solve_games.mjs';
+import { cubeContext } from './cube-context.mjs';
 
 const { canDouble, initialState } = await import(solverUrl('backgammon/core/rules.mjs'));
 const { toXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
@@ -155,15 +156,6 @@ function rollIntervals(game, rows, raw, breaks) {
   return intervals;
 }
 
-function cubeAt(game, row, frame) {
-  const offer = game.decisions.cube;
-  if (offer?.reply === 'take' && offer.endFrame <= frame) {
-    return { value: offer.offeredFace, owner: Number(offer.responder === 'dark') };
-  }
-  if (row.cube?.stake === 1 && row.cube.side === 'centered') return { value: 1, owner: null };
-  return null;
-}
-
 function cubeWaits(game, rows, rolls, breaks, evaluator) {
   const waits = [];
   const offer = game.decisions.cube;
@@ -176,7 +168,7 @@ function cubeWaits(game, rows, rolls, breaks, evaluator) {
     const previous = game.turns[(prior.decision ?? prior.sourceTurns.at(-1)) - 1];
     if (!source.before || !previous.after || JSON.stringify(source.before) !== JSON.stringify(previous.after) ||
         faces(source.dice).length !== 2) continue;
-    const cube = cubeAt(game, rows[roll.start], roll.start);
+    const cube = cubeContext(game, rows[roll.start]);
     if (!cube) continue;
     const { points, bar, borneOff } = source.before;
     const state = initialState({

@@ -6,11 +6,11 @@
     <meta name="description" content="Watch five Office-3 backgammon games with detected rolls, cube state, and GNUbg move analysis." />
     <title>Backgammon Vision</title>
     <link rel="icon" href="../icon.svg" />
-    <link rel="stylesheet" href="../../shared/tokens.css?bgv=dbe43176661d1d87" />
-    <link rel="stylesheet" href="../../shared/app.css?bgv=dbe43176661d1d87" />
-    <link rel="stylesheet" href="../styles.css?bgv=dbe43176661d1d87" />
-    <link rel="stylesheet" href="styles.css?bgv=dbe43176661d1d87" />
-    <script type="module" src="app.js?bgv=dbe43176661d1d87"></script>
+    <link rel="stylesheet" href="../../shared/tokens.css?bgv=6ce6316b3a3832b8" />
+    <link rel="stylesheet" href="../../shared/app.css?bgv=6ce6316b3a3832b8" />
+    <link rel="stylesheet" href="../styles.css?bgv=6ce6316b3a3832b8" />
+    <link rel="stylesheet" href="styles.css?bgv=6ce6316b3a3832b8" />
+    <script type="module" src="app.js?bgv=6ce6316b3a3832b8"></script>
   </head>
   <body class="vision-page">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -39,7 +39,7 @@
           <section class="vision-stage" aria-labelledby="selected-game">
             <div class="vision-player">
               <video id="replay" controls playsinline preload="none" poster="posters/game-01.jpg"
-                src="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261117-v7/game-01-analysis.mp4"
+                src="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261117-v8/game-01-analysis.mp4"
                 aria-labelledby="selected-game">
                 Your browser does not support embedded video. Use the download link below.
               </video>
@@ -58,11 +58,16 @@
               <div class="vision-player-actions">
                 <button id="toggle-replay-controls" class="vision-download" type="button" aria-controls="replay" hidden>Hide controls</button>
                 <a id="download-replay" class="vision-download"
-                  href="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261117-v7/game-01-analysis.mp4">
+                  href="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261117-v8/game-01-analysis.mp4">
                   Download MP4 <span aria-hidden="true">↓</span>
                 </a>
               </div>
             </div>
+            <nav id="decision-navigation" class="vision-decision-navigation" aria-label="Replay decisions" hidden>
+              <button type="button" data-decision-jump="previous" aria-label="Previous decision">← Previous</button>
+              <button type="button" data-decision-jump="current">Review current decision</button>
+              <button type="button" data-decision-jump="next" aria-label="Next decision">Next →</button>
+            </nav>
             <p class="vision-error" id="playback-error" role="status" hidden>
               Playback is unavailable. Use Download MP4 to watch the file.
             </p>
@@ -104,15 +109,18 @@
                 </a>
               </li>
             </ol>
-            <noscript><p><a href="https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v7">View all five MP4s on GitHub</a></p></noscript>
+            <noscript><p><a href="https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v8">View all five MP4s on GitHub</a></p></noscript>
           </nav>
         </div>
         <section class="vision-history" aria-labelledby="history-heading">
           <header class="vision-history-heading">
             <h2 id="history-heading">Game history</h2>
-            <a id="download-history" class="vision-download" href="history/game-01.json" download>
-              Download history <span aria-hidden="true">↓</span>
-            </a>
+            <div class="vision-player-actions">
+              <a id="download-frame-data" class="vision-download" href="state/game-01.json" download hidden>Frame data</a>
+              <a id="download-history" class="vision-download" href="history/game-01.json" download>
+                Download history <span aria-hidden="true">↓</span>
+              </a>
+            </div>
           </header>
           <p class="muted small">Import the JSON backup through <a href="../library/">Library → Import</a>. Gaps mark actions the footage could not confirm.</p>
           <div id="history-content" aria-busy="true"></div>

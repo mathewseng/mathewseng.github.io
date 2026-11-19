@@ -6,6 +6,7 @@ import { fromXGID } from '../../../core/xgid.mjs';
 import { parseBackup } from '../../../core/storage.mjs';
 import { ENGINE_VERSION } from '../../../engine/metadata.mjs';
 import { replayDir } from '../project_paths.mjs';
+import { cubeContext } from './cube-context.mjs';
 import { exclusive, loadEvaluator, rowsFrom } from '../v2/solve_games.mjs';
 
 const names = ['White', 'Black'];
@@ -70,7 +71,8 @@ function observedPosition(turn, cube, gameNumber) {
   if (!turn.before) return null;
   try {
     return initialState({
-      ...board(turn.before), gameNumber, matchLength: 0, turn: player(turn.player), cube, rules,
+      ...board(turn.before), gameNumber, matchLength: 0, turn: player(turn.player),
+      cube: cube ?? { value: 1, owner: null }, rules: { ...rules, cube: Boolean(cube) },
       phase: completeDice(turn.dice) ? 'move' : 'roll',
       dice: completeDice(turn.dice) ? turn.dice : [],
     });
@@ -94,7 +96,6 @@ function makeHistory(game, rows, extraCubeChances) {
     return item;
   };
   let active = null;
-  let cube = { value: 1, owner: null };
   let line = 0;
   const chapter = source => {
     if (active && positionKey(active.state) === positionKey(source)) return;
@@ -114,38 +115,50 @@ function makeHistory(game, rows, extraCubeChances) {
     return { item: active.id, event: active.events.push(event) - 1 };
   };
   const cubeEntry = game.decisions.cube;
-  const episodes = game.turns.map((turn, index) => ({ frame: turn.start, turn, index }));
+  const episodes = game.presentation?.rolls.flatMap(roll => {
+    const verified = roll.sourceTurns.filter(id => game.decisions[id]?.countedInGameLoss);
+    const sources = verified.length ? verified : [roll.decision ?? roll.sourceTurns[0]];
+    return sources.map((id, offset) => ({
+      frame: offset ? game.turns[id - 1].start : roll.start,
+      turn: game.turns[id - 1], id, end: roll.end, dice: roll.dice,
+    }));
+  }) ?? game.turns.map((turn, index) => ({
+    frame: turn.start, turn, id: index + 1, end: turn.end + 1, dice: turn.dice,
+  }));
   if (cubeEntry) episodes.push({ frame: cubeEntry.startFrame, offer: cubeEntry });
   const stop = rows.find(row => row.phase === 'game-closed');
   const opening = initialState(stateOptions);
   let observedTurn = 0;
-  for (const { frame, turn, index, offer } of episodes.sort((a, b) => a.frame - b.frame)) {
+  for (const { frame, turn, id, end, dice: rolledDice, offer } of episodes.sort((a, b) => a.frame - b.frame)) {
     if (stop && frame >= stop.frame) break;
     if (offer) {
       const offerer = player(offer.offerer);
       const source = offer.beforeXgid ? { ...fromXGID(offer.beforeXgid), gameNumber: number } :
-        initialState({ ...stateOptions, ...board(offer.position), turn: offerer, phase: 'roll', cube });
+        initialState({ ...stateOptions, ...board(offer.position), turn: offerer, phase: 'roll',
+          cube: { value: 1, owner: null } });
       chapter(source);
       const chances = offer.outcomeProbabilities ?? extraCubeChances;
-      timeline.push({ frame, turn: observedTurn + 1, kind: 'cube',
+      timeline.push({ frame, endFrame: offer.reply ? offer.endFrame : stop?.frame ?? offer.endFrame,
+        turn: observedTurn + 1, kind: 'cube',
         ...action({ type: 'double' }, frame, cubeResult(offer, active.state, chances)) });
       if (offer.reply === 'take' || offer.reply === 'pass') {
-        timeline.push({ frame: offer.endFrame, turn: observedTurn + 1, kind: 'cube',
+        timeline.push({ frame: offer.endFrame, endFrame: offer.reply === 'pass' ? rows.length : offer.endFrame + 50,
+          turn: observedTurn + 1, kind: 'cube',
           ...action({ type: offer.reply }, offer.endFrame, cubeResult(offer, active.state, chances)) });
-        cube = active.state.cube;
       } else {
-        timeline.push({ frame: offer.endFrame, kind: 'gap', label: 'Cube response unconfirmed' });
+        timeline.push({ frame: stop?.frame ?? offer.endFrame, kind: 'gap', label: 'Cube response unconfirmed' });
         active = null;
       }
       continue;
     }
 
     observedTurn++;
-    const decision = game.decisions[index + 1];
+    const decision = game.decisions[id];
+    const cube = cubeContext(game, rows[frame]);
     const source = observedPosition(turn, cube, number);
     const steps = decision?.countedInGameLoss ? decision.played.steps : turn.steps;
     if (!validMove(source, steps, turn.after)) {
-      const entry = { frame, turn: observedTurn, kind: 'gap', player: turn.player, dice: turn.dice,
+      const entry = { frame, turn: observedTurn, kind: 'gap', player: turn.player, dice: rolledDice,
         label: 'Checker move unconfirmed' };
       if (source) {
         const item = record('position', `Turn ${observedTurn} position`, 'Observed board before an unresolved checker move.');
@@ -169,19 +182,21 @@ function makeHistory(game, rows, extraCubeChances) {
       { type: 'roll', dice }, frame);
     const resultFrame = turn.resultFrame ?? frame;
     timeline.push({
-      frame: resultFrame, rollFrame: frame, turn: observedTurn, kind: 'checker',
+      frame: resultFrame, rollFrame: frame, endFrame: Math.max(end, resultFrame + 50),
+      turn: observedTurn, kind: 'checker',
       checkpoint: needsCheckpoint && !openingTurn,
       ...action({ type: 'move', steps }, resultFrame, checkerResult(decision, active.state, steps)),
     });
   }
   if (stop) {
     timeline.push({ frame: stop.frame, kind: 'end',
-      label: game.result ? `${names[player(game.result.winner)]} wins ${game.result.points} point` : 'Game closes · result unconfirmed' });
+      label: game.result ? `${names[player(game.result.winner)]} wins ${game.result.points} ${game.result.points === 1 ? 'point' : 'points'}`
+        : 'Game closes · result unconfirmed' });
   }
   const lastLoss = rows.at(-1).loss;
   return {
     version: 1, format: 'backgammon-library', progress: [], items,
-    replay: { game: number, timeline, losses: [lastLoss.white.loss, lastLoss.dark.loss] },
+    replay: { game: number, frameData: Boolean(game.presentation), timeline, losses: [lastLoss.white.loss, lastLoss.dark.loss] },
   };
 }
 

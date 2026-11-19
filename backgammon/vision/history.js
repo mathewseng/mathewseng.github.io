@@ -10,12 +10,46 @@ const timecode = frame => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 };
 
-export function createHistory(seek) {
+export function createHistory(seek, player) {
   const content = document.querySelector("#history-content");
   const download = document.querySelector("#download-history");
   const heading = document.querySelector("#history-heading");
+  const frameDownload = document.querySelector("#download-frame-data");
+  const navigation = document.querySelector("#decision-navigation");
+  const previous = navigation.querySelector("[data-decision-jump='previous']");
+  const current = navigation.querySelector("[data-decision-jump='current']");
+  const next = navigation.querySelector("[data-decision-jump='next']");
   const cache = new Map();
   let selected, request;
+  let chapters = [], targets = {};
+
+  function synchronize() {
+    const frame = Math.round(player.currentTime * fps);
+    const active = chapters.findLast(chapter => chapter.start <= frame && frame < chapter.end);
+    targets = {
+      previous: chapters.findLast(chapter => chapter.start < (active?.start ?? frame)),
+      current: active,
+      next: chapters.find(chapter => chapter.start > frame),
+    };
+    previous.disabled = !targets.previous;
+    current.disabled = !targets.current;
+    next.disabled = !targets.next;
+    const text = targets.current ? `Review ${targets.current.label}` : "Review current decision";
+    if (current.textContent !== text) current.textContent = text;
+  }
+
+  for (const event of ["timeupdate", "seeking", "seeked"]) player.addEventListener(event, synchronize);
+  for (const button of [previous, next]) {
+    button.addEventListener("click", () => {
+      const chapter = targets[button.dataset.decisionJump];
+      if (chapter) seek(chapter.start / fps, false);
+    });
+  }
+  current.addEventListener("click", () => {
+    if (!targets.current) return;
+    player.pause();
+    targets.current.open();
+  });
 
   const review = (source, { result, action, label, title, player }) => {
     const dialog = decisionReview(source, {
@@ -34,6 +68,7 @@ export function createHistory(seek) {
       ...data.replay.losses.map((loss, player) => el("div", {},
         el("dt", {}, `${names[player]} EV loss`), el("dd", {}, loss.toFixed(3)))));
     const list = el("ol", { class: "vision-history-list" });
+    chapters = [];
     for (const entry of data.replay.timeline) {
       const time = timecode(entry.frame);
       const position = items.get(entry.item);
@@ -47,6 +82,12 @@ export function createHistory(seek) {
         const open = () => review(row.source, { ...row,
           title: `${names[row.player]} · ${entry.kind === "checker" ? "Checker decision" : "Cube decision"} · ${time}`,
         });
+        if (Number.isFinite(entry.endFrame)) {
+          const label = entry.kind === "checker"
+            ? `${names[row.player]}’s ${[...row.source.dice].sort((a, b) => b - a).join("–")}`
+            : `${names[row.player]}’s ${row.action.type}`;
+          chapters.push({ start: entry.rollFrame ?? entry.frame, end: entry.endFrame, label, open });
+        }
         const node = historyTurn({ ...group, turn: entry.turn }, {
           names, viewer: 0, local: true, actions: () => ({ review: open, preview: open }),
         });
@@ -74,6 +115,10 @@ export function createHistory(seek) {
       list.append(item);
     }
     content.replaceChildren(totals, list);
+    chapters.sort((a, b) => a.start - b.start);
+    navigation.hidden = !chapters.length;
+    frameDownload.hidden = !data.replay.frameData;
+    synchronize();
   }
 
   return {
@@ -83,9 +128,15 @@ export function createHistory(seek) {
       request?.abort();
       const controller = new AbortController();
       request = controller;
-      const file = `history/game-${number.padStart(2, "0")}.json`;
+      const id = number.padStart(2, "0");
+      const file = `history/game-${id}.json`;
+      chapters = [];
+      navigation.hidden = frameDownload.hidden = true;
+      frameDownload.href = `state/game-${id}.json`;
+      frameDownload.download = `office-3-game-${id}-frames.json`;
       heading.textContent = `Game ${number} history`;
       download.href = file;
+      download.download = `office-3-game-${id}-history.json`;
       content.setAttribute("aria-busy", "true");
       content.replaceChildren(el("p", { role: "status", class: "muted" }, "Loading game history…"));
       try {
