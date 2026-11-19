@@ -402,6 +402,15 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.deepEqual(fan.after, fan.before);
     assert.equal(data.decisions[fan.decision].evLoss, 0);
   }
+  if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 21938 && entry.confirmedDetectorMisread)) {
+    const index = data.rolls.findIndex(roll => roll.start === 21938);
+    const fan = data.rolls[index];
+    assert.deepEqual([fan.player, fan.dice, fan.pickup], ['dark', [5, 5], 21979]);
+    assert(fan.fan);
+    assert.deepEqual(fan.before, fan.after);
+    assert.deepEqual(fan.after, data.rolls[index + 1].before);
+    assert.equal(data.decisions[fan.decision].evLoss, 0);
+  }
   const checkedHandoff = number === 3 ? [30428, 30810, [5, 3], '21/18 14/9'] :
     number === 4 ? [6489, 7768, [5, 5], '15/10 15/10 13/8 8/3'] : null;
   if (checkedHandoff) {

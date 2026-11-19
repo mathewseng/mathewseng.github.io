@@ -416,3 +416,24 @@ Calibrate die color and review turn order
   Put the two validation outputs in final-board-dice-training/ and
   blurred-dice-training/ beside the replay. The second run adds
   --camera-augmentation.
+
+  Apply v4/reviewed-fan-faces.json to the scored v28 replay and rescore
+  Game 4. The dice continuity trial now uses complete checker inventories
+  recovered from available tray and stack evidence. With the same locator
+  state and observation inputs, use the v28 pose plan as the comparison
+  baseline for pose-turn-validation.json. The new report includes the
+  last observed pair and reviewed pickup as separate times.
+
+  For the held-out cover and fan test, add
+  calibration/reviewed-covered-faces.json to the three earlier review
+  files. With camera augmentation enabled, exclude clips 18, 34, 35, 59
+  and 60 from training. The test positions in the new file already exclude
+  their own clips. Put the output in covered-dice-training/ beside the
+  replay so Reports can display the results.
+
+  The checker comparison uses calibration/reviewed-board-witnesses.json
+  and v4/reviewed-source-comparisons.json, reviewed-missing-rolls.json,
+  reviewed-reposition-and-fans.json, reviewed-final-boards.json and
+  reviewed-fan-faces.json. Hold out clips 18, 26, 27, 33–35, 51–53 and 67.
+  Put the training output in cover-checker-training/ beside the replay.
+  Reports includes only held-out count discrepancies and their source frames.

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { artifactDir, solverUrl } from '../project_paths.mjs';
+import { observedBoard } from './bearoff-board.mjs';
 import { verifyDicePose } from './dice-pose-continuity.mjs';
 import {
   evaluateDecision, loadEvaluator, matchingTurns, okay, positional, rowsFrom, stateFor,
@@ -54,7 +55,7 @@ function positionRecord(position, frame) {
 function boardRuns(rows, first, last) {
   const known = new Map();
   const records = rows.slice(first, last).map((row) => {
-    const position = row.state?.position;
+    const position = observedBoard(row.state);
     if (!position) return null;
     const key = JSON.stringify(position);
     if (!known.has(key)) known.set(key, okay(position) ? positionRecord(position, row.frame) : null);
@@ -195,10 +196,15 @@ function extendedRoll(roll, runs, poseFrames, limit, rolls) {
   const before = runs.filter(r => r.first <= pose.start + 5 && r.last >= pose.start - 65).at(-1);
   const after = runs.filter(r => r.first >= pose.start + 5 && r.first <= resultLimit &&
     r.last >= pose.end - 24 && r.count >= 12).at(-1);
-  if (!before || !after) return null;
-  const options = matchingTurns(before, after, allDice, names.indexOf(roll.player));
-  if (options.length !== 1 || !roll.dice.some(face => options[0].dice.includes(face))) return null;
-  const match = options[0];
+  const options = before && after ? matchingTurns(before, after, allDice, names.indexOf(roll.player)) : [];
+  const match = options.length === 1 && roll.dice.some(face => options[0].dice.includes(face)) ? options[0] : null;
+  if (!match) {
+    // Strong reads at the same two locations can establish a roll even
+    // when the observed checker movement cannot be scored.
+    if (pose.relocatedAt != null || roll.actorEvidence !== 'dice-body-agreement' ||
+        roll.quality < .90 || !roll.dice.every(Number.isInteger)) return null;
+    return { ...roll, ...pose, before, resultFrame: null, evidence: 'continuous-dice-poses', priority: 8 };
+  }
   return { ...roll, ...pose, before, after, dice: match.dice, resultFrame: after.first, steps: match.steps,
     evidence: 'continuous-dice-poses-and-legal-result', priority: 9 };
 }

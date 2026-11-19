@@ -522,3 +522,37 @@ readers matched five. Adding mild camera blur and exposure changes
 improved the broader supplemental set from 18 to 19 matches out of 26.
 The general holdout fell from 22 to 21, and the released replay keeps
 the existing weights.
+
+## Longer hand occlusions and late board reads
+
+The camera shows Black's 4–3 in place through the discussion in Game 3,
+from 18:03 until pickup at 20:12. Earlier automatic reads split it into
+several proposals while hands covered the dice. The trial now keeps the
+two face reads together and still leaves the checker result ungraded
+because the camera shows changes by both players.
+
+At 1:12 in Game 5, hands obscure the dice for nearly five seconds. The 6–4
+returns at the same locations with the same faces. The trial follows it
+through its last confirmed read at 2:07.64. The reviewed replay uses the
+separately confirmed pickup at 2:08.52. Game 2's 4–1 near 1:43 also
+stays together through the later read.
+
+Across all five games, the updated trial matches 133 of the 163 indexed
+rolls. Correct dice pairs increase from 92 to 93, additional proposals
+fall from 57 to 49, and starting boards matched increase from 109 to 112.
+Starting boards use tray and stack evidence when a clear partial reading
+can account for all 15 checkers on each side.
+
+Game 4 at 14:37 shows double fives in the camera crops. The fifth point is
+closed and both Black checkers stay on the bar. A face comparison uses
+six newly labeled dice from the fan and two long rolls. The fine-tuned
+reader matched four out of six, as did the current reader. It recovered
+both fives in the fan and misread a four in each of the two long rolls.
+The replay keeps the current weights and uses the verified dice for the fan.
+
+The checker comparison added 711 training crops from source-reviewed
+positions. Both readers matched 398 of 401 held-out board witnesses.
+Across all 445 held-out crops, the current reader matched 441 and the
+trial matched 442. The trial recovered a six-checker White stack that
+the current reader counted as five. Reports links the remaining
+count discrepancies to their camera frames.

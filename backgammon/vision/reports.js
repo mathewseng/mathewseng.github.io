@@ -111,14 +111,18 @@ function renderReport(report, seek) {
     const { current, candidate } = report.poseTrial;
     const section = element("section", null, "vision-report-model");
     section.append(element("h3", "Dice continuity trial"), element("p",
-      `Following the same dice through cover or repositioning changed correct pairs from ${current.counts.correctDice} to ${candidate.counts.correctDice}, and extra proposals from ${current.unmatched.length} to ${candidate.unmatched.length}. The trial checks the final checker board against legal plays.`,
+      `Tracking the same dice through hand occlusions or repositioning changed correct pairs from ${current.counts.correctDice} to ${candidate.counts.correctDice}, extra proposals from ${current.unmatched.length} to ${candidate.unmatched.length}, and matching starting boards from ${current.counts.correctBefore} to ${candidate.counts.correctBefore}.`,
       "muted small"));
     const episodes = candidate.rolls.filter(roll => roll.poseContinuity).map(roll => {
-      const { lastSeen, repositionedAt } = roll.poseContinuity;
-      const start = timecode(roll.automaticFrame, report.fps);
-      const reposition = repositionedAt == null ? "" : ` One die moved at ${timecode(repositionedAt, report.fps)}.`;
-      return { frame: roll.frame, title: `Dice tracked from ${start} through ${timecode(lastSeen, report.fps)}`,
-        detail: `Recovered ${roll.claimed.join("–")} from the complete legal checker result.${reposition}` };
+      const { lastSeen, resultFrame, repositionedAt, reviewedPickup } = roll.poseContinuity;
+      const time = frame => timecode(frame, report.fps);
+      const faces = roll.claimed.join("–");
+      const evidence = resultFrame == null ? `Held ${faces} from repeated dice reads. Trial checker result unconfirmed.` :
+        `Recovered ${faces} from the complete legal checker result.`;
+      const moved = repositionedAt == null ? "" : ` One die moved at ${time(repositionedAt)}.`;
+      const pickup = reviewedPickup == null ? "" : ` Reviewed pickup at ${time(reviewedPickup)}.`;
+      return { frame: roll.frame, title: `Dice tracked from ${time(roll.automaticFrame)} through ${time(lastSeen)}`,
+        detail: evidence + moved + pickup };
     });
     if (episodes.length) section.append(reviewList(episodes, entry => entry.title));
     fragment.append(section);
@@ -233,7 +237,18 @@ function renderReport(report, seek) {
     if (report.witnessTrials?.checkerContinuity) {
       const { crops, results } = report.witnessTrials.checkerContinuity;
       const held = results["verified-board"];
-      section.append(element("p", `The latest checker trial used ${crops} crops from reviewed boards. The current reader matched ${held.baseline}/${held.count} point counts from held-out clips, and the trial matched ${held.candidate}/${held.count}.`, "muted small"));
+      section.append(element("p", `An earlier checker trial used ${crops} crops from reviewed boards. The current reader matched ${held.baseline}/${held.count} point counts from held-out clips, and the trial matched ${held.candidate}/${held.count}.`, "muted small"));
+    }
+    const coverCheckers = report.witnessTrials?.coverCheckers;
+    if (coverCheckers) {
+      const { training, heldOut, current, trial, reviewedBoards, errors } = coverCheckers;
+      section.append(element("p", `The cover review added ${training} labeled checker crops to training. The current reader matched ${current}/${heldOut} counts and the trial matched ${trial}/${heldOut}. Both matched ${reviewedBoards.baseline}/${reviewedBoards.count} on the held-out board witnesses.`, "muted small"));
+      const count = label => label === 0 ? "empty" : label > 10 ? `${label - 10} Black` : `${label} White`;
+      const seekable = errors.filter(error => error.frame !== null).map(error => ({
+        frame: error.frame, title: `Point ${error.point} · ${count(error.expected)}`,
+        detail: `Current reader saw ${count(error.current)}. Trial saw ${count(error.trial)}.`,
+      }));
+      if (seekable.length) section.append(reviewList(seekable, entry => entry.title));
     }
     if (report.witnessTrials?.diceContinuity) {
       const { frames, tracks, results } = report.witnessTrials.diceContinuity;
@@ -256,6 +271,12 @@ function renderReport(report, seek) {
       const correct = (rows, key) => rows.filter(face => face[key] === face.expected).length;
       const extra = augmented ? ` The trial with camera blur and exposure augmentation matched ${correct(augmented.tests, "candidateTrack")}.` : "";
       section.append(element("p", `On ${tests.length} faces from the latest checker-board reviews, the current reader matched ${correct(tests, "baselineTrack")} and the fine-tuned reader matched ${correct(tests, "candidateTrack")}.${extra}`, "muted small"));
+    }
+    const coveredDice = report.witnessTrials?.coveredDice;
+    if (coveredDice?.tests.length) {
+      const { tests, trainingFrames, trainingTracks } = coveredDice;
+      const correct = key => tests.filter(face => face.expected === face[key]).length;
+      section.append(element("p", `The cover and fan review tested ${tests.length} newly labeled faces from this game. The current reader matched ${correct("baselineTrack")} and the reader fine-tuned on ${trainingFrames} frames from ${trainingTracks} tracks matched ${correct("candidateTrack")}.`, "muted small"));
     }
     fragment.append(section);
   }

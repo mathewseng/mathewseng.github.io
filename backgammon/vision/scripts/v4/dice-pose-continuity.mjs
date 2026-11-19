@@ -13,9 +13,18 @@ function pairVisible(frame, [first, second]) {
 
 function continuedTo(frames, centers, start, limit) {
   let end = start + 5, run = 6;
-  for (let frame = end + 1; frame < limit && frame - end <= 35; frame++) {
+  for (let frame = end + 1; frame < limit && frame - end <= 150; frame++) {
+    if (frame - end > 35) {
+      // A longer gap needs ongoing evidence at one of the original positions.
+      // The bridge itself never counts as seeing either die.
+      const recent = frames.slice(frame - 12, frame);
+      const supported = recent.filter(read => centers.some(center => visible(read, center) || covered(read, center)));
+      if (supported.length < 8) break;
+    }
     run = pairVisible(frames[frame], centers) ? run + 1 : 0;
-    if (run >= 6) end = frame;
+    if (run < 6) continue;
+    if (frame - end > 72 && !confirmedReturn(frames, centers, start, end, frame, limit)) break;
+    end = frame;
   }
   return end;
 }
@@ -30,6 +39,16 @@ function faceAt(frames, center) {
   }
   const [first, second] = [...votes].sort((a, b) => b[1] - a[1]);
   return first?.[1] >= Math.max(4, (second?.[1] ?? 0) * 2) ? first[0] : null;
+}
+
+function confirmedReturn(frames, centers, start, end, frame, limit) {
+  const before = frames.slice(Math.max(start, end - 24), end + 1);
+  const after = frames.slice(frame - 5, Math.min(limit, frame + 16));
+  const obscured = frames.slice(end + 1, frame).some(read => centers.some(center => covered(read, center)));
+  return obscured && centers.every(center => {
+    const face = faceAt(before, center);
+    return face !== null && faceAt(after, center) === face;
+  });
 }
 
 function relocatedPose(roll, frames, end, limit) {
@@ -79,5 +98,6 @@ export function verifyDicePose(roll, frames, limit) {
   let end = continuedTo(frames, roll.centers, start, limit);
   const relocation = relocatedPose(roll, frames, end, limit);
   if (relocation) end = continuedTo(frames, [relocation.fixed, relocation.center], relocation.start, limit);
-  return end >= roll.end + 50 ? { start, end, ...(relocation ? { relocatedAt: relocation.start } : {}) } : null;
+  return end >= roll.end + 50 ? { start, end, poseLastSeen: end,
+    ...(relocation ? { relocatedAt: relocation.start } : {}) } : null;
 }

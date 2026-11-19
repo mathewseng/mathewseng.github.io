@@ -44,6 +44,12 @@ const finalBoardFacePath = path.join(replayDir, "final-board-dice-training", "di
 const finalBoardFaces = fs.existsSync(finalBoardFacePath) ? read(finalBoardFacePath) : null;
 const blurredFacePath = path.join(replayDir, "blurred-dice-training", "dice-track-validation.json");
 const blurredFaces = fs.existsSync(blurredFacePath) ? read(blurredFacePath) : null;
+const coveredFacePath = path.join(replayDir, "covered-dice-training", "dice-track-validation.json");
+const coveredFaces = fs.existsSync(coveredFacePath) ? read(coveredFacePath) : null;
+const coverCheckerDir = path.join(replayDir, "cover-checker-training");
+const coverCheckerPath = path.join(coverCheckerDir, "validation.json");
+const coverChecker = fs.existsSync(coverCheckerPath) ? read(coverCheckerPath) : null;
+const coverCheckerLabels = coverChecker && read(path.join(coverCheckerDir, "labels.json"));
 const planTrialPath = path.join(replayDir, "dice-automatic-replay-validation.json");
 const planTrial = fs.existsSync(planTrialPath) ? read(planTrialPath) : [];
 const locatorPath = path.join(replayDir, "locator-validation.json");
@@ -125,6 +131,22 @@ function modelChecks(game) {
       gameCandidateErrors: errors("candidate"),
     }];
   }));
+}
+
+function checkerWitnessTrial(game, segments) {
+  if (!coverChecker) return null;
+  const errors = coverChecker.tests.flatMap(test => {
+    if (test.game !== game || (test.baseline === test.expected && test.candidate === test.expected)) return [];
+    const label = coverCheckerLabels[test.index];
+    const part = segments.find(item => item.clip === label.clip &&
+      item.firstFrame <= label.frame && label.frame < item.lastExclusive);
+    return [{ clip: label.clip, sourceFrame: label.frame, point: label.target + 1,
+      expected: test.expected, current: test.baseline, trial: test.candidate,
+      frame: part ? part.firstGameFrame + label.frame - part.firstFrame : null }];
+  });
+  return { training: coverChecker.extraLabels.train, heldOut: coverChecker.heldOut,
+    current: coverChecker.baselineCorrect, trial: coverChecker.candidateCorrect,
+    reviewedBoards: coverChecker.witnessSummary["verified-board"], errors };
 }
 
 function unindexedPairs(raw, data) {
@@ -357,6 +379,13 @@ function report(number) {
           tests: blurredFaces.tests.spotExtra.filter(test => test.cohort === "final-board-review" && test.game === number),
         },
       },
+      coveredDice: coveredFaces && {
+        summary: coveredFaces.summary,
+        trainingFrames: coveredFaces.trainingFrames,
+        trainingTracks: coveredFaces.trainingTracks,
+        tests: coveredFaces.tests.spotExtra.filter(test => test.cohort === "covered-dice-review" && test.game === number),
+      },
+      coverCheckers: checkerWitnessTrial(number, recording.segments),
     },
     footprintTiming: { controls: footprintValidation.filter(item => item.clear !== null).length, shiftedRolls,
       testedWindows: footprintValidation.filter(item => item.game === number) },

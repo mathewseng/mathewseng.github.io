@@ -61,9 +61,9 @@ function compare(game, plan) {
     }
     return { frame: roll.start, player: roll.player, expected, claimed, agreement,
       automaticFrame: automatic?.start ?? null, automaticPlayer: automatic?.player ?? null,
-      ...(automatic?.evidence === 'continuous-dice-poses-and-legal-result' ? {
-        poseContinuity: { lastSeen: automatic.end, resultFrame: automatic.resultFrame,
-          repositionedAt: automatic.relocatedAt ?? null },
+      ...(automatic?.evidence === 'continuous-dice-poses' || automatic?.evidence === 'continuous-dice-poses-and-legal-result' ? {
+        poseContinuity: { lastSeen: automatic.poseLastSeen ?? automatic.end, resultFrame: automatic.resultFrame,
+          repositionedAt: automatic.relocatedAt ?? null, reviewedPickup: roll.pickup ?? null },
       } : {}) };
   });
   const unmatched = plan.filter((_, index) => !used.has(index))
