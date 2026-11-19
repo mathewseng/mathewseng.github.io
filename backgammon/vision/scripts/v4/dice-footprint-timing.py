@@ -1,53 +1,12 @@
 """Find when the same two stationary dice appear and when both locations clear."""
 import argparse
-from collections import defaultdict
 import json
 from pathlib import Path
-import sys
 
 import cv2
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from project_paths import ARTIFACT_DIR
-
-
-def patches(game, frames, centers):
-    manifest = ARTIFACT_DIR / 'v2' / f'game-{game}-analysis.json'
-    segments = json.loads(manifest.read_text())['segments']
-    requested = defaultdict(list)
-    floor = min(frames)
-    for frame in sorted(frames):
-        segment = next(part for part in reversed(segments) if part['firstGameFrame'] <= frame)
-        offset = frame - segment['firstGameFrame'] + segment['firstFrame']
-        if offset >= segment['lastExclusive'] or (segment['discontinuity'] and floor < segment['firstGameFrame']):
-            raise ValueError(f'Timing samples cross missing footage in game {game}')
-        requested[segment['source']].append((frame, offset))
-
-    result = {}
-    for source, requests in requested.items():
-        capture = cv2.VideoCapture(str(ARTIFACT_DIR / 'board' / source))
-        previous = -2
-        for frame, offset in requests:
-            if offset != previous + 1:
-                capture.set(cv2.CAP_PROP_POS_FRAMES, offset)
-            ok, image = capture.read()
-            if not ok:
-                raise ValueError(f'Cannot read {source} frame {offset}')
-            height, width = image.shape[:2]
-            if any(not 11 <= x < width - 11 or not 11 <= y < height - 11 for x, y in centers):
-                raise ValueError(f'Die center outside the camera crop in game {game}')
-            result[frame] = [cv2.cvtColor(image[y-11:y+12, x-11:x+12], cv2.COLOR_BGR2GRAY) for x, y in centers]
-            previous = offset
-        capture.release()
-    return result
-
-
-def difference(patch, reference):
-    # Track the visual signature at each location even when the face reader
-    # drops it. The surrounding pixels allow for a small shift in rectification.
-    result = cv2.matchTemplate(patch, reference[4:19, 4:19], cv2.TM_SQDIFF)
-    return (max(0, result.min()) / 225) ** .5
+from dice_footprints import difference, patches
 
 
 def sustained(window, supported, minimum):
@@ -73,7 +32,8 @@ def verify(game, test):
         move = reposition['search']
         frames.update(reposition['visible'], range(*move), range(onset[1], move[1]))
         centers = centers + [center for center in moved_centers if center not in centers]
-    data = patches(game, frames, centers)
+    color = test.get('color', False)
+    data = patches(game, frames, centers, color=color)
 
     def template(index, visible):
         def median(keys):
@@ -85,7 +45,7 @@ def verify(game, test):
         index, die, background, scale = signature
         if scale < 12:
             return False
-        match, mismatch, multiplier, limit = (die, background, .45, 22) if occupied else (background, die, .40, 18)
+        match, mismatch, multiplier, limit = (die, background, .45, 22) if occupied else (background, die, .40, 8 if color else 18)
         near = difference(data[frame][index], match)
         far = difference(data[frame][index], mismatch)
         return near <= min(limit, multiplier * scale) and far - near > .25 * scale

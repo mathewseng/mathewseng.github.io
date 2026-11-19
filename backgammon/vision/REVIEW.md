@@ -579,3 +579,28 @@ tracks. It matched 24 of 31 general holdout tracks, up from 16, and 14 of 22
 additional camera tracks, up from 13. It matched one of the four new faces
 from the brief rolls, as did the current reader. The released replay keeps
 the existing weights and the source-reviewed values.
+
+## Stationary dice and pickup evidence
+
+Game 4’s Black 3–2 remains in the same two positions from 18:06.48 until
+pickup. Black tests several checker arrangements before settling on
+13/11 11/8. Seven proposals during the trial duplicated or interrupted
+that turn. In 1,190 sampled frames, both locations matched the original
+dice. The color comparison kept the near-side hand distinct from the empty
+felt. Both dice locations are clear at 21:29.68, seven frames before the
+prior marker. The replay now ends the roll there and preserves its score.
+
+The all-game comparison holds matched rolls at 133, increases correct dice
+pairs from 93 to 94 and matching final checker boards from 76 to 77, and
+reduces extra proposals from 49 to 42. The comparison uses the same detector
+outputs, with camera color patches to verify continuity and distinguish
+occlusion from pickup. A repeated partial die read and the two stable checker
+boards jointly distinguish 3–2 from the otherwise possible 4–1.
+
+Two follow-up face readers trained on 514 source frames from 79 tracks. The
+camera-augmented reader matched 23 of 31 general holdout tracks and the
+pip contrast reader matched 16. On six independently reviewed faces from
+long rolls, the current reader matched five, the camera-augmented reader
+matched four, and the pip contrast reader matched two. The camera-augmented
+reader recovered a rotated three that the current reader called a two, and
+misread both faces on the early Game 5 6–4. The replay retains its current weights.

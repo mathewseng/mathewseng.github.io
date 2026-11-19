@@ -66,6 +66,12 @@ const actorPath = path.join(replayDir, "actor-turn-validation.json");
 const actorTrial = fs.existsSync(actorPath) ? read(actorPath) : [];
 const posePath = path.join(replayDir, "pose-turn-validation.json");
 const poseTrial = fs.existsSync(posePath) ? read(posePath) : [];
+const stationaryPath = path.join(replayDir, "stationary-turn-validation.json");
+const stationaryTrial = fs.existsSync(stationaryPath) ? read(stationaryPath) : [];
+const occlusionFacePath = path.join(replayDir, "occlusion-dice-training", "dice-track-validation.json");
+const occlusionDetailPath = path.join(replayDir, "occlusion-dice-detail-training", "dice-track-validation.json");
+const occlusionFaces = fs.existsSync(occlusionFacePath) ? read(occlusionFacePath) : null;
+const occlusionDetail = fs.existsSync(occlusionDetailPath) ? read(occlusionDetailPath) : null;
 const motionPath = path.join(replayDir, "checker-motion-validation.json");
 const motionChecks = fs.existsSync(motionPath) ? read(motionPath) : [];
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
@@ -349,6 +355,8 @@ function report(number) {
     return roll ? [{ ...entry, player: roll.player, dice: roll.dice }] : [];
   }).sort((a, b) => a.frame - b.frame);
   const briefPairTrial = shortPairs.find(item => item.game === number);
+  const longTrialsForGame = data => data?.tests.spotExtra
+    .filter(test => test.game === number && test.cohort === "long-occlusion-review") ?? [];
   const report = { game: number, fps: data.fps, counts, unresolvedFaces, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
@@ -358,6 +366,7 @@ function report(number) {
     locatorTurnTrial: locatorTurnTrial.find(item => item.game === number) ?? null,
     actorTrial: actorTrial.find(item => item.game === number) ?? null,
     poseTrial: poseTrial.find(item => item.game === number) ?? null,
+    stationaryTrial: stationaryTrial.find(item => item.game === number) ?? null,
     briefDice: briefPairTrial ? {
       ...briefPairTrial,
       faces: briefFaces && {
@@ -399,6 +408,11 @@ function report(number) {
         tests: coveredFaces.tests.spotExtra.filter(test => test.cohort === "covered-dice-review" && test.game === number),
       },
       coverCheckers: checkerWitnessTrial(number, recording.segments),
+      occlusionDice: occlusionFaces && {
+        trainingFrames: occlusionFaces.trainingFrames,
+        tests: longTrialsForGame(occlusionFaces),
+        detail: longTrialsForGame(occlusionDetail),
+      },
     },
     footprintTiming: { controls: footprintValidation.filter(item => item.clear !== null).length, shiftedRolls,
       testedWindows: footprintValidation.filter(item => item.game === number) },

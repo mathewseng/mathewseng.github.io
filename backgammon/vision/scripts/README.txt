@@ -452,3 +452,20 @@ Calibrate die color and review turn order
   The trial leaves corrected faces unresolved until independently supported.
   Add calibration/reviewed-brief-faces.json to the prior covered-face training
   command and put its output in brief-dice-training/ beside the replay.
+
+  Run v4/long-dice-footprints.py with the actor observation directory and
+  an output JSON path to collect evidence of long stationary pairs from
+  color patches. Use that path in OFFICE3_VISION_LONG_FOOTPRINTS and keep
+  the pose-state and observation inputs fixed across the plan comparison.
+  Compare all five reconstructed plans with v4/compare-turn-plans.mjs,
+  then run v4/verify-long-footprints.mjs on the comparison. Put the comparison
+  in stationary-turn-validation.json beside the replay. Apply the reviewed
+  Game 4 pickup to the scored v30 replay with v4/reviewed-long-rolls.json and
+  v4/dice-footprint-controls.json using the earlier reconciliation command.
+
+  Add calibration/reviewed-long-occlusion-faces.json to the prior
+  brief-face training command and exclude the other views in clips 55–58.
+  Run the control and --pip-detail candidates from the same training set.
+  The latter candidate expects the local pip contrast transform before model
+  inference. Save the trial outputs in occlusion-dice-training/ and
+  occlusion-dice-detail-training/ for Reports.

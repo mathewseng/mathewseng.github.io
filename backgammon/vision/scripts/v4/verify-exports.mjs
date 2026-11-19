@@ -196,7 +196,8 @@ for (const number of [1, 2, 3, 4, 5]) {
       const continuous = replay.contextRecovery.find(entry => entry.kind === 'confirmed-consecutive');
       if (continuous) {
         const roll = verdict(1086.48, 'dark', [3, 2]);
-        assert.equal(roll.pickup, Math.round(1289.96 * 25));
+        const colorVerified = replay.contextRecovery.some(entry => entry.frame === roll.start && entry.clear === 32242);
+        assert.equal(roll.pickup, colorVerified ? 32242 : 32249);
         assert.equal(data.decisions[roll.decision].played.notation, '13/11 11/8');
         assert.equal(data.decisions[roll.decision].evLoss, 0);
         for (const other of [1162.8, 1212.56, 1227.88, 1284.24]) {

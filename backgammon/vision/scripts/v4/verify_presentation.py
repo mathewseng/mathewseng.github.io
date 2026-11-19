@@ -174,6 +174,11 @@ def verify(number):
         bear_off = next(r for r in rolls if r["start"] == 25758)
         assert bear_off["dice"] == [6, 1]
         assert game["turns"][bear_off["decision"] - 1]["after"]["borneOff"] == [7, 0]
+        if any(note.get("frame") == 27162 and note.get("clear") == 32242 for note in game.get("contextRecovery", [])):
+            stationary = next(roll for roll in rolls if roll["start"] == 27162)
+            assert stationary["pickup"] == stationary["end"] == 32242
+            assert stationary["dice"] == [3, 2] and drawn_rolls[27162] == 32242 - 27162
+            assert game["decisions"][str(stationary["decision"])]["played"]["notation"] == "13/11 11/8"
     if number == 5:
         roll = next(r for r in rolls if r["start"] == 636)
         assert roll["start"] < 73 * 25 < roll["end"] == 3213

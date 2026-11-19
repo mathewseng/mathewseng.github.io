@@ -21,6 +21,8 @@ const baseline = path.join(artifactDir, 'v4');
 const out = path.resolve(process.env.OFFICE3_REPLAY_DIR ?? baseline);
 const observationsDir = path.resolve(process.env.OFFICE3_VISION_OBSERVATIONS_DIR ?? baseline);
 const poseStateDir = process.env.OFFICE3_VISION_POSE_STATE_DIR;
+const longFootprintFile = process.env.OFFICE3_VISION_LONG_FOOTPRINTS;
+const longFootprints = longFootprintFile ? JSON.parse(fs.readFileSync(longFootprintFile, 'utf8')) : {};
 const v2 = path.join(artifactDir, 'v2');
 
 const load = (dir, file) => JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
@@ -210,9 +212,46 @@ function extendedRoll(roll, runs, poseFrames, limit, rolls) {
     evidence: 'continuous-dice-poses-and-legal-result', priority: 9 };
 }
 
+function footprintRoll(seed, proof, trials, runs) {
+  const { sourceStart, firstTogether, lastTogether, clear, coverage, maxGap, centers, player } = proof;
+  if (clear === null || coverage < .67 || maxGap > 160 || clear - firstTogether < fps * 5) return null;
+  const corroboration = trials.filter(roll => roll.player === player && roll.start >= sourceStart && roll.start < clear &&
+    samePose(roll.centers, centers));
+  const votes = new Map();
+  for (const observed of corroboration) {
+    for (const face of new Set(observed.dice.filter(Number.isInteger))) votes.set(face, (votes.get(face) ?? 0) + 1);
+  }
+  const stableFaces = [...votes].filter(([, count]) => count >= 2).map(([face]) => face);
+  // The camera proves these are still the same dice. Independent face votes
+  // help choose between otherwise legal rolls to the same resulting board.
+  const diceOptions = seed.dice.every(Number.isInteger) ? [seed.dice] :
+    stableFaces.length ? allDice.filter(dice => stableFaces.every(face => dice.includes(face))) : [];
+  const before = runs.filter(run => run.first <= firstTogether + 5 && run.last >= sourceStart - 65).at(-1);
+  const after = runs.filter(run => run.first >= firstTogether + 5 && run.first <= clear + 24 &&
+    run.last >= clear - 20 && run.count >= 12).at(-1);
+  const matches = before && after && after.first < clear
+    ? matchingTurns(before, after, diceOptions, names.indexOf(player)) : [];
+  if (matches.length !== 1) return null;
+  const [match] = matches;
+  return { ...seed, start: Math.min(sourceStart, firstTogether), end: clear - 1, poseLastSeen: lastTogether,
+    before, after, dice: match.dice, steps: match.steps, resultFrame: after.first, footprint: proof,
+    evidence: 'stationary-footprints-and-legal-result', priority: 12 };
+}
+
 function proposedRolls(game, observations, rows, runs, first, last, anchors, poseFrames) {
   const rolls = observedRolls(game, observations, rows).filter((r) => r.start >= first && r.start < last);
-  return rolls.flatMap((roll) => {
+  const spans = (longFootprints[game.number] ?? []).flatMap(proof => {
+    if (proof.sourceStart < first || proof.clear === null || proof.clear >= last ||
+        game.reviewedCubeOffers.some(offer => offer.startFrame < proof.clear && offer.endFrame >= proof.sourceStart)) return [];
+    const seed = rolls.find(roll => roll.start === proof.sourceStart && roll.player === proof.player &&
+      samePose(roll.centers, proof.centers));
+    if (!seed || seed.reviewedPose) return [];
+    if (rolls.some(roll => roll.reviewedPose && roll.start > proof.firstTogether && roll.start < proof.clear &&
+      roll.centers && !samePose(roll.centers, proof.centers))) return [];
+    const stationary = footprintRoll(seed, proof, rolls, runs);
+    return stationary ? [stationary] : [];
+  });
+  const normal = rolls.flatMap((roll) => {
     const extended = extendedRoll(roll, runs, poseFrames, last, rolls);
     if (extended) return [extended];
     const next = rolls.find((r) => r.start > roll.end && r.quality >= .80 && r.dice[1] !== null);
@@ -248,6 +287,7 @@ function proposedRolls(game, observations, rows, runs, first, last, anchors, pos
     return [{ ...roll, before, end: Math.min(last - 1, roll.end + 14),
       resultFrame: null, priority: roll.reviewedPose ? 11 : crediblePair ? 5 : 2 }];
   });
+  return [...spans, ...normal];
 }
 
 function boardOnlyTurns(runs, anchors) {
@@ -287,7 +327,7 @@ function chooseTurns(proposals, last) {
       turns.push({ ...roll });
       continue;
     }
-    if (existing.player === roll.player && sameDice(existing.dice, roll.dice) &&
+    if (!existing.footprint && existing.player === roll.player && sameDice(existing.dice, roll.dice) &&
         (existing.before?.key === roll.before?.key || !existing.before || !roll.before)) {
       existing.start = Math.min(existing.start, roll.start);
       existing.end = Math.max(existing.end, roll.end);
@@ -473,6 +513,7 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
     if (!d) continue;
     const grade = d.evLoss !== null &&
       (turn.existing?.countedInGameLoss || turn.evidence === 'reviewed-roll-and-legal-result' ||
+        turn.evidence === 'stationary-footprints-and-legal-result' ||
         (turn.evidence === 'tracked-roll-and-legal-result' && turn.quality >= .82));
     decisions[turn.id] = { ...d, player: turn.player, startFrame: turn.start, endFrame: turn.end,
       countedInGameLoss: !!grade, evidence: turn.evidence };

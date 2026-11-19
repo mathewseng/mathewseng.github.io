@@ -106,7 +106,13 @@ def camera_jitter(image, rng):
     return np.clip((soft - 128) * contrast + 128 + brightness, 0, 255).astype(np.uint8)
 
 
-def fit(baseline, candidate, patches, labels, rng, augment_camera=False):
+def pip_detail(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    detail = gray - cv2.GaussianBlur(gray, (0, 0), 1.2)
+    return np.clip(image.astype(np.float32) + .85 * detail[:, :, None], 0, 255).astype(np.uint8)
+
+
+def fit(baseline, candidate, patches, labels, rng, augment_camera=False, enhance_pips=False):
     examples, targets = [], []
     for group, label in zip(patches, labels):
         for i in range(14):
@@ -115,6 +121,7 @@ def fit(baseline, candidate, patches, labels, rng, augment_camera=False):
             examples.append(camera_jitter(augmented, rng) if augment_camera and i % 3 == 2 else augmented)
             targets.append(label)
     inputs = tensor(examples)
+    candidate_inputs = tensor([pip_detail(patch) for patch in examples]) if enhance_pips else inputs
     expected = torch.tensor(targets)
     weights = torch.bincount(expected, minlength=7).clamp_min(1).float().pow(-.35)
     for layer in list(candidate.children())[:-3]:
@@ -125,7 +132,7 @@ def fit(baseline, candidate, patches, labels, rng, augment_camera=False):
     candidate.eval()
     for _ in range(18):
         for batch in torch.randperm(len(inputs)).split(48):
-            logits = candidate(inputs[batch])
+            logits = candidate(candidate_inputs[batch])
             loss = F.cross_entropy(logits, expected[batch], weight=weights)
             loss += .24 * F.kl_div(logits.log_softmax(1), prior[batch], reduction="batchmean")
             optimizer.zero_grad(set_to_none=True)
@@ -142,6 +149,8 @@ def main():
                         help="Exclude a clip from training when it contains another view of a held-out roll.")
     parser.add_argument("--camera-augmentation", action="store_true",
                         help="Add mild directional blur and exposure changes to some training views.")
+    parser.add_argument("--pip-detail", action="store_true",
+                        help="Train and test a candidate on patches with increased local pip contrast.")
     args = parser.parse_args()
     cv2.setNumThreads(1)
     torch.set_num_threads(2)
@@ -162,10 +171,11 @@ def main():
     baseline.load_state_dict(weights)
     candidate.load_state_dict(weights)
     fit(baseline, candidate, groups[:len(training)], [int(row["label"]) for row in training], rng,
-        args.camera_augmentation)
+        args.camera_augmentation, args.pip_detail)
     tests = {kind: [] for kind in (["test", "spot", "spotExtra"] if extra else ["test", "spot"])}
     for item, group in zip(held + spots, groups[len(training):]):
-        old, new = probabilities(baseline, group, True), probabilities(candidate, group, True)
+        enhanced = [pip_detail(image) for image in group] if args.pip_detail else group
+        old, new = probabilities(baseline, group, True), probabilities(candidate, enhanced, True)
         tests[item["split"]].append(dict(game=item["game"], clip=item["clip"], patches=len(group),
             expected=int(item["label"]), baselineFrame=int(old[0].argmax()),
             baselineTrack=int(old.mean(axis=0).argmax()), candidateTrack=int(new.mean(axis=0).argmax()),
@@ -188,6 +198,8 @@ def main():
         result["extraTrainingTracks"] = sum(item in extra_training for item in training)
     if args.camera_augmentation:
         result["cameraAugmentation"] = True
+    if args.pip_detail:
+        result["pipDetail"] = True
     (directory / "dice-track-validation.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({k: v for k, v in result.items() if k != "tests"}), flush=True)
 

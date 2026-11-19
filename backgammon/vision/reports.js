@@ -128,6 +128,22 @@ function renderReport(report, seek) {
     fragment.append(section);
   }
 
+  const stationary = report.stationaryTrial;
+  const stationaryRolls = stationary?.candidate.rolls.filter(roll => roll.footprint) ?? [];
+  if (stationaryRolls.length) {
+    const { current, candidate } = stationary;
+    const section = element("section", null, "vision-report-model");
+    section.append(element("h3", "Stationary dice through occlusion"), element("p",
+      `Comparing the board at the two dice locations changed extra roll proposals from ${current.unmatched.length} to ${candidate.unmatched.length} and correct dice pairs from ${current.counts.correctDice} to ${candidate.counts.correctDice}.`, "muted small"));
+    const precise = frame => `${timecode(frame, report.fps)}.${String(Math.round((frame % report.fps) * 100 / report.fps)).padStart(2, "0")}`;
+    const entries = stationaryRolls.map(({ frame, player, claimed, footprint }) => ({
+      frame, title: `${player === "white" ? "White" : "Black"} ${claimed.join("–")}`,
+      detail: `Both dice matched their original appearance in ${number.format(footprint.together)} sampled frames. Empty felt is visible at both locations at ${precise(footprint.clear)}. The same roll explains the completed checker move.`,
+    }));
+    section.append(reviewList(entries, entry => entry.title));
+    fragment.append(section);
+  }
+
   if (report.briefDice) {
     const { total, aligned, afterGame, reviewed, faces } = report.briefDice;
     const section = element("section", null, "vision-report-model");
@@ -300,6 +316,19 @@ function renderReport(report, seek) {
       const { tests, trainingFrames, trainingTracks } = coveredDice;
       const correct = key => tests.filter(face => face.expected === face[key]).length;
       section.append(element("p", `The cover and fan review tested ${tests.length} newly labeled faces from this game. The current reader matched ${correct("baselineTrack")} and the reader fine-tuned on ${trainingFrames} frames from ${trainingTracks} tracks matched ${correct("candidateTrack")}.`, "muted small"));
+    }
+    const occlusionDice = report.witnessTrials?.occlusionDice;
+    if (occlusionDice?.tests.length) {
+      const { tests, detail, trainingFrames } = occlusionDice;
+      const correct = (rows, key) => rows.filter(test => test[key] === test.expected).length;
+      section.append(element("p", `Two readers trained on ${trainingFrames} source frames. Across ${tests.length} reviewed faces after an occlusion in this game, the current reader matched ${correct(tests, "baselineTrack")}, the camera-augmented reader matched ${correct(tests, "candidateTrack")}, and the reader trained with increased pip contrast matched ${correct(detail, "candidateTrack")}.`, "muted small"));
+      const errors = tests.flatMap(({ frame, expected, baselineTrack, candidateTrack }, i) => {
+        const contrast = detail[i]?.candidateTrack ?? "?";
+        if ([baselineTrack, candidateTrack, contrast].every(read => read === expected)) return [];
+        return [{ frame, title: `Reviewed face · ${expected}`,
+          detail: `Current reader saw ${baselineTrack}. Camera-augmented reader saw ${candidateTrack}. Pip contrast reader saw ${contrast}.` }];
+      });
+      if (errors.length) section.append(reviewList(errors, entry => entry.title));
     }
     fragment.append(section);
   }
