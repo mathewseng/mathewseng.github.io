@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v23");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v24");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -40,6 +40,8 @@ const diceRuntimePath = path.join(replayDir, "dice-continuity-training", "runtim
 const diceRuntime = fs.existsSync(diceRuntimePath) ? read(diceRuntimePath) : null;
 const planTrialPath = path.join(replayDir, "dice-automatic-replay-validation.json");
 const planTrial = fs.existsSync(planTrialPath) ? read(planTrialPath) : [];
+const motionPath = path.join(replayDir, "checker-motion-validation.json");
+const motionChecks = fs.existsSync(motionPath) ? read(motionPath) : [];
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
 const footprintValidation = fs.existsSync(footprintReportPath) ? read(footprintReportPath) : [];
 
@@ -286,7 +288,10 @@ function report(number) {
   assert(counts.completeRolls <= counts.rolls && counts.legalPlays <= counts.gradedPlays);
   assert(issues.every(issue => issue.frame >= 0 && issue.frame < data.frames));
   issues.sort((a, b) => a.frame - b.frame);
-  const footageReview = [...(reviewed[number] ?? []), ...(replay.contextRecovery ?? [])
+  const earlierNotes = reviewed[number] ?? [];
+  const regraded = number === 4 && replay.contextRecovery?.some(entry => entry.frame === 2285 && entry.boardWitnesses?.length === 2);
+  const gameNotes = regraded ? [{ frame: 2450, text: "Black’s visible roll is 6–4. The completed board now confirms bar/21 21/15 with zero checker EV loss." }] : earlierNotes;
+  const footageReview = [...gameNotes, ...(replay.contextRecovery ?? [])
     .filter(entry => entry.text && !entry.superseded)
     .map(({ frame, text, boardWitnesses }) => ({ frame, text, ...(boardWitnesses ? { boardWitnesses } : {}) }))]
     .sort((a, b) => a.frame - b.frame);
@@ -298,6 +303,7 @@ function report(number) {
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
     automaticTrial: planTrial.find(item => item.game === number) ?? null,
+    checkerMotion: motionChecks.find(item => item.game === number) ?? null,
     reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
     diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number),
     settledFaces: faceValidation && {

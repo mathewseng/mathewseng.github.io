@@ -385,3 +385,40 @@ fell from 96 to 88. Wrong pairs fell from nine to seven, while wrong-player
 assignments rose from three to four. The replay keeps the existing reader.
 Reports includes the per-game comparisons and the download records every
 matched or additional roll proposal.
+
+## Checker arrangements during a roll
+
+At 3:29 and 5:06 in Game 1, Black returns checkers while the same dice remain
+on the table. At 14:14 in Game 4, White changes the arrangement before picking
+up the dice. At 11:43 in Game 5, the count on Black’s tall stack drops back to
+five. The renderer now uses repeated images of these positions to revise the
+point counts. The frozen board, legal actions, and EV loss for the decision
+stay tied to the original roll and verified result.
+
+Across 14,571 comparable frames with a complete camera board and a graded
+roll, the updated counts match 14,550 readings. The earlier tracker matches
+14,165. This measures agreement with the detector where the full board fits a
+legal stage. The source camera confirms the named examples and the short
+transitions at 16:36.72 in Game 4 and 7:07.44 in Game 5.
+
+| Game and roll | Result from the original camera |
+| --- | --- |
+| Game 3, 14:55 | Double twos show 7/5 7/5 5/3 3/1. |
+| Game 4, 1:31 | Black’s 6–4 enters on the 21-point and moves to the 15-point. |
+| Game 4, 8:51 | The visible one and the verified pair of transfers establish 6–1. |
+| Game 4, 17:41 | Black’s 4–2 moves the rear checker six pips. |
+| Game 5, 8:33 | Black’s 5–3 moves one checker from fixed point 11 to point 19. |
+
+The latest training run used 776 source frames from 121 dice tracks and
+1,062 added checker crops. At the production thresholds, the dice candidate
+read 41 of 150 new held-out views correctly. The current reader read 55.
+The checker trial matched 878 of 890 held-out point counts from reviewed
+boards and the current reader matched 879. The replay retains the current
+weights.
+
+The full-session dice comparison reran both readers from the same source
+observations and used the same tracking and inference code. The current
+reader matched 122 of 159 indexed rolls and recovered 90 correct dice
+pairs. The earlier candidate matched 125 and recovered 88. Wrong-player
+assignments were three for the current reader and four for the candidate.
+The downloaded report records each matched and additional proposal.

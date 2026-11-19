@@ -1,0 +1,7 @@
+[
+  {"game":3,"seconds":897.20,"dice":[[388,139,2],[374,216,2]],"split":"spotExtra"},
+  {"game":4,"seconds":95.40,"dice":[[328,214,6],[409,224,4]],"split":"spotExtra"},
+  {"game":4,"seconds":550,"dice":[[112,206,1]],"split":"train"},
+  {"game":4,"seconds":1061.76,"dice":[[232,220,4],[118,350,2]],"split":"train"},
+  {"game":5,"seconds":518,"dice":[[438,204,3],[410,316,5]],"split":"spotExtra"}
+]

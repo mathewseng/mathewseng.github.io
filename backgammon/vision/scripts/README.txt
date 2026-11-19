@@ -273,6 +273,28 @@ Refresh the context and reviewed episodes
   The reviewed roll count is the comparison denominator, with unknown
   reference faces excluded from the dice-pair accuracy counts.
 
+  Apply v4/reviewed-checker-motion.json to the v24 replay. Rescore its
+  confirmed turns, then refresh the temporary checker counts before rendering.
+
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/reconcile-reviewed-turns.mjs \
+      "$previous" v4/reviewed-checker-motion.json
+    OFFICE3_REPLAY_DIR="$scored" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs
+    OFFICE3_REPLAY_DIR="$output" bun v4/refresh-checker-display.mjs "$scored"
+
+  The checker display refresh keeps the same decisions and EV loss ledger.
+  It checks observed legal stages in both directions within a roll and
+  produces checker-motion-validation.json for the report. The frame export
+  includes a complete temporary inventory when the point counts identify
+  the bar and borne-off totals uniquely.
+
+  Add v4/reviewed-checker-motion.json and hold out clips 30, 39 and 68 in
+  the checker command above. Add
+  --reviewed calibration/reviewed-checker-motion-faces.json to the face
+  command. Run the production detector threshold comparison on that same
+  review file. Regenerate both sides of the automatic comparison from the
+  same input observations. Use v2/vision.py with its default reader and a
+  separate --state-dir to generate the control.
+
 Manual reader calibration
 
     python3 calibration/sample.py

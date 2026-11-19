@@ -78,6 +78,12 @@ function renderReport(report, seek) {
   if (counts.reconstructedBoardFrames) {
     coverage.append(element("p", `Equity was evaluated for the reconstructed board in ${number.format(counts.equityFrames)} of ${number.format(counts.reconstructedBoardFrames)} frames with a board.`, "muted small"));
   }
+  if (report.checkerMotion?.compared) {
+    const { compared, previousMatches, updatedMatches } = report.checkerMotion;
+    coverage.append(element("p",
+      `During graded plays, the checker counts matched complete camera readings on ${number.format(updatedMatches)} of ${number.format(compared)} comparable frames. The earlier tracker matched ${number.format(previousMatches)}. The starting boards and play grades remain fixed during these movements.`,
+      "muted small"));
+  }
   fragment.append(coverage);
 
   if (report.automaticTrial) {
@@ -199,7 +205,7 @@ function renderReport(report, seek) {
     if (report.witnessTrials?.diceRuntime) {
       const { current, candidate } = report.witnessTrials.diceRuntime.counts;
       const total = Object.values(current).reduce((sum, count) => sum + count, 0);
-      section.append(element("p", `With the live detector thresholds, the latest dice trial gave ${candidate.correct} correct and ${candidate.wrong} wrong reads across ${total} views of the newly reviewed dice. The current reader gave ${current.correct} correct and ${current.wrong} wrong reads. The remaining views were uncertain or missed.`, "muted small"));
+      section.append(element("p", `With the live detector thresholds, the latest dice trial gave ${candidate.correct} correct and ${candidate.wrong ?? 0} wrong reads across ${total} views of the newly reviewed dice. The current reader gave ${current.correct} correct and ${current.wrong ?? 0} wrong reads. The remaining views were uncertain or missed.`, "muted small"));
     }
     fragment.append(section);
   }

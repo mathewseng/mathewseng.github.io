@@ -2,14 +2,29 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { artifactDir, replayDir } from '../project_paths.mjs';
-import { rowsFrom } from '../v2/solve_games.mjs';
+import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
 import { cubeContext } from './cube-context.mjs';
+import { checkerStages } from './checker-counts.mjs';
 
 const FPS = 25;
 
 function frameData(game, rows, recording) {
   const rolls = game.presentation.rolls;
   const offer = game.decisions.cube;
+  const movingBoards = new Map();
+  for (const roll of rolls) {
+    if (!roll.decision) continue;
+    const turn = game.turns[roll.decision - 1];
+    if (!turn.before || !turn.dice.every(Number.isInteger)) continue;
+    const input = stateFor(turn.before, Number(roll.player === 'dark'), turn.dice);
+    const visible = new Map();
+    for (const stage of checkerStages(input).values()) {
+      const points = stage.points.join(',');
+      // Omit the inventory if the point counts alone admit several versions.
+      visible.set(points, visible.has(points) ? null : stage);
+    }
+    movingBoards.set(roll.decision, visible);
+  }
   let rollIndex = 0, previous;
   const changes = [];
   for (const row of rows) {
@@ -28,6 +43,7 @@ function frameData(game, rows, recording) {
     if (cube && cube.offered && offer && row.frame >= offer.startFrame) {
       cube.offerer = offer.offerer;
     }
+    const movingDecision = onBoard ? rolls[rollIndex].decision ?? row.turn : row.turn;
     const phase = closed ? 'game-closed' : cube?.offered ? 'cube-response' : onBoard ? 'checker-turn' :
       pending ? 'checker-result-pending' :
       row.frame < rolls[0]?.start && game.game > 1 ? 'opening' :
@@ -36,6 +52,7 @@ function frameData(game, rows, recording) {
       phase,
       position: closed ? null : row.position,
       movingPoints: closed ? null : row.displayPoints ?? null,
+      movingBoard: !closed && row.displayPoints ? movingBoards.get(movingDecision)?.get(row.displayPoints.join(',')) ?? null : null,
       roll: onBoard ? rollIndex : null,
       player: closed ? null : cube?.offered ? (offer?.offerer === 'white' ? 'dark' : 'white') :
         onBoard ? rolls[rollIndex].player : pending ? prior.player : row.phase === 'pre-roll' ? row.player : null,

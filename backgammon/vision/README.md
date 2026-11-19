@@ -5,7 +5,7 @@ Office-3 game replays from November 17, 2026. Add `?game=1` through `?game=5`
 to link to a specific game.
 
 The 1080p video files are assets on the
-[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v24).
+[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v25).
 The published site contains the viewer and stills from the replays. The media
 loads over the network on playback. **Vision** toggles a frame-aligned overlay
 over the same video element, preserving playback, time, and seeking. The
@@ -45,8 +45,9 @@ frames from zero and find the last `changes` entry whose `frame` is at or before
 the desired frame. Resolve its `position` and `roll` references in the same file.
 Position points run from 1 to 24 and use positive counts for White and negative
 counts for Black. Bar, borne-off counts, and losses are in White, Black order.
-`movingPoints` supplies the in-turn point counts when they differ from the last
-settled board. Each roll also records its own fixed `before`, confirmed
+`movingPoints` supplies the visible in-turn point counts. When the point
+counts identify a unique legal inventory, `movingBoard` adds the bar and
+borne-off counts for that same temporary board. Each roll also records its own fixed `before`, confirmed
 `after`, and `resultFrame` so a later checker movement cannot change the
 position used for that decision. Missing boards are null. A null roll means
 there is no active roll in the reconstructed timeline.

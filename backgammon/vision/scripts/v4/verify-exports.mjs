@@ -42,6 +42,14 @@ for (const number of [1, 2, 3, 4, 5]) {
       const expected = replay.positions[row.position];
       assert.deepEqual(data.positions[state.position].points, expected.points.map(([white, dark]) => white - dark));
       assert.deepEqual(state.movingPoints, row.displayPoints ?? null);
+      if (state.movingBoard) {
+        const { points, bar, borneOff } = state.movingBoard;
+        assert.deepEqual(points, state.movingPoints);
+        for (const side of [0, 1]) {
+          const onPoints = points.reduce((total, count) => total + Math.max(0, side ? -count : count), 0);
+          assert.equal(onPoints + bar[side] + borneOff[side], 15);
+        }
+      }
       const xgid = expected.equities?.inputXgid;
       if (xgid) {
         const evaluated = fromXGID(xgid);
@@ -61,6 +69,23 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.equal(evaluated.rules.cube, Boolean(context));
     if (context) assert.deepEqual(evaluated.cube, context);
     assert.equal(data.decisions[id].moves.length, Math.min(5, decision.actions.length));
+  }
+  if (data.changes.some(change => change.movingBoard)) {
+    const motionControls = {
+      1: [[5270, 22, -2], [7679, 17, -3]],
+      4: [[21355, 20, 1], [24918, 6, 1]],
+      5: [[10686, 11, 1], [17600, 19, -5]],
+    };
+    const compared = fs.existsSync(path.join(replayDir, 'checker-motion-validation.json'));
+    for (const [frame, point, expected] of compared ? motionControls[number] ?? [] : []) {
+      const state = data.changes.findLast(change => change.frame <= frame);
+      const roll = data.rolls[state.roll];
+      const first = data.changes.findLast(change => change.frame <= roll.start);
+      assert.equal(state.movingBoard?.points[point - 1], expected, `Game ${number} at frame ${frame}`);
+      assert.equal(state.roll, first.roll);
+      assert.deepEqual(fromXGID(data.decisions[roll.decision].xgid).points, roll.before.points);
+      assert.deepEqual(state.checkerLoss, first.checkerLoss);
+    }
   }
   const native = history.items.filter(item => item.kind === 'match').flatMap(decisionHistory);
   const sum = [0, 0];
@@ -120,7 +145,8 @@ for (const number of [1, 2, 3, 4, 5]) {
   if (reviewedEpisodes && number === 4) {
     const corrected = data.rolls.find(roll => roll.start <= 2450 && roll.end > 2450);
     assert.deepEqual(corrected.dice, [6, 4]);
-    assert.equal(data.decisions[corrected.decision].evLoss, null);
+    const witnessedPlay = replay.contextRecovery.some(entry => entry.frame === corrected.start && entry.boardWitnesses?.length === 2);
+    assert.equal(data.decisions[corrected.decision].evLoss, witnessedPlay ? 0 : null);
     const fans = data.rolls.filter(roll => roll.fan && [24995, 25192].includes(roll.start));
     const witnessed = replay.contextRecovery.find(entry => entry.frame === 25192 &&
       entry.text.includes('retain their checker counts'));
@@ -165,7 +191,8 @@ for (const number of [1, 2, 3, 4, 5]) {
     }
     if (number === 4) {
       verdict(531.76, 'dark', [6, 1]);
-      verdict(1061.32, 'dark', [6, 2]);
+      const witnessed = replay.contextRecovery.some(entry => entry.frame === 26533 && entry.boardWitnesses?.length === 2);
+      verdict(1061.32, 'dark', witnessed ? [4, 2] : [6, 2]);
       const continuous = replay.contextRecovery.find(entry => entry.kind === 'confirmed-consecutive');
       if (continuous) {
         const roll = verdict(1086.48, 'dark', [3, 2]);
@@ -300,9 +327,9 @@ for (const number of [1, 2, 3, 4, 5]) {
   }
   const sourceComparisons = {
     1: [[6855, [6, 5]], [11388, [5, 1]]],
-    3: [[16005, [4, 2]], [16888, [1, 1]]],
-    4: [[25649, [6, 5]]],
-    5: [[12180, [3, 1]]],
+    3: [[16005, [4, 2]], [16888, [1, 1]], [22391, [2, 2]]],
+    4: [[2285, [6, 4]], [13294, [6, 1]], [25649, [6, 5]], [26533, [4, 2]]],
+    5: [[12180, [3, 1]], [12848, [5, 3]]],
   };
   for (const [start, dice] of sourceComparisons[number] ?? []) {
     const note = replay.contextRecovery.find(entry => entry.frame === start && entry.boardWitnesses?.length === 2);

@@ -1,40 +1,53 @@
-/** Use later confirmation to time visible intermediate steps on the board. */
+/** Use repeated camera boards to place visible checker moves within a frozen decision. */
 import { solverUrl } from '../project_paths.mjs';
 
 const { applyStep, boardKey, legalPaths } = await import(solverUrl('backgammon/core/rules.mjs'));
 
-export function trackCheckerCounts(rows, boards, roll, input, id, paths = legalPaths(input)) {
-  const start = boardKey(input);
+export function checkerStages(input, paths = legalPaths(input)) {
   const stages = new Map();
-  const makeStage = (state, level) => {
-    const key = boardKey(state);
-    if (!stages.has(key)) stages.set(key, { points: state.points, level });
-  };
+  const add = state => stages.set(boardKey(state), {
+    points: state.points, bar: state.bar, borneOff: state.off,
+  });
+  add(input);
   for (const { steps } of paths) {
     let state = input;
-    for (const [index, step] of steps.entries()) {
+    for (const step of steps) {
       state = applyStep(state, step, input.turn);
-      makeStage(state, index + 1);
+      add(state);
     }
   }
-  let current = null, candidate = null, count = 0;
+  return stages;
+}
+
+export function observedCheckerKey(board) {
+  return board && boardKey({
+    points: board.points.map(([white, dark]) => white - dark), bar: board.bar, off: board.borneOff,
+  });
+}
+
+export function trackCheckerCounts(rows, boards, roll, input, id, paths) {
+  const start = boardKey(input);
+  const stages = checkerStages(input, paths);
+  let current = null, candidate = null;
   const observations = [];
   for (let frame = roll.start; frame < roll.end; frame++) {
-    const position = boards[frame];
-    const key = position && boardKey({ points: position.points.map(([white, dark]) => white - dark),
-      bar: position.bar, off: position.borneOff });
+    const key = observedCheckerKey(boards[frame]);
     const stage = stages.get(key);
-    if (key && key !== start && stage && (!current || stage.level > current.level)) {
-      if (candidate?.key !== key || frame - candidate.last > 4) {
-        candidate = { key, first: frame, last: frame };
-        count = 1;
-      } else {
-        candidate.last = frame;
-        if (++count >= 7) {
-          current = stage;
-          observations.push({ first: candidate.first, points: stage.points });
-        }
-      }
+    const existing = rows[frame].displayPoints;
+    if (!stage || key === current || (!current && key === start && !existing)) continue;
+    if (candidate?.key !== key || frame - candidate.last > 4) {
+      candidate = { key, first: frame, last: frame, votes: 1 };
+      continue;
+    }
+    candidate.last = frame;
+    // Retain short, visible transitions when the existing point tracker and
+    // the full-board observation agree. A revised arrangement needs more views.
+    const agrees = existing?.every((count, i) => count === stage.points[i]);
+    const required = agrees ? 3 : 7;
+    if (++candidate.votes >= required) {
+      current = key;
+      observations.push({ first: candidate.first, points: stage.points });
+      candidate = null;
     }
   }
   let tracked = null, index = 0;
@@ -44,4 +57,3 @@ export function trackCheckerCounts(rows, boards, roll, input, id, paths = legalP
     if (tracked && row.turn === id && row.phase === 'move') row.displayPoints = tracked;
   }
 }
-

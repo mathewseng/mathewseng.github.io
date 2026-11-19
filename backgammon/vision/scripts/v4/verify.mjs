@@ -25,7 +25,7 @@ for (const game of [1, 2, 3, 4, 5]) {
     const decision = data.decisions[id + 1];
     if (!decision || !turn.before) continue;
     const state = fromXGID(decision.xgid);
-    const slots = new Set();
+    const slots = new Set([state.points.join(',')]);
     for (const { steps } of legalPaths(state)) {
       let position = state;
       for (const step of steps) {
