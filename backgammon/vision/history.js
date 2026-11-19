@@ -24,7 +24,7 @@ const timecode = frame => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 };
 
-export function createHistory(seek, player) {
+export function createHistory(seek, player, replayAsset) {
   applyBoardTheme(officeBoard, document.body);
   const content = document.querySelector("#history-content");
   const download = document.querySelector("#download-history");
@@ -150,10 +150,10 @@ export function createHistory(seek, player) {
       const controller = new AbortController();
       request = controller;
       const id = number.padStart(2, "0");
-      const file = `history/game-${id}.json`;
+      const file = replayAsset(`history/game-${id}.json`);
       chapters = [];
       navigation.hidden = frameDownload.hidden = true;
-      frameDownload.href = `state/game-${id}.json`;
+      frameDownload.href = replayAsset(`state/game-${id}.json`);
       frameDownload.download = `office-3-game-${id}-frames.json`;
       heading.textContent = `Game ${number} history`;
       download.href = file;

@@ -5,9 +5,8 @@ const CUBE = "#fff08c";
 const HAND = "#ef8ccc";
 const COLUMNS = [81, 115, 152, 187, 222, 256, 316, 350, 386, 421, 456, 491];
 
-async function loadFrames(number) {
-  const id = number.padStart(2, "0");
-  const response = await fetch(`audit/game-${id}.json.gz`);
+async function loadFrames(url) {
+  const response = await fetch(url);
   if (!response.ok) throw new Error("Detection data unavailable");
   const bytes = await response.arrayBuffer();
   if (new Uint8Array(bytes, 0, 2)[0] !== 0x1f) {
@@ -17,7 +16,7 @@ async function loadFrames(number) {
   return new Response(decoded).json();
 }
 
-export function createAudit(player) {
+export function createAudit(player, replayAsset) {
   const canvas = document.querySelector("#detection-overlay");
   const status = document.querySelector("#audit-status");
   const controls = [...document.querySelectorAll("[data-view]")];
@@ -129,7 +128,7 @@ export function createAudit(player) {
     stopTick();
     if (!enabled) return;
     status.textContent = "Loading detections…";
-    const pending = cache.get(number) ?? loadFrames(number);
+    const pending = cache.get(number) ?? loadFrames(replayAsset(`audit/game-${number.padStart(2, "0")}.json.gz`));
     const selected = number;
     cache.delete(number);
     cache.set(number, pending);

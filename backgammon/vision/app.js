@@ -1,7 +1,13 @@
-import { createAudit } from "./audit.js";
-import { createHistory } from "./history.js";
-import { createReports } from "./reports.js";
-import { createTransport } from "./transport.js";
+// The publisher versions this entry point with the same content hash as
+// the replay metadata. Carry it through the module and data requests.
+const revision = new URL(import.meta.url).search;
+const replayAsset = path => `${path}${revision}`;
+const [{ createAudit }, { createHistory }, { createReports }, { createTransport }] = await Promise.all([
+  import(`./audit.js${revision}`),
+  import(`./history.js${revision}`),
+  import(`./reports.js${revision}`),
+  import(`./transport.js${revision}`),
+]);
 
 const player = document.querySelector("#replay");
 const play = document.querySelector("#play-replay");
@@ -14,8 +20,8 @@ const games = new Map(
 );
 const release = new URL("./", download.href);
 let currentGame = "1";
-const audit = createAudit(player);
-const transport = createTransport(player, data => audit.setFrameData(data));
+const audit = createAudit(player, replayAsset);
+const transport = createTransport(player, data => audit.setFrameData(data), replayAsset);
 function seekDecision(time, focusVideo = true) {
   player.pause();
   transport.seek(time);
@@ -25,8 +31,8 @@ function seekDecision(time, focusVideo = true) {
     player.scrollIntoView({ block: "center" });
   }
 }
-const gameHistory = createHistory(seekDecision, player);
-const gameReports = createReports(seekDecision);
+const gameHistory = createHistory(seekDecision, player, replayAsset);
+const gameReports = createReports(seekDecision, replayAsset);
 
 function selectGame(number) {
   if (!games.has(number)) number = "1";

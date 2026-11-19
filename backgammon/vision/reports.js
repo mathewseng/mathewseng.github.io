@@ -234,7 +234,7 @@ function renderReport(report, seek) {
   return fragment;
 }
 
-export function createReports(seek) {
+export function createReports(seek, replayAsset) {
   const tabList = document.querySelector(".vision-detail-tabs");
   const tabs = [...tabList.querySelectorAll("[role=tab]")];
   const content = document.querySelector("#report-content");
@@ -247,7 +247,7 @@ export function createReports(seek) {
     controller?.abort();
     controller = new AbortController();
     const signal = controller.signal;
-    const url = `reports/game-${game.padStart(2, "0")}.json`;
+    const url = replayAsset(`reports/game-${game.padStart(2, "0")}.json`);
     title.textContent = `Game ${game} vision report`;
     download.href = url;
     content.setAttribute("aria-busy", "true");

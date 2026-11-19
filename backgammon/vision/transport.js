@@ -17,7 +17,7 @@ function indexedActions(data) {
   return actions.sort((a, b) => a.frame - b.frame);
 }
 
-export function createTransport(player, onData) {
+export function createTransport(player, onData, replayAsset) {
   const shell = document.querySelector("#replay-shell");
   const transport = shell.querySelector(".replay-transport");
   const markers = document.querySelector("#replay-markers");
@@ -147,7 +147,7 @@ export function createTransport(player, onData) {
       onData(null);
       drawMarkers();
       try {
-        const data = load.get(game) ?? await fetch(`state/game-${game.padStart(2, "0")}.json`, {
+        const data = load.get(game) ?? await fetch(replayAsset(`state/game-${game.padStart(2, "0")}.json`), {
           signal: request.signal,
         }).then(response => {
           if (!response.ok) throw new Error("Action timeline unavailable");
