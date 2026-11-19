@@ -422,3 +422,44 @@ reader matched 122 of 159 indexed rolls and recovered 90 correct dice
 pairs. The earlier candidate matched 125 and recovered 88. Wrong-player
 assignments were three for the current reader and four for the candidate.
 The downloaded report records each matched and additional proposal.
+
+## Two missing Game 4 throws
+
+At 8:10, Black’s original dice show 5–4. The completed board agrees with
+10/6 8/3. The next two throws were missing from the replay index. White
+rolls 6–2 at 8:22 and plays 8/6 13/7. Black throws double fives into the
+left half at 8:33 and plays 8/3 8/3 7/2 7/2. The source confirms clear,
+empty dice locations at 8:31.80 and 8:42.20. The boards connect both moves
+to the preceding and following recorded turns.
+
+Game 3’s double fives at 3:14 and double twos at 3:47 now use the visible
+starting boards and completed positions. The original Game 4 double ones
+at 14:57 have a verified checker result. The replay contains 149 graded
+plays across 161 indexed rolls.
+
+The first die of White’s missing throw reached the current locator on
+45 of 47 inspected views. Only three of those views passed the face gate,
+all as the wrong face. On Black’s missing throw, the second die reached
+the locator on four of 15 inspected views. Its only face candidate
+was also wrong. These failures involve both locating the die and preserving
+its evidence before counting the pips.
+
+The die locator trial used 210 reviewed dice and empty-board crops. It
+found 52 of 52 new held-out dice, compared with 39 for the current
+locator. On the older crop labels it produced two false leads on 17
+empty controls, alongside one additional correct localization.
+
+Keeping physical locations when faces were uncertain matched 126 of 161
+indexed rolls in the automatic pipeline, up from 123. Correct pairs fell
+from 89 to 87. Adding the new locator matched 133 rolls and recovered 91
+correct pairs. It also produced 63 unmatched proposals, compared with 36
+in the current pipeline. Some mark a second sighting of the same dice or
+movement after a reset.
+
+The new locator found Black’s low-contrast near-rail die on 13 of 15
+inspected views, up from four. The pip reader still interpreted it as a
+four. Both body colors identify Black as the roller in the left half.
+Using that agreement reduced wrong-player assignments from four to two
+across the automatic trial. The parser still rejected the recovered
+throw with its misread faces. The published overlays use the verified
+camera sequence and the existing production readers.

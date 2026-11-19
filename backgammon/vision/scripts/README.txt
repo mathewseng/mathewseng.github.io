@@ -295,6 +295,28 @@ Refresh the context and reviewed episodes
   same input observations. Use v2/vision.py with its default reader and a
   separate --state-dir to generate the control.
 
+  Apply v4/reviewed-missing-rolls.json to v25 and regenerate the footprint
+  validation. The two restored turns use independently witnessed pickups and
+  their full starting and ending boards. Their pips and roller are verified
+  separately from where the dice landed.
+
+    python3 calibration/train_locator_recovery.py calibration/reviewed-die-locations.json "$trial"
+    python3 v2/vision.py --retain-dice-locations --state-dir "$current/labeled-locations"
+    python3 v2/vision.py --retain-dice-locations --dice-locator "$trial/dice-locator-candidate.onnx" \
+      --state-dir "$trial/labeled-locations"
+
+  For each of the two runs above, feed the state directory into
+  v3/read_values.py with --retain-dice-locations and an alternate --output
+  track file. Then regenerate the observations and reconstruction plans
+  as above. Compare the retained-location run with the original face-gated
+  plan. Compare the locator trial with the retained-location plan to isolate
+  the change of weights. Save the two comparisons as presence-turn-validation.json
+  and locator-turn-validation.json in the scored replay directory. Repeat
+  observations.py with --verify-roller-color on the locator tracks to measure
+  the effect of trusting agreeing die bodies on either half of the board.
+  Save the comparison with the ordinary locator plan to actor-turn-validation.json.
+  Copy the crop metrics to locator-validation.json for Reports.
+
 Manual reader calibration
 
     python3 calibration/sample.py

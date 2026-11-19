@@ -86,6 +86,27 @@ function renderReport(report, seek) {
   }
   fragment.append(coverage);
 
+  if (report.locatorValidation) {
+    const { reviewedTrainingCrops, tests } = report.locatorValidation;
+    const { current, trial } = tests.newCamera;
+    const section = element("section", null, "vision-report-model");
+    section.append(element("h3", "Die location benchmark"),
+      element("p", `The trial trained on ${reviewedTrainingCrops} reviewed die and empty-board crops. On two held-out clips, it found ${trial.located} of ${trial.visible} visible dice, compared with ${current.located} for the current locator. Both returned zero false leads on ${trial.empty} empty crops. On the older holdout, false leads were ${tests.priorLabels.current.falseLeads} for the current locator and ${tests.priorLabels.trial.falseLeads} for the trial.`, "muted small"));
+    const summarize = ({ current, candidate }) =>
+      `${current.counts.matched} to ${candidate.counts.matched} matched turns and ${current.counts.correctDice} to ${candidate.counts.correctDice} correct pairs`;
+    if (report.presenceTrial) {
+      section.append(element("p", `Keeping die locations through uncertain face reads changed the automatic replay from ${summarize(report.presenceTrial)} in this game.`, "muted small"));
+    }
+    if (report.locatorTurnTrial) {
+      section.append(element("p", `Using the new locator with the same tracking changed the automatic replay from ${summarize(report.locatorTurnTrial)}.`, "muted small"));
+    }
+    if (report.actorTrial) {
+      const { current, candidate } = report.actorTrial;
+      section.append(element("p", `Requiring both die colors to agree before using color for the roller changed wrong-player assignments from ${current.counts.actorMismatches} to ${candidate.counts.actorMismatches}.`, "muted small"));
+    }
+    fragment.append(section);
+  }
+
   if (report.automaticTrial) {
     const { current, candidate } = report.automaticTrial;
     const section = element("section", null, "vision-report-model");

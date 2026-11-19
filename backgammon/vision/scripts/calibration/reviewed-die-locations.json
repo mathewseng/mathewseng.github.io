@@ -1,0 +1,10 @@
+[
+  {"game":1,"visible":282,"empty":[273.2,315.56],"centers":[[314,140],[326,256]],"split":"train"},
+  {"game":1,"visible":465,"empty":[472.88],"centers":[[306,250],[312,348]],"split":"train"},
+  {"game":3,"visible":897.2,"empty":[894.8,912.2],"centers":[[388,139],[374,216]],"split":"train"},
+  {"game":4,"visible":95.4,"empty":[90.64,125.2],"centers":[[328,214],[409,224]],"split":"train"},
+  {"game":4,"visible":1061.76,"empty":[1077.8],"centers":[[232,220],[118,350]],"split":"train"},
+  {"game":5,"visible":518,"empty":[534.6],"centers":[[438,204],[410,316]],"split":"train"},
+  {"game":4,"visible":504.48,"empty":[501.24,512],"centers":[[174,195],[76,314]],"split":"test"},
+  {"game":4,"visible":515.36,"empty":[512,522.44],"centers":[[222,222],[94,292]],"split":"test"}
+]

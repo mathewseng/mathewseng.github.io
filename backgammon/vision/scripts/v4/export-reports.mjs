@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v24");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v25");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -40,6 +40,14 @@ const diceRuntimePath = path.join(replayDir, "dice-continuity-training", "runtim
 const diceRuntime = fs.existsSync(diceRuntimePath) ? read(diceRuntimePath) : null;
 const planTrialPath = path.join(replayDir, "dice-automatic-replay-validation.json");
 const planTrial = fs.existsSync(planTrialPath) ? read(planTrialPath) : [];
+const locatorPath = path.join(replayDir, "locator-validation.json");
+const locatorValidation = fs.existsSync(locatorPath) ? read(locatorPath) : null;
+const presencePath = path.join(replayDir, "presence-turn-validation.json");
+const presenceTrial = fs.existsSync(presencePath) ? read(presencePath) : [];
+const locatorTurnPath = path.join(replayDir, "locator-turn-validation.json");
+const locatorTurnTrial = fs.existsSync(locatorTurnPath) ? read(locatorTurnPath) : [];
+const actorPath = path.join(replayDir, "actor-turn-validation.json");
+const actorTrial = fs.existsSync(actorPath) ? read(actorPath) : [];
 const motionPath = path.join(replayDir, "checker-motion-validation.json");
 const motionChecks = fs.existsSync(motionPath) ? read(motionPath) : [];
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
@@ -303,6 +311,10 @@ function report(number) {
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
     automaticTrial: planTrial.find(item => item.game === number) ?? null,
+    locatorValidation,
+    presenceTrial: presenceTrial.find(item => item.game === number) ?? null,
+    locatorTurnTrial: locatorTurnTrial.find(item => item.game === number) ?? null,
+    actorTrial: actorTrial.find(item => item.game === number) ?? null,
     checkerMotion: motionChecks.find(item => item.game === number) ?? null,
     reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
     diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number),

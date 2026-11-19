@@ -54,11 +54,13 @@ def stationary_tracks(tracks, breaks):
         # Both dice need independent corroboration. Suppress this channel
         # when a track joins incompatible observations.
         track["bodyColor"] = next(iter(body)) if len(body) == 1 else None
+        located = {read["locationBody"] for read in track["reads"] if read.get("locationBody")}
+        track["locationBody"] = next(iter(located)) if len(located) == 1 else None
     return [t for t in merged if t["samples"] >= 13 and t["end"] - t["start"] >= 15]
 
 
-def gather(game, tracks, corrections):
-    dice, cube, breaks, reviewed = [], [], [], []
+def gather(game, tracks, corrections, verify_roller_color=False):
+    dice, presence, cube, breaks, reviewed = [], [], [], [], []
     for section in game["segments"]:
         clip = section["clip"]
         first, last = section["firstFrame"], section["lastExclusive"]
@@ -66,8 +68,8 @@ def gather(game, tracks, corrections):
         shift = at - first
         if section["discontinuity"]:
             breaks.append(at)
-        for key, output in (("dice", dice), ("cube", cube)):
-            for candidate in tracks[clip][key]:
+        for key, output in (("dice", dice), ("presence", presence), ("cube", cube)):
+            for candidate in tracks[clip].get(key, []):
                 if candidate["end"] < first or candidate["start"] >= last:
                     continue
                 output.append({
@@ -93,13 +95,30 @@ def gather(game, tracks, corrections):
             and bool(half(a["x"])) and bool(half(b["x"])) and a["value"] != b["value"]
         )
 
-    pairs = direct_pairs(stationary_tracks(dice, breaks), breaks, compatible)
+    physical = stationary_tracks(dice, breaks)
+    pairs = direct_pairs(physical, breaks, compatible)
+    if presence:
+        locations = stationary_tracks(presence, breaks)
+        # Keep existing pairs. An unread die can add a proposal only if two
+        # stationary bodies agree on the roller.
+        def compatible_presence(a, b):
+            return bool((a.get("physicalOnly") or b.get("physicalOnly"))
+                        and a.get("locationBody") and a.get("locationBody") == b.get("locationBody")
+                        and half(a["x"]) and half(a["x"]) == half(b["x"]))
+        extra = direct_pairs(physical + locations, breaks, compatible_presence)
+        pairs.extend(pair for pair in extra if not any(
+            min(old["end"], pair["end"]) - max(old["start"], pair["start"]) >= 0 for old in pairs))
+        pairs.sort(key=lambda pair: pair["start"])
     events = []
     for pair in pairs:
         a, b = pair["tracks"]
         common = half(a["x"])
         opening = common != half(b["x"])
         body = a["bodyColor"] if a["bodyColor"] == b["bodyColor"] else None
+        if (verify_roller_color or a.get("physicalOnly") or b.get("physicalOnly")) and (
+                a["locationBody"] and a["locationBody"] == b["locationBody"]):
+            body = a["locationBody"]
+
         if opening:
             if not a["value"] or not b["value"]:
                 continue
@@ -131,6 +150,8 @@ def main():
     args.add_argument("games", nargs="*", type=int, default=range(1, 6))
     args.add_argument("--tracks", type=Path, default=ARTIFACT_DIR / "v3/value-tracks.json")
     args.add_argument("--output", type=Path, default=OUT)
+    args.add_argument("--verify-roller-color", action="store_true",
+                      help="Use agreeing die body readings to identify the roller on either half.")
     options = args.parse_args()
     tracks = json.loads(options.tracks.read_text())
     corrections = json.loads((ARTIFACT_DIR / "v3/reviewed-corrections.json").read_text())
@@ -138,7 +159,7 @@ def main():
     options.output.mkdir(parents=True, exist_ok=True)
     for number in options.games:
         game = json.loads((ARTIFACT_DIR / "v2" / f"game-{number}-analysis.json").read_text())
-        content = gather(game, tracks, corrections)
+        content = gather(game, tracks, corrections, options.verify_roller_color)
         (options.output / f"game-{number:02}-observations.json").write_text(json.dumps(content) + "\n")
         print(number, len(content["pairs"]), "paired dice episodes", flush=True)
 

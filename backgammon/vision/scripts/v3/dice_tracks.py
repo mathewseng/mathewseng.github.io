@@ -27,7 +27,7 @@ def state_rows(index, directory=None):
         return [json.loads(line) for line in stream]
 
 
-def pistes(rows):
+def pistes(rows, locations=False):
     tracks=[];live=[]
     for i,row in enumerate(rows):
         s=row['state']
@@ -36,7 +36,11 @@ def pistes(rows):
         live=[x for x in live if i-x['last']<=16]
         if not s:continue
         claimed=set()
-        dice=sorted(s['dice'],key=lambda d:d['locationScore']*d['score'],reverse=True)
+        if locations:
+            dice = [{'center': [x, y], 'locationScore': confidence, 'candidateValue': 0, 'score': 1,
+                     'color': None} for x, y, confidence in s.get('diceLocations', []) if confidence >= .30]
+        else:
+            dice = sorted(s['dice'], key=lambda d: d['locationScore'] * d['score'], reverse=True)
         for d in dice:
             if d['locationScore']<.185 or d['score']<.52:continue
             x,y=d['center']
@@ -56,6 +60,8 @@ def pistes(rows):
     for t in tracks:
         span=t['end']-t['start']+1
         if len(t['items'])<6 or span<11:
+            continue
+        if locations and (len(t['items']) < 12 or len(t['items']) / span < .28):
             continue
         if span>780:
             continue

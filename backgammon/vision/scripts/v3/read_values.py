@@ -12,16 +12,20 @@ from dice_tracks import OUT,ROOT,state_rows,pistes,read_patches,average_warp
 from cube_reader import evaluate as cube_eval
 from train_faces import normalize
 from game_state import evaluate_patches
+from v2.dice_body import DiceBodyReader
 
 DICE_NETS=None
 CUBE_NET=None
+BODY_READER=None
 
 
-def load_models():
-    global DICE_NETS,CUBE_NET
+def load_models(retain_locations=False):
+    global DICE_NETS,CUBE_NET,BODY_READER
     cv2.setNumThreads(1)
     DICE_NETS=[cv2.dnn.readNetFromONNX(str(OUT/f'dice-reader-{s}.onnx')) for s in (71,116)]
     CUBE_NET=joblib.load(OUT/'cube-faces.joblib')
+    if retain_locations:
+        BODY_READER = DiceBodyReader.load(ROOT / 'calibration/dice-body-model.json')
 
 
 def current_cubes(rows):
@@ -99,32 +103,59 @@ def cube_values(t,crops):
             'evidence':'repeated-visual-read' if count>=6 and chosen==face else 'trained-cube-face-poses'}
 
 
-def evaluate_clip(index, state_dir=None):
+def location_body(images):
+    if BODY_READER is None or len(images) < 5:
+        return None
+    low, high = np.quantile([BODY_READER.darkness(crop) for crop in images], [.2, .8])
+    if low >= .85:
+        return 'dark'
+    if high <= .15:
+        return 'white'
+    return None
+
+
+def evaluate_clip(index, state_dir=None, retain_locations=False):
     rows=state_rows(index, state_dir)
     ds=pistes(rows)
+    presence = pistes(rows, locations=True) if retain_locations else []
     cs=current_cubes(rows)
-    crops=read_patches(index,[*ds,*cs])
+    crops=read_patches(index,[*ds,*cs,*presence])
     out={'clip':index,'dice':[],'cube':[]}
     for i,(record,images) in enumerate(zip(ds,crops[:len(ds)])):
         d=dice_values(record,images)
+        if retain_locations:
+            d['locationBody'] = location_body(images)
         out['dice'].append({**{k:v for k,v in record.items() if k!='items'},'id':f'{index:02}_{i:03}',
              **d})
-    for record,images in zip(cs,crops[len(ds):]):
+    for record,images in zip(cs,crops[len(ds):len(ds)+len(cs)],strict=True):
         out['cube'].append({**{k:v for k,v in record.items() if k!='items'},
             **cube_values(record,images),'samples':len(record['items'])})
+    if retain_locations:
+        out['presence'] = []
+        for i, (record, images) in enumerate(zip(presence, crops[len(ds)+len(cs):], strict=True)):
+            body = location_body(images)
+            if body is None:
+                continue
+            out['presence'].append({**{k: v for k, v in record.items() if k != 'items'},
+                'id': f'{index:02}_physical_{i:03}', 'value': None, 'quality': .67,
+                'color': body, 'locationBody': body, 'physicalOnly': True})
     return out
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--state-dir', type=Path)
+    parser.add_argument('--retain-dice-locations', action='store_true')
     parser.add_argument('--output', type=Path, default=OUT / 'value-tracks.json')
     args = parser.parse_args()
     if args.state_dir and args.output.resolve() == (OUT / 'value-tracks.json').resolve():
         parser.error('Candidate states require a separate --output for the tracked values.')
+    if args.retain_dice_locations and not args.state_dir:
+        parser.error('Physical tracks require observations with retained die locations.')
     clips = range(len(list((ROOT / 'board').glob('*.mp4')))) if args.state_dir else range(77)
-    with ProcessPoolExecutor(max_workers=8, initializer=load_models) as pool:
-        values = list(pool.map(partial(evaluate_clip, state_dir=args.state_dir), clips))
+    with ProcessPoolExecutor(max_workers=8, initializer=load_models, initargs=(args.retain_dice_locations,)) as pool:
+        values = list(pool.map(partial(evaluate_clip, state_dir=args.state_dir,
+                                       retain_locations=args.retain_dice_locations), clips))
     args.output.write_text(json.dumps(values, indent=2) + '\n')
     print('Tracked values',sum(len(x['dice']) for x in values),sum(len(x['cube']) for x in values))
     print('Accepted die faces',sum(sum(d['value'] is not None for d in x['dice']) for x in values))

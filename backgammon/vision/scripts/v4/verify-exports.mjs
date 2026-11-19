@@ -325,6 +325,20 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.equal(afterPickup.roll, null);
     assert.deepEqual(last.after.bar, [0, 1]);
   }
+  if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 12565 && entry.boardWitnesses?.length === 2)) {
+    const frames = [12259, 12565, 12830, 13142];
+    const turns = frames.map(frame => data.rolls.find(roll => roll.start === frame));
+    assert.deepEqual(turns.map(roll => [roll.player, roll.dice]),
+      [['dark', [5, 4]], ['white', [6, 2]], ['dark', [5, 5]], ['white', [6, 4]]]);
+    assert.deepEqual(turns.slice(0, 3).map(roll => roll.pickup), [12529, 12795, 13055]);
+    for (let i = 0; i < 3; i++) {
+      assert.deepEqual(turns[i].after, turns[i + 1].before);
+      assert(data.decisions[turns[i].decision].played);
+      assert(turns[i].end <= turns[i + 1].start);
+    }
+    assert.equal(data.decisions[turns[1].decision].played.notation, '8/6 13/7');
+    assert.equal(data.decisions[turns[2].decision].played.notation, '8/3 8/3 7/2 7/2');
+  }
   const sourceComparisons = {
     1: [[6855, [6, 5]], [11388, [5, 1]]],
     3: [[16005, [4, 2]], [16888, [1, 1]], [22391, [2, 2]]],

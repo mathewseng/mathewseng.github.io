@@ -225,7 +225,8 @@ for (const game of [1, 2, 3, 4, 5]) {
   if (game === 4) {
     const row = rows[12341];
     assert.equal(row.roll.player, 'dark');
-    assert.deepEqual(row.roll.dice, [4, 4]);
+    const regraded = data.contextRecovery?.some(entry => entry.frame === 12259 && entry.boardWitnesses?.length === 2);
+    assert.deepEqual(row.roll.dice, regraded ? [4, 5] : [4, 4]);
     assert.match(row.roll.evidence, /reviewed/);
   }
   if (game === 5) {

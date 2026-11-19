@@ -44,9 +44,9 @@ def slot_decode(candidate):
     return ((candidate-1)//SLOT_CLASSES,(candidate-1)%SLOT_CLASSES+1) if candidate else (None,0)
 
 class CameraReader:
-    def __init__(self, face_reader=None, checker_reader=None):
+    def __init__(self, face_reader=None, checker_reader=None, dice_locator=None):
         self.slot=cv2.dnn.readNetFromONNX(str(checker_reader or OUT/'slots.onnx'))
-        self.dice=load('dice-locator')
+        self.dice = cv2.dnn.readNetFromONNX(str(dice_locator)) if dice_locator else load('dice-locator')
         self.face=cv2.dnn.readNetFromONNX(str(face_reader or ROOT/'models/dice_real.onnx'))
         self.template=cv2.imread(str(ROOT/'models/cube-four-template.png'),cv2.IMREAD_GRAYSCALE)
 
@@ -128,8 +128,9 @@ class CameraReader:
                 candidates.append((x,y,.14+.41*score))
         return skip_nearby(candidates,12)[:9]
 
-    def dice_faces(self,pixels,state):
-        candidates=self.locate_dice(pixels,state)
+    def dice_faces(self,pixels,state,candidates=None):
+        if candidates is None:
+            candidates=self.locate_dice(pixels,state)
         patches=[center_crop(pixels,x,y) for x,y,_ in candidates]
         if not patches:
             return []
@@ -150,10 +151,13 @@ class CameraReader:
                            'locationScore':round(track,3),'color':color})
         return result
 
-    def refine(self,pixels,state):
+    def refine(self,pixels,state,retain_dice_locations=False):
         self.correct_stacks(pixels,state)
         prior=state['dice']
-        upgraded=self.dice_faces(pixels,state)
+        candidates=self.locate_dice(pixels,state)
+        upgraded=self.dice_faces(pixels,state,candidates)
+        if retain_dice_locations:
+            state['diceLocations'] = [[x, y, round(float(score), 3)] for x, y, score in candidates]
         if len(prior)==2 and all(d['value'] is not None for d in prior):
             if len(upgraded)!=2 or any(d['value'] is None for d in upgraded):
                 upgraded=prior
@@ -161,7 +165,7 @@ class CameraReader:
         return state
 
 def replay(job):
-    video,force,state_dir,face_reader,checker_reader=job
+    video,force,state_dir,face_reader,checker_reader,dice_locator,retain_dice_locations=job
     cv2.setNumThreads(1)
     name=f'{video.stem}.jsonl.gz'
     source=ROOT/'state'/name
@@ -169,7 +173,7 @@ def replay(job):
     staged=final.with_suffix('.part.gz')
     if final.exists() and not force:
         return {'source':video.name,'status':'existing'}
-    reader=CameraReader(face_reader, checker_reader)
+    reader=CameraReader(face_reader, checker_reader, dice_locator)
     roll=RollState()
     counts=Counter()
     with av.open(str(video)) as media,gzip.open(source,'rt') as rows,gzip.open(staged,'wt',compresslevel=2) as result:
@@ -182,7 +186,7 @@ def replay(job):
             counts['frames']+=1
             prev=row['state']
             if prev:
-                s=reader.refine(frame.to_ndarray(format='bgr24'),prev)
+                s=reader.refine(frame.to_ndarray(format='bgr24'),prev,retain_dice_locations)
                 s=roll.update(s,row['seconds'])
                 counts[s['checkerStatus']]+=1
                 counts['settledRoll']+=s['currentRoll'] is not None
@@ -225,7 +229,10 @@ def main():
     p.add_argument('--test',action='store_true')
     p.add_argument('--dice-reader', type=Path, help='Candidate face reader ONNX file')
     p.add_argument('--checker-reader', type=Path, help='Candidate checker point reader ONNX file')
+    p.add_argument('--dice-locator', type=Path, help='Candidate die location reader ONNX file')
     p.add_argument('--state-dir', type=Path, help='Output directory for candidate observations')
+    p.add_argument('--retain-dice-locations', action='store_true',
+                   help='Preserve physical die candidates independently of pip confidence.')
     args=p.parse_args()
     cv2.setNumThreads(1)
     if args.test:
@@ -233,11 +240,12 @@ def main():
     state_dir = (args.state_dir or OUT/'state').resolve()
     if state_dir == (ROOT/'state').resolve():
         p.error('Choose a derived state directory to preserve the input observations.')
-    if (args.dice_reader or args.checker_reader) and state_dir == (OUT/'state').resolve():
-        p.error('Candidate readers require a separate --state-dir for their observations.')
+    if (args.dice_reader or args.checker_reader or args.dice_locator or args.retain_dice_locations) and state_dir == (OUT/'state').resolve():
+        p.error('Reader trials require a separate --state-dir for their observations.')
     state_dir.mkdir(parents=True, exist_ok=True)
     videos = sorted((ROOT/'board').glob('*.mp4'))[args.start:args.stop]
-    items = [(video, args.force, state_dir, args.dice_reader, args.checker_reader) for video in videos]
+    items = [(video, args.force, state_dir, args.dice_reader, args.checker_reader, args.dice_locator, args.retain_dice_locations)
+             for video in videos]
     if args.jobs==1:
         for item in items:print(json.dumps(replay(item)),flush=True)
     else:
