@@ -9,9 +9,10 @@
   },
   "2": {
     "start": 5475,
+    "clip": 13,
     "end": 6576,
     "offerer": "white",
-    "response": null,
+    "response": "pass",
     "receiverSide": "centered",
     "source": "office-3-wide_20261117-190329.mp4"
   },

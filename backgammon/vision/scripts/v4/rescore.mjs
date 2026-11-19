@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
-import { gzipSync } from 'node:zlib';
+import { applyAccounting, writeReplay } from './accounting.mjs';
 import { replayDir, solverUrl } from '../project_paths.mjs';
 import { exclusive, loadEvaluator, rowsFrom, stateFor } from '../v2/solve_games.mjs';
 
@@ -124,8 +124,6 @@ async function main() {
       action.equity4 = score.equity;
       action.outcomeProbabilities4 = score.chances;
     }
-    const losses = game.losses.filter(({ kind }) => kind === 'cube');
-    const lossKeys = new Set();
     for (const [id, decision] of Object.entries(game.decisions)) {
       if (id === 'cube') continue;
       decision.actions.sort((a, b) => b.equity4 - a.equity4);
@@ -140,15 +138,6 @@ async function main() {
       decision.best = summary(best);
       decision.played = played ? summary(played) : null;
       decision.evLoss = played ? Math.max(0, best.equity4 - played.equity4) : null;
-      if (decision.countedInGameLoss) {
-        const turn = game.turns[Number(id) - 1];
-        const frame = turn.resultFrame ?? turn.end;
-        const key = [frame, decision.player, decision.xgid].join('|');
-        if (!lossKeys.has(key)) {
-          lossKeys.add(key);
-          losses.push({ frame, player: decision.player, loss: decision.evLoss, kind: 'checker' });
-        }
-      }
     }
     for (const [id, { turn, job }] of positionJobs) {
       const { equity, chances: p } = results.get(job);
@@ -160,21 +149,9 @@ async function main() {
       game.positions[id].equities = { turn: game.positions[id].onRoll, plies: PLIES, players };
     }
 
-    game.losses = losses.sort((a, b) => a.frame - b.frame);
     game.scoringDepth = PLIES;
-    let next = 0;
-    const cumulative = { white: { loss: 0, count: 0 }, dark: { loss: 0, count: 0 } };
-    for (const row of rows) {
-      while (next < losses.length && losses[next].frame <= row.frame) {
-        const { player, loss } = losses[next++];
-        cumulative[player].loss += loss;
-        cumulative[player].count++;
-      }
-      row.loss = { white: { ...cumulative.white }, dark: { ...cumulative.dark } };
-    }
-    writeAtomic(path.join(replayDir, prefix + '-game.json'), JSON.stringify(game));
-    writeAtomic(path.join(replayDir, prefix + '-state.jsonl.gz'),
-      gzipSync(rows.map((row) => JSON.stringify(row)).join('\n') + '\n'));
+    applyAccounting(game, rows);
+    writeReplay(prefix, game, rows);
     console.log(prefix, 'scored at four ply', { newActionScores: actionJobs.size, positions: positionJobs.size });
   }
 }
@@ -184,12 +161,6 @@ function summary(action) {
     notation: action.notation, steps: action.steps, equity: action.equity4,
     outcomeProbabilities: action.outcomeProbabilities4,
   };
-}
-
-function writeAtomic(file, content) {
-  const temp = file + '.part';
-  fs.writeFileSync(temp, content);
-  fs.renameSync(temp, file);
 }
 
 async function runJobs(jobs, maxWorkers) {

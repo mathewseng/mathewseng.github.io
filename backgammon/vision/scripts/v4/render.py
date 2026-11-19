@@ -38,14 +38,6 @@ COLUMNS = (81, 115, 152, 187, 222, 256, 316, 350, 386, 421, 456, 491)
 PLAYER_NAME = {"white": "White", "dark": "Black"}
 PLAYER_TONE = {"white": WHITE, "dark": BLACK}
 TOP_MOVES = 5
-DIE_PIPS = {
-    1: ((0, 0),),
-    2: ((-1, -1), (1, 1)),
-    3: ((-1, -1), (0, 0), (1, 1)),
-    4: ((-1, -1), (1, -1), (-1, 1), (1, 1)),
-    5: ((-1, -1), (1, -1), (0, 0), (-1, 1), (1, 1)),
-    6: ((-1, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (1, 1)),
-}
 
 
 def write(draw, x, y, text, size, fill=TEXT, bold=False, anchor=None):
@@ -83,52 +75,20 @@ def activity(phase, player):
             "between-rolls": "Between rolls"}[phase]
 
 
-def status_panel(state):
-    image, draw = card(BW, 76)
-    phase, player, roll, cube = (state[k] for k in ("phase", "player", "roll", "cube"))
-    write(draw, 18, 23, activity(phase, player), 26, PLAYER_TONE.get(player, TEXT), True)
-    draw.line((281, 10, 281, 65), fill=LINE)
-    draw.line((690, 10, 690, 65), fill=LINE)
-    if roll:
-        owner = PLAYER_NAME[roll["player"]]
-        label = f"{owner}'s {'last roll' if roll['status'] == 'last' else 'roll'}"
-        write(draw, 299, 24, label, 22, PLAYER_TONE[roll["player"]], True)
-        dice = sorted(roll["dice"] or [None, None], key=lambda d: d or 0, reverse=True)
-        for i, number in enumerate(dice):
-            x = 557 + i * 57
-            is_white = roll["player"] == "white"
-            fill, ink = (WHITE, BG) if is_white else (BG, TEXT)
-            draw.rounded_rectangle((x, 14, x + 50, 62), radius=8, fill=fill, outline=MUTED, width=2)
-            for dx, dy in DIE_PIPS.get(number, ()):
-                px, py = x + 25 + 12 * dx, 38 + 12 * dy
-                draw.ellipse((px - 3.5, py - 3.5, px + 3.5, py + 3.5), fill=ink)
-            if number is None:
-                write(draw, x + 25, 37, "?", 25, ink, True, "mm")
-    else:
-        write(draw, 299, 24, "Roll pending" if phase in ("pre-roll", "opening") else "Roll", 22, MUTED)
-        write(draw, 617, 23, "—", 23, MUTED, anchor="ra")
-    write(draw, 709, 25, "Cube", 21, MUTED, True)
-    value = str(cube["stake"] or cube.get("face") or "—") if cube else "—"
-    if cube and cube["offered"]:
-        value += f" → {cube['offered']}"
-    write(draw, 907, 21, value, 29, AMBER if cube and cube["offered"] else TEXT, True, "ra")
-    return bgr(image)
-
-
 def equity_panel(position, loss, carried):
-    image, draw = card(BW, 166)
-    write(draw, 18, 13, "Game equity", 24, bold=True)
+    image, draw = card(BW, 256)
+    write(draw, 20, 23, "Game equity", 30, bold=True)
     if position and position["equities"]:
-        write(draw, BW - 17, 20, "Last evaluated position" if carried else "Settled position",
+        write(draw, BW - 20, 33, "Last evaluated position" if carried else "Settled position",
               17, MUTED, anchor="ra")
     columns = [(207, "Equity"), (310, "Win"), (424, "Single"), (539, "Gammon"),
                (658, "Backgammon"), (792, "Total EV loss")]
     for x, label in columns:
-        write(draw, x, 53, label, 16, MUTED, bold=True)
-    draw.line((18, 77, BW - 18, 77), fill=LINE)
+        write(draw, x, 84, label, 16, MUTED, bold=True)
+    draw.line((20, 114, BW - 20, 114), fill=LINE)
     equities = position.get("equities") if position else None
     for i, player in enumerate(("white", "dark")):
-        y = 87 + i * 35
+        y = 135 + i * 57
         write(draw, 18, y, PLAYER_NAME[player], 23, PLAYER_TONE[player], True)
         if equities:
             row = equities["players"][i]
@@ -146,14 +106,31 @@ def notation(value):
     return value.replace("Pass — no legal move", "Pass")
 
 
-def action_panel(state, entry):
+def played_caption(draw, held):
+    if held:
+        draw.line((24, 705, RW - 24, 705), fill=LINE)
+        name = PLAYER_NAME[held["player"]]
+        write(draw, 24, 733, f"{name} played   {notation(held['played']['notation'])}", 25)
+        write(draw, RW - 24, 733, f"EV loss   {held['evLoss']:.3f}", 24, AMBER, True, "ra")
+
+
+def action_panel(state, entry, held):
     image, draw = card(RW, RH)
     x = 24
     phase, player = state["phase"], state["player"]
     roll = state.get("roll")
     write(draw, x, 23, "Decision analysis", 25, bold=True)
+    result = state.get("result")
+    if result and result["reason"] == "pass":
+        winner = PLAYER_NAME[result["winner"]]
+        points = result["points"]
+        write(draw, x, 86, f"{PLAYER_NAME[player]} passes", 40, PLAYER_TONE[player], True)
+        write(draw, x, 153, f"{winner} wins {points} {'point' if points == 1 else 'points'}", 28)
+        return bgr(image)
+    if not entry and held:
+        entry, phase = held, "played"
     if not entry:
-        line = activity(phase, player)
+        line = "Between rolls" if phase == "pre-roll" else activity(phase, player)
         write(draw, x, 86, line, 40, PLAYER_TONE.get(player, TEXT), True)
         if phase in ("move", "played"):
             reason = "Waiting for a settled checker position" if roll and roll["dice"] and all(roll["dice"]) else "Roll faces unavailable"
@@ -165,7 +142,7 @@ def action_panel(state, entry):
             reason = "Action EVs appear when the roll settles."
         write(draw, x, 153, reason, 22, MUTED)
         return bgr(image)
-    if state["decision"] == "cube":
+    if "offerer" in entry:
         offerer = PLAYER_NAME[entry["offerer"]]
         write(draw, x, 85, f"{offerer} offers {entry['preOfferStake']} → {entry['offeredFace']}", 35, WHITE, True)
         label = activity(phase, player)
@@ -187,6 +164,7 @@ def action_panel(state, entry):
         for i, (action, key) in enumerate(options):
             write(draw, x, 474 + i * 55, action, 25)
             write(draw, RW - x, 474 + i * 55, f"{entry['options'][key]:+.3f}", 25, anchor="ra")
+        played_caption(draw, held)
         return bgr(image)
 
     player = entry["player"]
@@ -198,24 +176,21 @@ def action_panel(state, entry):
     moves = entry["actions"][:TOP_MOVES]
     draw.line((x, 187, RW - x, 187), fill=LINE)
     write(draw, x, 219, "Top moves", 24, MUTED, True)
-    write(draw, RW - x, 219, "EV", 24, MUTED, True, "ra")
+    write(draw, RW - 185, 219, "EV", 24, MUTED, True, "ra")
+    write(draw, RW - x, 219, "EV loss", 24, MUTED, True, "ra")
     for rank, move in enumerate(moves, 1):
         y = 287 + (rank - 1) * 82
-        played = move["isPlayed"] and phase == "played"
+        played = move["isPlayed"] and held is entry
         if rank == 1 or played:
             fill = "#25413d" if rank == 1 else "#443d35"
             draw.rounded_rectangle((x - 5, y - 10, RW - x + 5, y + 43), radius=6, fill=fill)
         tone = GREEN if rank == 1 else AMBER if played else TEXT
         write(draw, x + 8, y, rank, 24, tone, True)
         write(draw, x + 63, y, notation(move["notation"]), 29, tone, rank == 1)
-        write(draw, RW - x, y, f"{move['equity4']:+.3f}", 29, tone, rank == 1, "ra")
-    if phase == "played" and entry["played"]:
-        draw.line((x, 705, RW - x, 705), fill=LINE)
-        played = (f"Played   {notation(entry['played']['notation'])}"
-                  if any(a["isPlayed"] for a in moves) else "Played outside top five")
-        write(draw, x, 733, played, 25)
-        loss_label = "EV loss" if entry["countedInGameLoss"] else "Estimated EV loss"
-        write(draw, RW - x, 733, f"{loss_label}   {entry['evLoss']:.3f}", 24, AMBER, True, "ra")
+        write(draw, RW - 185, y, f"{move['equity4']:+.3f}", 29, tone, rank == 1, "ra")
+        write(draw, RW - x, y, f"{max(0, entry['best']['equity'] - move['equity4']):.3f}",
+              26, tone, rank == 1, "ra")
+    played_caption(draw, held)
     return bgr(image)
 
 
@@ -314,10 +289,9 @@ def render_frames(output, data, game, number, footage, software, start=0):
     canvas = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
     canvas[:] = (28, 21, 16)
     board_region = canvas[BY:BY + BH, BX:BX + BW]
-    status_region = canvas[792:868, BX:BX + BW]
-    equity_region = canvas[882:1048, BX:BX + BW]
+    equity_region = canvas[792:1048, BX:BX + BW]
     right_region = canvas[RY:RY + RH, RX:RX + RW]
-    status_key = right_key = equity_key = None
+    right_key = equity_key = None
     evaluated_position = None
     decisions = data["decisions"]
 
@@ -345,17 +319,15 @@ def render_frames(output, data, game, number, footage, software, start=0):
         board_region[:] = board_image(frame, None if state["phase"] == "game-closed" else points)
         if index == start or index % FPS == 0:
             canvas[:BY] = header(number, index)
-        key = state["phase"], state["player"], state["roll"], state["cube"]
-        if key != status_key:
-            status_region[:] = status_panel(state)
-            status_key = key
         key = id(evaluated_position), position is not evaluated_position, state["loss"]
         if key != equity_key:
             equity_region[:] = equity_panel(evaluated_position, state["loss"], position is not evaluated_position)
             equity_key = key
-        key = state["phase"], state["player"], state["decision"], state["roll"] if state["decision"] is None else None
+        key = (state["phase"], state["player"], state["decision"], state["playedDecision"],
+               state["roll"] if state["decision"] is None else None)
         if key != right_key:
-            right_region[:] = action_panel(state, decisions.get(str(state["decision"])))
+            right_region[:] = action_panel(
+                state, decisions.get(str(state["decision"])), decisions.get(str(state["playedDecision"])))
             right_key = key
         writer.write(canvas)
     if writer.frame_count != footage - start:

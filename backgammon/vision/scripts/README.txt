@@ -25,6 +25,7 @@ Rebuild or inspect the current replay from this directory.
     python3 v4/render.py --jobs 2
     python3 v4/verify_media.py
     python3 v4/export_audit.py ../audit
+    bun v4/export-history.mjs ../history
     python3 v4/query.py 1 --frame 25
     python3 v4/query.py 5 --seconds 748.88
 
@@ -44,23 +45,24 @@ Roll and board state
   checker movement, the counts show the last settled board until an established
   result replaces it. A recorder discontinuity starts a new evidence interval.
 
-  Every active roll has a single actor. When the dice disappear, the status strip
-  identifies the previous roll as historical until another supported roll or a
-  cube response. Intervals with insufficient evidence leave the next actor
-  unset. The frame audits and held dice are coverage measurements. They do not
-  establish ground-truth accuracy for every turn.
+  Every active roll has a single actor. Roll history stays in the frame state
+  when the dice leave the board. Intervals with insufficient evidence leave the
+  next actor unset. The frame audit shows detection coverage. The reviewed
+  Game 2 pass closes the game before the reset and preserves the final totals.
 
   The final scorer evaluates every legal result and position at four ply. It
   reuses exact four-ply outputs for unchanged XGIDs. The EV display omits search
-  depth. Estimated losses on inferred rolls stay outside the cumulative total.
-  Centered, one-unit checker contexts use cubeful money equity. Checker contexts
+  depth. A legal played move contributes once, when it reproduces the observed
+  resulting board. Its caption stays visible for two seconds. Confirmed cube
+  actions contribute when they occur. Centered, one-unit checker contexts use
+  cubeful money equity. Checker contexts
   where ownership is unknown use cubeless equity. The reviewed cube offers use
   their visible stake and ownership context directly.
 
   Point badges follow individually supported legal checker steps. A saturated
   five-checker reading is a lower bound for a taller stack. The forecast stays
   attached to the settled position. An identified pickup gates the next
-  player’s “to roll” caption. Uniquely constrained dice are recovered from the
+  player in the timeline. Uniquely constrained dice are recovered from the
   completed checker move. The audit sidecars report the original frame-level
   vision detections and expose the difference from the inferred replay state.
 

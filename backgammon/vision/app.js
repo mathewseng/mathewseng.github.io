@@ -1,4 +1,5 @@
 import { createAudit } from "./audit.js";
+import { createHistory } from "./history.js";
 
 const player = document.querySelector("#replay");
 const play = document.querySelector("#play-replay");
@@ -12,6 +13,15 @@ const games = new Map(
 const release = new URL("./", download.href);
 let currentGame = "1";
 const audit = createAudit(player);
+const gameHistory = createHistory((time) => {
+  player.pause();
+  player.preload = "metadata";
+  player.currentTime = time;
+  player.controls = true;
+  play.hidden = true;
+  player.focus({ preventScroll: true });
+  player.scrollIntoView({ block: "center" });
+});
 
 function selectGame(number) {
   if (!games.has(number)) number = "1";
@@ -33,8 +43,10 @@ function selectGame(number) {
   player.controls = false;
   player.poster = `posters/game-${id}.jpg`;
   player.src = asset;
+  player.preload = "none";
   player.load();
   audit.select(number);
+  gameHistory.select(number);
   play.hidden = false;
 }
 
@@ -74,3 +86,4 @@ window.addEventListener("popstate", restoreSelection);
 player.controls = false;
 play.hidden = false;
 restoreSelection();
+gameHistory.select(currentGame);

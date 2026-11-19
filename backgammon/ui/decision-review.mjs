@@ -42,6 +42,8 @@ export function decisionReview(
     onReturn,
     replayDescription = "Rewinds this turn and any bot reply, then plays the best move. Already rolled dice are preserved.",
     names = null,
+    rankedMoveLimit = 10,
+    includePlayedInRanking = true,
   } = {},
 ) {
   const slot = el("div", { class: "decision-board" });
@@ -390,16 +392,15 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s computation${result.cached ? " · cached" : ""}. ${result.evaluatedCount ?? result.candidates.length} ${result.method === "reference" ? "source-listed positions; imported XG values, Jacoby, beavers and raccoons on" : "legal resulting positions evaluated"}; small differences are estimates.`,
+            `${result.engine}${Number.isFinite(result.elapsedMs) ? ` · ${(result.elapsedMs / 1000).toFixed(2)} s computation` : ""}${result.cached ? " · cached" : ""}. ${result.evaluatedCount ?? result.candidates.length} ${result.method === "reference" ? "source-listed positions; imported XG values, Jacoby, beavers and raccoons on" : "legal resulting positions evaluated"}; small differences are estimates.`,
           ),
         ),
       );
-      // All ten evaluated alternatives stay available in a scrolling list.
-      // Selection previews this isolated board, never live play.
-      const candidates = result.candidates.slice(0, 10);
+      // Preview ranked alternatives on the isolated board.
+      const candidates = result.candidates.slice(0, rankedMoveLimit);
       const keyOf = c => boardKey(c.steps.reduce((s, st) => applyStep(s, st), source));
-      // The played choice stays reachable even when it falls outside the top ten.
-      if (result.actual && !candidates.some(c => keyOf(c) === keyOf(result.actual))) {
+      // The standard review keeps the played choice available below the ranking cutoff.
+      if (includePlayedInRanking && result.actual && !candidates.some(c => keyOf(c) === keyOf(result.actual))) {
         candidates.push(result.actual);candidates.sort((a,b) => b.equity-a.equity);
       }
       const ranked = el("section", {
@@ -498,7 +499,7 @@ export function decisionReview(
         el(
           "div",
           { class: "review-move-heading" },
-          el("strong", {}, `Top ${Math.min(10,candidates.length)} moves`),
+          el("strong", {}, `Top ${Math.min(rankedMoveLimit, candidates.length)} moves`),
           el("span", {}, "Equity"),
           el("span", {}, "Loss"),
         ),

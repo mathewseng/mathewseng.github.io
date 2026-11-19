@@ -6,7 +6,7 @@ import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
 
 const { fromXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
-const { applyStep, boardKey, legalPaths, legalTurns } = await import(solverUrl('backgammon/core/rules.mjs'));
+const { applyStep, boardKey, initialState, legalPaths, legalTurns } = await import(solverUrl('backgammon/core/rules.mjs'));
 const dir = replayDir;
 const base = path.join(artifactDir, 'v2');
 const summary = [];
@@ -35,6 +35,9 @@ for (const game of [1, 2, 3, 4, 5]) {
     countPaths.set(id + 1, slots);
   }
 
+  const opening = boardKey(initialState());
+  let postOfferRolls = 0;
+  let resetFrames = 0;
   let lossIndex = 0;
   let totalLegal = 0;
   const loss = { white: { loss: 0, count: 0 }, dark: { loss: 0, count: 0 } };
@@ -46,6 +49,14 @@ for (const game of [1, 2, 3, 4, 5]) {
     for (let i = part.firstFrame; i < part.lastExclusive; i++) {
       const frame = part.firstGameFrame + i - part.firstFrame;
       const row = rows[frame];
+      if (game === 2 && frame >= data.decisions.cube.startFrame) {
+        const detected = raw[i].state;
+        if (detected?.currentRoll) postOfferRolls++;
+        const board = detected?.position;
+        if (board && boardKey({
+          points: board.points.map(([white, black]) => white - black), bar: board.bar, off: board.borneOff,
+        }) === opening) resetFrames++;
+      }
       assert.equal(row.frame, frame);
       assert.equal(row.clip, part.clip);
       assert.equal(row.sourceFrame, i);
@@ -143,6 +154,24 @@ for (const game of [1, 2, 3, 4, 5]) {
       assert.equal(row.roll.player, 'white');
       assert.deepEqual(row.roll.dice, [4, 5]);
     }
+  }
+  if (game === 2) {
+    const move = data.losses.find(event => event.decision === 7);
+    assert.equal(move.frame, 2315);
+    assert.equal(move.player, 'dark');
+    assert.equal(move.loss.toFixed(3), '0.005');
+    assert.equal(data.losses.filter(event => event.decision === 7).length, 1);
+    assert(Math.abs(rows[2315].loss.dark.loss - rows[2314].loss.dark.loss - move.loss) < 1e-12);
+    assert.equal(rows[2425].loss.dark.loss, rows[2315].loss.dark.loss);
+    assert(rows.slice(2315, 2365).every(row => row.playedDecision === 7));
+    assert.notEqual(rows[2365].playedDecision, 7);
+    assert.deepEqual(data.result, { frame: 6576, winner: 'white', reason: 'pass', points: 1 });
+    assert.equal(rows[6575].phase, 'cube-response');
+    assert.equal(postOfferRolls, 0);
+    assert(resetFrames >= 5, 'Reset confirmed by multiple opening-board frames');
+    assert.equal(data.decisions.cube.reply, 'pass');
+    assert(rows.slice(6576).every(row => row.phase === 'game-closed' && row.roll === null &&
+      row.turn === null && row.decision === null && row.result.reason === 'pass'));
   }
   if (game === 1 || game === 3) {
     const frame = game === 1 ? 8206 : 14239;
