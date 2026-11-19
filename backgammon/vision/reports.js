@@ -426,7 +426,8 @@ function renderReport(report, seek) {
     return list;
   }
 
-  function automaticReconstruction({ current, updated, review, extra, boundary, closingRoll, suppressed, checkerRecoveries }, recoveries) {
+  function automaticReconstruction({ current, updated, review, extra, boundary, closingRoll, suppressed,
+    checkerRecoveries, handoffs = [], relocatedDice = [] }, recoveries) {
     const section = element("section", null, "vision-report-model vision-automatic-report");
     section.append(element("h3", "Automatic reconstruction"), element("p",
       "Both runs use the same footage and are compared with the reviewed replay. Dice accuracy uses rolls with two verified faces.",
@@ -498,6 +499,25 @@ function renderReport(report, seek) {
         { frame: roll.beforeFrame, title: "Starting checker position" },
         { frame: roll.resultFrame, title: "Ending checker position" },
       ]), entry => entry.title));
+    }
+    if (handoffs.length || relocatedDice.length) {
+      const describeRoll = roll => `${player(roll.player)} ${dice(roll.dice)}`;
+      section.append(element("h4", "Roll continuity"), reviewList([
+        ...handoffs.flatMap(({ outgoing, incoming, sharedBoard }) => [
+          { frame: outgoing.frame, title: describeRoll(outgoing), detail: "The earlier dice track belongs to the scored move." },
+          { frame: incoming.frame, title: describeRoll(incoming), detail: "Both dice settle for the next turn." },
+          { frame: sharedBoard, title: "Board confirmed at the handoff",
+            detail: `${player(outgoing.player)}’s ending position is ${player(incoming.player)}’s starting position.` },
+        ]),
+        ...relocatedDice.flatMap(roll => [
+          { frame: roll.frame, title: describeRoll(roll) },
+          { frame: roll.relocatedAt, title: "Same roll after a die moved",
+            detail: `The die showing ${roll.fixedFace} reappears in the same spot after the hand clears.` },
+          { frame: roll.pickupFrame, title: "Both dice picked up" },
+          { frame: roll.resultFrame, title: "Ending checker position",
+            detail: `Board confirmed ${((roll.resultFrame - roll.pickupFrame) / report.fps).toFixed(2)} s after pickup.` },
+        ]),
+      ].sort((first, second) => first.frame - second.frame), entry => entry.title));
     }
     if (review.length) {
       const pending = element("details");

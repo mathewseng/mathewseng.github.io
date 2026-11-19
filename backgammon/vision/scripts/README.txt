@@ -601,6 +601,10 @@ Audit game boundaries
   Pass the scored reconstruction directory as the last argument to
   audit-game-boundaries.mjs to check the frozen roll, actual play, and loss
   at the result frame. The report links to the verified checker positions.
+  The same audit verifies close handoffs and covered die relocations,
+  including roll ownership, pickup timing, both legal boards, and the
+  cumulative loss in the scored frame stream. The Reports roll continuity
+  links use the reviewed throw timestamps and camera confirmation frames.
 
 Source-crop pip reader trial
   Run calibration/train_native_face_tracks.py to prepare the camera crop

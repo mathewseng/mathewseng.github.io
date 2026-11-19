@@ -101,3 +101,36 @@ export function verifyDicePose(roll, frames, limit) {
   return end >= roll.end + 50 ? { start, end, poseLastSeen: end,
     ...(relocation ? { relocatedAt: relocation.start } : {}) } : null;
 }
+
+/** Rejoin a covered die relocation using a fixed die and its later pickup. */
+export function rejoinDicePose(roll, followup, proof, frames, limit) {
+  const shared = roll.centers.filter(center => proof.centers.some(point => close(center, point)));
+  if (shared.length !== 1) return null;
+  const fixed = shared[0];
+  const before = frames.slice(Math.max(roll.start, roll.end - 28), roll.end + 1);
+  const face = faceAt(before, fixed);
+  const after = frames.slice(proof.firstTogether, proof.firstTogether + 32);
+  if (face === null || !roll.dice.includes(face) || !followup.dice.includes(face) || faceAt(after, fixed) !== face) return null;
+
+  const movedFrom = roll.centers.find(center => center !== fixed);
+  const movedTo = proof.centers.find(center => !close(center, fixed));
+  if (!movedTo) return null;
+  const gap = frames.slice(roll.end + 1, proof.firstTogether + 6);
+  if (!gap.some(frame => covered(frame, movedFrom)) || !gap.some(frame => covered(frame, movedTo))) return null;
+  let unsupported = 0;
+  for (const read of gap) {
+    unsupported = visible(read, fixed) || covered(read, fixed) ? 0 : unsupported + 1;
+    if (unsupported > 8) return null;
+  }
+  let coveredDice = false, run = 0, lastSeen = proof.lastTogether;
+  for (let frame = lastSeen + 1; frame < Math.min(limit, proof.lastTogether + 50); frame++) {
+    const read = frames[frame];
+    const empty = read && proof.centers.every(center => !visible(read, center) && !covered(read, center));
+    if (pairVisible(read, proof.centers)) lastSeen = frame;
+    if (proof.centers.every(center => covered(read, center))) coveredDice = true;
+    run = empty && coveredDice ? run + 1 : 0;
+    if (run >= 8) return { start: roll.start, relocatedAt: proof.firstTogether,
+      pickupFrame: frame - run + 1, poseLastSeen: lastSeen, fixedFace: face };
+  }
+  return null;
+}

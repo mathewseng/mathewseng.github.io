@@ -802,3 +802,25 @@ On that difficult set the current reader matches 13, the new reader 14 and
 the combined read 16. On the earlier 94 held-out tracks those scores are
 56, 67 and 63. The final Game 4 six still reads as a five. These results
 qualify the model for another reconstruction trial with contextual constraints.
+
+## Keeping dice and checker results through handoffs
+
+At 7:45 in Game 5 the camera had Black's 4–3. An older analysis record
+started late and blocked the separate White 5–4 at 7:51. The reconstruction
+now joins the late grade to the matching Black dice track. White's first
+stable pose starts the next turn, with Black's completed board as the
+frozen starting position. The board is confirmed at frame 11780, after the
+next dice are visible. Black's grade belongs to Black and is applied once
+when that board is confirmed. White's roll and decision continue through it.
+
+At 8:51 in Game 4 Black throws 6–1 into the left half. An arm covers both
+dice and the six changes locations. The camera finds the one where it was
+before the occlusion. The two new locations remain visible through 9:30.80.
+The hand covers those locations before both clear at 9:31.20. The 6–1 stays
+one turn until pickup, and the next clean board at 9:31.48 confirms the move.
+
+The five-game comparison improves exact dice pairs from 102 to 104. Wrong
+reads fall from 11 to 9, and the two wrong rollers among matched throws are
+corrected. Matching starting boards rise from 118 to 120 and ending boards
+from 84 to 87. The comparison still matches 136 of 163 reviewed throws,
+with 22 extra proposals remaining.

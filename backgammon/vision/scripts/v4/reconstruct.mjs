@@ -4,7 +4,7 @@ import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { artifactDir, solverUrl, visionStateDir } from '../project_paths.mjs';
 import { observedBoard } from './bearoff-board.mjs';
-import { pairVisible, verifyDicePose } from './dice-pose-continuity.mjs';
+import { pairVisible, rejoinDicePose, verifyDicePose } from './dice-pose-continuity.mjs';
 import { refineIncompletePair, shortDicePairs } from './short-dice-pairs.mjs';
 import { recoverStationaryFaces } from './stationary-face-votes.mjs';
 import { backfillClosingRoll, inferGameBoundary } from './game-boundary.mjs';
@@ -12,7 +12,7 @@ import {
   evaluateDecision, loadEvaluator, matchingTurns, okay, positional, rowsFrom, stateFor,
 } from '../v2/solve_games.mjs';
 
-const { boardKey, initialState, pipCount, stepsForDie } = await import(solverUrl('backgammon/core/rules.mjs'));
+const { boardKey, commitTurn, initialState, pipCount, stepsForDie } = await import(solverUrl('backgammon/core/rules.mjs'));
 const { fromXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 const names = ['white', 'dark'];
 const fps = 25;
@@ -271,15 +271,44 @@ function footprintRoll(seed, proof, trials, runs, nextBoundary) {
     evidence: 'stationary-footprints-and-legal-result', priority: 12 };
 }
 
+function relocatedRoll(followup, proof, rolls, runs, poseFrames, limit) {
+  if (!poseFrames || proof.clear !== null || proof.coverage < .90 || proof.maxGap > 24 ||
+      proof.lastTogether - proof.firstTogether < fps * 5 || followup.dice[1] !== null) return null;
+  const earlier = rolls.findLast(roll => roll.start < followup.start && roll.player === followup.player &&
+    roll.centers?.length === 2 && roll.actorEvidence === 'dice-body-agreement' &&
+    roll.dice.every(Number.isInteger) && roll.quality >= .90 &&
+    roll.end < proof.firstTogether && proof.firstTogether - roll.end <= 150);
+  if (!earlier || rolls.some(roll => roll.start > earlier.start && roll.start < proof.lastTogether &&
+      roll.centers?.length === 2 && roll.quality >= .85 && roll.dice.every(Number.isInteger))) return null;
+  const next = rolls.find(roll => roll.start > proof.lastTogether && roll.centers && roll.quality >= .80 &&
+    roll.dice.every(Number.isInteger));
+  const cutoff = Math.min(limit, next?.start ?? limit);
+  const pose = rejoinDicePose(earlier, followup, proof, poseFrames, cutoff);
+  if (!pose) return null;
+  const before = runs.findLast(run => run.first <= earlier.start && run.last >= earlier.start - fps && run.count >= 12);
+  const after = runs.findLast(run => run.first > earlier.start && run.first < Math.min(cutoff, pose.pickupFrame + fps) &&
+    run.last >= pose.pickupFrame - 5 && run.count >= 12);
+  const [move] = before && after ? matchingTurns(before, after, [earlier.dice], names.indexOf(earlier.player)) : [];
+  return move ? { ...earlier, ...pose, end: Math.max(pose.pickupFrame - 1, after.first), before, after,
+    steps: move.steps, resultFrame: after.first, evidence: 'continuous-dice-poses-and-legal-result',
+    priority: 12, movedDie: { previousCenters: earlier.centers, laterCenters: proof.centers, ...pose } } : null;
+}
+
 function proposedRolls(game, observations, rows, runs, first, last, anchors, poseFrames) {
   const rolls = observedRolls(game, observations, rows).filter((r) => r.start >= first && r.start < last)
     .map(roll => recoverStationaryFaces(roll, rows, poseFrames, first, last));
   const spans = (longFootprints[game.number] ?? []).flatMap(proof => {
-    if (proof.sourceStart < first || proof.clear === null || proof.clear >= last ||
-        game.reviewedCubeOffers.some(offer => offer.startFrame < proof.clear && offer.endFrame >= proof.sourceStart)) return [];
+    const proofEnd = proof.clear ?? proof.lastTogether;
+    if (proof.sourceStart < first || proofEnd >= last ||
+        game.reviewedCubeOffers.some(offer => offer.startFrame < proofEnd && offer.endFrame >= proof.sourceStart)) return [];
     const seed = rolls.find(roll => roll.start === proof.sourceStart && roll.player === proof.player &&
       samePose(roll.centers, proof.centers));
     if (!seed || seed.reviewedPose) return [];
+    if (proof.clear === null) {
+      const offer = game.reviewedCubeOffers.find(item => item.startFrame >= proofEnd);
+      const resumed = relocatedRoll(seed, proof, rolls, runs, poseFrames, Math.min(last, offer?.startFrame ?? last));
+      return resumed ? [resumed] : [];
+    }
     if (rolls.some(roll => roll.reviewedPose && roll.start > proof.firstTogether && roll.start < proof.clear &&
       roll.centers && !samePose(roll.centers, proof.centers))) return [];
     const nextOffer = game.reviewedCubeOffers.find(offer => offer.startFrame >= proof.clear);
@@ -353,6 +382,68 @@ function boardOnlyTurns(runs, anchors) {
   return proposals;
 }
 
+function settledPoseStart(roll, frames) {
+  // The locator reports on a two-pixel grid. Require both dice to stay
+  // within roughly one grid step of their tracked centers for six frames.
+  let stable = 0;
+  const last = Math.min(roll.start + fps, roll.poseLastSeen);
+  for (let frame = roll.start; frame <= last; frame++) {
+    const locations = frames[frame]?.diceLocations ?? [];
+    const close = roll.centers.map(([x, y]) => locations.findIndex(([px, py, score]) =>
+      score >= .38 && Math.hypot(x - px, y - py) <= 3));
+    stable = close.every(index => index >= 0) && close[0] !== close[1] ? stable + 1 : 0;
+    if (stable === 6) return frame - stable + 1;
+  }
+  return null;
+}
+
+function reconcilePhysicalHandoffs(anchors, visual, runs, poseFrames) {
+  if (!poseFrames) return [];
+  const physical = visual.filter(roll => !roll.opening && !roll.footprint && roll.centers?.length === 2 &&
+    roll.actorEvidence === 'dice-body-agreement' && roll.quality >= .90 &&
+    roll.poseLastSeen - roll.start >= fps && roll.dice?.every(Number.isInteger))
+    .sort((a, b) => a.start - b.start);
+  const reconciled = [];
+  for (const [index, outgoing] of physical.entries()) {
+    const incoming = physical[index + 1];
+    if (!incoming || outgoing.player === incoming.player || outgoing.poseLastSeen >= incoming.start ||
+        incoming.start - outgoing.poseLastSeen > 2 * fps) continue;
+    // Match the late archived grade to the earlier pose it was scored from.
+    // The previous complete board and both recorded die faces must agree.
+    const grades = anchors.filter(turn => turn.steps?.length && turn.after && turn.player === outgoing.player &&
+      sameDice(turn.dice, outgoing.dice) && turn.before.key === outgoing.before?.key &&
+      turn.start > outgoing.start && turn.start <= outgoing.poseLastSeen && turn.end >= incoming.start &&
+      Math.abs(turn.resultFrame - incoming.start) <= fps);
+    if (grades.length !== 1 || incoming.after) continue;
+    const grade = grades[0];
+    const start = settledPoseStart(incoming, poseFrames);
+    if (start === null || start <= outgoing.poseLastSeen) continue;
+    const shared = runs.find(run => run.key === grade.after.key && run.count >= 12 &&
+      run.first <= start + fps && run.last >= start);
+    if (!shared) continue;
+    const prior = stateFor(grade.before.position, names.indexOf(grade.player), grade.dice);
+    try {
+      if (boardKey(commitTurn(prior, grade.steps)) !== shared.key) continue;
+    } catch {
+      continue;
+    }
+    const cutoff = Math.min(incoming.poseLastSeen + 55, physical[index + 2]?.start - 1 || Infinity);
+    const ending = runs.findLast(run => run.first > shared.last && run.first <= cutoff &&
+      run.last >= incoming.poseLastSeen - fps && run.count >= 12);
+    const [move] = ending ? matchingTurns(shared, ending, [incoming.dice], names.indexOf(incoming.player)) : [];
+    if (!move) continue;
+    const witness = { outgoingStart: outgoing.start, outgoingSeen: outgoing.poseLastSeen,
+      previousGradeStart: grade.start, incomingStart: start, sharedBoard: shared.first };
+    reconciled.push(
+      { ...grade, start: outgoing.start, end: start - 1, centers: outgoing.centers,
+        poseLastSeen: outgoing.poseLastSeen, priority: 12, physicalHandoff: witness },
+      { ...incoming, start, end: ending.first, before: shared, after: ending, steps: move.steps,
+        resultFrame: ending.first, evidence: 'physical-handoff-and-legal-result', priority: 12, physicalHandoff: witness },
+    );
+  }
+  return reconciled;
+}
+
 function chooseTurns(proposals, last) {
   const turns = [];
   for (const roll of [...proposals].sort((a, b) => b.priority - a.priority || a.start - b.start)) {
@@ -360,6 +451,9 @@ function chooseTurns(proposals, last) {
       if (!together(r, roll, 10)) return false;
       if (r.footprint || roll.footprint) return together(r, roll);
       const [before, after] = r.start < roll.start ? [r, roll] : [roll, r];
+      // Physical handoffs carry their own timing and preserve both turns.
+      if ((before.physicalHandoff || after.physicalHandoff) && before.player !== after.player &&
+          before.end < after.start) return false;
       // A presentation buffer must not swallow the other player's next throw.
       if ((before.stationaryFaces || after.stationaryFaces) && before.player !== after.player &&
           before.centers && after.centers && before.poseLastSeen < after.start &&
@@ -374,7 +468,8 @@ function chooseTurns(proposals, last) {
       turns.push({ ...roll });
       continue;
     }
-    if (!existing.footprint && existing.player === roll.player && sameDice(existing.dice, roll.dice) &&
+    if (!existing.footprint && !existing.physicalHandoff && !existing.movedDie &&
+        existing.player === roll.player && sameDice(existing.dice, roll.dice) &&
         (existing.before?.key === roll.before?.key || !existing.before || !roll.before)) {
       existing.start = Math.min(existing.start, roll.start);
       existing.end = Math.max(existing.end, roll.end);
@@ -422,8 +517,9 @@ function reconstruct(game, observations, rows, poseFrames) {
     // support. A valid completed legal move is a stronger mover witness.
     const retained = old.filter((r) => r.priority >= 8 ||
       visual.some((v) => together(r, v) && v.player === r.player && sameDice(v.dice, r.dice)));
+    const handoffs = reconcilePhysicalHandoffs(anchors, visual, runs, poseFrames);
     const extras = boardOnlyTurns(runs, [...retained, ...visual]);
-    return { first, last, runs, turns: chooseTurns([...retained, ...visual, ...extras], last) };
+    return { first, last, runs, turns: chooseTurns([...handoffs, ...retained, ...visual, ...extras], last) };
   });
 }
 
@@ -578,7 +674,8 @@ function buildTimeline(game, groups, cubes, rows, analysis, result) {
     const d = turn.decision;
     if (!d) continue;
     const grade = d.evLoss !== null &&
-      (turn.existing?.countedInGameLoss || turn.checkerDice || turn.evidence === 'reviewed-roll-and-legal-result' ||
+      (turn.existing?.countedInGameLoss || turn.checkerDice || turn.physicalHandoff || turn.movedDie ||
+        turn.evidence === 'reviewed-roll-and-legal-result' ||
         turn.evidence === 'stationary-footprints-and-legal-result' ||
         turn.evidence === 'stationary-faces-and-legal-result' ||
         (turn.evidence === 'tracked-roll-and-legal-result' && turn.quality >= .82));
