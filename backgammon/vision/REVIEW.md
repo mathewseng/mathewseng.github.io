@@ -604,3 +604,37 @@ long rolls, the current reader matched five, the camera-augmented reader
 matched four, and the pip contrast reader matched two. The camera-augmented
 reader recovered a rotated three that the current reader called a two, and
 misread both faces on the early Game 5 6–4. The replay retains its current weights.
+
+## Separate pickup and checker confirmation
+
+At 0:25 in Game 3, Black is still playing the 4–3 that started at 0:08.32.
+Both dice remain in the same locations through the intermediate checker
+arrangements. The reviewed replay shows the pickup at 0:40.60 and the
+completed board at 0:40.68. The automatic camera verifier samples both spots
+clear at 0:40.64. The checker result, 13/10 24/20, adds 0.024 Checker EVL
+when the board is confirmed. White's 4–3 begins at 0:42.92.
+
+The camera search now continues while both dice still positively match near
+its current time limit. A stable legal checker result can follow pickup
+within 24 frames. The search stops before the next credible throw or cube
+offer. With the same detector outputs, the five-game comparison reduced
+extra proposals from 42 to 39 and increased matched ending boards from
+77 to 78. The three removed proposals were inside that Game 3 roll. Matched
+rolls and correct dice pairs stayed at 133 and 94 respectively.
+
+Across the reviewed games, 118 checker confirmations followed pickup. The
+rerender keeps the current checker analysis visible during those intervals,
+clears the dice icons at pickup and holds the played move after confirmation.
+The frame export records the same interval with no active roll and an optional
+reference to the frozen checker decision.
+
+The checker trial used 20 manually reviewed camera frames to add 138 training
+crops, with the other new crops held out by source clip. On the same 862 held-out
+crops, the current reader matched 857. Both trial readers matched 858 and
+made the same four errors. Both recognized two White six-stacks the current
+reader counted as five. Reports links the remaining errors to the source
+frames. The replay retains the current checker weights.
+At 18:03 in Game 3, a black die beside point 4 is counted as a third checker
+in the isolated point image. Dice cups enter empty point strips around 20:12
+in Game 3 and 14:39 in Game 4. Both checker readers count those cups as black
+checkers in the cropped-image test.

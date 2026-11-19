@@ -54,6 +54,8 @@ const coverCheckerDir = path.join(replayDir, "cover-checker-training");
 const coverCheckerPath = path.join(coverCheckerDir, "validation.json");
 const coverChecker = fs.existsSync(coverCheckerPath) ? read(coverCheckerPath) : null;
 const coverCheckerLabels = coverChecker && read(path.join(coverCheckerDir, "labels.json"));
+const handoffCheckerPath = path.join(replayDir, "checker-handoff-validation.json");
+const handoffChecker = fs.existsSync(handoffCheckerPath) ? read(handoffCheckerPath) : null;
 const planTrialPath = path.join(replayDir, "dice-automatic-replay-validation.json");
 const planTrial = fs.existsSync(planTrialPath) ? read(planTrialPath) : [];
 const locatorPath = path.join(replayDir, "locator-validation.json");
@@ -143,16 +145,20 @@ function modelChecks(game) {
   }));
 }
 
+function gameFrame(segments, clip, sourceFrame) {
+  const part = segments.find(item => item.clip === clip &&
+    item.firstFrame <= sourceFrame && sourceFrame < item.lastExclusive);
+  return part ? part.firstGameFrame + sourceFrame - part.firstFrame : null;
+}
+
 function checkerWitnessTrial(game, segments) {
   if (!coverChecker) return null;
   const errors = coverChecker.tests.flatMap(test => {
     if (test.game !== game || (test.baseline === test.expected && test.candidate === test.expected)) return [];
     const label = coverCheckerLabels[test.index];
-    const part = segments.find(item => item.clip === label.clip &&
-      item.firstFrame <= label.frame && label.frame < item.lastExclusive);
     return [{ clip: label.clip, sourceFrame: label.frame, point: label.target + 1,
       expected: test.expected, current: test.baseline, trial: test.candidate,
-      frame: part ? part.firstGameFrame + label.frame - part.firstFrame : null }];
+      frame: gameFrame(segments, label.clip, label.frame) }];
   });
   return { training: coverChecker.extraLabels.train, heldOut: coverChecker.heldOut,
     current: coverChecker.baselineCorrect, trial: coverChecker.candidateCorrect,
@@ -245,6 +251,7 @@ function report(number) {
   assert.equal(raw.length, data.frames);
   const counts = { frames: raw.length, boardObserved: 0, boardReconciled: 0, reconstructedBoardFrames: 0, equityFrames: 0,
     coverFrames: 0, rollFrames: 0, diceRead: [0, 0, 0], diceConflictFrames: 0,
+    pendingCheckerHandoffs: 0, pendingCheckerFrames: 0,
     rolls: data.rolls.length, completeRolls: 0, missingFaces: 0, bothFacesMissing: 0,
     availableDecisions: 0, confirmedBoardsWithMissingDice: 0, fans: 0, gradedPlays: 0, legalPlays: 0, observedPickups: 0,
     confirmedConsecutive: 0, reviewedDetectorMisreads: (replay.contextRecovery ?? [])
@@ -256,9 +263,13 @@ function report(number) {
     else if (observedBoard(reading)) counts.boardReconciled++;
   }
   for (const [index, state] of data.changes.entries()) {
+    const frames = (data.changes[index + 1]?.frame ?? data.frames) - state.frame;
+    if (state.phase === "checker-result-pending") {
+      counts.pendingCheckerFrames += frames;
+      if (data.changes[index - 1]?.phase !== state.phase) counts.pendingCheckerHandoffs++;
+    }
     const board = data.positions[state.position];
     if (!board) continue;
-    const frames = (data.changes[index + 1]?.frame ?? data.frames) - state.frame;
     counts.reconstructedBoardFrames += frames;
     if (board.equities) counts.equityFrames += frames;
   }
@@ -408,6 +419,11 @@ function report(number) {
         tests: coveredFaces.tests.spotExtra.filter(test => test.cohort === "covered-dice-review" && test.game === number),
       },
       coverCheckers: checkerWitnessTrial(number, recording.segments),
+      handoffCheckers: handoffChecker && { ...handoffChecker,
+        errors: handoffChecker.errors.filter(error => error.game === number).map(error => ({
+          ...error, frame: gameFrame(recording.segments, error.clip, error.sourceFrame),
+        })),
+      },
       occlusionDice: occlusionFaces && {
         trainingFrames: occlusionFaces.trainingFrames,
         tests: longTrialsForGame(occlusionFaces),

@@ -5,6 +5,7 @@ import { artifactDir, replayDir } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
 import { rollCubePositions, scoreRollCubes } from './cube-rolls.mjs';
 import { applyAccounting, writeReplay } from './accounting.mjs';
+import { footprintPickup } from './roll-timing.mjs';
 
 const FPS = 25;
 const HOLD = 2 * FPS;
@@ -90,9 +91,10 @@ function track(group, raw, previous, limit, decisions) {
     [...group].reverse().find(({ id }) => decisions[id]) ?? last;
   const anchors = last.pose.length ? last.pose : preferred.pose;
   const startBound = Math.max(previous, first.turn.start - 8 * FPS);
+  const verifiedPickup = footprintPickup(last.turn, limit);
   let start = first.turn.start;
   const complete = first.pose.length === faces(first.turn.dice).length;
-  if (complete && first.pose.length) {
+  if (verifiedPickup === null && complete && first.pose.length) {
     for (let at = startBound; at < first.turn.start; at++) {
       if (!first.pose.some(anchor => senses(raw[at], anchor))) continue;
       const window = raw.slice(at, at + 12);
@@ -113,8 +115,8 @@ function track(group, raw, previous, limit, decisions) {
     if (sightings.length >= 3) lastSight = frame;
   }
   const explicit = last.turn.pickupFrame;
-  const pickup = explicit != null && explicit < limit && (lastSight === null || lastSight < explicit + 8)
-    ? explicit : contactEnd(raw, anchors, lastSight, limit);
+  const pickup = verifiedPickup ?? (explicit != null && explicit < limit && (lastSight === null || lastSight < explicit + 8)
+    ? explicit : contactEnd(raw, anchors, lastSight, limit));
   const end = Math.min(limit, pickup ?? Math.max(last.turn.end + 1, (lastSight ?? -1) + 1));
   const values = [...faces(preferred.turn.dice)].reverse();
   while (values.length < 2) values.push(null);

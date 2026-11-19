@@ -469,3 +469,19 @@ Calibrate die color and review turn order
   The latter candidate expects the local pip contrast transform before model
   inference. Save the trial outputs in occlusion-dice-training/ and
   occlusion-dice-detail-training/ for Reports.
+
+  The stationary verifier continues while the live camera still matches at
+  the end of its search window. Reconstructing a result after pickup preserves
+  both frame numbers. Run refine-replay.mjs with OFFICE3_REFINEMENT_SOURCE
+  pointing to the generated reconstruction and OFFICE3_VISION_OBSERVATIONS_DIR
+  pointing to its observations. Feed that output's context subdirectory to
+  presentation.mjs. Run v4/verify-pickup-handoff.mjs with the full-game
+  comparison and directory containing reconstructed, refined, and presentation
+  to check the Game 3 handoff through all three stages.
+
+  For the pickup checker trial, add calibration/reviewed-checker-handoffs.json
+  to the earlier checker witness inputs. Also hold out clips 15, 16, 55 and 59.
+  For the control, include the same new held-out witnesses and exclude the
+  remaining new witnesses from training. Use compare-checker-witnesses.mjs
+  on both outputs to verify identical held-out crops and save the result as
+  checker-handoff-validation.json beside the replay.

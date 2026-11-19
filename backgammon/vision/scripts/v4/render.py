@@ -235,6 +235,7 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
     result = state.get("result")
     frame = state["frame"]
     featured = None
+    decision_roll = roll or state.get("pendingRoll")
     if cube_mode == "cube-pass":
         cube_panel(draw, cube, cube_mode, result)
     elif state.get("postGamePlay"):
@@ -247,21 +248,24 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
         write(draw, x, 143, "Result unconfirmed", BODY, MUTED)
     elif cube_mode == "cube-offer":
         cube_panel(draw, cube, cube_mode)
-    elif roll:
-        player = roll["player"]
-        title = f"{PLAYER_NAME[player]}’s roll"
+    elif decision_roll:
+        player = decision_roll["player"]
+        title = f"{PLAYER_NAME[player]}’s {'roll' if roll else 'move'}"
         write(draw, x, 79, title, HEADLINE, PLAYER_TONE[player], True)
-        draw_dice(draw, x + draw.textlength(title, font=face(HEADLINE, True)) + 25, 78, roll["dice"], player)
+        if roll:
+            draw_dice(draw, x + draw.textlength(title, font=face(HEADLINE, True)) + 25, 78, roll["dice"], player)
         if entry:
-            if roll.get("sourceMismatch"):
+            if roll and roll.get("sourceMismatch"):
                 write(draw, x, 135, "Visible dice and checker result disagree", META, MUTED)
-            elif "inferred" in roll["evidence"] or "unique-legal-roll" in roll["evidence"]:
+            elif roll and ("inferred" in roll["evidence"] or "unique-legal-roll" in roll["evidence"]):
                 write(draw, x, 135, "Roll inferred from play", META, MUTED)
             played = next((move["key"] for move in entry["actions"] if move["isPlayed"]), None)
-            selected = played if any(event.get("decision") == roll["decision"] for event in events) else None
-            options = [(move["key"], notation(move["notation"], roll.get("fan")), move["equity4"])
+            selected = played if any(event.get("decision") == decision_roll["decision"] for event in events) else None
+            options = [(move["key"], notation(move["notation"], decision_roll.get("fan")), move["equity4"])
                        for move in entry["actions"][:TOP_MOVES]]
             draw_table(draw, 182, "Top checker moves", options, selected, 58, numbers=True)
+        elif not roll:
+            write(draw, x, 145, "Confirming the checker result", BODY, MUTED)
         elif roll.get("fan"):
             write(draw, x, 145, "Fanned · no checker entered", BODY, MUTED)
         elif roll["evidence"] == "reviewed-roll-with-confirmed-board" and roll.get("sourceMismatch"):
@@ -275,9 +279,6 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
                        cube_choices(cube_roll), "roll" if frame >= cube_roll["frame"] else None)
     elif cube_mode == "cube-take":
         cube_panel(draw, cube, cube_mode)
-    elif state.get("pendingChecker"):
-        player = state["pendingChecker"]
-        write(draw, x, 79, f"{PLAYER_NAME[player]} finishing move", HEADLINE, PLAYER_TONE[player], True)
     elif cube_roll:
         cube_panel(draw, cube_roll, "rolled" if frame >= cube_roll["frame"] else "before-roll")
     elif (featured := next((event for event in reversed(events) if event["kind"] in ("checker", "board-result")), None)):
@@ -362,8 +363,8 @@ def viewer_frames(data, states):
         while roll and frame >= roll["end"]:
             turn = data["turns"][(roll["decision"] or roll["sourceTurns"][0]) - 1]
             result, pickup = turn.get("resultFrame"), roll.get("pickup")
-            if result is not None and pickup is not None and result - pickup >= ACTION_HOLD:
-                pending_result = (result, roll["player"])
+            if result is not None and pickup is not None and result > pickup:
+                pending_result = (result, roll)
             roll = next(rolls, None)
         while upcoming_cube_roll and upcoming_cube_roll["start"] <= frame:
             shown_cube_roll = upcoming_cube_roll
@@ -383,11 +384,15 @@ def viewer_frames(data, states):
             elif cube.get("reply") == "take" and frame < cube["endFrame"] + ACTION_HOLD:
                 cube_mode = "cube-take"
         active_roll = roll if roll and roll["start"] <= frame else None
-        if pending_result and not active_roll and frame < pending_result[0]:
-            state = {**state, "pendingChecker": pending_result[1]}
+        if pending_result and (active_roll or frame >= pending_result[0] or cube_mode in ("cube-offer", "cube-pass")):
+            pending_result = None
+        if pending_result:
+            state = {**state, "pendingChecker": pending_result[1]["player"], "pendingRoll": pending_result[1]}
         cube_roll = shown_cube_roll if shown_cube_roll and frame < shown_cube_roll["end"] else None
         if active_roll:
             cube_roll = cubes_at_roll.get(active_roll["start"])
+        elif pending_result:
+            cube_roll = None
         yield state, active_roll, cube_roll, cube_mode, tuple(live), frame < opening_until
 
 
@@ -414,7 +419,8 @@ def equity_frames(data, frames):
         if estimate:
             last = estimate["players"]
         closed = state["phase"] == "game-closed"
-        key = str(roll["decision"]) if roll else None
+        decision_roll = roll or state.get("pendingRoll")
+        key = str(decision_roll["decision"]) if decision_roll else None
         if closed:
             equity, basis = None, ""
         elif key in move_scores and mode != "cube-offer":
@@ -572,10 +578,12 @@ def render_frames(output, data, game, number, footage, software, start=0, *, crf
             equity_region[:] = equity_panel(equity, basis, state["loss"], closed)
             equity_key = key
         # Frame detector changes do not independently invalidate a stable panel.
+        pending_roll = state.get("pendingRoll")
         key = (id(roll), id(wait), bool(wait and index >= wait["frame"]), cube_mode, tuple(id(event) for event in events),
-               opening, closed, state.get("pendingChecker"), state.get("postGamePlay"))
+               opening, closed, id(pending_roll), state.get("postGamePlay"))
         if key != right_key:
-            entry = decisions.get(str(roll["decision"])) if roll else None
+            decision_roll = roll or pending_roll
+            entry = decisions.get(str(decision_roll["decision"])) if decision_roll else None
             right_region[:] = action_panel(state, roll, entry, decisions.get("cube"), cube_mode, wait, events, opening)
             right_key = key
         writer.write(canvas)

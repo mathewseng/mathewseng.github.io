@@ -42,6 +42,12 @@ def verify(number):
             assert equity[1]["equity"] == game["decisions"]["1"]["played"]["equity"]
         if number == 3 and frame == 4030 and state.get("pendingChecker"):
             assert state["pendingChecker"] == "white" and not roll and not wait
+        if number == 3 and 1015 <= frame < 1017:
+            assert state["pendingChecker"] == "dark" and state["pendingRoll"]["decision"] == 1
+            assert not roll and not wait and basis == "After best play"
+        if number == 3 and frame == 1017:
+            assert "pendingChecker" not in state and basis == "After played move"
+            assert any(action["kind"] == "checker" and action["decision"] == 1 for action in actions)
         if number == 1 and frame == 11340 and roll and roll.get("fan"):
             assert basis == "Position estimate"
             assert equity == position["equities"]["players"]
@@ -72,10 +78,12 @@ def verify(number):
                 assert action["label"] == "fanned" and action["roll"]["fan"]
         if cube_mode:
             modes[cube_mode] += 1
-        key = (id(roll), id(wait), cube_mode, opening, state["phase"] == "game-closed", state.get("pendingChecker"),
+        pending_roll = state.get("pendingRoll")
+        key = (id(roll), id(wait), cube_mode, opening, state["phase"] == "game-closed", id(pending_roll),
                state.get("postGamePlay"), tuple((action["kind"], action["frame"]) for action in actions))
         if key not in rendered:
-            entry = game["decisions"].get(str(roll["decision"])) if roll else None
+            decision_roll = roll or pending_roll
+            entry = game["decisions"].get(str(decision_roll["decision"])) if decision_roll else None
             panel = action_panel(state, roll, entry, cube, cube_mode, wait, actions, opening)
             assert panel.shape == (RH, RW, 3)
             rendered.add(key)

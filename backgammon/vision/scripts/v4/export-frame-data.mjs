@@ -33,7 +33,6 @@ function frameData(game, rows, recording) {
     const onBoard = !closed && rolls[rollIndex]?.start <= row.frame;
     const prior = rolls[rollIndex - 1];
     const result = prior?.pickup != null && game.turns[(prior.decision ?? prior.sourceTurns[0]) - 1]?.resultFrame;
-    const pending = !closed && !onBoard && Number.isInteger(result) && result - prior.pickup >= 2 * FPS && row.frame < result;
     const owned = cubeContext(game, row);
     const cube = closed ? null : {
       value: owned?.value ?? row.cube?.stake ?? null,
@@ -43,7 +42,8 @@ function frameData(game, rows, recording) {
     if (cube && cube.offered && offer && row.frame >= offer.startFrame) {
       cube.offerer = offer.offerer;
     }
-    const movingDecision = onBoard ? rolls[rollIndex].decision ?? row.turn : row.turn;
+    const pending = !closed && !onBoard && !cube?.offered && Number.isInteger(result) && row.frame < result;
+    const movingDecision = (onBoard ? rolls[rollIndex].decision : pending ? prior.decision : null) ?? row.turn;
     const phase = closed ? 'game-closed' : cube?.offered ? 'cube-response' : onBoard ? 'checker-turn' :
       pending ? 'checker-result-pending' :
       row.frame < rolls[0]?.start && game.game > 1 ? 'opening' :
@@ -54,6 +54,7 @@ function frameData(game, rows, recording) {
       movingPoints: closed ? null : row.displayPoints ?? null,
       movingBoard: !closed && row.displayPoints ? movingBoards.get(movingDecision)?.get(row.displayPoints.join(',')) ?? null : null,
       roll: onBoard ? rollIndex : null,
+      ...(pending && prior.decision ? { pendingDecision: prior.decision } : {}),
       player: closed ? null : cube?.offered ? (offer?.offerer === 'white' ? 'dark' : 'white') :
         onBoard ? rolls[rollIndex].player : pending ? prior.player : row.phase === 'pre-roll' ? row.player : null,
       cube,

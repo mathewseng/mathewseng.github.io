@@ -212,7 +212,7 @@ function extendedRoll(roll, runs, poseFrames, limit, rolls) {
     evidence: 'continuous-dice-poses-and-legal-result', priority: 9 };
 }
 
-function footprintRoll(seed, proof, trials, runs) {
+function footprintRoll(seed, proof, trials, runs, nextBoundary) {
   const { sourceStart, firstTogether, lastTogether, clear, coverage, maxGap, centers, player } = proof;
   if (clear === null || coverage < .67 || maxGap > 160 || clear - firstTogether < fps * 5) return null;
   const corroboration = trials.filter(roll => roll.player === player && roll.start >= sourceStart && roll.start < clear &&
@@ -226,14 +226,17 @@ function footprintRoll(seed, proof, trials, runs) {
   // help choose between otherwise legal rolls to the same resulting board.
   const diceOptions = seed.dice.every(Number.isInteger) ? [seed.dice] :
     stableFaces.length ? allDice.filter(dice => stableFaces.every(face => dice.includes(face))) : [];
+  const nextThrow = trials.find(roll => roll.start >= clear && roll.centers &&
+    (roll.reviewedPose || roll.quality >= .80 && roll.dice.every(Number.isInteger)));
+  const resultLimit = Math.min(clear + 24, nextBoundary - 1, (nextThrow?.start ?? Infinity) - 1);
   const before = runs.filter(run => run.first <= firstTogether + 5 && run.last >= sourceStart - 65).at(-1);
-  const after = runs.filter(run => run.first >= firstTogether + 5 && run.first <= clear + 24 &&
+  const after = runs.filter(run => run.first >= firstTogether + 5 && run.first <= resultLimit &&
     run.last >= clear - 20 && run.count >= 12).at(-1);
-  const matches = before && after && after.first < clear
-    ? matchingTurns(before, after, diceOptions, names.indexOf(player)) : [];
+  const matches = before && after ? matchingTurns(before, after, diceOptions, names.indexOf(player)) : [];
   if (matches.length !== 1) return null;
   const [match] = matches;
-  return { ...seed, start: Math.min(sourceStart, firstTogether), end: clear - 1, poseLastSeen: lastTogether,
+  return { ...seed, start: Math.min(sourceStart, firstTogether), end: Math.max(clear - 1, after.first),
+    pickupFrame: clear, poseLastSeen: lastTogether,
     before, after, dice: match.dice, steps: match.steps, resultFrame: after.first, footprint: proof,
     evidence: 'stationary-footprints-and-legal-result', priority: 12 };
 }
@@ -248,7 +251,8 @@ function proposedRolls(game, observations, rows, runs, first, last, anchors, pos
     if (!seed || seed.reviewedPose) return [];
     if (rolls.some(roll => roll.reviewedPose && roll.start > proof.firstTogether && roll.start < proof.clear &&
       roll.centers && !samePose(roll.centers, proof.centers))) return [];
-    const stationary = footprintRoll(seed, proof, rolls, runs);
+    const nextOffer = game.reviewedCubeOffers.find(offer => offer.startFrame >= proof.clear);
+    const stationary = footprintRoll(seed, proof, rolls, runs, Math.min(last, nextOffer?.startFrame ?? last));
     return stationary ? [stationary] : [];
   });
   const normal = rolls.flatMap((roll) => {
@@ -316,6 +320,7 @@ function chooseTurns(proposals, last) {
   for (const roll of [...proposals].sort((a, b) => b.priority - a.priority || a.start - b.start)) {
     const existing = turns.find((r) => {
       if (!together(r, roll, 10)) return false;
+      if (r.footprint || roll.footprint) return together(r, roll);
       if (r.evidence !== 'continuous-dice-poses-and-legal-result' &&
           roll.evidence !== 'continuous-dice-poses-and-legal-result') return true;
       const [before, after] = r.start < roll.start ? [r, roll] : [roll, r];
@@ -550,6 +555,7 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
       const next = group.turns[ti + 1];
       const completed = current?.resultFrame != null && i >= current.resultFrame;
       const shown = current && current.end >= i;
+      const onBoard = shown && (current.pickupFrame == null || i < current.pickupFrame);
       const cube = findCube(cubes, i);
       const gapCube = group.first > 0 && cube && cube.frame < group.first && !cube.closed ? null : cube;
       let phase = 'between-rolls', player = null, actorEvidence = null;
@@ -560,7 +566,7 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
         player = gapCube.responder;
         actorEvidence = 'reviewed-cube-offer';
       } else if (shown) {
-        phase = completed ? 'played' : 'move';
+        phase = completed ? 'played' : onBoard ? 'move' : 'checker-result-pending';
         player = current.player;
         actorEvidence = current.evidence;
       } else if (next?.before && next.before.key === board?.run.key && next.start - i <= 300 &&
@@ -575,8 +581,8 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
       } else if (!current && game.number > 1 && (board?.run.key === opening || i < 25)) {
         phase = 'opening';
       }
-      const printRoll = current && phase !== 'cube-response' && phase !== 'game-closed';
-      let decision = gapCube?.offered ? 'cube' : shown && decisions[current.id] ? current.id : null;
+      const printRoll = current && !['cube-response', 'game-closed', 'checker-result-pending'].includes(phase);
+      let decision = gapCube?.offered ? 'cube' : onBoard && decisions[current.id] ? current.id : null;
       if (phase === 'game-closed') decision = null;
       const markerPlayer = !board || phase === 'game-closed' ? null :
         phase === 'cube-response' ? gapCube.offerer :
@@ -604,7 +610,7 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
         sourceTimeBase: raw.timeBase, phase, player, actorEvidence,
         turn: shown ? current.id : null,
         roll: printRoll ? { id: current.id, player: current.player, dice: current.dice,
-          status: shown ? 'current' : 'last', evidence: current.evidence } : null,
+          status: onBoard ? 'current' : 'last', evidence: current.evidence } : null,
         cube: gapCube ? { stake: gapCube.stake, side: gapCube.side, offered: gapCube.offered ?? null,
           evidence: gapCube.evidence } : null,
         position: lastPositionId, decision, loss: {

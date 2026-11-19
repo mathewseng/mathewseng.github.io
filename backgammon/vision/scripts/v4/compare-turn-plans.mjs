@@ -62,7 +62,7 @@ function compare(game, plan) {
     return { frame: roll.start, player: roll.player, expected, claimed, agreement,
       automaticFrame: automatic?.start ?? null, automaticPlayer: automatic?.player ?? null,
       ...(automatic?.footprint ? { footprint: { ...automatic.footprint, reviewedPickup: roll.pickup ?? null,
-        resultFrame: automatic.resultFrame } } : {}),
+        reviewedResult: turn.resultFrame, resultFrame: automatic.resultFrame } } : {}),
       ...(automatic?.evidence === 'continuous-dice-poses' || automatic?.evidence === 'continuous-dice-poses-and-legal-result' ? {
         poseContinuity: { lastSeen: automatic.poseLastSeen ?? automatic.end, resultFrame: automatic.resultFrame,
           repositionedAt: automatic.relocatedAt ?? null, reviewedPickup: roll.pickup ?? null },

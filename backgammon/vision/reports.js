@@ -1,5 +1,6 @@
 const number = new Intl.NumberFormat();
 const percent = new Intl.NumberFormat(undefined, { style: "percent", maximumFractionDigits: 1 });
+const checkerCount = label => label === 0 ? "empty" : label > 10 ? `${label - 10} Black` : `${label} White`;
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
@@ -133,13 +134,23 @@ function renderReport(report, seek) {
   if (stationaryRolls.length) {
     const { current, candidate } = stationary;
     const section = element("section", null, "vision-report-model");
+    const pairs = current.counts.correctDice === candidate.counts.correctDice
+      ? `${candidate.counts.correctDice} correct dice pairs in both runs`
+      : `${current.counts.correctDice} to ${candidate.counts.correctDice} correct dice pairs`;
     section.append(element("h3", "Stationary dice through occlusion"), element("p",
-      `Comparing the board at the two dice locations changed extra roll proposals from ${current.unmatched.length} to ${candidate.unmatched.length} and correct dice pairs from ${current.counts.correctDice} to ${candidate.counts.correctDice}.`, "muted small"));
+      `Extra roll proposals ${current.unmatched.length} → ${candidate.unmatched.length} · ${pairs}`, "muted small"));
     const precise = frame => `${timecode(frame, report.fps)}.${String(Math.round((frame % report.fps) * 100 / report.fps)).padStart(2, "0")}`;
-    const entries = stationaryRolls.map(({ frame, player, claimed, footprint }) => ({
-      frame, title: `${player === "white" ? "White" : "Black"} ${claimed.join("–")}`,
-      detail: `Both dice matched their original appearance in ${number.format(footprint.together)} sampled frames. Empty felt is visible at both locations at ${precise(footprint.clear)}. The same roll explains the completed checker move.`,
-    }));
+    const entries = stationaryRolls.flatMap(({ frame, player, claimed, footprint }) => {
+      const start = {
+        frame, title: `${player === "white" ? "White" : "Black"} ${claimed.join("–")}`,
+        detail: `Both dice matched their original appearance in ${number.format(footprint.together)} sampled frames. Empty felt is visible at both locations at ${precise(footprint.clear)}. The same roll explains the completed checker move.`,
+      };
+      const pickup = footprint.reviewedPickup;
+      const result = footprint.reviewedResult;
+      if (!Number.isInteger(pickup) || !Number.isInteger(result) || result <= pickup) return [start];
+      return [start, { frame: pickup, title: "Dice pickup and checker result",
+        detail: `The replay clears the dice at ${precise(pickup)} and keeps the checker analysis visible until the result is confirmed at ${precise(result)}.` }];
+    });
     section.append(reviewList(entries, entry => entry.title));
     fragment.append(section);
   }
@@ -282,10 +293,19 @@ function renderReport(report, seek) {
     if (coverCheckers) {
       const { training, heldOut, current, trial, reviewedBoards, errors } = coverCheckers;
       section.append(element("p", `The cover review added ${training} labeled checker crops to training. The current reader matched ${current}/${heldOut} counts and the trial matched ${trial}/${heldOut}. Both matched ${reviewedBoards.baseline}/${reviewedBoards.count} on the held-out board witnesses.`, "muted small"));
-      const count = label => label === 0 ? "empty" : label > 10 ? `${label - 10} Black` : `${label} White`;
       const seekable = errors.filter(error => error.frame !== null).map(error => ({
-        frame: error.frame, title: `Point ${error.point} · ${count(error.expected)}`,
-        detail: `Current reader saw ${count(error.current)}. Trial saw ${count(error.trial)}.`,
+        frame: error.frame, title: `Point ${error.point} · ${checkerCount(error.expected)}`,
+        detail: `Current reader saw ${checkerCount(error.current)}. Trial saw ${checkerCount(error.trial)}.`,
+      }));
+      if (seekable.length) section.append(reviewList(seekable, entry => entry.title));
+    }
+    const handoffCheckers = report.witnessTrials?.handoffCheckers;
+    if (handoffCheckers) {
+      const { addedCrops, heldOut, current, control, trial, errors } = handoffCheckers;
+      section.append(element("p", `The pickup review added ${addedCrops} labeled checker crops to training. On the same ${heldOut} held-out crops, the current reader matched ${current}, the control matched ${control}, and the expanded trial matched ${trial}.`, "muted small"));
+      const seekable = errors.filter(error => error.frame !== null).map(error => ({
+        frame: error.frame, title: `Point ${error.point} · ${checkerCount(error.expected)}`,
+        detail: `Current reader saw ${checkerCount(error.current)}. Control saw ${checkerCount(error.control)}. Expanded trial saw ${checkerCount(error.trial)}.`,
       }));
       if (seekable.length) section.append(reviewList(seekable, entry => entry.title));
     }
@@ -386,6 +406,9 @@ function renderReport(report, seek) {
   flagged.append(element("h3", "Timing and state checks"), element("p",
     `${counts.observedPickups} pickups have evidence. ${counts.availableDecisions} rolls have checker analysis. ${counts.fans} short fans were confirmed by footage review. Source cuts with a recorded gap ${counts.sourceCuts}. Flags identify footage for review. A raw disagreement can come from occlusion or a false detection.`,
     "muted small"));
+  if (counts.pendingCheckerHandoffs) {
+    flagged.append(element("p", `Checker confirmation followed dice pickup ${number.format(counts.pendingCheckerHandoffs)} times in this game. The replay kept the checker turn visible across ${number.format(counts.pendingCheckerFrames)} frames with the dice off the board.`, "muted small"));
+  }
   if (counts.reviewedDetectorMisreads) {
     flagged.append(element("p", `${counts.reviewedDetectorMisreads} additional detector misreads were confirmed from the camera or from the visible checker movement.`, "muted small"));
   }

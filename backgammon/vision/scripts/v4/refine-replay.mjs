@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { observedBoard } from './bearoff-board.mjs';
+import { footprintPickup } from './roll-timing.mjs';
 import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
 import { exclusive, loadEvaluator, matchingTurns, rowsFrom, stateFor } from '../v2/solve_games.mjs';
 
@@ -10,7 +11,8 @@ const { boardKey, initialState, legalTurns, legalPaths, applyStep, pipCount, not
   await import(solverUrl('backgammon/core/rules.mjs'));
 const { toXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 
-const baseline = path.join(artifactDir, 'v4');
+const baseline = path.resolve(process.env.OFFICE3_REFINEMENT_SOURCE ?? path.join(artifactDir, 'v4'));
+const observations = path.resolve(process.env.OFFICE3_VISION_OBSERVATIONS_DIR ?? baseline);
 const vision = path.join(artifactDir, 'v2');
 const output = path.join(replayDir, 'context');
 const rolls = Array.from({ length: 6 }, (_, i) =>
@@ -423,7 +425,7 @@ function applyCubeReview(game, rows, raw, review, solver) {
 function refine(number, solver, reviewedCube, reviewedRolls) {
   const prefix = 'game-' + String(number).padStart(2, '0');
   const game = read(baseline, prefix + '-game.json');
-  const evidence = read(baseline, prefix + '-observations.json');
+  const evidence = read(observations, prefix + '-observations.json');
   const rows = rowsFrom(path.join(baseline, prefix + '-state.jsonl.gz'));
   const recording = read(vision, 'game-' + number + '-analysis.json');
   const raw = [];
@@ -450,16 +452,17 @@ function refine(number, solver, reviewedCube, reviewedRolls) {
     const pose = poseFor(turn, evidence.pairs);
     const stop = blockedByCut(turn.start,
       Math.min(next?.start ?? rows.length, Math.max(turn.end, pose?.end ?? 0) + 62), evidence.breaks);
-    turn.pickupFrame = pickupFrame(turn, pose, raw, stop);
+    const verifiedPickup = footprintPickup(turn, stop);
+    turn.pickupFrame = verifiedPickup ?? pickupFrame(turn, pose, raw, stop);
     if (turn.pickupFrame !== null) pickups.push({ frame: turn.pickupFrame, actor: turn.player });
     if (!turn.before) {
       turn.before = stableResults(raw, Math.max(0, turn.start - 48), turn.start + 2).at(-1)?.position ?? null;
     }
     const review = reviewedRolls.find(({ clip, first }) => rows.slice(turn.start, turn.end + 1)
       .some((row) => row.clip === clip && row.sourceFrame === first));
-    const optics = faceConsensus(turn, pose, raw);
+    const optics = verifiedPickup === null && faceConsensus(turn, pose, raw);
     const update = review ? { dice: review.dice, reviewed: true } :
-      chooseRoll(turn, pose, raw, next, stop) ??
+      verifiedPickup !== null ? null : chooseRoll(turn, pose, raw, next, stop) ??
       (optics ? { dice: optics, result: null, optical: true } : null);
     const changed = update && !sameRoll(update.dice, turn.dice);
     const oldResult = turn.resultFrame;
@@ -521,7 +524,7 @@ function refine(number, solver, reviewedCube, reviewedRolls) {
     if (row.turn && (row.phase === 'move' || row.phase === 'played')) {
       const turn = game.turns[row.turn - 1];
       row.phase = turn.resultFrame !== null && row.frame >= turn.resultFrame ? 'played' : 'move';
-      row.decision = decisions[row.turn] ? row.turn : null;
+      row.decision = row.roll?.status === 'current' && decisions[row.turn] ? row.turn : null;
     }
     if (row.phase === 'pre-roll') {
       const hasPickup = latest && latest.player !== row.player &&

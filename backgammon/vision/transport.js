@@ -7,6 +7,7 @@ const name = player => player === "white" ? "White" : "Black";
 function indexedActions(data) {
   const actions = data.rolls.map(roll => ({
     frame: roll.start, player: roll.player, kind: "roll",
+    pickup: roll.pickup, resultFrame: roll.resultFrame,
     label: `${name(roll.player)} rolls ${roll.dice.map(die => die ?? "?").join("–")}`,
   }));
   if (data.cubeOffer) {
@@ -75,7 +76,10 @@ export function createTransport(player, onData, replayAsset) {
       index = highlighted;
     }
     const action = actions[current];
-    const label = postGame ? "Post-game play" : action ? `${action.label} · ${current + 1} of ${actions.length}` :
+    const finishingMove = action?.kind === "roll" && action.pickup != null && cursor() >= action.pickup &&
+      Number.isInteger(action.resultFrame) && cursor() < action.resultFrame;
+    const actionLabel = finishingMove ? `${name(action.player)}’s move` : action?.label;
+    const label = postGame ? "Post-game play" : action ? `${actionLabel} · ${current + 1} of ${actions.length}` :
       actions.length ? `${actions.length} actions` : unavailable ? "Action timeline unavailable" :
         source ? "No recorded actions" : "Loading actions…";
     if (status.textContent !== label) status.textContent = label;

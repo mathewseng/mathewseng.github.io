@@ -38,6 +38,13 @@ for (const number of [1, 2, 3, 4, 5]) {
       assert.equal(state.phase, 'checker-turn');
       assert.equal(state.player, data.rolls[state.roll].player);
     } else assert.notEqual(state.phase, 'checker-turn');
+    if (state.phase === 'checker-result-pending') {
+      const prior = data.rolls[rollIndex - 1];
+      assert(prior.pickup <= frame && frame < prior.resultFrame);
+      assert.equal(state.player, prior.player);
+      assert.equal(state.pendingDecision ?? null, prior.decision);
+      assert(!state.cube?.offered);
+    } else assert.equal(state.pendingDecision, undefined);
     if (state.position !== null) {
       const expected = replay.positions[row.position];
       assert.deepEqual(data.positions[state.position].points, expected.points.map(([white, dark]) => white - dark));
@@ -430,6 +437,16 @@ for (const number of [1, 2, 3, 4, 5]) {
   if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 30325 && entry.diceFrames?.length)) {
     const pending = data.changes.findLast(change => change.frame <= 4030);
     assert.deepEqual([pending.phase, pending.player, pending.roll], ['checker-result-pending', 'white', null]);
+    const first = data.rolls.find(roll => roll.start === 208);
+    const at = frame => data.changes.findLast(change => change.frame <= frame);
+    assert.equal(at(625).roll, data.rolls.indexOf(first));
+    assert.equal(at(first.pickup - 1).phase, 'checker-turn');
+    const afterPickup = at(first.pickup);
+    assert.deepEqual([afterPickup.phase, afterPickup.player, afterPickup.roll, afterPickup.pendingDecision],
+      ['checker-result-pending', 'dark', null, first.decision]);
+    assert.equal(data.decisions[first.decision].played.notation, '13/10 24/20');
+    assert.equal(at(first.resultFrame).pendingDecision, undefined);
+    assert(at(first.resultFrame).checkerLoss[1] > afterPickup.checkerLoss[1]);
     assert.equal(data.cubeRolls.find(item => item.frame === 4122).start, 4093);
     for (const [start, resultFrame, dice, off] of [[31514, 31601, [3, null], 7], [31838, 31992, [1, null], 9]]) {
       const roll = data.rolls.find(item => item.start === start);

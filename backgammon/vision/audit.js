@@ -56,7 +56,7 @@ export function createAudit(player, replayAsset) {
   function drawContextCheckers(frame, checkers, x, y) {
     const state = frameData?.changes.findLast(row => row.frame <= frame);
     const position = frameData?.positions[state?.position];
-    if (state?.phase !== "checker-turn" ||
+    if (!["checker-turn", "checker-result-pending"].includes(state?.phase) ||
         !["stable-board-and-bear-off-inventory", "repeated-settled-dice-faces"].includes(position?.source)) return;
     const counts = state.movingPoints ?? position.points;
     context.save();

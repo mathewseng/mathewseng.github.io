@@ -31,15 +31,14 @@ def presence(patch, background, die, contrast):
     return 0
 
 
-def track(game, seed, stop):
+def track(game, seed, stop, limit):
     start, end = seed["start"], seed["end"]
     centers = [list(map(round, point)) for point in seed["centers"]]
     if any(not 11 <= x < 549 or not 11 <= y < 409 for x, y in centers):
         return None
     earlier = range(start - 40, start - 6, 3)
     settled = range(start + 6, min(start + 110, end - 1), 3)
-    sample = range(start, stop, 4)
-    images = patches(game, set(earlier) | set(settled) | set(sample), centers, color=True)
+    images = patches(game, set(earlier) | set(settled), centers, color=True)
     empty = [stable_image(np.stack([images[frame][i] for frame in earlier])) for i in range(2)]
     faces = []
     for i, background in enumerate(empty):
@@ -53,21 +52,32 @@ def track(game, seed, stop):
 
     together = []
     clear = []
-    for frame in sample:
-        state = tuple(presence(*args) for args in zip(images[frame], empty, faces, contrast))
-        if together and frame - together[-1] > 185:
-            break
-        if state == (1, 1):
+    first = start
+    while first < stop:
+        sample = range(first, stop, 4)
+        images = patches(game, sample, centers, color=True)
+        for frame in sample:
+            if together and frame - together[-1] > 185:
+                break
             if not together and frame - start > 40:
                 return None
-            together.append(frame)
-        if state == (-1, -1) and together and frame > together[0] + 30:
-            # Pickup needs repeated positive views of both empty spots.
-            clear.append(frame)
-            if len(clear) == 4:
-                break
+            state = tuple(presence(*args) for args in zip(images[frame], empty, faces, contrast))
+            if state == (1, 1):
+                together.append(frame)
+            if state == (-1, -1) and together and frame > together[0] + 30:
+                # Pickup needs repeated positive views of both empty spots.
+                clear.append(frame)
+                if len(clear) == 4:
+                    break
+            else:
+                clear.clear()
         else:
-            clear.clear()
+            if together and stop < limit and stop - together[-1] <= 180:
+                # The detector dropped this stationary pair before the image did.
+                first = sample[-1] + sample.step
+                stop = min(limit, stop + 700)
+                continue
+        break
     if len(together) < 6 or together[-1] < end + 50:
         return None
     coverage = 4 * len(together) / (together[-1] - together[0] + 4)
@@ -100,8 +110,9 @@ def run(game, observations, frames):
             continue
         later = [read["end"] for read in pairs[i+1:] if read["player"] == seed["player"] and
                  read["start"] < min(after, start + 7500) and shared_centers(seed["centers"], read["centers"])]
-        stop = min(after, max(seed["end"] + 375, max(later, default=0) + 125))
-        found = track(game, seed, stop)
+        limit = min(after, start + 7500)
+        stop = min(limit, max(seed["end"] + 375, max(later, default=0) + 125))
+        found = track(game, seed, stop, limit)
         if found:
             output.append(found)
     return output
