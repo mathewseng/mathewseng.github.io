@@ -238,7 +238,9 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
         write(draw, x, 79, title, HEADLINE, PLAYER_TONE[player], True)
         draw_dice(draw, x + draw.textlength(title, font=face(HEADLINE, True)) + 25, 78, roll["dice"], player)
         if entry:
-            if "inferred" in roll["evidence"] or "unique-legal-roll" in roll["evidence"]:
+            if roll.get("sourceMismatch"):
+                write(draw, x, 135, "Visible dice and checker result disagree", META, MUTED)
+            elif "inferred" in roll["evidence"] or "unique-legal-roll" in roll["evidence"]:
                 write(draw, x, 135, "Roll inferred from play", META, MUTED)
             played = next((move["key"] for move in entry["actions"] if move["isPlayed"]), None)
             selected = played if any(event.get("decision") == roll["decision"] for event in events) else None

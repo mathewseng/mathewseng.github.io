@@ -343,3 +343,33 @@ The report records both confirmed same-player transitions separately.
 All 97 graded plays are legal for their reconstructed boards and dice.
 Both dice are known for 133 of 159 indexed rolls, with 29 unresolved
 faces across the session.
+
+## Original-camera comparison
+
+| Game and time | Verified roll | Replay result |
+| --- | --- | --- |
+| Game 1, 4:34 and 7:35 | Black 6–5 and 5–1 | The first turn moves two checkers from the same point. The second bears off two. Both agree with the next starting board. |
+| Game 3, 2:13 | Black 5–2 | The checkers confirm bar/23 13/8. The recorded move loses 0.048 equity. |
+| Game 3, 10:40 and 11:15 | Black 4–2 and 1–1 | The first turn enters from the bar. The second leaves a White checker on the bar. Both results now have checker analysis. |
+| Game 3, 20:17 | Black 5–3 | The original shows the dice throughout the demonstrated moves. The overlay carries them to 20:31.80. The ending board remains available, and the disagreement carries no checker loss. |
+| Game 4, 17:05 and Game 5, 8:07 | Black 6–5 and 3–1 | Game 4 enters both Black checkers from the bar. Game 5 hits White and leaves two Black checkers on fixed point 20. |
+
+The Reports tab records the source-verified starting and ending board times
+for each comparison. The replay has 138 graded plays and 152 complete
+rolls of 159. Six faces remain unknown on confirmed fans. Two remain
+unknown on turns with verified checker results. Twelve other checker
+plays remain unconfirmed, along with the 5–3 disagreement in Game 3.
+
+The dice trial trained on 789 frames from 122 labeled tracks. It read all
+10 new test faces correctly, compared with 8 for the current reader. It
+matched 23 of 31 general test tracks, compared with 16, and read 5 of 10
+original reviewed faces, compared with 8. The checker trial added 1,058
+training crops and matched 643 of the 654 held-out crops from reviewed
+boards, the same total as the current reader. The shipped replay uses
+the existing weights. The new labels and both trials are available for
+the next validation pass.
+
+The gated detector read 97 of 247 sampled face views correctly with the
+candidate and 72 with the current reader. Wrong reads fell from 20 to 6.
+These views come from the same held-out dice as the new track test, so
+a full-session precision and turn-order comparison remains open.

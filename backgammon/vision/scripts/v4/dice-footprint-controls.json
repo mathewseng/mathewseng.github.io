@@ -25,5 +25,6 @@
   {"game":4,"previousStart":22203,"centers":[[168,380],[122,222]],"visible":[22014,22085,22191],"empty":[21980,21982,21985],"search":[21985,22075],"clearSearch":[22234,22275],"expected":{"start":[22001,22005],"clear":[22255,22259]}},
   {"game":4,"previousStart":25754,"centers":[[234,56],[198,48]],"visible":[25767,25806,25816],"empty":[25895,25897,25900],"search":[25720,25800],"clearSearch":[25860,25907],"expected":{"start":[25756,25760],"clear":[25883,25887]}},
   {"game":4,"previousStart":26347,"centers":[[228,256],[258,214]],"visible":[26370,26383,26405],"empty":[26469,26477,26486],"search":[26315,26400],"clearSearch":[26408,26513],"expected":{"start":[26351,26355],"clear":[26450,26454]}},
-  {"game":1,"previousStart":4609,"centers":[[394,274],[410,329]],"visible":[4619,4630,4640],"empty":[4581,4584,4587],"search":[4595,4625],"clearSearch":[5994,6025],"expected":{"start":[4616,4620],"clear":null}}
+  {"game":1,"previousStart":4609,"centers":[[394,274],[410,329]],"visible":[4619,4630,4640],"empty":[4581,4584,4587],"search":[4595,4625],"clearSearch":[5994,6025],"expected":{"start":[4616,4620],"clear":null}},
+  {"game":3,"previousStart":30421,"centers":[[312,182],[378,256]],"visible":[30460,30575,30755],"empty":[30401,30405,30409],"search":[30407,30462],"clearSearch":[30780,30819],"expected":{"start":[30426,30430],"clear":[30793,30797]}}
 ]

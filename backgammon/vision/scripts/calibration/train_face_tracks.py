@@ -158,6 +158,9 @@ def main():
         directory /= "extra-dice-tracks"
     directory.mkdir(parents=True, exist_ok=True)
     torch.save(candidate.state_dict(), directory / "dice-track-candidate.pt")
+    torch.onnx.export(candidate, torch.zeros(1, 3, 32, 32), directory / "dice-track-candidate.onnx",
+                      input_names=["patches"], output_names=["logits"], opset_version=17,
+                      dynamic_axes={"patches": {0: "batch"}, "logits": {0: "batch"}}, dynamo=False)
     result = dict(trainingTracks=len(training), trainingFrames=sum(map(len, groups[:len(training)])),
                   summary=summary, tests=tests)
     if extra:

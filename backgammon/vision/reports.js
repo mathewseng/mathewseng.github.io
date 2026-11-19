@@ -163,6 +163,11 @@ function renderReport(report, seek) {
       const { test, spot, spotExtra } = results;
       section.append(element("p", `The latest dice trial used ${frames} source frames from ${tracks} tracks. Across the general, original reviewed, and newly reviewed tests, the current reader matched ${test.baselineTrack}/${test.tracks}, ${spot.baselineTrack}/${spot.tracks}, and ${spotExtra.baselineTrack}/${spotExtra.tracks}. The trial matched ${test.candidateTrack}/${test.tracks}, ${spot.candidateTrack}/${spot.tracks}, and ${spotExtra.candidateTrack}/${spotExtra.tracks}.`, "muted small"));
     }
+    if (report.witnessTrials?.diceRuntime) {
+      const { current, candidate } = report.witnessTrials.diceRuntime.counts;
+      const total = Object.values(current).reduce((sum, count) => sum + count, 0);
+      section.append(element("p", `With the live detector thresholds, the latest dice trial gave ${candidate.correct} correct and ${candidate.wrong} wrong reads across ${total} views of the newly reviewed dice. The current reader gave ${current.correct} correct and ${current.wrong} wrong reads. The remaining views were uncertain or missed.`, "muted small"));
+    }
     fragment.append(section);
   }
 
@@ -206,7 +211,12 @@ function renderReport(report, seek) {
 
   if (reviewed.length) {
     const notes = element("section");
-    notes.append(element("h3", "Reviewed footage"), reviewList(reviewed, entry => entry.text));
+    const notesWithTiming = reviewed.map(entry => {
+      if (entry.boardWitnesses?.length !== 2) return entry;
+      const [before, after] = entry.boardWitnesses;
+      return { ...entry, detail: `Starting board ${timecode(before.frame, report.fps)} · Ending board ${timecode(after.frame, report.fps)}` };
+    });
+    notes.append(element("h3", "Reviewed footage"), reviewList(notesWithTiming, entry => entry.text));
     fragment.append(notes);
   }
 
@@ -215,7 +225,7 @@ function renderReport(report, seek) {
     `${counts.observedPickups} pickups have evidence. ${counts.availableDecisions} rolls have checker analysis. ${counts.fans} short fans were confirmed by footage review. Source cuts with a recorded gap ${counts.sourceCuts}. Flags identify footage for review. A raw disagreement can come from occlusion or a false detection.`,
     "muted small"));
   if (counts.reviewedDetectorMisreads) {
-    flagged.append(element("p", `${counts.reviewedDetectorMisreads} additional detector misreads were confirmed by comparing the legal move with the visible checkers before and after the roll.`, "muted small"));
+    flagged.append(element("p", `${counts.reviewedDetectorMisreads} additional detector misreads were confirmed from the camera or from the visible checker movement.`, "muted small"));
   }
   if (counts.confirmedBoardsWithMissingDice) {
     const result = counts.confirmedBoardsWithMissingDice === 1 ? "checker result has a verified final board" :

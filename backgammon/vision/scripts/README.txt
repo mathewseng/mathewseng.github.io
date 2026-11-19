@@ -237,6 +237,23 @@ Refresh the context and reviewed episodes
   out clips 3 and 52 in the checker command above. Add
   --reviewed calibration/reviewed-recovery-faces.json to the dice command.
 
+  Apply v4/reviewed-source-comparisons.json to v23 with the updated footprint
+  controls. The exported review notes record the exact camera references
+  for both boards. Recheck the legality and timing of each newly scored
+  result against the next frozen starting board. The 5–3 in Game 3 keeps
+  both witnessed boards and the legal action choices without a played grade.
+
+  Add v4/reviewed-source-comparisons.json and hold out clips 26 and 27
+  in the checker command above. Add
+  --reviewed calibration/reviewed-source-comparison-faces.json to the
+  dice command. Use separate output directories for both trials. Evaluate
+  the exported ONNX face reader with the production detector thresholds.
+
+    python3 calibration/validate_runtime_faces.py \
+      calibration/reviewed-source-comparison-faces.json \
+      "$output/dice-continuity-training/dice-track-candidate.onnx" \
+      "$output/dice-continuity-training/runtime-dice-validation.json"
+
 Manual reader calibration
 
     python3 calibration/sample.py

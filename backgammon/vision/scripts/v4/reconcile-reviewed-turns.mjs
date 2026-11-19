@@ -331,6 +331,10 @@ async function recover(game, rows, recording) {
     }
     changes.push({ kind: 'reviewed-turn-order', frame: result.start, end: result.end, text: note.text,
       ...(note.confirmedDetectorMisread ? { confirmedDetectorMisread: true } : {}),
+      ...(note.resultAtWitness ? {
+        boardWitnesses: [note.beforeBoard, note.afterBoard].filter(Boolean)
+          .map(({ seconds, clip, sourceFrame }) => ({ frame: frames(seconds), clip, sourceFrame })),
+      } : {}),
       ...(timing ? { previousFrame: starts[0], clear: timing.clear } : {}),
       ...(result.evidence === 'settled-dice-and-legal-result' ?
         { diceFrames: faceEvidence[game.game][result.start].frames } : {}) });

@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v22");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v23");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -36,6 +36,8 @@ const checkerContinuityPath = path.join(replayDir, "board-continuity-training", 
 const checkerContinuity = fs.existsSync(checkerContinuityPath) ? read(checkerContinuityPath) : null;
 const diceContinuityPath = path.join(replayDir, "dice-continuity-training", "dice-track-validation.json");
 const diceContinuity = fs.existsSync(diceContinuityPath) ? read(diceContinuityPath) : null;
+const diceRuntimePath = path.join(replayDir, "dice-continuity-training", "runtime-dice-validation.json");
+const diceRuntime = fs.existsSync(diceRuntimePath) ? read(diceRuntimePath) : null;
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
 const footprintValidation = fs.existsSync(footprintReportPath) ? read(footprintReportPath) : [];
 
@@ -283,7 +285,9 @@ function report(number) {
   assert(issues.every(issue => issue.frame >= 0 && issue.frame < data.frames));
   issues.sort((a, b) => a.frame - b.frame);
   const footageReview = [...(reviewed[number] ?? []), ...(replay.contextRecovery ?? [])
-    .filter(entry => entry.text && !entry.superseded).map(({ frame, text }) => ({ frame, text }))].sort((a, b) => a.frame - b.frame);
+    .filter(entry => entry.text && !entry.superseded)
+    .map(({ frame, text, boardWitnesses }) => ({ frame, text, ...(boardWitnesses ? { boardWitnesses } : {}) }))]
+    .sort((a, b) => a.frame - b.frame);
   const faceResolutions = (replay.contextRecovery ?? []).filter(entry => entry.diceFrames?.length)
     .map(({ frame, diceFrames }) => ({ frame, frames: diceFrames.length }));
   const shiftedRolls = (replay.contextRecovery ?? []).filter(entry => entry.kind === "reviewed-turn-order" &&
@@ -306,6 +310,8 @@ function report(number) {
         results: checkerContinuity.witnessSummary },
       diceContinuity: diceContinuity && { tracks: diceContinuity.trainingTracks, frames: diceContinuity.trainingFrames,
         results: diceContinuity.summary },
+      diceRuntime: diceRuntime && { counts: diceRuntime.counts,
+        tests: diceRuntime.tests.filter(test => test.game === number) },
     },
     footprintTiming: { controls: footprintValidation.filter(item => item.clear !== null).length, shiftedRolls,
       testedWindows: footprintValidation.filter(item => item.game === number) },

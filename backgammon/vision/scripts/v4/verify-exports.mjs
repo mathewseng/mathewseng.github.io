@@ -204,8 +204,16 @@ for (const number of [1, 2, 3, 4, 5]) {
         assert(pooled.diceFrames.length >= 4 && pooled.diceFrames.every(frame => frame >= roll.start && frame < roll.end));
       }
     }
-    const handoff = data.rolls.find(item => item.start === 30421);
-    if (handoff.evidence === 'reviewed-physical-roll') {
+    const handoff = data.rolls.find(item => item.start === 30421 || item.start === 30428);
+    if (handoff.start === 30428) {
+      assert.deepEqual([handoff.dice, handoff.pickup], [[5, 3], 30795]);
+      assert.equal(handoff.sourceMismatch, true);
+      assert.equal(data.decisions[handoff.decision].played, null);
+      assert.equal(data.decisions[handoff.decision].evLoss, null);
+      assert(handoff.after && Number.isInteger(handoff.resultFrame));
+      const closed = history.replay.timeline.find(item => item.frame === handoff.resultFrame && item.kind === 'board-result');
+      assert(closed);
+    } else if (handoff.evidence === 'reviewed-physical-roll') {
       const previous = data.rolls.find(item => item.start === 30325);
       assert.deepEqual(handoff.before, previous.after);
       assert.deepEqual(handoff.dice, [4, 3]);
@@ -274,13 +282,37 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.deepEqual([first.dice, first.pickup], [[6, 5], 3302]);
     assert.equal(data.decisions[first.decision].played.notation, '6/1 24/18');
     assert.deepEqual(first.after, dark.before);
-    assert.deepEqual([dark.dice, dark.pickup, dark.sourceMismatch], [[4, 2], 3833, true]);
-    assert.equal(data.decisions[dark.decision].evLoss, null);
+    const corrected = replay.contextRecovery.some(entry => entry.frame === 3337 && entry.text.includes('from fixed point 12'));
+    assert.deepEqual([dark.dice, dark.pickup], [corrected ? [5, 2] : [4, 2], 3833]);
+    if (corrected) {
+      assert.equal(data.decisions[dark.decision].played.notation, 'bar/23 13/8');
+      assert(Math.abs(data.decisions[dark.decision].evLoss - 0.04777109) < 0.000001);
+      assert.deepEqual(dark.after, last.before);
+    } else {
+      assert.equal(dark.sourceMismatch, true);
+      assert.equal(data.decisions[dark.decision].evLoss, null);
+    }
     assert.deepEqual([last.dice, last.pickup, last.resultFrame], [[2, 1], 4028, 4093]);
     assert.equal(data.decisions[last.decision].played.notation, '18/16 16/15');
     const afterPickup = data.changes.findLast(change => change.frame <= 4030);
     assert.equal(afterPickup.roll, null);
     assert.deepEqual(last.after.bar, [0, 1]);
+  }
+  const sourceComparisons = {
+    1: [[6855, [6, 5]], [11388, [5, 1]]],
+    3: [[16005, [4, 2]], [16888, [1, 1]]],
+    4: [[25649, [6, 5]]],
+    5: [[12180, [3, 1]]],
+  };
+  for (const [start, dice] of sourceComparisons[number] ?? []) {
+    const note = replay.contextRecovery.find(entry => entry.frame === start && entry.boardWitnesses?.length === 2);
+    if (!note) continue;
+    const index = data.rolls.findIndex(item => item.start === start);
+    const roll = data.rolls[index];
+    assert.deepEqual([roll.player, roll.dice], ['dark', dice]);
+    assert(data.decisions[roll.decision].played);
+    assert.equal(roll.resultFrame, note.boardWitnesses[1].frame);
+    assert.deepEqual(roll.after, data.rolls[index + 1].before);
   }
   if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 30325 && entry.diceFrames?.length)) {
     const pending = data.changes.findLast(change => change.frame <= 4030);
