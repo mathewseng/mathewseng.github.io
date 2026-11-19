@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
+import { boardKey, commitTurn, initialState, legalTurns } from '../../../core/rules.mjs';
 
 const [referenceDir, candidateDir, comparisonPath, output, timelineDir] = process.argv.slice(2);
 assert(referenceDir && candidateDir && comparisonPath && output,
@@ -19,6 +20,35 @@ function summarize({ counts, rolls, unmatched }) {
       Math.abs(roll.automaticFrame - roll.frame) <= 5).length };
 }
 
+function verifyCheckerDice(plan, rolls, label) {
+  const stateFor = (board, turn, dice) => initialState({
+    points: board.points.map(([white, dark]) => white - dark), bar: board.bar, off: board.borneOff,
+    turn: Number(turn.player === 'dark'), dice, phase: 'move',
+  });
+  return plan.filter(turn => turn.checkerDice).map(turn => {
+    const roll = rolls.find(roll => roll.automaticFrame === turn.start);
+    assert(roll?.agreement === 'correct' && roll.beforeMatches && roll.afterMatches &&
+      roll.player === turn.player, `${label}: checker-inferred roll does not match review`);
+    const witness = turn.checkerDice;
+    assert(witness.firstPose >= turn.start && witness.lastPose - witness.firstPose >= 8 &&
+      witness.samples >= 6 && witness.after === turn.resultFrame, `${label}: missing temporal evidence`);
+    const start = stateFor(turn.before, turn, turn.dice);
+    const end = boardKey(stateFor(turn.after, turn, turn.dice));
+    assert.equal(boardKey(commitTurn(start, turn.steps)), end, label);
+    const compatible = [];
+    for (let low = 1; low <= 6; low++) {
+      for (let high = low; high <= 6; high++) {
+        const pair = [low, high];
+        const state = stateFor(turn.before, turn, pair);
+        if (legalTurns(state).some(move => move.key === end)) compatible.push(pair);
+      }
+    }
+    assert.deepEqual(compatible, [turn.dice], `${label}: roll was not uniquely determined`);
+    return { frame: roll.frame, player: turn.player, dice: dice(turn.dice), positions: witness.samples,
+      beforeFrame: witness.before, resultFrame: turn.resultFrame };
+  });
+}
+
 function verifyTimeline(prefix, boundary, expectedFrames) {
   const game = read(path.join(timelineDir, prefix + '-game.json'));
   const rows = gunzipSync(fs.readFileSync(path.join(timelineDir, prefix + '-state.jsonl.gz')))
@@ -26,6 +56,23 @@ function verifyTimeline(prefix, boundary, expectedFrames) {
   assert.equal(rows.length, expectedFrames, prefix);
   assert.deepEqual(game.boundary, boundary, prefix);
   assert(rows.every((row, frame) => row.frame === frame), prefix);
+  for (const [index, turn] of game.turns.entries()) {
+    if (!turn.checkerDice) continue;
+    const id = index + 1;
+    const label = `${prefix}, roll ${turn.start}`;
+    const decision = game.decisions[id];
+    assert(decision?.countedInGameLoss && Number.isFinite(decision.evLoss), `${label}: no scored move`);
+    assert.deepEqual(decision.played.steps, turn.steps, label);
+    assert(rows.slice(turn.start, turn.resultFrame).every(row =>
+      row.turn === id && row.roll?.id === id && row.roll.player === turn.player &&
+      JSON.stringify(row.roll.dice) === JSON.stringify(turn.dice)), `${label}: dice changed during play`);
+    assert.deepEqual(game.losses.filter(event => event.frame === turn.resultFrame && event.player === turn.player),
+      [{ frame: turn.resultFrame, player: turn.player, loss: decision.evLoss, kind: 'checker' }], label);
+    const previous = rows[turn.resultFrame - 1].loss[turn.player];
+    const settled = rows[turn.resultFrame].loss[turn.player];
+    assert(settled.count === previous.count + 1 &&
+      Math.abs(settled.loss - previous.loss - decision.evLoss) < 1e-10, `${label}: loss was not applied`);
+  }
   assert(rows.slice(0, boundary.frame).every(row => row.phase !== 'game-closed'), prefix);
   const closed = rows.slice(boundary.frame);
   for (const row of closed) {
@@ -86,6 +133,7 @@ const games = read(comparisonPath).map(({ game, current, candidate }) => {
   }));
   const extra = candidate.unmatched.map(roll => ({ frame: roll.start, player: roll.player, dice: dice(roll.dice) }));
   return { game, current: summarize(current), updated: summarize(candidate), review, extra,
+    checkerRecoveries: verifyCheckerDice(plan, candidate.rolls, label),
     boundary: { ...boundary, reviewedFrame: reference.ending.frame },
     closingRoll: closingRoll && { ...closingRoll, dice: dice(closingRoll.dice) },
     suppressed: suppressed.map(roll => ({ ...roll, dice: dice(roll.dice) })) };

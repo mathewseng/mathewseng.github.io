@@ -426,7 +426,7 @@ function renderReport(report, seek) {
     return list;
   }
 
-  function automaticReconstruction({ current, updated, review, extra, boundary, closingRoll, suppressed }, recoveries) {
+  function automaticReconstruction({ current, updated, review, extra, boundary, closingRoll, suppressed, checkerRecoveries }, recoveries) {
     const section = element("section", null, "vision-report-model vision-automatic-report");
     section.append(element("h3", "Automatic reconstruction"), element("p",
       "Both runs use the same footage and are compared with the reviewed replay. Dice accuracy uses rolls with two verified faces.",
@@ -491,6 +491,14 @@ function renderReport(report, seek) {
                 "The automatic run still lacks a verified checker result."),
         })), entry => entry.title));
     }
+    if (checkerRecoveries?.length) {
+      section.append(element("h4", "Rolls inferred from checker play"), reviewList(checkerRecoveries.flatMap(roll => [
+        { frame: roll.frame, title: `${player(roll.player)} ${dice(roll.dice)}`,
+          detail: `Both dice were tracked in ${roll.positions} frames. Only this roll can produce the verified checker move.` },
+        { frame: roll.beforeFrame, title: "Starting checker position" },
+        { frame: roll.resultFrame, title: "Ending checker position" },
+      ]), entry => entry.title));
+    }
     if (review.length) {
       const pending = element("details");
       pending.append(element("summary", `Rolls to review (${review.length})`),
@@ -548,6 +556,42 @@ function renderReport(report, seek) {
     if (accepted.length) section.append(reviewList(accepted.map(entry => ({
       ...entry, detail: `The original camera shows both faces in ${entry.witnesses.length} reviewed frames.`,
     })), entry => `Verified roll ${entry.dice.join("–")}`));
+    fragment.append(section);
+  }
+
+  if (report.pipReader) {
+    const { trainingFaces, previous, added, tests } = report.pipReader;
+    const section = element("section", null, "vision-report-model vision-pip-reader-report");
+    section.append(element("h3", "Dice reader trial"), element("p",
+      `The trial added ${trainingFaces} hand-labeled face crops. Calibration used separate clips. The blend averages both readers’ scores.`, "muted small"));
+    const rows = [
+      ["Earlier controls", previous], ["New difficult reads", added],
+    ];
+    const table = element("table", null, "vision-history-totals");
+    const headings = table.createTHead().insertRow();
+    for (const title of ["Dice tracks", "Current", "New", "Blend"]) {
+      const heading = element("th", title);
+      heading.scope = "col";
+      headings.append(heading);
+    }
+    const body = table.createTBody();
+    for (const [label, cohort] of rows) {
+      const heading = element("th", label);
+      heading.scope = "row";
+      body.insertRow().append(heading,
+        element("td", `${cohort.correct.baseline}/${cohort.tracks}`),
+        element("td", `${cohort.correct.candidate}/${cohort.tracks}`),
+        element("td", `${cohort.correct.blend}/${cohort.tracks}`));
+    }
+    section.append(table);
+    if (tests.length) {
+      const details = element("details");
+      details.append(element("summary", `Reviewed dice tracks (${tests.length})`), reviewList(tests.map(item => ({
+        ...item, title: `Die ${item.die + 1} shows ${item.expected}`,
+        detail: `Current ${item.baseline || "unread"} · New ${item.candidate || "unread"} · Combined ${item.blend || "unread"}. Reviewed in ${item.views} ${item.views === 1 ? "frame" : "frames"}.`,
+      })), item => item.title));
+      section.append(details);
+    }
     fragment.append(section);
   }
 

@@ -31,7 +31,7 @@ def read_jsonl(path):
         return [json.loads(line) for line in source]
 
 
-def process_source(source, items, mx, my):
+def process_source(source, items, mx, my, offsets=OFFSETS):
     cv2.setNumThreads(1)
     name = Path(source).with_suffix('.jsonl.gz')
     track = read_jsonl(ARTIFACT_DIR / 'tracking' / name)
@@ -39,7 +39,7 @@ def process_source(source, items, mx, my):
     requests = defaultdict(list)
     for index, item in items:
         x, y = item['target']
-        for offset in OFFSETS:
+        for offset in offsets:
             f = item['frame'] + offset
             if not 0 <= f < len(track) or not track[f]['board'].get('cornersFelt'):
                 continue
@@ -72,7 +72,7 @@ def process_source(source, items, mx, my):
                 coords = [cv2.remap(axis, mapped[:, :, 0], mapped[:, :, 1], cv2.INTER_LINEAR)
                           for axis in (mx, my)]
                 patch = cv2.remap(native, *coords, cv2.INTER_CUBIC)
-                result[index].append((f, patch, center_crop(rectified, x, y)))
+                result[index].append((f, patch, center_crop(rectified, round(x), round(y))))
             if not requests:
                 break
     if requests:
@@ -112,14 +112,14 @@ def label_set(local):
     return list(unique.values())
 
 
-def sample(dataset, output):
+def sample(dataset, output, offsets=OFFSETS):
     groups = defaultdict(list)
     for index, row in enumerate(dataset):
         groups[row['source']].append((index, row))
     records = {}
     with table_warp(CALIBRATION_REPO) as warp, ProcessPoolExecutor(3) as pool:
         mx, my = cv2.convertMaps(*warp.linear, cv2.CV_32FC1)
-        tasks = [pool.submit(process_source, name, items, mx, my) for name, items in groups.items()]
+        tasks = [pool.submit(process_source, name, items, mx, my, offsets) for name, items in groups.items()]
         for name, task in zip(groups, tasks):
             records.update(task.result())
             print('sampled', name, flush=True)

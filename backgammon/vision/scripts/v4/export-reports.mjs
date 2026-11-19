@@ -29,6 +29,8 @@ const faceReportPath = path.join(replayDir, "settled-face-validation.json");
 const faceValidation = fs.existsSync(faceReportPath) ? read(faceReportPath) : null;
 const nativeFacePath = path.join(replayDir, "native-face-review.json");
 const nativeFaceReview = fs.existsSync(nativeFacePath) ? read(nativeFacePath) : null;
+const pipReaderPath = path.join(replayDir, "pip-reader-validation.json");
+const pipReader = fs.existsSync(pipReaderPath) ? read(pipReaderPath) : null;
 const boardTrialPath = path.join(replayDir, "board-witness-training", "validation.json");
 const boardTrial = fs.existsSync(boardTrialPath) ? read(boardTrialPath) : null;
 const diceTrialPath = path.join(replayDir, "dice-witness-training", "dice-track-validation.json");
@@ -415,6 +417,12 @@ function report(number) {
       accepted: (replay.contextRecovery ?? []).filter(entry => entry.nativeFaceWitnesses && !entry.superseded)
         .map(({ frame, nativeFaceWitnesses }) => ({ frame,
           dice: data.rolls.find(roll => roll.start === frame).dice, witnesses: nativeFaceWitnesses })),
+    } } : {}),
+    ...(pipReader ? { pipReader: {
+      trainingClips: pipReader.trainingClips, trainingFaces: pipReader.addedTrainingFaces,
+      previous: { tracks: pipReader.previous.tracks, correct: pipReader.previous.correct },
+      added: { tracks: pipReader.added.tracks, correct: pipReader.added.correct },
+      tests: pipReader.added.tests.filter(test => test.game === number),
     } } : {}),
     ...(data.result?.reason === "bearoff" ? { result: data.result } : {}),
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>

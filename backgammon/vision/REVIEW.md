@@ -776,3 +776,29 @@ and contrast-focused dice models. The native model read the three in six
 crops and classified the six as five or four in all seven. The contrast
 model found the six in one crop. The diagnostic run keeps the second face
 unknown pending stronger evidence from the model.
+
+## Recovering unread dice from checker movement
+
+An ungraded roll may have two stable dice locations and a known roller even
+when both faces are unread. When the starting and ending checker positions
+are verified, enumerate all 21 dice pairs and carry the roll into the timeline
+only when exactly one pair can produce the move. The resulting move is scored
+at its verified completion frame.
+
+| Game and time | Roll | Frames showing both dice locations |
+| --- | --- | ---: |
+| 3, 11:05.20 | White 5–2 | 40 |
+| 4, 14:40.12 | White 5–5 | 32 |
+| 5, 11:12.88 | White 5–1 | 26 |
+
+Across the five games, exact dice pairs rose from 99 to 102. The same 136
+throws, 118 starting boards and 84 ending boards still match. There are 11
+wrong dice reads and 23 extra proposals in the same-session comparison.
+
+The pip reader trial added 183 hand-labeled face crops across 99 footage
+frames. Training uses 80 of the new labels, paired with earlier labeled views
+and rendered pips. The other 103 crops supply 27 held-out tracks from 13 clips.
+On that difficult set the current reader matches 13, the new reader 14 and
+the combined read 16. On the earlier 94 held-out tracks those scores are
+56, 67 and 63. The final Game 4 six still reads as a five. These results
+qualify the model for another reconstruction trial with contextual constraints.

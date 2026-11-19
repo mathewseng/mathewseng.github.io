@@ -4,7 +4,7 @@ import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { artifactDir, solverUrl, visionStateDir } from '../project_paths.mjs';
 import { observedBoard } from './bearoff-board.mjs';
-import { verifyDicePose } from './dice-pose-continuity.mjs';
+import { pairVisible, verifyDicePose } from './dice-pose-continuity.mjs';
 import { refineIncompletePair, shortDicePairs } from './short-dice-pairs.mjs';
 import { recoverStationaryFaces } from './stationary-face-votes.mjs';
 import { backfillClosingRoll, inferGameBoundary } from './game-boundary.mjs';
@@ -200,6 +200,22 @@ function matchRoll(roll, runs, end, known) {
   return { before, match: matches[0] };
 }
 
+function inferDiceFromCheckers(roll, match, runs, poseFrames, until) {
+  if (!poseFrames || roll.opening || roll.dice.some(Number.isInteger) ||
+      roll.actorEvidence !== 'dice-body-agreement' || roll.centers?.length !== 2 ||
+      names[match.player] !== roll.player) return null;
+  const { before, after } = match;
+  if (before.count < 12 || before.last < roll.start - 25 || after.count < 12 ||
+      after.last < roll.end - 24 || after.first > roll.end + 25) return null;
+  const lastBoard = runs.findLast(run => run.first <= until && run.last >= roll.end - 24 && run.count >= 12);
+  if (lastBoard?.key !== after.key) return null;
+  const frames = poseFrames.slice(roll.start, Math.min(roll.end + 1, roll.start + 40));
+  const hits = frames.flatMap((frame, offset) => pairVisible(frame, roll.centers) ? [roll.start + offset] : []);
+  if (hits.length < 6 || hits.at(-1) - hits[0] < 8) return null;
+  return { firstPose: hits[0], lastPose: hits.at(-1), samples: hits.length,
+    before: before.last, after: after.first };
+}
+
 function extendedRoll(roll, runs, poseFrames, limit, rolls) {
   if (!poseFrames || roll.reviewedPose || !roll.player || roll.dice[0] === null) return null;
   const pose = verifyDicePose(roll, poseFrames, limit);
@@ -290,13 +306,15 @@ function proposedRolls(game, observations, rows, runs, first, last, anchors, pos
       const player = names[match.player];
       const fullVision = !fallback && roll.dice[1] !== null;
       const hasFace = roll.dice[0] !== null;
-      return [{ ...roll, player, dice: hasFace ? match.dice : null, before: match.before, after: match.after,
-        resultFrame: match.resultFrame ?? match.after.first, steps: hasFace ? match.steps : null,
+      const checkerDice = !hasFace && inferDiceFromCheckers(roll, match, runs, poseFrames, until);
+      return [{ ...roll, player, dice: hasFace || checkerDice ? match.dice : null, before: match.before, after: match.after,
+        resultFrame: match.resultFrame ?? match.after.first, steps: hasFace || checkerDice ? match.steps : null,
+        ...(checkerDice && { checkerDice }),
         ...(roll.centers ? { poseLastSeen: roll.end } : {}),
         end: Math.min(until, Math.max(roll.end, match.resultFrame ?? (match.after.first + 14))),
         evidence: fullVision ? (roll.reviewedPose ? 'reviewed-roll-and-legal-result' :
           roll.stationaryFaces ? 'stationary-faces-and-legal-result' : 'tracked-roll-and-legal-result') : hasFace ?
-          'legal-result-and-single-die' : 'two-dice-poses-and-legal-result',
+          'legal-result-and-single-die' : checkerDice ? 'two-dice-bodies-and-unique-legal-roll' : 'two-dice-poses-and-legal-result',
         priority: roll.reviewedPose ? 11 : fullVision ? 9 : 7 }];
     }
     if (!roll.player) return [];
@@ -560,7 +578,7 @@ function buildTimeline(game, groups, cubes, rows, analysis, result) {
     const d = turn.decision;
     if (!d) continue;
     const grade = d.evLoss !== null &&
-      (turn.existing?.countedInGameLoss || turn.evidence === 'reviewed-roll-and-legal-result' ||
+      (turn.existing?.countedInGameLoss || turn.checkerDice || turn.evidence === 'reviewed-roll-and-legal-result' ||
         turn.evidence === 'stationary-footprints-and-legal-result' ||
         turn.evidence === 'stationary-faces-and-legal-result' ||
         (turn.evidence === 'tracked-roll-and-legal-result' && turn.quality >= .82));

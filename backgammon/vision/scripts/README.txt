@@ -596,3 +596,23 @@ Audit game boundaries
 
   Reports links to the estimated end, the reviewed end, and the subsequent
   camera evidence. It labels excluded roll proposals by their phase.
+
+  The comparison also verifies dice inferred from a unique checker transition.
+  Pass the scored reconstruction directory as the last argument to
+  audit-game-boundaries.mjs to check the frozen roll, actual play, and loss
+  at the result frame. The report links to the verified checker positions.
+
+Source-crop pip reader trial
+  Run calibration/train_native_face_tracks.py to prepare the camera crop
+  cache. Pass that directory and a separate output to:
+
+    python calibration/train_pip_reader.py "$native_cache" "$trial"
+
+  The trial uses the visible faces documented in
+  calibration/reviewed-native-pip-frames.json. Each row records the game
+  frame and the labels for the two tracked dice. Null labels are omitted.
+  The earlier controls and the new difficult tracks are kept out of
+  calibration by source clip. Tracks pool their labeled frames for
+  evaluation. The output includes the candidate weights and the score
+  audit. Put pip-reader-validation.json in the replay report directory to
+  include the trial in Reports.

@@ -892,6 +892,9 @@
   cursor: pointer;
 }
 .vision-automatic-report details { border-bottom: 1px solid var(--line); }
+.vision-pip-reader-report thead th:first-child { width: 34%; }
+.vision-pip-reader-report :is(th, td) { padding-inline: .35rem; }
+.vision-pip-reader-report summary { padding: .75rem 0; cursor: pointer; }
 @media (min-width: 1050px) {
   .vision-stage { max-width: 990px; }
 }
