@@ -734,6 +734,23 @@ errors and unmatched proposals.
 | Game 1, 9:34.96 | White's 5–3 is supported by 37 and 56 frames. The automatic run lacks a complete Black tray count, so the roll has no automatic checker grade. The preceding Black roll stays indexed. |
 | Game 4, 16:47.68 | Seven frames in each pass agree on Black's 3–2. Both entries are blocked and the same board is visible as White prepares the next throw. The automatic board confirmation time differs from the reviewed pickup time. |
 
+## Brief rolls from the bar
+
+The automatic timeline now looks for a settled pair, its pickup, and visible
+checker positions on both sides of the throw. It marks a fan when the board
+blocks both entries. Two physical throws also had stable boards and pickups
+but unreadable faces. They are indexed with their dice and legality unresolved.
+
+The same 163 reviewed rolls yielded 141 automatic matches, up from 137,
+and 109 exact dice pairs, up from 106. Nine matched rolls still had wrong
+dice. The automatic run matched 124 starting boards and 92 ending boards,
+up from 122 and 89.
+
+At 16:40 in Game 4, one of Black's 4–1 dice is still visible at frame 25023.
+A hand obscures the pickup. Both dice locations are visibly clear by frame
+25035, and White's 5–1 is settled by frame 25042. The replay uses those
+visual boundaries and the Reports tab links to each source witness.
+
 ## Pip counts and action review
 
 The game equity panel shows each player's pip count from the current
@@ -741,8 +758,11 @@ reconstructed board, including the bar. The checker panel follows visible
 legal steps from the original decision position. It shows tentative EV when
 the visible placement matches a scored legal result, keeps the top five
 options visible after pickup and marks the actual choice. Cube opportunities
-take priority between rolls. The recent action panel shows EV and EV loss
-for the last three actions where an evaluation is available.
+take priority between rolls. The video and the player both show the last three
+completed actions. Each scored action shows EV from the acting player's
+perspective and its color-coded EV loss. Unscored values display a dash.
+Completed actions stay until three newer actions arrive, including across
+hand occlusions, cube offers, and the following player's turn.
 
 The recorded cube offers now score Take, Pass and Beaver with one immediate
 reply allowed. Game 1 still records White's Take. Beaver is the higher-EV

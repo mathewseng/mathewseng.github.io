@@ -744,6 +744,49 @@
   color: var(--muted);
 }
 
+.replay-recent {
+  margin-top: 0.35rem;
+  padding: 0.65rem clamp(0.65rem, 2vw, 1rem);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.replay-recent h2 {
+  margin: 0 0 0.2rem;
+  color: var(--ink);
+  font-size: 0.94rem;
+}
+
+.replay-recent p { margin: 0.35rem 0; }
+
+.replay-recent table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.replay-recent :is(th, td) {
+  padding: 0.3rem 0 0.3rem 0.8rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.replay-recent :is(th, td):first-child {
+  padding-left: 0;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.replay-recent td { border-top: 1px solid var(--line); }
+.replay-recent-time { margin-right: 0.65rem; }
+.replay-recent [data-player="white"] { color: var(--vision-white); }
+.replay-recent [data-player="dark"] { color: var(--vision-black); }
+.replay-recent [data-loss-tone] { color: var(--loss-color); font-weight: 650; }
+
 .replay-shell:fullscreen {
   height: 100%;
   display: flex;

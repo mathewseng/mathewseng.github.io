@@ -1,9 +1,12 @@
+import { lossTone } from "../core/decision-feedback.mjs";
+
 const timecode = time => {
   const seconds = Math.max(0, Math.floor(time || 0));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 };
 const name = player => player === "white" ? "White" : "Black";
 
+const equityLabel = value => value == null ? "—" : `${value >= 0 ? "+" : ""}${value.toFixed(3)}`;
 function indexedActions(data) {
   const actions = data.rolls.map(roll => ({
     frame: roll.start, player: roll.player, kind: "roll",
@@ -31,7 +34,11 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
   const speed = document.querySelector("#replay-speed");
   const mute = document.querySelector("#replay-mute");
   const fullscreen = document.querySelector("#replay-fullscreen");
-  let actions = [], index = -1, source, pending, unavailable = false;
+  const recent = document.querySelector("#replay-recent");
+  const recentTable = recent.querySelector("table");
+  const recentBody = recentTable.tBodies[0];
+  const recentEmpty = recent.querySelector("p");
+  let actions = [], index = -1, recentIndex = -2, source, pending, unavailable = false;
   const load = new Map();
 
   const seekTo = seconds => {
@@ -52,7 +59,38 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
     if (target) seekTo(target.frame / fps());
   };
 
+  function showRecent() {
+    const history = source?.actions;
+    recent.hidden = !history;
+    if (!history) return;
+    const index = history.findLastIndex(event => event.frame <= Math.floor(player.currentTime * fps() + 1e-6));
+    if (index === recentIndex) return;
+    recentIndex = index;
+    recentTable.hidden = index < 0;
+    recentEmpty.hidden = index >= 0;
+    const rows = history.slice(Math.max(0, index - 2), index + 1).map(event => {
+      const row = document.createElement("tr");
+      const action = row.insertCell();
+      const label = document.createElement("span");
+      label.dataset.player = event.player;
+      const roll = event.fan ? source.rolls.find(roll => roll.start === event.rollStart) : null;
+      const dice = roll ? ` ${roll.dice.map(die => die ?? "?").join("–")}` : "";
+      label.textContent = `${name(event.player)} ${event.label}${dice}`;
+      const time = document.createElement("span");
+      time.className = "replay-recent-time";
+      time.textContent = timecode(event.frame / fps());
+      action.append(time, label);
+      row.insertCell().textContent = equityLabel(event.equity);
+      const loss = row.insertCell();
+      loss.textContent = event.loss == null ? "—" : event.loss.toFixed(3);
+      if (event.loss != null) loss.dataset.lossTone = lossTone(event.loss).tone;
+      return row;
+    });
+    recentBody.replaceChildren(...rows);
+  }
+
   function synchronize() {
+    showRecent();
     const duration = Number.isFinite(player.duration) ? player.duration : (source?.frames ?? 0) / fps();
     seek.max = duration;
     seek.value = Math.min(player.currentTime, duration);
@@ -78,12 +116,16 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
     const action = actions[current];
     const finishingMove = action?.kind === "roll" && action.pickup != null && cursor() >= action.pickup &&
       Number.isInteger(action.resultFrame) && cursor() < action.resultFrame;
-    const actionLabel = finishingMove ? `${name(action.player)}’s move` : action?.label;
+    const reply = source?.cubeOffer?.reply;
+    const response = action?.kind === "cube" && reply && cursor() >= source.cubeOffer.responseFrame
+      ? source.actions?.find(event => event.kind === `cube-${reply}`) : null;
+    const actionLabel = response ? `${name(response.player)} ${response.label}` :
+      finishingMove ? `${name(action.player)}’s move` : action?.label;
     const label = postGame ? "Post-game play" : action ? `${actionLabel} · ${current + 1} of ${actions.length}` :
       actions.length ? `${actions.length} actions` : unavailable ? "Action timeline unavailable" :
         source ? "No recorded actions" : "Loading actions…";
     if (status.textContent !== label) status.textContent = label;
-    status.dataset.player = postGame ? "" : action?.player ?? "";
+    status.dataset.player = postGame ? "" : (response ?? action)?.player ?? "";
   }
 
   function drawMarkers() {
@@ -153,6 +195,7 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
       pending?.abort();
       const request = pending = new AbortController();
       source = null;
+      recentIndex = -2;
       actions = [];
       unavailable = false;
       onData(null);

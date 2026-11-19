@@ -427,7 +427,7 @@ function renderReport(report, seek) {
   }
 
   function automaticReconstruction({ current, updated, review, extra, boundary, closingRoll, suppressed,
-    checkerRecoveries, handoffs = [], relocatedDice = [], poseHistories = [] }, recoveries) {
+    checkerRecoveries, handoffs = [], relocatedDice = [], poseHistories = [], fans = [] }, recoveries) {
     const section = element("section", null, "vision-report-model vision-automatic-report");
     section.append(element("h3", "Automatic reconstruction"), element("p",
       "Both runs use the same footage and are compared with the reviewed replay. Dice accuracy uses rolls with two verified faces.",
@@ -498,6 +498,22 @@ function renderReport(report, seek) {
           detail: `Both dice were tracked in ${roll.positions} frames. Only this roll can produce the verified checker move.` },
         { frame: roll.beforeFrame, title: "Starting checker position" },
         { frame: roll.resultFrame, title: "Ending checker position" },
+      ]), entry => entry.title));
+    }
+    if (fans.length) {
+      section.append(element("h4", "Short rolls from the bar"), reviewList(fans.map(roll => ({
+        ...roll, title: roll.blocked.length ? `${player(roll.player)} fans with ${dice(roll.dice)}` :
+          `${player(roll.player)} rolls with unread faces`,
+        detail: roll.blocked.length ? "The camera shows the dice and both entry points are blocked." :
+          "The dice appear and are picked up. The observed checker position stays the same.",
+      })), entry => entry.title));
+    }
+    if (report.fanHandoffs?.length) {
+      section.append(element("h4", "Corrected handoff in the replay"), reviewList(report.fanHandoffs.flatMap(item => [
+        { frame: item.lastVisibleDie, title: "Last clear view of Black’s die",
+          detail: "The hand then covers the die as it is removed." },
+        { frame: item.clear, title: "Both black dice locations clear" },
+        { frame: item.next, title: "White’s dice settle" },
       ]), entry => entry.title));
     }
     if (handoffs.length || relocatedDice.length || poseHistories.length) {

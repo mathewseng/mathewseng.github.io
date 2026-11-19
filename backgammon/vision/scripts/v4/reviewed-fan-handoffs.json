@@ -1,0 +1,16 @@
+{
+  "4": [
+    {
+      "originalStart": 24995,
+      "originalPickup": 25020,
+      "originalNext": 25032,
+      "start": 24998,
+      "lastVisibleDie": 25023,
+      "clear": 25035,
+      "next": 25042,
+      "clip": 54,
+      "witnesses": [[24998, 277], [25023, 302], [25035, 314], [25042, 321]],
+      "text": "One black die is still visible after the old pickup marker. The hand covers the removal. Both old locations are clear at 16:41.40. White's second die is still moving at 16:41.60 and is settled at 16:41.68."
+    }
+  ]
+}

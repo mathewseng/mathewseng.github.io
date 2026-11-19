@@ -436,6 +436,7 @@ function report(number) {
     stationaryTrial: stationaryTrial.find(item => item.game === number) ?? null,
     stationaryFaces: stationaryFaces.find(item => item.game === number) ?? null,
     automaticBoundary: gameBoundaries.find(item => item.game === number) ?? null,
+    fanHandoffs: (replay.contextRecovery ?? []).filter(item => item.kind === "reviewed-fan-handoff-timing"),
     briefDice: briefPairTrial ? {
       ...briefPairTrial,
       faces: briefFaces && {

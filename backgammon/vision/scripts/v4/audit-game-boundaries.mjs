@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { boardKey, commitTurn, initialState, legalTurns } from '../../../core/rules.mjs';
+import { boardKey, commitTurn, initialState, legalTurns, stepsForDie } from '../../../core/rules.mjs';
 
 const [referenceDir, candidateDir, comparisonPath, output, timelineDir] = process.argv.slice(2);
 assert(referenceDir && candidateDir && comparisonPath && output,
@@ -111,6 +111,26 @@ function verifyPhysicalTiming(plan, rolls, reference, label) {
   return { handoffs, relocatedDice, poseHistories };
 }
 
+function verifyFans(plan, rolls, game, label) {
+  return plan.filter(turn => turn.fanEvidence).map(turn => {
+    const match = rolls.find(roll => roll.automaticFrame === turn.start);
+    const reviewed = game.presentation.rolls.find(roll => roll.start === match?.frame);
+    assert(reviewed?.fan && reviewed.player === turn.player, `${label}: unverified fan at ${turn.start}`);
+    assert(Math.abs(reviewed.start - turn.start) <= 15 && Math.abs(reviewed.pickup - turn.pickupFrame) <= 15, label);
+    assert(!dice(turn.dice).length || match.agreement === 'correct', `${label}: unsupported die face`);
+    const { blocked, lastVisibleDie, before, after } = turn.fanEvidence;
+    assert(before < lastVisibleDie && lastVisibleDie < turn.pickupFrame && after >= turn.pickupFrame, label);
+    const recorded = game.turns[(reviewed.decision ?? reviewed.sourceTurns[0]) - 1];
+    if (blocked.length) {
+      const state = stateFor(recorded.before, turn);
+      assert(state.bar[state.turn] > 0 && blocked.every(face => stepsForDie(state, face).length === 0), label);
+      assert.deepEqual(turn.steps, [], label);
+    } else assert(turn.steps === null && turn.resultFrame === null, label);
+    return { frame: reviewed.start, player: turn.player, dice: dice(turn.dice), blocked,
+      lastVisibleDie, clearBy: turn.pickupFrame, boardFrame: after };
+  });
+}
+
 function verifyTimeline(prefix, boundary, expectedFrames) {
   const game = read(path.join(timelineDir, prefix + '-game.json'));
   const rows = gunzipSync(fs.readFileSync(path.join(timelineDir, prefix + '-state.jsonl.gz')))
@@ -119,6 +139,13 @@ function verifyTimeline(prefix, boundary, expectedFrames) {
   assert.deepEqual(game.boundary, boundary, prefix);
   assert(rows.every((row, frame) => row.frame === frame), prefix);
   for (const [index, turn] of game.turns.entries()) {
+    if (turn.fanEvidence) {
+      const id = index + 1;
+      assert(rows.slice(turn.start, turn.end + 1).every(row => row.turn === id && row.roll?.id === id &&
+        row.roll.player === turn.player && row.roll.status === 'current' &&
+        Boolean(row.roll.fan) === Boolean(turn.fanEvidence.blocked.length)), `${prefix}: lost a short roll`);
+      assert(!game.decisions[id]?.countedInGameLoss, `${prefix}: a forced pass accrued checker loss`);
+    }
     if (!turn.checkerDice && !turn.physicalHandoff && !turn.movedDie && !turn.poseHistory) continue;
     const id = index + 1;
     const label = `${prefix}, roll ${turn.start}`;
@@ -212,6 +239,7 @@ const games = read(comparisonPath).map(({ game, current, candidate }) => {
   const extra = candidate.unmatched.map(roll => ({ frame: roll.start, player: roll.player, dice: dice(roll.dice) }));
   return { game, current: summarize(current), updated: summarize(candidate), review, extra,
     checkerRecoveries: verifyCheckerDice(plan, candidate.rolls, label),
+    fans: verifyFans(plan, candidate.rolls, reference, label),
     ...verifyPhysicalTiming(plan, candidate.rolls, reference.presentation.rolls, label),
     boundary: { ...boundary, reviewedFrame: reference.ending.frame },
     closingRoll: closingRoll && { ...closingRoll, dice: dice(closingRoll.dice) },

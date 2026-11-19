@@ -6,6 +6,7 @@ import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
 import { boardKey, notation, pipCount } from '../../../core/rules.mjs';
 import { cubeContext } from './cube-context.mjs';
 import { checkerStages } from './checker-counts.mjs';
+import { presentationActions } from './presentation-actions.mjs';
 
 const FPS = 25;
 const snapshot = position => position ? {
@@ -146,7 +147,7 @@ function frameData(game, rows, recording) {
     result: game.result ?? null, ending: game.ending ?? null,
     ...(game.postGamePlay ? { postGamePlay: game.postGamePlay } : {}),
     players: ['white', 'dark'], changes, positions, rolls: rollSnapshots, decisions,
-    cubeRolls: game.presentation.cubeRolls,
+    cubeRolls: game.presentation.cubeRolls, actions: presentationActions(game),
     cubeOffer: offer ? {
       start: offer.startFrame, responseFrame: offer.reply ? offer.endFrame : null, player: offer.offerer,
       offered: offer.offeredFace, reply: offer.reply ?? null, replyInferred: Boolean(offer.replyInferred), options: offer.options,
@@ -172,12 +173,13 @@ for (const n of games) {
   const data = frameData(game, rows, recording);
   if (overlayOnly) {
     let last;
-    console.log(JSON.stringify(data.changes.flatMap(({ frame, pipCounts, moveProgress }) => {
+    const changes = data.changes.flatMap(({ frame, pipCounts, moveProgress }) => {
       const key = JSON.stringify([pipCounts, moveProgress]);
       if (key === last) return [];
       last = key;
       return [[frame, pipCounts, moveProgress]];
-    })));
+    });
+    console.log(JSON.stringify({ changes, actions: data.actions }));
     continue;
   }
   fs.writeFileSync(path.join(output, `${prefix}.json`), JSON.stringify(data) + '\n');

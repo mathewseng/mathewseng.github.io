@@ -107,10 +107,6 @@ def notation(value, fan=False):
     return value
 
 
-def dice_label(dice):
-    return "–".join(str(die) if die is not None else "?" for die in dice)
-
-
 def draw_dice(draw, x, y, dice, player, size=44):
     pips = {1: (4,), 2: (0, 8), 3: (0, 4, 8), 4: (0, 2, 6, 8),
             5: (0, 2, 4, 6, 8), 6: (0, 2, 3, 5, 6, 8)}
@@ -177,7 +173,7 @@ def recent_actions(draw, actions):
         rank = f"  ·  Rank {event['rank']}" if event.get("rank", 0) > TOP_MOVES else ""
         title = f"{PLAYER_NAME[player]} {action}{rank}"
         write(draw, PAD, y, title, BODY, PLAYER_TONE[player])
-        if event.get("fan") or event["kind"] == "roll" and event["roll"].get("fan"):
+        if event.get("fan"):
             draw_dice(draw, PAD + draw.textlength(title, font=face(BODY)) + 16, y - 1,
                       event["roll"]["dice"], player, size=28)
         equity, loss = event.get("equity"), event.get("loss")
@@ -333,7 +329,7 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, opening):
     return bgr(image)
 
 
-def viewer_frames(data, states):
+def viewer_frames(data, states, actions):
     """Yield independently timed roll, cube and action layers for each camera frame."""
     rolls = iter(data["presentation"]["rolls"])
     cube_rolls = iter(data["presentation"]["cubeRolls"])
@@ -345,49 +341,12 @@ def viewer_frames(data, states):
     cube = decisions.get("cube")
     post_game = data.get("postGamePlay")
     opening_until = roll["start"] if roll and data["game"] > 1 else 0
-    played_rolls = {entry["decision"]: entry for entry in data["presentation"]["rolls"] if entry["decision"]}
-    actions = []
-    for event in data["losses"]:
-        if event["kind"] == "checker":
-            decision = decisions[str(event["decision"])]
-            plays = decision["actions"]
-            rank = next(i for i, move in enumerate(plays) if move["isPlayed"])
-            played = plays[rank]
-            played_roll = played_rolls.get(event["decision"])
-            fan = bool(played_roll and played_roll.get("fan"))
-            choices = checker_choices(decision, fan)
-            label = notation(played["notation"], fan)
-            # Show a committed choice once the legal result and pickup agree.
-            confirmed = max(event["frame"], (played_roll or {}).get("pickup") or 0)
-            actions.append({**event, "frame": confirmed, "label": "fanned" if fan else f"played   {label}",
-                            "notation": label, "fan": fan, "roll": played_roll, "rank": rank + 1,
-                            "choices": choices, "played": played["key"], "equity": played["equity4"]})
-    for item in data["presentation"]["rolls"]:
-        if item["evidence"] == "reviewed-roll-with-confirmed-board":
-            turn = data["turns"][item["sourceTurns"][0] - 1]
-            event = {"frame": turn["resultFrame"], "kind": "board-result", "player": item["player"],
-                     "label": "fanned" if item.get("fan") else "finished moving", "fan": item.get("fan", False), "roll": item}
-            if forced := item.get("forcedPlay"):
-                event.update(label=f"played   {forced['notation']}", loss=forced["evLoss"], forcedPlay=forced)
-            actions.append(event)
-        if item["end"] - item["start"] < ACTION_HOLD:
-            actions.append({"frame": item["start"], "kind": "roll", "player": item["player"], "roll": item,
-                            "label": "rolled" if item.get("fan") else f"rolled   {dice_label(item['dice'])}"})
-    for item in data["presentation"]["cubeRolls"]:
-        loss = item["evLoss"]
-        actions.append({"frame": item["frame"], "kind": "no-double", "player": item["player"],
-                        "label": "rolls without doubling", "loss": loss, "equity": item["options"]["noDouble"]})
-    if cube:
-        actions.append({"frame": cube["startFrame"], "kind": "cube-offer", "player": cube["offerer"],
-                        "label": f"doubles to {cube['offeredFace']}", "loss": cube.get("offerEvLoss"),
-                            "equity": cube_choices(cube)[1][2]})
-        if cube.get("reply") in ("take", "pass"):
-            kind = "cube-" + cube["reply"]
-            label = f"takes   ·   cube at {cube['offeredFace']}" if kind == "cube-take" else "passes"
-            loss = next((event["loss"] for event in data["losses"] if event.get("action") == cube["reply"]), None)
-            actions.append({"frame": cube["endFrame"], "kind": kind, "player": cube["responder"],
-                            "label": label, "loss": loss, "equity": -cube["options"][cube["reply"]]})
-    actions.sort(key=lambda event: event["frame"])
+    rolls_by_start = {entry["start"]: entry for entry in data["presentation"]["rolls"]}
+    for action in actions:
+        if "rollStart" in action:
+            action["roll"] = rolls_by_start[action["rollStart"]]
+        if action["kind"] == "checker":
+            action["choices"] = checker_choices(decisions[str(action["decision"])], action.get("fan"))
     pending = iter(actions)
     upcoming = next(pending, None)
     live = []
@@ -407,8 +366,7 @@ def viewer_frames(data, states):
             upcoming_cube_roll = next(cube_rolls, None)
         while upcoming and upcoming["frame"] <= frame:
             live.append(upcoming)
-            if upcoming["kind"] != "roll":
-                recent = (recent + [upcoming])[-3:]
+            recent = (recent + [upcoming])[-3:]
             if upcoming["kind"] in ("checker", "board-result"):
                 previous_checker = upcoming
             upcoming = next(pending, None)
@@ -433,11 +391,7 @@ def viewer_frames(data, states):
             cube_roll = cubes_at_roll.get(active_roll["start"])
         elif pending_result:
             cube_roll = None
-        completed_fans = {event["roll"]["start"] for event in recent if event.get("fan")}
-        brief_rolls = [event for event in live if event["kind"] == "roll" and event["roll"] is not active_roll
-                       and event["frame"] not in completed_fans]
-        recent_with_roll = sorted(recent + brief_rolls, key=lambda event: event["frame"])[-3:]
-        state = {**state, "previousChecker": previous_checker, "recentActions": tuple(recent_with_roll)}
+        state = {**state, "previousChecker": previous_checker, "recentActions": tuple(recent)}
         yield state, active_roll, cube_roll, cube_mode, tuple(live), frame < opening_until
 
 
@@ -554,7 +508,8 @@ def rows(file):
 def overlay_states(number):
     exporter = Path(__file__).with_name("export-frame-data.mjs")
     data = subprocess.check_output(["bun", str(exporter), "--overlay-state", str(number)], text=True)
-    return iter(json.loads(data))
+    data = json.loads(data)
+    return iter(data["changes"]), data["actions"]
 
 
 def game_frames(game, start=0):
@@ -613,8 +568,8 @@ def render_frames(output, data, game, number, footage, software, start=0, *, crf
     right_key = equity_key = None
     decisions = data["decisions"]
 
-    states = equity_frames(data, viewer_frames(data, rows(OUT / f"{prefix}-state.jsonl.gz")))
-    overlay = overlay_states(number)
+    overlay, actions = overlay_states(number)
+    states = equity_frames(data, viewer_frames(data, rows(OUT / f"{prefix}-state.jsonl.gz"), actions))
     upcoming_overlay = next(overlay, None)
     pips, progress = None, None
     for _ in range(start):

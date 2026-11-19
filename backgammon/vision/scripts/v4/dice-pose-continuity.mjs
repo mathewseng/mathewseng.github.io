@@ -1,6 +1,6 @@
 const close = ([x, y], [px, py]) => Math.hypot(x - px, y - py) <= 8;
 const supports = (location, center) => location[2] >= .38 && close(center, location);
-const visible = (frame, center) => frame?.diceLocations?.some(location =>
+export const visible = (frame, center) => frame?.diceLocations?.some(location =>
   supports(location, center));
 const covered = (frame, [x, y]) => frame?.handRegions?.some(
   ([left, top, right, bottom]) => x >= left - 8 && x <= right + 8 && y >= top - 8 && y <= bottom + 8);
@@ -43,7 +43,7 @@ function continuedTo(frames, centers, start, limit) {
   return end;
 }
 
-function faceAt(frames, center) {
+export function faceAt(frames, center) {
   const votes = new Map();
   for (const frame of frames) {
     const die = frame?.dice?.find(d => close(d.center, center));

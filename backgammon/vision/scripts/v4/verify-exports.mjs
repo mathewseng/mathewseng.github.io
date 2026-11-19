@@ -10,6 +10,7 @@ import { fromXGID } from '../../../core/xgid.mjs';
 import { replayDir } from '../project_paths.mjs';
 import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
 import { cubeContext } from './cube-context.mjs';
+import { bestCubeReply } from './cube-options.mjs';
 import { adjustPoints } from './checker-adjustment.mjs';
 
 const read = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
@@ -26,6 +27,34 @@ for (const number of [1, 2, 3, 4, 5]) {
   const history = parseBackup(fs.readFileSync(path.join(root, 'history', game + '.json'), 'utf8'));
   assert.equal(data.frames, rows.length);
   assert.deepEqual(data.ending, replay.ending ?? null);
+  assert(data.actions.every((event, i) => Number.isInteger(event.frame) && event.frame < data.frames &&
+    event.frame >= (data.actions[i - 1]?.frame ?? 0)));
+  const completedRolls = data.actions.filter(event => 'rollStart' in event);
+  assert.equal(new Set(completedRolls.map(event => event.rollStart)).size, completedRolls.length);
+  for (const action of completedRolls) {
+    const roll = data.rolls.find(roll => roll.start === action.rollStart);
+    assert.equal(action.player, roll.player);
+    assert(action.frame >= (roll.pickup ?? roll.start));
+    if (action.kind === 'checker') {
+      const choice = data.decisions[action.decision];
+      assert.equal(action.equity, choice.played.equity);
+      assert.equal(action.loss, choice.evLoss);
+    } else if (action.kind === 'board-result' && roll.evidence === 'reviewed-blocked-entry') {
+      assert.equal(action.loss, 0);
+      assert.equal(action.equity, undefined);
+    }
+  }
+  const cube = replay.decisions.cube;
+  const offered = data.actions.find(event => event.kind === 'cube-offer');
+  assert.equal(offered.equity, bestCubeReply(cube.options)[1]);
+  assert.equal(offered.loss, cube.offerEvLoss);
+  if (cube.reply) {
+    const response = data.actions.find(event => event.kind === `cube-${cube.reply}`);
+    assert.equal(response.frame, cube.endFrame);
+    assert.equal(response.equity, -cube.options[cube.reply]);
+    assert.equal(response.loss, cube.replyEvLoss);
+  }
+
   assert.equal(data.changes[0].frame, 0);
   assert(data.changes.every((change, idx) => idx === 0 || change.frame > data.changes[idx - 1].frame));
   let changeIndex = 0, rollIndex = 0;
@@ -182,7 +211,8 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.deepEqual(corrected.dice, [6, 4]);
     const witnessedPlay = replay.contextRecovery.some(entry => entry.frame === corrected.start && entry.boardWitnesses?.length === 2);
     assert.equal(data.decisions[corrected.decision].evLoss, witnessedPlay ? 0 : null);
-    const fans = data.rolls.filter(roll => roll.fan && [24995, 25192].includes(roll.start));
+    const handoff = replay.contextRecovery.find(entry => entry.kind === 'reviewed-fan-handoff-timing');
+    const fans = data.rolls.filter(roll => roll.fan && [handoff?.frame ?? 24995, 25192].includes(roll.start));
     const witnessed = replay.contextRecovery.find(entry => entry.frame === 25192 &&
       entry.text.includes('retain their checker counts'));
     assert.deepEqual(fans.map(roll => [roll.player, roll.dice]),
@@ -190,6 +220,15 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert(fans.every(roll => roll.before.bar[1] === 2));
     assert.equal(fans[0].decision, null);
     assert.deepEqual(fans[0].before, fans[0].after);
+    if (handoff) {
+      const incoming = data.rolls[data.rolls.indexOf(fans[0]) + 1];
+      assert.deepEqual([fans[0].pickup, incoming.start], [25035, 25042]);
+      assert.deepEqual([incoming.player, incoming.dice], ['white', [5, 1]]);
+      assert.equal(data.changes.findLast(change => change.frame <= 25023).roll, data.rolls.indexOf(fans[0]));
+      assert.equal(data.changes.findLast(change => change.frame <= 25041).roll, null);
+      assert.equal(data.actions.find(action => action.rollStart === fans[0].start).frame, 25035);
+    }
+
     if (witnessed) {
       assert.deepEqual(fans[1].before, fans[1].after);
       assert.equal(data.decisions[fans[1].decision].evLoss, 0);

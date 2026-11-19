@@ -29,10 +29,11 @@ def verify(number):
     cube = game["decisions"]["cube"]
     played_rolls = {entry["decision"]: entry for entry in rolls if entry["decision"]}
     previous_checker = None
-    overlay = overlay_states(number)
+    overlay, timeline = overlay_states(number)
     upcoming_overlay = next(overlay, None)
     pips, progress = None, None
-    frames = viewer_frames(game, rows(OUT / f"{prefix}-state.jsonl.gz"))
+    frames = viewer_frames(game, rows(OUT / f"{prefix}-state.jsonl.gz"), timeline)
+    action_index = 0
     for items, position, equity, basis, closed in equity_frames(game, frames):
         state, roll, wait, cube_mode, actions, opening = items
         frame = state["frame"]
@@ -81,8 +82,12 @@ def verify(number):
             assert wait == cubes_at_roll[roll["start"]]
             shown_at_roll.add(roll["start"])
         recent = state["recentActions"]
-        assert len(recent) <= 3 and all(action["frame"] <= frame for action in recent)
-        assert all(a["frame"] <= b["frame"] for a, b in zip(recent, recent[1:]))
+        while action_index < len(timeline) and timeline[action_index]["frame"] <= frame:
+            action_index += 1
+        assert recent == tuple(timeline[max(0, action_index - 3):action_index])
+        assert len({action["rollStart"] for action in recent if "rollStart" in action}) == sum(
+            "rollStart" in action for action in recent
+        )
         assert all(action["roll"] is not roll for action in recent if action["kind"] == "roll")
         for action in actions:
             if action["frame"] == frame and action["kind"] in ("checker", "board-result"):
@@ -115,9 +120,10 @@ def verify(number):
             confirmed = max(loss["frame"], pickup or 0)
             assert counts["checker", confirmed] == ACTION_HOLD
     for roll in rolls:
-        if roll["evidence"] == "reviewed-roll-with-confirmed-board":
+        if roll["evidence"] in ("reviewed-roll-with-confirmed-board", "reviewed-blocked-entry"):
             result = game["turns"][roll["sourceTurns"][0] - 1]["resultFrame"]
-            assert counts["board-result", result] == ACTION_HOLD
+            confirmed = max(result, roll["pickup"] or 0)
+            assert counts["board-result", confirmed] == ACTION_HOLD
     assert counts["cube-offer", cube["startFrame"]] == ACTION_HOLD
     assert all(counts["no-double", wait["frame"]] == ACTION_HOLD for wait in cube_rolls)
     if cube.get("reply") in ("take", "pass"):

@@ -4,8 +4,8 @@ import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { artifactDir, solverUrl, visionStateDir } from '../project_paths.mjs';
 import { observedBoard } from './bearoff-board.mjs';
-import { pairVisible, pickupAfterPose, rejoinDicePose, stationaryPoseOnset, traceDicePoseHistory,
-  verifyDicePose } from './dice-pose-continuity.mjs';
+import { faceAt, pairVisible, pickupAfterPose, rejoinDicePose, stationaryPoseOnset, traceDicePoseHistory,
+  verifyDicePose, visible } from './dice-pose-continuity.mjs';
 import { refineIncompletePair, shortDicePairs } from './short-dice-pairs.mjs';
 import { recoverStationaryFaces } from './stationary-face-votes.mjs';
 import { backfillClosingRoll, inferGameBoundary } from './game-boundary.mjs';
@@ -558,9 +558,120 @@ function chooseTurns(proposals, last) {
   })).filter((r) => r.end >= r.start);
 }
 
+function blockedEntryEvidence(rows, first, last, player, faces) {
+  const index = names.indexOf(player);
+  const targets = faces.map(face => index === 0 ? 24 - face : face - 1);
+  const observations = new Map();
+  for (const row of rows.slice(first, last)) {
+    const view = row.state;
+    if (!(view?.bar?.[index] > 0) || view.handRegions?.some(([left, , right]) => left <= 295 && right >= 265)) continue;
+    if (!targets.every(target => !view.occludedPoints?.includes(target + 1) &&
+        view.points?.[target]?.[index] === 0 && view.points[target][1 - index] >= 2)) continue;
+    const count = view.bar[index];
+    if (!observations.has(count)) observations.set(count, []);
+    observations.get(count).push(row.frame);
+  }
+  const consistent = [...observations.entries()].filter(([, frames]) => frames.length >= 4);
+  return consistent.length === 1 ? consistent[0] : null;
+}
+
+function repeatedVisibleBoard(rows, first, last, player) {
+  const side = names.indexOf(player);
+  const observations = new Map();
+  for (const row of rows.slice(first, last)) {
+    const view = row.state;
+    if (!view?.points || !(view.bar?.[side] > 0) || view.handRegions?.length || view.occludedPoints?.length) continue;
+    const key = JSON.stringify([view.points, view.bar]);
+    if (!observations.has(key)) observations.set(key, []);
+    observations.get(key).push(row.frame);
+  }
+  const stable = [...observations.entries()].filter(([, frames]) => frames.length >= 4);
+  return stable.length === 1 ? stable[0] : null;
+}
+
+function findBlockedFans(turns, pairs, fresh, rows, poses, runs, first, last, offers) {
+  if (!poses) return turns;
+  const confirmed = pairs.filter(pair => pair.actorEvidence === 'dice-body-agreement' && !pair.opening && pair.centers?.length === 2);
+  const candidates = [...confirmed, ...fresh.filter(pair => !confirmed.some(saved =>
+    together(pair, saved, 8) && samePose(pair.centers, saved.centers)))];
+  const result = [...turns];
+  for (const pair of candidates) {
+    const length = pair.end - pair.start;
+    if (pair.start < first || pair.end >= last || length < 10 || length > 75 ||
+        offers.some(offer => offer.startFrame <= pair.end && offer.endFrame >= pair.start)) continue;
+    const start = stationaryPoseOnset(poses, pair.centers, pair.start, pair.end) ??
+      pair.shortPairEvidence?.firstTogether ?? pair.firstTogether;
+    if (start == null) continue;
+    const overlapping = result.filter(turn => turn.start >= start - 15 && turn.start < pair.end && turn.player === pair.player);
+    if (overlapping.length > 1 || overlapping.some(turn => turn.steps || turn.dice?.every(Number.isInteger))) continue;
+    const existing = overlapping[0];
+    const prior = result.findLast(turn => turn !== existing && turn.start < start);
+    const next = result.find(turn => turn !== existing && turn.start >= start);
+    if (!prior || !next || prior.player === pair.player || next.player === pair.player ||
+        prior.poseLastSeen >= start || prior.resultFrame > start || prior.end > start + 12) continue;
+    const pickup = pickupAfterPose(pair, poses, last);
+    if (!pickup || pickup.pickupFrame > next.start + 15) continue;
+    const { pickupFrame, poseLastSeen } = pickup;
+    const incoming = pickupFrame > next.start && confirmed.find(candidate => candidate.player === next.player &&
+      Math.abs(candidate.start - next.start) <= 8 && candidate.dice.some(face => Number.isInteger(face) && next.dice?.includes(face)));
+    const settled = incoming && stationaryPoseOnset(poses, incoming.centers, incoming.start,
+      Math.min(incoming.end, next.start + fps));
+    const nextStart = settled >= pickupFrame && settled < next.end && (next.resultFrame == null || settled < next.resultFrame)
+      ? settled : next.start;
+    const rawReads = rows.slice(start, poseLastSeen + 1).map(row => row.state);
+    const poseReads = poses.slice(start, poseLastSeen + 1);
+    const saved = pair.dice?.filter(Number.isInteger) ?? [];
+    const seenFaces = pair.centers.map(center => {
+      const face = faceAt(rawReads, center);
+      const alternate = faceAt(poseReads, center);
+      return alternate !== null && (face === alternate || face === null && saved.length === 1 && saved[0] === alternate)
+        ? alternate : null;
+    }).filter(Number.isInteger);
+    // The paired read can be stronger than either short per-location sequence.
+    const dice = saved.length === 2 && pair.quality >= .82 && seenFaces.every(face => saved.includes(face)) ?
+      saved : seenFaces;
+    const consistent = saved.length !== 1 || dice.includes(saved[0]);
+    const blocked = consistent && dice.length === 2 ? [...new Set(dice)] : [1, 2, 3, 4, 5, 6];
+    const beforeStart = Math.max(first, start - 18);
+    const afterEnd = Math.min(last, pickupFrame + 23, nextStart + 20);
+    const beforeReads = blockedEntryEvidence(rows, beforeStart, start + 10, pair.player, blocked);
+    const afterReads = blockedEntryEvidence(rows, pickupFrame, afterEnd, pair.player, blocked);
+    const verifiedBlock = beforeReads && afterReads && beforeReads[0] === afterReads[0];
+    let observations;
+    if (verifiedBlock) {
+      observations = [beforeReads[1].at(-1), afterReads[1][0]];
+    } else {
+      if (dice.length === 2 || saved.length === 2) continue;
+      // Two physical dice and an unchanged board establish the turn.
+      // Keep the faces and legality unresolved when entry is not verified.
+      const earlier = repeatedVisibleBoard(rows, beforeStart, start + 10, pair.player);
+      const later = repeatedVisibleBoard(rows, pickupFrame, afterEnd, pair.player);
+      if (!earlier || earlier[0] !== later?.[0]) continue;
+      observations = [earlier[1].at(-1), later[1][0]];
+    }
+    const before = runs.findLast(run => run.first <= start && run.last >= start - 12 && run.count >= 10);
+    const after = runs.find(run => run.key === before?.key && run.first <= pickupFrame + 25 && run.last >= pickupFrame);
+    const end = Math.min(nextStart - 1, pickupFrame - 1);
+    if (end < start) continue;
+    const tail = poses.slice(poseLastSeen, pickupFrame);
+    const lastVisibleDie = poseLastSeen + tail.findLastIndex(read => pair.centers.some(center => visible(read, center)));
+    if (prior.end >= start) prior.end = start - 1;
+    if (existing) result.splice(result.indexOf(existing), 1);
+    next.start = nextStart;
+    result.push({ ...pair, start, end, ...pickup, dice: verifiedBlock && consistent ?
+      [...dice.sort((a, b) => a - b), null, null].slice(0, 2) : [null, null],
+      before: after ? before : null, after: after ?? null,
+      steps: verifiedBlock ? [] : null, resultFrame: verifiedBlock ? pickupFrame : null,
+      evidence: verifiedBlock ? 'camera-pickup-and-blocked-bar' : 'camera-pickup-and-unchanged-board', priority: 9,
+      fanEvidence: { before: observations[0], after: observations[1], blocked: verifiedBlock ? blocked : [], lastVisibleDie } });
+    result.sort((a, b) => a.start - b.start);
+  }
+  return result;
+}
+
 function reconstruct(game, observations, rows, poseFrames) {
+  const brief = poseFrames ? shortDicePairs(poseFrames, observations.breaks) : [];
   if (poseFrames && process.env.OFFICE3_TRIAL_SHORT_DICE === '1') {
-    const brief = shortDicePairs(poseFrames, observations.breaks);
     observations = { ...observations, pairs: observations.pairs.map(roll => refineIncompletePair(roll, brief)) };
   }
   const intervals = [...new Set([0, ...observations.breaks, rows.length])].sort((a, b) => a - b);
@@ -588,7 +699,9 @@ function reconstruct(game, observations, rows, poseFrames) {
     const partialHandoffs = reconcilePartialHandoffs(anchors, observations.pairs, runs, poseFrames,
       first, last, game.reviewedCubeOffers);
     const extras = boardOnlyTurns(runs, [...retained, ...visual]);
-    return { first, last, runs, turns: chooseTurns([...handoffs, ...partialHandoffs, ...retained, ...visual, ...extras], last) };
+    const turns = chooseTurns([...handoffs, ...partialHandoffs, ...retained, ...visual, ...extras], last);
+    return { first, last, runs, turns: findBlockedFans(turns, observations.pairs, brief, rows, poseFrames,
+      runs, first, last, game.reviewedCubeOffers) };
   });
 }
 
@@ -840,6 +953,7 @@ function buildTimeline(game, groups, cubes, rows, analysis, result) {
         ...(gapCube?.closed && result && { result }),
         turn: !gapCube?.closed && shown ? current.id : null,
         roll: printRoll ? { id: current.id, player: current.player, dice: current.dice,
+          ...(current.steps?.length === 0 && current.fanEvidence && { fan: true }),
           status: onBoard ? 'current' : 'last', evidence: current.evidence } : null,
         cube: gapCube && !gapCube.closed ? { stake: gapCube.stake, side: gapCube.side, offered: gapCube.offered ?? null,
           evidence: gapCube.evidence } : null,

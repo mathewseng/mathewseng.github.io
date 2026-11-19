@@ -125,6 +125,12 @@ Refresh an existing reconstructed replay
   v4/rescore.mjs 3 against that staging folder via OFFICE3_SCORE_SOURCE.
   Publication verifies the roll snapshots, action totals and Library backup.
 
+  Apply the reviewed Game 4 pickup and dice-settle timing with
+  OFFICE3_REPLAY_DIR="$output" bun v4/review-episodes.mjs "$previous" --handoff-timing.
+  The timing witnesses are in v4/reviewed-fan-handoffs.json. The video and
+  public frame index use the same completed-action timeline from
+  v4/presentation-actions.mjs.
+
   Apply the reviewed endings to an existing replay with
   OFFICE3_REPLAY_DIR="$output" bun v4/accounting.mjs "$previous".
   The Game 4 result requires the reviewed reset and the same final dice,
