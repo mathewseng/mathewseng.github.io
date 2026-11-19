@@ -52,6 +52,7 @@ function renderReport(report, seek) {
       `Unknown faces · ${fans} on confirmed fans · ${confirmedResults} with verified checker results · ${unconfirmedResults} with unconfirmed results`,
       "muted small"));
   }
+  if (report.stationaryFaces) fragment.append(automaticReconstruction(report.stationaryFaces));
 
   const coverage = element("section", null, "vision-report-coverage");
   coverage.append(element("h3", "Detector coverage"));
@@ -228,7 +229,7 @@ function renderReport(report, seek) {
     fragment.append(section);
   }
 
-  if (report.automaticTrial) {
+  if (report.automaticTrial && !report.stationaryFaces) {
     const { current, candidate } = report.automaticTrial;
     const section = element("section", null, "vision-report-model");
     section.append(element("h3", "Automatic replay trial"), element("p",
@@ -422,6 +423,71 @@ function renderReport(report, seek) {
       list.append(row);
     }
     return list;
+  }
+
+  function automaticReconstruction({ current, updated, recoveries, review, extra }) {
+    const section = element("section", null, "vision-report-model vision-automatic-report");
+    section.append(element("h3", "Automatic reconstruction"), element("p",
+      "Both runs use the same footage and are compared with the reviewed replay. Dice accuracy uses rolls with two verified faces.",
+      "muted small"));
+    const table = element("table", null, "vision-history-totals");
+    const headings = table.createTHead().insertRow();
+    for (const label of ["Check", "Before", "Updated"]) {
+      const heading = element("th", label);
+      heading.scope = "col";
+      headings.append(heading);
+    }
+    const body = table.createTBody();
+    for (const [label, value] of [
+      ["Rolls matched", run => `${run.matched}/${run.reference}`],
+      ["Correct dice pairs", run => run.correctDice],
+      ["Pairs with unread faces", run => run.unknownDice],
+      ["Wrong dice", run => run.wrongDice],
+      ["Wrong player", run => run.actorMismatches],
+      ["Extra roll proposals", run => run.extraProposals],
+      ["Starts within 0.2 s", run => `${run.closeStarts}/${run.matched}`],
+      ["Starting boards matched", run => run.correctBefore],
+      ["Ending boards matched", run => run.correctAfter],
+    ]) {
+      const row = body.insertRow();
+      const heading = element("th", label);
+      heading.scope = "row";
+      row.append(heading, element("td", String(value(current))), element("td", String(value(updated))));
+    }
+    section.append(table);
+    const player = side => side === "white" ? "White" : side === "dark" ? "Black" : "Unknown player";
+    const dice = faces => faces.length === 2 ? faces.join("–") : faces.length ? `${faces[0]}–?` : "?–?";
+    if (recoveries.length) {
+      section.append(element("h4", "Dice recovered from stationary reads"),
+        reviewList(recoveries.map(roll => ({
+          frame: roll.frame,
+          title: `${player(roll.player)} ${dice(roll.dice)}`,
+          detail: `Both faces agree in ${roll.samples} frames from the main reader and ${roll.corroboratingSamples} from the alternate locator. ` +
+            (roll.checkerResult === "fan" ? "The verified board blocks both entries from the bar." :
+              roll.checkerResult === "move" ? "The legal checker move reached the verified ending board." :
+                "The automatic run still lacks a verified checker result."),
+        })), entry => entry.title));
+    }
+    if (review.length) {
+      const pending = element("details");
+      pending.append(element("summary", `Rolls to review (${review.length})`),
+        reviewList(review.map(roll => ({
+          frame: roll.frame,
+          title: `${player(roll.player)} ${dice(roll.dice)}`,
+          detail: roll.verdict === "unmatched" ? "Automatic run missed this roll." :
+            `Automatic run saw ${player(roll.automaticPlayer)} ${dice(roll.seen)}. ` +
+            (roll.automaticPlayer !== roll.player ? "Player mismatch." :
+              roll.verdict === "wrong" ? "Dice mismatch." : "At least one face is unread."),
+        })), entry => entry.title));
+      section.append(pending);
+    }
+    if (extra.length) {
+      const pending = element("details");
+      pending.append(element("summary", `Extra roll proposals (${extra.length})`),
+        reviewList(extra, roll => `${player(roll.player)} ${dice(roll.dice)}`));
+      section.append(pending);
+    }
+    return section;
   }
 
   if (report.settledFaces) {

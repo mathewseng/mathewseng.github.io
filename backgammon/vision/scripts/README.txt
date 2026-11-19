@@ -78,6 +78,14 @@ Roll and board state
   complete legal turns. Backfill resolved dice to the start of the physical
   roll. The public frame data includes both checker snapshots when supported.
   The audit sidecars retain the original frame-level vision detections.
+  Frame data also records the visible board's pip counts and the supported
+  steps of a checker move in progress. The renderer uses this same data for
+  pip counts and a tentative EV when the observed placement matches a fully
+  scored candidate. A confirmed result and pickup select the played move.
+  Between rolls, an available cube decision takes priority over the last
+  checker analysis. The three most recent actions retain their EV and EVL.
+  Cube analysis enables one beaver in these money-game positions. A beaver
+  entry in the response table is an evaluated option.
   Source-anchored observations in v4/reviewed_endings.json mark resets and
   the Game 5 pack-up. The latter establishes an inferred pass. Keep the
   recording running through cleanup without carrying live game graphics over it.
@@ -550,3 +558,21 @@ Calibrate die color and review turn order
   reconcile-reviewed-turns.mjs with reviewed-occluded-dice-pickup.json and
   an empty face evidence object. Verify the frame index and Library exports
   after that correction, then render Games 3 through 5.
+
+Audit stationary dice face recovery
+
+  Run the previous and updated v4/reconstruct.mjs --plan with the same
+  OFFICE3_VISION_STATE_DIR, OFFICE3_VISION_OBSERVATIONS_DIR, and alternate
+  OFFICE3_VISION_POSE_STATE_DIR as the five-game evaluation. Use separate
+  output directories, the same verified footprint file, and
+  OFFICE3_TRIAL_SHORT_DICE=1. Compare against the reviewed release.
+
+    bun v4/compare-turn-plans.mjs "$reviewed" "$before" "$updated" "$updated/comparison.json"
+    bun v4/audit-stationary-faces.mjs "$updated" "$updated/comparison.json" \
+      "$release/stationary-face-validation.json"
+    OFFICE3_REPLAY_DIR="$release" bun v4/export-reports.mjs ..
+
+  The gate verifies each recovered pair against its source throw. It
+  checks that adjacent rolls stay indexed, compares starting and ending
+  boards, and replays each recovered legal checker result. Reports lists
+  the remaining missed rolls, wrong faces and extra proposals by timestamp.

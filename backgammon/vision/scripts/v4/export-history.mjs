@@ -8,6 +8,7 @@ import { ENGINE_VERSION } from '../../../engine/metadata.mjs';
 import { gradeCube } from '../../../engine/cube-grade.mjs';
 import { replayDir } from '../project_paths.mjs';
 import { cubeContext } from './cube-context.mjs';
+import { bestCubeReply, cubeReplies } from './cube-options.mjs';
 import { turnResult } from './checker-adjustment.mjs';
 import { exclusive, loadEvaluator, rowsFrom } from '../v2/solve_games.mjs';
 
@@ -58,6 +59,11 @@ function cubeResult(entry, source, chances) {
   return {
     ...base(source, 'cube', true), probabilities, cubeless: cubeless(probabilities),
     equity: noDouble, outcomes: [noDouble, take, pass],
+    ...(Number.isFinite(entry.options.beaver) ? {
+      decisionOptions: source.phase === 'double'
+        ? cubeReplies(entry.options).map(([action, equity]) => ({ action, equity }))
+        : [{ action: 'roll', equity: noDouble }, { action: 'double', equity: bestCubeReply(entry.options)[1] }],
+    } : {}),
   };
 }
 
@@ -70,12 +76,13 @@ function validMove(source, steps, observed) {
   }
 }
 
-function observedPosition(turn, cube, gameNumber) {
+function observedPosition(turn, cube, gameNumber, beavers) {
   if (!turn.before) return null;
   try {
     return initialState({
       ...board(turn.before), gameNumber, matchLength: 0, turn: player(turn.player),
-      cube: cube ?? { value: 1, owner: null }, rules: { ...rules, cube: Boolean(cube) },
+      cube: cube ?? { value: 1, owner: null },
+      rules: { ...rules, cube: Boolean(cube), immediateRedoubles: cube && beavers ? 1 : 0 },
       phase: completeDice(turn.dice) ? 'move' : 'roll',
       dice: completeDice(turn.dice) ? turn.dice : [],
     });
@@ -88,7 +95,10 @@ function makeHistory(game, rows, extraCubeChances) {
   const number = game.game;
   const collection = 'Office-3 · Nov 17, 2026';
   const items = [], timeline = [];
-  const stateOptions = { gameNumber: number, matchLength: 0, rules };
+  const beavers = Number.isFinite(game.decisions.cube?.options?.beaver) ||
+    game.presentation?.cubeRolls.some(roll => Number.isFinite(roll.options.beaver));
+  const replayRules = { ...rules, immediateRedoubles: beavers ? 1 : 0 };
+  const stateOptions = { gameNumber: number, matchLength: 0, rules: replayRules };
   const record = (kind, description, notes) => {
     const item = {
       version: 1, kind, id: `office3-20261117-game-${number}-${items.length + 1}`,
@@ -130,8 +140,7 @@ function makeHistory(game, rows, extraCubeChances) {
     const item = record('position', `Turn ${turn} cube decision`, 'The pre-roll cube decision is scored from the visible board.');
     item.state = source;
     item.analysis = gradeCube(source, result, 'roll');
-    timeline.push({ ...entry, kind: 'cube-review', item: item.id,
-      label: source.cube.value === 1 ? 'No double' : 'No redouble' });
+    timeline.push({ ...entry, kind: 'cube-review', item: item.id, label: 'No double' });
     return null;
   };
   const cubeEntry = game.decisions.cube;
@@ -153,9 +162,9 @@ function makeHistory(game, rows, extraCubeChances) {
     if (stop && frame >= stop.frame) break;
     if (offer) {
       const offerer = player(offer.offerer);
-      const source = offer.beforeXgid ? { ...fromXGID(offer.beforeXgid), gameNumber: number } :
+      const source = offer.beforeXgid ? { ...fromXGID(offer.beforeXgid), gameNumber: number, rules: replayRules } :
         initialState({ ...stateOptions, ...board(offer.position), turn: offerer, phase: 'roll',
-          cube: { value: 1, owner: null } });
+          cube: { value: offer.preOfferStake, owner: offer.preOfferStake === 1 ? null : offerer } });
       chapter(source);
       const chances = offer.outcomeProbabilities ?? extraCubeChances;
       timeline.push({ frame, endFrame: offer.reply ? offer.endFrame : stop?.frame ?? offer.endFrame,
@@ -176,7 +185,7 @@ function makeHistory(game, rows, extraCubeChances) {
     observedTurn++;
     const decision = game.decisions[id];
     const cube = cubeContext(game, rows[frame]);
-    const source = observedPosition(turn, cube, number);
+    const source = observedPosition(turn, cube, number, beavers);
     const steps = decision?.countedInGameLoss ? decision.played.steps : turn.steps;
     const cubeChoice = noDoubles.get(frame);
     const preRoll = source && { ...source, dice: [], phase: 'roll' };
@@ -200,7 +209,7 @@ function makeHistory(game, rows, extraCubeChances) {
       if (resultVerified) {
         const nextPlayer = turn.player === 'white' ? 'dark' : 'white';
         const result = record('position', `Turn ${observedTurn} result`, 'Confirmed checker board after an ungraded roll.');
-        result.state = observedPosition({ before: turn.after, player: nextPlayer, dice: [] }, cube, number);
+        result.state = observedPosition({ before: turn.after, player: nextPlayer, dice: [] }, cube, number, beavers);
         timeline.push({ frame: turn.resultFrame, kind: 'board-result',
           label: forcedPlay ? `Played ${forcedPlay.notation}` : 'Confirmed checker result', item: result.id,
           ...(forcedPlay ? { note: `Forced play · EV loss ${forcedPlay.evLoss.toFixed(3)}` } : {}) });

@@ -48,11 +48,13 @@ function compare(game, plan) {
     const turn = game.turns[(roll.decision ?? roll.sourceTurns[0]) - 1];
     const expected = faces(roll.dice);
     const claimed = faces(automatic?.dice);
+    const beforeMatches = Boolean(turn.before && board(automatic?.before) === board(turn.before));
+    const afterMatches = Boolean(turn.after && board(automatic?.after) === board(turn.after));
     let agreement = 'unmatched';
     if (automatic) {
       if (automatic.player !== roll.player) counts.actorMismatches++;
-      if (turn.before && board(automatic.before) === board(turn.before)) counts.correctBefore++;
-      if (turn.after && board(automatic.after) === board(turn.after)) counts.correctAfter++;
+      if (beforeMatches) counts.correctBefore++;
+      if (afterMatches) counts.correctAfter++;
       if (expected.length === 2) {
         agreement = sameFaces(claimed, expected) ? 'correct' :
           claimed.length === 2 || claimed.some(face => !expected.includes(face)) ? 'wrong' : 'unknown';
@@ -61,6 +63,7 @@ function compare(game, plan) {
     }
     return { frame: roll.start, player: roll.player, expected, claimed, agreement,
       automaticFrame: automatic?.start ?? null, automaticPlayer: automatic?.player ?? null,
+      beforeMatches, afterMatches,
       ...(automatic?.footprint ? { footprint: { ...automatic.footprint, reviewedPickup: roll.pickup ?? null,
         reviewedResult: turn.resultFrame, resultFrame: automatic.resultFrame } } : {}),
       ...(automatic?.evidence === 'continuous-dice-poses' || automatic?.evidence === 'continuous-dice-poses-and-legal-result' ? {

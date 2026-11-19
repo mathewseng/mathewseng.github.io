@@ -718,3 +718,33 @@ the native-camera trial matched 51, and the native-camera contrast trial
 matched 49. The existing reader remains active. The resolved 4–1 comes
 from a direct review of the original camera. All roll starts and pickups,
 and accumulated checker and cube losses, remain as in the preceding release.
+
+## Stationary dice recovery
+
+Reconstructing all five games from the same archived camera reads matched
+135 of 163 reviewed throws, up from 133. Exact dice pairs rose from 96 to 99,
+matching starting boards from 116 to 117, and matching ending boards from
+82 to 84. The comparison found 11 wrong dice reads, two wrong rollers and
+39 extra proposals in both runs. The Reports tab links to the remaining
+errors and unmatched proposals.
+
+| Game and time | Evidence |
+| --- | --- |
+| Game 1, 5:16.40 | White's 3–3 is visible at two fixed positions. The main reader agreed in 53 frames and the alternate locator in 49. The complete legal path reaches the reviewed board at 5:36.76. |
+| Game 1, 9:34.96 | White's 5–3 is supported by 37 and 56 frames. The automatic run lacks a complete Black tray count, so the roll has no automatic checker grade. The preceding Black roll stays indexed. |
+| Game 4, 16:47.68 | Seven frames in each pass agree on Black's 3–2. Both entries are blocked and the same board is visible as White prepares the next throw. The automatic board confirmation time differs from the reviewed pickup time. |
+
+## Pip counts and action review
+
+The game equity panel shows each player's pip count from the current
+reconstructed board, including the bar. The checker panel follows visible
+legal steps from the original decision position. It shows tentative EV when
+the visible placement matches a scored legal result, keeps the top five
+options visible after pickup and marks the actual choice. Cube opportunities
+take priority between rolls. The recent action panel shows EV and EV loss
+for the last three actions where an evaluation is available.
+
+The recorded cube offers now score Take, Pass and Beaver with one immediate
+reply allowed. Game 1 still records White's Take. Beaver is the higher-EV
+response there, so the response loss and Black's offer loss reflect the
+expanded choices. Game 5 shows White's double to 4 and Black's inferred pass.

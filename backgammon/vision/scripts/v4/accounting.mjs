@@ -6,6 +6,7 @@ import { gzipSync } from 'node:zlib';
 import { replayDir, solverUrl } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
 import { turnResult } from './checker-adjustment.mjs';
+import { bestCubeReply } from './cube-options.mjs';
 
 const { boardKey, commitTurn, legalTurns, winLevel } = await import(solverUrl('backgammon/core/rules.mjs'));
 const { fromXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
@@ -55,7 +56,7 @@ function applyEnding(game, rows) {
     cube.responder = 'dark';
     cube.endFrame = ending.frame;
     cube.endSeconds = ending.frame / 25;
-    cube.replyEvLoss = cube.options.pass - Math.min(cube.options.take, cube.options.pass);
+    cube.replyEvLoss = cube.options.pass - bestCubeReply(cube.options)[1];
   }
   const frame = cube?.reply === 'pass' ? cube.endFrame : matched && ending.kind === 'board-reset' ? ending.frame : null;
   if (frame === null) return;
@@ -90,11 +91,10 @@ export function applyAccounting(game, rows) {
   const losses = game.losses.filter(({ kind, action }) => kind === 'cube' && !action);
   applyEnding(game, rows);
   const cube = game.decisions.cube;
-  if (cube?.options && ['take', 'pass'].includes(cube.reply)) {
-    const { take, pass } = cube.options;
+  if (cube?.options && ['take', 'pass', 'beaver'].includes(cube.reply) && Number.isFinite(cube.options[cube.reply])) {
     losses.push({
       frame: cube.endFrame, player: cube.responder, kind: 'cube', action: cube.reply,
-      loss: cube.options[cube.reply] - Math.min(take, pass),
+      loss: cube.options[cube.reply] - bestCubeReply(cube.options)[1],
     });
   }
   for (const decision of game.presentation?.cubeRolls ?? []) {

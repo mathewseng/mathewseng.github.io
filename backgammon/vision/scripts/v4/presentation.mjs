@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { artifactDir, replayDir } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
-import { rollCubePositions, scoreRollCubes } from './cube-rolls.mjs';
+import { offerPosition, refreshCubeOffer, rollCubePositions, scoreRollCubes } from './cube-rolls.mjs';
 import { applyAccounting, writeReplay } from './accounting.mjs';
 import { footprintPickup } from './roll-timing.mjs';
 
@@ -176,7 +176,11 @@ for (const number of (process.argv.length > 3 ? process.argv.slice(3).map(Number
   const rows = rowsFrom(path.join(source, timeline));
   const breaks = recording.segments.filter(part => part.discontinuity).map(part => part.firstGameFrame);
   const rolls = rollIntervals(game, rows, rawFrames(recording), breaks);
-  const cubeRolls = await scoreRollCubes(rollCubePositions(game, rows, rolls, breaks));
+  const positions = rollCubePositions(game, rows, rolls, breaks);
+  const offer = offerPosition(game.decisions.cube);
+  const scored = await scoreRollCubes(offer ? [...positions, { xgid: offer }] : positions);
+  const cubeRolls = offer ? scored.slice(0, -1) : scored;
+  if (offer) refreshCubeOffer(game, scored.at(-1));
   game.presentation = { rolls, cubeRolls };
   applyAccounting(game, rows);
   writeReplay(prefix, game, rows);

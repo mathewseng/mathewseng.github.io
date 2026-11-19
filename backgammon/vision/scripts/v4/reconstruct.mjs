@@ -6,11 +6,12 @@ import { artifactDir, solverUrl, visionStateDir } from '../project_paths.mjs';
 import { observedBoard } from './bearoff-board.mjs';
 import { verifyDicePose } from './dice-pose-continuity.mjs';
 import { refineIncompletePair, shortDicePairs } from './short-dice-pairs.mjs';
+import { recoverStationaryFaces } from './stationary-face-votes.mjs';
 import {
   evaluateDecision, loadEvaluator, matchingTurns, okay, positional, rowsFrom, stateFor,
 } from '../v2/solve_games.mjs';
 
-const { boardKey, initialState, pipCount } = await import(solverUrl('backgammon/core/rules.mjs'));
+const { boardKey, initialState, pipCount, stepsForDie } = await import(solverUrl('backgammon/core/rules.mjs'));
 const { fromXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 const names = ['white', 'dark'];
 const fps = 25;
@@ -179,12 +180,22 @@ function matchRoll(roll, runs, end, known) {
       if (exact.length === 1) matches.push({ ...exact[0], before, after });
     }
   }
+  const before = pre.at(-1);
+  if (!matches.length && roll.stationaryFaces && known && before?.position.bar[which]) {
+    const firstAtEnd = following.find(after => after.last >= roll.end);
+    const state = stateFor(before.position, which, roll.dice);
+    if (firstAtEnd?.key === before.key && !following.some(after => after.key !== before.key) &&
+        roll.dice.every(face => stepsForDie(state, face).length === 0)) {
+      matches.push({ player: which, dice: roll.dice, steps: [], before, after: firstAtEnd,
+        resultFrame: Math.max(firstAtEnd.first, roll.end) });
+    }
+  }
   // Prefer the last observed pre-roll board and an established result that
   // persists to pickup. A different legal result may be a mid-turn board.
   matches.sort((a, b) => b.before.last - a.before.last ||
     Math.abs(a.after.first - roll.end) - Math.abs(b.after.first - roll.end) ||
     b.after.count - a.after.count);
-  return { before: pre.at(-1), match: matches[0] };
+  return { before, match: matches[0] };
 }
 
 function extendedRoll(roll, runs, poseFrames, limit, rolls) {
@@ -199,7 +210,8 @@ function extendedRoll(roll, runs, poseFrames, limit, rolls) {
   const before = runs.filter(r => r.first <= pose.start + 5 && r.last >= pose.start - 65).at(-1);
   const after = runs.filter(r => r.first >= pose.start + 5 && r.first <= resultLimit &&
     r.last >= pose.end - 24 && r.count >= 12).at(-1);
-  const options = before && after ? matchingTurns(before, after, allDice, names.indexOf(roll.player)) : [];
+  const diceOptions = roll.stationaryFaces ? [roll.dice] : allDice;
+  const options = before && after ? matchingTurns(before, after, diceOptions, names.indexOf(roll.player)) : [];
   const match = options.length === 1 && roll.dice.some(face => options[0].dice.includes(face)) ? options[0] : null;
   if (!match) {
     // Strong reads at the same two locations can establish a roll even
@@ -242,7 +254,8 @@ function footprintRoll(seed, proof, trials, runs, nextBoundary) {
 }
 
 function proposedRolls(game, observations, rows, runs, first, last, anchors, poseFrames) {
-  const rolls = observedRolls(game, observations, rows).filter((r) => r.start >= first && r.start < last);
+  const rolls = observedRolls(game, observations, rows).filter((r) => r.start >= first && r.start < last)
+    .map(roll => recoverStationaryFaces(roll, rows, poseFrames, first, last));
   const spans = (longFootprints[game.number] ?? []).flatMap(proof => {
     if (proof.sourceStart < first || proof.clear === null || proof.clear >= last ||
         game.reviewedCubeOffers.some(offer => offer.startFrame < proof.clear && offer.endFrame >= proof.sourceStart)) return [];
@@ -258,12 +271,14 @@ function proposedRolls(game, observations, rows, runs, first, last, anchors, pos
   const normal = rolls.flatMap((roll) => {
     const extended = extendedRoll(roll, runs, poseFrames, last, rolls);
     if (extended) return [extended];
-    const next = rolls.find((r) => r.start > roll.end && r.quality >= .80 && r.dice[1] !== null);
+    const next = rolls.find((r) => r.start > roll.end &&
+      (r.quality >= .80 && r.dice[1] !== null ||
+        roll.stationaryFaces && r.actorEvidence === 'dice-body-agreement' && r.centers));
     const anchor = anchors.find((r) => r.start > roll.start + 10 && r.priority >= 8);
-    const until = Math.min(last - 1, roll.end + 55, roll.start + fps * 19,
+    const until = Math.min(last - 1, roll.end + 55, roll.stationaryFaces ? Infinity : roll.start + fps * 19,
       next ? next.start - 1 : Infinity, anchor ? anchor.start - 1 : Infinity);
     const attempt = matchRoll(roll, runs, until, roll.player);
-    const fallback = !attempt.match && roll.centers && !roll.reviewedPose && roll.dice[1] !== null
+    const fallback = !attempt.match && roll.centers && !roll.reviewedPose && !roll.stationaryFaces && roll.dice[1] !== null
       ? matchRoll({ ...roll, dice: [roll.dice[0], null] }, runs, until, roll.player).match
       : null;
     const { before } = attempt;
@@ -274,21 +289,24 @@ function proposedRolls(game, observations, rows, runs, first, last, anchors, pos
       const fullVision = !fallback && roll.dice[1] !== null;
       const hasFace = roll.dice[0] !== null;
       return [{ ...roll, player, dice: hasFace ? match.dice : null, before: match.before, after: match.after,
-        resultFrame: match.after.first, steps: match.steps,
-        end: Math.min(until, Math.max(roll.end, match.after.first + 14)),
-        evidence: fullVision ? (roll.reviewedPose ? 'reviewed-roll-and-legal-result' : 'tracked-roll-and-legal-result') : hasFace ?
+        resultFrame: match.resultFrame ?? match.after.first, steps: hasFace ? match.steps : null,
+        ...(roll.centers ? { poseLastSeen: roll.end } : {}),
+        end: Math.min(until, Math.max(roll.end, match.resultFrame ?? (match.after.first + 14))),
+        evidence: fullVision ? (roll.reviewedPose ? 'reviewed-roll-and-legal-result' :
+          roll.stationaryFaces ? 'stationary-faces-and-legal-result' : 'tracked-roll-and-legal-result') : hasFace ?
           'legal-result-and-single-die' : 'two-dice-poses-and-legal-result',
         priority: roll.reviewedPose ? 11 : fullVision ? 9 : 7 }];
     }
     if (!roll.player) return [];
     const sameSide = observations.individual.filter((track) => track.player === roll.player &&
       together(track, roll, 8)).length;
-    const crediblePair = roll.dice[1] !== null && (roll.quality >= .82 ||
+    const crediblePair = roll.dice[1] !== null && (roll.stationaryFaces || roll.quality >= .82 ||
       (roll.alternatives && roll.end - roll.start >= 20) || (sameSide >= 2 && roll.end - roll.start >= 42));
     const crediblePartial = roll.dice[1] === null &&
       ((roll.centers && roll.end - roll.start >= 28) || (roll.quality >= .84 && roll.end - roll.start >= 25));
     if (!crediblePair && !crediblePartial) return [];
-    return [{ ...roll, before, end: Math.min(last - 1, roll.end + 14),
+    return [{ ...roll, before, ...(roll.centers ? { poseLastSeen: roll.end } : {}),
+      end: Math.min(last - 1, roll.end + 14),
       resultFrame: null, priority: roll.reviewedPose ? 11 : crediblePair ? 5 : 2 }];
   });
   return [...spans, ...normal];
@@ -321,9 +339,13 @@ function chooseTurns(proposals, last) {
     const existing = turns.find((r) => {
       if (!together(r, roll, 10)) return false;
       if (r.footprint || roll.footprint) return together(r, roll);
+      const [before, after] = r.start < roll.start ? [r, roll] : [roll, r];
+      // A presentation buffer must not swallow the other player's next throw.
+      if ((before.stationaryFaces || after.stationaryFaces) && before.player !== after.player &&
+          before.centers && after.centers && before.poseLastSeen < after.start &&
+          (before.resultFrame == null || before.resultFrame < after.start)) return false;
       if (r.evidence !== 'continuous-dice-poses-and-legal-result' &&
           roll.evidence !== 'continuous-dice-poses-and-legal-result') return true;
-      const [before, after] = r.start < roll.start ? [r, roll] : [roll, r];
       return before.player === after.player || before.end > after.start + 15 ||
         before.resultFrame == null || before.resultFrame >= after.start ||
         !before.after || before.after.key !== after.before?.key;
@@ -519,6 +541,7 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
     const grade = d.evLoss !== null &&
       (turn.existing?.countedInGameLoss || turn.evidence === 'reviewed-roll-and-legal-result' ||
         turn.evidence === 'stationary-footprints-and-legal-result' ||
+        turn.evidence === 'stationary-faces-and-legal-result' ||
         (turn.evidence === 'tracked-roll-and-legal-result' && turn.quality >= .82));
     decisions[turn.id] = { ...d, player: turn.player, startFrame: turn.start, endFrame: turn.end,
       countedInGameLoss: !!grade, evidence: turn.evidence };

@@ -5,11 +5,12 @@ import path from 'node:path';
 import { parseBackup } from '../../../core/storage.mjs';
 import { decisionHistory } from '../../../core/decision-history.mjs';
 import { decisionFeedback } from '../../../core/decision-feedback.mjs';
-import { boardKey, legalTurns, notation } from '../../../core/rules.mjs';
+import { boardKey, commitTurn, legalPaths, legalTurns, notation, pipCount } from '../../../core/rules.mjs';
 import { fromXGID } from '../../../core/xgid.mjs';
 import { replayDir } from '../project_paths.mjs';
 import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
 import { cubeContext } from './cube-context.mjs';
+import { adjustPoints } from './checker-adjustment.mjs';
 
 const read = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
 const root = process.argv[2];
@@ -33,6 +34,8 @@ for (const number of [1, 2, 3, 4, 5]) {
     while (data.changes[changeIndex + 1]?.frame <= frame) changeIndex++;
     while (data.rolls[rollIndex]?.end <= frame) rollIndex++;
     const state = data.changes[changeIndex];
+    const visible = state.movingBoard ?? data.positions[state.position];
+    assert.deepEqual(state.pipCounts, visible ? [pipCount(visible, 0), pipCount(visible, 1)] : null);
     assert.deepEqual(state.loss, [row.loss.white.loss, row.loss.dark.loss]);
     assert.deepEqual(state.checkerLoss, [row.loss.white.checkerLoss, row.loss.dark.checkerLoss]);
     assert.deepEqual(state.cubeLoss, [row.loss.white.cubeLoss, row.loss.dark.cubeLoss]);
@@ -70,6 +73,27 @@ for (const number of [1, 2, 3, 4, 5]) {
     } else if (state.phase === 'game-closed') {
       assert.equal(state.cube, null);
       assert.equal(state.player, null);
+    }
+  }
+  const paths = new Map();
+  for (const change of data.changes) {
+    if (!change.moveProgress) continue;
+    const { moves, candidate } = change.moveProgress;
+    const roll = data.rolls[change.roll];
+    assert(roll?.decision && change.movingBoard);
+    const source = fromXGID(data.decisions[roll.decision].xgid);
+    if (!paths.has(roll.decision)) paths.set(roll.decision, legalPaths(source)
+      .map(path => path.steps.map(step => notation([step], source.turn))));
+    assert(paths.get(roll.decision).some(steps => moves.every((move, index) => steps[index] === move)));
+    if (candidate) {
+      const action = replay.decisions[roll.decision].actions.find(action => action.key === candidate);
+      assert(Number.isFinite(action?.equity4));
+      const turn = replay.turns[roll.decision - 1];
+      const expected = change.movingBoard;
+      const played = commitTurn(source, action.steps);
+      const points = turn.adjustment && change.frame >= turn.adjustment.frame
+        ? adjustPoints(played.points, turn.adjustment) : played.points;
+      assert.equal(boardKey({ ...played, points }), boardKey({ ...expected, off: expected.borneOff }));
     }
   }
   for (const [id, decision] of Object.entries(replay.decisions)) {

@@ -3,7 +3,7 @@ import json
 from collections import Counter
 
 from render import (ACTION_HOLD, BW, OUT, RH, RW, action_panel, equity_frames, equity_panel, rows,
-                    viewer_frames, visible_recent_actions)
+                    overlay_states, viewer_frames)
 
 
 def verify(number):
@@ -27,12 +27,20 @@ def verify(number):
     rendered = set()
     equity_rendered = set()
     cube = game["decisions"]["cube"]
+    played_rolls = {entry["decision"]: entry for entry in rolls if entry["decision"]}
+    previous_checker = None
+    overlay = overlay_states(number)
+    upcoming_overlay = next(overlay, None)
+    pips, progress = None, None
     frames = viewer_frames(game, rows(OUT / f"{prefix}-state.jsonl.gz"))
     for items, position, equity, basis, closed in equity_frames(game, frames):
         state, roll, wait, cube_mode, actions, opening = items
         frame = state["frame"]
+        while upcoming_overlay and upcoming_overlay[0] <= frame:
+            _, pips, progress = upcoming_overlay
+            upcoming_overlay = next(overlay, None)
         if closed:
-            assert not (position or equity or roll or wait)
+            assert not (position or equity or roll or wait or pips or progress)
         elif roll and roll["decision"] and cube_mode != "cube-offer":
             assert equity and basis in ("After best play", "After played move", "After move and board adjustment")
             if roll["start"] == frame:
@@ -56,9 +64,9 @@ def verify(number):
         if number == 1 and frame == 11340 and roll and roll.get("fan"):
             assert basis == "Position estimate"
             assert equity == position["equities"]["players"]
-        equity_key = id(equity), basis, closed
+        equity_key = id(equity), basis, closed, tuple(pips or ())
         if equity_key not in equity_rendered:
-            assert equity_panel(equity, basis, state["loss"], closed).shape == (256, BW, 3)
+            assert equity_panel(equity, basis, state["loss"], closed, pips).shape == (256, BW, 3)
             equity_rendered.add(equity_key)
         if opening:
             assert number > 1 and frame < rolls[0]["start"]
@@ -68,14 +76,20 @@ def verify(number):
             assert not opening and state["phase"] != "game-closed"
         if wait:
             assert wait["start"] <= frame < wait["end"]
+            assert roll or frame < wait["frame"]
         if roll and roll["start"] in cubes_at_roll:
             assert wait == cubes_at_roll[roll["start"]]
             shown_at_roll.add(roll["start"])
-        fan_results = {action["roll"]["start"] for action in actions if action.get("fan")}
-        visible = visible_recent_actions(actions, roll, cube_mode if not roll else None, wait, None)
+        recent = state["recentActions"]
+        assert len(recent) <= 3 and all(action["frame"] <= frame for action in recent)
+        assert all(a["frame"] <= b["frame"] for a, b in zip(recent, recent[1:]))
+        assert all(action["roll"] is not roll for action in recent if action["kind"] == "roll")
         for action in actions:
-            if action["kind"] == "roll" and action["roll"] is not roll:
-                assert (action in visible) == (action["frame"] not in fan_results)
+            if action["frame"] == frame and action["kind"] in ("checker", "board-result"):
+                previous_checker = action
+        assert state["previousChecker"] is previous_checker
+        if previous_checker and previous_checker["kind"] == "checker":
+            assert len(previous_checker["choices"]) == min(5, len(game["decisions"][str(previous_checker["decision"])]["actions"]))
         for action in actions:
             counts[action["kind"], action["frame"]] += 1
             assert action["frame"] <= frame < action["frame"] + ACTION_HOLD
@@ -85,11 +99,11 @@ def verify(number):
             modes[cube_mode] += 1
         pending_roll = state.get("pendingRoll")
         key = (id(roll), id(wait), cube_mode, opening, state["phase"] == "game-closed", id(pending_roll),
-               state.get("postGamePlay"), tuple((action["kind"], action["frame"]) for action in actions))
+               state.get("postGamePlay"), tuple(id(action) for action in recent), id(previous_checker), json.dumps(progress))
         if key not in rendered:
             decision_roll = roll or pending_roll
             entry = game["decisions"].get(str(decision_roll["decision"])) if decision_roll else None
-            panel = action_panel(state, roll, entry, cube, cube_mode, wait, actions, opening)
+            panel = action_panel({**state, "moveProgress": progress}, roll, entry, cube, cube_mode, wait, opening)
             assert panel.shape == (RH, RW, 3)
             rendered.add(key)
     assert dict(drawn_rolls) == {r["start"]: r["end"] - r["start"] for r in rolls}
@@ -97,7 +111,9 @@ def verify(number):
     assert all(count == min(ACTION_HOLD, game["frames"] - start) for (_, start), count in counts.items())
     for loss in game["losses"]:
         if loss["kind"] == "checker":
-            assert counts["checker", loss["frame"]] == ACTION_HOLD
+            pickup = played_rolls.get(loss["decision"], {}).get("pickup")
+            confirmed = max(loss["frame"], pickup or 0)
+            assert counts["checker", confirmed] == ACTION_HOLD
     for roll in rolls:
         if roll["evidence"] == "reviewed-roll-with-confirmed-board":
             result = game["turns"][roll["sourceTurns"][0] - 1]["resultFrame"]
@@ -130,7 +146,7 @@ def verify(number):
         assert all(a["after"] == b["before"] for a, b in zip(turns, turns[1:]))
         if corrected:
             assert game["decisions"][str(handoff[3]["decision"])]["countedInGameLoss"]
-            assert counts["checker", turns[3]["resultFrame"]] == ACTION_HOLD
+            assert counts["checker", max(turns[3]["resultFrame"], handoff[3]["pickup"] or 0)] == ACTION_HOLD
         else:
             assert handoff[3]["sourceMismatch"] and handoff[3]["decision"] is None
             assert counts["board-result", turns[3]["resultFrame"]] == ACTION_HOLD

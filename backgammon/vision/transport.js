@@ -13,7 +13,7 @@ function indexedActions(data) {
   if (data.cubeOffer) {
     const { start, player, offered } = data.cubeOffer;
     actions.push({ frame: start, player, kind: "cube", face: offered,
-      label: `${name(player)} ${offered === 2 ? "doubles" : "redoubles"} to ${offered}` });
+      label: `${name(player)} doubles to ${offered}` });
   }
   return actions.sort((a, b) => a.frame - b.frame);
 }

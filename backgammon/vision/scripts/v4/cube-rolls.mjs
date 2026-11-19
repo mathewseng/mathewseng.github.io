@@ -7,8 +7,9 @@ import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
 import { exclusive, loadEvaluator, rowsFrom } from '../v2/solve_games.mjs';
 import { applyAccounting, writeReplay } from './accounting.mjs';
 import { cubeContext } from './cube-context.mjs';
+import { bestCubeReply } from './cube-options.mjs';
 
-const { boardKey, canDouble, initialState } = await import(solverUrl('backgammon/core/rules.mjs'));
+const { boardKey, canDouble, initialState, transition } = await import(solverUrl('backgammon/core/rules.mjs'));
 const { fromXGID, toXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 const opening = boardKey(initialState());
 
@@ -73,16 +74,49 @@ export async function scoreRollCubes(positions) {
   return positions.map(position => ({ ...position, ...results.get(position.xgid) }));
 }
 
+export function offerPosition(offer) {
+  if (!offer) return null;
+  if (offer.beforeXgid) return offer.beforeXgid;
+  const { points, bar, borneOff } = offer.position;
+  const turn = Number(offer.offerer === 'dark');
+  return toXGID(initialState({ points: points.map(([white, dark]) => white - dark),
+    bar, off: borneOff, phase: 'roll', turn, matchLength: 0,
+    cube: { value: offer.preOfferStake, owner: offer.preOfferStake === 1 ? null : turn },
+  }));
+}
+
+export function refreshCubeOffer(game, scored) {
+  const offer = game.decisions.cube;
+  if (!offer) return;
+  const { options, outcomeProbabilities } = scored;
+  const [reply, equity] = bestCubeReply(options);
+  const offerEvLoss = Math.max(0, options.noDouble - equity);
+  Object.assign(offer, { options, outcomeProbabilities, offerEvLoss,
+    recommendation: equity >= options.noDouble ? 'Double' : 'No double',
+    bestReply: reply[0].toUpperCase() + reply.slice(1),
+    ...(offer.reply && { replyEvLoss: Math.max(0, options[offer.reply] - equity) }),
+  });
+  for (const action of game.losses) {
+    if (action.kind === 'cube' && !action.action && action.frame === offer.startFrame) action.loss = offerEvLoss;
+  }
+}
+
+function evaluateOptions(evaluator, xgid) {
+  const before = fromXGID(xgid);
+  const source = { ...before, rules: { ...before.rules, immediateRedoubles: 1 } };
+  const offered = transition(source, { type: 'double' }, source.turn);
+  const result = evaluator.analyze(offered, 'research', 'cube');
+  const options = { noDouble: result.outcomes[0],
+    ...Object.fromEntries(result.decisionOptions.map(({ action, equity }) => [action, equity])) };
+  return { options, outcomeProbabilities: exclusive(result.probabilities),
+    evLoss: Math.max(0, bestCubeReply(options)[1] - options.noDouble) };
+}
+
 if (!isMainThread) {
   const evaluator = await loadEvaluator();
   parentPort.on('message', xgid => {
     try {
-      const result = evaluator.analyze(fromXGID(xgid), 'research', 'cube');
-      const [noDouble, take, pass] = result.outcomes;
-      parentPort.postMessage({ xgid, value: {
-        options: { noDouble, take, pass }, outcomeProbabilities: exclusive(result.probabilities),
-        evLoss: Math.max(0, Math.min(take, pass) - noDouble),
-      } });
+      parentPort.postMessage({ xgid, value: evaluateOptions(evaluator, xgid) });
     } catch (error) {
       parentPort.postMessage({ error: xgid + ': ' + error.message });
     }
@@ -98,12 +132,14 @@ if (!isMainThread) {
     const recording = JSON.parse(fs.readFileSync(path.join(artifactDir, 'v2', `game-${number}-analysis.json`)));
     const breaks = recording.segments.filter(part => part.discontinuity).map(part => part.firstGameFrame);
     const positions = rollCubePositions(game, rows, game.presentation.rolls, breaks);
-    return { prefix, game, rows, positions };
+    const offer = offerPosition(game.decisions.cube);
+    return { prefix, game, rows, positions, offer };
   });
-  const scored = await evaluateJobs(games.flatMap(game => game.positions));
-  for (const { prefix, game, rows, positions } of games) {
+  const scored = await evaluateJobs(games.flatMap(({ positions, offer }) => [...positions, ...(offer ? [{ xgid: offer }] : [])]));
+  for (const { prefix, game, rows, positions, offer } of games) {
     delete game.presentation.waits;
     game.presentation.cubeRolls = positions.map(position => ({ ...position, ...scored.get(position.xgid) }));
+    if (offer) refreshCubeOffer(game, scored.get(offer));
     applyAccounting(game, rows);
     writeReplay(prefix, game, rows);
     console.log(prefix, positions.length, 'no-double decisions');

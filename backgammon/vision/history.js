@@ -90,8 +90,7 @@ export function createHistory(seek, player, replayAsset) {
         if (Number.isFinite(entry.endFrame)) {
           const label = entry.kind === "checker"
             ? `${names[row.player]}’s ${[...row.source.dice].sort((a, b) => b - a).join("–")}`
-            : `${names[row.player]}’s ${row.action.type === "roll"
-              ? row.source.cube.value === 1 ? "no double" : "no redouble" : row.action.type}`;
+            : `${names[row.player]}’s ${row.action.type === "roll" ? "no double" : row.action.type}`;
           chapters.push({ start: entry.rollFrame ?? entry.frame, end: entry.endFrame, label, open });
         }
         const node = historyTurn({ ...group, turn: entry.turn }, {

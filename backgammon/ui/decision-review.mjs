@@ -306,7 +306,8 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            "Cube offers use the opponent’s best evaluated reply. Values stay in the original cube units, even after a take or immediate redouble.",
+            recordingReview ? "Cube offers use the opponent’s best evaluated reply. EV is shown in the original cube units." :
+              "Cube offers use the opponent’s best evaluated reply. Values stay in the original cube units, even after a take or immediate redouble.",
           ),
           el(
             "p",

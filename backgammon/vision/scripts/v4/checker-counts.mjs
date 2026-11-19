@@ -4,18 +4,20 @@ import { adjustPoints } from './checker-adjustment.mjs';
 
 const { applyStep, boardKey, legalPaths } = await import(solverUrl('backgammon/core/rules.mjs'));
 
-export function checkerStages(input, paths = legalPaths(input), adjustment) {
+export function checkerStages(input, paths = legalPaths(input), adjustment, onStage) {
   const stages = new Map();
-  const add = state => {
+  const add = (state, steps, count) => {
     const points = adjustPoints(state.points, adjustment);
-    stages.set(boardKey(adjustment ? { ...state, points } : state), { points, bar: state.bar, borneOff: state.off });
+    const key = boardKey(adjustment ? { ...state, points } : state);
+    stages.set(key, { points, bar: state.bar, borneOff: state.off });
+    onStage?.(key, state, steps.slice(0, count));
   };
-  add(input);
+  add(input, [], 0);
   for (const { steps } of paths) {
     let state = input;
-    for (const step of steps) {
+    for (const [index, step] of steps.entries()) {
       state = applyStep(state, step, input.turn);
-      add(state);
+      add(state, steps, index + 1);
     }
   }
   return stages;
