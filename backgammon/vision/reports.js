@@ -130,6 +130,10 @@ function renderReport(report, seek) {
       const { test, spot, spotExtra } = results;
       section.append(element("p", `The dice trial added ${extraTracks} hand-labeled tracks and trained on ${frames} frames. It matched ${test.candidateTrack}/${test.tracks} general test tracks, up from ${test.baselineTrack}/${test.tracks}. On the separately reviewed roll faces it matched ${spot.candidateTrack}/${spot.tracks}, compared with ${spot.baselineTrack}/${spot.tracks} for the current reader. Both readers matched ${spotExtra.baselineTrack}/${spotExtra.tracks} on the new reviewed faces.`, "muted small"));
     }
+    if (report.witnessTrials?.blend) {
+      const { faces, clips, metrics } = report.witnessTrials.blend;
+      section.append(element("p", `A new check used ${faces} clearly visible, hand-labeled faces from ${clips} separate clips. The current reader matched ${metrics.baseline}/${faces}, the fine-tuned reader matched ${metrics.candidate}/${faces}, and an equal blend matched ${metrics.blend}/${faces}.`, "muted small"));
+    }
     fragment.append(section);
   }
 

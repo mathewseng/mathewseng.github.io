@@ -39,6 +39,8 @@ def verify(number):
         if number == 3 and frame == 1025:
             assert basis == "After played move"
             assert equity[1]["equity"] == game["decisions"]["1"]["played"]["equity"]
+        if number == 3 and frame == 4030 and state.get("pendingChecker"):
+            assert state["pendingChecker"] == "white" and not roll and not wait
         if number == 1 and frame == 11340 and roll and roll.get("fan"):
             assert basis == "Position estimate"
             assert equity == position["equities"]["players"]
@@ -64,7 +66,7 @@ def verify(number):
                 assert action["label"] == "fanned"
         if cube_mode:
             modes[cube_mode] += 1
-        key = (id(roll), id(wait), cube_mode, opening, state["phase"] == "game-closed",
+        key = (id(roll), id(wait), cube_mode, opening, state["phase"] == "game-closed", state.get("pendingChecker"),
                tuple((action["kind"], action["frame"]) for action in actions))
         if key not in rendered:
             entry = game["decisions"].get(str(roll["decision"])) if roll else None

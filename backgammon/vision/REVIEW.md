@@ -98,6 +98,24 @@ evaluation. Reports count the frames with reconstructed boards that have an
 equity result. The stationary-dice check now covers seven reviewed intervals
 and still abstains during the hand occlusion.
 
+## Late bear-offs and checker action timing
+
+- Game 3 at 20:13 shows White's 6–2. Re-centering the partly missed die and
+  pooling ten views distinguished six from five. Both completed checker
+  boards are recorded in the game history.
+- At 21:00, the board confirms both checkers off the 3-point. At 21:13,
+  White has one off from each of the first two points, reaching nine off.
+  Some dice pairs produce the same positions, so both rolls retain an
+  unresolved face. The completed move appears before the reset.
+- At 2:41, White has picked up the dice and is still moving a checker.
+  The panel shows who is finishing the move. Black's pre-roll cube cue
+  begins after the camera confirms the hit at 2:43.72.
+
+The fixed-weight blend matched the current reader on 22 newly labeled clear
+faces from clips outside the earlier training and validation samples. The
+fine-tuned reader matched 18. These clear samples test how reliably each
+reader preserves dice values once the die location is available.
+
 ## Opening and overlay review
 
 - Game 3’s opening toss is visible from about 0:03.4. The settled board at

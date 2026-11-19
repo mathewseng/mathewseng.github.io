@@ -5,6 +5,8 @@ import { artifactDir, replayDir } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
 import { cubeContext } from './cube-context.mjs';
 
+const FPS = 25;
+
 function frameData(game, rows, recording) {
   const rolls = game.presentation.rolls;
   const offer = game.decisions.cube;
@@ -14,6 +16,9 @@ function frameData(game, rows, recording) {
     while (rollIndex < rolls.length && row.frame >= rolls[rollIndex].end) rollIndex++;
     const closed = row.phase === 'game-closed';
     const onBoard = !closed && rolls[rollIndex]?.start <= row.frame;
+    const prior = rolls[rollIndex - 1];
+    const result = prior?.pickup != null && game.turns[(prior.decision ?? prior.sourceTurns[0]) - 1]?.resultFrame;
+    const pending = !closed && !onBoard && Number.isInteger(result) && result - prior.pickup >= 2 * FPS && row.frame < result;
     const owned = cubeContext(game, row);
     const cube = closed ? null : {
       value: owned?.value ?? row.cube?.stake ?? null,
@@ -24,6 +29,7 @@ function frameData(game, rows, recording) {
       cube.offerer = offer.offerer;
     }
     const phase = closed ? 'game-closed' : cube?.offered ? 'cube-response' : onBoard ? 'checker-turn' :
+      pending ? 'checker-result-pending' :
       row.frame < rolls[0]?.start && game.game > 1 ? 'opening' :
       row.phase === 'pre-roll' ? 'pre-roll' : 'between-rolls';
     const state = {
@@ -32,7 +38,7 @@ function frameData(game, rows, recording) {
       movingPoints: closed ? null : row.displayPoints ?? null,
       roll: onBoard ? rollIndex : null,
       player: closed ? null : cube?.offered ? (offer?.offerer === 'white' ? 'dark' : 'white') :
-        onBoard ? rolls[rollIndex].player : row.phase === 'pre-roll' ? row.player : null,
+        onBoard ? rolls[rollIndex].player : pending ? prior.player : row.phase === 'pre-roll' ? row.player : null,
       cube,
       loss: [row.loss.white.loss, row.loss.dark.loss],
       checkerLoss: [row.loss.white.checkerLoss, row.loss.dark.checkerLoss],
@@ -68,7 +74,7 @@ function frameData(game, rows, recording) {
     return { ...roll, before: snapshot(turn.before), after: snapshot(turn.after), resultFrame: turn.resultFrame ?? null };
   });
   return {
-    format: 'office-3-replay-frames', version: 1, game: game.game, fps: 25, frames: rows.length,
+    format: 'office-3-replay-frames', version: 1, game: game.game, fps: FPS, frames: rows.length,
     result: game.result ?? null, ending: game.ending ?? null,
     players: ['white', 'dark'], changes, positions, rolls: rollSnapshots, decisions,
     cubeRolls: game.presentation.cubeRolls,

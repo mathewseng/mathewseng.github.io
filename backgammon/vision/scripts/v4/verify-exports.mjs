@@ -110,7 +110,8 @@ for (const number of [1, 2, 3, 4, 5]) {
       assert.equal(bearoff.end, 30300);
       assert.equal(bearoff.pickup, 30300);
       const successor = data.rolls[data.rolls.indexOf(bearoff) + 1];
-      assert.deepEqual([successor.start, successor.player, successor.dice], [30325, 'white', [2, null]]);
+      const dice = successor.evidence === 'settled-dice-and-legal-result' ? [6, 2] : [2, null];
+      assert.deepEqual([successor.start, successor.player, successor.dice], [30325, 'white', dice]);
     }
     const white = data.rolls.find(roll => roll.start <= 31300 && roll.end > 31300);
     assert.equal(white.before.points[6], -1);
@@ -165,7 +166,9 @@ for (const number of [1, 2, 3, 4, 5]) {
   }
   if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 22851 && entry.confirmedDetectorMisread)) {
     const pooled = replay.contextRecovery.find(entry => entry.frame === 11776 && entry.diceFrames?.length);
-    for (const [time, dice] of [[471.04, pooled ? [6, 2] : [2, null]], [914.04, [5, 5]], [981.44, [5, 5]], [1213, [2, null]]]) {
+    const latePooled = replay.contextRecovery.find(entry => entry.frame === 30325 && entry.diceFrames?.length);
+    for (const [time, dice] of [[471.04, pooled ? [6, 2] : [2, null]], [914.04, [5, 5]], [981.44, [5, 5]],
+      [1213, latePooled ? [6, 2] : [2, null]]]) {
       const roll = data.rolls.find(item => item.start === Math.round(time * 25));
       assert.deepEqual(roll.dice, dice);
       assert(roll.after && Number.isInteger(roll.resultFrame));
@@ -240,6 +243,22 @@ for (const number of [1, 2, 3, 4, 5]) {
     const afterPickup = data.changes.findLast(change => change.frame <= 4030);
     assert.equal(afterPickup.roll, null);
     assert.deepEqual(last.after.bar, [0, 1]);
+  }
+  if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 30325 && entry.diceFrames?.length)) {
+    const pending = data.changes.findLast(change => change.frame <= 4030);
+    assert.deepEqual([pending.phase, pending.player, pending.roll], ['checker-result-pending', 'white', null]);
+    assert.equal(data.cubeRolls.find(item => item.frame === 4122).start, 4093);
+    for (const [start, resultFrame, dice, off] of [[31514, 31601, [3, null], 7], [31838, 31992, [1, null], 9]]) {
+      const roll = data.rolls.find(item => item.start === start);
+      assert.deepEqual(roll.dice, dice);
+      assert.equal(roll.resultFrame, resultFrame);
+      assert.equal(roll.decision, null);
+      assert.deepEqual(roll.after.borneOff, [off, 0]);
+      assert(history.replay.timeline.some(item => item.kind === 'board-result' && item.frame === resultFrame));
+    }
+    const last = data.rolls.at(-1);
+    assert.equal(last.end, data.ending.frame);
+    assert(last.resultFrame + 50 < last.end);
   }
   if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 1283 && entry.confirmedDetectorMisread)) {
     const roll = data.rolls.find(item => item.start === 8436);

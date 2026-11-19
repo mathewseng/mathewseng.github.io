@@ -29,12 +29,13 @@ export function rollCubePositions(game, rows, rolls, breaks) {
     // We can only place a cue before the roll when the previous pickup and
     // the handoff to the new player were both established.
     const previous = prior && game.turns[(prior.decision ?? prior.sourceTurns.at(-1)) - 1];
+    const handoff = Math.max(prior?.pickup ?? 0, previous?.resultFrame ?? 0);
     const afterPickup = prior?.pickup != null && prior.player !== roll.player &&
       previous?.after && JSON.stringify(previous.after) === JSON.stringify(turn.before) &&
       !breaks.some(frame => frame > prior.pickup && frame <= roll.start) &&
       !(offer && offer.startFrame < roll.start && offer.endFrame >= prior.pickup);
     return [{
-      start: afterPickup ? prior.pickup : roll.start,
+      start: afterPickup ? Math.min(handoff, roll.start) : roll.start,
       frame: roll.start, end: Math.min(rows.length, Math.max(roll.end, roll.start + 50)),
       player: roll.player, preOfferStake: cube.value, xgid: toXGID(state),
     }];

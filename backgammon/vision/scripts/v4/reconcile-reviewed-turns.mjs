@@ -162,7 +162,8 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   const played = analysis?.played;
   const canScore = Boolean(analysis?.state);
   const verifiedResult = Boolean(played || (analysis?.ambiguous && note.afterBoard));
-  const finish = verifiedResult ? Math.min(afterLimit, Math.max(following.frame, end)) : null;
+  if (note.resultAtWitness) assert(verifiedResult && note.afterBoard, `Unverified checker result at ${start / 25}.`);
+  const finish = verifiedResult ? (note.resultAtWitness ? following.frame : Math.min(afterLimit, Math.max(following.frame, end))) : null;
   const dice = canScore ? [...analysis.state.dice] : [...note.dice].reverse();
   const evidence = analysis?.faceEvidence ? 'settled-dice-and-legal-result' :
     played ? 'reviewed-roll-and-legal-result' :

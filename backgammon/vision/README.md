@@ -5,7 +5,7 @@ Office-3 game replays from November 17, 2026. Add `?game=1` through `?game=5`
 to link to a specific game.
 
 The 1080p video files are assets on the
-[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v19).
+[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v20).
 The published site contains the viewer and stills from the replays. The media
 loads over the network on playback. **Vision** toggles a frame-aligned overlay
 over the same video element, preserving playback, time, and seeking. The
@@ -53,6 +53,8 @@ there is no active roll in the reconstructed timeline.
 A null die face means the other face could not be established. An unknown cube
 owner stays explicit even when the face or stake is readable. Use `sources` to
 locate the original camera clip and frame offset.
+`checker-result-pending` identifies an observed move that continues after
+pickup. `player` identifies the player finishing the move and `roll` is null.
 The `ending` entry marks a reviewed reset or pack-up. Game 5’s inferred pass
 is marked in both `result` and `cubeOffer`.
 

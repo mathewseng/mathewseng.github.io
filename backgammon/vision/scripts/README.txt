@@ -191,6 +191,17 @@ Refresh the context and reviewed episodes
   and v4/reviewed-opening-continuity.json. Rescore the complete session so
   every referenced board with a known roller has a position equity estimate.
 
+  For the late bear-off review, apply v4/reviewed-late-bearoff.json to the v19
+  replay with its output from v4/settled-face-evidence.py. This uses a clear
+  result frame before the reset. The dice interval and checker result retain
+  their respective times.
+
+    python3 calibration/validate_face_blend.py calibration/reviewed-blend-controls.json \
+      "$dice_witness_training/dice-track-candidate.pt" "$output/dice-blend-validation.json"
+
+  Supply the previously trained candidate checkpoint. This check holds out
+  every source clip used in the earlier dice benchmarks.
+
 Manual reader calibration
 
     python3 calibration/sample.py

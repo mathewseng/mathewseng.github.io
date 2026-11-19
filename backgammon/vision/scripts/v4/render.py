@@ -256,6 +256,9 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
                        cube_choices(cube_roll), "roll" if frame >= cube_roll["frame"] else None)
     elif cube_mode == "cube-take":
         cube_panel(draw, cube, cube_mode)
+    elif state.get("pendingChecker"):
+        player = state["pendingChecker"]
+        write(draw, x, 79, f"{PLAYER_NAME[player]} finishing move", HEADLINE, PLAYER_TONE[player], True)
     elif cube_roll:
         cube_panel(draw, cube_roll, "rolled" if frame >= cube_roll["frame"] else "before-roll")
     elif (featured := next((event for event in reversed(events) if event["kind"] in ("checker", "board-result")), None)):
@@ -331,9 +334,14 @@ def viewer_frames(data, states):
     pending = iter(actions)
     upcoming = next(pending, None)
     live = []
+    pending_result = None
     for state in states:
         frame = state["frame"]
         while roll and frame >= roll["end"]:
+            turn = data["turns"][(roll["decision"] or roll["sourceTurns"][0]) - 1]
+            result, pickup = turn.get("resultFrame"), roll.get("pickup")
+            if result is not None and pickup is not None and result - pickup >= ACTION_HOLD:
+                pending_result = (result, roll["player"])
             roll = next(rolls, None)
         while upcoming_cube_roll and upcoming_cube_roll["start"] <= frame:
             shown_cube_roll = upcoming_cube_roll
@@ -351,6 +359,8 @@ def viewer_frames(data, states):
             elif cube.get("reply") == "take" and frame < cube["endFrame"] + ACTION_HOLD:
                 cube_mode = "cube-take"
         active_roll = roll if roll and roll["start"] <= frame else None
+        if pending_result and not active_roll and frame < pending_result[0]:
+            state = {**state, "pendingChecker": pending_result[1]}
         cube_roll = shown_cube_roll if shown_cube_roll and frame < shown_cube_roll["end"] else None
         if active_roll:
             cube_roll = cubes_at_roll.get(active_roll["start"])
@@ -538,7 +548,8 @@ def render_frames(output, data, game, number, footage, software, start=0, *, crf
             equity_region[:] = equity_panel(equity, basis, state["loss"], closed)
             equity_key = key
         # Frame detector changes do not independently invalidate a stable panel.
-        key = id(roll), id(wait), bool(wait and index >= wait["frame"]), cube_mode, tuple(id(event) for event in events), opening, closed
+        key = (id(roll), id(wait), bool(wait and index >= wait["frame"]), cube_mode, tuple(id(event) for event in events),
+               opening, closed, state.get("pendingChecker"))
         if key != right_key:
             entry = decisions.get(str(roll["decision"])) if roll else None
             right_region[:] = action_panel(state, roll, entry, decisions.get("cube"), cube_mode, wait, events, opening)

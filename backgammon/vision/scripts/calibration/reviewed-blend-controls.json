@@ -1,0 +1,14 @@
+[
+  {"game":3,"seconds":209.68,"dice":[[174,238,5],[222,248,5]],"split":"spotExtra"},
+  {"game":3,"seconds":494.64,"dice":[[312,208,1]],"split":"spotExtra"},
+  {"game":3,"seconds":569.56,"dice":[[250,185,2],[234,332,2]],"split":"spotExtra"},
+  {"game":3,"seconds":587.08,"dice":[[432,288,2],[493,172,6]],"split":"spotExtra"},
+  {"game":3,"seconds":879.6,"dice":[[198,178,5],[176,288,1]],"split":"spotExtra"},
+  {"game":4,"seconds":812.36,"dice":[[403,302,4],[350,256,6]],"split":"spotExtra"},
+  {"game":4,"seconds":819.8,"dice":[[164,190,1]],"split":"spotExtra"},
+  {"game":4,"seconds":843.28,"dice":[[141,172,1],[158,337,1]],"split":"spotExtra"},
+  {"game":4,"seconds":996.8,"dice":[[80,222,6],[130,296,1]],"split":"spotExtra"},
+  {"game":4,"seconds":1171.36,"dice":[[172,108,2],[74,256,3]],"split":"spotExtra"},
+  {"game":5,"seconds":339.92,"dice":[[419,292,4],[332,305,6]],"split":"spotExtra"},
+  {"game":5,"seconds":628.68,"dice":[[487,256,4],[376,94,1]],"split":"spotExtra"}
+]
