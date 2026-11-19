@@ -91,11 +91,28 @@ def verify(number):
     if number == 1:
         roll = next(r for r in rolls if r["sourceTurns"] == [3])
         assert roll["start"] < 55 * 25 < roll["end"] == 1531
+        assert next(r for r in rolls if r["start"] == 6426)["pickup"] == 6486
+        assert next(r for r in rolls if r["start"] == 6518)["dice"] == [6, 6]
+        entry, fan, twos = [next(r for r in rolls if r["start"] == frame) for frame in (11833, 11993, 12047)]
+        assert (entry["player"], entry["dice"], entry["pickup"]) == ("white", [5, 3], 11958)
+        assert (fan["player"], fan["dice"], fan["fan"]) == ("dark", [5, 3], True)
+        assert (twos["player"], twos["dice"]) == ("white", [2, 2])
+        entry_turn, fan_turn, twos_turn = [game["turns"][r["decision"] - 1] for r in (entry, fan, twos)]
+        assert entry_turn["before"]["bar"] == [1, 0] and entry_turn["after"]["bar"] == [0, 1]
+        assert entry_turn["after"] == fan_turn["before"] == fan_turn["after"] == twos_turn["before"]
+        assert twos_turn["resultFrame"] == 12176
+        assert game["decisions"][str(twos["decision"])]["played"]["notation"] == "20/18 18/16 16/14 14/12"
     if number == 2:
         roll = next(r for r in rolls if r["sourceTurns"] == [4, 5, 6, 7])
         assert roll["start"] <= 1064 < 62 * 25 < roll["end"] == 2443
         assert roll["dice"] == [3, 2] and roll["decision"] == 7
         assert modes["cube-pass"] == game["frames"] - cube["endFrame"]
+        dark = next(r for r in rolls if r["start"] == 3117)
+        white = next(r for r in rolls if r["start"] == 3247)
+        assert dark["pickup"] == 3233 and white["pickup"] == 3749
+        assert game["turns"][dark["decision"] - 1]["resultFrame"] == 3243
+        choice = game["decisions"][str(white["decision"])]
+        assert choice["countedInGameLoss"] and choice["played"]["notation"] == "13/9 13/8"
     if number == 3:
         opening = rolls[0]
         assert opening["start"] == 86 and opening["dice"] == [6, 1]
@@ -111,6 +128,8 @@ def verify(number):
         if roll["decision"] is not None:
             assert game["decisions"][str(roll["decision"])]["played"]["notation"] == "24/20 20/14"
         assert modes["cube-pass"] == game["frames"] - game["ending"]["frame"]
+        assert next(r for r in rolls if r["start"] == 17055)["pickup"] == 17279
+        assert next(r for r in rolls if r["start"] == 17286)["pickup"] == 17457
     return {"game": number, "rolls": len(rolls), "noDoubleDecisions": len(cube_rolls),
             "heldActions": len(counts), "cubeFrames": dict(modes)}
 

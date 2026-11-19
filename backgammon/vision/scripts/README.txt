@@ -200,7 +200,15 @@ Refresh the context and reviewed episodes
       "$dice_witness_training/dice-track-candidate.pt" "$output/dice-blend-validation.json"
 
   Supply the previously trained candidate checkpoint. This check holds out
-  every source clip used in the earlier dice benchmarks.
+  every source clip used in the earlier dice benchmarks. Run the same command
+  with calibration/reviewed-blend-followup.json and dice-blend-followup.json
+  to include the second held-out sample in Reports.
+
+  Apply v4/reviewed-physical-handoffs.json to the v20 replay with the updated
+  dice footprint controls. The timing-only entries preserve the scored
+  position and move. A reviewed result can move earlier when the exact
+  source board matches the existing legal result. Optional reviewed checker
+  steps must reach that same board under the verified roll.
 
 Manual reader calibration
 

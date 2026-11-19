@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v19");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v20");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -30,6 +30,8 @@ const diceTrialPath = path.join(replayDir, "dice-witness-training", "dice-track-
 const diceTrial = fs.existsSync(diceTrialPath) ? read(diceTrialPath) : null;
 const blendReportPath = path.join(replayDir, "dice-blend-validation.json");
 const blendValidation = fs.existsSync(blendReportPath) ? read(blendReportPath) : null;
+const followupReportPath = path.join(replayDir, "dice-blend-followup.json");
+const followupValidation = fs.existsSync(followupReportPath) ? read(followupReportPath) : null;
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
 const footprintValidation = fs.existsSync(footprintReportPath) ? read(footprintReportPath) : [];
 
@@ -279,6 +281,8 @@ function report(number) {
       dice: diceTrial && { extraTracks: diceTrial.extraTrainingTracks, frames: diceTrial.trainingFrames, results: diceTrial.summary },
       blend: blendValidation && { faces: blendValidation.faces, clips: blendValidation.clips, metrics: blendValidation.metrics,
         tests: blendValidation.tests.filter(item => item.game === number) },
+      followup: followupValidation && { faces: followupValidation.faces, clips: followupValidation.clips,
+        metrics: followupValidation.metrics, tests: followupValidation.tests.filter(item => item.game === number) },
     },
     footprintTiming: { controls: footprintValidation.filter(item => item.clear !== null).length, shiftedRolls,
       testedWindows: footprintValidation.filter(item => item.game === number) },

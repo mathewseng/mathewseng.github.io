@@ -3,14 +3,14 @@ import { solverUrl } from '../project_paths.mjs';
 
 const { applyStep, boardKey, legalPaths } = await import(solverUrl('backgammon/core/rules.mjs'));
 
-export function trackCheckerCounts(rows, boards, roll, input, id) {
+export function trackCheckerCounts(rows, boards, roll, input, id, paths = legalPaths(input)) {
   const start = boardKey(input);
   const stages = new Map();
   const makeStage = (state, level) => {
     const key = boardKey(state);
     if (!stages.has(key)) stages.set(key, { points: state.points, level });
   };
-  for (const { steps } of legalPaths(input)) {
+  for (const { steps } of paths) {
     let state = input;
     for (const [index, step] of steps.entries()) {
       state = applyStep(state, step, input.turn);

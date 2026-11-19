@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { artifactDir, replayDir } from '../project_paths.mjs';
 import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
-import { boardKey, initialState, legalTurns, notation } from '../../../core/rules.mjs';
+import { boardKey, initialState, legalPaths, legalTurns, notation } from '../../../core/rules.mjs';
 import { toXGID } from '../../../core/xgid.mjs';
 import { trackCheckerCounts } from './checker-counts.mjs';
 import { observedBoard } from './bearoff-board.mjs';
@@ -141,6 +141,44 @@ function reviewedBoard(rows, witness, lower, upper) {
   } };
 }
 
+function retime(game, rows, roll, note, prior, start, end) {
+  const id = idOf(roll);
+  const turn = game.turns[id - 1];
+  const decision = game.decisions[id];
+  const witness = reviewedBoard(rows, note.afterBoard, start, turn.resultFrame);
+  if (witness) {
+    const settled = rows[turn.resultFrame];
+    assert(decision?.countedInGameLoss && settled.turn === id);
+    assert.equal(keyOf(witness.position), keyOf(turn.after));
+    assert.equal(keyOf(game.positions[settled.position]), keyOf(turn.after));
+    for (const row of rows.slice(witness.frame, turn.resultFrame)) {
+      assert.equal(row.turn, id);
+      row.phase = 'played';
+      row.position = settled.position;
+      delete row.displayPoints;
+    }
+    turn.resultFrame = decision.observedResultFrame = witness.frame;
+  }
+  if (start < roll.start) {
+    const position = rows[start].position;
+    assert.equal(keyOf(game.positions[position]), keyOf(turn.before));
+    for (const row of rows.slice(start, roll.start)) {
+      const priorResult = row.phase === 'played' && prior?.sourceTurns.includes(row.turn) &&
+        Number.isInteger(prior.pickup) && prior.pickup <= start;
+      assert(!row.turn || row.turn === id || priorResult, `Earlier dice overlap another turn at frame ${row.frame}.`);
+      bind(row, roll, id, turn);
+      row.position = position;
+    }
+    turn.start = Math.min(start, turn.start);
+    if (decision) {
+      decision.startFrame = turn.start;
+      decision.startSeconds = turn.start / 25;
+    }
+  }
+  turn.pickupFrame = end;
+  return { ...roll, start, end, pickup: end };
+}
+
 function observed(game, rows, boards, note, prior, start, end, afterLimit, nextPosition) {
   const player = Number(note.player === 'dark');
   const initial = reviewedBoard(rows, note.beforeBoard, prior ? prior.end - 25 : 0, start + 6)
@@ -159,7 +197,10 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   }
   const analysis = legalAnalysis(before, before && after && (pass || keyOf(before) !== keyOf(after)) ? after : null,
     player, note.dice, stationary);
-  const played = analysis?.played;
+  const recorded = note.playedPath && analysis?.played && legalPaths(analysis.state).find(path =>
+    boardKey(path.state) === analysis.played.key && notation(path.steps, player) === note.playedPath);
+  if (note.playedPath) assert(recorded, `Reviewed checker steps do not reach the verified result at ${start / 25}.`);
+  const played = recorded ? { ...analysis.played, steps: recorded.steps } : analysis?.played;
   const canScore = Boolean(analysis?.state);
   const verifiedResult = Boolean(played || (analysis?.ambiguous && note.afterBoard));
   if (note.resultAtWitness) assert(verifiedResult && note.afterBoard, `Unverified checker result at ${start / 25}.`);
@@ -184,8 +225,12 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
     game.decisions[id] = {
       player: note.player, dice, evidence, xgid: toXGID(state), startFrame: start, endFrame: turn.end,
       startSeconds: start / 25, endSeconds: turn.end / 25, observedResultFrame: finish, legalCandidates: actions.length,
-      actions: actions.map(action => ({ key: action.key, notation: notation(action.steps, player), steps: action.steps,
-        xgid: toXGID({ ...action.state, phase: 'roll', dice: [] }, { engine: true }), isPlayed: action.key === played?.key })),
+      actions: actions.map(action => {
+        const isPlayed = action.key === played?.key;
+        const steps = isPlayed ? played.steps : action.steps;
+        return { key: action.key, notation: notation(steps, player), steps, isPlayed,
+          xgid: toXGID({ ...action.state, phase: 'roll', dice: [] }, { engine: true }) };
+      }),
     };
   }
   const oldBoard = nextPosition;
@@ -209,7 +254,7 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
       row.position = newBoard;
     }
   }
-  if (played) trackCheckerCounts(rows, boards, roll, analysis.state, id);
+  if (played) trackCheckerCounts(rows, boards, roll, analysis.state, id, recorded ? [recorded] : undefined);
   return { roll, nextPosition };
 }
 
@@ -231,7 +276,8 @@ async function recover(game, rows, recording) {
       assert(Number.isInteger(timing?.start) && Number.isInteger(timing?.clear) && timing.start < timing.clear,
         `No verified dice timing for game ${game.game} at ${reviewed.starts[0]}.`);
     }
-    const note = timing ? { ...reviewed, start: timing.start / 25, pickup: timing.clear / 25 } : reviewed;
+    const note = timing ? { ...reviewed, start: (reviewed.keepStart ? starts[0] : timing.start) / 25,
+      pickup: timing.clear / 25 } : reviewed;
     const index = starts.length ? rolls.findIndex(roll => roll.start === starts[0]) :
       rolls.findIndex(roll => roll.start > frames(note.start));
     assert(index >= 0, JSON.stringify(note));
@@ -261,7 +307,10 @@ async function recover(game, rows, recording) {
       game.turns[idOf(prior) - 1].pickupFrame = prior.pickup;
     }
     assert(!prior || prior.end <= start);
-    if (note.kind === 'join') {
+    if (note.kind === 'retime') {
+      assert(timing && selection.length === 1 && (note.keepStart === true || start < selection[0].start));
+      rolls[index] = retime(game, rows, selection[0], note, prior, start, end);
+    } else if (note.kind === 'join') {
       const first = joined(game, rows, selection, note, start, end, invalidated);
       rolls.splice(index, selection.length, first);
     } else {

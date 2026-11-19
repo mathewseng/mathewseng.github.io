@@ -134,6 +134,10 @@ function renderReport(report, seek) {
       const { faces, clips, metrics } = report.witnessTrials.blend;
       section.append(element("p", `A new check used ${faces} clearly visible, hand-labeled faces from ${clips} separate clips. The current reader matched ${metrics.baseline}/${faces}, the fine-tuned reader matched ${metrics.candidate}/${faces}, and an equal blend matched ${metrics.blend}/${faces}.`, "muted small"));
     }
+    if (report.witnessTrials?.followup) {
+      const { faces, clips, metrics } = report.witnessTrials.followup;
+      section.append(element("p", `A follow-up used ${faces} hand-labeled faces from ${clips} additional clips, including blurred dice and faces the detector missed. The current reader matched ${metrics.baseline}/${faces}, the fine-tuned reader matched ${metrics.candidate}/${faces}, and the equal blend matched ${metrics.blend}/${faces}.`, "muted small"));
+    }
     fragment.append(section);
   }
 
@@ -201,7 +205,8 @@ function renderReport(report, seek) {
     const { controls, shiftedRolls } = report.footprintTiming;
     const timingNotes = shiftedRolls.map(roll => {
       const shift = (roll.previousFrame - roll.frame) / report.fps;
-      return { frame: roll.frame, title: `Roll starts ${Math.abs(shift).toFixed(1)} seconds ${shift > 0 ? "earlier" : "later"}`,
+      return { frame: roll.frame, title: shift === 0 ? "Dice pickup confirmed" :
+        `Roll starts ${Math.abs(shift).toFixed(1)} seconds ${shift > 0 ? "earlier" : "later"}`,
         detail: `Previous marker ${timecode(roll.previousFrame, report.fps)} · Both dice locations clear at ${timecode(roll.clear, report.fps)}.` };
     });
     flagged.append(element("p", `Matching both stationary dice and then the empty board agreed with the reviewed timing in ${controls} rolls.`, "muted small"),

@@ -116,6 +116,24 @@ faces from clips outside the earlier training and validation samples. The
 fine-tuned reader matched 18. These clear samples test how reliably each
 reader preserves dice values once the die location is available.
 
+## Dice pickups and confirmed checker handoffs
+
+| Where | Camera review and replay correction |
+| --- | --- |
+| Game 1, 4:19–4:21 | White picks up 6–1 at 4:19.44. Black's double sixes settle at 4:20.72, more than two seconds before the earlier replay marker. The confirmed result of White's move supplies Black's starting board. |
+| Game 1, 7:53–8:07 | The visible three and `bar/20 17/14` confirm White's 5–3 at 7:53.32. Black rolls 5–3 and fans with both entry points closed. White next rolls double twos and advances the same checker from 20 to 12. The four legal steps are preserved in history. |
+| Game 2, 2:09–2:30 | Black's dice clear at 2:09.32 and the board confirms the move before White's dice settle at 2:09.88. The visible four and the completed `13/9 13/8` verify White's 5–4 for analysis. |
+| Game 5, 11:31 and 11:38 | Both dice locations clear after each pickup, including the dark die beside a stack. The checked openings and endings of the rolls use separate evidence. |
+
+The timing checks match the visible dice and the empty board at both die
+locations. Timing corrections preserve existing graded decisions. A revised
+result timestamp requires a matching checker board in a specific camera frame.
+
+A second held-out sample includes blurred dice and faces missed by the
+detector. The current reader matched 13 of 15 manually labeled faces.
+The fine-tuned reader and the equal blend each matched 12. The replay
+continues to use the current reader.
+
 ## Opening and overlay review
 
 - Game 3’s opening toss is visible from about 0:03.4. The settled board at
