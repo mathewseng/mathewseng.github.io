@@ -6,7 +6,7 @@
   <meta name="description" content="Explore ranked Akai EWI4000s fingerings, learn every note key, and plan easier melody fingerings with octave-aware transitions.">
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261031">
   <link rel="stylesheet" href="../../shared/app.css?v=20261031">
-  <link rel="stylesheet" href="styles.css?v=20261118-melody-list">
+  <link rel="stylesheet" href="styles.css?v=20261119-melody-choices">
   <title>EWI Fingerings · Music</title>
 </head>
 <body>
@@ -72,8 +72,15 @@
       </div>
       <div class="planner-output">
         <div class="section-title"><h2 id="phrase-heading">Fingering path</h2><div class="playback"><label for="tempo">BPM <input id="tempo" type="number" min="30" max="240" value="90"></label><button type="button" id="play-phrase" class="btn">Play phrase</button></div></div>
-        <div id="plan-summary" class="plan-summary" role="status"></div>
+        <div class="plan-summary">
+          <div id="plan-summary" role="status"></div>
+          <button type="button" class="text-button" id="jump-melody-choices" aria-controls="melody-choices" hidden>Fingering choices ↓</button>
+        </div>
         <ol id="phrase-steps" class="phrase-steps" role="list" aria-labelledby="phrase-heading"></ol>
+        <section id="melody-choices" class="melody-choices" aria-labelledby="melody-choice-title" hidden>
+          <h3 id="melody-choice-title" tabindex="-1">Fingering choices</h3>
+          <div id="step-variant" role="group" aria-labelledby="melody-choice-title"></div>
+        </section>
       </div>
     </section>
     <section id="guide" class="guide" aria-label="Keys and playing guide">
@@ -140,11 +147,6 @@
       </div>
       <article id="move-result" class="move-result"></article>
     </section>
-    <dialog id="melody-choices" class="planner-dialog" aria-labelledby="melody-choice-title">
-      <div class="section-title"><h2 id="melody-choice-title">Fingering</h2><button type="button" class="btn" id="close-melody-choices">Close</button></div>
-      <div id="step-variant" class="choice-buttons" role="group" aria-labelledby="melody-choice-title" tabindex="-1"></div>
-      <button type="button" class="text-button" id="unlock">Reset all choices</button>
-    </dialog>
     <dialog id="scale-library" class="planner-dialog" aria-labelledby="scales-heading">
       <div class="section-title"><h2 id="scales-heading">Scales</h2><button type="button" class="btn" id="close-scales">Close</button></div>
       <div class="scale-controls">
@@ -156,6 +158,6 @@
     <p id="app-status" class="app-status" role="status" aria-live="polite"></p>
     <noscript><p>This interactive chart needs JavaScript. You can still use the <a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">OneWatt reference chart</a>.</p></noscript>
   </main>
-  <script type="module" src="app.js?v=20261118-melody-list"></script>
+  <script type="module" src="app.js?v=20261119-melody-choices"></script>
 </body>
 </html>

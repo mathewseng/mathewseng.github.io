@@ -17,7 +17,7 @@ The comparison chart uses compact horizontal key diagrams with each fingering’
 
 The Key Explorer places 13 keys in playing position, with round-key labels on the left and side-key and bis labels on the right. A thumb stepper changes the letter name, MIDI pitch and staff. K2 lowers the pitch by one semitone on its own. It drops out when K1 and K3 are both held. Descriptions put the usual effect first, followed by exceptions and live examples. Blue means usually −2 semitones, violet −1, and green +1. Dashed outlines and dependency labels mark conditional or linked keys. The Pitch drops table pairs K2 with K1 and lists combinations in order of each group’s effect. Selecting a total loads its keys into Key Explorer.
 
-Melody shows the entire phrase in playing order, one note per row with its front-key diagram and thumb register. Select a row to edit its fingering. The Up and Down arrows move through the list, and playback highlights and follows the current note.
+Melody shows one row per note from highest to lowest pitch, with its playback step, front-key diagram and thumb register. Select a row to see its fingering choices below the list. The panel shows the current fingering and every option within two movement points of the best. Scores re-optimize the whole phrase with that option fixed and all other locks applied. Playback follows the entered phrase order.
 
 ## Register convention
 

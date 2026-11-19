@@ -44,6 +44,7 @@ async function check(browser, url, mobile) {
     assert.match(await lastStep.getAttribute('aria-label'), /G5, locked/);
     assert.equal(await lastStep.locator('svg').getAttribute('aria-label'), chartTouch);
     await activate('[data-step="2"]');
+    assert.equal(await page.locator('dialog[open]').count(), 0);
     assert.equal(await page.locator('#step-variant [aria-pressed="true"]').getAttribute('data-fingering-choice'), imported);
 
     // Unlock and select the same chart option again, then recalculate and play.
@@ -51,12 +52,12 @@ async function check(browser, url, mobile) {
     assert.equal(await page.locator('#step-variant [aria-pressed="true"]').getAttribute('data-fingering-choice'), '');
     await activate('[data-fingering-choice="' + imported + '"]');
     assert.equal(await page.locator('#step-variant [aria-pressed="true"]').getAttribute('data-fingering-choice'), imported);
-    await activate('#close-melody-choices');
     await activate('#melody-form button[type=submit]');
     assert.equal(await lastStep.locator('svg').getAttribute('aria-label'), chartTouch);
     await page.locator('#tempo').fill('240');
     await activate('#play-phrase');
     await page.waitForFunction(() => window.scheduledNotes.length === 3);
+    await page.waitForFunction(() => document.querySelector('.phrase-step.playing')?.dataset.step === '0');
     const scheduled = await page.evaluate(() => window.scheduledNotes);
     assert.deepEqual(scheduled.map(note => note.midi), [67, 81, 79]);
     assert.ok(scheduled[0].at < scheduled[1].at && scheduled[1].at < scheduled[2].at);

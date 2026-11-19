@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FINGERINGS, KEYS, candidates, changes, optimize, parseMelody, routeCost, noteName } from '../engine.mjs';
+import { FINGERINGS, KEYS, candidates, changes, optimize, parseMelody, routeCost, noteName, scoreFingeringOptions } from '../engine.mjs';
 
 test('85 unique chart patterns, 13 keys, and no conflicting pitch assignments', () => {
   assert.equal(KEYS.length, 13);
@@ -78,6 +78,15 @@ test('locked choices remain fixed while the rest of the phrase optimizes', () =>
   assert.equal(result.path[1].shift, 1);
   assert.equal(optimize(melody, undefined, { 1: 'invalid' }), null);
   assert.deepEqual(optimize([]), { path: [], cost: 0 });
+});
+
+test('alternative scores replace only the chosen note lock and rank the resulting full phrase', () => {
+  const melody = [71, 72, 74, 72, 71];
+  const options = scoreFingeringOptions(melody, 1, undefined, { 1: '60-0', 2: '74-0' });
+  assert.deepEqual(options.map(({ id, cost }) => [id, cost]), [
+    ['72-0', 8.25], ['72-1', 8.5], ['72-2', 8.5], ['72-3', 10.5],
+    ['72-4', 10.5], ['60-0', 19.75], ['60-1', 23.75],
+  ]);
 });
 
 test('an imported chart row can be locked an octave up and still follows the bis rule', () => {

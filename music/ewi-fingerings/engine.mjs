@@ -86,6 +86,12 @@ export function optimize(melody, weights = DEFAULT_WEIGHTS, locks = {}, chartCho
   }
   return { path, cost };
 }
+export function scoreFingeringOptions(melody, step, weights, locks = {}, chartChoices = {}) {
+  return candidates(melody[step], chartChoices[step]).flatMap(option => {
+    const plan = optimize(melody, weights, { ...locks, [step]: option.id }, chartChoices);
+    return plan ? [{ ...option, cost: plan.cost }] : [];
+  }).sort((a, b) => a.cost - b.cost);
+}
 export function routeCost(path, weights = DEFAULT_WEIGHTS) {
   return path.reduce((sum, f, i) => sum + preferenceCost(f, weights) + (i ? transitionCost(path[i - 1], f, weights) : 0), 0);
 }

@@ -1,7 +1,7 @@
 import { KEY_RULES, isEligibleFingering, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-key-labels';
 import { KEY_SYMBOLS, KEY_LAYOUT, keySideEdge } from './key-artwork.mjs?v=20261118-manual-keys';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-melody-list';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody, scoreFingeringOptions } from './engine.mjs?v=20261119-melody-choices';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
 import { bestNoteMoves, noteMoveCounts, MOVE_PITCHES } from './note-moves.mjs?v=20261118-keys';
 import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-scales';
@@ -45,7 +45,7 @@ function markChoice(button) {
     choice.setAttribute('aria-pressed', String(choice === button));
   });
 }
-function navigateButtons(container, selector, arrows, select = button => button.click()) {
+function navigateButtons(container, selector, arrows) {
   $(container).addEventListener('keydown', event => {
     const step = arrows[event.key];
     const current = event.target.closest(selector);
@@ -56,7 +56,7 @@ function navigateButtons(container, selector, arrows, select = button => button.
     event.preventDefault();
     const button = buttons[Math.min(buttons.length - 1, Math.max(0, next))];
     button.focus();
-    select(button);
+    button.click();
   });
 }
 function updateSpellingButtons() {
@@ -159,7 +159,6 @@ function renderMoveResult() {
     ${line(from, move.from)}
     ${line(to, move.to)}`;
 }
-function variantLabel(f, index) { return f.main ? 'Main fingering' : `${f.base < 62 ? 'Low extension' : f.base > 73 ? 'High extension' : 'Alternate'} ${index + 1}`; }
 function renderScaleLibrary() {
   const { root, group, custom } = scaleSelection;
   const pitches = state.flats ? FLATS : SHARPS;
@@ -411,9 +410,7 @@ function calculate() {
   } catch (error) {
     $('melody-error').textContent = error.message; $('melody-error').hidden = false; $('melody').setAttribute('aria-invalid', 'true');
     state.plan = null;
-    $('phrase-steps').replaceChildren();
-    $('plan-summary').textContent = '';
-    if ($('melody-choices').open) $('melody-choices').close();
+    clearMelodyList();
     return false;
   }
 }
@@ -422,45 +419,60 @@ function routeStats(path) {
     const diff = changes(path[i], to); return { keys: total.keys + diff.keys, rollers: total.rollers + diff.rollers };
   }, { keys: 0, rollers: 0 });
 }
+function clearMelodyList(message = '') {
+  $('phrase-steps').replaceChildren();
+  $('plan-summary').textContent = message;
+  $('melody-choices').hidden = true;
+  $('jump-melody-choices').hidden = true;
+}
 function renderPlan() {
   const path = state.plan.path, stats = routeStats(path);
   $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb octave steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span>`;
-  $('phrase-steps').innerHTML = path.map((f, i) => {
+  const byPitch = path.map((f, i) => ({ f, i })).sort((a, b) => state.melody[b.i] - state.melody[a.i]);
+  $('phrase-steps').innerHTML = byPitch.map(({ f, i }) => {
     const note = name(state.melody[i]), thumb = registerName(f.shift), locked = Boolean(state.locks[i]);
     const label = `Step ${i + 1}, ${note}${locked ? ', locked' : ''}. Thumb ${thumb}. Touch ${keyList(f.bits)}.`;
-    return `<li><button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-haspopup="dialog" aria-label="${label}">
-      <strong>${note}</strong>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
+    return `<li><button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-controls="melody-choices" aria-label="${label}">
+      <span class="phrase-note"><strong>${note}</strong><span>#${i + 1}</span></span>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
       <span class="phrase-thumb">Thumb ${thumb}${locked ? '<span>Locked</span>' : ''}</span>
     </button></li>`;
   }).join('');
-  if ($('melody-choices').open) renderMelodyChoices();
+  $('melody-choices').hidden = false;
+  $('jump-melody-choices').hidden = false;
+  renderMelodyChoices();
 }
-function updatePhraseSteps(playing = false) {
-  $('phrase-steps').querySelectorAll('[data-step]').forEach((button, i) => {
-    const current = i === state.step;
+function updatePhraseSteps() {
+  $('phrase-steps').querySelectorAll('[data-step]').forEach(button => {
+    const current = Number(button.dataset.step) === state.step;
     button.setAttribute('aria-pressed', String(current));
     button.tabIndex = current ? 0 : -1;
-    button.classList.toggle('playing', playing && current);
   });
-}
-function selectPhraseStep(button) {
-  stopAudio();
-  state.step = Number(button.dataset.step);
-  updatePhraseSteps();
 }
 function renderMelodyChoices() {
   const i = state.step, current = state.plan.path[i];
-  $('melody-choice-title').textContent = `Fingering for ${name(state.melody[i])}`;
-  const options = candidates(state.melody[i], state.chartChoices[i]);
+  $('melody-choice-title').textContent = `${name(state.melody[i])} fingerings · step ${i + 1}`;
+  const options = scoreFingeringOptions(state.melody, i, weights(), state.locks, state.chartChoices);
+  const best = options[0].cost;
   const lock = state.locks[i] ?? '';
-  const choice = (id, text, label) =>
-    `<button type="button" data-fingering-choice="${id}" aria-pressed="${id === lock}" aria-label="${label}" title="${label}">${text}</button>`;
-  $('step-variant').innerHTML = choice('', 'Auto', 'Use suggested fingering') + options.map((f, j) => {
-    const offset = f.shift - current.shift;
-    const label = `${f.fromChart ? 'From chart' : variantLabel(f, j)}. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than the current choice.` : ''}`;
-    return choice(f.id, f.fromChart ? 'Chart' : f.main ? 'Main' : j + 1, label);
-  }).join('');
-  $('unlock').disabled = !Object.keys(state.locks).length;
+  const near = [], more = [];
+  for (const f of options) {
+    const delta = Number((f.cost - best).toFixed(2));
+    const selected = f.id === current.id;
+    const title = f.fromChart ? 'Chart' : f.main ? 'Main' : 'Alternate';
+    const thumb = registerName(f.shift);
+    const score = delta ? `+${delta}` : 'Best';
+    const label = `${title}${selected ? ', current' : ''}. Thumb ${thumb}. Touch ${keyList(f.bits)}. ${delta ? `${delta} points above best.` : 'Best score.'}`;
+    const row = `<button type="button" class="melody-option${selected ? ' current' : ''}" data-fingering-choice="${f.id}" aria-pressed="${f.id === lock}" aria-label="${label}">
+      <span class="melody-option-name"><strong>${title}</strong><span>Thumb ${thumb}</span></span>
+      ${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox, decorative: true })}
+      <span class="melody-option-score">${score}</span>
+    </button>`;
+    (delta <= 2 || selected ? near : more).push(row);
+  }
+  const expanded = $('step-variant').querySelector('details')?.open;
+  $('step-variant').innerHTML = `<div class="melody-choice-actions"><button type="button" class="btn" data-fingering-choice="" aria-pressed="${!lock}">Auto</button><button type="button" class="text-button" id="unlock" ${Object.keys(state.locks).length ? '' : 'disabled'}>Reset all choices</button><span class="small-label">Score relative to best</span></div>
+    <div class="melody-option-list">${near.join('')}</div>
+    ${more.length ? `<details ${expanded ? 'open' : ''}><summary>${more.length} more fingerings</summary><div class="melody-option-list">${more.join('')}</div></details>` : ''}`;
 }
 
 let audioContext, activeNodes = [], audioTimers = [], playbackGeneration = 0;
@@ -510,9 +522,11 @@ async function playPhrase() {
     state.melody.forEach((midi, i) => {
       tone(context, midi, start + i * duration, duration * .85);
       audioTimers.push(setTimeout(() => {
-        state.step = i;
-        updatePhraseSteps(true);
-        $('phrase-steps').children[i].scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+        const list = $('phrase-steps');
+        list.querySelector('.playing')?.classList.remove('playing');
+        const row = list.querySelector(`[data-step="${i}"]`);
+        row.classList.add('playing');
+        row.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
       }, (i * duration + .05) * 1000));
     });
     audioTimers.push(setTimeout(stopAudio, (state.melody.length * duration + .1) * 1000));
@@ -590,8 +604,8 @@ $('add-note').addEventListener('click', () => {
 $('melody-form').addEventListener('submit', event => { event.preventDefault(); calculate(); });
 $('melody').addEventListener('input', () => {
   state.usePhraseOctave = true;
-  stopAudio(); state.plan = null; $('phrase-steps').replaceChildren();
-  $('plan-summary').textContent = 'Choose Find fingerings to update the list.';
+  stopAudio(); state.plan = null;
+  clearMelodyList('Choose Find fingerings to update the list.');
   $('melody-error').hidden = true; $('melody').removeAttribute('aria-invalid'); save();
 });
 document.querySelectorAll('[data-phrase]').forEach(button => button.addEventListener('click', () => {
@@ -604,22 +618,26 @@ document.querySelectorAll('[data-phrase]').forEach(button => button.addEventList
 }));
 $('phrase-steps').addEventListener('click', event => {
   const button = event.target.closest('[data-step]'); if (!button) return;
-  selectPhraseStep(button);
+  stopAudio();
+  const step = Number(button.dataset.step);
+  if (step === state.step) return;
+  state.step = step;
+  updatePhraseSteps();
   renderMelodyChoices();
-  $('melody-choices').showModal();
-  $('step-variant').focus();
 });
-navigateButtons('phrase-steps', '[data-step]', { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -1, ArrowRight: 1 }, selectPhraseStep);
-$('close-melody-choices').addEventListener('click', () => $('melody-choices').close());
-$('melody-choices').addEventListener('close', () => {
-  ($('phrase-steps').querySelector('[aria-pressed="true"]') ?? $('melody')).focus();
+navigateButtons('phrase-steps', '[data-step]', { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -1, ArrowRight: 1 });
+$('jump-melody-choices').addEventListener('click', () => {
+  const heading = $('melody-choice-title');
+  heading.focus({ preventScroll: true });
+  heading.scrollIntoView({ block: 'start' });
 });
 navigateButtons('alternates', '[data-fingering]', { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -1, ArrowRight: 1 });
 $('step-variant').addEventListener('click', event => {
-  const button = event.target.closest('[data-fingering-choice]');
+  const button = event.target.closest('[data-fingering-choice], #unlock');
   if (!button) return;
   const choice = button.dataset.fingeringChoice;
-  if (choice) state.locks[state.step] = choice;
+  if (button.id === 'unlock') state.locks = {};
+  else if (choice) state.locks[state.step] = choice;
   else delete state.locks[state.step];
   if (calculate()) $('step-variant').querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
 });
@@ -669,10 +687,6 @@ document.querySelectorAll('[data-rule-filter]').forEach(button => button.addEven
   markChoice(button);
   renderKeyExplorer();
 }));
-$('unlock').addEventListener('click', () => {
-  state.locks = {};
-  if (calculate()) $('step-variant').querySelector('[aria-pressed="true"]').focus();
-});
 $('open-scales').addEventListener('click', () => {
   renderScaleLibrary();
   $('scale-library').showModal();
