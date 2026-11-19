@@ -1,0 +1,8 @@
+[
+  {"game":1,"seconds":184.76,"dice":[[394,274,3],[410,329,5]],"split":"train"},
+  {"game":1,"seconds":579.52,"dice":[[330,220,3],[362,256,5]],"split":"train"},
+  {"game":1,"seconds":583.12,"dice":[[146,248,2],[174,318,1]],"split":"train"},
+  {"game":1,"seconds":586.48,"dice":[[328,336,6],[392,320,6]],"split":"train"},
+  {"game":4,"seconds":881.64,"dice":[[168,380,5],[122,222,5]],"split":"train"},
+  {"game":4,"seconds":1007.84,"dice":[[344,268,2],[384,208,3]],"split":"train"}
+]

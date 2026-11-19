@@ -138,7 +138,7 @@ continues to use the current reader.
 
 | Where | What the replay now shows |
 | --- | --- |
-| Game 1, 8:08–9:38 | Black fans, White plays 5–1, Black enters on 6–1, and the later checker positions carry into Black’s 4–3 and White’s 5–3. At 8:46, the camera confirms a six but the checker result disagrees with every legal pair containing six. History saves both boards and the play stays ungraded. |
+| Game 1, 8:08–9:38 | Black fans, White plays 5–1, and Black enters on 6–1. The later close-up review below corrects the position at 8:46 and the subsequent starting boards. |
 | Game 3, 5:05–5:08 | Black picks up 5–3 at 5:05.96. White’s 5–2 settles at 5:07.16, 7.20 seconds ahead of the old marker, using the confirmed board after Black’s hit. |
 | Game 3, 6:41 and 15:56 | Both dice remain in their original locations after the old overlay ended. Each roll stays visible until both locations clear. |
 | Game 3, 16:29 | White picks up the two dice separately. The footage then shows an extended discussion with the same checker arrangement through the next throw. |
@@ -151,6 +151,25 @@ and scored 192 of 200 on separate reviewed clips. The current reader scored
 scored 23 of 31 on the general test set, compared with 16 for the current
 reader. It scored 5 of 10 and 36 of 41 on the reviewed sets, compared with 8
 and 39. The replay continues to use the current readers.
+
+## Checker handoffs and final bear-offs
+
+| Where | Camera evidence and replay correction |
+| --- | --- |
+| Game 1, 3:04.72 | The original camera shows three and five. The dice shift during an extended discussion and the same faces stay visible. The verified final position confirms Black’s play. |
+| Game 1, 6:46–7:26 | White’s 2–1 plays two checkers from the 6-point. The next three fans preserve their respective starting boards through pickup. The final fan in this sequence reads 5–1. |
+| Game 1, 8:46 | A close view shows both the move from point 8 to point 2 and the transfer from point 5 to point 2. These account for nine pips with 6–3. The replay grades the move and rebuilds the following starting boards. |
+| Game 1, 9:38–9:49 | Black’s 5–3 advances the rear checker and bears one off. White bears two off on 2–1. Black’s double sixes brings Black to eleven off. The replay marks the reset at 9:49.56 after both dice are collected. |
+| Game 3, 15:30–15:35 | White’s 6–2 advances two checkers from point 7. Black’s dice settle at 15:35.08, 6.04 seconds before the earlier marker. The verified White result supplies Black’s starting board. |
+| Game 4, 14:40–14:50 | The same dice remain visible throughout twenty pips of White checker movement. Both original faces and the verified result identify double fives and the four steps `7/2 20/15 15/10 10/5`. |
+
+Reports lists unknown faces on confirmed fans, faces with independently
+verified checker results, and faces where the result remains unconfirmed.
+The latest checker candidate used 863 reviewed training crops and scored
+473 of 486 on the separate reviewed clips, compared with 475 for the current
+reader. The dice candidate used 747 source images from 116 tracks and scored
+23 of 31 on the general test. It scored 6 of 10 and 37 of 41 on the reviewed
+sets. The current dice reader scored 16, 8, and 39 on the same sets.
 
 ## Opening and overlay review
 

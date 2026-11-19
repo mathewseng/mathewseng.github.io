@@ -45,6 +45,12 @@ function renderReport(report, seek) {
     fragment.append(element("p", ["Since the earlier replay", ...comparisons].join(" · "),
       "muted small vision-report-comparison"));
   }
+  if (counts.missingFaces && report.unresolvedFaces) {
+    const { fans, confirmedResults, unconfirmedResults } = report.unresolvedFaces;
+    fragment.append(element("p",
+      `Unknown faces · ${fans} on confirmed fans · ${confirmedResults} with verified checker results · ${unconfirmedResults} with unconfirmed results`,
+      "muted small"));
+  }
 
   const coverage = element("section", null, "vision-report-coverage");
   coverage.append(element("h3", "Detector coverage"));

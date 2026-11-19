@@ -122,9 +122,17 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.deepEqual(corrected.dice, [6, 4]);
     assert.equal(data.decisions[corrected.decision].evLoss, null);
     const fans = data.rolls.filter(roll => roll.fan && [24995, 25192].includes(roll.start));
-    assert.deepEqual(fans.map(roll => [roll.player, roll.dice]), [['dark', [4, 1]], ['dark', [2, null]]]);
-    assert(fans.every(roll => roll.before.bar[1] === 2 && roll.decision === null));
+    const witnessed = replay.contextRecovery.find(entry => entry.frame === 25192 &&
+      entry.text.includes('retain their checker counts'));
+    assert.deepEqual(fans.map(roll => [roll.player, roll.dice]),
+      [['dark', [4, 1]], ['dark', witnessed ? [3, 2] : [2, null]]]);
+    assert(fans.every(roll => roll.before.bar[1] === 2));
+    assert.equal(fans[0].decision, null);
     assert.deepEqual(fans[0].before, fans[0].after);
+    if (witnessed) {
+      assert.deepEqual(fans[1].before, fans[1].after);
+      assert.equal(data.decisions[fans[1].decision].evLoss, 0);
+    }
   }
   if (replay.contextRecovery?.some(entry => entry.kind === 'reviewed-turn-order')) {
     const verdict = (start, player, dice) => {
@@ -133,7 +141,9 @@ for (const number of [1, 2, 3, 4, 5]) {
       return roll;
     };
     if (number === 1) {
-      assert.equal(verdict(184.36, 'dark', [4, 3]).pickup, Math.round(239.96 * 25));
+      const recovered = data.rolls.some(roll => roll.start === 4618);
+      assert.equal(verdict(recovered ? 184.72 : 184.36, 'dark', recovered ? [5, 3] : [4, 3]).pickup,
+        Math.round(239.96 * 25));
       assert(verdict(437.56, 'white', [null, null]).fan);
       assert(verdict(488.84, 'dark', [2, 1]).fan);
       if (replay.contextRecovery.some(entry => entry.confirmedDetectorMisread)) {
@@ -143,9 +153,15 @@ for (const number of [1, 2, 3, 4, 5]) {
     }
     if (number === 3) {
       const confirmedPickup = replay.contextRecovery.find(entry => entry.frame === 23528 && entry.clear === 23913);
-      assert.equal(verdict(941.12, 'dark', [4, 3]).end, confirmedPickup ? 23913 : 23853);
+      const retimed = replay.contextRecovery.find(entry => entry.previousFrame === 23528 && entry.frame === 23377);
+      assert.equal(verdict(retimed ? 935.08 : 941.12, 'dark', [4, 3]).end,
+        retimed || confirmedPickup ? 23913 : 23853);
       assert(!data.rolls.some(roll => roll.start === Math.round(951.24 * 25)));
-      verdict(930.32, 'white', [6, 2]);
+      const white = verdict(930.32, 'white', [6, 2]);
+      if (retimed) {
+        assert.equal(data.decisions[white.decision].played.notation, '7/5 7/1');
+        assert.deepEqual(white.after, data.rolls.find(roll => roll.start === retimed.frame).before);
+      }
     }
     if (number === 4) {
       verdict(531.76, 'dark', [6, 1]);
@@ -223,13 +239,23 @@ for (const number of [1, 2, 3, 4, 5]) {
     }
     if (laterHandoff) {
       const conflict = data.rolls.find(item => item.start === 13165);
-      assert.deepEqual([conflict.dice, conflict.decision, conflict.sourceMismatch], [[6, null], null, true]);
       assert.deepEqual(conflict.after, data.rolls.find(item => item.start === 14287).before);
-      const gap = history.replay.timeline.find(item => item.frame === conflict.start && item.kind === 'gap');
-      const result = history.replay.timeline.find(item => item.frame === conflict.resultFrame && item.kind === 'board-result');
-      assert.equal(gap?.label, 'Dice and checker result disagree');
-      const saved = history.items.find(item => item.id === result?.item)?.state;
-      assert.deepEqual(saved?.points, conflict.after.points);
+      const corrected = replay.contextRecovery.some(entry => entry.frame === conflict.start && entry.superseded);
+      if (corrected) {
+        assert.deepEqual(conflict.dice, [6, 3]);
+        assert.deepEqual([conflict.before.points[1], conflict.after.points[1]], [2, 4]);
+        assert.deepEqual([conflict.before.points[4], conflict.after.points[4]], [3, 2]);
+        assert(data.decisions[conflict.decision].played);
+        assert.equal(data.ending.frame, 14739);
+        assert.deepEqual(data.rolls.at(-1).after.borneOff, [2, 11]);
+      } else {
+        assert.deepEqual([conflict.dice, conflict.decision, conflict.sourceMismatch], [[6, null], null, true]);
+        const gap = history.replay.timeline.find(item => item.frame === conflict.start && item.kind === 'gap');
+        const result = history.replay.timeline.find(item => item.frame === conflict.resultFrame && item.kind === 'board-result');
+        assert.equal(gap?.label, 'Dice and checker result disagree');
+        const saved = history.items.find(item => item.id === result?.item)?.state;
+        assert.deepEqual(saved?.points, conflict.after.points);
+      }
     }
   }
   if (number === 3 && replay.contextRecovery.some(entry => entry.previousFrame === 1858 && entry.clear === 2234)) {

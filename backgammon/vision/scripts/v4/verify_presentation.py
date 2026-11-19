@@ -104,12 +104,17 @@ def verify(number):
         assert game["decisions"][str(twos["decision"])]["played"]["notation"] == "20/18 18/16 16/14 14/12"
         handoff = [next(r for r in rolls if r["start"] == frame)
                    for frame in (12221, 12269, 13053, 13165, 14287, 14374)]
-        assert [r["dice"] for r in handoff] == [[2, 1], [5, 1], [6, 1], [6, None], [4, 3], [5, 3]]
+        corrected = any(entry["frame"] == 13165 and entry.get("superseded") for entry in game["contextRecovery"])
+        assert [r["dice"] for r in handoff] == [[2, 1], [5, 1], [6, 1], [6, 3 if corrected else None], [4, 3], [5, 3]]
         turns = [game["turns"][(r["decision"] or r["sourceTurns"][0]) - 1] for r in handoff]
         assert twos_turn["after"] == turns[0]["before"]
         assert all(a["after"] == b["before"] for a, b in zip(turns, turns[1:]))
-        assert handoff[3]["sourceMismatch"] and handoff[3]["decision"] is None
-        assert counts["board-result", turns[3]["resultFrame"]] == ACTION_HOLD
+        if corrected:
+            assert game["decisions"][str(handoff[3]["decision"])]["countedInGameLoss"]
+            assert counts["checker", turns[3]["resultFrame"]] == ACTION_HOLD
+        else:
+            assert handoff[3]["sourceMismatch"] and handoff[3]["decision"] is None
+            assert counts["board-result", turns[3]["resultFrame"]] == ACTION_HOLD
     if number == 2:
         roll = next(r for r in rolls if r["sourceTurns"] == [4, 5, 6, 7])
         assert roll["start"] <= 1064 < 62 * 25 < roll["end"] == 2443
@@ -131,11 +136,17 @@ def verify(number):
         assert modes["cube-take"] == ACTION_HOLD
         assert next(r for r in rolls if r["start"] == 7519)["pickup"] == 7649
         assert next(r for r in rolls if r["start"] == 7679)["dice"] == [5, 2]
-        for start, clear in [(9703, 10030), (23528, 23913), (24536, 24741)]:
+        middle = 23377 if any(r["start"] == 23377 for r in rolls) else 23528
+        for start, clear in [(9703, 10030), (middle, 23913), (24536, 24741)]:
             assert next(r for r in rolls if r["start"] == start)["pickup"] == clear
     if number == 4:
         assert next(r for r in rolls if r["start"] == 6489)["dice"] == [5, 4]
-        for start, clear in [(6338, 6453), (19587, 19705), (22203, 22257), (25758, 25885), (26347, 26452)]:
+        doubles = next((r for r in rolls if r["start"] == 22003), None)
+        if doubles:
+            assert doubles["dice"] == [5, 5]
+            assert game["decisions"][str(doubles["decision"])]["played"]["notation"] == "7/2 20/15 15/10 10/5"
+        for start, clear in [(6338, 6453), (19587, 19705), (22003 if doubles else 22203, 22257),
+                             (25758, 25885), (26347, 26452)]:
             assert next(r for r in rolls if r["start"] == start)["pickup"] == clear
         bear_off = next(r for r in rolls if r["start"] == 25758)
         assert bear_off["dice"] == [6, 1]

@@ -228,6 +228,15 @@ Refresh the context and reviewed episodes
       --reviewed calibration/reviewed-blend-controls.json \
       --reviewed calibration/reviewed-blend-followup.json
 
+  Apply v4/reviewed-board-recovery.json to v22 with the updated timing
+  controls. Reviews may supersede earlier descriptions while keeping the
+  historical evidence available in replay data. Recalculate checker and
+  cube decisions from the corrected starting boards.
+
+  For the later reader trials, add v4/reviewed-board-recovery.json and hold
+  out clips 3 and 52 in the checker command above. Add
+  --reviewed calibration/reviewed-recovery-faces.json to the dice command.
+
 Manual reader calibration
 
     python3 calibration/sample.py

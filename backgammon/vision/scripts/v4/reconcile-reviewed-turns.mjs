@@ -323,6 +323,12 @@ async function recover(game, rows, recording) {
       rolls.splice(index, selection.length, replacement.roll);
     }
     const result = rolls[index];
+    if (note.supersedesReview) {
+      const earlier = changes.findLast(entry => entry.kind === 'reviewed-turn-order' &&
+        entry.frame === starts[0] && !entry.superseded);
+      assert(earlier, `Missing review to supersede at frame ${starts[0]}.`);
+      earlier.superseded = true;
+    }
     changes.push({ kind: 'reviewed-turn-order', frame: result.start, end: result.end, text: note.text,
       ...(note.confirmedDetectorMisread ? { confirmedDetectorMisread: true } : {}),
       ...(timing ? { previousFrame: starts[0], clear: timing.clear } : {}),
