@@ -1,0 +1,232 @@
+{
+  "3": [
+    {
+      "kind": "retime",
+      "starts": [
+        300.76
+      ],
+      "useFootprintTiming": true,
+      "text": "Black throws 5\u20133 at 4:46. The three is slid beside the five at 5:00 while the five stays in place. The dice remain one roll through the confirmed pickup."
+    },
+    {
+      "kind": "replace",
+      "starts": [
+        1083.28
+      ],
+      "player": "dark",
+      "dice": [
+        4,
+        3
+      ],
+      "beforeBoard": {
+        "seconds": 1083.44,
+        "clip": 33,
+        "sourceFrame": 1222,
+        "points": {
+          "1": 6,
+          "2": 2,
+          "3": 3,
+          "4": -2,
+          "5": 2,
+          "17": -1,
+          "19": -2,
+          "20": -3,
+          "21": -2,
+          "22": -2,
+          "23": -2,
+          "24": -1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          2,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 1212.88,
+        "clip": 35,
+        "sourceFrame": 1466,
+        "points": {
+          "1": 6,
+          "2": 3,
+          "3": 2,
+          "4": -1,
+          "5": 2,
+          "11": -1,
+          "17": -1,
+          "19": -2,
+          "20": -3,
+          "21": -2,
+          "22": -2,
+          "23": -2,
+          "24": -1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          2,
+          0
+        ]
+      },
+      "resultAtWitness": true,
+      "text": "The original dark dice remain in place through the long discussion. The completed board shows Black\u2019s rear checker seven pips ahead and one White checker transferred from point 3 to point 2. The source board cannot result from Black\u2019s legal play alone."
+    }
+  ],
+  "4": [
+    {
+      "kind": "insert",
+      "start": 1019.32,
+      "player": "dark",
+      "dice": [
+        5,
+        5
+      ],
+      "fan": true,
+      "useFootprintTiming": true,
+      "beforeBoard": {
+        "seconds": 1019.4,
+        "clip": 54,
+        "sourceFrame": 764,
+        "points": {
+          "1": 2,
+          "2": 3,
+          "3": 2,
+          "4": 2,
+          "5": 2,
+          "19": -5,
+          "22": -4,
+          "23": -4
+        },
+        "bar": [
+          0,
+          2
+        ],
+        "off": [
+          4,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 1021.2,
+        "clip": 54,
+        "sourceFrame": 809,
+        "points": {
+          "1": 2,
+          "2": 3,
+          "3": 2,
+          "4": 2,
+          "5": 2,
+          "19": -5,
+          "22": -4,
+          "23": -4
+        },
+        "bar": [
+          0,
+          2
+        ],
+        "off": [
+          4,
+          0
+        ]
+      },
+      "text": "Black throws double fives into a closed five point with two checkers on the bar. Neither enters. The dice are picked up one at a time before White\u2019s settled roll."
+    },
+    {
+      "kind": "insert",
+      "start": 1021.24,
+      "player": "white",
+      "dice": [
+        5,
+        2
+      ],
+      "useFootprintTiming": true,
+      "resultAtWitness": true,
+      "beforeBoard": {
+        "seconds": 1021.28,
+        "clip": 54,
+        "sourceFrame": 811,
+        "points": {
+          "1": 2,
+          "2": 3,
+          "3": 2,
+          "4": 2,
+          "5": 2,
+          "19": -5,
+          "22": -4,
+          "23": -4
+        },
+        "bar": [
+          0,
+          2
+        ],
+        "off": [
+          4,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 1024.16,
+        "clip": 54,
+        "sourceFrame": 883,
+        "points": {
+          "1": 2,
+          "2": 3,
+          "3": 3,
+          "4": 2,
+          "19": -5,
+          "22": -4,
+          "23": -4
+        },
+        "bar": [
+          0,
+          2
+        ],
+        "off": [
+          5,
+          0
+        ]
+      },
+      "playedPath": "5/off 5/3",
+      "text": "White rolls 5\u20132, bears off one checker from the five point, and moves the other to the three point. The full board is visible before White picks up both dice."
+    },
+    {
+      "kind": "replace",
+      "starts": [
+        1290.44
+      ],
+      "player": "white",
+      "dice": [
+        6,
+        3
+      ],
+      "beforeBoard": {
+        "seconds": 1290.6,
+        "clip": 59,
+        "sourceFrame": 56,
+        "points": {
+          "2": 2,
+          "13": -1,
+          "17": -1,
+          "19": -5,
+          "22": -4,
+          "23": -4
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          13,
+          0
+        ]
+      },
+      "confirmedDetectorMisread": true,
+      "text": "The last white dice show six and three. White transfers the last two on-board checkers directly from point 2 to point 6 while resetting. No completed bear-off is visible."
+    }
+  ]
+}

@@ -63,25 +63,51 @@ def verify(game, test):
     occupied, empty = test['visible'], test['empty']
     onset, pickup = test['search'], test['clearSearch']
     frames = set(occupied + empty).union(range(*onset), range(*pickup))
-    data = patches(game, frames, test['centers'])
-    templates = lambda keys: np.median([data[key] for key in keys], axis=0).astype(np.uint8)
-    dice, background = templates(occupied), templates(empty)
-    contrast = [difference(die, blank) for die, blank in zip(dice, background)]
-    if min(contrast) < 12:
-        return {'start': None, 'clear': None}
+    centers = test['centers']
+    reposition = test.get('reposition')
+    if reposition:
+        moved_centers = reposition['centers']
+        shared = [center for center in centers if center in moved_centers]
+        if len(centers) != 2 or len(moved_centers) != 2 or len(shared) != 1:
+            raise ValueError('A repositioned roll must have one unchanged die location.')
+        move = reposition['search']
+        frames.update(reposition['visible'], range(*move), range(onset[1], move[1]))
+        centers = centers + [center for center in moved_centers if center not in centers]
+    data = patches(game, frames, centers)
 
-    def supporting(frame, reference, alternative, multiplier, limit):
-        for patch, match, mismatch, scale in zip(data[frame], reference, alternative, contrast):
-            near = difference(patch, match)
-            far = difference(patch, mismatch)
-            if near > min(limit, multiplier * scale) or far - near <= .25 * scale:
-                return False
-        return True
+    def template(index, visible):
+        def median(keys):
+            return np.median([data[key][index] for key in keys], axis=0).astype(np.uint8)
+        die, background = median(visible), median(empty)
+        return (index, die, background, difference(die, background))
 
-    start = sustained(onset, lambda frame: supporting(frame, dice, background, .45, 22), 6)
+    def supporting(frame, signature, occupied):
+        index, die, background, scale = signature
+        if scale < 12:
+            return False
+        match, mismatch, multiplier, limit = (die, background, .45, 22) if occupied else (background, die, .40, 18)
+        near = difference(data[frame][index], match)
+        far = difference(data[frame][index], mismatch)
+        return near <= min(limit, multiplier * scale) and far - near > .25 * scale
+
+    initial = [template(index, occupied) for index in range(len(test['centers']))]
+    final = initial
+    start = sustained(onset, lambda frame: all(supporting(frame, die, True) for die in initial), 6)
+    if start is not None and reposition:
+        anchor = initial[centers.index(shared[0])]
+        vacated = next(die for die in initial if die is not anchor)
+        new_location = next(center for center in moved_centers if center != shared[0])
+        relocated = template(centers.index(new_location), reposition['visible'])
+        final = [anchor, relocated]
+        moved = sustained(move, lambda frame: supporting(frame, vacated, False) and
+                          all(supporting(frame, die, True) for die in final), 6)
+        # Check the shared die at both endpoints and reject a confirmed
+        # removal in between. Brief occlusions need no visible pip match.
+        if moved is None or sustained((start, moved + 6), lambda frame: supporting(frame, anchor, False), 6) is not None:
+            return {'start': None, 'clear': None}
     # Removal needs a positive match for the empty board on both locations.
     # Lack of a die match during a hand occlusion is insufficient.
-    clear = sustained(pickup, lambda frame: supporting(frame, background, dice, .40, 18), 6) if start is not None else None
+    clear = sustained(pickup, lambda frame: all(supporting(frame, die, False) for die in final), 6) if start is not None else None
     return {'start': start, 'clear': clear}
 
 
@@ -99,6 +125,7 @@ if __name__ == '__main__':
             agrees = result[key] is None if interval is None else result[key] is not None and interval[0] <= result[key] <= interval[1]
             if not agrees:
                 raise AssertionError(f'Game {game} {key} was {result[key]}, expected frame range {interval}')
-        results.append({'game': game, 'previousStart': case['previousStart'], **result, 'expected': case['expected']})
+        results.append({'game': game, 'previousStart': case['previousStart'], **result, 'expected': case['expected'],
+                        **({'repositioned': True} if case.get('reposition') else {})})
     args.output.write_text(json.dumps(results, indent=2) + '\n')
     print(results)

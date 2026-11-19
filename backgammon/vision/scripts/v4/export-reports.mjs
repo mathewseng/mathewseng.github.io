@@ -38,6 +38,8 @@ const diceContinuityPath = path.join(replayDir, "dice-continuity-training", "dic
 const diceContinuity = fs.existsSync(diceContinuityPath) ? read(diceContinuityPath) : null;
 const diceRuntimePath = path.join(replayDir, "dice-continuity-training", "runtime-dice-validation.json");
 const diceRuntime = fs.existsSync(diceRuntimePath) ? read(diceRuntimePath) : null;
+const shortTurnFacePath = path.join(replayDir, "short-turn-dice-training", "dice-track-validation.json");
+const shortTurnFaces = fs.existsSync(shortTurnFacePath) ? read(shortTurnFacePath) : null;
 const planTrialPath = path.join(replayDir, "dice-automatic-replay-validation.json");
 const planTrial = fs.existsSync(planTrialPath) ? read(planTrialPath) : [];
 const locatorPath = path.join(replayDir, "locator-validation.json");
@@ -284,8 +286,10 @@ function report(number) {
   for (const entry of replay.contextRecovery ?? []) {
     if (entry.kind !== "settled-dice") continue;
     const roll = data.rolls.find(item => item.start === entry.frame);
-    if (roll) add("dice-disagreement", roll, entry.frame,
-      `Earlier replay ${entry.before?.map(face => face ?? "?").join("–") ?? "unknown"}. Current replay ${roll.dice.join("–")}.`);
+    const earlierDice = entry.before?.map(face => face ?? "?").join("–") ?? "unknown";
+    const currentDice = roll?.dice.map(face => face ?? "?").join("–");
+    if (roll && earlierDice !== currentDice) add("dice-disagreement", roll, entry.frame,
+      `Earlier replay ${earlierDice}. Current replay ${currentDice}.`);
   }
   for (const entry of unindexedPairs(raw, data)) {
     add("unindexed-pair", { player: null }, entry.frame,
@@ -305,8 +309,12 @@ function report(number) {
     .sort((a, b) => a.frame - b.frame);
   const faceResolutions = (replay.contextRecovery ?? []).filter(entry => entry.diceFrames?.length)
     .map(({ frame, diceFrames }) => ({ frame, frames: diceFrames.length }));
-  const shiftedRolls = (replay.contextRecovery ?? []).filter(entry => entry.kind === "reviewed-turn-order" &&
-    Number.isInteger(entry.previousFrame) && Number.isInteger(entry.clear));
+  const shiftedRolls = (replay.contextRecovery ?? []).flatMap(entry => {
+    if (entry.kind !== "reviewed-turn-order" || !Number.isInteger(entry.clear) ||
+        !(Number.isInteger(entry.previousFrame) || entry.restored)) return [];
+    const roll = data.rolls.find(item => item.start === entry.frame && item.pickup === entry.clear);
+    return roll ? [{ ...entry, player: roll.player, dice: roll.dice }] : [];
+  }).sort((a, b) => a.frame - b.frame);
   const report = { game: number, fps: data.fps, counts, unresolvedFaces, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
@@ -333,6 +341,7 @@ function report(number) {
         results: diceContinuity.summary },
       diceRuntime: diceRuntime && { counts: diceRuntime.counts,
         tests: diceRuntime.tests.filter(test => test.game === number) },
+      shortTurnDice: shortTurnFaces?.tests.spotExtra.filter(test => test.cohort === "short-turn-review" && test.game === number) ?? [],
     },
     footprintTiming: { controls: footprintValidation.filter(item => item.clear !== null).length, shiftedRolls,
       testedWindows: footprintValidation.filter(item => item.game === number) },

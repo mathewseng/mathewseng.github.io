@@ -339,6 +339,31 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.equal(data.decisions[turns[1].decision].played.notation, '8/6 13/7');
     assert.equal(data.decisions[turns[2].decision].played.notation, '8/3 8/3 7/2 7/2');
   }
+  if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 7168 && entry.previousFrame === 7519)) {
+    const roll = data.rolls.find(item => item.start === 7168);
+    assert.deepEqual([roll.player, roll.dice, roll.pickup], ['dark', [5, 3], 7649]);
+    assert(!data.rolls.some(item => item.start > 7168 && item.start < 7649));
+    assert(data.decisions[roll.decision].played);
+    const disagreement = data.rolls.find(item => item.start === 27082);
+    assert.equal(disagreement.sourceMismatch, true);
+    assert.deepEqual(disagreement.dice, [4, 3]);
+    assert.equal(disagreement.resultFrame, 30322);
+    assert.equal(data.decisions[disagreement.decision].evLoss, null);
+  }
+  if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 25487)) {
+    const [fan, bearOff, entry] = [25487, 25534, 25649].map(frame => data.rolls.find(roll => roll.start === frame));
+    assert.deepEqual([fan.player, fan.dice, fan.pickup], ['dark', [5, 5], bearOff.start]);
+    assert(fan.fan);
+    assert.deepEqual(fan.before, fan.after);
+    assert.deepEqual([bearOff.player, bearOff.dice, bearOff.pickup], ['white', [5, 2], 25611]);
+    assert.deepEqual(fan.after, bearOff.before);
+    assert.deepEqual(bearOff.after, entry.before);
+    assert.deepEqual(bearOff.after.borneOff, [5, 0]);
+    assert.equal(data.decisions[bearOff.decision].played.notation, '5/off 5/3');
+    const reset = data.rolls.at(-1);
+    assert.deepEqual(reset.dice, [6, 3]);
+    assert.equal(reset.after, null);
+  }
   const sourceComparisons = {
     1: [[6855, [6, 5]], [11388, [5, 1]]],
     3: [[16005, [4, 2]], [16888, [1, 1]], [22391, [2, 2]]],

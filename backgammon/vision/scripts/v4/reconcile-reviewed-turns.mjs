@@ -271,13 +271,14 @@ async function recover(game, rows, recording) {
   let nextPosition = Math.max(...Object.keys(game.positions).map(Number)) + 1;
   for (const reviewed of notes[game.game]) {
     const starts = reviewed.starts?.map(frames) ?? [];
+    const previousStart = starts[0] ?? (reviewed.start == null ? null : frames(reviewed.start));
     const timing = reviewed.useFootprintTiming && footprintTimings.find(entry =>
-      entry.game === game.game && entry.previousStart === starts[0] && Number.isInteger(entry.clear));
+      entry.game === game.game && entry.previousStart === previousStart && Number.isInteger(entry.clear));
     if (reviewed.useFootprintTiming) {
       assert(Number.isInteger(timing?.start) && Number.isInteger(timing?.clear) && timing.start < timing.clear,
-        `No verified dice timing for game ${game.game} at ${reviewed.starts[0]}.`);
+        `No verified dice timing for game ${game.game} at ${previousStart / 25}.`);
     }
-    const note = timing ? { ...reviewed, start: (reviewed.keepStart ? starts[0] : timing.start) / 25,
+    const note = timing ? { ...reviewed, start: (reviewed.keepStart ? previousStart : timing.start) / 25,
       pickup: timing.clear / 25 } : reviewed;
     const index = starts.length ? rolls.findIndex(roll => roll.start === starts[0]) :
       rolls.findIndex(roll => roll.start > frames(note.start));
@@ -335,7 +336,8 @@ async function recover(game, rows, recording) {
         boardWitnesses: [note.beforeBoard, note.afterBoard].filter(Boolean)
           .map(({ seconds, clip, sourceFrame }) => ({ frame: frames(seconds), clip, sourceFrame })),
       } : {}),
-      ...(timing ? { previousFrame: starts[0], clear: timing.clear } : {}),
+      ...(timing ? { ...(starts.length ? { previousFrame: previousStart } : { restored: true }),
+        ...(timing.repositioned ? { repositioned: true } : {}), clear: timing.clear } : {}),
       ...(result.evidence === 'settled-dice-and-legal-result' ?
         { diceFrames: faceEvidence[game.game][result.start].frames } : {}) });
     console.log(game.game, start / 25, note.kind, result.player, result.dice, 'before/after',

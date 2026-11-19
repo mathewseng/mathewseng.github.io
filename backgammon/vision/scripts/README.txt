@@ -383,3 +383,16 @@ Calibrate die color and review turn order
   It can preserve the confirmed result board when multiple legal dice
   pairs fit it. These results are available in the frame data and Library
   history without a checker score.
+
+  For reviewed-reposition-and-fans.json, start from the scored v26 replay.
+  Pass reposition-footprint-controls.json to dice-footprint-timing.py and
+  provide its output as the fourth argument to reconcile-reviewed-turns.mjs.
+  Use an empty JSON object for the third argument. A repositioned roll requires
+  a shared stationary die and a confirmed vacated location. The timing check
+  detects pickup at the two final locations. The Game 4 fan and bear-off use
+  the same positive dice and empty-board timing checks with fixed locations.
+
+  Add calibration/reviewed-reposition-and-fan-faces.json and
+  calibration/reviewed-source-comparison-faces.json to the face-track
+  trainer with --holdout-clip 18. Put its validation in
+  short-turn-dice-training/ beside the scored replay for Reports.

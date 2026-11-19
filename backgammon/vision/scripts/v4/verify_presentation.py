@@ -134,7 +134,13 @@ def verify(number):
         assert roll["start"] == 208 and roll["start"] < 25 * 25 < roll["end"]
         assert roll["decision"] == 1 and 615 not in cubes_at_roll
         assert modes["cube-take"] == ACTION_HOLD
-        assert next(r for r in rolls if r["start"] == 7519)["pickup"] == 7649
+        repositioned = next((r for r in rolls if r["start"] == 7168), None)
+        if repositioned:
+            assert repositioned["dice"] == [5, 3]
+            assert repositioned["pickup"] == 7649
+            assert not any(7168 < r["start"] < 7649 for r in rolls)
+        else:
+            assert next(r for r in rolls if r["start"] == 7519)["pickup"] == 7649
         assert next(r for r in rolls if r["start"] == 7679)["dice"] == [5, 2]
         middle = 23377 if any(r["start"] == 23377 for r in rolls) else 23528
         for start, clear in [(9703, 10030), (middle, 23913), (24536, 24741)]:

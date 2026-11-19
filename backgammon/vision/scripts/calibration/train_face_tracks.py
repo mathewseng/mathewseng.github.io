@@ -88,7 +88,8 @@ def reviewed_tracks(file):
         assert local < source["lastExclusive"]
         for x, y, face in item["dice"]:
             rows.append(dict(game=game, source=source["source"], clip=source["clip"],
-                             frame=local, target=[x, y], label=str(face), split=split))
+                             frame=local, target=[x, y], label=str(face), split=split,
+                             rollFrame=frame, cohort=item.get("cohort")))
     return rows
 
 
@@ -150,7 +151,8 @@ def main():
         old, new = probabilities(baseline, group, True), probabilities(candidate, group, True)
         tests[item["split"]].append(dict(game=item["game"], clip=item["clip"], patches=len(group),
             expected=int(item["label"]), baselineFrame=int(old[0].argmax()),
-            baselineTrack=int(old.mean(axis=0).argmax()), candidateTrack=int(new.mean(axis=0).argmax())))
+            baselineTrack=int(old.mean(axis=0).argmax()), candidateTrack=int(new.mean(axis=0).argmax()),
+            **(dict(frame=item["rollFrame"], cohort=item["cohort"]) if item.get("cohort") else {})))
     summary = {kind: dict(tracks=len(rows), **{
         key: sum(row[key] == row["expected"] for row in rows)
         for key in ("baselineFrame", "baselineTrack", "candidateTrack")

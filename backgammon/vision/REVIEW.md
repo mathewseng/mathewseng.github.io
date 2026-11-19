@@ -463,3 +463,33 @@ Using that agreement reduced wrong-player assignments from four to two
 across the automatic trial. The parser still rejected the recovered
 throw with its misread faces. The published overlays use the verified
 camera sequence and the existing production readers.
+
+## Repositioned dice and short turns
+
+| Game and time | Camera review and replay correction |
+| --- | --- |
+| Game 3, 4:46.72–5:05.96 | Black's 5–3 settles at 4:46.72. The three is slid beside the five around 5:00 and the five remains in place. The replay keeps one roll and the original starting board through pickup. |
+| Game 3, 18:03–20:12 | Black's 4–3 remains on the board during a long discussion. The final board includes both Black's seven-pip advance and a change to White's checker counts. The history preserves the observed board and leaves the checker EVL ungraded. |
+| Game 4, 16:59–17:01 | Black fans on double fives with two checkers on the bar. The dice are removed separately. |
+| Game 4, 17:01–17:04 | White's 5–2 bears off from point 5 and moves the remaining checker there to point 3. The completed board establishes Black's next starting position. |
+| Game 4, 21:30 | White's last dice show 6–3. The final two on-board checkers move to point 6 as the reset begins. The replay keeps the observed roll and leaves the result unresolved. |
+
+The timing check accepts a reviewed change in one die's location when the
+shared die is present at both endpoints and there is no confirmed empty
+interval at that location. It checks that the vacated location is empty
+and that both final dice locations clear at pickup.
+
+On six clear Game 3 frames before the die moved, the production reader
+found the five in four frames and called it four in every candidate read.
+In 11 clear frames of the Game 4 fan, the production locator found the two
+dice in 11 and six frames. The trial locator found each in all 11. The face
+reader still interpreted the fives as four and six, and both bodies were
+classified as white by the frame-level color cue. The automatic trial kept
+the following White 5–2 but missed the fan. Use these failures to distinguish
+location recall, pip classification, and turn attribution in follow-up tests.
+
+A follow-up face reader trained on 590 frames from 82 labeled tracks.
+The three new test clips stayed out of training. On the eight new manually
+labeled faces, pooled reads matched four for the current reader and five
+for the candidate. The candidate recovered the Game 3 five and still
+misread both fives in the Game 4 fan. The replay keeps the existing reader.

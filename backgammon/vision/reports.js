@@ -228,6 +228,11 @@ function renderReport(report, seek) {
       const total = Object.values(current).reduce((sum, count) => sum + count, 0);
       section.append(element("p", `With the live detector thresholds, the latest dice trial gave ${candidate.correct} correct and ${candidate.wrong ?? 0} wrong reads across ${total} views of the newly reviewed dice. The current reader gave ${current.correct} correct and ${current.wrong ?? 0} wrong reads. The remaining views were uncertain or missed.`, "muted small"));
     }
+    const shortTurnDice = report.witnessTrials?.shortTurnDice ?? [];
+    if (shortTurnDice.length) {
+      const correct = key => shortTurnDice.filter(face => face[key] === face.expected).length;
+      section.append(element("p", `On ${shortTurnDice.length} newly reviewed faces from this game, the pooled current reader matched ${correct("baselineTrack")} and the trial matched ${correct("candidateTrack")}.`, "muted small"));
+    }
     fragment.append(section);
   }
 
@@ -300,9 +305,13 @@ function renderReport(report, seek) {
     const { controls, shiftedRolls } = report.footprintTiming;
     const timingNotes = shiftedRolls.map(roll => {
       const shift = (roll.previousFrame - roll.frame) / report.fps;
-      return { frame: roll.frame, title: shift === 0 ? "Dice pickup confirmed" :
-        `Roll starts ${Math.abs(shift).toFixed(1)} seconds ${shift > 0 ? "earlier" : "later"}`,
-        detail: `Previous marker ${timecode(roll.previousFrame, report.fps)} · Both dice locations clear at ${timecode(roll.clear, report.fps)}.` };
+      const title = roll.restored ? "Missing roll restored" : shift === 0 ? "Dice pickup confirmed" :
+        `Roll starts ${Math.abs(shift).toFixed(1)} seconds ${shift > 0 ? "earlier" : "later"}`;
+      const previous = roll.restored ? `${roll.player === "white" ? "White" : "Black"} rolls ${roll.dice.map(face => face ?? "?").join("–")}. ` :
+        `Previous marker ${timecode(roll.previousFrame, report.fps)}. `;
+      const repositioned = roll.repositioned ? "One die was repositioned during the roll. " : "";
+      return { frame: roll.frame, title, detail:
+        `${previous}${repositioned}Both dice locations clear at ${timecode(roll.clear, report.fps)}.` };
     });
     flagged.append(element("p", `Matching both stationary dice and then the empty board agreed with the reviewed timing in ${controls} rolls.`, "muted small"),
       reviewList(timingNotes, entry => entry.title));
