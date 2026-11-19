@@ -181,8 +181,9 @@ function makeHistory(game, rows, extraCubeChances) {
     const preRoll = source && { ...source, dice: [], phase: 'roll' };
     if (!validMove(source, steps, turn.after)) {
       if (preRoll) recordNoDouble(cubeChoice, preRoll, turn.dice, observedTurn, true);
+      const resultVerified = turn.evidence === 'reviewed-roll-with-confirmed-board';
       const entry = { frame, turn: observedTurn, kind: 'gap', player: turn.player, dice: rolledDice,
-        label: 'Checker move unconfirmed' };
+        label: resultVerified ? 'Dice unresolved' : 'Checker move unconfirmed' };
       if (source) {
         const item = record('position', `Turn ${observedTurn} position`, 'Observed board before an unresolved checker move.');
         item.state = source;
@@ -190,6 +191,12 @@ function makeHistory(game, rows, extraCubeChances) {
         entry.item = item.id;
       }
       timeline.push(entry);
+      if (resultVerified) {
+        const nextPlayer = turn.player === 'white' ? 'dark' : 'white';
+        const result = record('position', `Turn ${observedTurn} result`, 'Confirmed checker board after a roll with an unresolved face.');
+        result.state = observedPosition({ before: turn.after, player: nextPlayer, dice: [] }, cube, number);
+        timeline.push({ frame: turn.resultFrame, kind: 'board-result', label: 'Confirmed checker result', item: result.id });
+      }
       active = null;
       continue;
     }

@@ -154,6 +154,10 @@ function renderReport(report, seek) {
   if (counts.reviewedDetectorMisreads) {
     flagged.append(element("p", `${counts.reviewedDetectorMisreads} additional detector misreads were confirmed by comparing the legal move with the visible checkers before and after the roll.`, "muted small"));
   }
+  if (counts.confirmedBoardsWithMissingDice) {
+    flagged.append(element("p",
+      `${counts.confirmedBoardsWithMissingDice} checker results have verified final boards and unresolved dice. Open those boards in Game history.`, "muted small"));
+  }
   if (counts.confirmedConsecutive) {
     flagged.append(element("p", "The footage confirms successive throws from the same player. See the timestamped review above.", "muted small"));
   }

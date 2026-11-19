@@ -163,6 +163,37 @@ for (const number of [1, 2, 3, 4, 5]) {
       assert(fans.every(roll => roll.fan && JSON.stringify(roll.before) === JSON.stringify(roll.after)));
     }
   }
+  if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 22851 && entry.confirmedDetectorMisread)) {
+    for (const [time, dice] of [[471.04, [2, null]], [914.04, [5, 5]], [981.44, [5, 5]], [1213, [2, null]]]) {
+      const roll = data.rolls.find(item => item.start === Math.round(time * 25));
+      assert.deepEqual(roll.dice, dice);
+      assert(roll.after && Number.isInteger(roll.resultFrame));
+      if (dice.includes(null)) {
+        assert.equal(roll.decision, null);
+        const entry = history.replay.timeline.find(item => item.frame === roll.resultFrame && item.kind === 'board-result');
+        assert(entry);
+        const saved = history.items.find(item => item.id === entry.item).state;
+        assert.deepEqual(saved.points, roll.after.points);
+        assert.deepEqual(saved.off, roll.after.borneOff);
+      } else assert(data.decisions[roll.decision].played);
+    }
+    const handoff = data.rolls.find(item => item.start === 30421);
+    if (handoff.evidence === 'reviewed-physical-roll') {
+      const previous = data.rolls.find(item => item.start === 30325);
+      assert.deepEqual(handoff.before, previous.after);
+      assert.deepEqual(handoff.dice, [4, 3]);
+      assert.equal(data.decisions[handoff.decision].played, null);
+      assert.equal(handoff.sourceMismatch, true);
+    }
+  }
+  if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 1283 && entry.confirmedDetectorMisread)) {
+    const roll = data.rolls.find(item => item.start === 8436);
+    assert.deepEqual(roll.dice, [6, 4]);
+    assert.equal(roll.pickup, 8728);
+    assert(data.decisions[roll.decision].played);
+    assert(replay.contextRecovery.some(item => item.kind === 'confirmed-consecutive' &&
+      item.previousFrame === 22435 && item.frame === 24716));
+  }
   if (number === 5) {
     assert.equal(data.cubeOffer.replyInferred, true);
     if (replay.contextRecovery?.some(entry => entry.kind === 'reviewed-early-roll')) {

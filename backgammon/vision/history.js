@@ -115,8 +115,8 @@ export function createHistory(seek, player) {
           ...[...entry.dice].sort((a, b) => (b || 0) - (a || 0))
             .map(value => value ? dieFace(value, { player }) : el("span", { class: "muted" }, "?"))));
         }
-        if (position?.analysis) {
-          const isCube = position.analysis.type === "cube";
+        if (position?.state) {
+          const isCube = position.analysis?.type === "cube";
           const seat = position.state.turn;
           const open = () => review(position.state, {
             title: `${names[seat]} · ${isCube ? "Cube decision" : "Observed position"} · ${time}`,

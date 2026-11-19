@@ -244,6 +244,8 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
             draw_table(draw, 182, "Top checker moves", options, selected, 58, numbers=True)
         elif roll.get("fan"):
             write(draw, x, 145, "Fanned · no checker entered", BODY, MUTED)
+        elif roll["evidence"] == "reviewed-roll-with-confirmed-board":
+            write(draw, x, 145, "Dice partly unreadable", BODY, MUTED)
         else:
             write(draw, x, 145, "Checker analysis unavailable", BODY, MUTED)
         if cube_roll:
@@ -253,12 +255,16 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
         cube_panel(draw, cube, cube_mode)
     elif cube_roll:
         cube_panel(draw, cube_roll, "rolled" if frame >= cube_roll["frame"] else "before-roll")
-    elif (featured := next((event for event in reversed(events) if event["kind"] == "checker"), None)):
+    elif (featured := next((event for event in reversed(events) if event["kind"] in ("checker", "board-result")), None)):
         player = featured["player"]
-        write(draw, x, 79, f"{PLAYER_NAME[player]} played", HEADLINE, PLAYER_TONE[player], True)
-        rank = featured["rank"]
-        write(draw, x, 135, f"{featured['notation']}  ·  Rank {rank}", BODY, MUTED)
-        draw_table(draw, 205, "Completed checker move", featured["choices"], featured["played"])
+        if featured["kind"] == "board-result":
+            write(draw, x, 79, f"{PLAYER_NAME[player]} finished moving", HEADLINE, PLAYER_TONE[player], True)
+            write(draw, x, 135, "Checker position confirmed", BODY, MUTED)
+        else:
+            write(draw, x, 79, f"{PLAYER_NAME[player]} played", HEADLINE, PLAYER_TONE[player], True)
+            rank = featured["rank"]
+            write(draw, x, 135, f"{featured['notation']}  ·  Rank {rank}", BODY, MUTED)
+            draw_table(draw, 205, "Completed checker move", featured["choices"], featured["played"])
     elif opening:
         write(draw, x, 86, "Opening toss", HEADLINE, TEXT, True)
     else:
@@ -291,6 +297,10 @@ def viewer_frames(data, states):
             actions.append({**event, "label": f"played   {label}", "notation": label,
                             "rank": rank + 1, "choices": choices, "played": played["key"]})
     for item in data["presentation"]["rolls"]:
+        if item["evidence"] == "reviewed-roll-with-confirmed-board":
+            turn = data["turns"][item["sourceTurns"][0] - 1]
+            actions.append({"frame": turn["resultFrame"], "kind": "board-result", "player": item["player"],
+                            "label": "finished moving"})
         if item["end"] - item["start"] < ACTION_HOLD:
             actions.append({"frame": item["start"], "kind": "roll", "player": item["player"], "roll": item,
                             "label": f"rolled   {dice_label(item['dice'])}" + ("  ·  fan" if item.get("fan") else "")})

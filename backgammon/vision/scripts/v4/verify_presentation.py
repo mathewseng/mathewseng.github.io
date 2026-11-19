@@ -72,6 +72,10 @@ def verify(number):
     for loss in game["losses"]:
         if loss["kind"] == "checker":
             assert counts["checker", loss["frame"]] == ACTION_HOLD
+    for roll in rolls:
+        if roll["evidence"] == "reviewed-roll-with-confirmed-board":
+            result = game["turns"][roll["sourceTurns"][0] - 1]["resultFrame"]
+            assert counts["board-result", result] == ACTION_HOLD
     assert counts["cube-offer", cube["startFrame"]] == ACTION_HOLD
     assert all(counts["no-double", wait["frame"]] == ACTION_HOLD for wait in cube_rolls)
     if cube.get("reply") in ("take", "pass"):

@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v14");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v15");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -30,6 +30,7 @@ const issueNames = {
   "no-position": "Starting checker position unavailable",
   "unconfirmed-play": "Played checker move not confirmed",
   "illegal-play": "Confirmed result is illegal for the displayed roll",
+  "observed-move-mismatch": "Observed checker arrangement conflicts with the roll",
   "dice-disagreement": "Settled dice evidence disagreed with the earlier replay",
   "overlapping-rolls": "Roll intervals overlap",
   "unindexed-pair": "Stationary dice outside a reconstructed roll",
@@ -168,7 +169,7 @@ function report(number) {
   const counts = { frames: raw.length, boardObserved: 0, boardReconciled: 0,
     coverFrames: 0, rollFrames: 0, diceRead: [0, 0, 0], diceConflictFrames: 0,
     rolls: data.rolls.length, completeRolls: 0, missingFaces: 0, bothFacesMissing: 0,
-    availableDecisions: 0, fans: 0, gradedPlays: 0, legalPlays: 0, observedPickups: 0,
+    availableDecisions: 0, confirmedBoardsWithMissingDice: 0, fans: 0, gradedPlays: 0, legalPlays: 0, observedPickups: 0,
     confirmedConsecutive: 0, reviewedDetectorMisreads: (replay.contextRecovery ?? [])
       .filter(entry => entry.confirmedDetectorMisread).length,
     sourceCuts: data.sources.filter(source => source.discontinuity).length };
@@ -192,9 +193,12 @@ function report(number) {
       add("unknown-face", roll, roll.start, missing === 2 ? "Both faces are unknown." : "One face is unknown.");
     }
     if (roll.decision) counts.availableDecisions++;
+    if (missing && roll.evidence === "reviewed-roll-with-confirmed-board") counts.confirmedBoardsWithMissingDice++;
     if (roll.fan) counts.fans++;
     if (!roll.before) add("no-position", roll);
-    if (roll.decision && !confirmed) add("unconfirmed-play", roll);
+    if (roll.sourceMismatch) add("observed-move-mismatch", roll, roll.end - 1,
+      "The reviewed checker arrangement at pickup falls outside the legal results for the frozen starting board and dice.");
+    else if (roll.decision && !confirmed) add("unconfirmed-play", roll);
     if (confirmed) {
       const snapshot = board => ({ ...board, points: board.points.map(value => [Math.max(value, 0), Math.max(-value, 0)]) });
       const player = Number(roll.player === "dark");

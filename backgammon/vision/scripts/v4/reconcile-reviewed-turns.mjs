@@ -54,6 +54,7 @@ function legalAnalysis(before, after, player, evidence) {
   });
   const confirmed = checked.filter(entry => entry.played);
   if (confirmed.length === 1) return confirmed[0];
+  if (confirmed.length > 1) return { ambiguous: true };
   if (playable(physical)) return { ...checked[0], played: null };
   return null;
 }
@@ -145,18 +146,24 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   const analysis = legalAnalysis(before, before && after && (pass || keyOf(before) !== keyOf(after)) ? after : null,
     player, note.dice);
   const played = analysis?.played;
-  const finish = played ? Math.min(afterLimit, Math.max(following.frame, end)) : null;
-  const dice = analysis ? [...analysis.state.dice] : [...note.dice].reverse();
-  const evidence = played ? 'reviewed-roll-and-legal-result' : 'reviewed-physical-roll';
+  const canScore = Boolean(analysis?.state);
+  const verifiedResult = Boolean(played || (analysis?.ambiguous && note.afterBoard));
+  const finish = verifiedResult ? Math.min(afterLimit, Math.max(following.frame, end)) : null;
+  const dice = canScore ? [...analysis.state.dice] : [...note.dice].reverse();
+  const evidence = played ? 'reviewed-roll-and-legal-result' :
+    verifiedResult ? 'reviewed-roll-with-confirmed-board' : 'reviewed-physical-roll';
   const id = game.turns.length + 1;
   const turn = {
     start, end: Math.max(end - 1, finish ?? 0), pickupFrame: note.pickupFrame, player: note.player, dice,
-    before, after: played ? after : null, resultFrame: finish, steps: played?.steps ?? null, evidence,
+    before, after: verifiedResult ? after : null, resultFrame: finish, steps: played?.steps ?? null, evidence,
   };
   game.turns.push(turn);
+  const sourceMismatch = note.afterBoard && playable(note.dice) && before && after &&
+    keyOf(before) !== keyOf(after) && !played;
   const roll = { start, end, pickup: note.pickupFrame, player: note.player, dice: [...dice].reverse(),
-    decision: analysis ? id : null, sourceTurns: [id], evidence, ...(note.fan ? { fan: true } : {}) };
-  if (analysis) {
+    decision: canScore ? id : null, sourceTurns: [id], evidence, ...(note.fan ? { fan: true } : {}),
+    ...(sourceMismatch ? { sourceMismatch: true } : {}) };
+  if (canScore) {
     const { state, actions } = analysis;
     game.decisions[id] = {
       player: note.player, dice, evidence, xgid: toXGID(state), startFrame: start, endFrame: turn.end,
@@ -168,7 +175,7 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   const oldBoard = nextPosition;
   if (before) game.positions[nextPosition++] = { ...before, onRoll: note.player, observedFrame: initial.frame, source: evidence, equities: null };
   const newBoard = nextPosition;
-  if (played) game.positions[nextPosition++] = { ...after, onRoll: note.player === 'dark' ? 'white' : 'dark',
+  if (verifiedResult) game.positions[nextPosition++] = { ...after, onRoll: note.player === 'dark' ? 'white' : 'dark',
     observedFrame: following.frame, source: evidence, equities: null };
   for (const row of rows.slice(start, Math.max(end, (finish ?? -1) + 1))) {
     const existing = game.decisions[row.decision];
@@ -178,6 +185,13 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
       `Overlap with a pending scored move at ${row.frame}.`);
     bind(row, roll, id, turn);
     if (before) row.position = finish !== null && row.frame >= finish ? newBoard : oldBoard;
+  }
+  if (verifiedResult && note.afterBoard) {
+    for (const row of rows.slice(finish + 1, afterLimit + 1)) {
+      if (row.phase === 'game-closed' || row.cube?.offered ||
+          game.positions[row.position]?.observedFrame > following.frame) break;
+      row.position = newBoard;
+    }
   }
   if (played) trackCheckerCounts(rows, boards, roll, analysis.state, id);
   return { roll, nextPosition };

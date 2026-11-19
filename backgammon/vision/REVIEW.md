@@ -188,3 +188,32 @@ correct faces. The candidate matched 5/10 there. The replay retains the
 original face classifier and uses the source-reviewed board evidence to
 resolve those game states. The sampled checks give evidence about these
 specific frames and turns.
+
+
+## Verified checker results with incomplete dice
+
+The next pass compared the checker inventory before and after six
+additional throws in Games 3 and 4. Game 3 has double fives at
+15:14 and 16:21. The second turn leaves six White checkers on point 1
+and two off. White's two transfers at 0:51 in Game 4 require 5–4.
+At 5:37 the same 6–4 remains on the board while White tries checker
+arrangements, until pickup near 5:49.
+
+Game 3 has two confirmed results whose dice are still ambiguous.
+At 7:51 the same board can follow either 6–2 or 2–2. At 20:13 it can
+follow either 5–2 or 6–2 because the higher die can bear the checker off.
+Game history now opens both verified boards. A two-second cue marks each
+confirmed result in the video. The replay keeps the
+unknown face visible. Checker EV loss is reserved for graded decisions.
+At 20:16 the verified six-checker stack becomes the starting position
+for Black’s next roll. Checker movements in that turn include
+demonstration placements, and the final board fails the legal-result check.
+
+The final turn-order flag came from another sequence of consecutive
+White throws in Game 4 at 16:28. The wide recording shows the discussion
+between them. Black's cup stayed on the felt for all 1,542 original
+frames in the interval, and the next visible throw belonged to White.
+The report records both confirmed same-player transitions separately.
+All 97 graded plays are legal for their reconstructed boards and dice.
+Both dice are known for 133 of 159 indexed rolls, with 29 unresolved
+faces across the session.

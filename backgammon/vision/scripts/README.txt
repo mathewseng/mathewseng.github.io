@@ -199,3 +199,9 @@ Calibrate die color and review turn order
   stationary die. It compares an individual baseline reading, pooled baseline,
   and pooled fine-tuned reader, with held-out clips and reviewed game rolls.
   Track training and results are kept alongside the other calibration artifacts.
+
+
+  A follow-up using reviewed-checker-followup.json starts from scored v15.
+  It can preserve the confirmed result board when multiple legal dice
+  pairs fit it. These results are available in the frame data and Library
+  history without a checker score.
