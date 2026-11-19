@@ -80,6 +80,39 @@ function renderReport(report, seek) {
   }
   fragment.append(coverage);
 
+  if (report.automaticTrial) {
+    const { current, candidate } = report.automaticTrial;
+    const section = element("section", null, "vision-report-model");
+    section.append(element("h3", "Automatic replay trial"), element("p",
+      "Both readers processed the full recording. Their automatic game states are compared with the reviewed replay. Dice counts use matched rolls whose faces are both known in the reviewed footage.",
+      "muted small"));
+    const table = element("table", null, "vision-history-totals");
+    const head = table.createTHead().insertRow();
+    for (const label of ["Check", "Current", "Trial"]) {
+      const cell = element("th", label);
+      cell.scope = "col";
+      head.append(cell);
+    }
+    const body = table.createTBody();
+    for (const [label, value] of [
+      ["Reviewed rolls matched", entry => `${entry.counts.matched}/${entry.counts.reference}`],
+      ["Additional roll proposals", entry => entry.unmatched.length],
+      ["Correct dice pairs", entry => entry.counts.correctDice],
+      ["Wrong dice pairs", entry => entry.counts.wrongDice],
+      ["Pairs with unread faces", entry => entry.counts.unknownDice],
+      ["Wrong player", entry => entry.counts.actorMismatches],
+      ["Starting boards matched", entry => entry.counts.correctBefore],
+      ["Ending boards matched", entry => entry.counts.correctAfter],
+    ]) {
+      const row = body.insertRow();
+      const name = element("th", label);
+      name.scope = "row";
+      row.append(name, element("td", String(value(current))), element("td", String(value(candidate))));
+    }
+    section.append(table);
+    fragment.append(section);
+  }
+
   if (report.modelChecks) {
     const section = element("section", null, "vision-report-model");
     section.append(element("h3", "Manual model benchmark"), element("p",

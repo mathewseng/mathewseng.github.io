@@ -38,6 +38,8 @@ const diceContinuityPath = path.join(replayDir, "dice-continuity-training", "dic
 const diceContinuity = fs.existsSync(diceContinuityPath) ? read(diceContinuityPath) : null;
 const diceRuntimePath = path.join(replayDir, "dice-continuity-training", "runtime-dice-validation.json");
 const diceRuntime = fs.existsSync(diceRuntimePath) ? read(diceRuntimePath) : null;
+const planTrialPath = path.join(replayDir, "dice-automatic-replay-validation.json");
+const planTrial = fs.existsSync(planTrialPath) ? read(planTrialPath) : [];
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
 const footprintValidation = fs.existsSync(footprintReportPath) ? read(footprintReportPath) : [];
 
@@ -295,6 +297,7 @@ function report(number) {
   const report = { game: number, fps: data.fps, counts, unresolvedFaces, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
+    automaticTrial: planTrial.find(item => item.game === number) ?? null,
     reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
     diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number),
     settledFaces: faceValidation && {

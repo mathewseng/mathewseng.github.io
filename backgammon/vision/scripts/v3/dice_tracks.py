@@ -17,9 +17,14 @@ BASE=ROOT/'v2'; OUT=ROOT/'v3'
 from game_state import center_crop
 
 
-def state_rows(index):
-    source=sorted((BASE/'state').glob('*.jsonl.gz'))[index]
-    with gzip.open(source,'rt') as f:return [json.loads(line) for line in f]
+def state_rows(index, directory=None):
+    if directory is None:
+        source = sorted((BASE / 'state').glob('*.jsonl.gz'))[index]
+    else:
+        video = sorted((ROOT / 'board').glob('*.mp4'))[index]
+        source = directory / video.with_suffix('.jsonl.gz').name
+    with gzip.open(source, 'rt') as stream:
+        return [json.loads(line) for line in stream]
 
 
 def pistes(rows):

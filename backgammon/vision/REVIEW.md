@@ -379,5 +379,9 @@ the next validation pass.
 
 The gated detector read 95 of 247 sampled face views correctly with the
 candidate and 72 with the current reader. Wrong reads fell from 20 to 6.
-These views come from the same held-out dice as the new track test, so
-a full-session precision and turn-order comparison remains open.
+Across all five games, the original automatic reconstruction matched 129
+of 159 reviewed rolls and the candidate matched 125. Correct dice pairs
+fell from 96 to 88. Wrong pairs fell from nine to seven, while wrong-player
+assignments rose from three to four. The replay keeps the existing reader.
+Reports includes the per-game comparisons and the download records every
+matched or additional roll proposal.

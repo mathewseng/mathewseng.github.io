@@ -255,6 +255,24 @@ Refresh the context and reviewed episodes
       "$output/dice-continuity-training/dice-track-candidate.onnx" \
       "$output/dice-continuity-training/runtime-dice-validation.json"
 
+  To test a candidate over the full recording, keep the frame observations,
+  physical tracks, and reconstruction plans in separate folders.
+
+    python3 v2/vision.py --dice-reader "$candidate/dice-track-candidate.onnx" \
+      --state-dir "$candidate/state"
+    python3 v3/read_values.py --state-dir "$candidate/state" \
+      --output "$candidate/value-tracks.json"
+    python3 v4/observations.py --tracks "$candidate/value-tracks.json" --output "$candidate"
+    python3 v4/observations.py --output "$current"
+    OFFICE3_VISION_OBSERVATIONS_DIR="$candidate" OFFICE3_REPLAY_DIR="$candidate" bun v4/reconstruct.mjs --plan
+    OFFICE3_VISION_OBSERVATIONS_DIR="$current" OFFICE3_REPLAY_DIR="$current" bun v4/reconstruct.mjs --plan
+    bun v4/compare-turn-plans.mjs "$output" "$current" "$candidate" \
+      "$output/dice-automatic-replay-validation.json"
+
+  Report the automatic comparison before applying manual reconciliation.
+  The reviewed roll count is the comparison denominator, with unknown
+  reference faces excluded from the dice-pair accuracy counts.
+
 Manual reader calibration
 
     python3 calibration/sample.py

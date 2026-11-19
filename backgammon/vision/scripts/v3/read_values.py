@@ -1,5 +1,7 @@
 """Reread physical dice and cube tracks using multiple images of each face."""
 from __future__ import annotations
+import argparse
+from functools import partial
 from collections import Counter,defaultdict
 from concurrent.futures import ProcessPoolExecutor
 import json,sys
@@ -97,8 +99,8 @@ def cube_values(t,crops):
             'evidence':'repeated-visual-read' if count>=6 and chosen==face else 'trained-cube-face-poses'}
 
 
-def evaluate_clip(index):
-    rows=state_rows(index)
+def evaluate_clip(index, state_dir=None):
+    rows=state_rows(index, state_dir)
     ds=pistes(rows)
     cs=current_cubes(rows)
     crops=read_patches(index,[*ds,*cs])
@@ -114,9 +116,16 @@ def evaluate_clip(index):
 
 
 def main():
-    with ProcessPoolExecutor(max_workers=8,initializer=load_models) as pool:
-        values=list(pool.map(evaluate_clip,range(77)))
-    (OUT/'value-tracks.json').write_text(json.dumps(values,indent=2)+'\n')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--state-dir', type=Path)
+    parser.add_argument('--output', type=Path, default=OUT / 'value-tracks.json')
+    args = parser.parse_args()
+    if args.state_dir and args.output.resolve() == (OUT / 'value-tracks.json').resolve():
+        parser.error('Candidate states require a separate --output for the tracked values.')
+    clips = range(len(list((ROOT / 'board').glob('*.mp4')))) if args.state_dir else range(77)
+    with ProcessPoolExecutor(max_workers=8, initializer=load_models) as pool:
+        values = list(pool.map(partial(evaluate_clip, state_dir=args.state_dir), clips))
+    args.output.write_text(json.dumps(values, indent=2) + '\n')
     print('Tracked values',sum(len(x['dice']) for x in values),sum(len(x['cube']) for x in values))
     print('Accepted die faces',sum(sum(d['value'] is not None for d in x['dice']) for x in values))
 if __name__=='__main__':main()
