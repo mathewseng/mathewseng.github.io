@@ -1,0 +1,6 @@
+{
+  "1": { "frame": 14865, "clip": 9, "sourceFrame": 1354, "kind": "board-reset" },
+  "3": { "frame": 32063, "clip": 37, "sourceFrame": 199, "kind": "board-reset" },
+  "4": { "frame": 32300, "clip": 59, "sourceFrame": 91, "kind": "board-reset" },
+  "5": { "frame": 19425, "clip": 72, "sourceFrame": 608, "kind": "pack-up-after-offer" }
+}

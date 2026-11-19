@@ -516,6 +516,12 @@
   font-weight: 650;
 }
 
+.vision-played-move {
+  margin-top: 0.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+}
+
 @media (max-width: 700px) and (min-height: 501px) {
   .vision-page .recording-review[data-decision-kind="cube"][data-review-view="decision"] .decision-layout {
     grid-template-rows: min(42dvh, calc((100vw - 2.25rem) * 0.75)) minmax(0, 1fr);

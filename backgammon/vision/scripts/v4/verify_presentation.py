@@ -2,7 +2,7 @@
 import json
 from collections import Counter
 
-from render import ACTION_HOLD, OUT, RH, RW, action_panel, rows, viewer_frames
+from render import ACTION_HOLD, BW, OUT, RH, RW, action_panel, equity_frames, equity_panel, rows, viewer_frames
 
 
 def verify(number):
@@ -24,11 +24,25 @@ def verify(number):
     shown_at_roll = set()
     modes = Counter()
     rendered = set()
+    equity_rendered = set()
     cube = game["decisions"]["cube"]
-    for state, roll, wait, cube_mode, actions, opening in viewer_frames(
-        game, rows(OUT / f"{prefix}-state.jsonl.gz")
-    ):
+    frames = viewer_frames(game, rows(OUT / f"{prefix}-state.jsonl.gz"))
+    for items, position, equity, basis, closed in equity_frames(game, frames):
+        state, roll, wait, cube_mode, actions, opening = items
         frame = state["frame"]
+        if closed:
+            assert not (position or equity or roll or wait)
+        elif roll and roll["decision"] and cube_mode != "cube-offer":
+            assert equity and basis in ("After best play", "After played move")
+            if roll["start"] == frame:
+                assert basis == "After best play"
+        if number == 3 and frame == 1025:
+            assert basis == "After played move"
+            assert equity[1]["equity"] == game["decisions"]["1"]["played"]["equity"]
+        equity_key = id(equity), basis, closed
+        if equity_key not in equity_rendered:
+            assert equity_panel(equity, basis, state["loss"], closed).shape == (256, BW, 3)
+            equity_rendered.add(equity_key)
         if opening:
             assert number > 1 and frame < rolls[0]["start"]
         if roll:
@@ -83,6 +97,7 @@ def verify(number):
         roll = next(r for r in rolls if r["sourceTurns"] == [3, 4])
         assert roll["start"] < 73 * 25 < roll["end"]
         assert roll["dice"] == [6, 4] and roll["decision"] is None
+        assert modes["cube-pass"] == game["frames"] - game["ending"]["frame"]
     return {"game": number, "rolls": len(rolls), "noDoubleDecisions": len(cube_rolls),
             "heldActions": len(counts), "cubeFrames": dict(modes)}
 

@@ -45,7 +45,8 @@ function checkerResult(decision, source, steps) {
   return {
     ...base(source, 'checker', decision.equityUnits !== 'cubeless equity'),
     candidates: decision.actions.slice(0, 5).map(convert),
-    actual: played ? convert(played) : null, evaluatedCount: decision.actions.length,
+    actual: played ? { ...convert(played), rank: decision.actions.indexOf(played) + 1 } : null,
+    evaluatedCount: decision.actions.length,
   };
 }
 
@@ -162,6 +163,7 @@ function makeHistory(game, rows, extraCubeChances) {
       if (offer.reply === 'take' || offer.reply === 'pass') {
         timeline.push({ frame: offer.endFrame, endFrame: offer.reply === 'pass' ? rows.length : offer.endFrame + 50,
           turn: observedTurn + 1, kind: 'cube',
+          ...(offer.replyInferred ? { note: 'Pass inferred from pack-up' } : {}),
           ...action({ type: offer.reply }, offer.endFrame, cubeResult(offer, active.state, chances)) });
       } else {
         timeline.push({ frame: stop?.frame ?? offer.endFrame, kind: 'gap', label: 'Cube response unconfirmed' });
@@ -210,9 +212,11 @@ function makeHistory(game, rows, extraCubeChances) {
     });
   }
   if (stop) {
-    timeline.push({ frame: stop.frame, kind: 'end',
-      label: game.result ? `${names[player(game.result.winner)]} wins ${game.result.points} ${game.result.points === 1 ? 'point' : 'points'}`
-        : 'Game closes · result unconfirmed' });
+    const result = game.result;
+    const outcome = result ? `${names[player(result.winner)]} wins ${result.points} ${result.points === 1 ? 'point' : 'points'}` : null;
+    timeline.push({ frame: stop.frame, kind: 'end', label: outcome ??
+      (game.ending?.kind === 'board-reset' ? 'Board reset · result unconfirmed' : 'Game ends · result unconfirmed'),
+      ...(result?.inferred ? { note: 'Pass inferred from pack-up' } : {}) });
   }
   const lastLoss = rows.at(-1).loss;
   return {

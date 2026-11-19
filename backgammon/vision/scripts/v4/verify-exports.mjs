@@ -21,6 +21,7 @@ for (const number of [1, 2, 3, 4, 5]) {
   const data = read(path.join(root, 'state'), game + '.json');
   const history = parseBackup(fs.readFileSync(path.join(root, 'history', game + '.json'), 'utf8'));
   assert.equal(data.frames, rows.length);
+  assert.deepEqual(data.ending, replay.ending ?? null);
   assert.equal(data.changes[0].frame, 0);
   assert(data.changes.every((change, idx) => idx === 0 || change.frame > data.changes[idx - 1].frame));
   let changeIndex = 0, rollIndex = 0;
@@ -94,6 +95,14 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.equal(history.items[0].events.at(-1).action.type, 'pass');
     assert.equal(history.items[0].status, 'game-complete');
     assert.equal(history.replay.timeline.filter(entry => entry.kind === 'gap').length, 0);
+  }
+  if (number === 5) {
+    assert.equal(data.cubeOffer.replyInferred, true);
+    const pass = history.replay.timeline.find(entry => entry.frame === data.ending.frame && entry.kind === 'cube');
+    assert.equal(pass.note, 'Pass inferred from pack-up');
+    const segment = history.items.find(item => item.id === pass.item);
+    assert.equal(segment.events.at(-1).action.type, 'pass');
+    assert.equal(segment.status, 'game-complete');
   }
   summary.push({ game: number, frames: data.frames, turns: data.rolls.length, recovered: replay.recoveredTurns.length,
     verified: native.filter(turn => turn.action.type === 'move').length });

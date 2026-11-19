@@ -234,7 +234,7 @@ def stroke_label(image,label):
 
 
 class FrameWriter:
-    def __init__(self,target,software=False,bitrate=3_500_000):
+    def __init__(self,target,software=False,bitrate=3_500_000,*,software_preset='ultrafast',software_crf=23):
         self.target=target
         if hasattr(target, 'write'):
             self.writer = av.open(target, 'w', format='mp4',
@@ -244,7 +244,7 @@ class FrameWriter:
         self.stream=self.writer.add_stream('libx264' if software else 'h264_videotoolbox',rate=FPS)
         self.stream.width=WIDTH;self.stream.height=HEIGHT
         self.stream.pix_fmt='yuv420p' if software else 'nv12'
-        if software:self.stream.options={'crf':'23','preset':'ultrafast','threads':'2'}
+        if software:self.stream.options={'crf':str(software_crf),'preset':software_preset,'threads':'2'}
         else:
             self.stream.bit_rate=bitrate
             self.stream.options={'allow_sw':'1','realtime':'0','profile':'high'}

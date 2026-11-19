@@ -77,6 +77,9 @@ Roll and board state
   complete legal turns. Backfill resolved dice to the start of the physical
   roll. The public frame data includes both checker snapshots when supported.
   The audit sidecars retain the original frame-level vision detections.
+  Source-anchored observations in v4/reviewed_endings.json mark resets and
+  the Game 5 pack-up. The latter establishes an inferred pass. Keep the
+  recording running through cleanup without carrying live game graphics over it.
 
   Game 1 begins with the first captured frame and an open game. Games 2 through
   5 begin at verified opening boards. The original v2 and v3 videos and source
@@ -111,3 +114,7 @@ Refresh an existing reconstructed replay
   replay with OFFICE3_REPLAY_DIR set to a separate staging folder. Run
   v4/rescore.mjs 3 against that staging folder via OFFICE3_SCORE_SOURCE.
   Publication verifies the roll snapshots, action totals and Library backup.
+
+  Apply the reviewed endings to an existing replay with
+  OFFICE3_REPLAY_DIR="$output" bun v4/accounting.mjs "$previous".
+  Render that output with --software for the compact H.264 export.

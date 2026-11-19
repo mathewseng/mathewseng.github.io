@@ -5,7 +5,7 @@ Office-3 game replays from November 17, 2026. Add `?game=1` through `?game=5`
 to link to a specific game.
 
 The 1080p video files are assets on the
-[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v9).
+[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v10).
 The published site contains the viewer and stills from the replays. The media
 loads over the network on playback. **Vision** toggles a frame-aligned overlay
 over the same video element, preserving playback, time, and seeking. The
@@ -18,6 +18,10 @@ Every supported cube opportunity has an EV comparison, including a roll
 without doubling. Checker and cube loss are tracked in separate columns.
 Best and played choices have separate labels. The review board uses the
 colors of the recorded table.
+The active roll shows equity after best play until a confirmed result. Once
+play ends, the overlay clears checker counts and shows the final loss totals.
+The review includes a separate playable row when the recorded move ranked
+outside the top five.
 [Review notes](REVIEW.md) record the footage and timing checks for this update.
 
 Use **Previous decision**, **Next decision**, and **Review** beside the video
@@ -41,6 +45,8 @@ there is no active roll in the reconstructed timeline.
 A null die face means the other face could not be established. An unknown cube
 owner stays explicit even when the face or stake is readable. Use `sources` to
 locate the original camera clip and frame offset.
+The `ending` entry marks a reviewed reset or pack-up. Game 5’s inferred pass
+is marked in both `result` and `cubeOffer`.
 
 The [vision pipeline](scripts/README.txt) contains the source used to reconstruct
 the game state, score the decisions with GNUbg, and render the overlays. Site

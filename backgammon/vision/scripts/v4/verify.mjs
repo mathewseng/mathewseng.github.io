@@ -11,6 +11,7 @@ const dir = replayDir;
 const base = path.join(artifactDir, 'v2');
 const summary = [];
 const read = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
+const reviewedEndings = JSON.parse(fs.readFileSync(new URL('./reviewed_endings.json', import.meta.url)));
 for (const game of [1, 2, 3, 4, 5]) {
   const prefix = 'game-' + String(game).padStart(2, '0');
   const data = read(dir, prefix + '-game.json');
@@ -72,6 +73,9 @@ for (const game of [1, 2, 3, 4, 5]) {
             JSON.stringify(raw[i].state?.position) === entry.target) entry.matches++;
       }
       if (game === 2 && frame >= data.decisions.cube.startFrame) countReset(raw[i].state);
+      if (game === 5 && frame >= data.decisions.cube.startFrame && frame < data.ending.frame) {
+        assert(!raw[i].state?.currentRoll, 'No dice rolled between the offer and pack-up');
+      }
       assert.equal(row.frame, frame);
       assert.equal(row.clip, part.clip);
       assert.equal(row.sourceFrame, i);
@@ -170,6 +174,21 @@ for (const game of [1, 2, 3, 4, 5]) {
   }
   assert(Object.values(data.positions).every((p) => !p.equities || p.equities.plies === 4));
   assert(counts.cubeOfferFrames > 0);
+  if (data.ending) {
+    const stop = data.ending.frame;
+    assert(rows[stop - 1].phase !== 'game-closed');
+    assert(rows.slice(stop).every(row => row.phase === 'game-closed' &&
+      [row.position, row.player, row.roll, row.decision, row.turn].every(value => value === null)));
+    if (reviewedEndings[game]) {
+      const { frame, clip, sourceFrame, kind } = reviewedEndings[game];
+      assert.deepEqual(data.ending, { frame, kind });
+      assert.equal(rows[frame].clip, clip);
+      assert.equal(rows[frame].sourceFrame, sourceFrame);
+      assert(data.presentation.rolls.every(roll => roll.end <= frame));
+      assert(data.presentation.cubeRolls.every(roll => roll.end <= frame));
+      if (kind === 'board-reset') assert.equal(data.result, undefined);
+    }
+  }
   if (game === 1) {
     // The first visible white roll stays stable across drift in both die readings.
     for (const row of rows.slice(0, 465)) {
@@ -207,13 +226,19 @@ for (const game of [1, 2, 3, 4, 5]) {
     assert.match(row.roll.evidence, /reviewed/);
   }
   if (game === 5) {
-    for (const row of rows.slice(18628, 19983)) {
+    assert.deepEqual(data.result, { frame: 19425, winner: 'white', reason: 'pass', points: 2, inferred: true });
+    for (const row of rows.slice(18628, data.result.frame)) {
       assert.equal(row.phase, 'cube-response');
       assert.equal(row.player, 'dark');
       assert.equal(row.cube.stake, 2);
       assert.equal(row.cube.offered, 4);
       assert.equal(row.roll, null);
     }
+    const pass = data.losses.filter(event => event.action === 'pass');
+    assert.equal(pass.length, 1);
+    assert.equal(pass[0].frame, data.result.frame);
+    assert.equal(pass[0].player, 'dark');
+    assert.equal(pass[0].loss.toFixed(3), '0.361');
   }
   const result = { game, frames: rows.length, turnEpisodes: data.turns.length,
     decisions: Object.keys(data.decisions).length, legalActions: totalLegal, graded: loss, ...counts };

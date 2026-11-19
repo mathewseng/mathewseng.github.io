@@ -69,12 +69,12 @@ function frameData(game, rows, recording) {
   });
   return {
     format: 'office-3-replay-frames', version: 1, game: game.game, fps: 25, frames: rows.length,
-    result: game.result ?? null,
+    result: game.result ?? null, ending: game.ending ?? null,
     players: ['white', 'dark'], changes, positions, rolls: rollSnapshots, decisions,
     cubeRolls: game.presentation.cubeRolls,
     cubeOffer: offer ? {
       start: offer.startFrame, responseFrame: offer.reply ? offer.endFrame : null, player: offer.offerer,
-      offered: offer.offeredFace, reply: offer.reply ?? null, options: offer.options,
+      offered: offer.offeredFace, reply: offer.reply ?? null, replyInferred: Boolean(offer.replyInferred), options: offer.options,
     } : null,
     sources: recording.segments.map(({ clip, firstGameFrame, firstFrame, lastExclusive, discontinuity }) =>
       ({ clip, firstGameFrame, firstFrame, lastExclusive, discontinuity })),

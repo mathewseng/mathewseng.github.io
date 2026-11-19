@@ -409,8 +409,10 @@ export function decisionReview(
       // Preview ranked alternatives on the isolated board.
       const candidates = result.candidates.slice(0, rankedMoveLimit);
       const keyOf = c => boardKey(c.steps.reduce((s, st) => applyStep(s, st), source));
+      const actualKey = result.actual ? keyOf(result.actual) : null;
+      const outsideRanking = actualKey !== null && !candidates.some(c => keyOf(c) === actualKey);
       // The standard review keeps the played choice available below the ranking cutoff.
-      if (includePlayedInRanking && result.actual && !candidates.some(c => keyOf(c) === keyOf(result.actual))) {
+      if (includePlayedInRanking && outsideRanking) {
         candidates.push(result.actual);candidates.sort((a,b) => b.equity-a.equity);
       }
       const ranked = el("section", {
@@ -426,6 +428,21 @@ export function decisionReview(
         el('span',{class:'review-notation'},'Position',el('small',{},'Before roll')),
         search?.positionEquity ?? el('span', {class:'review-number'}, '—'),
         el('span',{class:'review-position-dice','aria-label':`Rolled ${displayDice.join('–')}`},...displayDice.map(value=>dieFace(value,{player:source.turn}))));
+      let playedOutside;
+      if (recordingReview && !includePlayedInRanking && outsideRanking) {
+        const actual = result.actual;
+        const loss = Math.max(0, best.equity - actual.equity);
+        playedOutside = button("", () => show(actual.steps, "Played move"), "review-move vision-played-move", {
+          "aria-label": `Played move: ${actual.notation}. Equity ${equity(actual.equity)}. Loss ${loss.toFixed(3)}.`,
+          "aria-pressed": "false",
+        });
+        playedOutside.append(
+          el("span", { class: "review-rank" }, Number.isInteger(actual.rank) ? actual.rank : "—"),
+          el("span", { class: "review-notation" }, actual.notation, el("small", {}, "Played")),
+          el("span", { class: "review-number" }, equity(actual.equity)),
+          el("span", { class: "review-number review-loss", "data-loss-tone": lossTone(loss).tone }, loss.toFixed(3)),
+        );
+      }
       // Size to the actual first six rows, including wrapped notation/source
       // credits. Extra candidates scroll inside this fixed-height list.
       const sizeMoves = () => {
@@ -440,21 +457,15 @@ export function decisionReview(
       const chances = el("div", { class: "review-chances", "aria-live": "polite" });
       const redraw = () => {
         moveRowsObserver.disconnect();
-        chances.replaceChildren(...[chanceLines((candidates[selected] || best).probabilities, result.perspective, { table: true, names })].filter(Boolean));
+        const previewed = playedOutside && selected === candidates.length ? result.actual : candidates[selected] || best;
+        chances.replaceChildren(...[chanceLines(previewed.probabilities, result.perspective, { table: true, names })].filter(Boolean));
         chances.hidden = !chances.childElementCount;
         position.setAttribute("aria-pressed",String(selected === -1));
+        playedOutside?.setAttribute("aria-pressed", String(selected === candidates.length));
         const scrollTop = rows.scrollTop;
         rows.replaceChildren(
           ...candidates.map((c, rank) => {
-            const played =
-              result.actual &&
-              boardKey(c.steps.reduce((s, st) => applyStep(s, st), source)) ===
-                boardKey(
-                  result.actual.steps.reduce(
-                    (s, st) => applyStep(s, st),
-                    source,
-                  ),
-                );
+            const played = keyOf(c) === actualKey;
             const loss = Math.max(0, best.equity - c.equity);
             const status = recordingReview
               ? [played ? "Played" : "", rank === 0 ? "Best" : ""].filter(Boolean).join(" · ")
@@ -510,6 +521,7 @@ export function decisionReview(
         ),
         position, rows,
       );
+      if (playedOutside) ranked.append(playedOutside);
       body.append(chances, ranked);
       if (search) body.append(search.node);
       revealSelectedMove = () => {
@@ -523,15 +535,8 @@ export function decisionReview(
       moveListResize = () => { sizeMoves(); revealSelectedMove(); };
       selectPreview = (steps, label) => {
         const key = boardKey(steps.reduce((s, st) => applyStep(s, st), source));
-        const next =
-          label === "Position"
-            ? -1
-            : candidates.findIndex(
-                (c) =>
-                  boardKey(
-                    c.steps.reduce((s, st) => applyStep(s, st), source),
-                  ) === key,
-              );
+        let next = label === "Position" ? -1 : candidates.findIndex(c => keyOf(c) === key);
+        if (label === "Played move" && playedOutside && key === actualKey) next = candidates.length;
         if (next !== selected) {
           selected = next;
           redraw();

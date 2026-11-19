@@ -10,30 +10,52 @@ const { boardKey, commitTurn } = await import(solverUrl('backgammon/core/rules.m
 const { fromXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 
 const reviewedCubes = JSON.parse(fs.readFileSync(new URL('./reviewed_cube_offers.json', import.meta.url)));
+const reviewedEndings = JSON.parse(fs.readFileSync(new URL('./reviewed_endings.json', import.meta.url)));
 
-function applyPass(game, rows) {
+function applyEnding(game, rows) {
   const cube = game.decisions.cube;
   const review = reviewedCubes[game.game];
   if (review?.response === 'pass' && cube?.startFrame === review.start &&
       cube.endFrame === review.end && cube.offerer === review.offerer &&
       rows[review.start]?.clip === review.clip) cube.reply = review.response;
-  if (cube?.reply !== 'pass') return;
-  const frame = cube.endFrame;
-  const result = { frame, winner: cube.offerer, reason: 'pass', points: cube.preOfferStake };
-  game.result = result;
+  const ending = reviewedEndings[game.game];
+  const witness = ending && rows[ending.frame];
+  const matched = witness && witness.clip === ending.clip && witness.sourceFrame === ending.sourceFrame;
+  if (matched && ending.kind === 'pack-up-after-offer' && cube?.startFrame === 18628 &&
+      cube.offerer === 'white' && cube.offeredFace === 4 && (!cube.reply || cube.replyInferred)) {
+    cube.reply = 'pass';
+    cube.replyInferred = true;
+    cube.responder = 'dark';
+    cube.endFrame = ending.frame;
+    cube.endSeconds = ending.frame / 25;
+    cube.replyEvLoss = cube.options.pass - Math.min(cube.options.take, cube.options.pass);
+  }
+  const frame = cube?.reply === 'pass' ? cube.endFrame : matched && ending.kind === 'board-reset' ? ending.frame : null;
+  if (frame === null) return;
+  const result = cube?.reply === 'pass'
+    ? { frame, winner: cube.offerer, reason: 'pass', points: cube.preOfferStake,
+      ...(cube.replyInferred ? { inferred: true } : {}) }
+    : null;
+  game.ending = { frame, kind: result ? (cube.replyInferred ? ending.kind : 'cube-pass') : ending.kind };
+  if (result) game.result = result;
+  if (game.presentation) {
+    game.presentation.rolls = game.presentation.rolls.filter(roll => roll.start < frame).map(roll =>
+      roll.end > frame ? { ...roll, end: frame, pickup: null } : roll);
+    game.presentation.cubeRolls = game.presentation.cubeRolls.filter(roll => roll.frame < frame).map(roll =>
+      roll.end > frame ? { ...roll, end: frame } : roll);
+  }
   for (const row of rows.slice(frame)) {
     row.phase = 'game-closed';
-    row.player = cube.responder;
-    row.actorEvidence = 'confirmed-cube-pass';
-    row.turn = row.roll = row.decision = row.displayPoints = null;
-    row.result = result;
-    row.cube = { ...row.cube, stake: cube.preOfferStake, offered: null, response: 'pass' };
+    row.player = row.turn = row.roll = row.decision = row.position = row.displayPoints = null;
+    row.actorEvidence = game.ending.kind;
+    if (result) row.result = result;
+    row.cube = null;
   }
 }
 
 export function applyAccounting(game, rows) {
   const losses = game.losses.filter(({ kind, action }) => kind === 'cube' && !action);
-  applyPass(game, rows);
+  applyEnding(game, rows);
   const cube = game.decisions.cube;
   if (cube?.options && ['take', 'pass'].includes(cube.reply)) {
     const { take, pass } = cube.options;
@@ -53,7 +75,7 @@ export function applyAccounting(game, rows) {
     if (!decision.played || !Number.isFinite(decision.evLoss) || !turn?.after ||
         !Number.isInteger(turn.resultFrame) || turn.resultFrame < turn.start ||
         turn.resultFrame > turn.end || turn.resultFrame >= rows.length ||
-        (game.result && turn.resultFrame >= game.result.frame)) continue;
+        (game.ending && turn.resultFrame >= game.ending.frame)) continue;
     const source = fromXGID(decision.xgid);
     const after = {
       points: turn.after.points.map(([white, black]) => white - black),

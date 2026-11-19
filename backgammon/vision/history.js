@@ -114,11 +114,13 @@ export function createHistory(seek, player) {
         });
         if (entry.checkpoint) node.classList.add("vision-history-checkpoint");
         item.append(node);
+        if (entry.note) node.append(el("p", { class: "muted small" }, entry.note));
       } else {
         const player = Number(entry.player === "dark");
         const information = el("div", { class: "vision-history-unresolved" },
           el("div", {},
             el("strong", {}, entry.label),
+            ...(entry.note ? [el("span", { class: "muted small" }, entry.note)] : []),
             ...(entry.player ? [el("span", { class: "muted small" }, names[player])] : []),
           ),
         );
