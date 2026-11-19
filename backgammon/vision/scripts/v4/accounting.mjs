@@ -5,12 +5,39 @@ import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { replayDir, solverUrl } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
+import { turnResult } from './checker-adjustment.mjs';
 
-const { boardKey, commitTurn } = await import(solverUrl('backgammon/core/rules.mjs'));
+const { boardKey, commitTurn, legalTurns, winLevel } = await import(solverUrl('backgammon/core/rules.mjs'));
 const { fromXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 
 const reviewedCubes = JSON.parse(fs.readFileSync(new URL('./reviewed_cube_offers.json', import.meta.url)));
 const reviewedEndings = JSON.parse(fs.readFileSync(new URL('./reviewed_endings.json', import.meta.url)));
+
+function inferForcedFinish(game, rows, ending) {
+  const finish = ending.forcedFinish;
+  if (!finish) return null;
+  const roll = game.presentation?.rolls.at(-1);
+  const witness = rows[finish.rollFrame];
+  if (roll?.start !== finish.rollFrame || roll.end < ending.frame || roll.pickup != null ||
+      roll.player !== finish.player || roll.dice.join() !== finish.dice.join() ||
+      witness?.clip !== ending.clip || witness.sourceFrame !== finish.sourceFrame) return null;
+  const turn = game.turns[roll.decision - 1];
+  const decision = game.decisions[roll.decision];
+  if (!turn?.before || turn.after || !decision?.xgid) return null;
+  const before = fromXGID(decision.xgid);
+  if (before.phase !== 'move' || before.turn !== Number(roll.player === 'dark') ||
+      before.dice.slice().sort().join() !== finish.dice.slice().sort().join() ||
+      before.cube.value !== witness.cube?.stake || before.cube.value !== rows[ending.frame - 1]?.cube?.stake ||
+      boardKey(before) !== boardKey({
+        points: turn.before.points.map(([white, black]) => white - black),
+        bar: turn.before.bar, off: turn.before.borneOff,
+      })) return null;
+  const results = legalTurns(before);
+  if (results.length !== 1 || results[0].state.off[before.turn] !== 15) return null;
+  const level = winLevel(results[0].state, before.turn);
+  return { frame: ending.frame, winner: roll.player, reason: 'bearoff',
+    points: level * before.cube.value, level, inferred: true, rollFrame: roll.start };
+}
 
 function applyEnding(game, rows) {
   const cube = game.decisions.cube;
@@ -35,9 +62,10 @@ function applyEnding(game, rows) {
   const result = cube?.reply === 'pass'
     ? { frame, winner: cube.offerer, reason: 'pass', points: cube.preOfferStake,
       ...(cube.replyInferred ? { inferred: true } : {}) }
-    : null;
-  game.ending = { frame, kind: result ? (cube.replyInferred ? ending.kind : 'cube-pass') : ending.kind };
+    : inferForcedFinish(game, rows, ending);
+  game.ending = { frame, kind: result?.reason === 'pass' && !cube.replyInferred ? 'cube-pass' : ending.kind };
   if (result) game.result = result;
+  else delete game.result;
   const postGame = matched && ending.postGamePlay;
   const playWitness = postGame && rows[postGame.frame];
   if (playWitness && postGame.frame > frame && playWitness.clip === postGame.clip &&
@@ -53,6 +81,7 @@ function applyEnding(game, rows) {
     row.player = row.turn = row.roll = row.decision = row.position = row.displayPoints = null;
     row.actorEvidence = game.ending.kind;
     if (result) row.result = result;
+    else delete row.result;
     row.cube = null;
   }
 }
@@ -81,10 +110,11 @@ export function applyAccounting(game, rows) {
         turn.resultFrame > turn.end || turn.resultFrame >= rows.length ||
         (game.ending && turn.resultFrame >= game.ending.frame)) continue;
     const source = fromXGID(decision.xgid);
+    const scored = turnResult(turn);
     const after = {
-      points: turn.after.points.map(([white, black]) => white - black),
-      bar: turn.after.bar,
-      off: turn.after.borneOff,
+      points: scored.points.map(([white, black]) => white - black),
+      bar: scored.bar,
+      off: scored.borneOff,
     };
     if (boardKey(commitTurn(source, decision.played.steps)) !== boardKey(after)) continue;
     const key = [turn.resultFrame, decision.player, decision.xgid].join('|');

@@ -242,6 +242,12 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
         write(draw, x, 86, "Post-game play", HEADLINE, TEXT, True)
         points = result["points"]
         write(draw, x, 143, f"{PLAYER_NAME[result['winner']]} won {points} {'point' if points == 1 else 'points'}", BODY, MUTED)
+    elif state["phase"] == "game-closed" and result and result["reason"] == "bearoff":
+        winner = PLAYER_NAME[result["winner"]]
+        points = result["points"]
+        outcome = {1: "Single", 2: "Gammon", 3: "Backgammon"}[result["level"]]
+        write(draw, x, 86, f"{winner} wins {points} {'point' if points == 1 else 'points'}", HEADLINE, TEXT, True)
+        write(draw, x, 143, f"{outcome} · Inferred from final roll and reset", BODY, MUTED)
     elif state["phase"] == "game-closed":
         title = "Board reset" if state.get("actorEvidence") == "board-reset" else "Game finished"
         write(draw, x, 86, title, HEADLINE, TEXT, True)
@@ -426,7 +432,11 @@ def equity_frames(data, frames):
         elif key in move_scores and mode != "cube-offer":
             best, played = move_scores[key]
             complete = played is not None and played_at[key] <= state["frame"]
-            equity, basis = (played, "After played move") if complete else (best, "After best play")
+            turn = data["turns"][decision_roll["decision"] - 1]
+            if complete and turn.get("adjustment") and estimate:
+                equity, basis = estimate["players"], "After move and board adjustment"
+            else:
+                equity, basis = (played, "After played move") if complete else (best, "After best play")
         elif not roll and not mode and (latest := next((event for event in reversed(events)
                                                        if event["kind"] == "checker"), None)):
             equity, basis = move_scores[str(latest["decision"])][1], "After played move"

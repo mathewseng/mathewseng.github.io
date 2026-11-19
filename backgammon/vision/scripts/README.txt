@@ -119,6 +119,9 @@ Refresh an existing reconstructed replay
 
   Apply the reviewed endings to an existing replay with
   OFFICE3_REPLAY_DIR="$output" bun v4/accounting.mjs "$previous".
+  The Game 4 result requires the reviewed reset and the same final dice,
+  locked board, and supported stake. The only legal board must be terminal.
+  Accounting records the inferred result without adding a checker loss event.
   Render that output with --software for the compact H.264 export.
   When space is limited, --software --crf 26 keeps the same frame size and
   soundtrack with a smaller video stream. Verify the exported video and read
@@ -141,6 +144,14 @@ Refresh the context and reviewed episodes
   The source-frame review notes for a continuous roll and short fans live in
   v4/reviewed_episodes.json. Apply them only to the corresponding Office-3
   session. Export state, history and reports from the same output directory.
+
+  For the Game 3 board rearrangement, apply the Game 3 note to the v34 replay
+  before scoring. The source witnesses verify the two board changes separately.
+  The starting board and dice stay fixed. The export records the physically
+  observed resulting board and tests the played move independently.
+
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/reconcile-reviewed-turns.mjs "$previous" v4/reviewed-opponent-adjustment.json
+    OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs 3
 
   To reproduce the stationary-dice review, provide the clip-specific dice
   locations and source windows from reviewed-settled-dice.json. The reader

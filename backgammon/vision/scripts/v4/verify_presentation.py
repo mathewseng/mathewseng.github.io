@@ -34,7 +34,7 @@ def verify(number):
         if closed:
             assert not (position or equity or roll or wait)
         elif roll and roll["decision"] and cube_mode != "cube-offer":
-            assert equity and basis in ("After best play", "After played move")
+            assert equity and basis in ("After best play", "After played move", "After move and board adjustment")
             if roll["start"] == frame:
                 assert basis == "After best play"
         if number == 3 and frame == 1025:
@@ -48,6 +48,11 @@ def verify(number):
         if number == 3 and frame == 1017:
             assert "pendingChecker" not in state and basis == "After played move"
             assert any(action["kind"] == "checker" and action["decision"] == 1 for action in actions)
+        if number == 3 and frame == 30279 and roll:
+            turn = game["turns"][roll["decision"] - 1]
+            if turn.get("adjustment"):
+                assert basis == "After move and board adjustment"
+                assert equity == position["equities"]["players"]
         if number == 1 and frame == 11340 and roll and roll.get("fan"):
             assert basis == "Position estimate"
             assert equity == position["equities"]["players"]

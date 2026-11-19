@@ -8,6 +8,7 @@ import { ENGINE_VERSION } from '../../../engine/metadata.mjs';
 import { gradeCube } from '../../../engine/cube-grade.mjs';
 import { replayDir } from '../project_paths.mjs';
 import { cubeContext } from './cube-context.mjs';
+import { turnResult } from './checker-adjustment.mjs';
 import { exclusive, loadEvaluator, rowsFrom } from '../v2/solve_games.mjs';
 
 const names = ['White', 'Black'];
@@ -179,14 +180,16 @@ function makeHistory(game, rows, extraCubeChances) {
     const steps = decision?.countedInGameLoss ? decision.played.steps : turn.steps;
     const cubeChoice = noDoubles.get(frame);
     const preRoll = source && { ...source, dice: [], phase: 'roll' };
-    if (!validMove(source, steps, turn.after)) {
+    if (!validMove(source, steps, turnResult(turn))) {
       if (preRoll) recordNoDouble(cubeChoice, preRoll, turn.dice, observedTurn, true);
       const resultVerified = turn.evidence === 'reviewed-roll-with-confirmed-board';
+      const forcedFinish = game.result?.reason === 'bearoff' && game.result.rollFrame === frame;
       const entry = { frame, turn: observedTurn, kind: 'gap', player: turn.player, dice: rolledDice,
-        label: sourceMismatch ? 'Dice and checker result disagree' :
+        label: forcedFinish ? 'Forced bear-off before reset' : sourceMismatch ? 'Dice and checker result disagree' :
           resultVerified ? 'Dice unresolved' : 'Checker move unconfirmed' };
       if (source) {
-        const item = record('position', `Turn ${observedTurn} position`, 'Observed board before an unresolved checker move.');
+        const item = record('position', `Turn ${observedTurn} position`, forcedFinish
+          ? 'Observed board before the forced bear-off.' : 'Observed board before an unresolved checker move.');
         item.state = source;
         if (decision) item.analysis = checkerResult(decision, source);
         entry.item = item.id;
@@ -211,25 +214,37 @@ function makeHistory(game, rows, extraCubeChances) {
     const [low, high] = [...dice].sort((a, b) => a - b);
     if (openingTurn) action({ type: 'opening', dice: source.turn ? [low, high] : [high, low] }, frame);
     else if (!recordNoDouble(cubeChoice, start, dice, observedTurn, needsCheckpoint)) action({ type: 'roll', dice }, frame);
+    if (turn.adjustment) {
+      const { frame, player, from, to, position } = turn.adjustment;
+      const item = record('position', `Turn ${observedTurn} board adjustment`, 'Observed board during a checker rearrangement.');
+      item.state = observedPosition({ before: position, player: turn.player, dice: [] }, cube, number);
+      timeline.push({ frame, turn: observedTurn, kind: 'board-adjustment', item: item.id, player,
+        label: 'Board adjustment', note: `Net checker transfer from fixed point ${from} to ${to} during the same roll.` });
+    }
     const resultFrame = turn.resultFrame ?? frame;
     timeline.push({
       frame: resultFrame, rollFrame: frame, endFrame: Math.max(end, resultFrame + 50),
       turn: observedTurn, kind: 'checker',
       checkpoint: needsCheckpoint && !openingTurn,
+      ...(turn.adjustment ? { note: 'The move is graded from the board at the roll. The filmed board adjustment is listed separately.' } : {}),
       ...action({ type: 'move', steps }, resultFrame, checkerResult(decision, active.state, steps)),
     });
   }
   if (stop) {
     const result = game.result;
     const outcome = result ? `${names[player(result.winner)]} wins ${result.points} ${result.points === 1 ? 'point' : 'points'}` : null;
+    const note = result?.inferred ? (result.reason === 'bearoff'
+      ? `${['', 'Single', 'Gammon', 'Backgammon'][result.level]} inferred from final roll and reset`
+      : 'Pass inferred from pack-up') : null;
     timeline.push({ frame: stop.frame, kind: 'end', label: outcome ??
       (game.ending?.kind === 'board-reset' ? 'Board reset · result unconfirmed' : 'Game ends · result unconfirmed'),
-      ...(result?.inferred ? { note: 'Pass inferred from pack-up' } : {}) });
+      ...(note ? { note } : {}) });
   }
   const lastLoss = rows.at(-1).loss;
   return {
     version: 1, format: 'backgammon-library', progress: [], items,
     replay: { game: number, frameData: Boolean(game.presentation), timeline,
+      ...(game.result?.reason === 'bearoff' ? { result: game.result } : {}),
       losses: [lastLoss.white.loss, lastLoss.dark.loss],
       lossBreakdown: [lastLoss.white, lastLoss.dark].map(({ checkerLoss, cubeLoss }) => ({ checkerLoss, cubeLoss })),
     },

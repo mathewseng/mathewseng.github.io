@@ -122,7 +122,8 @@ for (const number of [1, 2, 3, 4, 5]) {
   for (const [player, loss] of sum.entries()) {
     assert(Math.abs(loss - history.replay.losses[player]) < 1e-8, `${game} Library EV loss differs`);
   }
-  assert.equal(history.replay.timeline.filter(entry => entry.kind === 'checker' || entry.player).length, data.rolls.length);
+  assert.equal(history.replay.timeline.filter(entry => entry.kind === 'checker' ||
+    (entry.kind === 'gap' && entry.player)).length, data.rolls.length);
   if (number === 2) {
     assert.equal(history.items.length, 1);
     assert.equal(history.items[0].initial.phase, 'opening');
@@ -369,10 +370,29 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert(!data.rolls.some(item => item.start > 7168 && item.start < 7649));
     assert(data.decisions[roll.decision].played);
     const disagreement = data.rolls.find(item => item.start === 27082);
-    assert.equal(disagreement.sourceMismatch, true);
     assert.deepEqual(disagreement.dice, [4, 3]);
-    assert.equal(disagreement.resultFrame, 30322);
-    assert.equal(data.decisions[disagreement.decision].evLoss, null);
+    assert.equal(disagreement.pickup, 30300);
+    if (disagreement.adjustment) {
+      const { frame, player, from, to, position } = disagreement.adjustment;
+      assert.deepEqual([frame, player, from, to], [29109, 'white', 3, 2]);
+      assert(!disagreement.sourceMismatch);
+      assert.equal(disagreement.resultFrame, 30279);
+      const decision = data.decisions[disagreement.decision];
+      assert.equal(decision.played.notation, '21/18 18/14');
+      assert.equal(decision.evLoss, 0);
+      const at = frame => data.changes.findLast(change => change.frame <= frame);
+      assert.deepEqual(at(frame).movingBoard, position);
+      assert.deepEqual(at(27318).movingPoints.slice(3, 8), [-1, 2, 0, 0, -1]);
+      assert.equal(at(27440).movingPoints[3], -2);
+      assert.deepEqual(at(30208).movingPoints.slice(19), [-3, -2, -2, -2, -1]);
+      assert.deepEqual(disagreement.after, data.rolls[data.rolls.indexOf(disagreement) + 1].before);
+      assert(history.replay.timeline.some(entry => entry.frame === frame && entry.label === 'Board adjustment'));
+      assert(history.replay.timeline.some(entry => entry.frame === disagreement.resultFrame && entry.kind === 'checker'));
+    } else {
+      assert.equal(disagreement.sourceMismatch, true);
+      assert.equal(disagreement.resultFrame, 30322);
+      assert.equal(data.decisions[disagreement.decision].evLoss, null);
+    }
   }
   if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 6400 && entry.confirmedDetectorMisread)) {
     const white = data.rolls.find(roll => roll.start === 6400);
@@ -394,6 +414,14 @@ for (const number of [1, 2, 3, 4, 5]) {
     const reset = data.rolls.at(-1);
     assert.deepEqual(reset.dice, [6, 3]);
     assert.equal(reset.after, null);
+    if (data.result?.reason === 'bearoff') {
+      assert.deepEqual(history.replay.result, data.result);
+      assert.equal(history.replay.timeline.find(entry => entry.frame === reset.start && entry.kind === 'gap')?.label,
+        'Forced bear-off before reset');
+      const end = history.replay.timeline.at(-1);
+      assert.deepEqual([end.frame, end.label, end.note], [32300, 'White wins 4 points',
+        'Gammon inferred from final roll and reset']);
+    }
   }
   const sourceComparisons = {
     1: [[6855, [6, 5]], [11388, [5, 1]]],

@@ -6,7 +6,8 @@ import { artifactDir, replayDir, visionStateDir } from '../project_paths.mjs';
 import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
 import { boardKey, initialState, legalPaths, legalTurns, notation } from '../../../core/rules.mjs';
 import { toXGID } from '../../../core/xgid.mjs';
-import { trackCheckerCounts } from './checker-counts.mjs';
+import { checkerStages, trackCheckerCounts } from './checker-counts.mjs';
+import { turnResult } from './checker-adjustment.mjs';
 import { observedBoard } from './bearoff-board.mjs';
 import { chooseLegalDice } from './legal-face-evidence.mjs';
 import { applyAccounting, writeReplay } from './accounting.mjs';
@@ -187,6 +188,24 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
     ?? snapshot(boards, end - 9, Math.min(afterLimit + 1, end + 24));
   const before = initial?.position ?? null;
   const after = following?.position ?? null;
+  let adjustment, adjustmentBoard;
+  if (note.adjustment) {
+    const { from, to, beforeBoard, afterBoard } = note.adjustment;
+    assert(before && after && playable(note.dice) && note.resultAtWitness);
+    const previous = reviewedBoard(rows, beforeBoard, start, end - 1);
+    const adjusted = reviewedBoard(rows, afterBoard, previous.frame + 1, end - 1);
+    assert(adjusted.frame < following.frame);
+    adjustment = { frame: adjusted.frame, player: player === 1 ? 'white' : 'dark', from, to };
+    adjustmentBoard = adjusted.position;
+    const input = stateFor(before, player, note.dice);
+    const paths = legalPaths(input);
+    assert(paths.every(path => path.steps.every(step =>
+      ![from - 1, to - 1].includes(step.from) && ![from - 1, to - 1].includes(step.to))),
+    'Checker rearrangement must leave all legal paths from the roll intact.');
+    const original = turnResult({ after: adjustmentBoard, adjustment });
+    assert.equal(keyOf(original), keyOf(previous.position));
+    assert(checkerStages(input, paths).has(keyOf(original)), 'Adjustment must start from a legal in-turn board.');
+  }
   const pass = note.fan && before?.bar[player] > 0 && keyOf(before) === keyOf(after);
   const stationary = note.settledFaces && faceEvidence[game.game]?.[start];
   if (stationary) {
@@ -195,7 +214,8 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
     assert(first >= start && stop <= end && stationary.frames.every(frame => frame >= first && frame < stop),
       `Settled dice evidence outside its roll at ${start / 25}.`);
   }
-  const analysis = legalAnalysis(before, before && after && (pass || keyOf(before) !== keyOf(after)) ? after : null,
+  const scoredAfter = turnResult({ after, adjustment });
+  const analysis = legalAnalysis(before, before && scoredAfter && (pass || keyOf(before) !== keyOf(scoredAfter)) ? scoredAfter : null,
     player, note.dice, stationary);
   const recorded = note.playedPath && analysis?.played && legalPaths(analysis.state).find(path =>
     boardKey(path.state) === analysis.played.key && notation(path.steps, player) === note.playedPath);
@@ -216,7 +236,9 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   const turn = {
     start, end: Math.max(end - 1, finish ?? 0), pickupFrame: note.pickupFrame, player: note.player, dice,
     before, after: verifiedResult ? after : null, resultFrame: finish, steps: played?.steps ?? null, evidence,
+    ...(adjustment ? { adjustment: { ...adjustment, position: adjustmentBoard } } : {}),
   };
+  if (adjustment) assert(played, 'A reviewed checker rearrangement still needs a legal result.');
   game.turns.push(turn);
   const roll = { start, end, pickup: note.pickupFrame, player: note.player, dice: [...dice].reverse(),
     decision: canScore ? id : null, sourceTurns: [id], evidence, ...(note.fan ? { fan: true } : {}),
@@ -255,7 +277,16 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
       row.position = newBoard;
     }
   }
-  if (played) trackCheckerCounts(rows, boards, roll, analysis.state, id, recorded ? [recorded] : undefined);
+  if (played) {
+    const witnesses = new Map((note.checkerStages ?? []).map(board => {
+      const witness = reviewedBoard(rows, board, start, Math.min(end, finish) - 1);
+      return [witness.frame, witness.position];
+    }));
+    if (adjustment) witnesses.set(adjustment.frame, adjustmentBoard);
+    trackCheckerCounts(rows, boards, roll, analysis.state, id, {
+      paths: recorded && !adjustment ? [recorded] : undefined, adjustment: turn.adjustment, witnesses,
+    });
+  }
   return { roll, nextPosition };
 }
 

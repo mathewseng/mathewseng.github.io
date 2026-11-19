@@ -1,0 +1,54 @@
+{
+  "3": [
+    {
+      "kind": "replace",
+      "starts": [1083.28],
+      "player": "dark",
+      "dice": [4, 3],
+      "beforeBoard": {
+        "seconds": 1083.44, "clip": 33, "sourceFrame": 1222,
+        "points": {"1": 6, "2": 2, "3": 3, "4": -2, "5": 2, "17": -1, "19": -2, "20": -3, "21": -2, "22": -2, "23": -2, "24": -1},
+        "bar": [0, 0], "off": [2, 0]
+      },
+      "adjustment": {
+        "from": 3, "to": 2,
+        "beforeBoard": {
+          "seconds": 1157.32, "clip": 35, "sourceFrame": 77,
+          "points": {"1": 6, "2": 2, "3": 3, "4": -1, "5": 2, "7": -1, "17": -1, "19": -2, "20": -2, "21": -2, "22": -2, "23": -2, "24": -2},
+          "bar": [0, 0], "off": [2, 0]
+        },
+        "afterBoard": {
+          "seconds": 1164.36, "clip": 35, "sourceFrame": 253,
+          "points": {"1": 6, "2": 3, "3": 2, "4": -1, "5": 2, "7": -1, "17": -1, "19": -2, "20": -2, "21": -2, "22": -2, "23": -2, "24": -2},
+          "bar": [0, 0], "off": [2, 0]
+        }
+      },
+      "checkerStages": [
+        {
+          "seconds": 1092.72, "clip": 33, "sourceFrame": 1454,
+          "points": {"1": 6, "2": 2, "3": 3, "4": -1, "5": 2, "8": -1, "17": -1, "19": -2, "20": -3, "21": -2, "22": -2, "23": -2, "24": -1},
+          "bar": [0, 0], "off": [2, 0]
+        },
+        {
+          "seconds": 1097.60, "clip": 34, "sourceFrame": 88,
+          "points": {"1": 6, "2": 2, "3": 3, "4": -2, "5": 2, "17": -1, "19": -2, "20": -3, "21": -2, "22": -2, "23": -2, "24": -1},
+          "bar": [0, 0], "off": [2, 0]
+        },
+        {
+          "seconds": 1208.32, "clip": 35, "sourceFrame": 1352,
+          "points": {"1": 6, "2": 3, "3": 2, "4": -1, "5": 2, "7": -1, "17": -1, "19": -2, "20": -3, "21": -2, "22": -2, "23": -2, "24": -1},
+          "bar": [0, 0], "off": [2, 0]
+        }
+      ],
+      "afterBoard": {
+        "seconds": 1211.16, "clip": 35, "sourceFrame": 1423,
+        "points": {"1": 6, "2": 3, "3": 2, "4": -1, "5": 2, "11": -1, "17": -1, "19": -2, "20": -3, "21": -2, "22": -2, "23": -2, "24": -1},
+        "bar": [0, 0], "off": [2, 0]
+      },
+      "playedPath": "21/18 18/14",
+      "resultAtWitness": true,
+      "supersedesReview": true,
+      "text": "Black’s 4–3 finishes 21/18 18/14. White separately rearranges checkers while the dice are still down, changing only White’s fixed points 2 and 3 in the settled board. Black’s play is graded from the original roll position."
+    }
+  ]
+}

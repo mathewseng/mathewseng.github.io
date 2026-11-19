@@ -5,7 +5,7 @@ Office-3 game replays from November 17, 2026. Add `?game=1` through `?game=5`
 to link to a specific game.
 
 The 1080p video files are assets on the
-[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v34).
+[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v35).
 The Pages build copies those MP4s into the published site for streaming and
 seeking. The files load over the network on playback. For a local replay build,
 run `node scripts/package-vision-replays.mjs _site` after assembling the site.
@@ -53,13 +53,19 @@ borne-off counts for that same temporary board. Each roll also records its own f
 `after`, and `resultFrame` so a later checker movement cannot change the
 position used for that decision. Missing boards are null. A null roll means
 there is no active roll in the reconstructed timeline.
+An `adjustment` records a separately witnessed rearrangement during a roll.
+Its fixed points describe the net transfer, and its position is the visible
+board after that transfer. The grade uses the frozen roll position and the
+roller’s own moves.
 A null die face means the other face could not be established. An unknown cube
 owner stays explicit even when the face or stake is readable. Use `sources` to
 locate the original camera clip and frame offset.
 `checker-result-pending` identifies a turn whose checker result is confirmed
 after pickup. `player` remains the checker mover and `roll` is null.
 `pendingDecision` links to the original checker analysis when one is available.
-The `ending` entry marks a reviewed reset or pack-up. Game 5’s inferred pass
+The `ending` entry marks a reviewed reset or pack-up. Game 4’s inferred
+four-point gammon is marked in `result`. The final roll and reset establish
+the outcome while the final move remains ungraded. Game 5’s inferred pass
 is marked in both `result` and `cubeOffer`. Its `postGamePlay` entry marks
 the separate throws after the game board was cleared.
 

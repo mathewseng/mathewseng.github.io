@@ -692,3 +692,14 @@ All other tested dice footprints preserved their prior timing in the
 starting board and one matching ending board in Game 3. The scored checker
 and cube choices, and final EV loss totals, were verified against the
 previous release. Reports links directly to the changed frames.
+
+## Game 3 checker rearrangement and Game 4 finish
+
+| Game and time | Source evidence and replay behavior |
+| --- | --- |
+| Game 3, 18:03–20:12 | Black tries a placement on fixed point 8 and takes it back. Both dice stay on the table. At 19:24.36 the board confirms White’s separate rearrangement, with one more White checker on fixed point 2 and one fewer on point 3. None of Black’s legal paths touch those points. At 20:11.16 Black finishes on fixed point 11. The replay keeps one 4–3, follows the visible interim counts, and records **21/18 18/14** for **0.000 checker EVL** from the frozen starting board. History saves White’s arrangement as a separate position. |
+| Game 4, 21:32 | White’s last 6–3 has only one legal result. Both White checkers on point 2 bear off, Black has none off, and the accepted cube is at 2. The players proceed straight into setup. The replay, history, frame data and Reports show White’s **four-point gammon** as inferred. The final checker action remains ungraded because the footage shows the reset. |
+
+All 163 indexed throws retain their actor, dice and pickup timing. The ledger
+adds one graded move for Game 3 at zero loss. There are six unresolved die faces
+across Games 1 and 3.

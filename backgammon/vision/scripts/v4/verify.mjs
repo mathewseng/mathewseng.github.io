@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
+import { adjustPoints } from './checker-adjustment.mjs';
 
 const { fromXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 const { applyStep, boardKey, initialState, legalPaths, legalTurns } = await import(solverUrl('backgammon/core/rules.mjs'));
@@ -39,7 +40,9 @@ for (const game of [1, 2, 3, 4, 5]) {
         slots.add(position.points.join(','));
       }
     }
-    countPaths.set(id + 1, slots);
+    const adjusted = turn.adjustment && new Set([...slots].map(points =>
+      adjustPoints(points.split(',').map(Number), turn.adjustment).join(',')));
+    countPaths.set(id + 1, { slots, adjusted, frame: turn.adjustment?.frame });
   }
 
   const recovered = (data.recoveredTurns ?? []).map(({ id, before, after, next, dice }) => {
@@ -119,7 +122,8 @@ for (const game of [1, 2, 3, 4, 5]) {
       }
       if (row.displayPoints) {
         assert.equal(row.displayPoints.length, 24);
-        assert(countPaths.get(row.turn)?.has(row.displayPoints.join(',')));
+        const stages = countPaths.get(row.turn);
+        assert((frame >= stages?.frame ? stages.adjusted : stages?.slots)?.has(row.displayPoints.join(',')));
         counts.liveCountFrames++;
         if (row.displayPoints.some((n) => Math.abs(n) > 5)) counts.tallStackFrames++;
       }
@@ -196,7 +200,15 @@ for (const game of [1, 2, 3, 4, 5]) {
       assert.equal(rows[frame].sourceFrame, sourceFrame);
       assert(data.presentation.rolls.every(roll => roll.end <= frame));
       assert(data.presentation.cubeRolls.every(roll => roll.end <= frame));
-      if (kind === 'board-reset') assert.equal(data.result, undefined);
+      if (reviewedEndings[game].forcedFinish) {
+        assert.deepEqual(data.result, { frame: 32300, winner: 'white', reason: 'bearoff',
+          points: 4, level: 2, inferred: true, rollFrame: 32261 });
+        assert(rows.slice(frame).every(row => row.result?.reason === 'bearoff'));
+        const last = data.presentation.rolls.at(-1);
+        assert.equal(last.start, data.result.rollFrame);
+        assert.equal(data.turns[last.decision - 1].after, null);
+        assert.equal(data.decisions[last.decision].countedInGameLoss, false);
+      } else if (kind === 'board-reset') assert.equal(data.result, undefined);
     }
   }
   if (game === 1) {

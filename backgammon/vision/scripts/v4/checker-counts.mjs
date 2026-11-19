@@ -1,13 +1,15 @@
 /** Use repeated camera boards to place visible checker moves within a frozen decision. */
 import { solverUrl } from '../project_paths.mjs';
+import { adjustPoints } from './checker-adjustment.mjs';
 
 const { applyStep, boardKey, legalPaths } = await import(solverUrl('backgammon/core/rules.mjs'));
 
-export function checkerStages(input, paths = legalPaths(input)) {
+export function checkerStages(input, paths = legalPaths(input), adjustment) {
   const stages = new Map();
-  const add = state => stages.set(boardKey(state), {
-    points: state.points, bar: state.bar, borneOff: state.off,
-  });
+  const add = state => {
+    const points = adjustPoints(state.points, adjustment);
+    stages.set(boardKey(adjustment ? { ...state, points } : state), { points, bar: state.bar, borneOff: state.off });
+  };
   add(input);
   for (const { steps } of paths) {
     let state = input;
@@ -25,16 +27,25 @@ export function observedCheckerKey(board) {
   });
 }
 
-export function trackCheckerCounts(rows, boards, roll, input, id, paths) {
+export function trackCheckerCounts(rows, boards, roll, input, id, { paths, adjustment, witnesses } = {}) {
   const start = boardKey(input);
   const stages = checkerStages(input, paths);
+  const adjusted = adjustment && checkerStages(input, paths, adjustment);
   let current = null, candidate = null;
   const observations = [];
   for (let frame = roll.start; frame < roll.end; frame++) {
-    const key = observedCheckerKey(boards[frame]);
-    const stage = stages.get(key);
+    const witness = witnesses?.get(frame);
+    const key = observedCheckerKey(witness ?? boards[frame]);
+    const stage = (adjusted && frame >= adjustment.frame ? adjusted : stages).get(key);
     const existing = rows[frame].displayPoints;
+    if (witness && !stage) throw new Error(`Checker witness is outside the legal stages at frame ${frame}.`);
     if (!stage || key === current || (!current && key === start && !existing)) continue;
+    if (witness) {
+      current = key;
+      observations.push({ first: frame, points: stage.points });
+      candidate = null;
+      continue;
+    }
     if (candidate?.key !== key || frame - candidate.last > 4) {
       candidate = { key, first: frame, last: frame, votes: 1 };
       continue;

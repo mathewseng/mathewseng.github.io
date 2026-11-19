@@ -18,7 +18,9 @@ function frameData(game, rows, recording) {
     if (!turn.before || !turn.dice.every(Number.isInteger)) continue;
     const input = stateFor(turn.before, Number(roll.player === 'dark'), turn.dice);
     const visible = new Map();
-    for (const stage of checkerStages(input).values()) {
+    const stages = checkerStages(input);
+    if (turn.adjustment) for (const [key, stage] of checkerStages(input, undefined, turn.adjustment)) stages.set(key, stage);
+    for (const stage of stages.values()) {
       const points = stage.points.join(',');
       // Omit the inventory if the point counts alone admit several versions.
       visible.set(points, visible.has(points) ? null : stage);
@@ -89,7 +91,9 @@ function frameData(game, rows, recording) {
   } : null;
   const rollSnapshots = rolls.map(roll => {
     const turn = game.turns[(roll.decision ?? roll.sourceTurns[0]) - 1];
-    return { ...roll, before: snapshot(turn.before), after: snapshot(turn.after), resultFrame: turn.resultFrame ?? null };
+    const adjustment = turn.adjustment;
+    return { ...roll, before: snapshot(turn.before), after: snapshot(turn.after), resultFrame: turn.resultFrame ?? null,
+      ...(adjustment ? { adjustment: { ...adjustment, position: snapshot(adjustment.position) } } : {}) };
   });
   return {
     format: 'office-3-replay-frames', version: 1, game: game.game, fps: FPS, frames: rows.length,

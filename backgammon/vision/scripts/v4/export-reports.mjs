@@ -6,6 +6,7 @@ import { artifactDir, replayDir, visionStateDir } from "../project_paths.mjs";
 import { rowsFrom, stateFor } from "../v2/solve_games.mjs";
 import { observedBoard } from "./bearoff-board.mjs";
 import { boardKey, legalTurns } from "../../../core/rules.mjs";
+import { adjustPoints } from "./checker-adjustment.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
@@ -308,12 +309,18 @@ function report(number) {
     if (!roll.before) add("no-position", roll);
     if (roll.sourceMismatch) add("observed-move-mismatch", roll, roll.end - 1,
       "The reviewed checker arrangement at pickup falls outside the legal results for the frozen starting board and dice.");
-    else if (roll.decision && !confirmed) add("unconfirmed-play", roll);
+    else if (roll.decision && !confirmed) {
+      const forcedFinish = data.result?.reason === "bearoff" && data.result.rollFrame === roll.start;
+      add("unconfirmed-play", roll, roll.start, forcedFinish
+        ? "The only legal play bears off both checkers. The camera shows the players proceeding directly to the reset."
+        : "");
+    }
     if (confirmed) {
       const snapshot = board => ({ ...board, points: board.points.map(value => [Math.max(value, 0), Math.max(-value, 0)]) });
       const player = Number(roll.player === "dark");
       const from = stateFor(snapshot(roll.before), player, dice);
-      const final = stateFor(snapshot(roll.after), player, dice);
+      const scored = { ...roll.after, points: adjustPoints(roll.after.points, roll.adjustment, true) };
+      const final = stateFor(snapshot(scored), player, dice);
       const legal = legalTurns(from).some(turn => boardKey(turn.state) === boardKey(final));
       counts.gradedPlays++;
       if (legal) counts.legalPlays++;
@@ -361,6 +368,10 @@ function report(number) {
   const footageReview = [...gameNotes, ...(replay.contextRecovery ?? [])
     .filter(entry => entry.text && !entry.superseded)
     .map(({ frame, text, boardWitnesses }) => ({ frame, text, ...(boardWitnesses ? { boardWitnesses } : {}) })),
+    ...(data.result?.reason === "bearoff" ? [{ frame: data.result.frame,
+      text: `${data.result.winner === "white" ? "White" : "Black"} wins ${data.result.points} points, inferred from the final roll and reset.` }] : []),
+    ...data.rolls.flatMap(roll => roll.adjustment ? [{ frame: roll.adjustment.frame,
+      text: `${roll.adjustment.player === "white" ? "White" : "Black"} rearranges checkers during the same roll. The score uses the frozen starting board and the roller’s own checker moves.` }] : []),
     ...(data.postGamePlay ? [{ frame: data.postGamePlay.frame, text: data.postGamePlay.text }] : [])]
     .sort((a, b) => a.frame - b.frame);
   const faceResolutions = (replay.contextRecovery ?? []).filter(entry => entry.diceFrames?.length)
@@ -377,6 +388,7 @@ function report(number) {
   const stack = stackChecks.find(item => item.game === number);
   const checker = stationaryCheckers?.games.find(item => item.game === number);
   const report = { game: number, fps: data.fps, counts, unresolvedFaces, issues, issueNames, reviewed: footageReview,
+    ...(data.result?.reason === "bearoff" ? { result: data.result } : {}),
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
     automaticTrial: planTrial.find(item => item.game === number) ?? null,
