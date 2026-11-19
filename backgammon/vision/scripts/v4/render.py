@@ -22,6 +22,7 @@ from PIL import Image, ImageDraw
 OUT = REPLAY_DIR
 BASE = ARTIFACT_DIR / "v2"
 FPS = 25
+ACTION_HOLD = 2 * FPS
 WIDTH, HEIGHT = 1920, 1080
 BX, BY, BW, BH = 32, 88, 928, 696
 RX, RY, RW, RH = 984, 88, 904, 960
@@ -59,28 +60,9 @@ def percent(probability):
     return f"{probability * 100:.1f}%"
 
 
-def activity(phase, player):
-    name = PLAYER_NAME.get(player)
-    if phase == "pre-roll":
-        return f"{name} to roll"
-    if phase == "move":
-        return f"{name} on roll"
-    if phase == "played":
-        return f"{name} played"
-    if phase == "cube-response":
-        return f"{name} to respond"
-    if phase == "cube-result":
-        return "Cube response"
-    return {"opening": "Opening toss", "game-closed": "Game finished",
-            "between-rolls": "Between rolls"}[phase]
-
-
-def equity_panel(position, loss, carried):
+def equity_panel(position, loss):
     image, draw = card(BW, 256)
     write(draw, 20, 23, "Game equity", 30, bold=True)
-    if position and position["equities"]:
-        write(draw, BW - 20, 33, "Last evaluated position" if carried else "Settled position",
-              17, MUTED, anchor="ra")
     columns = [(207, "Equity"), (310, "Win"), (424, "Single"), (539, "Gammon"),
                (658, "Backgammon"), (792, "Total EV loss")]
     for x, label in columns:
@@ -106,92 +88,192 @@ def notation(value):
     return value.replace("Pass — no legal move", "Pass")
 
 
-def played_caption(draw, held):
-    if held:
-        draw.line((24, 705, RW - 24, 705), fill=LINE)
-        name = PLAYER_NAME[held["player"]]
-        write(draw, 24, 733, f"{name} played   {notation(held['played']['notation'])}", 25)
-        write(draw, RW - 24, 733, f"EV loss   {held['evLoss']:.3f}", 24, AMBER, True, "ra")
+def dice_label(dice):
+    return "–".join(str(die) if die is not None else "?" for die in dice)
 
 
-def action_panel(state, entry, held):
+def recent_actions(draw, events, active_roll, cube_mode):
+    shown = [
+        event for event in events
+        if (event["kind"] != "roll" or event["roll"] is not active_roll)
+        and (event["kind"] != cube_mode)
+    ]
+    if not shown:
+        return
+    draw.line((24, 714, RW - 24, 714), fill=LINE)
+    write(draw, 24, 738, "Recent actions", 18, MUTED, True)
+    for i, event in enumerate(shown):
+        y = 773 + i * 44
+        player, action = event["player"], event["label"]
+        write(draw, 24, y, f"{PLAYER_NAME[player]} {action}", 25, PLAYER_TONE[player])
+        if event.get("loss") is not None:
+            write(draw, RW - 24, y, f"EV loss   {event['loss']:.3f}", 23, AMBER, True, "ra")
+
+
+def cube_actions(draw, x, y, player, choices):
+    write(draw, x, y, f"{PLAYER_NAME[player]}’s options", 20, MUTED, True)
+    write(draw, RW - 185, y, "EV", 20, MUTED, True, "ra")
+    write(draw, RW - x, y, "EV loss", 20, MUTED, True, "ra")
+    draw.line((x, y + 34, RW - x, y + 34), fill=LINE)
+    best = max(value for _, value in choices)
+    for i, (label, value) in enumerate(choices):
+        y_row = y + 55 + i * 65
+        optimal = abs(best - value) < 1e-7
+        tone = GREEN if optimal else TEXT
+        if optimal:
+            draw.rounded_rectangle((x - 5, y_row - 9, RW - x + 5, y_row + 41), radius=6, fill="#25413d")
+        write(draw, x + 8, y_row, label, 27, tone, optimal)
+        write(draw, RW - 185, y_row, f"{value:+.3f}", 26, tone, optimal, "ra")
+        write(draw, RW - x, y_row, f"{max(0, best - value):.3f}", 25, tone, optimal, "ra")
+
+
+def cube_panel(draw, cube, phase, x, result=None):
+    player = cube.get("offerer", cube.get("player"))
+    responder = cube.get("responder") or ("white" if player == "dark" else "dark")
+    offer = "doubles" if cube["preOfferStake"] == 1 else "redoubles"
+    if phase == "wait":
+        title, subtitle = f"{PLAYER_NAME[player]}’s cube decision", "Before the roll"
+    elif phase == "cube-take":
+        title = f"{PLAYER_NAME[responder]} takes"
+        subtitle = f"Cube at {cube['offeredFace']}"
+    elif phase == "cube-pass":
+        title = f"{PLAYER_NAME[responder]} passes"
+        points = result["points"]
+        subtitle = f"{PLAYER_NAME[result['winner']]} wins {points} {'point' if points == 1 else 'points'}"
+    else:
+        title = f"{PLAYER_NAME[player]} {offer} to {cube['offeredFace']}"
+        subtitle = f"{PLAYER_NAME[responder]} to respond"
+    write(draw, x, 82, title, 39, TEXT, True)
+    write(draw, x, 146, subtitle, 24, MUTED)
+    options = cube.get("options")
+    if not options:
+        write(draw, x, 227, "Cube analysis unavailable", 25, MUTED)
+        return
+    action = "Double" if cube["preOfferStake"] == 1 else "Redouble"
+    cube_actions(draw, x, 215, player, [
+        (f"No {action.lower()}", options["noDouble"]), (action, min(options["take"], options["pass"])),
+    ])
+    if phase != "wait":
+        cube_actions(draw, x, 450, responder, [
+            ("Take", -options["take"]), ("Pass", -options["pass"]),
+        ])
+
+
+def action_panel(state, roll, entry, cube, cube_mode, wait, events, opening):
     image, draw = card(RW, RH)
     x = 24
-    phase, player = state["phase"], state["player"]
-    roll = state.get("roll")
     write(draw, x, 23, "Decision analysis", 25, bold=True)
     result = state.get("result")
-    if result and result["reason"] == "pass":
-        winner = PLAYER_NAME[result["winner"]]
-        points = result["points"]
-        write(draw, x, 86, f"{PLAYER_NAME[player]} passes", 40, PLAYER_TONE[player], True)
-        write(draw, x, 153, f"{winner} wins {points} {'point' if points == 1 else 'points'}", 28)
-        return bgr(image)
-    if not entry and held:
-        entry, phase = held, "played"
-    if not entry:
-        line = "Between rolls" if phase == "pre-roll" else activity(phase, player)
-        write(draw, x, 86, line, 40, PLAYER_TONE.get(player, TEXT), True)
-        if phase in ("move", "played"):
-            reason = "Waiting for a settled checker position" if roll and roll["dice"] and all(roll["dice"]) else "Roll faces unavailable"
-        elif phase == "game-closed":
-            reason = "Final EV loss is shown in the game equity panel."
-        elif phase == "between-rolls":
-            reason = "Waiting for the next identifiable roll."
+    if cube_mode == "cube-pass":
+        cube_panel(draw, cube, cube_mode, x, result)
+    elif state["phase"] == "game-closed":
+        write(draw, x, 86, "Game finished", 40, TEXT, True)
+        if cube and not cube.get("reply"):
+            write(draw, x, 153, "Cube response unconfirmed", 24, MUTED)
+    elif cube_mode == "cube-offer":
+        cube_panel(draw, cube, cube_mode, x)
+    elif roll:
+        player = roll["player"]
+        write(draw, x, 77, f"{PLAYER_NAME[player]}’s roll   {dice_label(roll['dice'])}", 39,
+              PLAYER_TONE[player], True)
+        if entry:
+            if "inferred" in roll["evidence"] or "unique-legal-roll" in roll["evidence"]:
+                write(draw, x, 127, "Roll inferred from play", 19, MUTED)
+            played = any(event.get("decision") == roll["decision"] for event in events)
+            moves_panel(draw, entry, played, x)
         else:
-            reason = "Action EVs appear when the roll settles."
-        write(draw, x, 153, reason, 22, MUTED)
-        return bgr(image)
-    if "offerer" in entry:
-        offerer = PLAYER_NAME[entry["offerer"]]
-        write(draw, x, 85, f"{offerer} offers {entry['preOfferStake']} → {entry['offeredFace']}", 35, WHITE, True)
-        label = activity(phase, player)
-        if phase == "cube-result":
-            label = f"{PLAYER_NAME[player]} takes" if entry.get("reply") == "take" else "Reply unconfirmed"
-        write(draw, x, 143, label, 24, PLAYER_TONE.get(player, MUTED), True)
-        if not entry.get("options"):
-            write(draw, x, 227, "Awaiting a verified board position", 25, MUTED)
-            return bgr(image)
-        write(draw, x, 227, "Best cube action", 19, MUTED, True)
-        write(draw, x, 263, entry["recommendation"], 40, GREEN, True)
-        write(draw, x, 334, f"Best reply   {entry['bestReply']}", 25)
-        write(draw, RW - x, 334, f"Offer EV loss   {entry['offerEvLoss']:.3f}", 25, AMBER, True, "ra")
-        draw.line((x, 400, RW - x, 400), fill=LINE)
-        write(draw, x, 424, "Action", 20, MUTED, True)
-        write(draw, RW - x, 424, "EV", 20, MUTED, True, "ra")
-        label = "Double" if entry["preOfferStake"] == 1 else "Redouble"
-        options = [(f"No {label.lower()}", "noDouble"), (f"{label} / take", "take"), (f"{label} / pass", "pass")]
-        for i, (action, key) in enumerate(options):
-            write(draw, x, 474 + i * 55, action, 25)
-            write(draw, RW - x, 474 + i * 55, f"{entry['options'][key]:+.3f}", 25, anchor="ra")
-        played_caption(draw, held)
-        return bgr(image)
+            write(draw, x, 153, "Move analysis unavailable", 23, MUTED)
+    elif cube_mode == "cube-take":
+        cube_panel(draw, cube, cube_mode, x)
+    elif wait:
+        cube_panel(draw, wait, "wait", x)
+    elif opening:
+        write(draw, x, 86, "Opening toss", 40, TEXT, True)
+    else:
+        write(draw, x, 86, "Between rolls", 40, TEXT, True)
+    recent_actions(draw, events, roll, cube_mode if not roll else None)
+    return bgr(image)
 
-    player = entry["player"]
-    dice = "–".join(map(str, sorted(entry["dice"], reverse=True)))
-    write(draw, x, 77, f"{PLAYER_NAME[player]} {'rolled' if phase == 'played' else 'rolls'} {dice}", 38,
-          PLAYER_TONE[player], True)
-    if "inferred-from-moves" in entry.get("evidence", ""):
-        write(draw, x, 127, "Roll inferred from play", 19, MUTED)
+
+def moves_panel(draw, entry, played, x):
     moves = entry["actions"][:TOP_MOVES]
     draw.line((x, 187, RW - x, 187), fill=LINE)
     write(draw, x, 219, "Top moves", 24, MUTED, True)
     write(draw, RW - 185, 219, "EV", 24, MUTED, True, "ra")
     write(draw, RW - x, 219, "EV loss", 24, MUTED, True, "ra")
     for rank, move in enumerate(moves, 1):
-        y = 287 + (rank - 1) * 82
-        played = move["isPlayed"] and held is entry
-        if rank == 1 or played:
+        y = 287 + (rank - 1) * 78
+        is_played = move["isPlayed"] and played
+        if rank == 1 or is_played:
             fill = "#25413d" if rank == 1 else "#443d35"
             draw.rounded_rectangle((x - 5, y - 10, RW - x + 5, y + 43), radius=6, fill=fill)
-        tone = GREEN if rank == 1 else AMBER if played else TEXT
+        tone = GREEN if rank == 1 else AMBER if is_played else TEXT
         write(draw, x + 8, y, rank, 24, tone, True)
         write(draw, x + 63, y, notation(move["notation"]), 29, tone, rank == 1)
         write(draw, RW - 185, y, f"{move['equity4']:+.3f}", 29, tone, rank == 1, "ra")
         write(draw, RW - x, y, f"{max(0, entry['best']['equity'] - move['equity4']):.3f}",
               26, tone, rank == 1, "ra")
-    played_caption(draw, held)
-    return bgr(image)
+
+
+def viewer_frames(data, states):
+    """Yield independently timed roll, cube and action layers for each camera frame."""
+    rolls = iter(data["presentation"]["rolls"])
+    waits = iter(data["presentation"]["waits"])
+    roll = next(rolls, None)
+    wait = next(waits, None)
+    decisions = data["decisions"]
+    cube = decisions.get("cube")
+    opening_until = roll["start"] if roll and data["game"] > 1 else 0
+    actions = []
+    for event in data["losses"]:
+        if event["kind"] == "checker":
+            decision = decisions[str(event["decision"])]
+            actions.append({**event, "label": f"played   {notation(decision['played']['notation'])}"})
+    for item in data["presentation"]["rolls"]:
+        if item["end"] - item["start"] < ACTION_HOLD:
+            actions.append({"frame": item["start"], "kind": "roll", "player": item["player"], "roll": item,
+                            "label": f"rolled   {dice_label(item['dice'])}"})
+    for item in data["presentation"]["waits"]:
+        options = item["options"]
+        loss = max(0, min(options["take"], options["pass"]) - options["noDouble"])
+        label = "rolls without doubling" if item["preOfferStake"] == 1 else "rolls without redoubling"
+        actions.append({"frame": item["end"], "kind": "no-double", "player": item["player"],
+                        "label": label, "loss": loss})
+    if cube:
+        label = "doubles" if cube["preOfferStake"] == 1 else "redoubles"
+        actions.append({"frame": cube["startFrame"], "kind": "cube-offer", "player": cube["offerer"],
+                        "label": f"{label} to {cube['offeredFace']}", "loss": cube.get("offerEvLoss")})
+        if cube.get("reply") in ("take", "pass"):
+            kind = "cube-" + cube["reply"]
+            label = f"takes   ·   cube at {cube['offeredFace']}" if kind == "cube-take" else "passes"
+            loss = next((event["loss"] for event in data["losses"] if event.get("action") == cube["reply"]), None)
+            actions.append({"frame": cube["endFrame"], "kind": kind, "player": cube["responder"],
+                            "label": label, "loss": loss})
+    actions.sort(key=lambda event: event["frame"])
+    pending = iter(actions)
+    upcoming = next(pending, None)
+    live = []
+    for state in states:
+        frame = state["frame"]
+        while roll and frame >= roll["end"]:
+            roll = next(rolls, None)
+        while wait and frame >= wait["end"]:
+            wait = next(waits, None)
+        while upcoming and upcoming["frame"] <= frame:
+            live.append(upcoming)
+            upcoming = next(pending, None)
+        live = [event for event in live if frame < event["frame"] + ACTION_HOLD]
+        cube_mode = None
+        if cube and frame >= cube["startFrame"]:
+            if frame < cube["endFrame"] or (not cube.get("reply") and state["phase"] == "cube-response"):
+                cube_mode = "cube-offer"
+            elif state.get("result", {}).get("reason") == "pass":
+                cube_mode = "cube-pass"
+            elif cube.get("reply") == "take" and frame < cube["endFrame"] + ACTION_HOLD:
+                cube_mode = "cube-take"
+        yield (state, roll if roll and roll["start"] <= frame else None,
+               wait if wait and wait["start"] <= frame and wait["end"] - wait["start"] >= ACTION_HOLD else None,
+               cube_mode, tuple(live), frame < opening_until)
 
 
 @lru_cache(maxsize=256)
@@ -295,15 +377,15 @@ def render_frames(output, data, game, number, footage, software, start=0):
     evaluated_position = None
     decisions = data["decisions"]
 
-    states = rows(OUT / f"{prefix}-state.jsonl.gz")
+    states = viewer_frames(data, rows(OUT / f"{prefix}-state.jsonl.gz"))
     for _ in range(start):
-        state = next(states)
+        state, *_ = next(states)
         position = data["positions"].get(str(state["position"]))
         if position and position["equities"]:
             evaluated_position = position
         if position is None or state["phase"] == "game-closed":
             evaluated_position = None
-    for (index, frame), state in zip(game_frames(game, start), states):
+    for (index, frame), (state, roll, wait, cube_mode, events, opening) in zip(game_frames(game, start), states):
         if index >= footage:
             break
         if state["frame"] != index:
@@ -319,15 +401,16 @@ def render_frames(output, data, game, number, footage, software, start=0):
         board_region[:] = board_image(frame, None if state["phase"] == "game-closed" else points)
         if index == start or index % FPS == 0:
             canvas[:BY] = header(number, index)
-        key = id(evaluated_position), position is not evaluated_position, state["loss"]
+        key = id(evaluated_position), state["loss"]
         if key != equity_key:
-            equity_region[:] = equity_panel(evaluated_position, state["loss"], position is not evaluated_position)
+            equity_region[:] = equity_panel(evaluated_position, state["loss"])
             equity_key = key
-        key = (state["phase"], state["player"], state["decision"], state["playedDecision"],
-               state["roll"] if state["decision"] is None else None)
+        # Frame detector changes do not independently invalidate a stable panel.
+        closed = state["phase"] == "game-closed"
+        key = id(roll), id(wait), cube_mode, tuple(id(event) for event in events), opening, closed
         if key != right_key:
-            right_region[:] = action_panel(
-                state, decisions.get(str(state["decision"])), decisions.get(str(state["playedDecision"])))
+            entry = decisions.get(str(roll["decision"])) if roll else None
+            right_region[:] = action_panel(state, roll, entry, decisions.get("cube"), cube_mode, wait, events, opening)
             right_key = key
         writer.write(canvas)
     if writer.frame_count != footage - start:

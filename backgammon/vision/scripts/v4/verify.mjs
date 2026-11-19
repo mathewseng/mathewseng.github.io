@@ -38,6 +38,13 @@ for (const game of [1, 2, 3, 4, 5]) {
   const opening = boardKey(initialState());
   let postOfferRolls = 0;
   let resetFrames = 0;
+  const countReset = (detected) => {
+    if (detected?.currentRoll) postOfferRolls++;
+    const board = detected?.position;
+    if (board && boardKey({
+      points: board.points.map(([white, black]) => white - black), bar: board.bar, off: board.borneOff,
+    }) === opening) resetFrames++;
+  };
   let lossIndex = 0;
   let totalLegal = 0;
   const loss = { white: { loss: 0, count: 0 }, dark: { loss: 0, count: 0 } };
@@ -49,14 +56,7 @@ for (const game of [1, 2, 3, 4, 5]) {
     for (let i = part.firstFrame; i < part.lastExclusive; i++) {
       const frame = part.firstGameFrame + i - part.firstFrame;
       const row = rows[frame];
-      if (game === 2 && frame >= data.decisions.cube.startFrame) {
-        const detected = raw[i].state;
-        if (detected?.currentRoll) postOfferRolls++;
-        const board = detected?.position;
-        if (board && boardKey({
-          points: board.points.map(([white, black]) => white - black), bar: board.bar, off: board.borneOff,
-        }) === opening) resetFrames++;
-      }
+      if (game === 2 && frame >= data.decisions.cube.startFrame) countReset(raw[i].state);
       assert.equal(row.frame, frame);
       assert.equal(row.clip, part.clip);
       assert.equal(row.sourceFrame, i);
@@ -120,6 +120,11 @@ for (const game of [1, 2, 3, 4, 5]) {
       assert.deepEqual(row.loss, loss);
       counts.role += Number(row.player !== null);
       counts.cube += Number(row.cube !== null);
+    }
+    // The last raw clip straddles the edit into Game 3. Confirm the opening
+    // arrangement with the adjacent frames from that same camera clip.
+    if (game === 2 && part === source.segments.at(-1)) {
+      for (let i = part.lastExclusive; resetFrames < 5 && i < raw.length; i++) countReset(raw[i].state);
     }
   }
   assert.equal(counts.anchoredRollRead, counts.missingRollRead);

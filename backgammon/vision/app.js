@@ -3,6 +3,7 @@ import { createHistory } from "./history.js";
 
 const player = document.querySelector("#replay");
 const play = document.querySelector("#play-replay");
+const controlToggle = document.querySelector("#toggle-replay-controls");
 const title = document.querySelector("#selected-game");
 const download = document.querySelector("#download-replay");
 const note = document.querySelector("#game-note");
@@ -12,12 +13,24 @@ const games = new Map(
 );
 const release = new URL("./", download.href);
 let currentGame = "1";
+let controlsVisible = true;
+
+function setPlaybackControls() {
+  player.controls = controlsVisible;
+  controlToggle.hidden = false;
+  controlToggle.textContent = controlsVisible ? "Hide controls" : "Show controls";
+}
+
+controlToggle.addEventListener("click", () => {
+  controlsVisible = !controlsVisible;
+  setPlaybackControls();
+});
 const audit = createAudit(player);
 const gameHistory = createHistory((time) => {
   player.pause();
   player.preload = "metadata";
   player.currentTime = time;
-  player.controls = true;
+  setPlaybackControls();
   play.hidden = true;
   player.focus({ preventScroll: true });
   player.scrollIntoView({ block: "center" });
@@ -40,6 +53,8 @@ function selectGame(number) {
   note.hidden = !note.textContent;
   download.href = asset;
   error.hidden = true;
+  controlsVisible = true;
+  controlToggle.hidden = true;
   player.controls = false;
   player.poster = `posters/game-${id}.jpg`;
   player.src = asset;
@@ -67,7 +82,7 @@ for (const [number, link] of games) {
 }
 
 play.addEventListener("click", () => {
-  player.controls = true;
+  setPlaybackControls();
   player.play().catch(() => {
     if (player.error) error.hidden = false;
   });
@@ -79,6 +94,7 @@ player.addEventListener("play", () => {
 player.addEventListener("ended", () => { play.hidden = false; });
 player.addEventListener("error", () => {
   error.hidden = false;
+  controlToggle.hidden = true;
   player.controls = false;
   play.hidden = true;
 });

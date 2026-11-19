@@ -22,6 +22,8 @@ Rebuild or inspect the current replay from this directory.
     bun v4/refine-replay.mjs
     bun v4/rescore.mjs
     bun v4/verify.mjs
+    bun v4/presentation.mjs
+    python3 v4/verify_presentation.py
     python3 v4/render.py --jobs 2
     python3 v4/verify_media.py
     python3 v4/export_audit.py ../audit
@@ -62,7 +64,13 @@ Roll and board state
   Point badges follow individually supported legal checker steps. A saturated
   five-checker reading is a lower bound for a taller stack. The forecast stays
   attached to the settled position. An identified pickup gates the next
-  player in the timeline. Uniquely constrained dice are recovered from the
+  player in the timeline. Presentation intervals follow the same physical dice
+  through temporary occlusions and clear them at the supported pickup or next
+  boundary. The opening cue stays until play begins. Cube offers and replies
+  use a two-second action display. A no-double appears only when the cube is
+  available, the board and actor match across the wait, and the opposing dice
+  were picked up more than two seconds before the roll.
+  Uniquely constrained dice are recovered from the
   completed checker move. The audit sidecars report the original frame-level
   vision detections and expose the difference from the inferred replay state.
 
