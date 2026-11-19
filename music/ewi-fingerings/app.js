@@ -446,20 +446,20 @@ function clearMelodyList(message = '') {
 function renderPlan() {
   const path = state.plan.path, stats = routeStats(path);
   $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb octave steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span>`;
-  const byPitch = path.map((f, i) => ({ f, i })).sort((a, b) => state.melody[b.i] - state.melody[a.i]);
-  $('phrase-steps').innerHTML = byPitch.map(({ f, i }, row) => {
-    const lower = byPitch[row + 1], locked = Boolean(state.locks[i]);
-    const diff = lower && changes(lower.f, f);
-    const octaveUp = diff?.direction === 1;
+  $('phrase-steps').innerHTML = path.map((f, i) => {
+    const midi = state.melody[i], octave = Math.floor(midi / 12) - 1;
+    const locked = Boolean(state.locks[i]);
+    const diff = i > 0 ? changes(path[i - 1], f) : null;
+    const thumbUp = diff?.direction === 1;
     const counts = diff ? `${diff.release.length}/${diff.touch.length}` : '';
-    const move = diff ? ` From the row below, release ${diff.release.length} and touch ${diff.touch.length}.${octaveUp ? ` ${thumbOffset(diff.rollers)}.` : ''}` : '';
-    const label = `Step ${i + 1}, ${name(state.melody[i])}${locked ? ', locked' : ''}. Thumb ${registerName(f.shift)}. Touch ${keyList(f.bits)}.${move}`;
+    const move = diff ? ` From the previous note, release ${diff.release.length} and touch ${diff.touch.length}.${thumbUp ? ` ${thumbOffset(diff.rollers)}.` : ''}` : '';
+    const label = `Step ${i + 1}, ${name(midi)}${locked ? ', locked' : ''}. Thumb ${registerName(f.shift)}. Touch ${keyList(f.bits)}.${move}`;
     return `<li><button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-controls="melody-choices" aria-label="${label}">
-      <strong${octaveUp ? ' class="phrase-octave-up"' : ''}>${pitchName(state.melody[i])}</strong>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
+      <strong data-octave="${octave}">${pitchName(midi)}</strong>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
       <span class="phrase-change"><span class="phrase-counts">${counts}</span>${locked ? '<span class="phrase-lock">Locked</span>' : ''}</span>
     </button></li>`;
   }).join('');
-  $('phrase-change-legend').hidden = byPitch.length < 2;
+  $('phrase-change-legend').hidden = path.length < 2;
   $('melody-choices').hidden = false;
   $('jump-melody-choices').hidden = false;
   renderMelodyChoices();

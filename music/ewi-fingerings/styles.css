@@ -110,8 +110,14 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 .phrase-step:hover, .melody-option:hover { background: var(--surface-2); }
 .phrase-step[aria-pressed="true"], .melody-option.current { border-color: var(--ewi-accent); background: var(--ewi-accent-soft); }
 .phrase-step.playing { box-shadow: inset 3px 0 var(--ewi-accent); }
-.phrase-step strong { font-size: 17px; }
-.phrase-step .phrase-octave-up { color: color-mix(in srgb, var(--info) 38%, var(--ink)); }
+.phrase-step strong { font-size: 17px; color: color-mix(in srgb, var(--octave-tint, var(--ink)) 40%, var(--ink)); }
+.phrase-step [data-octave="1"] { --octave-tint: var(--family-poker); }
+.phrase-step [data-octave="2"] { --octave-tint: var(--family-poker-2); }
+.phrase-step [data-octave="3"] { --octave-tint: var(--warn); }
+.phrase-step [data-octave="5"] { --octave-tint: var(--info); }
+.phrase-step [data-octave="6"] { --octave-tint: var(--family-dice); }
+.phrase-step [data-octave="7"] { --octave-tint: var(--good); }
+.phrase-step [data-octave="8"] { --octave-tint: var(--family-microtonal); }
 .phrase-step .mini-diagram, .melody-option .mini-diagram { width: min(100%, 250px); max-height: 54px; justify-self: center; }
 #phrase-change-legend { text-align: end; padding-inline-end: 14px; }
 .phrase-change { display: grid; text-align: end; font: var(--t-sm)/1.35 var(--font-mono); }

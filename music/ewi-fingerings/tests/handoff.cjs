@@ -66,7 +66,8 @@ async function check(browser, url, mobile) {
 
     await activate('#reverse-melody');
     assert.equal(await melody.inputValue(), 'G5 A5 G4');
-    assert.deepEqual(await page.locator('.phrase-step strong').allTextContents(), ['A', 'G', 'G']);
+    assert.deepEqual(await page.locator('.phrase-step strong').allTextContents(), ['G', 'A', 'G']);
+    assert.deepEqual(await page.locator('.phrase-step strong').evaluateAll(notes => notes.map(note => note.dataset.octave)), ['5', '5', '4']);
     const firstStep = page.locator('[data-step="0"]');
     assert.match(await firstStep.getAttribute('aria-label'), /G5, locked/);
     assert.equal(await firstStep.locator('svg').getAttribute('aria-label'), chartTouch);
