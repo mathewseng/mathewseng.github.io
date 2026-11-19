@@ -504,3 +504,26 @@ Calibrate die color and review turn order
   exact source frames and writes tall-stack-witnesses.json for Reports.
   Keep all dice inputs fixed when repeating the automatic plan comparison and
   save it as tall-stack-plan-validation.json beside the scored replay.
+
+  Train a checker center reader from the reviewed local camera crops with
+  calibration/train_checker_centers.py. Its labels include covered centers,
+  dice, cubes, and felt as non-checker controls. The source clips in its
+  holdout list are excluded from training.
+
+    python3 calibration/train_checker_centers.py "$center-model"
+    python3 v4/recover_stationary_checkers.py "$merged" "$stationary" \
+      --center-reader "$center-model/checker-centers.onnx"
+
+  Use the stationary archive as OFFICE3_VISION_STATE_DIR for reconstruction,
+  display refresh, and camera audit. Run v4/verify-stationary-checkers.mjs
+  with the previous scored replay, previous camera observations and the
+  five-game plan comparison to produce stationary-checker-validation.json.
+  Run that verifier before applying the separately reviewed dice pickup.
+
+  Run dice-footprint-timing.py on dice-footprint-controls.json and
+  reposition-footprint-controls.json. To apply the covered Game 3 pickup,
+  take the Game 3 result with previousStart 3877 and write it with
+  previousStart 3882 to match the reviewed roll. Pass this timing to
+  reconcile-reviewed-turns.mjs with reviewed-occluded-dice-pickup.json and
+  an empty face evidence object. Verify the frame index and Library exports
+  after that correction, then render Games 3 through 5.

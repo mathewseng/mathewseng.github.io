@@ -336,9 +336,16 @@ for (const number of [1, 2, 3, 4, 5]) {
       assert.equal(dark.sourceMismatch, true);
       assert.equal(data.decisions[dark.decision].evLoss, null);
     }
-    assert.deepEqual([last.dice, last.pickup, last.resultFrame], [[2, 1], 4028, 4093]);
+    const continuous = replay.contextRecovery.some(entry => entry.previousFrame === 3882 && entry.clear === 4081);
+    assert.deepEqual([last.dice, last.pickup, last.resultFrame], [[2, 1], continuous ? 4081 : 4028, continuous ? 4086 : 4093]);
     assert.equal(data.decisions[last.decision].played.notation, '18/16 16/15');
-    const afterPickup = data.changes.findLast(change => change.frame <= 4030);
+    if (continuous) {
+      for (const frame of [4028, 4060, 4080]) {
+        const active = data.changes.findLast(change => change.frame <= frame);
+        assert.equal(active.roll, data.rolls.indexOf(last));
+      }
+    }
+    const afterPickup = data.changes.findLast(change => change.frame <= last.pickup);
     assert.equal(afterPickup.roll, null);
     assert.deepEqual(last.after.bar, [0, 1]);
   }
@@ -440,7 +447,8 @@ for (const number of [1, 2, 3, 4, 5]) {
     }
   }
   if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 30325 && entry.diceFrames?.length)) {
-    const pending = data.changes.findLast(change => change.frame <= 4030);
+    const white = data.rolls.find(roll => roll.start === 3882);
+    const pending = data.changes.findLast(change => change.frame <= white.pickup);
     assert.deepEqual([pending.phase, pending.player, pending.roll], ['checker-result-pending', 'white', null]);
     const first = data.rolls.find(roll => roll.start === 208);
     const at = frame => data.changes.findLast(change => change.frame <= frame);
@@ -452,7 +460,7 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.equal(data.decisions[first.decision].played.notation, '13/10 24/20');
     assert.equal(at(first.resultFrame).pendingDecision, undefined);
     assert(at(first.resultFrame).checkerLoss[1] > afterPickup.checkerLoss[1]);
-    assert.equal(data.cubeRolls.find(item => item.frame === 4122).start, 4093);
+    assert.equal(data.cubeRolls.find(item => item.frame === 4122).start, white.resultFrame);
     for (const [start, resultFrame, dice, off] of [[31514, 31601, [3, null], 7], [31838, 31992, [1, null], 9]]) {
       const roll = data.rolls.find(item => item.start === start);
       assert.deepEqual(roll.dice, dice);

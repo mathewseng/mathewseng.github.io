@@ -117,6 +117,26 @@ function renderReport(report, seek) {
     fragment.append(section);
   }
 
+  if (report.stationaryCheckers) {
+    const { counts: recovered, model, witness, visible, previous, candidate } = report.stationaryCheckers;
+    const section = element("section", null, "vision-report-model");
+    section.append(element("h3", "Stationary checker recovery"),
+      element("p", `The camera pass restored ${number.format(recovered.recovered)} checker detections on ${number.format(recovered.frames)} frames. It uses nearby frames on both sides of a dropout and checks the object in the current image.`, "muted small"),
+      element("p", `The checker crop model matched ${model.correct} of ${model.held} labeled crops from ${model.heldClips} source clips held out of its training. In this game, ${recovered.after} of ${recovered.controls} reviewed locations matched after recovery, up from ${recovered.before}.`, "muted small"));
+    if (candidate.correctBefore > previous.correctBefore || candidate.correctAfter > previous.correctAfter) {
+      section.append(element("p", `Automatic reconstruction matched ${candidate.correctBefore} starting boards and ${candidate.correctAfter} ending boards, up from ${previous.correctBefore} and ${previous.correctAfter}.`, "muted small"));
+    }
+    const entries = [
+      ...(witness ? [{ frame: witness.frame,
+        title: `${witness.color === "white" ? "White" : "Black"} checker recovered on point ${witness.point}`,
+        detail: "Vision marks the recovered camera detection with a dotted circle." }] : []),
+      ...visible.map(item => ({ frame: item.frame, title: `Checker display moves from point ${item.from} to point ${item.to}`,
+        detail: "The board tracks this placement while the move analysis keeps the original starting position." })),
+    ].sort((a, b) => a.frame - b.frame);
+    if (entries.length) section.append(reviewList(entries, item => item.title));
+    fragment.append(section);
+  }
+
   if (report.locatorValidation) {
     const { reviewedTrainingCrops, tests } = report.locatorValidation;
     const { current, trial } = tests.newCamera;

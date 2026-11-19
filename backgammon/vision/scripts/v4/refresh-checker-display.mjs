@@ -73,6 +73,36 @@ function keepResult(game, rows, states, keys, roll, turn, id, barriers, report) 
   if (carried) report.carriedResults.push({ decision: id, frame: firstCarried, frames: carried });
 }
 
+function restoreFinalCheckerDisplay(rows, states, roll, turn, id) {
+  if (!Number.isInteger(turn.resultFrame)) return;
+  const final = turn.after.points.map(([white, dark]) => white - dark);
+  const last = Math.min(roll.end, turn.resultFrame);
+  let previous = -1, first = null;
+  for (let frame = Math.max(roll.start, last - 25, turn.resultFrame - 36); frame < last; frame++) {
+    const row = rows[frame];
+    const camera = states[frame];
+    if (row.turn !== id || row.phase !== 'move' || !camera || !row.displayPoints) continue;
+    const changed = row.displayPoints.flatMap((value, index) => value === final[index] ? [] : [index]);
+    if (changed.length !== 2) continue;
+    const [a, b] = changed;
+    if (row.displayPoints[a] !== final[b] || row.displayPoints[b] !== final[a] ||
+        ![0, 1, -1].includes(final[a]) || ![0, 1, -1].includes(final[b]) || (final[a] && final[b])) continue;
+    if (changed.some(index => camera.occludedPoints?.includes(index + 1))) continue;
+    if (!changed.every(index => camera.points[index][0] - camera.points[index][1] === final[index])) {
+      first = null;
+      previous = -1;
+      continue;
+    }
+    // Two nearby local views can show a return to the eventual position before
+    // the rest of the board clears. Keep accounting at the verified result.
+    if (previous === frame - 1) first ??= previous;
+    previous = frame;
+  }
+  if (first !== null) for (const row of rows.slice(first, turn.resultFrame)) {
+    if (row.turn === id && ['move', 'checker-result-pending'].includes(row.phase)) row.displayPoints = final;
+  }
+}
+
 for (const game of [1, 2, 3, 4, 5]) {
   const prefix = `game-0${game}`;
   const data = read(path.join(source, prefix + '-game.json'));
@@ -99,6 +129,7 @@ for (const game of [1, 2, 3, 4, 5]) {
     const stages = checkerStages(input);
     const previous = rows.slice(roll.start, roll.end).map(row => row.displayPoints);
     trackCheckerCounts(rows, boards, roll, input, id);
+    restoreFinalCheckerDisplay(rows, states, roll, turn, id);
     for (let frame = roll.start; frame < roll.end; frame++) {
       const row = rows[frame];
       if (row.turn !== id || row.phase !== 'move') continue;

@@ -1,0 +1,21 @@
+{
+  "3": [
+    {
+      "kind": "retime",
+      "starts": [155.28],
+      "keepStart": true,
+      "useFootprintTiming": true,
+      "resultAtWitness": true,
+      "supersedesReview": true,
+      "text": "White’s arm covers the 2–1 near 2:41. Both dice reappear at their original locations at 2:42.40. Both locations clear at 2:43.24, and the unobstructed board at 2:43.44 confirms the hit.",
+      "afterBoard": {
+        "seconds": 163.44,
+        "clip": 18,
+        "sourceFrame": 724,
+        "points": {"1":2,"2":-2,"6":4,"7":2,"8":1,"12":-3,"13":4,"15":1,"17":-4,"19":-5,"24":1},
+        "bar": [0, 1],
+        "off": [0, 0]
+      }
+    }
+  ]
+}

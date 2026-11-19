@@ -65,9 +65,13 @@ def verify(game, test):
         # removal in between. Brief occlusions need no visible pip match.
         if moved is None or sustained((start, moved + 6), lambda frame: supporting(frame, anchor, False), 6) is not None:
             return {'start': None, 'clear': None}
-    # Removal needs a positive match for the empty board on both locations.
-    # Lack of a die match during a hand occlusion is insufficient.
-    clear = sustained(pickup, lambda frame: all(supporting(frame, die, False) for die in final), 6) if start is not None else None
+    # A hand can resemble the empty board. A later repeated appearance at
+    # both locations takes precedence over an apparent clear during occlusion.
+    last_visible = next((frame for frame in reversed(range(pickup[0] + 2, pickup[1]))
+                         if all(supporting(sample, die, True)
+                                for sample in range(frame - 2, frame + 1) for die in final)), pickup[0] - 1)
+    clear = sustained((last_visible + 1, pickup[1]),
+        lambda frame: all(supporting(frame, die, False) for die in final), 6) if start is not None else None
     return {'start': start, 'clear': clear}
 
 

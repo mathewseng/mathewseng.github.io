@@ -23,11 +23,14 @@ POINT_WIDTH=28
 POINT_HEIGHT=112
 SLOT_CLASSES=10
 
+def point_strip(pixels, point):
+    x = int(COLUMNS[12 - point if point <= 12 else point - 13])
+    crop = pixels[:224, x - 21:x + 22] if point <= 12 else pixels[196:, x - 21:x + 22][::-1]
+    return cv2.resize(crop, (POINT_WIDTH, POINT_HEIGHT), interpolation=cv2.INTER_AREA)
+
+
 def strips(pixels):
-    for point in range(1,25):
-        x=int(COLUMNS[12-point if point<=12 else point-13])
-        p=pixels[:224,x-21:x+22] if point<=12 else pixels[196:,x-21:x+22][::-1]
-        yield cv2.resize(p,(POINT_WIDTH,POINT_HEIGHT),interpolation=cv2.INTER_AREA)
+    return (point_strip(pixels, point) for point in range(1, 25))
 
 def load(name):
     return cv2.dnn.readNetFromONNX(str(OUT/f'{name}.onnx'))

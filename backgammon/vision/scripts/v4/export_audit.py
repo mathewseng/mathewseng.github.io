@@ -21,10 +21,12 @@ def confidence(score):
 def pack(state):
     if not state:
         return None
-    checkers = [
-        [*reading["center"], int(reading["color"] == "dark"), confidence(reading["score"])]
-        for reading in state.get("checkers", [])
-    ]
+    checkers = []
+    for reading in state.get("checkers", []):
+        checker = [*reading["center"], int(reading["color"] == "dark"), confidence(reading["score"])]
+        if reading.get("source") == "stationary-checker-recovery":
+            checker.append(1)
+        checkers.append(checker)
     dice = [
         [*reading["center"], reading["value"] or 0, reading["candidateValue"],
          confidence(reading["score"])]

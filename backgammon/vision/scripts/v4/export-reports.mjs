@@ -80,6 +80,8 @@ const stackPath = path.join(replayDir, "tall-stack-plan-validation.json");
 const stackChecks = fs.existsSync(stackPath) ? read(stackPath) : [];
 const stackWitnessPath = path.join(replayDir, "tall-stack-witnesses.json");
 const stackWitnesses = fs.existsSync(stackWitnessPath) ? read(stackWitnessPath) : [];
+const stationaryCheckerPath = path.join(replayDir, "stationary-checker-validation.json");
+const stationaryCheckers = fs.existsSync(stationaryCheckerPath) ? read(stationaryCheckerPath) : null;
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
 const footprintValidation = fs.existsSync(footprintReportPath) ? read(footprintReportPath) : [];
 
@@ -373,6 +375,7 @@ function report(number) {
   const longTrialsForGame = data => data?.tests.spotExtra
     .filter(test => test.game === number && test.cohort === "long-occlusion-review") ?? [];
   const stack = stackChecks.find(item => item.game === number);
+  const checker = stationaryCheckers?.games.find(item => item.game === number);
   const report = { game: number, fps: data.fps, counts, unresolvedFaces, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
@@ -393,6 +396,7 @@ function report(number) {
     checkerMotion: motionChecks.find(item => item.game === number) ?? null,
     tallStacks: stack ? { current: stack.current.counts, updated: stack.candidate.counts,
       witnesses: stackWitnesses.filter(item => item.game === number) } : null,
+    stationaryCheckers: checker ? { ...checker, model: stationaryCheckers.model } : null,
     reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
     diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number),
     settledFaces: faceValidation && {

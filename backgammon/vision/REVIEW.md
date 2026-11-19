@@ -668,3 +668,27 @@ changes. With the same dice data and reviewed turns, the all-game automatic
 comparison found two more correct dice pairs and three more matching
 starting and ending boards. Published dice, legal moves, doubling decisions,
 physical pickup times, and final EV loss totals were verified unchanged.
+
+## Stationary checker gaps and covered dice
+
+The camera review labeled 256 source crops, including checkers, dice,
+cubes, sleeve and hand occlusions, and empty felt. Training used 190 crops.
+The new center-crop reader matched 47 of 48 labeled crops drawn from ten
+held-out source clips. The recovery pass requires repeated location
+evidence before and after a dropout and a matching checker in the current
+camera image. It added 1,551 checker readings across 1,531 frames. On the
+238 legible reviewed controls, the camera marks matched 169 after recovery,
+up from 94, with zero new marks on the non-checker controls.
+
+| Game and time | Footage review and published change |
+| --- | --- |
+| Game 3, 2:41.12–2:43.44 | White’s arm hides the 2–1. Both dice reappear at their original locations at 2:42.40. Keep the roll visible until both locations clear at 2:43.24. The board clears at 2:43.44 to confirm the same hit, `18/16 16/15`. |
+| Game 3, 20:52 | The Black checker on point 7 remains beside the rail while the hand moves on the opposite half. Vision shows a dotted circle on the recovered detection. Point 16 is also visible in the source. |
+| Game 4, 2:03.92 | The Black checker is already on point 10 while the hand still covers other parts of the board. Show the landing and carry it through dice pickup and confirmation. |
+| Game 5, 1:17.36–1:19.76 | The Black checker returns from fixed point 11 to point 7 during the same roll, then goes back to point 11. Display both placements while keeping the original starting board and the move grade. |
+
+All other tested dice footprints preserved their prior timing in the
+35-camera-control comparison. Automatic reconstruction gained one matching
+starting board and one matching ending board in Game 3. The scored checker
+and cube choices, and final EV loss totals, were verified against the
+previous release. Reports links directly to the changed frames.

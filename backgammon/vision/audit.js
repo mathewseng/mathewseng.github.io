@@ -37,12 +37,14 @@ export function createAudit(player, replayAsset) {
       context.strokeStyle = HAND;
       context.strokeRect(x(left), y(top), (right - left) * scale, (bottom - top) * scale);
     }
-    for (const [cx, cy, side] of checkers) {
+    for (const [cx, cy, side, , recovered] of checkers) {
       context.strokeStyle = CHECKER[side];
+      context.setLineDash(recovered ? [3, 3] : []);
       context.beginPath();
       context.arc(x(cx), y(cy), 14 * scale, 0, 2 * Math.PI);
       context.stroke();
     }
+    context.setLineDash([]);
     drawContextCheckers(frame, checkers, x, y);
     for (const [point, side, count] of stacks) {
       const top = point <= 12;
@@ -111,7 +113,7 @@ export function createAudit(player, replayAsset) {
     if (!source) return;
     status.textContent = player.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
       ? "Play to see detections."
-      : "White (cyan) · Black (amber) · Dice (green) · Cube (yellow) · Hands (pink) · Reconstructed checker (dashed) · Stack read (numbered)";
+      : "White (cyan) · Black (amber) · Dice (green) · Cube (yellow) · Hands (pink) · Camera recovery (dotted) · Reconstructed checker (dashed) · Stack count (numbered)";
   }
 
   function stopTick() {
