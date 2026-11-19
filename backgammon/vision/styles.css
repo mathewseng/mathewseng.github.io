@@ -608,6 +608,10 @@
   cursor: pointer;
 }
 
+.replay-markers button[data-kind="roll"] {
+  width: min(0.72rem, var(--marker-gap));
+}
+
 .replay-markers button::after {
   display: block;
   content: "";
@@ -616,6 +620,14 @@
   margin: auto;
   border-radius: 2px;
   background: currentColor;
+}
+
+.replay-markers button[data-kind="roll"]::after {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .replay-markers button[aria-current="true"]::after,

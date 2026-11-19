@@ -84,12 +84,21 @@ export function createTransport(player, onData, replayAsset) {
 
   function drawMarkers() {
     index = -1;
+    const rolls = actions.filter(action => action.kind === "roll");
+    let rollIndex = 0;
     markers.replaceChildren(...actions.map(action => {
       const marker = document.createElement("button");
       marker.type = "button";
       marker.dataset.kind = action.kind;
       marker.dataset.player = action.player;
-      marker.style.left = `${(action.frame / source.frames) * 100}%`;
+      marker.style.left = `${action.frame * 100 / source.frames}%`;
+      if (action.kind === "roll") {
+        const left = rolls[rollIndex - 1]?.frame ?? action.frame - source.frames;
+        const right = rolls[rollIndex + 1]?.frame ?? action.frame + source.frames;
+        const gap = Math.min(action.frame - left, right - action.frame);
+        marker.style.setProperty("--marker-gap", `${gap * 100 / source.frames}%`);
+        rollIndex++;
+      }
       const label = `${timecode(action.frame / fps())} · ${action.label}`;
       marker.title = label;
       marker.setAttribute("aria-label", label);
