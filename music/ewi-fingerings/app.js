@@ -1,7 +1,7 @@
 import { KEY_RULES, isEligibleFingering, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-key-labels';
 import { KEY_SYMBOLS, KEY_LAYOUT, keySideEdge } from './key-artwork.mjs?v=20261118-manual-keys';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody, scoreFingeringOptions } from './engine.mjs?v=20261119-melody-changes';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody, melodyTokens, scoreFingeringOptions } from './engine.mjs?v=20261119-octave-tint';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
 import { bestNoteMoves, noteMoveCounts, MOVE_PITCHES } from './note-moves.mjs?v=20261118-keys';
 import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-scales';
@@ -396,6 +396,22 @@ function keepUnchangedChoices(melody) {
   }
   state.melody = melody;
 }
+function reverseMelody() {
+  const input = $('melody');
+  let melody;
+  try { melody = parseMelody(input.value); }
+  catch { calculate(); return; }
+  keepUnchangedChoices(melody);
+  const last = melody.length - 1;
+  for (const field of ['locks', 'chartChoices']) {
+    state[field] = Object.fromEntries(Object.entries(state[field]).map(([step, choice]) => [last - Number(step), choice]));
+  }
+  state.step = last - Math.min(state.step, last);
+  state.melody = melody.reverse();
+  state.usePhraseOctave = true;
+  input.value = melodyTokens(input.value).reverse().join(' ');
+  calculate();
+}
 function calculate() {
   stopAudio();
   try {
@@ -434,11 +450,12 @@ function renderPlan() {
   $('phrase-steps').innerHTML = byPitch.map(({ f, i }, row) => {
     const lower = byPitch[row + 1], locked = Boolean(state.locks[i]);
     const diff = lower && changes(lower.f, f);
+    const octaveUp = diff?.direction === 1;
     const counts = diff ? `${diff.release.length}/${diff.touch.length}` : '';
-    const move = diff ? ` From the row below, release ${diff.release.length} and add ${diff.touch.length}.` : '';
+    const move = diff ? ` From the row below, release ${diff.release.length} and touch ${diff.touch.length}.${octaveUp ? ` ${thumbOffset(diff.rollers)}.` : ''}` : '';
     const label = `Step ${i + 1}, ${name(state.melody[i])}${locked ? ', locked' : ''}. Thumb ${registerName(f.shift)}. Touch ${keyList(f.bits)}.${move}`;
     return `<li><button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-controls="melody-choices" aria-label="${label}">
-      <strong>${pitchName(state.melody[i])}</strong>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
+      <strong${octaveUp ? ' class="phrase-octave-up"' : ''}>${pitchName(state.melody[i])}</strong>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
       <span class="phrase-change"><span class="phrase-counts">${counts}</span>${locked ? '<span class="phrase-lock">Locked</span>' : ''}</span>
     </button></li>`;
   }).join('');
@@ -614,14 +631,7 @@ $('melody').addEventListener('input', () => {
   clearMelodyList('Choose Find fingerings to update the list.');
   $('melody-error').hidden = true; $('melody').removeAttribute('aria-invalid'); save();
 });
-document.querySelectorAll('[data-phrase]').forEach(button => button.addEventListener('click', () => {
-  $('melody').value = button.dataset.phrase;
-  state.usePhraseOctave = false;
-  state.step = 0;
-  state.locks = {};
-  state.chartChoices = {};
-  calculate();
-}));
+$('reverse-melody').addEventListener('click', reverseMelody);
 $('phrase-steps').addEventListener('click', event => {
   const button = event.target.closest('[data-step]'); if (!button) return;
   stopAudio();

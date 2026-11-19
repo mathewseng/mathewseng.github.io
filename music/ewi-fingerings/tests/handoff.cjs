@@ -64,6 +64,18 @@ async function check(browser, url, mobile) {
     await page.waitForFunction(() => document.querySelector('#play-phrase').textContent === 'Play phrase');
     assert.match(await lastStep.getAttribute('aria-label'), /locked/);
 
+    await activate('#reverse-melody');
+    assert.equal(await melody.inputValue(), 'G5 A5 G4');
+    assert.deepEqual(await page.locator('.phrase-step strong').allTextContents(), ['A', 'G', 'G']);
+    const firstStep = page.locator('[data-step="0"]');
+    assert.match(await firstStep.getAttribute('aria-label'), /G5, locked/);
+    assert.equal(await firstStep.locator('svg').getAttribute('aria-label'), chartTouch);
+    await page.evaluate(() => { window.scheduledNotes.length = 0; });
+    await activate('#play-phrase');
+    await page.waitForFunction(() => window.scheduledNotes.length === 3);
+    assert.deepEqual(await page.evaluate(() => window.scheduledNotes.map(note => note.midi)), [79, 81, 67]);
+    await page.waitForFunction(() => document.querySelector('#play-phrase').textContent === 'Play phrase');
+
     // An empty phrase defaults to octave 4. Appending another note keeps that first lock.
     await melody.fill('');
     await activate('[data-view="explore"]');

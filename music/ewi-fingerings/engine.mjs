@@ -96,8 +96,11 @@ export function scoreFingeringOptions(melody, step, weights, locks = {}, chartCh
 export function routeCost(path, weights = DEFAULT_WEIGHTS) {
   return path.reduce((sum, f, i) => sum + preferenceCost(f, weights) + (i ? transitionCost(path[i - 1], f, weights) : 0), 0);
 }
+export function melodyTokens(input) {
+  return input.trim().split(/[\s,;|]+/).filter(Boolean);
+}
 export function parseMelody(input) {
-  const tokens = input.trim().split(/[\s,;|]+/).filter(Boolean);
+  const tokens = melodyTokens(input);
   if (!tokens.length) throw new Error('Enter a note or phrase, for example B4 C5 D5.');
   if (tokens.length > 64) throw new Error('Use up to 64 notes per phrase.');
   const pitch = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };

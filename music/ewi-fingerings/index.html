@@ -6,7 +6,7 @@
   <meta name="description" content="Explore ranked Akai EWI4000s fingerings, learn every note key, and plan easier melody fingerings with octave-aware transitions.">
   <link rel="stylesheet" href="../../shared/tokens.css?v=20261031">
   <link rel="stylesheet" href="../../shared/app.css?v=20261031">
-  <link rel="stylesheet" href="styles.css?v=20261119-melody-changes">
+  <link rel="stylesheet" href="styles.css?v=20261119-octave-tint">
   <title>EWI Fingerings · Music</title>
 </head>
 <body>
@@ -58,8 +58,7 @@
     <section id="plan" class="planner" hidden aria-label="Melody">
       <div class="planner-input">
         <div class="planner-editor">
-          <form id="melody-form"><div class="section-title"><label for="melody">Melody</label><button type="button" class="btn" id="open-scales" aria-haspopup="dialog">Scales</button></div><textarea id="melody" rows="2" spellcheck="false" aria-describedby="melody-error">C4 D4 E4 F4 G4 A4 B4 C5</textarea><p id="melody-error" class="error" role="alert" hidden></p><button class="btn btn--primary" type="submit">Find fingerings</button></form>
-          <div class="phrase-examples"><button type="button" data-phrase="B4 C5 D5 C5 B4">Across the break</button><button type="button" data-phrase="G3 G4 D5 G5 D5 G4 G3">Octave jumps</button></div>
+          <form id="melody-form"><div class="section-title"><label for="melody">Melody</label><div class="melody-editor-actions"><button type="button" class="btn" id="reverse-melody" aria-label="Reverse melody">Reverse</button><button type="button" class="btn" id="open-scales" aria-haspopup="dialog">Scales</button></div></div><textarea id="melody" rows="2" spellcheck="false" aria-describedby="melody-error">C4 D4 E4 F4 G4 A4 B4 C5</textarea><p id="melody-error" class="error" role="alert" hidden></p><button class="btn btn--primary" type="submit">Find fingerings</button></form>
         </div>
         <div class="planner-tuning">
           <fieldset class="preferences">
@@ -76,7 +75,7 @@
           <div id="plan-summary" role="status"></div>
           <button type="button" class="text-button" id="jump-melody-choices" aria-controls="melody-choices" hidden>Fingering choices ↓</button>
         </div>
-        <p id="phrase-change-legend" class="small-label" hidden>Release / add from the row below</p>
+        <p id="phrase-change-legend" class="small-label" hidden>Release / Touch</p>
         <ol id="phrase-steps" class="phrase-steps" role="list" aria-labelledby="phrase-heading"></ol>
         <section id="melody-choices" class="melody-choices" aria-labelledby="melody-choice-title" hidden>
           <h3 id="melody-choice-title" tabindex="-1">Fingering choices</h3>
@@ -159,6 +158,6 @@
     <p id="app-status" class="app-status" role="status" aria-live="polite"></p>
     <noscript><p>This interactive chart needs JavaScript. You can still use the <a href="https://www.patchmanmusic.com/EWIFingeringOneWatts.pdf">OneWatt reference chart</a>.</p></noscript>
   </main>
-  <script type="module" src="app.js?v=20261119-melody-changes"></script>
+  <script type="module" src="app.js?v=20261119-octave-tint"></script>
 </body>
 </html>

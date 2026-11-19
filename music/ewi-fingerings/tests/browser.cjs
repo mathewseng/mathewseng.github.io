@@ -199,12 +199,14 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     // A phrase is calculated globally and can be constrained by the user.
     await page.getByRole('button', { name: 'Add E♭4 to melody', exact: true }).click();
     assert.match(await page.locator('#melody').inputValue(), / E♭4$/);
-    await page.getByRole('button', { name: 'Across the break', exact: true }).click();
+    await page.locator('#melody').fill('B4 C5 D5 C5 B4');
+    await page.locator('#melody-form button[type=submit]').click();
     assert.equal(await page.locator('.phrase-step').count(), 5);
     assert.deepEqual(await page.locator('.phrase-step strong').allTextContents(), ['D', 'C', 'C', 'B', 'B']);
     assert.deepEqual(await page.locator('.phrase-step').evaluateAll(rows => rows.map(row => row.dataset.step)), ['2', '1', '3', '0', '4']);
     assert.deepEqual(await page.locator('.phrase-counts').allTextContents(), ['1/0', '0/0', '1/0', '0/0', '']);
-    assert.match(await page.locator('.phrase-step').first().getAttribute('aria-label'), /From the row below, release 1 and add 0/);
+    assert.equal(await page.locator('#phrase-change-legend').textContent(), 'Release / Touch');
+    assert.match(await page.locator('.phrase-step').first().getAttribute('aria-label'), /From the row below, release 1 and touch 0/);
     await checkMelodyColumn();
     assert.deepEqual(await keyGeometry('.phrase-step .mini-diagram'), referenceGeometry);
     assert.equal(await page.locator('.phrase-step .mini-diagram > g').first().getAttribute('transform'), 'rotate(-90)');
@@ -227,6 +229,9 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('[data-step="1"]').getAttribute('aria-pressed'), 'true');
     assert.deepEqual(await page.locator('.phrase-step strong').allTextContents(), ['G', 'G']);
     assert.deepEqual(await page.locator('.phrase-counts').allTextContents(), ['0/0', '']);
+    assert.equal(await page.locator('.phrase-octave-up').count(), 1);
+    assert.equal(await page.locator('[data-step="1"] .phrase-octave-up').textContent(), 'G');
+    assert.match(await page.locator('[data-step="1"]').getAttribute('aria-label'), /Thumb 1 octave higher/);
     assert.deepEqual(await page.locator('.phrase-step svg').evaluateAll(diagrams => diagrams.map(svg => svg.getAttribute('aria-label'))),
       ['Touch K1, K3, K4', 'Touch K1, K3, K4']);
     await page.keyboard.press('Enter');
@@ -282,7 +287,11 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('#melody-form').getByRole('button', { name: 'Find fingerings' }).click();
     assert.equal(await page.locator('.phrase-step').count(), 64);
     await checkMelodyColumn();
-    await page.locator('[data-phrase="B4 C5 D5 C5 B4"]').click();
+    await page.locator('.phrase-step').last().scrollIntoViewIfNeeded();
+    assert.ok(await page.evaluate(() => window.scrollY > 0), 'a long melody scrolls the page');
+    assert.equal(await page.locator('.planner-output').evaluate(panel => getComputedStyle(panel).overflowY), 'visible');
+    await page.locator('#melody').fill('B4 C5 D5 C5 B4');
+    await page.locator('#melody-form button[type=submit]').click();
 
     // Latching input, live staff, and examples must agree across key interactions.
     await page.getByRole('button', { name: 'Key explorer', exact: true }).click();
