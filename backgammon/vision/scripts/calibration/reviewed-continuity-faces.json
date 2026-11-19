@@ -1,0 +1,14 @@
+[
+  {"game":1,"seconds":493,"dice":[[256,159,5],[152,366,1]],"split":"train"},
+  {"game":1,"seconds":541,"dice":[[204,190,6]],"split":"train"},
+  {"game":1,"seconds":522.24,"dice":[[307,254,6],[326,350,1]],"split":"train"},
+  {"game":1,"seconds":571.96,"dice":[[390,372,4]],"split":"train"},
+  {"game":3,"seconds":304.32,"dice":[[482,260,3],[496,230,5]],"split":"train"},
+  {"game":3,"seconds":309.4,"dice":[[186,191,2],[252,340,5]],"split":"train"},
+  {"game":3,"seconds":953.84,"dice":[[306,292,4],[448,310,3]],"split":"train"},
+  {"game":3,"seconds":984,"dice":[[165,374,5]],"split":"train"},
+  {"game":4,"seconds":254.8,"dice":[[206,189,1],[256,294,4]],"split":"train"},
+  {"game":4,"seconds":785,"dice":[[136,142,4],[257,189,1]],"split":"train"},
+  {"game":4,"seconds":1032.32,"dice":[[234,56,1],[198,48,6]],"split":"train"},
+  {"game":4,"seconds":1055.32,"dice":[[228,256,4],[258,214,1]],"split":"train"}
+]

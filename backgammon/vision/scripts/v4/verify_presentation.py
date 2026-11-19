@@ -102,6 +102,14 @@ def verify(number):
         assert entry_turn["after"] == fan_turn["before"] == fan_turn["after"] == twos_turn["before"]
         assert twos_turn["resultFrame"] == 12176
         assert game["decisions"][str(twos["decision"])]["played"]["notation"] == "20/18 18/16 16/14 14/12"
+        handoff = [next(r for r in rolls if r["start"] == frame)
+                   for frame in (12221, 12269, 13053, 13165, 14287, 14374)]
+        assert [r["dice"] for r in handoff] == [[2, 1], [5, 1], [6, 1], [6, None], [4, 3], [5, 3]]
+        turns = [game["turns"][(r["decision"] or r["sourceTurns"][0]) - 1] for r in handoff]
+        assert twos_turn["after"] == turns[0]["before"]
+        assert all(a["after"] == b["before"] for a, b in zip(turns, turns[1:]))
+        assert handoff[3]["sourceMismatch"] and handoff[3]["decision"] is None
+        assert counts["board-result", turns[3]["resultFrame"]] == ACTION_HOLD
     if number == 2:
         roll = next(r for r in rolls if r["sourceTurns"] == [4, 5, 6, 7])
         assert roll["start"] <= 1064 < 62 * 25 < roll["end"] == 2443
@@ -121,6 +129,17 @@ def verify(number):
         assert roll["start"] == 208 and roll["start"] < 25 * 25 < roll["end"]
         assert roll["decision"] == 1 and 615 not in cubes_at_roll
         assert modes["cube-take"] == ACTION_HOLD
+        assert next(r for r in rolls if r["start"] == 7519)["pickup"] == 7649
+        assert next(r for r in rolls if r["start"] == 7679)["dice"] == [5, 2]
+        for start, clear in [(9703, 10030), (23528, 23913), (24536, 24741)]:
+            assert next(r for r in rolls if r["start"] == start)["pickup"] == clear
+    if number == 4:
+        assert next(r for r in rolls if r["start"] == 6489)["dice"] == [5, 4]
+        for start, clear in [(6338, 6453), (19587, 19705), (22203, 22257), (25758, 25885), (26347, 26452)]:
+            assert next(r for r in rolls if r["start"] == start)["pickup"] == clear
+        bear_off = next(r for r in rolls if r["start"] == 25758)
+        assert bear_off["dice"] == [6, 1]
+        assert game["turns"][bear_off["decision"] - 1]["after"]["borneOff"] == [7, 0]
     if number == 5:
         roll = next(r for r in rolls if r["start"] == 636)
         assert roll["start"] < 73 * 25 < roll["end"] == 3213

@@ -202,7 +202,10 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   if (note.playedPath) assert(recorded, `Reviewed checker steps do not reach the verified result at ${start / 25}.`);
   const played = recorded ? { ...analysis.played, steps: recorded.steps } : analysis?.played;
   const canScore = Boolean(analysis?.state);
-  const verifiedResult = Boolean(played || (analysis?.ambiguous && note.afterBoard));
+  const sourceMismatch = Boolean(note.afterBoard && note.dice.some(Number.isInteger) && before && after &&
+    keyOf(before) !== keyOf(after) && !played && !analysis?.ambiguous);
+  const verifiedResult = Boolean(played || (analysis?.ambiguous && note.afterBoard) ||
+    (sourceMismatch && note.resultAtWitness));
   if (note.resultAtWitness) assert(verifiedResult && note.afterBoard, `Unverified checker result at ${start / 25}.`);
   const finish = verifiedResult ? (note.resultAtWitness ? following.frame : Math.min(afterLimit, Math.max(following.frame, end))) : null;
   const dice = canScore ? [...analysis.state.dice] : [...note.dice].reverse();
@@ -215,8 +218,6 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
     before, after: verifiedResult ? after : null, resultFrame: finish, steps: played?.steps ?? null, evidence,
   };
   game.turns.push(turn);
-  const sourceMismatch = note.afterBoard && playable(note.dice) && before && after &&
-    keyOf(before) !== keyOf(after) && !played;
   const roll = { start, end, pickup: note.pickupFrame, player: note.player, dice: [...dice].reverse(),
     decision: canScore ? id : null, sourceTurns: [id], evidence, ...(note.fan ? { fan: true } : {}),
     ...(sourceMismatch ? { sourceMismatch: true } : {}) };

@@ -120,7 +120,8 @@ def fit(baseline, candidate, patches, labels, rng):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--reviewed", type=Path, help="Additional labeled dice tracks")
+    parser.add_argument("--reviewed", type=Path, action="append", default=[],
+                        help="Additional labeled dice tracks. Repeat for separate training and holdout files.")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     cv2.setNumThreads(1)
@@ -128,7 +129,7 @@ def main():
     torch.manual_seed(372)
     rng = np.random.default_rng(372)
     reviewed = json.loads(Path(__file__).with_name("labels.json").read_text())["dice"]
-    extra = reviewed_tracks(args.reviewed) if args.reviewed else []
+    extra = [item for file in args.reviewed for item in reviewed_tracks(file)]
     extra_training = [item for item in extra if item["split"] == "train"]
     spots = [item for item in extra if item["split"] == "spotExtra"] + test_spots()
     held_clips = {item["clip"] for item in spots}

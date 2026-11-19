@@ -134,6 +134,24 @@ detector. The current reader matched 13 of 15 manually labeled faces.
 The fine-tuned reader and the equal blend each matched 12. The replay
 continues to use the current reader.
 
+## Continuous rolls and late checker transitions
+
+| Where | What the replay now shows |
+| --- | --- |
+| Game 1, 8:08–9:38 | Black fans, White plays 5–1, Black enters on 6–1, and the later checker positions carry into Black’s 4–3 and White’s 5–3. At 8:46, the camera confirms a six but the checker result disagrees with every legal pair containing six. History saves both boards and the play stays ungraded. |
+| Game 3, 5:05–5:08 | Black picks up 5–3 at 5:05.96. White’s 5–2 settles at 5:07.16, 7.20 seconds ahead of the old marker, using the confirmed board after Black’s hit. |
+| Game 3, 6:41 and 15:56 | Both dice remain in their original locations after the old overlay ended. Each roll stays visible until both locations clear. |
+| Game 3, 16:29 | White picks up the two dice separately. The footage then shows an extended discussion with the same checker arrangement through the next throw. |
+| Game 4, 4:18–4:20 and 13:08 | Both white dice clear before the next roll. The first Black roll is visible earlier and starts from the completed White position. |
+| Game 4, 17:10–17:15 | White’s 6–1 survives an arm occlusion and bears off one checker from point 4 and one from point 1, leaving seven off. |
+
+The new checker trial used 619 point crops from reviewed boards for training
+and scored 192 of 200 on separate reviewed clips. The current reader scored
+191. The new dice trial used 704 source images from 106 stationary tracks. It
+scored 23 of 31 on the general test set, compared with 16 for the current
+reader. It scored 5 of 10 and 36 of 41 on the reviewed sets, compared with 8
+and 39. The replay continues to use the current readers.
+
 ## Opening and overlay review
 
 - Game 3’s opening toss is visible from about 0:03.4. The settled board at

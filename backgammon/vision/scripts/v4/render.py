@@ -247,6 +247,8 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
             draw_table(draw, 182, "Top checker moves", options, selected, 58, numbers=True)
         elif roll.get("fan"):
             write(draw, x, 145, "Fanned · no checker entered", BODY, MUTED)
+        elif roll["evidence"] == "reviewed-roll-with-confirmed-board" and roll.get("sourceMismatch"):
+            write(draw, x, 145, "Visible dice and checker result disagree", BODY, MUTED)
         elif roll["evidence"] == "reviewed-roll-with-confirmed-board":
             write(draw, x, 145, "Dice partly unreadable", BODY, MUTED)
         else:

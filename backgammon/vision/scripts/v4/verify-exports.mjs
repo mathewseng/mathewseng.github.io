@@ -142,7 +142,8 @@ for (const number of [1, 2, 3, 4, 5]) {
       }
     }
     if (number === 3) {
-      assert.equal(verdict(941.12, 'dark', [4, 3]).end, Math.round(954.12 * 25));
+      const confirmedPickup = replay.contextRecovery.find(entry => entry.frame === 23528 && entry.clear === 23913);
+      assert.equal(verdict(941.12, 'dark', [4, 3]).end, confirmedPickup ? 23913 : 23853);
       assert(!data.rolls.some(roll => roll.start === Math.round(951.24 * 25)));
       verdict(930.32, 'white', [6, 2]);
     }
@@ -198,8 +199,9 @@ for (const number of [1, 2, 3, 4, 5]) {
   }
   if (number === 1 && replay.contextRecovery.some(entry => entry.frame === 3684 && entry.kind === 'reviewed-turn-order')) {
     const bearoff = replay.contextRecovery.some(entry => entry.frame === 11166 && entry.text.includes('bears one off'));
+    const laterHandoff = replay.contextRecovery.some(entry => entry.frame === 12221 && entry.text.includes('unchanged board'));
     for (const [time, player, dice, hasPlayed] of [[147.36, 'white', [6, 1], true], [413.88, 'dark', [5, 1], true],
-      [422.6, 'dark', [3, 1], true], [446.64, 'dark', [3, 1], bearoff], [571.48, 'dark', [4, 3], false]]) {
+      [422.6, 'dark', [3, 1], true], [446.64, 'dark', [3, 1], bearoff], [571.48, 'dark', [4, 3], laterHandoff]]) {
       const roll = data.rolls.find(item => item.start === Math.round(time * 25));
       assert.deepEqual([roll.player, roll.dice], [player, dice]);
       assert.equal(Boolean(data.decisions[roll.decision]?.played), hasPlayed);
@@ -218,6 +220,16 @@ for (const number of [1, 2, 3, 4, 5]) {
         const following = data.rolls.find(item => item.start === 11388);
         assert.deepEqual(following.before, fan.after);
       }
+    }
+    if (laterHandoff) {
+      const conflict = data.rolls.find(item => item.start === 13165);
+      assert.deepEqual([conflict.dice, conflict.decision, conflict.sourceMismatch], [[6, null], null, true]);
+      assert.deepEqual(conflict.after, data.rolls.find(item => item.start === 14287).before);
+      const gap = history.replay.timeline.find(item => item.frame === conflict.start && item.kind === 'gap');
+      const result = history.replay.timeline.find(item => item.frame === conflict.resultFrame && item.kind === 'board-result');
+      assert.equal(gap?.label, 'Dice and checker result disagree');
+      const saved = history.items.find(item => item.id === result?.item)?.state;
+      assert.deepEqual(saved?.points, conflict.after.points);
     }
   }
   if (number === 3 && replay.contextRecovery.some(entry => entry.previousFrame === 1858 && entry.clear === 2234)) {

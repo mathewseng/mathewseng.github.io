@@ -32,8 +32,17 @@ function renderReport(report, seek) {
   if (report.reference) {
     const previous = report.reference;
     const repeated = issues.filter(issue => issue.kind === "repeated-player").length;
-    fragment.append(element("p",
-      `Since the earlier replay · Complete rolls ${previous.completeRolls} → ${counts.completeRolls} · Unknown faces ${previous.missingFaces} → ${counts.missingFaces} · Unresolved turn-order flags ${previous.repeatedPlayers} → ${repeated}`,
+    const comparisons = [
+      `Complete rolls ${previous.completeRolls} → ${counts.completeRolls}`,
+      `Unknown faces ${previous.missingFaces} → ${counts.missingFaces}`,
+      `Graded plays ${previous.gradedPlays} → ${counts.gradedPlays}`,
+      `Unresolved turn-order flags ${previous.repeatedPlayers} → ${repeated}`,
+    ];
+    if (Number.isInteger(previous.missingPickups)) {
+      const pickups = issues.filter(issue => issue.kind === "no-pickup").length;
+      comparisons.push(`Unconfirmed pickups ${previous.missingPickups} → ${pickups}`);
+    }
+    fragment.append(element("p", ["Since the earlier replay", ...comparisons].join(" · "),
       "muted small vision-report-comparison"));
   }
 
@@ -137,6 +146,16 @@ function renderReport(report, seek) {
     if (report.witnessTrials?.followup) {
       const { faces, clips, metrics } = report.witnessTrials.followup;
       section.append(element("p", `A follow-up used ${faces} hand-labeled faces from ${clips} additional clips, including blurred dice and faces the detector missed. The current reader matched ${metrics.baseline}/${faces}, the fine-tuned reader matched ${metrics.candidate}/${faces}, and the equal blend matched ${metrics.blend}/${faces}.`, "muted small"));
+    }
+    if (report.witnessTrials?.checkerContinuity) {
+      const { crops, results } = report.witnessTrials.checkerContinuity;
+      const held = results["verified-board"];
+      section.append(element("p", `The latest checker trial used ${crops} crops from reviewed boards. The current reader matched ${held.baseline}/${held.count} point counts from held-out clips, and the trial matched ${held.candidate}/${held.count}.`, "muted small"));
+    }
+    if (report.witnessTrials?.diceContinuity) {
+      const { frames, tracks, results } = report.witnessTrials.diceContinuity;
+      const { test, spot, spotExtra } = results;
+      section.append(element("p", `The latest dice trial used ${frames} source frames from ${tracks} tracks. Across the general, original reviewed, and newly reviewed tests, the current reader matched ${test.baselineTrack}/${test.tracks}, ${spot.baselineTrack}/${spot.tracks}, and ${spotExtra.baselineTrack}/${spotExtra.tracks}. The trial matched ${test.candidateTrack}/${test.tracks}, ${spot.candidateTrack}/${spot.tracks}, and ${spotExtra.candidateTrack}/${spotExtra.tracks}.`, "muted small"));
     }
     fragment.append(section);
   }

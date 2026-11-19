@@ -210,6 +210,24 @@ Refresh the context and reviewed episodes
   source board matches the existing legal result. Optional reviewed checker
   steps must reach that same board under the verified roll.
 
+  Apply v4/reviewed-roll-continuity.json to v21 with the updated footprint
+  controls. Save a reviewed after-board even when the observed dice and result
+  conflict. This confirms the next starting position and excludes the
+  conflicting action from checker EV loss.
+
+  The next reader trials add board and dice evidence from those source clips.
+  Keep the previous trial files when exporting comparisons.
+
+    python3 calibration/train_board_witnesses.py "$output/board-continuity-training" \
+      --holdout 16 --holdout 17 --holdout 50 --holdout 9 --holdout 54 \
+      v4/reviewed-settled-dice.json calibration/reviewed-board-witnesses.json \
+      v4/reviewed-physical-handoffs.json v4/reviewed-roll-continuity.json
+    python3 calibration/train_face_tracks.py --output "$output/dice-continuity-training" \
+      --reviewed calibration/reviewed-dice-tracks.json \
+      --reviewed calibration/reviewed-continuity-faces.json \
+      --reviewed calibration/reviewed-blend-controls.json \
+      --reviewed calibration/reviewed-blend-followup.json
+
 Manual reader calibration
 
     python3 calibration/sample.py

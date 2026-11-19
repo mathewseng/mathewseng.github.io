@@ -139,7 +139,7 @@ function makeHistory(game, rows, extraCubeChances) {
     const sources = verified.length ? verified : [roll.decision ?? roll.sourceTurns[0]];
     return sources.map((id, offset) => ({
       frame: offset ? game.turns[id - 1].start : roll.start,
-      turn: game.turns[id - 1], id, end: roll.end, dice: roll.dice,
+      turn: game.turns[id - 1], id, end: roll.end, dice: roll.dice, sourceMismatch: roll.sourceMismatch,
     }));
   }) ?? game.turns.map((turn, index) => ({
     frame: turn.start, turn, id: index + 1, end: turn.end + 1, dice: turn.dice,
@@ -148,7 +148,7 @@ function makeHistory(game, rows, extraCubeChances) {
   const stop = rows.find(row => row.phase === 'game-closed');
   const opening = initialState(stateOptions);
   let observedTurn = 0;
-  for (const { frame, turn, id, end, dice: rolledDice, offer } of episodes.sort((a, b) => a.frame - b.frame)) {
+  for (const { frame, turn, id, end, dice: rolledDice, sourceMismatch, offer } of episodes.sort((a, b) => a.frame - b.frame)) {
     if (stop && frame >= stop.frame) break;
     if (offer) {
       const offerer = player(offer.offerer);
@@ -183,7 +183,8 @@ function makeHistory(game, rows, extraCubeChances) {
       if (preRoll) recordNoDouble(cubeChoice, preRoll, turn.dice, observedTurn, true);
       const resultVerified = turn.evidence === 'reviewed-roll-with-confirmed-board';
       const entry = { frame, turn: observedTurn, kind: 'gap', player: turn.player, dice: rolledDice,
-        label: resultVerified ? 'Dice unresolved' : 'Checker move unconfirmed' };
+        label: sourceMismatch ? 'Dice and checker result disagree' :
+          resultVerified ? 'Dice unresolved' : 'Checker move unconfirmed' };
       if (source) {
         const item = record('position', `Turn ${observedTurn} position`, 'Observed board before an unresolved checker move.');
         item.state = source;
@@ -193,7 +194,7 @@ function makeHistory(game, rows, extraCubeChances) {
       timeline.push(entry);
       if (resultVerified) {
         const nextPlayer = turn.player === 'white' ? 'dark' : 'white';
-        const result = record('position', `Turn ${observedTurn} result`, 'Confirmed checker board after a roll with an unresolved face.');
+        const result = record('position', `Turn ${observedTurn} result`, 'Confirmed checker board after an ungraded roll.');
         result.state = observedPosition({ before: turn.after, player: nextPlayer, dice: [] }, cube, number);
         timeline.push({ frame: turn.resultFrame, kind: 'board-result', label: 'Confirmed checker result', item: result.id });
       }

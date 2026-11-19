@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v20");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v21");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -32,6 +32,10 @@ const blendReportPath = path.join(replayDir, "dice-blend-validation.json");
 const blendValidation = fs.existsSync(blendReportPath) ? read(blendReportPath) : null;
 const followupReportPath = path.join(replayDir, "dice-blend-followup.json");
 const followupValidation = fs.existsSync(followupReportPath) ? read(followupReportPath) : null;
+const checkerContinuityPath = path.join(replayDir, "board-continuity-training", "validation.json");
+const checkerContinuity = fs.existsSync(checkerContinuityPath) ? read(checkerContinuityPath) : null;
+const diceContinuityPath = path.join(replayDir, "dice-continuity-training", "dice-track-validation.json");
+const diceContinuity = fs.existsSync(diceContinuityPath) ? read(diceContinuityPath) : null;
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
 const footprintValidation = fs.existsSync(footprintReportPath) ? read(footprintReportPath) : [];
 
@@ -144,6 +148,11 @@ function repeatedPlayer(roll, next, sources) {
     source.firstGameFrame > roll.start && source.firstGameFrame <= next.start);
 }
 
+function missingPickup(roll, next, sources) {
+  return roll.pickup === null && next && !sources.some(source => source.discontinuity &&
+    source.firstGameFrame >= roll.end && source.firstGameFrame <= next.start);
+}
+
 function reviewedTransitions(replay) {
   return new Set((replay.contextRecovery ?? []).filter(item => item.kind === "confirmed-consecutive")
     .map(item => `${item.previousFrame}:${item.frame}`));
@@ -165,6 +174,7 @@ function referenceFor(prefix, sources) {
     missingFaces: rolls.flatMap(roll => roll.dice).filter(face => face === null).length,
     repeatedPlayers: rolls.filter((roll, i) => repeatedPlayer(roll, rolls[i + 1], sources) &&
       !reviewed.has(transitionKey(roll, rolls[i + 1]))).length,
+    missingPickups: rolls.filter((roll, i) => missingPickup(roll, rolls[i + 1], sources)).length,
     gradedPlays: Object.values(decisions).filter(decision => decision.player && decision.countedInGameLoss).length,
   };
 }
@@ -230,8 +240,7 @@ function report(number) {
       else add("illegal-play", roll, roll.resultFrame ?? roll.start);
     }
     if (roll.pickup !== null) counts.observedPickups++;
-    else if (next && !data.sources.some(source => source.discontinuity &&
-      source.firstGameFrame >= roll.end && source.firstGameFrame <= next.start)) {
+    else if (missingPickup(roll, next, data.sources)) {
       add("no-pickup", roll, roll.end - 1);
     }
     if (next?.start < roll.end) add("overlapping-rolls", next);
@@ -283,6 +292,10 @@ function report(number) {
         tests: blendValidation.tests.filter(item => item.game === number) },
       followup: followupValidation && { faces: followupValidation.faces, clips: followupValidation.clips,
         metrics: followupValidation.metrics, tests: followupValidation.tests.filter(item => item.game === number) },
+      checkerContinuity: checkerContinuity && { crops: checkerContinuity.extraLabels.train,
+        results: checkerContinuity.witnessSummary },
+      diceContinuity: diceContinuity && { tracks: diceContinuity.trainingTracks, frames: diceContinuity.trainingFrames,
+        results: diceContinuity.summary },
     },
     footprintTiming: { controls: footprintValidation.filter(item => item.clear !== null).length, shiftedRolls,
       testedWindows: footprintValidation.filter(item => item.game === number) },
