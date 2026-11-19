@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { artifactDir, solverUrl } from '../project_paths.mjs';
+import { verifyDicePose } from './dice-pose-continuity.mjs';
 import {
   evaluateDecision, loadEvaluator, matchingTurns, okay, positional, rowsFrom, stateFor,
 } from '../v2/solve_games.mjs';
@@ -17,6 +18,7 @@ const opening = boardKey(initialState());
 const baseline = path.join(artifactDir, 'v4');
 const out = path.resolve(process.env.OFFICE3_REPLAY_DIR ?? baseline);
 const observationsDir = path.resolve(process.env.OFFICE3_VISION_OBSERVATIONS_DIR ?? baseline);
+const poseStateDir = process.env.OFFICE3_VISION_POSE_STATE_DIR;
 const v2 = path.join(artifactDir, 'v2');
 
 const load = (dir, file) => JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
@@ -34,6 +36,13 @@ function sourceRows(game) {
         ...row, sourceFrame: row.frame, frame: part.firstGameFrame + offset,
         seconds: (part.firstGameFrame + offset) / fps,
       })));
+}
+
+function dicePoseFrames(game) {
+  if (!poseStateDir) return null;
+  return game.segments.flatMap(part =>
+    rowsFrom(path.join(poseStateDir, part.source.replace(/\.mp4$/, '.jsonl.gz')))
+      .slice(part.firstFrame, part.lastExclusive).map(row => row.state));
 }
 
 function positionRecord(position, frame) {
@@ -174,9 +183,31 @@ function matchRoll(roll, runs, end, known) {
   return { before: pre.at(-1), match: matches[0] };
 }
 
-function proposedRolls(game, observations, rows, runs, first, last, anchors) {
+function extendedRoll(roll, runs, poseFrames, limit, rolls) {
+  if (!poseFrames || roll.reviewedPose || !roll.player || roll.dice[0] === null) return null;
+  const pose = verifyDicePose(roll, poseFrames, limit);
+  if (!pose) return null;
+  const next = rolls.find(other => other.start > pose.end && other.player !== roll.player &&
+    other.centers && other.quality >= .75);
+  // A clear board may only become visible as the player removes the dice.
+  // Stop at the next credible throw before that player can move checkers.
+  const resultLimit = Math.min(pose.end + 25, next ? next.start - 1 : limit - 1);
+  const before = runs.filter(r => r.first <= pose.start + 5 && r.last >= pose.start - 65).at(-1);
+  const after = runs.filter(r => r.first >= pose.start + 5 && r.first <= resultLimit &&
+    r.last >= pose.end - 24 && r.count >= 12).at(-1);
+  if (!before || !after) return null;
+  const options = matchingTurns(before, after, allDice, names.indexOf(roll.player));
+  if (options.length !== 1 || !roll.dice.some(face => options[0].dice.includes(face))) return null;
+  const match = options[0];
+  return { ...roll, ...pose, before, after, dice: match.dice, resultFrame: after.first, steps: match.steps,
+    evidence: 'continuous-dice-poses-and-legal-result', priority: 9 };
+}
+
+function proposedRolls(game, observations, rows, runs, first, last, anchors, poseFrames) {
   const rolls = observedRolls(game, observations, rows).filter((r) => r.start >= first && r.start < last);
   return rolls.flatMap((roll) => {
+    const extended = extendedRoll(roll, runs, poseFrames, last, rolls);
+    if (extended) return [extended];
     const next = rolls.find((r) => r.start > roll.end && r.quality >= .80 && r.dice[1] !== null);
     const anchor = anchors.find((r) => r.start > roll.start + 10 && r.priority >= 8);
     const until = Math.min(last - 1, roll.end + 55, roll.start + fps * 19,
@@ -236,7 +267,15 @@ function boardOnlyTurns(runs, anchors) {
 function chooseTurns(proposals, last) {
   const turns = [];
   for (const roll of [...proposals].sort((a, b) => b.priority - a.priority || a.start - b.start)) {
-    const existing = turns.find((r) => together(r, roll, 10));
+    const existing = turns.find((r) => {
+      if (!together(r, roll, 10)) return false;
+      if (r.evidence !== 'continuous-dice-poses-and-legal-result' &&
+          roll.evidence !== 'continuous-dice-poses-and-legal-result') return true;
+      const [before, after] = r.start < roll.start ? [r, roll] : [roll, r];
+      return before.player === after.player || before.end > after.start + 15 ||
+        before.resultFrame == null || before.resultFrame >= after.start ||
+        !before.after || before.after.key !== after.before?.key;
+    });
     if (!existing) {
       turns.push({ ...roll });
       continue;
@@ -263,7 +302,7 @@ function chooseTurns(proposals, last) {
   })).filter((r) => r.end >= r.start);
 }
 
-function reconstruct(game, observations, rows) {
+function reconstruct(game, observations, rows, poseFrames) {
   const intervals = [...new Set([0, ...observations.breaks, rows.length])].sort((a, b) => a - b);
   return intervals.slice(1).map((last, index) => {
     const first = intervals[index], runs = boardRuns(rows, first, last);
@@ -279,7 +318,7 @@ function reconstruct(game, observations, rows) {
         return !continued;
       });
     const anchors = old.filter((r) => r.priority >= 8).sort((a, b) => a.start - b.start);
-    const visual = proposedRolls(game, observations, rows, runs, first, last, anchors);
+    const visual = proposedRolls(game, observations, rows, runs, first, last, anchors, poseFrames);
 
     // Dice-color-only hypotheses in the older review need independent spatial
     // support. A valid completed legal move is a stronger mover witness.
@@ -543,7 +582,7 @@ for (const number of gameNumbers.length ? gameNumbers : [1, 2, 3, 4, 5]) {
   const observations = load(observationsDir, `${prefix}-observations.json`);
   const rows = sourceRows(game);
   if (rows.length !== game.frames) throw new Error('Frame count does not match source timeline');
-  const groups = reconstruct(game, observations, rows);
+  const groups = reconstruct(game, observations, rows, dicePoseFrames(game));
   const changes = cubeTimeline(game, observations);
   const scores = scoreTurns(game, groups, changes, analysis, !isPlan);
   const turns = groups.flatMap((g) => g.turns);

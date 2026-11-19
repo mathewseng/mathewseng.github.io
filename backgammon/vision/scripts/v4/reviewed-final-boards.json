@@ -1,0 +1,287 @@
+{
+  "3": [
+    {
+      "kind": "replace",
+      "starts": [
+        256.0
+      ],
+      "player": "white",
+      "dice": [
+        3,
+        2
+      ],
+      "beforeBoard": {
+        "seconds": 256.0,
+        "clip": 20,
+        "sourceFrame": 46,
+        "points": {
+          "1": 2,
+          "2": -1,
+          "3": 2,
+          "4": -2,
+          "6": 4,
+          "7": 2,
+          "10": 1,
+          "12": -2,
+          "13": 3,
+          "16": -1,
+          "17": -4,
+          "19": -3,
+          "21": -2,
+          "24": 1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 282.4,
+        "clip": 20,
+        "sourceFrame": 706,
+        "points": {
+          "1": 2,
+          "2": -1,
+          "3": 2,
+          "4": -2,
+          "6": 4,
+          "7": 3,
+          "12": -2,
+          "13": 3,
+          "16": -1,
+          "17": -4,
+          "19": -3,
+          "21": -2,
+          "22": 1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "resultAtWitness": true,
+      "supersedesReview": true,
+      "invalidatedStartingPositions": [
+        256.0
+      ],
+      "confirmedDetectorMisread": true,
+      "text": "The initial dice show 3–2. One die shifts as White discusses the position. White tries a checker arrangement and completes 10/7 24/22. The final position matches the board for Black’s next roll."
+    },
+    {
+      "kind": "replace",
+      "starts": [
+        1217.12
+      ],
+      "player": "dark",
+      "dice": [
+        5,
+        3
+      ],
+      "beforeBoard": {
+        "seconds": 1217.36,
+        "clip": 36,
+        "sourceFrame": 74,
+        "points": {
+          "1": 6,
+          "2": 3,
+          "3": 3,
+          "4": -1,
+          "11": -1,
+          "17": -1,
+          "19": -2,
+          "20": -3,
+          "21": -2,
+          "22": -2,
+          "23": -2,
+          "24": -1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          3,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 1232.4,
+        "clip": 36,
+        "sourceFrame": 450,
+        "points": {
+          "1": 6,
+          "2": 3,
+          "3": 3,
+          "7": -1,
+          "16": -1,
+          "17": -1,
+          "19": -2,
+          "20": -3,
+          "21": -2,
+          "22": -2,
+          "23": -2,
+          "24": -1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          3,
+          0
+        ]
+      },
+      "playedPath": "21/18 14/9",
+      "resultAtWitness": true,
+      "supersedesReview": true,
+      "text": "The completed Black transfer ends at fixed point 16. The camera shows the checkers on 7, 16 and 17, agreeing with 21/18 14/9 on 5–3."
+    }
+  ],
+  "4": [
+    {
+      "kind": "replace",
+      "starts": [
+        259.56
+      ],
+      "player": "dark",
+      "dice": [
+        5,
+        5
+      ],
+      "beforeBoard": {
+        "seconds": 259.8,
+        "clip": 41,
+        "sourceFrame": 1282,
+        "points": {
+          "3": 2,
+          "5": 2,
+          "6": 2,
+          "8": 3,
+          "10": -2,
+          "12": -3,
+          "13": 4,
+          "17": -3,
+          "18": -2,
+          "19": -5,
+          "20": 2
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 310.72,
+        "clip": 42,
+        "sourceFrame": 1051,
+        "points": {
+          "3": 2,
+          "5": 2,
+          "6": 2,
+          "8": 3,
+          "12": -2,
+          "13": 4,
+          "15": -2,
+          "17": -3,
+          "18": -2,
+          "19": -5,
+          "20": 2,
+          "22": -1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "playedPath": "15/10 15/10 13/8 8/3",
+      "resultAtWitness": true,
+      "confirmedDetectorMisread": true,
+      "text": "Both dice show five in the original camera footage. Black plays 15/10 twice and advances the remaining checker 13/8 8/3. The completed board is visible before pickup."
+    },
+    {
+      "kind": "replace",
+      "starts": [
+        781.64
+      ],
+      "player": "dark",
+      "dice": [
+        5,
+        3
+      ],
+      "fan": true,
+      "beforeBoard": {
+        "seconds": 781.8,
+        "clip": 50,
+        "sourceFrame": 828,
+        "points": {
+          "1": 1,
+          "2": 2,
+          "3": 2,
+          "4": 2,
+          "5": 2,
+          "6": 3,
+          "7": 2,
+          "19": -6,
+          "20": 1,
+          "21": -1,
+          "22": -4,
+          "23": -3
+        },
+        "bar": [
+          0,
+          1
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 783.16,
+        "clip": 50,
+        "sourceFrame": 862,
+        "points": {
+          "1": 1,
+          "2": 2,
+          "3": 2,
+          "4": 2,
+          "5": 2,
+          "6": 3,
+          "7": 2,
+          "19": -6,
+          "20": 1,
+          "21": -1,
+          "22": -4,
+          "23": -3
+        },
+        "bar": [
+          0,
+          1
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "supersedesReview": true,
+      "confirmedDetectorMisread": true,
+      "text": "Black’s short roll shows 5–3. White’s third and fifth points are closed, so Black cannot enter from the bar."
+    }
+  ]
+}

@@ -107,6 +107,23 @@ function renderReport(report, seek) {
     fragment.append(section);
   }
 
+  if (report.poseTrial) {
+    const { current, candidate } = report.poseTrial;
+    const section = element("section", null, "vision-report-model");
+    section.append(element("h3", "Dice continuity trial"), element("p",
+      `Following the same dice through cover or repositioning changed correct pairs from ${current.counts.correctDice} to ${candidate.counts.correctDice}, and extra proposals from ${current.unmatched.length} to ${candidate.unmatched.length}. The trial checks the final checker board against legal plays.`,
+      "muted small"));
+    const episodes = candidate.rolls.filter(roll => roll.poseContinuity).map(roll => {
+      const { lastSeen, repositionedAt } = roll.poseContinuity;
+      const start = timecode(roll.automaticFrame, report.fps);
+      const reposition = repositionedAt == null ? "" : ` One die moved at ${timecode(repositionedAt, report.fps)}.`;
+      return { frame: roll.frame, title: `Dice tracked from ${start} through ${timecode(lastSeen, report.fps)}`,
+        detail: `Recovered ${roll.claimed.join("–")} from the complete legal checker result.${reposition}` };
+    });
+    if (episodes.length) section.append(reviewList(episodes, entry => entry.title));
+    fragment.append(section);
+  }
+
   if (report.automaticTrial) {
     const { current, candidate } = report.automaticTrial;
     const section = element("section", null, "vision-report-model");
@@ -232,6 +249,13 @@ function renderReport(report, seek) {
     if (shortTurnDice.length) {
       const correct = key => shortTurnDice.filter(face => face[key] === face.expected).length;
       section.append(element("p", `On ${shortTurnDice.length} newly reviewed faces from this game, the pooled current reader matched ${correct("baselineTrack")} and the trial matched ${correct("candidateTrack")}.`, "muted small"));
+    }
+    const finalBoardDice = report.witnessTrials?.finalBoardDice;
+    if (finalBoardDice?.tests.length) {
+      const { tests, augmented } = finalBoardDice;
+      const correct = (rows, key) => rows.filter(face => face[key] === face.expected).length;
+      const extra = augmented ? ` The trial with camera blur and exposure augmentation matched ${correct(augmented.tests, "candidateTrack")}.` : "";
+      section.append(element("p", `On ${tests.length} faces from the latest checker-board reviews, the current reader matched ${correct(tests, "baselineTrack")} and the fine-tuned reader matched ${correct(tests, "candidateTrack")}.${extra}`, "muted small"));
     }
     fragment.append(section);
   }

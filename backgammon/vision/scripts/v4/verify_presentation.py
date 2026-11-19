@@ -146,7 +146,14 @@ def verify(number):
         for start, clear in [(9703, 10030), (middle, 23913), (24536, 24741)]:
             assert next(r for r in rolls if r["start"] == start)["pickup"] == clear
     if number == 4:
-        assert next(r for r in rolls if r["start"] == 6489)["dice"] == [5, 4]
+        long_roll = next(r for r in rolls if r["start"] == 6489)
+        corrected = any(note["frame"] == 6489 and note.get("confirmedDetectorMisread")
+                        for note in game.get("contextRecovery", []))
+        if corrected:
+            assert long_roll["dice"] == [5, 5] and long_roll["pickup"] == 7791
+            assert game["decisions"][str(long_roll["decision"])]["played"]["notation"] == "15/10 15/10 13/8 8/3"
+        else:
+            assert long_roll["dice"] == [5, 4]
         doubles = next((r for r in rolls if r["start"] == 22003), None)
         if doubles:
             assert doubles["dice"] == [5, 5]

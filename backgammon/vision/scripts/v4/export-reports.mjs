@@ -40,6 +40,10 @@ const diceRuntimePath = path.join(replayDir, "dice-continuity-training", "runtim
 const diceRuntime = fs.existsSync(diceRuntimePath) ? read(diceRuntimePath) : null;
 const shortTurnFacePath = path.join(replayDir, "short-turn-dice-training", "dice-track-validation.json");
 const shortTurnFaces = fs.existsSync(shortTurnFacePath) ? read(shortTurnFacePath) : null;
+const finalBoardFacePath = path.join(replayDir, "final-board-dice-training", "dice-track-validation.json");
+const finalBoardFaces = fs.existsSync(finalBoardFacePath) ? read(finalBoardFacePath) : null;
+const blurredFacePath = path.join(replayDir, "blurred-dice-training", "dice-track-validation.json");
+const blurredFaces = fs.existsSync(blurredFacePath) ? read(blurredFacePath) : null;
 const planTrialPath = path.join(replayDir, "dice-automatic-replay-validation.json");
 const planTrial = fs.existsSync(planTrialPath) ? read(planTrialPath) : [];
 const locatorPath = path.join(replayDir, "locator-validation.json");
@@ -50,6 +54,8 @@ const locatorTurnPath = path.join(replayDir, "locator-turn-validation.json");
 const locatorTurnTrial = fs.existsSync(locatorTurnPath) ? read(locatorTurnPath) : [];
 const actorPath = path.join(replayDir, "actor-turn-validation.json");
 const actorTrial = fs.existsSync(actorPath) ? read(actorPath) : [];
+const posePath = path.join(replayDir, "pose-turn-validation.json");
+const poseTrial = fs.existsSync(posePath) ? read(posePath) : [];
 const motionPath = path.join(replayDir, "checker-motion-validation.json");
 const motionChecks = fs.existsSync(motionPath) ? read(motionPath) : [];
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
@@ -323,6 +329,7 @@ function report(number) {
     presenceTrial: presenceTrial.find(item => item.game === number) ?? null,
     locatorTurnTrial: locatorTurnTrial.find(item => item.game === number) ?? null,
     actorTrial: actorTrial.find(item => item.game === number) ?? null,
+    poseTrial: poseTrial.find(item => item.game === number) ?? null,
     checkerMotion: motionChecks.find(item => item.game === number) ?? null,
     reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
     diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number),
@@ -342,6 +349,14 @@ function report(number) {
       diceRuntime: diceRuntime && { counts: diceRuntime.counts,
         tests: diceRuntime.tests.filter(test => test.game === number) },
       shortTurnDice: shortTurnFaces?.tests.spotExtra.filter(test => test.cohort === "short-turn-review" && test.game === number) ?? [],
+      finalBoardDice: finalBoardFaces && {
+        summary: finalBoardFaces.summary,
+        tests: finalBoardFaces.tests.spotExtra.filter(test => test.cohort === "final-board-review" && test.game === number),
+        augmented: blurredFaces && {
+          summary: blurredFaces.summary,
+          tests: blurredFaces.tests.spotExtra.filter(test => test.cohort === "final-board-review" && test.game === number),
+        },
+      },
     },
     footprintTiming: { controls: footprintValidation.filter(item => item.clear !== null).length, shiftedRolls,
       testedWindows: footprintValidation.filter(item => item.game === number) },

@@ -62,7 +62,7 @@ def source_patches(samples):
 
 def test_spots():
     spots = []
-    held = [*SPOTS, (4, 6500, 6575, [(384, 256, 5), (496, 318, 4)]),
+    held = [*SPOTS, (4, 6500, 6575, [(384, 256, 5), (496, 318, 5)]),
             (5, 11800, 11880, [(196, 106, 4), (246, 212, 5)]),
             (5, 16825, 16915, [(106, 338, 5), (124, 364, 1)])]
     for game, start, stop, dice in held:
@@ -93,12 +93,26 @@ def reviewed_tracks(file):
     return rows
 
 
-def fit(baseline, candidate, patches, labels, rng):
+def camera_jitter(image, rng):
+    # Mild directional blur preserves the pip layout seen by the wide camera.
+    kernel = np.zeros((5, 5), np.float32)
+    kernel[2] = [1, 2, 3, 2, 1]
+    angle = float(rng.uniform(-180, 180))
+    kernel = cv2.warpAffine(kernel, cv2.getRotationMatrix2D((2, 2), angle, 1), (5, 5))
+    blurred = cv2.filter2D(image, -1, kernel / kernel.sum())
+    blend = float(rng.uniform(.30, .65))
+    soft = cv2.addWeighted(image, 1 - blend, blurred, blend, 0).astype(np.float32)
+    contrast, brightness = rng.uniform(.8, 1.15), rng.uniform(-14, 14)
+    return np.clip((soft - 128) * contrast + 128 + brightness, 0, 255).astype(np.uint8)
+
+
+def fit(baseline, candidate, patches, labels, rng, augment_camera=False):
     examples, targets = [], []
     for group, label in zip(patches, labels):
         for i in range(14):
             patch = group[i % len(group)]
-            examples.append(dice_jitter(patch, rng) if i else patch)
+            augmented = dice_jitter(patch, rng) if i else patch
+            examples.append(camera_jitter(augmented, rng) if augment_camera and i % 3 == 2 else augmented)
             targets.append(label)
     inputs = tensor(examples)
     expected = torch.tensor(targets)
@@ -126,6 +140,8 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--holdout-clip", type=int, action="append", default=[],
                         help="Exclude a clip from training when it contains another view of a held-out roll.")
+    parser.add_argument("--camera-augmentation", action="store_true",
+                        help="Add mild directional blur and exposure changes to some training views.")
     args = parser.parse_args()
     cv2.setNumThreads(1)
     torch.set_num_threads(2)
@@ -145,7 +161,8 @@ def main():
     weights = torch.load(ARTIFACT_DIR / "models/dice_real.pt", map_location="cpu", weights_only=True)
     baseline.load_state_dict(weights)
     candidate.load_state_dict(weights)
-    fit(baseline, candidate, groups[:len(training)], [int(row["label"]) for row in training], rng)
+    fit(baseline, candidate, groups[:len(training)], [int(row["label"]) for row in training], rng,
+        args.camera_augmentation)
     tests = {kind: [] for kind in (["test", "spot", "spotExtra"] if extra else ["test", "spot"])}
     for item, group in zip(held + spots, groups[len(training):]):
         old, new = probabilities(baseline, group, True), probabilities(candidate, group, True)
@@ -169,6 +186,8 @@ def main():
                   summary=summary, tests=tests)
     if extra:
         result["extraTrainingTracks"] = sum(item in extra_training for item in training)
+    if args.camera_augmentation:
+        result["cameraAugmentation"] = True
     (directory / "dice-track-validation.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({k: v for k, v in result.items() if k != "tests"}), flush=True)
 

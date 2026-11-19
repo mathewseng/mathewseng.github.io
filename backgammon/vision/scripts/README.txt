@@ -396,3 +396,23 @@ Calibrate die color and review turn order
   calibration/reviewed-source-comparison-faces.json to the face-track
   trainer with --holdout-clip 18. Put its validation in
   short-turn-dice-training/ beside the scored replay for Reports.
+
+  Apply v4/reviewed-final-boards.json to scored v27. It replaces four
+  source-reviewed rolls, then rescore Games 3 and 4. The 4:19 Game 4
+  control spans source clips 41 and 42. Both clips are held out when the
+  corrected 5–5 labels are supplied to the face-track trainer.
+
+  For the dice-continuity comparison, use the same inputs as the model
+  with dice body agreement enabled. Set OFFICE3_VISION_POSE_STATE_DIR to
+  the locator trial's raw state output and reconstruct to a separate
+  --plan directory. Compare with the original body-agreement plan and
+  save the comparison as pose-turn-validation.json alongside the replay.
+  Report the last positive pose match separately from reviewed pickup.
+
+  Run the face-track trainer with the three label files
+  calibration/reviewed-reposition-and-fan-faces.json,
+  calibration/reviewed-source-comparison-faces.json, and
+  calibration/reviewed-final-board-faces.json, with --holdout-clip 18.
+  Put the two validation outputs in final-board-dice-training/ and
+  blurred-dice-training/ beside the replay. The second run adds
+  --camera-augmentation.

@@ -493,3 +493,32 @@ The three new test clips stayed out of training. On the eight new manually
 labeled faces, pooled reads matched four for the current reader and five
 for the candidate. The candidate recovered the Game 3 five and still
 misread both fives in the Game 4 fan. The replay keeps the existing reader.
+
+## The board through pickup
+
+| Game and time | Source review |
+| --- | --- |
+| Game 3, 4:16 | White's dice show 3–2 before a die shifts. After trying a checker arrangement, White completes 24/22 10/7. That board matches Black's starting position on the next roll. |
+| Game 3, 20:17 | Black's 5–3 finishes with checkers on fixed points 7, 16 and 17. The previous review assigned one of these to point 18. The corrected board confirms 21/18 14/9 and **0.005** checker EVL. |
+| Game 4, 4:19 | Both dice show five. The completed play is 15/10 15/10 13/8 8/3. The starting board and the completed legal play agree with the preceding and following turns. The held-out die previously labeled four was corrected to five. |
+| Game 4, 13:01 | Both dice show 5–3. Both entry points are closed and Black's checker stays on the bar. |
+
+The automatic continuity trial tracks two resting dice through a brief hand
+occlusion. It can join a shifted die to the same roll when the other
+location stays fixed and the moved die has the same readable face on
+both sides of the shift. The result board needs to support exactly one
+legal roll, with at least one face agreeing with the dice evidence.
+This recovers Game 3's 3–2 and Game 4's double fives from the detector
+outputs. It also joins three extra proposals for Game 2's long 3–2.
+Across the updated 163-roll reference, the same-input comparison finds
+133 matched rolls in both runs, with 90 versus 92 correct dice pairs and
+63 versus 57 additional proposals. Last positive location evidence is
+separate from a confirmed pickup in the released replay.
+
+Two face trials trained on 562 source frames from 78 labeled tracks,
+with the clips for the new eight face labels held out. On those eight
+faces, pooled current readings matched four, and both fine-tuned
+readers matched five. Adding mild camera blur and exposure changes
+improved the broader supplemental set from 18 to 19 matches out of 26.
+The general holdout fell from 22 to 21, and the released replay keeps
+the existing weights.
