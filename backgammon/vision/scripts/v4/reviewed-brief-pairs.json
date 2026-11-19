@@ -1,0 +1,7 @@
+[
+  {"game":1,"frame":10945,"centers":[[188,134],[154,88]],"text":"Two white dice appear briefly together before pickup. Camera blur leaves at least one face uncertain."},
+  {"game":1,"frame":12224,"centers":[[308,332],[308,244]],"text":"Two black dice are visible for the short 2–1. The prior pair tracker did not record this pose."},
+  {"game":2,"frame":687,"centers":[[412,236],[366,360]],"text":"The same black 6–1 is already settled before the pointing gesture and stays until pickup."},
+  {"game":4,"frame":19552,"centers":[[348,260],[314,342]],"replacesChecker":true,"text":"Two new dice locations agree with the 5–3 fan. The earlier pair used a stationary checker as one die."},
+  {"game":4,"frame":21944,"centers":[[404,158],[332,236]],"replacesChecker":true,"text":"The two dice in the short 5–5 fan appear together. The earlier pair used a stationary checker as one die."}
+]

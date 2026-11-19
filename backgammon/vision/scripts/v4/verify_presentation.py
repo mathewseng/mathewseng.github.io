@@ -2,7 +2,8 @@
 import json
 from collections import Counter
 
-from render import ACTION_HOLD, BW, OUT, RH, RW, action_panel, equity_frames, equity_panel, rows, viewer_frames
+from render import (ACTION_HOLD, BW, OUT, RH, RW, action_panel, equity_frames, equity_panel, rows,
+                    viewer_frames, visible_recent_actions)
 
 
 def verify(number):
@@ -59,15 +60,20 @@ def verify(number):
         if roll and roll["start"] in cubes_at_roll:
             assert wait == cubes_at_roll[roll["start"]]
             shown_at_roll.add(roll["start"])
+        fan_results = {action["roll"]["start"] for action in actions if action.get("fan")}
+        visible = visible_recent_actions(actions, roll, cube_mode if not roll else None, wait, None)
+        for action in actions:
+            if action["kind"] == "roll" and action["roll"] is not roll:
+                assert (action in visible) == (action["frame"] not in fan_results)
         for action in actions:
             counts[action["kind"], action["frame"]] += 1
             assert action["frame"] <= frame < action["frame"] + ACTION_HOLD
             if action.get("fan"):
-                assert action["label"] == "fanned"
+                assert action["label"] == "fanned" and action["roll"]["fan"]
         if cube_mode:
             modes[cube_mode] += 1
         key = (id(roll), id(wait), cube_mode, opening, state["phase"] == "game-closed", state.get("pendingChecker"),
-               tuple((action["kind"], action["frame"]) for action in actions))
+               state.get("postGamePlay"), tuple((action["kind"], action["frame"]) for action in actions))
         if key not in rendered:
             entry = game["decisions"].get(str(roll["decision"])) if roll else None
             panel = action_panel(state, roll, entry, cube, cube_mode, wait, actions, opening)
@@ -116,6 +122,10 @@ def verify(number):
             assert handoff[3]["sourceMismatch"] and handoff[3]["decision"] is None
             assert counts["board-result", turns[3]["resultFrame"]] == ACTION_HOLD
     if number == 2:
+        opening_reply = next(r for r in rolls if r["sourceTurns"] == [2])
+        if any(note.get("previousFrame") == 728 for note in game.get("contextRecovery", [])):
+            assert (opening_reply["start"], opening_reply["pickup"], opening_reply["dice"]) == (679, 795, [6, 1])
+            assert game["decisions"]["2"]["played"]["notation"] == "8/7 13/7"
         roll = next(r for r in rolls if r["sourceTurns"] == [4, 5, 6, 7])
         assert roll["start"] <= 1064 < 62 * 25 < roll["end"] == 2443
         assert roll["dice"] == [3, 2] and roll["decision"] == 7
@@ -170,7 +180,8 @@ def verify(number):
         assert roll["dice"] == [6, 4]
         if roll["decision"] is not None:
             assert game["decisions"][str(roll["decision"])]["played"]["notation"] == "24/20 20/14"
-        assert modes["cube-pass"] == game["frames"] - game["ending"]["frame"]
+        post_game = game.get("postGamePlay", {"frame": game["frames"]})["frame"]
+        assert modes["cube-pass"] == post_game - game["ending"]["frame"]
         assert next(r for r in rolls if r["start"] == 17055)["pickup"] == 17279
         assert next(r for r in rolls if r["start"] == 17286)["pickup"] == 17457
     return {"game": number, "rolls": len(rolls), "noDoubleDecisions": len(cube_rolls),

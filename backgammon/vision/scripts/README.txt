@@ -437,3 +437,18 @@ Calibrate die color and review turn order
   reviewed-fan-faces.json. Hold out clips 18, 26, 27, 33–35, 51–53 and 67.
   Put the training output in cover-checker-training/ beside the replay.
   Reports includes only held-out count discrepancies and their source frames.
+
+  For the brief dice review, use the scored v29 replay as input to
+  v4/reconcile-reviewed-turns.mjs with v4/reviewed-short-rolls.json, an empty
+  JSON object for face evidence, and the output of v4/dice-footprint-timing.py
+  with v4/dice-footprint-controls.json. The same accounting pass applies the
+  source-verified start of post-game play in Game 5.
+
+  Run v4/verify-short-dice-pairs.mjs with the locator state folder, actor
+  observation folder and output path short-dice-validation.json. The report
+  distinguishes pairs within the game from recorded post-game throws. To
+  compare reconstructed plans using the corrected locations, set
+  OFFICE3_TRIAL_SHORT_DICE=1 with the same pose and observation inputs.
+  The trial leaves corrected faces unresolved until independently supported.
+  Add calibration/reviewed-brief-faces.json to the prior covered-face training
+  command and put its output in brief-dice-training/ beside the replay.

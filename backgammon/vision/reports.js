@@ -128,6 +128,29 @@ function renderReport(report, seek) {
     fragment.append(section);
   }
 
+  if (report.briefDice) {
+    const { total, aligned, afterGame, reviewed, faces } = report.briefDice;
+    const section = element("section", null, "vision-report-model");
+    section.append(element("h3", "Brief dice appearances"));
+    const inGame = total - afterGame.length;
+    if (inGame) section.append(element("p", `${aligned} of ${inGame} pairs found by the short-roll detector overlapped an indexed roll by the same player. This compares locations and timing. Face accuracy is checked separately.`, "muted small"));
+    if (afterGame.length) section.append(element("p", `The detector found ${afterGame.length} pairs after the scored game ended. These throws are excluded from game totals.`, "muted small"));
+    if (faces?.tests.length) {
+      const correct = key => faces.tests.filter(face => face[key] === face.expected).length;
+      section.append(element("p", `The trial reader trained on ${faces.trainingFrames} source frames from ${faces.trainingTracks} tracks. On ${faces.tests.length} newly reviewed faces in this game, the current reader matched ${correct("baselineTrack")} and the trial matched ${correct("candidateTrack")}.`, "muted small"));
+    }
+    const entries = [
+      ...reviewed.map(({ frame, text, jointlyObserved, correctedPair }) => ({ frame, detail: text,
+        title: correctedPair ? `Both dice located · ${jointlyObserved} frames` : `Paired positions · ${jointlyObserved} frames` })),
+      ...afterGame.map(({ start }) => ({ frame: start, title: "Post-game dice" })),
+      ...(faces?.tests ?? []).filter(face => face.baselineTrack !== face.expected || face.candidateTrack !== face.expected)
+        .map(face => ({ frame: face.frame, title: `Reviewed face · ${face.expected}`,
+          detail: `Current reader saw ${face.baselineTrack ?? "?"}. Trial saw ${face.candidateTrack ?? "?"}.` })),
+    ].sort((a, b) => a.frame - b.frame);
+    if (entries.length) section.append(reviewList(entries, entry => entry.title));
+    fragment.append(section);
+  }
+
   if (report.automaticTrial) {
     const { current, candidate } = report.automaticTrial;
     const section = element("section", null, "vision-report-model");

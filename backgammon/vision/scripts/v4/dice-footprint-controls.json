@@ -1,4 +1,5 @@
 [
+  {"game":2,"previousStart":728,"centers":[[412,236],[366,360]],"visible":[680,687,736,769],"empty":[641,649,659],"search":[652,702],"clearSearch":[781,821],"expected":{"start":[676,682],"clear":[792,798]}},
   {"game":3,"previousStart":1858,"centers":[[104,336],[174,400]],"visible":[1750,1800,1840],"empty":[1030,1038,1042],"search":[1048,1865],"clearSearch":[2204,2260],"expected":{"start":[1071,1076],"clear":[2233,2238]}},
   {"game":1,"previousStart":11166,"centers":[[310,268],[304,172]],"visible":[11205,11217,11229],"empty":[11136,11144,11152],"search":[11128,11221],"clearSearch":[11280,11344],"expected":{"start":[11179,11184],"clear":[11311,11316]}},
   {"game":4,"previousStart":15990,"centers":[[342,348],[366,356]],"visible":[15994,15997,16001],"empty":[15960,15968,15976],"search":[15962,16013],"clearSearch":[16003,16028],"expected":{"start":[15988,15993],"clear":[16009,16015]}},

@@ -20,6 +20,12 @@ for (const game of [1, 2, 3, 4, 5]) {
   assert.equal(rows.length, source.frames);
   assert.equal(data.frames, rows.length);
   assert.equal(data.scoringDepth, 4);
+  if (data.postGamePlay) {
+    const { frame, clip, sourceFrame } = data.postGamePlay;
+    assert(frame > data.ending.frame && rows[frame].clip === clip && rows[frame].sourceFrame === sourceFrame);
+    assert(data.losses.every(action => action.frame < frame));
+    assert(rows.slice(frame).every(row => row.phase === 'game-closed' && row.roll === null));
+  }
   const countPaths = new Map();
   for (const [id, turn] of data.turns.entries()) {
     const decision = data.decisions[id + 1];

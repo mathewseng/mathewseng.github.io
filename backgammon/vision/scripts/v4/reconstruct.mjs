@@ -5,6 +5,7 @@ import { gzipSync } from 'node:zlib';
 import { artifactDir, solverUrl } from '../project_paths.mjs';
 import { observedBoard } from './bearoff-board.mjs';
 import { verifyDicePose } from './dice-pose-continuity.mjs';
+import { refineIncompletePair, shortDicePairs } from './short-dice-pairs.mjs';
 import {
   evaluateDecision, loadEvaluator, matchingTurns, okay, positional, rowsFrom, stateFor,
 } from '../v2/solve_games.mjs';
@@ -309,6 +310,10 @@ function chooseTurns(proposals, last) {
 }
 
 function reconstruct(game, observations, rows, poseFrames) {
+  if (poseFrames && process.env.OFFICE3_TRIAL_SHORT_DICE === '1') {
+    const brief = shortDicePairs(poseFrames, observations.breaks);
+    observations = { ...observations, pairs: observations.pairs.map(roll => refineIncompletePair(roll, brief)) };
+  }
   const intervals = [...new Set([0, ...observations.breaks, rows.length])].sort((a, b) => a - b);
   return intervals.slice(1).map((last, index) => {
     const first = intervals[index], runs = boardRuns(rows, first, last);

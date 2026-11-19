@@ -46,6 +46,10 @@ const blurredFacePath = path.join(replayDir, "blurred-dice-training", "dice-trac
 const blurredFaces = fs.existsSync(blurredFacePath) ? read(blurredFacePath) : null;
 const coveredFacePath = path.join(replayDir, "covered-dice-training", "dice-track-validation.json");
 const coveredFaces = fs.existsSync(coveredFacePath) ? read(coveredFacePath) : null;
+const briefFacePath = path.join(replayDir, "brief-dice-training", "dice-track-validation.json");
+const briefFaces = fs.existsSync(briefFacePath) ? read(briefFacePath) : null;
+const shortPairPath = path.join(replayDir, "short-dice-validation.json");
+const shortPairs = fs.existsSync(shortPairPath) ? read(shortPairPath) : [];
 const coverCheckerDir = path.join(replayDir, "cover-checker-training");
 const coverCheckerPath = path.join(coverCheckerDir, "validation.json");
 const coverChecker = fs.existsSync(coverCheckerPath) ? read(coverCheckerPath) : null;
@@ -333,7 +337,8 @@ function report(number) {
   const gameNotes = regraded ? [{ frame: 2450, text: "Black’s visible roll is 6–4. The completed board now confirms bar/21 21/15 with zero checker EV loss." }] : earlierNotes;
   const footageReview = [...gameNotes, ...(replay.contextRecovery ?? [])
     .filter(entry => entry.text && !entry.superseded)
-    .map(({ frame, text, boardWitnesses }) => ({ frame, text, ...(boardWitnesses ? { boardWitnesses } : {}) }))]
+    .map(({ frame, text, boardWitnesses }) => ({ frame, text, ...(boardWitnesses ? { boardWitnesses } : {}) })),
+    ...(data.postGamePlay ? [{ frame: data.postGamePlay.frame, text: data.postGamePlay.text }] : [])]
     .sort((a, b) => a.frame - b.frame);
   const faceResolutions = (replay.contextRecovery ?? []).filter(entry => entry.diceFrames?.length)
     .map(({ frame, diceFrames }) => ({ frame, frames: diceFrames.length }));
@@ -343,6 +348,7 @@ function report(number) {
     const roll = data.rolls.find(item => item.start === entry.frame && item.pickup === entry.clear);
     return roll ? [{ ...entry, player: roll.player, dice: roll.dice }] : [];
   }).sort((a, b) => a.frame - b.frame);
+  const briefPairTrial = shortPairs.find(item => item.game === number);
   const report = { game: number, fps: data.fps, counts, unresolvedFaces, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
@@ -352,6 +358,13 @@ function report(number) {
     locatorTurnTrial: locatorTurnTrial.find(item => item.game === number) ?? null,
     actorTrial: actorTrial.find(item => item.game === number) ?? null,
     poseTrial: poseTrial.find(item => item.game === number) ?? null,
+    briefDice: briefPairTrial ? {
+      ...briefPairTrial,
+      faces: briefFaces && {
+        trainingFrames: briefFaces.trainingFrames, trainingTracks: briefFaces.trainingTracks,
+        tests: briefFaces.tests.spotExtra.filter(test => test.game === number && test.cohort === "brief-roll-review"),
+      },
+    } : null,
     checkerMotion: motionChecks.find(item => item.game === number) ?? null,
     reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
     diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number),

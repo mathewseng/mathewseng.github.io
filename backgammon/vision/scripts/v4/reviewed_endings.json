@@ -2,5 +2,8 @@
   "1": { "frame": 14739, "clip": 9, "sourceFrame": 1228, "kind": "board-reset" },
   "3": { "frame": 32063, "clip": 37, "sourceFrame": 199, "kind": "board-reset" },
   "4": { "frame": 32300, "clip": 59, "sourceFrame": 91, "kind": "board-reset" },
-  "5": { "frame": 19425, "clip": 72, "sourceFrame": 608, "kind": "pack-up-after-offer" }
+  "5": { "frame": 19425, "clip": 72, "sourceFrame": 608, "kind": "pack-up-after-offer",
+    "postGamePlay": { "frame": 20449, "clip": 73, "sourceFrame": 128,
+      "text": "After the game position is cleared, the players start rolling again with one checker each. These throws are outside the scored game." }
+  }
 }

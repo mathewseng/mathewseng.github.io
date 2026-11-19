@@ -65,19 +65,21 @@ export function createTransport(player, onData, replayAsset) {
     mute.textContent = player.muted ? "Unmute" : "Mute";
     fullscreen.textContent = document.fullscreenElement === shell ? "Exit full screen" : "Full screen";
     const current = activeIndex();
+    const postGame = source?.postGamePlay && cursor() >= source.postGamePlay.frame;
     previous.disabled = current < 0 || (current === 0 && actions[current].frame === cursor());
     next.disabled = nextIndex() < 0;
-    if (current !== index) {
+    const highlighted = postGame ? -1 : current;
+    if (highlighted !== index) {
       markers.children[index]?.removeAttribute("aria-current");
-      markers.children[current]?.setAttribute("aria-current", "true");
-      index = current;
+      markers.children[highlighted]?.setAttribute("aria-current", "true");
+      index = highlighted;
     }
     const action = actions[current];
-    const label = action ? `${action.label} · ${current + 1} of ${actions.length}` :
+    const label = postGame ? "Post-game play" : action ? `${action.label} · ${current + 1} of ${actions.length}` :
       actions.length ? `${actions.length} actions` : unavailable ? "Action timeline unavailable" :
         source ? "No recorded actions" : "Loading actions…";
     if (status.textContent !== label) status.textContent = label;
-    status.dataset.player = action?.player ?? "";
+    status.dataset.player = postGame ? "" : action?.player ?? "";
   }
 
   function drawMarkers() {

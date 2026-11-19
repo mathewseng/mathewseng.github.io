@@ -556,3 +556,26 @@ Across all 445 held-out crops, the current reader matched 441 and the
 trial matched 442. The trial recovered a six-checker White stack that
 the current reader counted as five. Reports links the remaining
 count discrepancies to their camera frames.
+
+## Brief rolls and post-game footage
+
+| Game and time | Source review and overlay change |
+| --- | --- |
+| Game 2, 0:27.16–0:31.80 | Black’s 6–1 remains at the same two locations while Black points to the board. The previous overlay began 49 frames late. The replay and export now use the earlier onset and retain the original legal result and checker EVL. |
+| Games 1 and 4, short fans | The recent actions area showed a held roll and its fan as separate rows. The result now carries its pips and replaces the duplicate row for the same throw. The result still holds for two seconds. |
+| Game 5, from 13:37.96 | Both players cleared the scored position after the 12:57 pass, then rolled again with one checker each. The overlay labels this post-game play and keeps the scored game’s result and losses visible. |
+
+The short-roll detector found 17 paired appearances during the scored games.
+All 17 overlapped an indexed roll for the same player. The four other
+appearances were after Game 5 ended. The location trial replaced a stationary
+checker with a second die in the Game 4 fans at 13:01 and 14:37. Both dice were
+seen together in eight and fourteen frames respectively. The comparison
+kept the same full-game results because the corrected locations alone could
+not establish the pips. Reports links to the source evidence and displays
+the face errors alongside the location trial.
+
+The follow-up face reader trained on 541 source frames from 82 labeled
+tracks. It matched 24 of 31 general holdout tracks, up from 16, and 14 of 22
+additional camera tracks, up from 13. It matched one of the four new faces
+from the brief rolls, as did the current reader. The released replay keeps
+the existing weights and the source-reviewed values.

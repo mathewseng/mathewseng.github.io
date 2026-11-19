@@ -111,18 +111,20 @@ def dice_label(dice):
     return "–".join(str(die) if die is not None else "?" for die in dice)
 
 
-def draw_dice(draw, x, y, dice, player):
+def draw_dice(draw, x, y, dice, player, size=44):
     pips = {1: (4,), 2: (0, 8), 3: (0, 4, 8), 4: (0, 2, 6, 8),
             5: (0, 2, 4, 6, 8), 6: (0, 2, 3, 5, 6, 8)}
     fill, ink, rim = (WHITE, BG, WHITE) if player == "white" else (SELECTED, TEXT, BLACK)
+    scale = size / 44
     for i, die in enumerate(dice):
-        left = x + i * 53
-        draw.rounded_rectangle((left, y, left + 44, y + 44), radius=8, fill=fill, outline=rim, width=2)
+        left = x + i * 53 * scale
+        draw.rounded_rectangle((left, y, left + size, y + size), radius=8 * scale, fill=fill, outline=rim, width=2)
         if die not in pips:
-            write(draw, left + 22, y + 22, "?", SECTION, ink, True, "mm")
+            write(draw, left + size / 2, y + size / 2, "?", round(SECTION * scale), ink, True, "mm")
         for dot in pips.get(die, ()):
-            cx, cy = left + 10 + 12 * (dot % 3), y + 10 + 12 * (dot // 3)
-            draw.ellipse((cx - 3, cy - 3, cx + 3, cy + 3), fill=ink)
+            cx, cy = left + (10 + 12 * (dot % 3)) * scale, y + (10 + 12 * (dot // 3)) * scale
+            radius = 3 * scale
+            draw.ellipse((cx - radius, cy - radius, cx + radius, cy + radius), fill=ink)
 
 
 def draw_table(draw, y, title, choices, actual=None, row_height=52, numbers=False):
@@ -158,14 +160,19 @@ def cube_choices(cube):
             ("double", action, min(options["take"], options["pass"]))]
 
 
-def recent_actions(draw, events, active_roll, cube_mode, cube_roll, featured):
-    shown = [
+def visible_recent_actions(events, active_roll, cube_mode, cube_roll, featured):
+    completed_fans = {event["roll"]["start"] for event in events if event.get("fan")}
+    return [
         event for event in events
-        if (event["kind"] != "roll" or event["roll"] is not active_roll)
+        if (event["kind"] != "roll" or (event["roll"] is not active_roll and event["frame"] not in completed_fans))
         and event is not featured
         and event["kind"] != cube_mode
         and not (event["kind"] == "no-double" and cube_roll and event["frame"] == cube_roll["frame"])
     ]
+
+
+def recent_actions(draw, events, active_roll, cube_mode, cube_roll, featured):
+    shown = visible_recent_actions(events, active_roll, cube_mode, cube_roll, featured)
     if not shown:
         return
     draw.line((PAD, 742, RW - PAD, 742), fill=LINE)
@@ -174,7 +181,11 @@ def recent_actions(draw, events, active_roll, cube_mode, cube_roll, featured):
         y = 794 + i * 39
         player, action = event["player"], event["label"]
         rank = f"  ·  Rank {event['rank']}" if event.get("rank", 0) > TOP_MOVES else ""
-        write(draw, PAD, y, f"{PLAYER_NAME[player]} {action}{rank}", BODY, PLAYER_TONE[player])
+        title = f"{PLAYER_NAME[player]} {action}{rank}"
+        write(draw, PAD, y, title, BODY, PLAYER_TONE[player])
+        if event.get("fan") or event["kind"] == "roll" and event["roll"].get("fan"):
+            draw_dice(draw, PAD + draw.textlength(title, font=face(BODY)) + 16, y - 1,
+                      event["roll"]["dice"], player, size=28)
         if event.get("loss") is not None:
             value = event["loss"]
             write(draw, RW - PAD, y, f"EV loss   {value:.3f}", BODY, loss_color(value), True, "ra")
@@ -226,6 +237,10 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
     featured = None
     if cube_mode == "cube-pass":
         cube_panel(draw, cube, cube_mode, result)
+    elif state.get("postGamePlay"):
+        write(draw, x, 86, "Post-game play", HEADLINE, TEXT, True)
+        points = result["points"]
+        write(draw, x, 143, f"{PLAYER_NAME[result['winner']]} won {points} {'point' if points == 1 else 'points'}", BODY, MUTED)
     elif state["phase"] == "game-closed":
         title = "Board reset" if state.get("actorEvidence") == "board-reset" else "Game finished"
         write(draw, x, 86, title, HEADLINE, TEXT, True)
@@ -267,14 +282,15 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
         cube_panel(draw, cube_roll, "rolled" if frame >= cube_roll["frame"] else "before-roll")
     elif (featured := next((event for event in reversed(events) if event["kind"] in ("checker", "board-result")), None)):
         player = featured["player"]
+        fan = featured.get("fan")
+        title = f"{PLAYER_NAME[player]} " + ("fanned" if fan else "finished moving" if featured["kind"] == "board-result" else "played")
+        write(draw, x, 79, title, HEADLINE, PLAYER_TONE[player], True)
+        if fan:
+            draw_dice(draw, x + draw.textlength(title, font=face(HEADLINE, True)) + 25,
+                      78, featured["roll"]["dice"], player)
         if featured["kind"] == "board-result":
-            result = "fanned" if featured.get("fan") else "finished moving"
-            detail = "No checker entered" if featured.get("fan") else "Checker position confirmed"
-            write(draw, x, 79, f"{PLAYER_NAME[player]} {result}", HEADLINE, PLAYER_TONE[player], True)
-            write(draw, x, 135, detail, BODY, MUTED)
+            write(draw, x, 135, "No checker entered" if fan else "Checker position confirmed", BODY, MUTED)
         else:
-            result = "fanned" if featured.get("fan") else "played"
-            write(draw, x, 79, f"{PLAYER_NAME[player]} {result}", HEADLINE, PLAYER_TONE[player], True)
             rank = featured["rank"]
             write(draw, x, 135, f"{featured['notation']}  ·  Rank {rank}", BODY, MUTED)
             draw_table(draw, 205, "Completed checker move", featured["choices"], featured["played"])
@@ -296,8 +312,9 @@ def viewer_frames(data, states):
     shown_cube_roll = None
     decisions = data["decisions"]
     cube = decisions.get("cube")
+    post_game = data.get("postGamePlay")
     opening_until = roll["start"] if roll and data["game"] > 1 else 0
-    fans = {entry["decision"] for entry in data["presentation"]["rolls"] if entry.get("fan")}
+    fans = {entry["decision"]: entry for entry in data["presentation"]["rolls"] if entry.get("fan")}
     actions = []
     for event in data["losses"]:
         if event["kind"] == "checker":
@@ -305,20 +322,21 @@ def viewer_frames(data, states):
             plays = decision["actions"]
             rank = next(i for i, move in enumerate(plays) if move["isPlayed"])
             played = plays[rank]
-            fan = event["decision"] in fans
+            fan_roll = fans.get(event["decision"])
+            fan = fan_roll is not None
             choices = [(move["key"], notation(move["notation"], fan), move["equity4"])
                        for move in ([plays[0], played] if rank else [played])]
             label = notation(played["notation"], fan)
-            actions.append({**event, "label": "fanned" if fan else f"played   {label}", "notation": label, "fan": fan,
+            actions.append({**event, "label": "fanned" if fan else f"played   {label}", "notation": label, "fan": fan, "roll": fan_roll,
                             "rank": rank + 1, "choices": choices, "played": played["key"]})
     for item in data["presentation"]["rolls"]:
         if item["evidence"] == "reviewed-roll-with-confirmed-board":
             turn = data["turns"][item["sourceTurns"][0] - 1]
             actions.append({"frame": turn["resultFrame"], "kind": "board-result", "player": item["player"],
-                            "label": "fanned" if item.get("fan") else "finished moving", "fan": item.get("fan", False)})
+                            "label": "fanned" if item.get("fan") else "finished moving", "fan": item.get("fan", False), "roll": item})
         if item["end"] - item["start"] < ACTION_HOLD:
             actions.append({"frame": item["start"], "kind": "roll", "player": item["player"], "roll": item,
-                            "label": f"rolled   {dice_label(item['dice'])}" + ("  ·  fan" if item.get("fan") else "")})
+                            "label": "rolled" if item.get("fan") else f"rolled   {dice_label(item['dice'])}"})
     for item in data["presentation"]["cubeRolls"]:
         loss = item["evLoss"]
         label = "rolls without doubling" if item["preOfferStake"] == 1 else "rolls without redoubling"
@@ -355,7 +373,9 @@ def viewer_frames(data, states):
             upcoming = next(pending, None)
         live = [event for event in live if frame < event["frame"] + ACTION_HOLD]
         cube_mode = None
-        if cube and frame >= cube["startFrame"]:
+        if post_game and frame >= post_game["frame"]:
+            state = {**state, "postGamePlay": True}
+        elif cube and frame >= cube["startFrame"]:
             if frame < cube["endFrame"] or (not cube.get("reply") and state["phase"] == "cube-response"):
                 cube_mode = "cube-offer"
             elif state.get("result", {}).get("reason") == "pass":
@@ -553,7 +573,7 @@ def render_frames(output, data, game, number, footage, software, start=0, *, crf
             equity_key = key
         # Frame detector changes do not independently invalidate a stable panel.
         key = (id(roll), id(wait), bool(wait and index >= wait["frame"]), cube_mode, tuple(id(event) for event in events),
-               opening, closed, state.get("pendingChecker"))
+               opening, closed, state.get("pendingChecker"), state.get("postGamePlay"))
         if key != right_key:
             entry = decisions.get(str(roll["decision"])) if roll else None
             right_region[:] = action_panel(state, roll, entry, decisions.get("cube"), cube_mode, wait, events, opening)

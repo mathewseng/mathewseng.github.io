@@ -38,6 +38,10 @@ function applyEnding(game, rows) {
     : null;
   game.ending = { frame, kind: result ? (cube.replyInferred ? ending.kind : 'cube-pass') : ending.kind };
   if (result) game.result = result;
+  const postGame = matched && ending.postGamePlay;
+  const playWitness = postGame && rows[postGame.frame];
+  if (playWitness && postGame.frame > frame && playWitness.clip === postGame.clip &&
+      playWitness.sourceFrame === postGame.sourceFrame) game.postGamePlay = postGame;
   if (game.presentation) {
     game.presentation.rolls = game.presentation.rolls.filter(roll => roll.start < frame).map(roll =>
       roll.end > frame ? { ...roll, end: frame, pickup: null } : roll);

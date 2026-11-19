@@ -93,6 +93,7 @@ function frameData(game, rows, recording) {
   return {
     format: 'office-3-replay-frames', version: 1, game: game.game, fps: FPS, frames: rows.length,
     result: game.result ?? null, ending: game.ending ?? null,
+    ...(game.postGamePlay ? { postGamePlay: game.postGamePlay } : {}),
     players: ['white', 'dark'], changes, positions, rolls: rollSnapshots, decisions,
     cubeRolls: game.presentation.cubeRolls,
     cubeOffer: offer ? {
