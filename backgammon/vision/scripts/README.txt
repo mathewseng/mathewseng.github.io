@@ -576,3 +576,23 @@ Audit stationary dice face recovery
   checks that adjacent rolls stay indexed, compares starting and ending
   boards, and replays each recovered legal checker result. Reports lists
   the remaining missed rolls, wrong faces and extra proposals by timestamp.
+
+Audit game boundaries
+
+  The automatic timeline uses a stationary cube, later clear board views,
+  and the renewed starting formation to decide when gameplay ended. This
+  lets the scorer keep the real camera recording through pack-up while
+  preserving the game state at its finish. The policy assumes each input
+  segment represents one game plus any cleanup or post-game play.
+
+  Compare the candidate plans and the prior stationary-face plans to a
+  reviewed replay with v4/compare-turn-plans.mjs. The candidate planning
+  pass records the proposed boundaries and excluded rolls in
+  game-NN-boundary.json.
+
+    bun v4/audit-game-boundaries.mjs "$reviewed" "$updated" "$updated/comparison.json" \
+      "$release/game-boundary-validation.json"
+    OFFICE3_REPLAY_DIR="$release" bun v4/export-reports.mjs ..
+
+  Reports links to the estimated end, the reviewed end, and the subsequent
+  camera evidence. It labels excluded roll proposals by their phase.

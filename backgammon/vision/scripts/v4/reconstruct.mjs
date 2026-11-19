@@ -7,6 +7,7 @@ import { observedBoard } from './bearoff-board.mjs';
 import { verifyDicePose } from './dice-pose-continuity.mjs';
 import { refineIncompletePair, shortDicePairs } from './short-dice-pairs.mjs';
 import { recoverStationaryFaces } from './stationary-face-votes.mjs';
+import { backfillClosingRoll, inferGameBoundary } from './game-boundary.mjs';
 import {
   evaluateDecision, loadEvaluator, matchingTurns, okay, positional, rowsFrom, stateFor,
 } from '../v2/solve_games.mjs';
@@ -17,7 +18,8 @@ const names = ['white', 'dark'];
 const fps = 25;
 const allDice = Array.from({ length: 6 }, (_, i) =>
   Array.from({ length: 6 - i }, (_, j) => [i + 1, i + j + 1])).flat();
-const opening = boardKey(initialState());
+const openingState = initialState();
+const opening = boardKey(openingState);
 const baseline = path.join(artifactDir, 'v4');
 const out = path.resolve(process.env.OFFICE3_REPLAY_DIR ?? baseline);
 const observationsDir = path.resolve(process.env.OFFICE3_VISION_OBSERVATIONS_DIR ?? baseline);
@@ -419,27 +421,19 @@ function cubeTimeline(game, observations) {
   };
   if (game.number > 1) update(0, { stake: 1, side: 'centered', evidence: 'verified-opening' });
   const offers = game.reviewedCubeOffers;
-  const lastOfferEnd = Math.max(-1, ...offers.map((o) => o.endFrame));
   const events = observations.cube.filter((r) => r.side !== 'playing-surface');
   for (const e of events) {
-    if (current?.closed) continue;
     // Game reset is stronger evidence for the starting stake than a face left
     // showing from the preceding game. A raise needs a post-opening change.
     if (game.number > 1 && e.start < 150 && e.stake !== 1) continue;
     if (e.end - e.start < 24 && e.visibleSamples < 20) continue;
-    if (current?.stake && e.stake < current.stake) {
-      if (e.stake === 1 && offers.length && e.start > lastOfferEnd && e.end - e.start >= 100) {
-        update(e.start, { stake: 1, side: e.side, closed: true, evidence: 'reviewed-offer-followed-by-cube-reset' });
-      }
-      continue;
-    }
+    if (current?.stake && e.stake < current.stake) continue;
     if (current?.stake && e.stake > current.stake * 2) continue;
     update(e.start, { stake: e.stake, side: e.side, evidence: e.evidence });
   }
   if (offers.length) {
     const first = offers[0];
-    const end = changes.find((c) => c.frame > first.startFrame &&
-      (c.closed || c.stake === first.offeredFace))?.frame ?? game.frames;
+    const end = changes.find((c) => c.frame > first.startFrame && c.stake === first.offeredFace)?.frame ?? game.frames;
     const before = changes.filter((c) => c.frame < first.startFrame).at(-1);
     changes.push({
       frame: first.startFrame, stake: first.preOfferStake, side: before?.side,
@@ -448,6 +442,33 @@ function cubeTimeline(game, observations) {
     });
   }
   return changes.sort((a, b) => a.frame - b.frame);
+}
+
+function applyGameBoundary(groups, changes, boundary) {
+  const suppressed = [];
+  if (!boundary) return { changes, suppressed };
+  const stop = boundary.offerFrame ?? boundary.frame;
+  for (const group of groups) {
+    group.turns = group.turns.flatMap(turn => {
+      if (turn.start >= stop) {
+        const reason = turn.start >= boundary.frame ? 'post-game' : 'cube-response';
+        suppressed.push({ frame: turn.start, end: turn.end, player: turn.player, dice: turn.dice, reason });
+        return [];
+      }
+      if (turn.end < stop) return [turn];
+      const validResult = turn.resultFrame == null || turn.resultFrame < stop;
+      return [{ ...turn, end: stop - 1,
+        ...(!validResult && { after: null, steps: null, resultFrame: null }) }];
+    });
+  }
+  const earlier = changes.filter(cube => cube.frame < stop);
+  if (boundary.offerFrame != null) {
+    const previous = earlier.at(-1);
+    earlier.push({ frame: boundary.offerFrame, stake: boundary.points, side: previous?.side,
+      offered: 2 * boundary.points, offerer: boundary.winner, responder: opposite(boundary.winner),
+      evidence: 'stationary-cube-on-playing-surface', end: boundary.frame });
+  }
+  return { changes: [...earlier, { frame: boundary.frame, closed: true, evidence: boundary.kind }], suppressed };
 }
 
 function findCube(changes, frame) {
@@ -527,7 +548,7 @@ function chooseBoardChanges(group) {
   return unique.filter((c, i) => unique[i - 1]?.run.key !== c.run.key);
 }
 
-function buildTimeline(game, groups, cubes, rows, analysis) {
+function buildTimeline(game, groups, cubes, rows, analysis, result) {
   const turns = groups.flatMap((g) => g.turns);
   for (const [i, turn] of turns.entries()) turn.id = i + 1;
   const decisions = {};
@@ -573,21 +594,22 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
         cumulative[player].loss += loss;
         cumulative[player].count++;
       }
-      const board = boards[bi] ?? null;
+      const cube = findCube(cubes, i);
+      const gapCube = group.first > 0 && cube && cube.frame < group.first && !cube.closed ? null : cube;
+      const board = gapCube?.closed ? null : boards[bi] ?? null;
       const current = group.turns[ti];
       const next = group.turns[ti + 1];
       const completed = current?.resultFrame != null && i >= current.resultFrame;
       const shown = current && current.end >= i;
       const onBoard = shown && (current.pickupFrame == null || i < current.pickupFrame);
-      const cube = findCube(cubes, i);
-      const gapCube = group.first > 0 && cube && cube.frame < group.first && !cube.closed ? null : cube;
       let phase = 'between-rolls', player = null, actorEvidence = null;
       if (gapCube?.closed) {
         phase = 'game-closed';
+        actorEvidence = gapCube.evidence;
       } else if (gapCube?.offered) {
         phase = 'cube-response';
         player = gapCube.responder;
-        actorEvidence = 'reviewed-cube-offer';
+        actorEvidence = gapCube.evidence;
       } else if (shown) {
         phase = completed ? 'played' : onBoard ? 'move' : 'checker-result-pending';
         player = current.player;
@@ -605,7 +627,7 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
         phase = 'opening';
       }
       const printRoll = current && !['cube-response', 'game-closed', 'checker-result-pending'].includes(phase);
-      let decision = gapCube?.offered ? 'cube' : onBoard && decisions[current.id] ? current.id : null;
+      let decision = gapCube?.offered && decisions.cube ? 'cube' : onBoard && decisions[current.id] ? current.id : null;
       if (phase === 'game-closed') decision = null;
       const markerPlayer = !board || phase === 'game-closed' ? null :
         phase === 'cube-response' ? gapCube.offerer :
@@ -631,10 +653,11 @@ function buildTimeline(game, groups, cubes, rows, analysis) {
       output.push({
         frame: i, clip: raw.clip, sourceFrame: raw.sourceFrame, sourcePts: raw.pts,
         sourceTimeBase: raw.timeBase, phase, player, actorEvidence,
-        turn: shown ? current.id : null,
+        ...(gapCube?.closed && result && { result }),
+        turn: !gapCube?.closed && shown ? current.id : null,
         roll: printRoll ? { id: current.id, player: current.player, dice: current.dice,
           status: onBoard ? 'current' : 'last', evidence: current.evidence } : null,
-        cube: gapCube ? { stake: gapCube.stake, side: gapCube.side, offered: gapCube.offered ?? null,
+        cube: gapCube && !gapCube.closed ? { stake: gapCube.stake, side: gapCube.side, offered: gapCube.offered ?? null,
           evidence: gapCube.evidence } : null,
         position: lastPositionId, decision, loss: {
           white: { ...cumulative.white }, dark: { ...cumulative.dark },
@@ -663,8 +686,13 @@ for (const number of gameNumbers.length ? gameNumbers : [1, 2, 3, 4, 5]) {
   const observations = load(observationsDir, `${prefix}-observations.json`);
   const rows = sourceRows(game);
   if (rows.length !== game.frames) throw new Error('Frame count does not match source timeline');
-  const groups = reconstruct(game, observations, rows, dicePoseFrames(game));
-  const changes = cubeTimeline(game, observations);
+  const poseFrames = dicePoseFrames(game);
+  const groups = reconstruct(game, observations, rows, poseFrames);
+  const cubeEvents = cubeTimeline(game, observations);
+  const boundary = inferGameBoundary(rows, groups, observations, cubeEvents, openingState.points);
+  const closingGroup = boundary && groups.find(group => group.first <= boundary.frame && boundary.frame < group.last);
+  const closingRoll = closingGroup ? backfillClosingRoll(closingGroup, rows, poseFrames, boundary) : null;
+  const { changes, suppressed } = applyGameBoundary(groups, cubeEvents, boundary);
   const scores = scoreTurns(game, groups, changes, analysis, !isPlan);
   const turns = groups.flatMap((g) => g.turns);
   const authored = turns.map(({ before, after, existing, decision, alternatives, ...turn }) => ({
@@ -672,15 +700,22 @@ for (const number of gameNumbers.length ? gameNumbers : [1, 2, 3, 4, 5]) {
   }));
   if (isPlan) {
     writeAtomic(path.join(out, `${prefix}-plan.json`), JSON.stringify(authored));
+    writeAtomic(path.join(out, `${prefix}-boundary.json`), JSON.stringify({ boundary, closingRoll, suppressed }));
     console.log(JSON.stringify({ game: number, turns: turns.length, complete: turns.filter((r) => r.dice?.[1]).length,
-      boardResults: turns.filter((r) => r.after).length, cubeChanges: changes, ...scores }));
+      boardResults: turns.filter((r) => r.after).length, boundary, suppressed: suppressed.length,
+      cubeChanges: changes, ...scores }));
     continue;
   }
-  const { output, ...lookup } = buildTimeline(game, groups, changes, rows, analysis);
+  const result = boundary?.winner ? { frame: boundary.frame, winner: boundary.winner,
+    points: boundary.points, reason: 'pass', inferred: true } : null;
+  const { output, ...lookup } = buildTimeline(game, groups, changes, rows, analysis, result);
   writeAtomic(path.join(out, `${prefix}-state.jsonl.gz`),
     gzipSync(output.map((row) => JSON.stringify(row)).join('\n') + '\n'));
   writeAtomic(path.join(out, `${prefix}-game.json`),
-    JSON.stringify({ game: number, frames: game.frames, turns: authored, ...lookup }));
+    JSON.stringify({ game: number, frames: game.frames, turns: authored, ...lookup,
+      ...(boundary ? { ending: { frame: boundary.frame, kind: boundary.kind }, boundary } : {}),
+      ...(result && { result }),
+    }));
   console.log(JSON.stringify({ game: number, frames: rows.length, turns: turns.length,
     decisions: Object.keys(lookup.decisions).length, ...scores }));
 }

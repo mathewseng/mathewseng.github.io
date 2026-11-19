@@ -748,3 +748,31 @@ The recorded cube offers now score Take, Pass and Beaver with one immediate
 reply allowed. Game 1 still records White's Take. Beaver is the higher-EV
 response there, so the response loss and Black's offer loss reflect the
 expanded choices. Game 5 shows White's double to 4 and Black's inferred pass.
+
+## End-of-game reconstruction
+
+The camera pass now requires later board evidence before closing a game.
+A cube that returns to center and a subsequently restored starting position
+support the Game 2 pass. In Game 5, the cube stays on the felt while both
+players clear their checkers. Once the board clears and the cube returns
+to center, later throws belong to the post-game play.
+
+| Game | Automatic end | Reviewed end | Footage evidence |
+| --- | --- | --- | --- |
+| 1 | 9:50.28 | 9:49.56 | White rebuilds fixed point 6, followed by both starting formations. |
+| 2 | 4:23.04 | 4:23.04 | The cube returns to center. No confirmed throw precedes the reset. |
+| 3 | 21:22.40 | 21:22.52 | Later setup confirms the sustained backward checker transfer. |
+| 4 | 21:32.04 | 21:32.00 | White rebuilds point 6. Both camera passes see the dice positions and agree on a three. The reviewed second face is a six. The automatic read leaves it unknown. |
+| 5 | 12:55.56 | 12:57.00 | Uncovered points lose checkers on both sides of the board, followed by a clear board and the return of the cube. The automatic onset is approximate. |
+
+The same-session comparison matched 136 of 163 reviewed throws, up from
+135. Extra proposals fell from 39 to 23. Fifteen occurred during a cube
+response or after gameplay and were excluded. Another proposal was
+matched to the final Game 4 throw. Correct starting boards rose from
+117 to 118. Exact dice pairs remain at 99, with 11 misreads.
+
+Seven source crops from that final throw were also checked with the native
+and contrast-focused dice models. The native model read the three in six
+crops and classified the six as five or four in all seven. The contrast
+model found the six in one crop. The diagnostic run keeps the second face
+unknown pending stronger evidence from the model.

@@ -77,6 +77,8 @@ const stationaryPath = path.join(replayDir, "stationary-turn-validation.json");
 const stationaryTrial = fs.existsSync(stationaryPath) ? read(stationaryPath) : [];
 const stationaryFacePath = path.join(replayDir, "stationary-face-validation.json");
 const stationaryFaces = fs.existsSync(stationaryFacePath) ? read(stationaryFacePath) : [];
+const gameBoundaryPath = path.join(replayDir, "game-boundary-validation.json");
+const gameBoundaries = fs.existsSync(gameBoundaryPath) ? read(gameBoundaryPath) : [];
 const occlusionFacePath = path.join(replayDir, "occlusion-dice-training", "dice-track-validation.json");
 const occlusionDetailPath = path.join(replayDir, "occlusion-dice-detail-training", "dice-track-validation.json");
 const occlusionFaces = fs.existsSync(occlusionFacePath) ? read(occlusionFacePath) : null;
@@ -425,6 +427,7 @@ function report(number) {
     poseTrial: poseTrial.find(item => item.game === number) ?? null,
     stationaryTrial: stationaryTrial.find(item => item.game === number) ?? null,
     stationaryFaces: stationaryFaces.find(item => item.game === number) ?? null,
+    automaticBoundary: gameBoundaries.find(item => item.game === number) ?? null,
     briefDice: briefPairTrial ? {
       ...briefPairTrial,
       faces: briefFaces && {

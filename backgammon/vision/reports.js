@@ -52,7 +52,8 @@ function renderReport(report, seek) {
       `Unknown faces · ${fans} on confirmed fans · ${confirmedResults} with verified checker results · ${unconfirmedResults} with unconfirmed results`,
       "muted small"));
   }
-  if (report.stationaryFaces) fragment.append(automaticReconstruction(report.stationaryFaces));
+  const automatic = report.automaticBoundary ?? report.stationaryFaces;
+  if (automatic) fragment.append(automaticReconstruction(automatic, report.stationaryFaces?.recoveries ?? []));
 
   const coverage = element("section", null, "vision-report-coverage");
   coverage.append(element("h3", "Detector coverage"));
@@ -229,7 +230,7 @@ function renderReport(report, seek) {
     fragment.append(section);
   }
 
-  if (report.automaticTrial && !report.stationaryFaces) {
+  if (report.automaticTrial && !automatic) {
     const { current, candidate } = report.automaticTrial;
     const section = element("section", null, "vision-report-model");
     section.append(element("h3", "Automatic replay trial"), element("p",
@@ -425,7 +426,7 @@ function renderReport(report, seek) {
     return list;
   }
 
-  function automaticReconstruction({ current, updated, recoveries, review, extra }) {
+  function automaticReconstruction({ current, updated, review, extra, boundary, closingRoll, suppressed }, recoveries) {
     const section = element("section", null, "vision-report-model vision-automatic-report");
     section.append(element("h3", "Automatic reconstruction"), element("p",
       "Both runs use the same footage and are compared with the reviewed replay. Dice accuracy uses rolls with two verified faces.",
@@ -457,6 +458,28 @@ function renderReport(report, seek) {
     section.append(table);
     const player = side => side === "white" ? "White" : side === "dark" ? "Black" : "Unknown player";
     const dice = faces => faces.length === 2 ? faces.join("–") : faces.length ? `${faces[0]}–?` : "?–?";
+    if (boundary) {
+      const offset = (boundary.frame - boundary.reviewedFrame) / report.fps;
+      const timing = offset === 0 ? "Matches the reviewed end." :
+        `${Math.abs(offset).toFixed(2)} s ${offset < 0 ? "before" : "after"} the reviewed end.`;
+      const title = boundary.winner ? `${player(boundary.winner)} wins ${boundary.points} ${boundary.points === 1 ? "point" : "points"} after a pass` :
+        "The board is reset";
+      const evidence = boundary.kind === "pack-up-after-offer"
+        ? "Both players’ checkers were cleared while the offered cube was still on the board."
+        : boundary.kind === "cube-returned-before-reset"
+          ? "The cube returned to center. The board was later reset without another confirmed throw."
+          : boundary.setupPoint
+            ? `${player(boundary.setupPlayer)} rebuilt the stack on fixed point ${boundary.setupPoint}. Both starting formations appeared later.`
+            : "Both starting formations were visible after the bearing-off position.";
+      section.append(element("h4", "Game ending evidence"), reviewList([
+        ...(closingRoll ? [{ frame: closingRoll.frame, title: `Final throw · ${dice(closingRoll.dice)}`,
+          detail: "Both die locations were visible before setup. The automatic reading preserves the supported face." }] : []),
+        { frame: boundary.frame, title, detail: `Automatic estimate. ${timing} ${evidence}` },
+        ...(offset === 0 ? [] : [{ frame: boundary.reviewedFrame, title: "Reviewed game end" }]),
+        { frame: boundary.confirmedFrame, title: boundary.kind === "pack-up-after-offer" ? "Clear view of the packed board" :
+          "Starting formation confirmed" },
+      ], entry => entry.title));
+    }
     if (recoveries.length) {
       section.append(element("h4", "Dice recovered from stationary reads"),
         reviewList(recoveries.map(roll => ({
@@ -486,6 +509,15 @@ function renderReport(report, seek) {
       pending.append(element("summary", `Extra roll proposals (${extra.length})`),
         reviewList(extra, roll => `${player(roll.player)} ${dice(roll.dice)}`));
       section.append(pending);
+    }
+    if (suppressed?.length) {
+      const excluded = element("details");
+      excluded.append(element("summary", `Excluded roll proposals (${suppressed.length})`),
+        reviewList(suppressed.map(roll => ({
+          ...roll,
+          detail: roll.reason === "post-game" ? "After the inferred game end." : "While the cube was awaiting a response.",
+        })), roll => `${player(roll.player)} ${dice(roll.dice)}`));
+      section.append(excluded);
     }
     return section;
   }

@@ -5,7 +5,7 @@ const visible = (frame, center) => frame?.diceLocations?.some(location =>
 const covered = (frame, [x, y]) => frame?.handRegions?.some(
   ([left, top, right, bottom]) => x >= left - 8 && x <= right + 8 && y >= top - 8 && y <= bottom + 8);
 
-function pairVisible(frame, [first, second]) {
+export function pairVisible(frame, [first, second]) {
   const locations = frame?.diceLocations ?? [];
   return locations.some((location, index) => supports(location, first) &&
     locations.some((other, otherIndex) => otherIndex !== index && supports(other, second)));
