@@ -1,10 +1,10 @@
-/** Refresh visible checker counts while preserving the scored decisions and loss ledger. */
+/** Refine confirmed checker display timing without changing the scored moves. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { artifactDir, replayDir } from '../project_paths.mjs';
+import { artifactDir, replayDir, visionStateDir } from '../project_paths.mjs';
 import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
-import { writeReplay } from './accounting.mjs';
+import { applyAccounting, writeReplay } from './accounting.mjs';
 import { observedBoard } from './bearoff-board.mjs';
 import { checkerStages, observedCheckerKey, trackCheckerCounts } from './checker-counts.mjs';
 
@@ -15,20 +15,86 @@ const raw = path.join(artifactDir, 'v2');
 const reports = [];
 fs.mkdirSync(replayDir, { recursive: true });
 
+function earlyStackResult(states, keys, start, stop, after) {
+  let first = null, run = [];
+  for (let frame = start; frame < stop; frame++) {
+    const key = keys[frame];
+    if (key && key !== after) {
+      first = null;
+      run = [];
+    }
+    if (key !== after || !states[frame]?.stackReadings?.some(reading =>
+      reading.method === 'supplemental-tall-stack-reader')) continue;
+    run = run.filter(witness => frame - witness <= 6);
+    run.push(frame);
+    if (run.length >= 4) first ??= run[0];
+  }
+  return first;
+}
+
+function keepResult(game, rows, states, keys, roll, turn, id, barriers, report) {
+  const result = rows[turn.resultFrame];
+  if (!result || result.turn !== id || result.phase !== 'played') return;
+  const after = observedCheckerKey(turn.after);
+  if (observedCheckerKey(game.positions[result.position]) !== after) return;
+  const before = observedCheckerKey(turn.before);
+  if (before === after) return;
+  const first = Math.max(turn.start + 1, barriers.findLast(frame => frame < result.frame) ?? 0);
+  const earlier = earlyStackResult(states, keys, first, result.frame, after);
+  if (earlier !== null && rows.slice(earlier, turn.resultFrame).every(row =>
+    row.turn === id && row.phase === 'move' && !row.cube?.offered)) {
+    report.earlierResults.push({ decision: id, previous: turn.resultFrame, frame: earlier });
+    for (const row of rows.slice(earlier, turn.resultFrame + 1)) {
+      row.phase = 'played';
+      row.position = result.position;
+      if (row.roll && Number.isInteger(roll.pickup) && row.frame >= roll.pickup) {
+        row.roll.status = 'last';
+        row.decision = null;
+      }
+      delete row.displayPoints;
+    }
+    turn.resultFrame = game.decisions[id].observedResultFrame = earlier;
+  }
+  const limit = barriers.find(frame => frame > result.frame) ?? rows.length;
+  let firstCarried = null, carried = 0;
+  for (let frame = result.frame + 1; frame < limit; frame++) {
+    const row = rows[frame];
+    if (row.turn || row.cube?.offered || !['between-rolls', 'pre-roll'].includes(row.phase)) break;
+    const position = game.positions[row.position];
+    const current = observedCheckerKey(position);
+    if (current && current !== before && current !== after) break;
+    if (current === after) continue;
+    if (position?.observedFrame > result.frame) break;
+    row.position = result.position;
+    delete row.displayPoints;
+    firstCarried ??= frame;
+    carried++;
+  }
+  if (carried) report.carriedResults.push({ decision: id, frame: firstCarried, frames: carried });
+}
+
 for (const game of [1, 2, 3, 4, 5]) {
   const prefix = `game-0${game}`;
   const data = read(path.join(source, prefix + '-game.json'));
   const rows = rowsFrom(path.join(source, prefix + '-state.jsonl.gz'));
   const recording = read(path.join(raw, `game-${game}-analysis.json`));
-  const boards = recording.segments.flatMap(segment =>
-    rowsFrom(path.join(raw, 'state', segment.source.replace(/\.mp4$/, '.jsonl.gz')))
-      .slice(segment.firstFrame, segment.lastExclusive).map(({ state }) => observedBoard(state)));
+  const states = recording.segments.flatMap(segment =>
+    rowsFrom(path.join(visionStateDir, segment.source.replace(/\.mp4$/, '.jsonl.gz')))
+      .slice(segment.firstFrame, segment.lastExclusive).map(({ state }) => state));
+  const boards = states.map(state => observedBoard(state));
+  const keys = boards.map(observedCheckerKey);
   assert.equal(boards.length, rows.length);
-  const report = { game, compared: 0, previousMatches: 0, updatedMatches: 0, improved: 0, regressed: 0 };
+  const report = { game, compared: 0, previousMatches: 0, updatedMatches: 0, improved: 0, regressed: 0,
+    tallStackFrames: states.filter(state => state?.stackReadings?.some(
+      reading => reading.method === 'supplemental-tall-stack-reader')).length,
+    earlierResults: [], carriedResults: [] };
+  const barriers = [...recording.segments.filter(part => part.discontinuity).map(part => part.firstGameFrame),
+    ...data.presentation.rolls.map(roll => roll.start), data.decisions.cube?.startFrame,
+    data.ending?.frame].filter(Number.isInteger).sort((a, b) => a - b);
   for (const roll of data.presentation.rolls) {
     const id = roll.decision;
     const turn = id && data.turns[id - 1];
-    if (!turn?.before || !turn.after || !data.decisions[id].played || !turn.dice.every(Number.isInteger)) continue;
+    if (!turn?.before || !turn.after || !data.decisions[id]?.countedInGameLoss || !turn.dice.every(Number.isInteger)) continue;
     const input = stateFor(turn.before, Number(roll.player === 'dark'), turn.dice);
     const stages = checkerStages(input);
     const previous = rows.slice(roll.start, roll.end).map(row => row.displayPoints);
@@ -36,7 +102,7 @@ for (const game of [1, 2, 3, 4, 5]) {
     for (let frame = roll.start; frame < roll.end; frame++) {
       const row = rows[frame];
       if (row.turn !== id || row.phase !== 'move') continue;
-      const evidence = stages.get(observedCheckerKey(boards[frame]));
+      const evidence = stages.get(keys[frame]);
       if (!evidence) continue;
       const fallback = data.positions[row.position]?.points.map(([white, dark]) => white - dark) ?? input.points;
       const before = previous[frame - roll.start] ?? fallback;
@@ -49,7 +115,9 @@ for (const game of [1, 2, 3, 4, 5]) {
       report.improved += Number(!was && now);
       report.regressed += Number(was && !now);
     }
+    keepResult(data, rows, states, keys, roll, turn, id, barriers, report);
   }
+  applyAccounting(data, rows);
   writeReplay(prefix, data, rows);
   reports.push(report);
   console.log(JSON.stringify(report));

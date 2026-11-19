@@ -633,8 +633,38 @@ crops, with the other new crops held out by source clip. On the same 862 held-ou
 crops, the current reader matched 857. Both trial readers matched 858 and
 made the same four errors. Both recognized two White six-stacks the current
 reader counted as five. Reports links the remaining errors to the source
-frames. The replay retains the current checker weights.
+frames. That review retained the main checker reader.
 At 18:03 in Game 3, a black die beside point 4 is counted as a third checker
 in the isolated point image. Dice cups enter empty point strips around 20:12
 in Game 3 and 14:39 in Game 4. Both checker readers count those cups as black
 checkers in the cropped-image test.
+
+## Tall stacks and earlier checker results
+
+The whole-session comparison found that replacing the point reader dropped
+singleton observations. The revised pipeline keeps the primary reader and
+uses the candidate only to extend a visible stack to six or more when the
+count fits the checker inventory. A loose checker past the middle of the
+board can join a tall stack when its alignment and distance match the
+spacing of the existing checkers. Vision mode marks supplemental readings
+with a numbered badge.
+
+| Game and time | Source evidence and replay change |
+| --- | --- |
+| Game 1, 6:45.52 | The completed Black arrangement stays on the table as White prepares to roll. Carry it through the 20 frames that showed the previous position. |
+| Game 3, 16:27.52 | An unobstructed view shows six White checkers on point 1. Update the moving checker display while keeping the starting board for analysis. |
+| Game 4, 9:31.48 | The Black stack on point 19 still holds six. Several complete boards confirm the 6–1 result one second earlier. |
+| Game 5, 0:22.88 | White has six on point 13 and one on point 24. The result appears 1.72 seconds earlier and the counts persist through pickup and into Black's roll. |
+| Game 5, 1:20.68 | Black restores the 6–4 result after briefly moving the checker again. A repeated complete board confirms the move and posts its 0.045 Checker EVL while the dice remain on the table. |
+
+At 9:06.68 in Game 5, later source frames show the Black checker back on
+point 11. The board display uses that newer observation while the scored
+history keeps the verified move. No new roll is assigned to that interval.
+
+Across 113,235 frames, the supplemental reader extended tall stacks on 777
+frames in Game 4 and 4,712 in Game 5. Reports includes 83 manually reviewed
+source frames for those two stacks, along with seek links to the timing
+changes. With the same dice data and reviewed turns, the all-game automatic
+comparison found two more correct dice pairs and three more matching
+starting and ending boards. Published dice, legal moves, doubling decisions,
+physical pickup times, and final EV loss totals were verified unchanged.

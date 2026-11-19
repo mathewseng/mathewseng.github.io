@@ -90,7 +90,8 @@ for (const game of [1, 2, 3, 4, 5]) {
       const turn = row.turn === null ? null : data.turns[row.turn - 1];
       if (turn) {
         assert(turn.start <= frame && frame <= turn.end);
-        if (!raw[i].state?.currentRoll && ['move', 'played'].includes(row.phase)) {
+        const beforePickup = !Number.isInteger(turn.pickupFrame) || frame < turn.pickupFrame;
+        if (beforePickup && !raw[i].state?.currentRoll && ['move', 'played'].includes(row.phase)) {
           counts.missingRollRead++;
           if (row.roll?.status === 'current' && row.roll.player === turn.player) counts.anchoredRollRead++;
         }

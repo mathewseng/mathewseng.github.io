@@ -43,6 +43,22 @@ def face_probabilities(network, patches):
 def slot_decode(candidate):
     return ((candidate-1)//SLOT_CLASSES,(candidate-1)%SLOT_CLASSES+1) if candidate else (None,0)
 
+
+def record_stack_readings(state, totals, revisions):
+    if not revisions:
+        return
+    state['stackReadings'] = revisions
+    state['visibleCheckerTotals'] = totals
+    if any(checker['zone'] == 'loose' for checker in state['checkers']):
+        return
+    off = [15 - total if total == 15 or state['trayEvidence'][color] else None
+           for color, total in enumerate(totals)]
+    state['borneOff'] = off
+    if all(count is not None for count in off):
+        state['checkerStatus'] = 'inferred-tray' if any(off) else 'complete-with-stack-reader'
+        state['position'] = {'points': state['points'], 'bar': state['bar'], 'borneOff': off}
+
+
 class CameraReader:
     def __init__(self, face_reader=None, checker_reader=None, dice_locator=None):
         self.slot=cv2.dnn.readNetFromONNX(str(checker_reader or OUT/'slots.onnx'))
@@ -99,16 +115,7 @@ class CameraReader:
                 totals[color]+=missing
                 revisions.append({'point':i+1,'color':['white','dark'][color],'added':missing,
                     'confidence':round(confidence,4),'method':'stack-appearance-with-15-checker-inventory'})
-        if not revisions:
-            return
-        state['stackReadings']=revisions
-        state['visibleCheckerTotals']=totals
-        if not loose:
-            off=[(15-t if t==15 or state['trayEvidence'][k] else None) for k,t in enumerate(totals)]
-            state['borneOff']=off
-            if all(o is not None for o in off):
-                state['checkerStatus']='inferred-tray' if any(off) else 'complete-with-stack-reader'
-                state['position']={'points':original,'bar':state['bar'],'borneOff':off}
+        record_stack_readings(state, totals, revisions)
 
     def locate_dice(self,pixels,state):
         candidates=[]

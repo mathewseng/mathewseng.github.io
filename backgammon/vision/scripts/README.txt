@@ -485,3 +485,22 @@ Calibrate die color and review turn order
   remaining new witnesses from training. Use compare-checker-witnesses.mjs
   on both outputs to verify identical held-out crops and save the result as
   checker-handoff-validation.json beside the replay.
+
+  The tall-stack pass uses that trained checkers-candidate.onnx as a
+  supplemental reader. Run v2/vision.py with --checker-reader and a separate
+  --state-dir, then run v2/merge_tall_stacks.py with the candidate state
+  directory and a distinct output directory. Pass the merged directory as
+  OFFICE3_VISION_STATE_DIR to v4 reconstruction, display refresh, audit, and
+  report export. The detector keeps the primary singleton reads and may add
+  just the high-confidence tall-stack corrections from the candidate.
+
+    OFFICE3_VISION_STATE_DIR="$merged" OFFICE3_REPLAY_DIR="$output" \
+      bun v4/refresh-checker-display.mjs "$previous"
+    OFFICE3_VISION_STATE_DIR="$merged" OFFICE3_REPLAY_DIR="$output" \
+      bun v4/verify-stack-results.mjs "$previous"
+    OFFICE3_VISION_STATE_DIR="$merged" python3 v4/export_audit.py ../audit 4 5
+
+  The play and loss ledger verifier confirms the Game 5 early result against
+  exact source frames and writes tall-stack-witnesses.json for Reports.
+  Keep all dice inputs fixed when repeating the automatic plan comparison and
+  save it as tall-stack-plan-validation.json beside the scored replay.

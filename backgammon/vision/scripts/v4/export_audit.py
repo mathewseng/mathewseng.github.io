@@ -8,9 +8,10 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from project_paths import ARTIFACT_DIR
+from project_paths import ARTIFACT_DIR, local_path
 
 BASE = ARTIFACT_DIR / "v2"
+STATES = local_path("OFFICE3_VISION_STATE_DIR", BASE / "state")
 
 
 def confidence(score):
@@ -32,7 +33,16 @@ def pack(state):
     cube = state.get("cube")
     if cube:
         cube = [*cube["center"], cube["face"] or 0, confidence(cube["score"])]
-    return [checkers, dice, cube, state.get("handRegions", [])]
+    packed = [checkers, dice, cube, state.get("handRegions", [])]
+    counts = []
+    for reading in state.get("stackReadings", []):
+        if reading["method"] == "supplemental-tall-stack-reader":
+            point = reading["point"]
+            color = int(reading["color"] == "dark")
+            counts.append([point, color, state["points"][point - 1][color]])
+    if counts:
+        packed.append(counts)
+    return packed
 
 
 def export(number, directory):
@@ -43,7 +53,7 @@ def export(number, directory):
         output.write('{"fps":25,"frames":[')
         for part in game["segments"]:
             source = Path(part["source"]).with_suffix(".jsonl.gz").name
-            with gzip.open(BASE / "state" / source, "rt") as clip:
+            with gzip.open(STATES / source, "rt") as clip:
                 for i, line in enumerate(clip):
                     if i >= part["lastExclusive"]:
                         break
@@ -61,9 +71,10 @@ def export(number, directory):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path)
+    parser.add_argument("games", nargs="*", type=int, choices=range(1, 6))
     args = parser.parse_args()
     args.directory.mkdir(parents=True, exist_ok=True)
-    for number in range(1, 6):
+    for number in args.games or range(1, 6):
         export(number, args.directory)
 
 

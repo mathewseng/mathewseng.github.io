@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
-import { artifactDir, solverUrl } from '../project_paths.mjs';
+import { artifactDir, solverUrl, visionStateDir } from '../project_paths.mjs';
 import { observedBoard } from './bearoff-board.mjs';
 import { verifyDicePose } from './dice-pose-continuity.mjs';
 import { refineIncompletePair, shortDicePairs } from './short-dice-pairs.mjs';
@@ -34,7 +34,7 @@ const range = (start, end) => ({ start, end });
 
 function sourceRows(game) {
   return game.segments.flatMap((part) =>
-    rowsFrom(path.join(v2, 'state', part.source.replace(/\.mp4$/, '.jsonl.gz')))
+    rowsFrom(path.join(visionStateDir, part.source.replace(/\.mp4$/, '.jsonl.gz')))
       .slice(part.firstFrame, part.lastExclusive)
       .map((row, offset) => ({
         ...row, sourceFrame: row.frame, frame: part.firstGameFrame + offset,

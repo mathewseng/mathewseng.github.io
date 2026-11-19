@@ -10,6 +10,7 @@ const localPath = configured?.startsWith("~/")
 export const artifactDir = path.resolve(
   localPath || path.join(homedir(), "Downloads", "office-3-backgammon-20261117"),
 );
+export const visionStateDir = path.resolve(process.env.OFFICE3_VISION_STATE_DIR || path.join(artifactDir, 'v2', 'state'));
 export const solverDir = path.join(artifactDir, "site-solver");
 export const solverUrl = (modulePath) => pathToFileURL(path.join(solverDir, modulePath));
 

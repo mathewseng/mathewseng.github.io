@@ -29,7 +29,7 @@ export function createAudit(player, replayAsset) {
     context.clearRect(0, 0, canvas.width, canvas.height);
     if (!enabled || !source || player.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
     const frame = Math.floor(time * source.fps + .001);
-    const [checkers, dice, cube, hands] = source.frames[frame] ?? [[], [], null, []];
+    const [checkers, dice, cube, hands, stacks = []] = source.frames[frame] ?? [[], [], null, []];
     const x = (value) => BOARD.x + value * scale;
     const y = (value) => BOARD.y + value * BOARD.height / BOARD.sourceHeight;
     context.lineWidth = 2.6;
@@ -44,6 +44,20 @@ export function createAudit(player, replayAsset) {
       context.stroke();
     }
     drawContextCheckers(frame, checkers, x, y);
+    for (const [point, side, count] of stacks) {
+      const top = point <= 12;
+      const center = COLUMNS[top ? 12 - point : point - 13];
+      const label = `${count}`;
+      const left = x(center) - 15;
+      const at = y(top ? 58 : 347);
+      context.fillStyle = "#10151c";
+      context.fillRect(left, at, 30, 26);
+      context.strokeStyle = CHECKER[side];
+      context.strokeRect(left, at, 30, 26);
+      context.font = "bold 21px system-ui";
+      context.fillStyle = CHECKER[side];
+      context.fillText(label, x(center) - context.measureText(label).width / 2, at + 21);
+    }
     for (const [cx, cy, value, candidate, score] of dice) {
       mark(x(cx), y(cy), DIE, value ? `${value} · ${score}%` : `${candidate}?`);
     }
@@ -97,7 +111,7 @@ export function createAudit(player, replayAsset) {
     if (!source) return;
     status.textContent = player.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
       ? "Play to see detections."
-      : "White (cyan) · Black (amber) · Dice (green) · Cube (yellow) · Hands (pink) · Reconstructed checker (dashed)";
+      : "White (cyan) · Black (amber) · Dice (green) · Cube (yellow) · Hands (pink) · Reconstructed checker (dashed) · Stack read (numbered)";
   }
 
   function stopTick() {

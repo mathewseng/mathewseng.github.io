@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { artifactDir, replayDir } from '../project_paths.mjs';
+import { artifactDir, replayDir, visionStateDir } from '../project_paths.mjs';
 import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
 import { boardKey, initialState, legalPaths, legalTurns, notation } from '../../../core/rules.mjs';
 import { toXGID } from '../../../core/xgid.mjs';
@@ -262,8 +262,7 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
 async function recover(game, rows, recording) {
   const changes = game.contextRecovery ??= [];
   const rolls = game.presentation.rolls;
-  const rawDir = path.join(artifactDir, 'v2', 'state');
-  const boards = recording.segments.flatMap(segment => rowsFrom(path.join(rawDir, segment.source.replace(/\.mp4$/, '.jsonl.gz')))
+  const boards = recording.segments.flatMap(segment => rowsFrom(path.join(visionStateDir, segment.source.replace(/\.mp4$/, '.jsonl.gz')))
     .slice(segment.firstFrame, segment.lastExclusive).map(({ state }) => observedBoard(state)));
   const breaks = recording.segments.filter(segment => segment.discontinuity).map(segment => segment.firstGameFrame);
   const offer = game.decisions.cube;

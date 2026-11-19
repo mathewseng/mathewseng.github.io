@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { artifactDir, replayDir } from "../project_paths.mjs";
+import { artifactDir, replayDir, visionStateDir } from "../project_paths.mjs";
 import { rowsFrom, stateFor } from "../v2/solve_games.mjs";
 import { observedBoard } from "./bearoff-board.mjs";
 import { boardKey, legalTurns } from "../../../core/rules.mjs";
@@ -76,6 +76,10 @@ const occlusionFaces = fs.existsSync(occlusionFacePath) ? read(occlusionFacePath
 const occlusionDetail = fs.existsSync(occlusionDetailPath) ? read(occlusionDetailPath) : null;
 const motionPath = path.join(replayDir, "checker-motion-validation.json");
 const motionChecks = fs.existsSync(motionPath) ? read(motionPath) : [];
+const stackPath = path.join(replayDir, "tall-stack-plan-validation.json");
+const stackChecks = fs.existsSync(stackPath) ? read(stackPath) : [];
+const stackWitnessPath = path.join(replayDir, "tall-stack-witnesses.json");
+const stackWitnesses = fs.existsSync(stackWitnessPath) ? read(stackWitnessPath) : [];
 const footprintReportPath = path.join(replayDir, "dice-footprint-validation.json");
 const footprintValidation = fs.existsSync(footprintReportPath) ? read(footprintReportPath) : [];
 
@@ -246,7 +250,7 @@ function report(number) {
   const confirmedTransitions = reviewedTransitions(replay);
   const recording = read(path.join(rawDir, `game-${number}-analysis.json`));
   const raw = recording.segments.flatMap(segment =>
-    rowsFrom(path.join(rawDir, "state", segment.source.replace(/\.mp4$/, ".jsonl.gz")))
+    rowsFrom(path.join(visionStateDir, segment.source.replace(/\.mp4$/, ".jsonl.gz")))
       .slice(segment.firstFrame, segment.lastExclusive).map(row => row.state));
   assert.equal(raw.length, data.frames);
   const counts = { frames: raw.length, boardObserved: 0, boardReconciled: 0, reconstructedBoardFrames: 0, equityFrames: 0,
@@ -368,6 +372,7 @@ function report(number) {
   const briefPairTrial = shortPairs.find(item => item.game === number);
   const longTrialsForGame = data => data?.tests.spotExtra
     .filter(test => test.game === number && test.cohort === "long-occlusion-review") ?? [];
+  const stack = stackChecks.find(item => item.game === number);
   const report = { game: number, fps: data.fps, counts, unresolvedFaces, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
@@ -386,6 +391,8 @@ function report(number) {
       },
     } : null,
     checkerMotion: motionChecks.find(item => item.game === number) ?? null,
+    tallStacks: stack ? { current: stack.current.counts, updated: stack.candidate.counts,
+      witnesses: stackWitnesses.filter(item => item.game === number) } : null,
     reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
     diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number),
     settledFaces: faceValidation && {

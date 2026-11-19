@@ -87,6 +87,36 @@ function renderReport(report, seek) {
   }
   fragment.append(coverage);
 
+  const motion = report.checkerMotion;
+  if (motion?.tallStackFrames || motion?.earlierResults?.length || motion?.carriedResults?.length ||
+      (report.tallStacks && motion?.improved)) {
+    const section = element("section", null, "vision-report-model");
+    section.append(element("h3", "Checker stacks and move timing"));
+    if (motion.tallStackFrames) section.append(element("p",
+      `The supplemental reader extended visible stacks to six or more checkers on ${number.format(motion.tallStackFrames)} frames in this game.`,
+      "muted small"));
+    if (report.tallStacks) {
+      const { current, updated, witnesses } = report.tallStacks;
+      if (witnesses?.length) {
+        const matched = key => witnesses.filter(witness => witness[key] === witness.count).length;
+        section.append(element("p",
+          `On ${number.format(witnesses.length)} source frames selected to check the stack, the updated reader matched ${matched("updated")}. The earlier reader matched ${matched("current")}.`,
+          "muted small"));
+      }
+      section.append(element("p",
+        `On the same reviewed turns, automatic reconstruction matched ${updated.correctBefore} starting boards, ${updated.correctAfter} ending boards, and ${updated.correctDice} dice pairs. The earlier pipeline matched ${current.correctBefore}, ${current.correctAfter}, and ${current.correctDice}, respectively.`,
+        "muted small"));
+    }
+    const timing = [
+      ...(motion.earlierResults ?? []).map(item => ({ ...item, title: "Earlier checker result",
+        detail: `Repeated complete boards confirmed this move ${((item.previous - item.frame) / report.fps).toFixed(2)} seconds earlier. The played move and its equity loss stay the same.` })),
+      ...(motion.carriedResults ?? []).map(item => ({ ...item, title: "Checker counts carried into the next turn",
+        detail: `The verified ending board replaced stale counts on ${number.format(item.frames)} intervening frames.` })),
+    ].sort((a, b) => a.frame - b.frame);
+    if (timing.length) section.append(reviewList(timing, item => item.title));
+    fragment.append(section);
+  }
+
   if (report.locatorValidation) {
     const { reviewedTrainingCrops, tests } = report.locatorValidation;
     const { current, trial } = tests.newCamera;

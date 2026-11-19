@@ -13,6 +13,8 @@ import { cubeContext } from './cube-context.mjs';
 const read = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
 const root = process.argv[2];
 if (!root) throw new Error('Supply the Backgammon Vision directory.');
+const motionFile = 'checker-motion-validation.json';
+const motion = fs.existsSync(path.join(replayDir, motionFile)) ? read(replayDir, motionFile) : [];
 const summary = [];
 for (const number of [1, 2, 3, 4, 5]) {
   const game = `game-0${number}`;
@@ -400,7 +402,10 @@ for (const number of [1, 2, 3, 4, 5]) {
     const roll = data.rolls[index];
     assert.deepEqual([roll.player, roll.dice], ['dark', dice]);
     assert(data.decisions[roll.decision].played);
-    assert.equal(roll.resultFrame, note.boardWitnesses[1].frame);
+    const advance = motion.find(report => report.game === number)?.earlierResults?.find(
+      entry => entry.decision === roll.decision);
+    if (advance) assert.equal(advance.previous, note.boardWitnesses[1].frame);
+    assert.equal(roll.resultFrame, advance?.frame ?? note.boardWitnesses[1].frame);
     assert.deepEqual(roll.after, data.rolls[index + 1].before);
   }
   if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 19541 && entry.confirmedDetectorMisread)) {

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { observedBoard } from './bearoff-board.mjs';
 import { footprintPickup } from './roll-timing.mjs';
-import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
+import { artifactDir, replayDir, solverUrl, visionStateDir } from '../project_paths.mjs';
 import { exclusive, loadEvaluator, matchingTurns, rowsFrom, stateFor } from '../v2/solve_games.mjs';
 
 const { boardKey, initialState, legalTurns, legalPaths, applyStep, pipCount, notation } =
@@ -430,7 +430,7 @@ function refine(number, solver, reviewedCube, reviewedRolls) {
   const recording = read(vision, 'game-' + number + '-analysis.json');
   const raw = [];
   for (const part of recording.segments) {
-    const clip = rowsFrom(path.join(vision, 'state', part.source.replace(/\.mp4$/, '.jsonl.gz')));
+    const clip = rowsFrom(path.join(visionStateDir, part.source.replace(/\.mp4$/, '.jsonl.gz')));
     for (const row of clip.slice(part.firstFrame, part.lastExclusive)) raw.push(row.state);
   }
   const source = reviewedCube && recording.segments.findLast((segment) =>
