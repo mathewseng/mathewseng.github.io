@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v13");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v14");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -20,6 +20,8 @@ const spotPath = path.join(artifactDir, "calibration", "spot-validation.json");
 const modelSpots = fs.existsSync(spotPath) ? read(spotPath) : [];
 const bodyReportPath = path.join(artifactDir, "calibration", "dice-body-validation.json");
 const bodyValidation = fs.existsSync(bodyReportPath) ? read(bodyReportPath) : null;
+const trackReportPath = path.join(artifactDir, "calibration", "dice-track-validation.json");
+const trackValidation = fs.existsSync(trackReportPath) ? read(trackReportPath) : null;
 
 const issueNames = {
   "repeated-player": "Consecutive rolls assigned to the same player",
@@ -58,6 +60,12 @@ function diceBodyEvidence(prefix, rolls) {
   const { reviewed, heldOut, baselineCorrect, candidateCorrect } = bodyValidation;
   return { reviewed, heldOut, baselineCorrect, candidateCorrect, pairs: trained.length,
     corroboratedPairs: trained.filter(pair => pair.actorEvidence === "dice-body-agreement").length, changed };
+}
+
+function diceTrackEvidence(game) {
+  if (!trackValidation) return null;
+  const { trainingTracks, trainingFrames, summary, tests } = trackValidation;
+  return { trainingTracks, trainingFrames, summary, reviewedFaces: tests.spot.filter(item => item.game === game) };
 }
 
 function modelChecks(game) {
@@ -122,15 +130,27 @@ function repeatedPlayer(roll, next, sources) {
     source.firstGameFrame > roll.start && source.firstGameFrame <= next.start);
 }
 
+function reviewedTransitions(replay) {
+  return new Set((replay.contextRecovery ?? []).filter(item => item.kind === "confirmed-consecutive")
+    .map(item => `${item.previousFrame}:${item.frame}`));
+}
+
+function transitionKey(roll, next) {
+  return `${roll.start}:${next.start}`;
+}
+
 function referenceFor(prefix, sources) {
   const file = path.join(referenceDir, prefix + "-game.json");
   if (!fs.existsSync(file)) return null;
-  const { presentation, decisions } = read(file);
+  const replay = read(file);
+  const { presentation, decisions } = replay;
+  const reviewed = reviewedTransitions(replay);
   const rolls = presentation.rolls;
   return {
     completeRolls: rolls.filter(roll => roll.dice.every(Number.isInteger)).length,
     missingFaces: rolls.flatMap(roll => roll.dice).filter(face => face === null).length,
-    repeatedPlayers: rolls.filter((roll, i) => repeatedPlayer(roll, rolls[i + 1], sources)).length,
+    repeatedPlayers: rolls.filter((roll, i) => repeatedPlayer(roll, rolls[i + 1], sources) &&
+      !reviewed.has(transitionKey(roll, rolls[i + 1]))).length,
     gradedPlays: Object.values(decisions).filter(decision => decision.player && decision.countedInGameLoss).length,
   };
 }
@@ -139,6 +159,7 @@ function report(number) {
   const prefix = `game-0${number}`;
   const data = read(path.join(output, "state", prefix + ".json"));
   const replay = read(path.join(replayDir, prefix + "-game.json"));
+  const confirmedTransitions = reviewedTransitions(replay);
   const recording = read(path.join(rawDir, `game-${number}-analysis.json`));
   const raw = recording.segments.flatMap(segment =>
     rowsFrom(path.join(rawDir, "state", segment.source.replace(/\.mp4$/, ".jsonl.gz")))
@@ -148,6 +169,8 @@ function report(number) {
     coverFrames: 0, rollFrames: 0, diceRead: [0, 0, 0], diceConflictFrames: 0,
     rolls: data.rolls.length, completeRolls: 0, missingFaces: 0, bothFacesMissing: 0,
     availableDecisions: 0, fans: 0, gradedPlays: 0, legalPlays: 0, observedPickups: 0,
+    confirmedConsecutive: 0, reviewedDetectorMisreads: (replay.contextRecovery ?? [])
+      .filter(entry => entry.confirmedDetectorMisread).length,
     sourceCuts: data.sources.filter(source => source.discontinuity).length };
   for (const reading of raw) {
     if (reading?.handRegions?.length) counts.coverFrames++;
@@ -188,7 +211,10 @@ function report(number) {
       add("no-pickup", roll, roll.end - 1);
     }
     if (next?.start < roll.end) add("overlapping-rolls", next);
-    if (repeatedPlayer(roll, next, data.sources)) add("repeated-player", next);
+    if (repeatedPlayer(roll, next, data.sources)) {
+      if (confirmedTransitions.has(transitionKey(roll, next))) counts.confirmedConsecutive++;
+      else add("repeated-player", next);
+    }
     for (let f = roll.start; f < roll.end; f++) {
       const detected = raw[f]?.dice?.filter(die => die.value && die.locationScore >= .25) ?? [];
       counts.rollFrames++;
@@ -218,7 +244,8 @@ function report(number) {
   const report = { game: number, fps: data.fps, counts, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
-    reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls), modelSpots: modelSpots.filter(spot => spot.game === number) };
+    reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
+    diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number) };
   fs.writeFileSync(path.join(reportDir, prefix + ".json"), JSON.stringify(report) + "\n");
   console.log(prefix, counts, Object.fromEntries(Object.keys(issueNames).map(kind =>
     [kind, issues.filter(issue => issue.kind === kind).length])));

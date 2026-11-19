@@ -157,3 +157,34 @@ reports. All four correspond to three reviewed Black rolls in Game 4.
 The observation model requires agreement from both dice. The published
 timeline uses the reviewed throws, pickups and rules checks to verify
 those corrections.
+
+## Second turn-order review
+
+The next pass reviewed all 16 remaining turn-order flags. It recovered
+11 visible throws across Games 1, 3, 4, and 5 and merged duplicate
+detections. At 6:37 in Game 1, two clear checker positions establish
+Black’s 6–5 despite a detector read of four. Game 4’s Black 3–2 stays on the table from 18:06 through
+21:29. The review compared the board before the throw with the board
+after pickup. It kept Black’s final 13/11 11/8 and removed the earlier
+0.015 checker EV loss charged for an intermediate arrangement. A brief
+Black roll at 13:01 is now shown before White’s throw. Source footage
+also confirms that White physically throws twice in succession around
+16:35. The Reports tab records this separately. One turn-order flag at
+16:28 remains open.
+
+Game 5’s opening consists of individual tosses. White wins the decisive
+6–5 and plays 24/13, leaving six checkers on point 13. At 5:01, moving two
+checkers from 13 to 1 and hitting Black establishes double six. Entering
+from the bar to 20 and moving 6/2 establishes 5–4 at 7:51. Later, 14/9
+and 6/5 establish 5–1 at 11:12. The original vision reads alone did not
+support those results. Each manually checked board links to its camera
+clip and frame in the pipeline notes. A roll stays incomplete when the
+visible faces and legal outcomes cannot identify both dice.
+
+A second face model used 608 nearby frames from 83 labeled dice tracks. It matched 20/31 held-out tracks, compared with 16/31
+for the original classifier. On five separately reviewed game rolls,
+pooling nearby frames improved the original model from 6/10 to 8/10
+correct faces. The candidate matched 5/10 there. The replay retains the
+original face classifier and uses the source-reviewed board evidence to
+resolve those game states. The sampled checks give evidence about these
+specific frames and turns.

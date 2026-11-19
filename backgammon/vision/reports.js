@@ -21,7 +21,7 @@ function renderReport(report, seek) {
     ["Rolls with both faces", `${counts.completeRolls} / ${counts.rolls}`],
     ["Unknown dice faces", number.format(counts.missingFaces)],
     ["Graded plays legal for roll", `${counts.legalPlays} / ${counts.gradedPlays}`],
-    ["Confirmed prior misreads", number.format(report.confirmedPriorMisreads)],
+    ["Confirmed dice misreads", number.format(report.confirmedPriorMisreads + (counts.reviewedDetectorMisreads ?? 0))],
   ];
   for (const [label, value] of metrics) {
     const stat = element("div");
@@ -33,7 +33,7 @@ function renderReport(report, seek) {
     const previous = report.reference;
     const repeated = issues.filter(issue => issue.kind === "repeated-player").length;
     fragment.append(element("p",
-      `Since the earlier replay · Complete rolls ${previous.completeRolls} → ${counts.completeRolls} · Unknown faces ${previous.missingFaces} → ${counts.missingFaces} · Same-player flags ${previous.repeatedPlayers} → ${repeated}`,
+      `Since the earlier replay · Complete rolls ${previous.completeRolls} → ${counts.completeRolls} · Unknown faces ${previous.missingFaces} → ${counts.missingFaces} · Unresolved turn-order flags ${previous.repeatedPlayers} → ${repeated}`,
       "muted small vision-report-comparison"));
   }
 
@@ -56,8 +56,9 @@ function renderReport(report, seek) {
     row.append(element("dt", label), bar);
     chart.append(row);
   }
+  const conflictLabel = counts.diceConflictFrames === 1 ? "frame" : "frames";
   coverage.append(chart, element("p",
-    `Dice coverage uses ${number.format(counts.rollFrames)} frames during reconstructed rolls. Checker coverage uses all ${number.format(counts.frames)} frames, including ${number.format(counts.boardReconciled)} recovered from tray and stack evidence. The detector’s pair disagreed with the replay in ${number.format(counts.diceConflictFrames)} frames.`,
+    `Dice coverage uses ${number.format(counts.rollFrames)} frames during reconstructed rolls. Checker coverage uses all ${number.format(counts.frames)} frames, including ${number.format(counts.boardReconciled)} recovered from tray and stack evidence. The detector’s pair disagreed with the replay in ${number.format(counts.diceConflictFrames)} ${conflictLabel}.`,
     "muted small"));
   fragment.append(coverage);
 
@@ -96,6 +97,18 @@ function renderReport(report, seek) {
       section.append(element("p",
         `Die body color matched ${candidateCorrect}/${heldOut} held-out crops. The brightness heuristic matched ${baselineCorrect}/${heldOut}. Both dice supported the same color in ${corroboratedPairs}/${pairs} tracked pairs.${agreement}`,
         "muted small"));
+    }
+    if (report.diceTracks) {
+      const { trainingTracks, trainingFrames, summary, reviewedFaces } = report.diceTracks;
+      section.append(element("p",
+        `A second run used ${trainingFrames} frames from ${trainingTracks} labeled dice tracks. The fine-tuned reader matched ${summary.test.candidateTrack}/${summary.test.tracks} held-out tracks. The current reader matched ${summary.test.baselineTrack}. Across separately reviewed game rolls, pooling nearby frames improved the current reader from ${summary.spot.baselineFrame}/${summary.spot.tracks} to ${summary.spot.baselineTrack}/${summary.spot.tracks}. The fine-tuned reader matched ${summary.spot.candidateTrack}/${summary.spot.tracks} on those rolls.`,
+        "muted small"));
+      if (reviewedFaces.length) {
+        const misses = reviewedFaces.filter(face => face.baselineTrack !== face.expected).length;
+        section.append(element("p",
+          `This game contributed ${reviewedFaces.length} faces to the separately reviewed rolls. The current reader still misread ${misses} after pooling frames.`,
+          "muted small"));
+      }
     }
     for (const spot of report.modelSpots ?? []) {
       const row = element("div", null, "vision-report-spot");
@@ -138,6 +151,12 @@ function renderReport(report, seek) {
   flagged.append(element("h3", "Timing and state checks"), element("p",
     `${counts.observedPickups} pickups have evidence. ${counts.availableDecisions} rolls have checker analysis. ${counts.fans} short fans were confirmed by footage review. Source cuts with a recorded gap ${counts.sourceCuts}. Flags identify footage for review. A raw disagreement can come from occlusion or a false detection.`,
     "muted small"));
+  if (counts.reviewedDetectorMisreads) {
+    flagged.append(element("p", `${counts.reviewedDetectorMisreads} additional detector misreads were confirmed by comparing the legal move with the visible checkers before and after the roll.`, "muted small"));
+  }
+  if (counts.confirmedConsecutive) {
+    flagged.append(element("p", "The footage confirms successive throws from the same player. See the timestamped review above.", "muted small"));
+  }
   if (issues.length) {
     const picker = element("label", "Filter checks ", "vision-report-filter");
     const filter = element("select");

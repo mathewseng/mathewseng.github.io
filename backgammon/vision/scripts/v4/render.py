@@ -77,8 +77,8 @@ def equity_panel(equities, basis, loss, closed):
     context = "Scored decisions only" if closed else basis
     write(draw, BW - 28, 26, context, META, MUTED, anchor="ra")
     losses = [(755, "Checker EVL"), (899, "Cube EVL")]
-    cols = losses if closed else [(196, "Equity"), (276, "Win"), (360, "Single"), (456, "Gammon"),
-                                  (583, "Backgammon"), *losses]
+    cols = losses if closed else [(187, "Equity"), (288, "Win"), (390, "Single"), (492, "Gammon"),
+                                  (617, "Backgammon"), *losses]
     for column, label in cols:
         write(draw, column, 84, label, META, MUTED, True, "ra")
     draw.line((28, 115, BW - 28, 115), fill=LINE)

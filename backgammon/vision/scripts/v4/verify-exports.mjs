@@ -135,6 +135,10 @@ for (const number of [1, 2, 3, 4, 5]) {
       assert.equal(verdict(184.36, 'dark', [4, 3]).pickup, Math.round(239.96 * 25));
       assert(verdict(437.56, 'white', [null, null]).fan);
       assert(verdict(488.84, 'dark', [2, 1]).fan);
+      if (replay.contextRecovery.some(entry => entry.confirmedDetectorMisread)) {
+        const confirmed = verdict(397.16, 'dark', [6, 5]);
+        assert.equal(data.decisions[confirmed.decision].played.notation, '6/1 9/3');
+      }
     }
     if (number === 3) {
       assert.equal(verdict(941.12, 'dark', [4, 3]).end, Math.round(954.12 * 25));
@@ -144,7 +148,17 @@ for (const number of [1, 2, 3, 4, 5]) {
     if (number === 4) {
       verdict(531.76, 'dark', [6, 1]);
       verdict(1061.32, 'dark', [6, 2]);
-      verdict(1162.8, 'dark', [3, 2]);
+      const continuous = replay.contextRecovery.find(entry => entry.kind === 'confirmed-consecutive');
+      if (continuous) {
+        const roll = verdict(1086.48, 'dark', [3, 2]);
+        assert.equal(roll.pickup, Math.round(1289.96 * 25));
+        assert.equal(data.decisions[roll.decision].played.notation, '13/11 11/8');
+        assert.equal(data.decisions[roll.decision].evLoss, 0);
+        for (const other of [1162.8, 1212.56, 1227.88, 1284.24]) {
+          assert(!data.rolls.some(roll => roll.start === Math.round(other * 25)));
+        }
+        assert.equal(continuous.frame, Math.round(995.36 * 25));
+      } else verdict(1162.8, 'dark', [3, 2]);
       const fans = [verdict(823.32, 'dark', [6, 2]), verdict(895.16, 'dark', [6, 2])];
       assert(fans.every(roll => roll.fan && JSON.stringify(roll.before) === JSON.stringify(roll.after)));
     }
@@ -158,6 +172,18 @@ for (const number of [1, 2, 3, 4, 5]) {
       assert.deepEqual(entered.after.bar, [0, 0]);
       assert.equal(data.decisions[entered.decision].played.notation, 'bar/21 8/7');
       assert.equal(entered.resultFrame, 12826);
+    }
+    const opening = data.rolls.find(roll => roll.start === 488 && roll.evidence === 'reviewed-roll-and-legal-result');
+    if (opening) {
+      assert.deepEqual(opening.dice, [6, 5]);
+      assert.equal(opening.before.points[12], 5);
+      assert.equal(opening.after.points[12], 6);
+      assert.equal(history.items[0].initial.phase, 'opening');
+      for (const [start, dice] of [[301.56, [6, 6]], [471.12, [5, 4]], [672.88, [5, 1]]]) {
+        const roll = data.rolls.find(roll => roll.start === Math.round(start * 25));
+        assert.deepEqual(roll.dice, dice);
+        assert(data.decisions[roll.decision].played, 'Recovered play must have a graded legal result');
+      }
     }
     const pass = history.replay.timeline.find(entry => entry.frame === data.ending.frame && entry.kind === 'cube');
     assert.equal(pass.note, 'Pass inferred from pack-up');

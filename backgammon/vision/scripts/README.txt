@@ -187,3 +187,15 @@ Calibrate die color and review turn order
   camera-confirmed cases in reviewed-turn-order.json. A previously scored
   move can survive a joined episode. A newly observed move is graded only
   if repeated source boards and legal play support the result.
+
+  To continue from the scored v14 release, pass reviewed-turn-order-followup.json
+  as the second argument to reconcile-reviewed-turns.mjs. Reviewed checker
+  boards bind to an exact source clip and frame and must close the inventory.
+  A joined roll can retain a score when those boards match the scored play.
+
+    python3 calibration/train_face_tracks.py
+
+  This second dice benchmark samples nearby, unoccluded frames of the same
+  stationary die. It compares an individual baseline reading, pooled baseline,
+  and pooled fine-tuned reader, with held-out clips and reviewed game rolls.
+  Track training and results are kept alongside the other calibration artifacts.

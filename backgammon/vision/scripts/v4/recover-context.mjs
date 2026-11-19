@@ -3,11 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
 import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
+import { trackCheckerCounts } from './checker-counts.mjs';
 import { observedBoard } from './bearoff-board.mjs';
 import { applyAccounting, writeReplay } from './accounting.mjs';
 import { rollCubePositions, scoreRollCubes } from './cube-rolls.mjs';
 
-const { applyStep, boardKey, legalPaths, legalTurns, notation } = await import(solverUrl('backgammon/core/rules.mjs'));
+const { boardKey, legalTurns, notation } = await import(solverUrl('backgammon/core/rules.mjs'));
 const { toXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 const read = (dir, file) => JSON.parse(fs.readFileSync(path.join(dir, file)));
 const rawDir = path.join(artifactDir, 'v2');
@@ -81,45 +82,6 @@ function legalDecision(before, player, dice, after) {
   return { input, actions, played: after ? actions.find(action => action.key === keyOf(after)) : null };
 }
 
-function trackCheckerCounts(rows, boards, roll, input, id) {
-  const start = boardKey(input);
-  const stages = new Map();
-  const makeStage = (state, level) => {
-    const key = boardKey(state);
-    if (!stages.has(key)) stages.set(key, { points: state.points, level });
-  };
-  for (const { steps } of legalPaths(input)) {
-    let state = input;
-    for (const [index, step] of steps.entries()) {
-      state = applyStep(state, step, input.turn);
-      makeStage(state, index + 1);
-    }
-  }
-  let current = null, candidate = null, count = 0;
-  const observations = [];
-  for (let frame = roll.start; frame < roll.end; frame++) {
-    const key = keyOf(boards[frame]);
-    const stage = stages.get(key);
-    if (key && key !== start && stage && (!current || stage.level > current.level)) {
-      if (candidate?.key !== key || frame - candidate.last > 4) {
-        candidate = { key, first: frame, last: frame };
-        count = 1;
-      } else {
-        candidate.last = frame;
-        if (++count >= 7) {
-          current = stage;
-          observations.push({ first: candidate.first, points: stage.points });
-        }
-      }
-    }
-  }
-  let tracked = null, index = 0;
-  for (let frame = roll.start; frame < roll.end; frame++) {
-    if (observations[index]?.first === frame) tracked = observations[index++].points;
-    const row = rows[frame];
-    if (tracked && row.turn === id && row.phase === 'move') row.displayPoints = tracked;
-  }
-}
 
 function normalizeRolls(game, raw, boundaries) {
   const merged = [];
