@@ -96,6 +96,29 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.equal(history.items[0].status, 'game-complete');
     assert.equal(history.replay.timeline.filter(entry => entry.kind === 'gap').length, 0);
   }
+  const reviewedEpisodes = replay.contextRecovery?.some(entry => entry.kind.startsWith('reviewed-'));
+  if (reviewedEpisodes && number === 3) {
+    const continuous = data.rolls.find(roll => roll.start === 16888);
+    assert.deepEqual(continuous.dice, [1, 1]);
+    assert.equal(continuous.end, 17258);
+    assert(!data.rolls.some(roll => roll.start === 17001));
+    const bearoff = data.rolls.find(roll => roll.start <= 27100 && roll.end > 27100);
+    assert.deepEqual(bearoff.dice, [4, 3]);
+    assert.deepEqual(bearoff.before.borneOff, [2, 0]);
+    assert(bearoff.decision && data.decisions[bearoff.decision].moves.length > 0);
+    const white = data.rolls.find(roll => roll.start <= 31300 && roll.end > 31300);
+    assert.equal(white.before.points[6], -1);
+    assert.deepEqual(white.after.borneOff, [5, 0]);
+  }
+  if (reviewedEpisodes && number === 4) {
+    const corrected = data.rolls.find(roll => roll.start <= 2450 && roll.end > 2450);
+    assert.deepEqual(corrected.dice, [6, 4]);
+    assert.equal(data.decisions[corrected.decision].evLoss, null);
+    const fans = data.rolls.filter(roll => roll.fan);
+    assert.deepEqual(fans.map(roll => [roll.player, roll.dice]), [['dark', [4, 1]], ['dark', [2, null]]]);
+    assert(fans.every(roll => roll.before.bar[1] === 2 && roll.decision === null));
+    assert.deepEqual(fans[0].before, fans[0].after);
+  }
   if (number === 5) {
     assert.equal(data.cubeOffer.replyInferred, true);
     const pass = history.replay.timeline.find(entry => entry.frame === data.ending.frame && entry.kind === 'cube');

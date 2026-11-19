@@ -48,7 +48,7 @@ function frameData(game, rows, recording) {
       return [id, {
         points: position.points.map(([white, dark]) => white - dark),
         bar: position.bar, borneOff: position.borneOff,
-        onRoll: position.onRoll, equities: position.equities,
+        onRoll: position.onRoll, source: position.source, equities: position.equities,
       }];
     }));
   const decisions = Object.fromEntries(Object.entries(game.decisions).filter(([id]) => id !== 'cube')

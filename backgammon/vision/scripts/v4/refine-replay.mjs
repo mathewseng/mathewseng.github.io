@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
+import { observedBoard } from './bearoff-board.mjs';
 import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
 import { exclusive, loadEvaluator, matchingTurns, rowsFrom, stateFor } from '../v2/solve_games.mjs';
 
@@ -76,7 +77,7 @@ function stableResults(raw, start, stop) {
   const candidates = [];
   let last = null;
   for (let f = start; f < stop; f++) {
-    const position = raw[f]?.position;
+    const position = observedBoard(raw[f]);
     if (!position) continue;
     const key = keyFor(position);
     if (last?.key === key && f - last.last <= 3) {

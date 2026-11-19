@@ -30,6 +30,7 @@ Rebuild or inspect the current replay from this directory.
     bun v4/export-history.mjs ../history
     bun v4/export-frame-data.mjs ../state
     bun v4/verify-exports.mjs ..
+    bun v4/export-reports.mjs ..
     python3 v4/query.py 1 --frame 25
     python3 v4/query.py 5 --seconds 748.88
 
@@ -100,6 +101,7 @@ Refresh an existing reconstructed replay
     bun v4/export-history.mjs ../history
     bun v4/export-frame-data.mjs ../state
     bun v4/verify-exports.mjs ..
+    bun v4/export-reports.mjs ..
     python3 v4/render.py --jobs 3
     python3 v4/verify_media.py
 
@@ -118,3 +120,33 @@ Refresh an existing reconstructed replay
   Apply the reviewed endings to an existing replay with
   OFFICE3_REPLAY_DIR="$output" bun v4/accounting.mjs "$previous".
   Render that output with --software for the compact H.264 export.
+
+
+Refresh the context and reviewed episodes
+
+  A stable checker inventory uses tray evidence, the last settled board, and
+  physically adjacent tall-stack detections. Repeated, co-visible dice faces
+  can replace a roll previously derived from checker movement. Verified
+  short fans may have an unresolved face and cannot incur checker EV loss.
+
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/recover-context.mjs "$previous"
+    OFFICE3_REPLAY_DIR="$scored" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs
+    OFFICE3_REPLAY_DIR="$output" bun v4/review-episodes.mjs "$scored"
+
+  The source-frame review notes for a continuous roll and short fans live in
+  v4/reviewed_episodes.json. Apply them only to the corresponding Office-3
+  session. Export state, history and reports from the same output directory.
+
+Manual reader calibration
+
+    python3 calibration/sample.py
+    python3 calibration/train.py
+
+  The sampler writes board-only contact sheets, crops and provenance to
+  calibration/ in the artifact folder. labels.json records the reviewed die
+  face or signed checker count for each local sample and leaves unreadable
+  targets as ?. The test clips are held out of fine-tuning. The two candidate
+  weight files and a per-sample validation JSON are saved alongside the crops.
+  The released replay continues to use the existing readers. The small
+  benchmark is biased toward difficult detections and includes nearby frames
+  from the same physical episode, so its counts describe reviewed patches.

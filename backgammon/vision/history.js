@@ -31,39 +31,24 @@ export function createHistory(seek, player) {
   const heading = document.querySelector("#history-heading");
   const frameDownload = document.querySelector("#download-frame-data");
   const navigation = document.querySelector("#decision-navigation");
-  const previous = navigation.querySelector("[data-decision-jump='previous']");
   const current = navigation.querySelector("[data-decision-jump='current']");
-  const next = navigation.querySelector("[data-decision-jump='next']");
   const cache = new Map();
   let selected, request;
-  let chapters = [], targets = {};
+  let chapters = [], active;
 
   function synchronize() {
     const frame = Math.round(player.currentTime * fps);
-    const active = chapters.findLast(chapter => chapter.start <= frame && frame < chapter.end);
-    targets = {
-      previous: chapters.findLast(chapter => chapter.start < (active?.start ?? frame)),
-      current: active,
-      next: chapters.find(chapter => chapter.start > frame),
-    };
-    previous.disabled = !targets.previous;
-    current.disabled = !targets.current;
-    next.disabled = !targets.next;
-    const text = targets.current ? `Review ${targets.current.label}` : "Review current decision";
+    active = chapters.findLast(chapter => chapter.start <= frame && frame < chapter.end);
+    current.disabled = !active;
+    const text = active ? `Review ${active.label}` : "Review current decision";
     if (current.textContent !== text) current.textContent = text;
   }
 
   for (const event of ["timeupdate", "seeking", "seeked"]) player.addEventListener(event, synchronize);
-  for (const button of [previous, next]) {
-    button.addEventListener("click", () => {
-      const chapter = targets[button.dataset.decisionJump];
-      if (chapter) seek(chapter.start / fps, false);
-    });
-  }
   current.addEventListener("click", () => {
-    if (!targets.current) return;
+    if (!active) return;
     player.pause();
-    targets.current.open();
+    active.open();
   });
 
   const review = (source, { result, action, label, title, player }) => {
@@ -84,7 +69,7 @@ export function createHistory(seek, player) {
     const totals = el("table", { class: "vision-history-totals" },
       el("caption", { class: "sr-only" }, "EV loss by decision type"),
       el("thead", {}, el("tr", {},
-        ...["Player", "Checker EV Loss", "Cube EV Loss"].map(label => el("th", { scope: "col" }, label)))),
+        ...["Player", "Checker EVL", "Cube EVL"].map(label => el("th", { scope: "col" }, label)))),
       el("tbody", {}, ...(data.replay.lossBreakdown ?? []).map(({ checkerLoss, cubeLoss }, player) => el("tr", {},
         el("th", { scope: "row", "data-player": player }, names[player]), score(checkerLoss), score(cubeLoss)))));
     const list = el("ol", { class: "vision-history-list" });

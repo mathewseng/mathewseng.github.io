@@ -58,7 +58,7 @@ the Library analysis totals against the scored replay.
   detector update is part of that same turn.
 - Game 2’s final cube decision marks Pass as played and Take as best.
   Every scored cube opportunity shows both actions and their EV loss.
-- The video and review show separate Checker EV Loss and Cube EV Loss
+- The video and review show separate Checker EVL and Cube EVL
   columns and share a green-to-red scale. The review uses the table’s
   cream, slate blue, ivory and charcoal palette with contrasting blue dice.
 
@@ -82,3 +82,30 @@ the actual move and its resulting probabilities.
 Game 5 still has an unscored stretch from about 2:09 to 5:30. The recorded
 board changes across that interval, but the footage and detector records did
 not establish consecutive rolls and complete legal turns there.
+
+
+## Reports and model review
+
+| Where | Reviewed evidence | Replay change |
+| --- | --- | --- |
+| Game 3, 11:15–11:30 | Black's 1–1 stayed on the board. One die shifted while Black handled checkers. | Join the split into one roll and keep the original options visible. |
+| Game 3, 18:04 | A sixth checker was counted on White's first point and also detected in the middle of the board. The tray corroborates two White checkers off. | Recover the checker inventory and show Black's 4–3 options from the fixed board. |
+| Game 3, 20:52 | Black's checker on point 7 is supported before the occlusion. The next board confirms two White bear-offs. | Keep the checker count, show reconstructed markers in Vision, and preserve the legal 6–1 result. |
+| Game 4, 1:38 | Black's settled dice show 6–4. The old 3–1 grade was tied to a different move. | Show 6–4 and remove the unsupported checker loss. |
+| Game 4, 16:39 and 16:47 | Black rolled twice from the bar between distinct White rolls. Neither Black roll changed the board. | Show both fans. The second die of the later roll is unreadable. |
+
+316 distinct source frames were inspected. The 175 dice crops produced 90
+training labels and 31 held-out labels. The 141 checker crops produced 104
+training labels and 36 held-out labels. There were 55 ambiguous samples.
+
+| Reviewed target | Existing reader | Fine-tuned reader |
+| --- | ---: | ---: |
+| Dice face | 16/31 | 19/31 |
+| Checker color and point count | 35/36 | 35/36 |
+
+These are patch-level results on a hard-case sample. Multiple frames can show
+the same physical dice or stacked checkers, and the old model's original
+training split differed. The fine-tuned dice reader improved this test overall
+and regressed on some clips, so the published state uses the calibrated
+baseline with revised temporal inference. Game reports list remaining pickup
+and turn-order flags with links to seek the footage.

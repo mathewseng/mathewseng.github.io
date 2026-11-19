@@ -1,0 +1,196 @@
+const number = new Intl.NumberFormat();
+const percent = new Intl.NumberFormat(undefined, { style: "percent", maximumFractionDigits: 1 });
+
+function element(tag, text, className) {
+  const node = document.createElement(tag);
+  if (text) node.textContent = text;
+  if (className) node.className = className;
+  return node;
+}
+
+function timecode(frame, fps) {
+  const seconds = Math.floor(frame / fps);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function renderReport(report, seek) {
+  const { counts, issues, reviewed, issueNames } = report;
+  const fragment = document.createDocumentFragment();
+  const summary = element("dl", null, "vision-report-score");
+  const metrics = [
+    ["Rolls with both faces", `${counts.completeRolls} / ${counts.rolls}`],
+    ["Unknown dice faces", number.format(counts.missingFaces)],
+    ["Graded plays legal for roll", `${counts.legalPlays} / ${counts.gradedPlays}`],
+    ["Confirmed prior misreads", number.format(report.confirmedPriorMisreads)],
+  ];
+  for (const [label, value] of metrics) {
+    const stat = element("div");
+    stat.append(element("dt", label), element("dd", value));
+    summary.append(stat);
+  }
+  fragment.append(summary);
+
+  const coverage = element("section", null, "vision-report-coverage");
+  coverage.append(element("h3", "Detector coverage"));
+  const chart = element("dl", null, "vision-report-bars");
+  for (const [label, value, total] of [
+    ["Both dice read", counts.diceRead[2], counts.rollFrames],
+    ["One die read", counts.diceRead[1], counts.rollFrames],
+    ["Neither die read", counts.diceRead[0], counts.rollFrames],
+    ["Complete checker inventory", counts.boardObserved + counts.boardReconciled, counts.frames],
+  ]) {
+    const row = element("div");
+    const meter = element("meter");
+    meter.max = total || 1;
+    meter.value = value;
+    meter.setAttribute("aria-label", label);
+    const bar = element("dd");
+    bar.append(meter, element("span", total ? percent.format(value / total) : "—"));
+    row.append(element("dt", label), bar);
+    chart.append(row);
+  }
+  coverage.append(chart, element("p",
+    `Dice coverage uses ${number.format(counts.rollFrames)} frames during reconstructed rolls. Checker coverage uses all ${number.format(counts.frames)} frames, including ${number.format(counts.boardReconciled)} recovered from tray and stack evidence. The detector’s pair disagreed with the replay in ${number.format(counts.diceConflictFrames)} frames.`,
+    "muted small"));
+  fragment.append(coverage);
+
+  if (report.modelChecks) {
+    const section = element("section", null, "vision-report-model");
+    section.append(element("h3", "Manual model benchmark"), element("p",
+      "Each sample is one visible die face or checker point. Test clips were held out of fine-tuning. The replay uses the existing readers with temporal reconstruction.",
+      "muted small"));
+    const table = element("table", null, "vision-history-totals");
+    const head = table.createTHead().insertRow();
+    for (const label of ["Reader", "Current", "Fine-tuned", "Game test errors"]) {
+      const cell = element("th", label);
+      cell.scope = "col";
+      head.append(cell);
+    }
+    const body = table.createTBody();
+    for (const [kind, check] of Object.entries(report.modelChecks)) {
+      const row = body.insertRow();
+      const label = element("th", kind === "dice" ? "Dice faces" : "Checker points");
+      label.scope = "row";
+      row.append(label, element("td", `${check.baselineCorrect}/${check.heldOut}`),
+        element("td", `${check.candidateCorrect}/${check.heldOut}`),
+        element("td", check.gameHeldOut ? `${check.gameBaselineErrors} → ${check.gameCandidateErrors} / ${check.gameHeldOut}` : "No test samples"));
+    }
+    section.append(table);
+    const checks = Object.values(report.modelChecks);
+    const reviewed = checks.reduce((sum, check) => sum + check.reviewed, 0);
+    const unreadable = checks.reduce((sum, check) => sum + check.unreadable, 0);
+    section.append(element("p", `${reviewed} frames reviewed across the session. ${unreadable} ambiguous samples were excluded from training and scoring.`, "muted small"));
+    fragment.append(section);
+  }
+
+  function timestamp(frame) {
+    const button = element("button", timecode(frame, report.fps), "vision-download vision-report-time");
+    button.type = "button";
+    button.setAttribute("aria-label", `Seek to ${button.textContent}`);
+    button.addEventListener("click", () => seek(frame / report.fps));
+    return button;
+  }
+
+  function reviewList(items, describe) {
+    const list = element("ol", null, "vision-report-list");
+    for (const entry of items) {
+      const row = element("li");
+      const detail = element("div");
+      detail.append(element("strong", describe(entry)));
+      if (entry.detail) detail.append(element("p", entry.detail, "muted small"));
+      row.append(timestamp(entry.frame), detail);
+      list.append(row);
+    }
+    return list;
+  }
+
+  if (reviewed.length) {
+    const notes = element("section");
+    notes.append(element("h3", "Reviewed footage"), reviewList(reviewed, entry => entry.text));
+    fragment.append(notes);
+  }
+
+  const flagged = element("section", null, "vision-report-flags");
+  flagged.append(element("h3", "Timing and state checks"), element("p",
+    `${counts.observedPickups} pickups have evidence. ${counts.availableDecisions} rolls have checker analysis. ${counts.fans} short fans were confirmed by footage review. Source cuts with a recorded gap ${counts.sourceCuts}. Flags identify footage for review. A raw disagreement can come from occlusion or a false detection.`,
+    "muted small"));
+  if (issues.length) {
+    const picker = element("label", "Filter checks ", "vision-report-filter");
+    const filter = element("select");
+    filter.append(new Option(`All checks (${issues.length})`, ""));
+    for (const [kind, label] of Object.entries(issueNames)) {
+      const count = issues.filter(issue => issue.kind === kind).length;
+      if (count) filter.append(new Option(`${label} (${count})`, kind));
+    }
+    const results = element("div");
+    function update() {
+      results.replaceChildren(reviewList(issues.filter(issue => !filter.value || issue.kind === filter.value),
+        issue => issueNames[issue.kind] + (issue.player ? ` · ${issue.player === "white" ? "White" : "Black"}` : "")));
+    }
+    filter.addEventListener("change", update);
+    picker.append(filter);
+    flagged.append(picker, results);
+    update();
+  } else flagged.append(element("p", "No issues were flagged by these checks."));
+  fragment.append(flagged);
+  return fragment;
+}
+
+export function createReports(seek) {
+  const tabList = document.querySelector(".vision-detail-tabs");
+  const tabs = [...tabList.querySelectorAll("[role=tab]")];
+  const content = document.querySelector("#report-content");
+  const title = document.querySelector("#report-heading");
+  const download = document.querySelector("#download-report");
+  let game = "1";
+  let controller;
+
+  function load() {
+    controller?.abort();
+    controller = new AbortController();
+    const signal = controller.signal;
+    const url = `reports/game-${game.padStart(2, "0")}.json`;
+    title.textContent = `Game ${game} vision report`;
+    download.href = url;
+    content.setAttribute("aria-busy", "true");
+    content.replaceChildren(element("p", "Loading report…", "muted small"));
+    fetch(url, { signal }).then(response => {
+      if (!response.ok) throw new Error(response.status);
+      return response.json();
+    }).then(report => {
+      if (signal.aborted) return;
+      content.replaceChildren(renderReport(report, seek));
+      content.setAttribute("aria-busy", "false");
+    }).catch(() => {
+      if (signal.aborted) return;
+      content.replaceChildren(element("p", "The report could not be loaded.", "vision-error"));
+      content.setAttribute("aria-busy", "false");
+    });
+  }
+
+  function activate(selected) {
+    for (const tab of tabs) {
+      const active = tab === selected;
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      document.getElementById(tab.getAttribute("aria-controls")).hidden = !active;
+    }
+    if (selected.id === "reports-tab") load();
+  }
+
+  tabList.hidden = false;
+  for (const [index, tab] of tabs.entries()) {
+    tab.addEventListener("click", () => activate(tab));
+    tab.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const target = tabs[event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : 1 - index];
+      activate(target);
+      target.focus();
+    });
+  }
+  return { select(number) {
+    game = number;
+    if (tabs[1].getAttribute("aria-selected") === "true") load();
+  } };
+}

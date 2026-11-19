@@ -1,9 +1,10 @@
 import { createAudit } from "./audit.js";
 import { createHistory } from "./history.js";
+import { createReports } from "./reports.js";
+import { createTransport } from "./transport.js";
 
 const player = document.querySelector("#replay");
 const play = document.querySelector("#play-replay");
-const controlToggle = document.querySelector("#toggle-replay-controls");
 const title = document.querySelector("#selected-game");
 const download = document.querySelector("#download-replay");
 const note = document.querySelector("#game-note");
@@ -13,30 +14,19 @@ const games = new Map(
 );
 const release = new URL("./", download.href);
 let currentGame = "1";
-let controlsVisible = true;
-
-function setPlaybackControls() {
-  player.controls = controlsVisible;
-  controlToggle.hidden = false;
-  controlToggle.textContent = controlsVisible ? "Hide controls" : "Show controls";
-}
-
-controlToggle.addEventListener("click", () => {
-  controlsVisible = !controlsVisible;
-  setPlaybackControls();
-});
 const audit = createAudit(player);
-const gameHistory = createHistory((time, focusVideo = true) => {
+const transport = createTransport(player, data => audit.setFrameData(data));
+function seekDecision(time, focusVideo = true) {
   player.pause();
-  player.preload = "metadata";
-  player.currentTime = time;
-  setPlaybackControls();
+  transport.seek(time);
   play.hidden = true;
   if (focusVideo) {
     player.focus({ preventScroll: true });
     player.scrollIntoView({ block: "center" });
   }
-}, player);
+}
+const gameHistory = createHistory(seekDecision, player);
+const gameReports = createReports(seekDecision);
 
 function selectGame(number) {
   if (!games.has(number)) number = "1";
@@ -55,15 +45,14 @@ function selectGame(number) {
   note.hidden = !note.textContent;
   download.href = asset;
   error.hidden = true;
-  controlsVisible = true;
-  controlToggle.hidden = true;
-  player.controls = false;
   player.poster = `posters/game-${id}.jpg`;
   player.src = asset;
   player.preload = "none";
   player.load();
   audit.select(number);
+  transport.select(number);
   gameHistory.select(number);
+  gameReports.select(number);
   play.hidden = false;
 }
 
@@ -84,7 +73,6 @@ for (const [number, link] of games) {
 }
 
 play.addEventListener("click", () => {
-  setPlaybackControls();
   player.play().catch(() => {
     if (player.error) error.hidden = false;
   });
@@ -96,12 +84,17 @@ player.addEventListener("play", () => {
 player.addEventListener("ended", () => { play.hidden = false; });
 player.addEventListener("error", () => {
   error.hidden = false;
-  controlToggle.hidden = true;
-  player.controls = false;
   play.hidden = true;
 });
+player.addEventListener("loadeddata", () => {
+  if (player.currentTime > 0) play.hidden = true;
+});
 window.addEventListener("popstate", restoreSelection);
-player.controls = false;
 play.hidden = false;
-restoreSelection();
-gameHistory.select(currentGame);
+const initial = new URLSearchParams(location.search).get("game");
+if (games.has(initial) && initial !== currentGame) selectGame(initial);
+else {
+  transport.select(currentGame);
+  gameHistory.select(currentGame);
+  gameReports.select(currentGame);
+}

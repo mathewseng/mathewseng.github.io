@@ -1,0 +1,30 @@
+{
+  "3": [
+    {
+      "kind": "join",
+      "start": 16888,
+      "continuation": 17001,
+      "text": "Black rolls 1–1. One die shifts while Black handles the checkers, but the other remains in place. There is no second roll before White picks up and rolls."
+    }
+  ],
+  "4": [
+    {
+      "kind": "fan",
+      "start": 24995,
+      "end": 25020,
+      "next": 25032,
+      "player": "dark",
+      "dice": [4, 1],
+      "text": "Black rolls 4–1 with two checkers on the bar. Both entry points are closed, and the board is unchanged when White rolls."
+    },
+    {
+      "kind": "fan",
+      "start": 25192,
+      "end": 25212,
+      "next": 25243,
+      "player": "dark",
+      "dice": [2, null],
+      "text": "Black rolls and picks up without entering a checker. One face is 2. The other face is blurred, and no checker move establishes its value."
+    }
+  ]
+}

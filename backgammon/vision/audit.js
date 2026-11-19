@@ -3,6 +3,7 @@ const CHECKER = ["#74f4ff", "#ffba72"];
 const DIE = "#87ecac";
 const CUBE = "#fff08c";
 const HAND = "#ef8ccc";
+const COLUMNS = [81, 115, 152, 187, 222, 256, 316, 350, 386, 421, 456, 491];
 
 async function loadFrames(number) {
   const id = number.padStart(2, "0");
@@ -20,20 +21,16 @@ export function createAudit(player) {
   const canvas = document.querySelector("#detection-overlay");
   const status = document.querySelector("#audit-status");
   const controls = [...document.querySelectorAll("[data-view]")];
-  const fullscreen = document.querySelector("#audit-fullscreen");
-  const stage = canvas.parentElement;
   const context = canvas.getContext("2d");
   const cache = new Map();
   const scale = BOARD.width / BOARD.sourceWidth;
-  let enabled = false, number = "1", source, callback, request = 0;
+  let enabled = false, number = "1", source, frameData, callback, request = 0;
 
   function draw(time = player.currentTime) {
     context.clearRect(0, 0, canvas.width, canvas.height);
     if (!enabled || !source || player.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
     const frame = Math.floor(time * source.fps + .001);
-    const reading = source.frames[frame];
-    if (!reading) return;
-    const [checkers, dice, cube, hands] = reading;
+    const [checkers, dice, cube, hands] = source.frames[frame] ?? [[], [], null, []];
     const x = (value) => BOARD.x + value * scale;
     const y = (value) => BOARD.y + value * BOARD.height / BOARD.sourceHeight;
     context.lineWidth = 2.6;
@@ -47,6 +44,7 @@ export function createAudit(player) {
       context.arc(x(cx), y(cy), 14 * scale, 0, 2 * Math.PI);
       context.stroke();
     }
+    drawContextCheckers(frame, checkers, x, y);
     for (const [cx, cy, value, candidate, score] of dice) {
       mark(x(cx), y(cy), DIE, value ? `${value} · ${score}%` : `${candidate}?`);
     }
@@ -54,6 +52,32 @@ export function createAudit(player) {
       const [cx, cy, face, score] = cube;
       mark(x(cx), y(cy), CUBE, `Cube ${face || "?"} · ${score}%`);
     }
+  }
+
+  function drawContextCheckers(frame, checkers, x, y) {
+    const state = frameData?.changes.findLast(row => row.frame <= frame);
+    const position = frameData?.positions[state?.position];
+    if (state?.phase !== "checker-turn" ||
+        !["stable-board-and-bear-off-inventory", "repeated-settled-dice-faces"].includes(position?.source)) return;
+    const counts = state.movingPoints ?? position.points;
+    context.save();
+    context.setLineDash([7, 5]);
+    for (const [index, count] of counts.entries()) {
+      if (!count) continue;
+      const top = index < 12;
+      const center = COLUMNS[top ? 11 - index : index - 12];
+      const side = Number(count < 0);
+      const seen = checkers.filter(([cx, cy, color]) =>
+        side === color && Math.abs(center - cx) <= 15 && (cy < 210) === top).length;
+      context.strokeStyle = CHECKER[side];
+      for (let missing = seen; missing < Math.abs(count); missing++) {
+        const slot = 32 + 26 * missing;
+        context.beginPath();
+        context.arc(x(center), y(top ? slot : BOARD.sourceHeight - slot), 14 * scale, 0, 2 * Math.PI);
+        context.stroke();
+      }
+    }
+    context.restore();
   }
 
   function mark(x, y, color, label) {
@@ -74,7 +98,7 @@ export function createAudit(player) {
     if (!source) return;
     status.textContent = player.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
       ? "Play to see detections."
-      : "White (cyan) · Black (amber) · Dice (green) · Cube (yellow) · Hands (pink)";
+      : "White (cyan) · Black (amber) · Dice (green) · Cube (yellow) · Hands (pink) · Reconstructed checker (dashed)";
   }
 
   function stopTick() {
@@ -101,7 +125,6 @@ export function createAudit(player) {
     const id = ++request;
     source = undefined;
     canvas.hidden = status.hidden = !enabled;
-    fullscreen.hidden = !enabled || !stage.requestFullscreen;
     draw();
     stopTick();
     if (!enabled) return;
@@ -135,7 +158,6 @@ export function createAudit(player) {
       void update();
     });
   }
-  fullscreen.addEventListener("click", () => { void stage.requestFullscreen(); });
   for (const event of ["seeked", "loadeddata", "pause"]) {
     player.addEventListener(event, () => {
       updateStatus();
@@ -143,6 +165,10 @@ export function createAudit(player) {
     });
   }
   return {
+    setFrameData(data) {
+      frameData = data;
+      draw();
+    },
     select(game) {
       number = game;
       void update();

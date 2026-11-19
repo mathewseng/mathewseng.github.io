@@ -42,6 +42,9 @@ COLUMNS = (81, 115, 152, 187, 222, 256, 316, 350, 386, 421, 456, 491)
 PLAYER_NAME = {"white": "White", "dark": "Black"}
 PLAYER_TONE = {"white": WHITE, "dark": BLACK}
 TOP_MOVES = 5
+# The rectified source is low-contrast. Grade only the camera rectangle, before
+# drawing the checker labels, and leave the game's graphics palette intact.
+CAMERA_TONE = np.clip((np.arange(256, dtype=np.float32) - 16) * (255 / 226), 0, 255).astype(np.uint8)
 
 
 def write(draw, x, y, text, size, fill=TEXT, bold=False, anchor=None):
@@ -73,7 +76,7 @@ def equity_panel(equities, basis, loss, closed):
     write(draw, 28, 20, "Final EV loss" if closed else "Game equity", SECTION, bold=True)
     context = "Scored decisions only" if closed else basis
     write(draw, BW - 28, 26, context, META, MUTED, anchor="ra")
-    losses = [(755, "Checker EV Loss"), (899, "Cube EV Loss")]
+    losses = [(755, "Checker EVL"), (899, "Cube EVL")]
     cols = losses if closed else [(196, "Equity"), (276, "Win"), (360, "Single"), (456, "Gammon"),
                                   (583, "Backgammon"), *losses]
     for column, label in cols:
@@ -239,6 +242,8 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
             selected = played if any(event.get("decision") == roll["decision"] for event in events) else None
             options = [(move["key"], notation(move["notation"]), move["equity4"]) for move in entry["actions"][:TOP_MOVES]]
             draw_table(draw, 182, "Top checker moves", options, selected, 58, numbers=True)
+        elif roll.get("fan"):
+            write(draw, x, 145, "Fanned · no checker entered", BODY, MUTED)
         else:
             write(draw, x, 145, "Checker analysis unavailable", BODY, MUTED)
         if cube_roll:
@@ -288,7 +293,7 @@ def viewer_frames(data, states):
     for item in data["presentation"]["rolls"]:
         if item["end"] - item["start"] < ACTION_HOLD:
             actions.append({"frame": item["start"], "kind": "roll", "player": item["player"], "roll": item,
-                            "label": f"rolled   {dice_label(item['dice'])}"})
+                            "label": f"rolled   {dice_label(item['dice'])}" + ("  ·  fan" if item.get("fan") else "")})
     for item in data["presentation"]["cubeRolls"]:
         loss = item["evLoss"]
         label = "rolls without doubling" if item["preOfferStake"] == 1 else "rolls without redoubling"
@@ -395,10 +400,18 @@ def point_marks(counts):
     return ys, xs, rgba[ys, xs, :3][:, ::-1]
 
 
+def grade_camera(pixels):
+    pixels = cv2.LUT(pixels, CAMERA_TONE)
+    hsv = cv2.cvtColor(pixels, cv2.COLOR_BGR2HSV)
+    hsv[:, :, 1] = cv2.multiply(hsv[:, :, 1], 1.22)
+    return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+
 def board_image(frame, points):
     pixels = cv2.resize(frame.to_ndarray(format="bgr24"), (BW, BH), interpolation=cv2.INTER_LINEAR)
     if pixels[::24, ::24].max() < 32:
         return unavailable_board()
+    pixels = grade_camera(pixels)
     if points is not None:
         y, x, color = point_marks(tuple(points))
         pixels[y, x] = color
