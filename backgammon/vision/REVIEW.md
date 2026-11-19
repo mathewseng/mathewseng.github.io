@@ -63,6 +63,10 @@ and bear-off are confirmed, and the second die remains unresolved.
 
 The checker trial added 314 clear training crops and 95 held-out crops from
 manually verified positions. Both readers got 92 of the 95 new crops correct.
+One test roll crosses a camera clip boundary. The corrected training
+split holds out both clips so the same die never appears in training
+and testing.
+
 The dice trial trained on 638 frames across 91 tracks, including eight new
 hand-labeled tracks. The candidate improved from 16 to 21 correct on 31 test
 tracks and dropped from 8 to 5 correct on 10 separately reviewed faces.
@@ -360,16 +364,20 @@ rolls of 159. Six faces remain unknown on confirmed fans. Two remain
 unknown on turns with verified checker results. Twelve other checker
 plays remain unconfirmed, along with the 5–3 disagreement in Game 3.
 
-The dice trial trained on 789 frames from 122 labeled tracks. It read all
+One test roll crosses a camera clip boundary. The corrected training
+split holds out both clips so the same die never appears in training
+and testing.
+
+The dice trial trained on 754 frames from 118 labeled tracks. It read all
 10 new test faces correctly, compared with 8 for the current reader. It
-matched 23 of 31 general test tracks, compared with 16, and read 5 of 10
-original reviewed faces, compared with 8. The checker trial added 1,058
-training crops and matched 643 of the 654 held-out crops from reviewed
-boards, the same total as the current reader. The shipped replay uses
+matched 23 of 31 general test tracks, compared with 16, and read 6 of 10
+original reviewed faces, compared with 8. The checker trial added 990
+training crops and matched 712 of the 722 held-out crops from reviewed
+boards. The current reader matched 711. The shipped replay uses
 the existing weights. The new labels and both trials are available for
 the next validation pass.
 
-The gated detector read 97 of 247 sampled face views correctly with the
+The gated detector read 95 of 247 sampled face views correctly with the
 candidate and 72 with the current reader. Wrong reads fell from 20 to 6.
 These views come from the same held-out dice as the new track test, so
 a full-session precision and turn-order comparison remains open.

@@ -123,6 +123,8 @@ def main():
     parser.add_argument("--reviewed", type=Path, action="append", default=[],
                         help="Additional labeled dice tracks. Repeat for separate training and holdout files.")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--holdout-clip", type=int, action="append", default=[],
+                        help="Exclude a clip from training when it contains another view of a held-out roll.")
     args = parser.parse_args()
     cv2.setNumThreads(1)
     torch.set_num_threads(2)
@@ -132,7 +134,7 @@ def main():
     extra = [item for file in args.reviewed for item in reviewed_tracks(file)]
     extra_training = [item for item in extra if item["split"] == "train"]
     spots = [item for item in extra if item["split"] == "spotExtra"] + test_spots()
-    held_clips = {item["clip"] for item in spots}
+    held_clips = {item["clip"] for item in spots} | set(args.holdout_clip)
     training = [item for item in reviewed + extra_training if item["split"] == "train" and item["label"] != "?"
                 and item["clip"] not in held_clips]
     held = [item for item in reviewed if item["split"] == "test" and item["label"] != "?"]
