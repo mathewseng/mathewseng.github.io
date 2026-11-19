@@ -1,7 +1,7 @@
 import { KEY_RULES, isEligibleFingering, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-key-labels';
 import { KEY_SYMBOLS, KEY_LAYOUT, keySideEdge } from './key-artwork.mjs?v=20261118-manual-keys';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody, scoreFingeringOptions } from './engine.mjs?v=20261119-melody-choices';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody, scoreFingeringOptions } from './engine.mjs?v=20261119-melody-changes';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
 import { bestNoteMoves, noteMoveCounts, MOVE_PITCHES } from './note-moves.mjs?v=20261118-keys';
 import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-scales';
@@ -37,6 +37,7 @@ function save() {
 }
 const keyList = bits => KEYS.filter((_, i) => bits[i] === '1').map(k => k.id).join(', ') || 'none';
 const name = midi => noteName(midi, state.flats);
+const pitchName = midi => (state.flats ? FLATS : SHARPS)[midi % 12];
 const weights = () => Object.fromEntries(
   [...document.querySelectorAll('[data-weight][aria-pressed="true"]')].map(button => [button.dataset.weight, Number(button.dataset.value)])
 );
@@ -424,19 +425,24 @@ function clearMelodyList(message = '') {
   $('plan-summary').textContent = message;
   $('melody-choices').hidden = true;
   $('jump-melody-choices').hidden = true;
+  $('phrase-change-legend').hidden = true;
 }
 function renderPlan() {
   const path = state.plan.path, stats = routeStats(path);
   $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb octave steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span>`;
   const byPitch = path.map((f, i) => ({ f, i })).sort((a, b) => state.melody[b.i] - state.melody[a.i]);
-  $('phrase-steps').innerHTML = byPitch.map(({ f, i }) => {
-    const note = name(state.melody[i]), thumb = registerName(f.shift), locked = Boolean(state.locks[i]);
-    const label = `Step ${i + 1}, ${note}${locked ? ', locked' : ''}. Thumb ${thumb}. Touch ${keyList(f.bits)}.`;
+  $('phrase-steps').innerHTML = byPitch.map(({ f, i }, row) => {
+    const lower = byPitch[row + 1], locked = Boolean(state.locks[i]);
+    const diff = lower && changes(lower.f, f);
+    const counts = diff ? `${diff.release.length}/${diff.touch.length}` : '';
+    const move = diff ? ` From the row below, release ${diff.release.length} and add ${diff.touch.length}.` : '';
+    const label = `Step ${i + 1}, ${name(state.melody[i])}${locked ? ', locked' : ''}. Thumb ${registerName(f.shift)}. Touch ${keyList(f.bits)}.${move}`;
     return `<li><button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-controls="melody-choices" aria-label="${label}">
-      <span class="phrase-note"><strong>${note}</strong><span>#${i + 1}</span></span>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
-      <span class="phrase-thumb">Thumb ${thumb}${locked ? '<span>Locked</span>' : ''}</span>
+      <strong>${pitchName(state.melody[i])}</strong>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
+      <span class="phrase-change"><span class="phrase-counts">${counts}</span>${locked ? '<span class="phrase-lock">Locked</span>' : ''}</span>
     </button></li>`;
   }).join('');
+  $('phrase-change-legend').hidden = byPitch.length < 2;
   $('melody-choices').hidden = false;
   $('jump-melody-choices').hidden = false;
   renderMelodyChoices();
@@ -450,7 +456,7 @@ function updatePhraseSteps() {
 }
 function renderMelodyChoices() {
   const i = state.step, current = state.plan.path[i];
-  $('melody-choice-title').textContent = `${name(state.melody[i])} fingerings · step ${i + 1}`;
+  $('melody-choice-title').textContent = `${pitchName(state.melody[i])} fingerings`;
   const options = scoreFingeringOptions(state.melody, i, weights(), state.locks, state.chartChoices);
   const best = options[0].cost;
   const lock = state.locks[i] ?? '';
@@ -463,7 +469,7 @@ function renderMelodyChoices() {
     const score = delta ? `+${delta}` : 'Best';
     const label = `${title}${selected ? ', current' : ''}. Thumb ${thumb}. Touch ${keyList(f.bits)}. ${delta ? `${delta} points above best.` : 'Best score.'}`;
     const row = `<button type="button" class="melody-option${selected ? ' current' : ''}" data-fingering-choice="${f.id}" aria-pressed="${f.id === lock}" aria-label="${label}">
-      <span class="melody-option-name"><strong>${title}</strong><span>Thumb ${thumb}</span></span>
+      <strong>${title}</strong>
       ${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox, decorative: true })}
       <span class="melody-option-score">${score}</span>
     </button>`;

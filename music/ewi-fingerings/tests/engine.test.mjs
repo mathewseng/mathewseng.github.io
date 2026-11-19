@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FINGERINGS, KEYS, candidates, changes, optimize, parseMelody, routeCost, noteName, scoreFingeringOptions } from '../engine.mjs';
+import { FINGERINGS, KEYS, candidates, changes, transitionCost, optimize, parseMelody, routeCost, noteName, scoreFingeringOptions } from '../engine.mjs';
 
 test('85 unique chart patterns, 13 keys, and no conflicting pitch assignments', () => {
   assert.equal(KEYS.length, 13);
@@ -40,6 +40,17 @@ test('register candidates encode absolute octave, including overlapping low and 
 test('a pure octave leap changes the thumb but not the note keys', () => {
   const a = candidates(67).find(f => f.main), b = candidates(79).find(f => f.id === a.id);
   assert.deepEqual(changes(a, b), { touch: [], release: [], keep: ['K1', 'K3', 'K4'], keys: 0, rollers: 1, direction: 1 });
+});
+
+test('mixed releases and adds cost more than the same number of one-direction changes', () => {
+  const fingering = bits => ({ bits: bits.padEnd(13, '0'), shift: 0 });
+  const weights = { roller: 0, pinky: 0 };
+  const cost = (a, b) => transitionCost(fingering(a), fingering(b), weights);
+  assert.equal(cost('101', '000'), 2);
+  assert.equal(cost('000', '101'), 2);
+  assert.equal(cost('100', '001'), 2.5);
+  assert.equal(cost('10110', '00001'), 4.5);
+  assert.equal(cost('10100', '00011'), 5);
 });
 
 test('different C fingerings require different roller positions for the same sounding note', () => {
@@ -84,8 +95,8 @@ test('alternative scores replace only the chosen note lock and rank the resultin
   const melody = [71, 72, 74, 72, 71];
   const options = scoreFingeringOptions(melody, 1, undefined, { 1: '60-0', 2: '74-0' });
   assert.deepEqual(options.map(({ id, cost }) => [id, cost]), [
-    ['72-0', 8.25], ['72-1', 8.5], ['72-2', 8.5], ['72-3', 10.5],
-    ['72-4', 10.5], ['60-0', 19.75], ['60-1', 23.75],
+    ['72-0', 10.25], ['72-1', 10.5], ['72-2', 10.5], ['72-3', 12.5],
+    ['72-4', 12.5], ['60-0', 21.25], ['60-1', 25.75],
   ]);
 });
 

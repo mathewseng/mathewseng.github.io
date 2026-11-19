@@ -57,7 +57,8 @@ export const DEFAULT_WEIGHTS = { roller: 4, pinky: 1, unfamiliar: 0.25 };
 export function transitionCost(a, b, weights = DEFAULT_WEIGHTS) {
   const diff = changes(a, b);
   const pinkies = [4, 5, 10, 11, 12].filter(i => a.bits[i] !== b.bits[i]).length;
-  return diff.keys + diff.rollers * weights.roller + pinkies * weights.pinky;
+  const mixedPairs = Math.min(diff.release.length, diff.touch.length);
+  return diff.keys + mixedPairs * 0.5 + diff.rollers * weights.roller + pinkies * weights.pinky;
 }
 export function preferenceCost(f, weights = DEFAULT_WEIGHTS) { return f.main ? 0 : weights.unfamiliar; }
 

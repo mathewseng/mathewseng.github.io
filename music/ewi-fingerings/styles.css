@@ -111,12 +111,12 @@ textarea, input { border: 1px solid var(--control-border); border-radius: var(--
 .phrase-step:hover, .melody-option:hover { background: var(--surface-2); }
 .phrase-step[aria-pressed="true"], .melody-option.current { border-color: var(--ewi-accent); background: var(--ewi-accent-soft); }
 .phrase-step.playing { box-shadow: inset 3px 0 var(--ewi-accent); }
-.phrase-note, .melody-option-name { display: grid; }
 .phrase-step strong { font-size: 17px; }
-.phrase-note > span, .melody-option-name > span { color: var(--muted); font: var(--t-xs)/1.35 var(--font-mono); }
 .phrase-step .mini-diagram, .melody-option .mini-diagram { width: min(100%, 250px); max-height: 54px; justify-self: center; }
-.phrase-thumb { text-align: end; font: var(--t-xs)/1.35 var(--font-mono); color: var(--muted); }
-.phrase-thumb span { display: block; }
+#phrase-change-legend { text-align: end; padding-inline-end: 14px; }
+.phrase-change { display: grid; text-align: end; font: var(--t-sm)/1.35 var(--font-mono); }
+.phrase-counts:empty { display: none; }
+.phrase-lock { color: var(--muted); font-size: var(--t-xs); }
 .melody-choices { margin-top: 16px; padding: 12px 3px 0; border-top: 1px solid var(--line); }
 .melody-choice-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 6px 0; }
 .melody-choice-actions > .btn[aria-pressed="true"] { color: var(--ewi-accent); border-color: var(--ewi-accent); }
