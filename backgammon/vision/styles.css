@@ -113,6 +113,10 @@
   height: 100%;
 }
 
+.vision-player video:not([controls]) {
+  cursor: pointer;
+}
+
 .vision-play {
   display: grid;
   position: absolute;

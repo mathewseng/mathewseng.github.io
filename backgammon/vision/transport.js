@@ -18,7 +18,7 @@ function indexedActions(data) {
   return actions.sort((a, b) => a.frame - b.frame);
 }
 
-export function createTransport(player, onData, replayAsset, requestPlayback) {
+export function createTransport(player, onData, replayAsset, togglePlayback) {
   const shell = document.querySelector("#replay-shell");
   const transport = shell.querySelector(".replay-transport");
   const markers = document.querySelector("#replay-markers");
@@ -113,10 +113,6 @@ export function createTransport(player, onData, replayAsset, requestPlayback) {
     synchronize();
   }
 
-  const togglePlayback = () => {
-    if (player.paused) void requestPlayback();
-    else player.pause();
-  };
   toggle.addEventListener("click", togglePlayback);
   previous.addEventListener("click", () => jump(-1));
   next.addEventListener("click", () => jump(1));

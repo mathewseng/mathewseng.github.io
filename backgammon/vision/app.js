@@ -22,7 +22,7 @@ const release = new URL("./", download.href);
 const media = new URL("./", player.src);
 let currentGame = "1";
 const audit = createAudit(player, replayAsset);
-const transport = createTransport(player, data => audit.setFrameData(data), replayAsset, requestPlayback);
+const transport = createTransport(player, data => audit.setFrameData(data), replayAsset, togglePlayback);
 function seekDecision(time, focusVideo = true) {
   player.pause();
   transport.seek(time);
@@ -94,7 +94,15 @@ function requestPlayback() {
   });
 }
 
-play.addEventListener("click", requestPlayback);
+function togglePlayback() {
+  if (player.paused) void requestPlayback();
+  else player.pause();
+}
+
+play.addEventListener("click", togglePlayback);
+player.addEventListener("click", () => {
+  if (!player.controls && !player.webkitDisplayingFullscreen) togglePlayback();
+});
 player.addEventListener("playing", () => {
   error.hidden = true;
   if (document.activeElement === play) player.focus();
