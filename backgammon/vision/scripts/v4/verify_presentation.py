@@ -1,4 +1,4 @@
-"""Verify each replay's displayed rolls, held actions, and cube waits frame by frame."""
+"""Verify each replay's displayed rolls, held actions, and cube decisions frame by frame."""
 import json
 from collections import Counter
 
@@ -10,19 +10,18 @@ def verify(number):
     game = json.loads((OUT / f"{prefix}-game.json").read_text())
     presentation = game["presentation"]
     rolls = presentation["rolls"]
-    waits = presentation["waits"]
+    cube_rolls = presentation["cubeRolls"]
+    cubes_at_roll = {entry["frame"]: entry for entry in cube_rolls}
     assert all(a["end"] <= b["start"] for a, b in zip(rolls, rolls[1:]))
     assert all(0 <= roll["start"] < roll["end"] <= game["frames"] for roll in rolls)
     assert all(roll["pickup"] is None or roll["pickup"] == roll["end"] for roll in rolls)
     assert all(not roll["dice"][1] or roll["dice"][0] >= roll["dice"][1] for roll in rolls)
-    for wait in waits:
-        incoming = next(i for i, roll in enumerate(rolls) if roll["start"] == wait["end"])
-        previous = rolls[incoming - 1]
-        assert wait["start"] == previous["pickup"] + ACTION_HOLD < wait["end"]
-        assert rolls[incoming]["player"] == wait["player"] != previous["player"]
+    assert set(cubes_at_roll) <= {roll["start"] for roll in rolls}
+    for cube_roll in cube_rolls:
+        assert cube_roll["start"] <= cube_roll["frame"] < cube_roll["end"]
     counts = Counter()
     drawn_rolls = Counter()
-    drawn_waits = Counter()
+    shown_at_roll = set()
     modes = Counter()
     rendered = set()
     cube = game["decisions"]["cube"]
@@ -37,9 +36,10 @@ def verify(number):
             assert roll["start"] <= frame < roll["end"]
             assert not opening and state["phase"] != "game-closed"
         if wait:
-            drawn_waits[wait["start"]] += 1
             assert wait["start"] <= frame < wait["end"]
-            assert not roll and cube_mode is None
+        if roll and roll["start"] in cubes_at_roll:
+            assert wait == cubes_at_roll[roll["start"]]
+            shown_at_roll.add(roll["start"])
         for action in actions:
             counts[action["kind"], action["frame"]] += 1
             assert action["frame"] <= frame < action["frame"] + ACTION_HOLD
@@ -53,14 +53,13 @@ def verify(number):
             assert panel.shape == (RH, RW, 3)
             rendered.add(key)
     assert dict(drawn_rolls) == {r["start"]: r["end"] - r["start"] for r in rolls}
-    assert dict(drawn_waits) == {w["start"]: w["end"] - w["start"] for w in waits
-                               if w["end"] - w["start"] >= ACTION_HOLD}
+    assert shown_at_roll == set(cubes_at_roll)
     assert all(count == min(ACTION_HOLD, game["frames"] - start) for (_, start), count in counts.items())
     for loss in game["losses"]:
         if loss["kind"] == "checker":
             assert counts["checker", loss["frame"]] == ACTION_HOLD
     assert counts["cube-offer", cube["startFrame"]] == ACTION_HOLD
-    assert all(counts["no-double", wait["end"]] == ACTION_HOLD for wait in waits)
+    assert all(counts["no-double", wait["frame"]] == ACTION_HOLD for wait in cube_rolls)
     if cube.get("reply") in ("take", "pass"):
         assert counts["cube-" + cube["reply"], cube["endFrame"]] == ACTION_HOLD
     # These are the gaps identified by watching the prior exports.
@@ -73,14 +72,18 @@ def verify(number):
         assert roll["dice"] == [3, 2] and roll["decision"] == 7
         assert modes["cube-pass"] == game["frames"] - cube["endFrame"]
     if number == 3:
-        roll = next(r for r in rolls if r["sourceTurns"] == [2, 3])
-        assert roll["start"] < 29 * 25 < roll["end"]
+        opening = rolls[0]
+        assert opening["start"] == 86 and opening["dice"] == [6, 1]
+        assert opening["player"] == "white" and 86 not in cubes_at_roll
+        roll = next(r for r in rolls if r["sourceTurns"] == [1, 2, 3])
+        assert roll["start"] == 208 and roll["start"] < 25 * 25 < roll["end"]
+        assert roll["decision"] == 1 and 615 not in cubes_at_roll
         assert modes["cube-take"] == ACTION_HOLD
     if number == 5:
         roll = next(r for r in rolls if r["sourceTurns"] == [3, 4])
         assert roll["start"] < 73 * 25 < roll["end"]
         assert roll["dice"] == [6, 4] and roll["decision"] is None
-    return {"game": number, "rolls": len(rolls), "longCubeWaits": len(waits),
+    return {"game": number, "rolls": len(rolls), "noDoubleDecisions": len(cube_rolls),
             "heldActions": len(counts), "cubeFrames": dict(modes)}
 
 

@@ -35,6 +35,8 @@ function frameData(game, rows, recording) {
         onBoard ? rolls[rollIndex].player : row.phase === 'pre-roll' ? row.player : null,
       cube,
       loss: [row.loss.white.loss, row.loss.dark.loss],
+      checkerLoss: [row.loss.white.checkerLoss, row.loss.dark.checkerLoss],
+      cubeLoss: [row.loss.white.cubeLoss, row.loss.dark.cubeLoss],
     };
     const key = JSON.stringify(state);
     if (key !== previous) changes.push({ frame: row.frame, ...state });
@@ -58,10 +60,18 @@ function frameData(game, rows, recording) {
       moves: decision.actions.slice(0, 5).map(({ notation, steps, equity4, outcomeProbabilities4 }) =>
         ({ notation, steps, equity: equity4, probabilities: outcomeProbabilities4 })),
     }]));
+  const snapshot = position => position ? {
+    points: position.points.map(([white, dark]) => white - dark), bar: position.bar, borneOff: position.borneOff,
+  } : null;
+  const rollSnapshots = rolls.map(roll => {
+    const turn = game.turns[(roll.decision ?? roll.sourceTurns[0]) - 1];
+    return { ...roll, before: snapshot(turn.before), after: snapshot(turn.after), resultFrame: turn.resultFrame ?? null };
+  });
   return {
     format: 'office-3-replay-frames', version: 1, game: game.game, fps: 25, frames: rows.length,
     result: game.result ?? null,
-    players: ['white', 'dark'], changes, positions, rolls, decisions,
+    players: ['white', 'dark'], changes, positions, rolls: rollSnapshots, decisions,
+    cubeRolls: game.presentation.cubeRolls,
     cubeOffer: offer ? {
       start: offer.startFrame, responseFrame: offer.reply ? offer.endFrame : null, player: offer.offerer,
       offered: offer.offeredFace, reply: offer.reply ?? null, options: offer.options,

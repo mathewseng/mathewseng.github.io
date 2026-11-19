@@ -44,6 +44,7 @@ export function decisionReview(
     names = null,
     rankedMoveLimit = 10,
     includePlayedInRanking = true,
+    recordingReview = false,
   } = {},
 ) {
   const slot = el("div", { class: "decision-board" });
@@ -59,6 +60,7 @@ export function decisionReview(
     ),
   );
   d.classList.add("decision-dialog");
+  if (recordingReview) d.classList.add("recording-review");
   const appendReturn = () => {
     d.querySelector("footer").append(button("Save position", () => saveDialog(source), "", { id: "save-review-position", title: "Save this decision with its original dice and rules" }));
     if (!onReturn) return;
@@ -176,13 +178,18 @@ export function decisionReview(
     previewResult = null,
     bestPreviewLabel = "Best move";
   const board = new Board(slot);
+  const boardSettings = () => ({
+    ...settings(),
+    ...(recordingReview ? { cubeOneAsOne: true } : {}),
+    interactive: false,
+    preview: true,
+  });
+  const displayDice = recordingReview ? [...source.dice].sort((a, b) => b - a) : source.dice;
   board.svg.setAttribute("preserveAspectRatio", "xMidYMin meet");
   const show = (steps, label) => {
     const after = steps.reduce((s, step) => applyStep(s, step), source);
-    board.showPreview(after, {
-      ...settings(),
-      interactive: false,
-      preview: true,
+    board.showPreview(recordingReview ? { ...after, dice: displayDice } : after, {
+      ...boardSettings(),
       usedDice: steps.map((s) => s.die),
       lastMove: label === "Position" ? null : moveTrace(after, source.turn, steps, source.dice),
     });
@@ -199,12 +206,13 @@ export function decisionReview(
     },
     { once: true },
   );
-  const search = reviewSearch(source, d, (...args) => api.result(...args), beforeRoll);
+  const search = recordingReview ? null : reviewSearch(source, d, (...args) => api.result(...args), beforeRoll);
   const api = {
     dialog: d,
     preview(steps = [], label = "Played move") {
       show(steps, label);
-      body.replaceChildren(el("p", {class:"muted"}, "This decision has not been analyzed."), search.node);
+      body.replaceChildren(el("p", {class:"muted"}, "This decision has not been analyzed."));
+      if (search) body.append(search.node);
     },
     loading(status, preset) {
       previewResult = null;
@@ -250,11 +258,7 @@ export function decisionReview(
                   { type: choice.action },
                   decisionPlayer(source),
                 );
-          board.render(state, {
-            ...settings(),
-            interactive: false,
-            preview: true,
-          });
+          board.render(state, boardSettings());
           body
             .querySelectorAll(".review-cube-choice")
             .forEach((b) =>
@@ -280,18 +284,20 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            `${result.settings.name} · ${result.method === "reference" ? "published XG book" : `${result.settings.plies} ply`} · ${playerName(f.perspective)}`,
+            recordingReview ? `${names?.[f.perspective] ?? playerName(f.perspective)}’s perspective` :
+              `${result.settings.name} · ${result.method === "reference" ? "published XG book" : `${result.settings.plies} ply`} · ${playerName(f.perspective)}`,
           ),
           lossSummary(f),
           decisionValues(f, false, {
             opponent,
+            showLoss: recordingReview,
             onPosition: () => showCube(null, "Position"),
             onChoice: (choice) => {
               showCube(choice, choice.notation);
             },
           }),
           el("div", { class: "review-chances" }, chanceLines(f.positionChances, f.chancePlayer, { table: true, names })),
-          lossLegend(),
+          lossLegend(recordingReview),
           el(
             "p",
             { class: "muted small" },
@@ -305,12 +311,15 @@ export function decisionReview(
           el(
             "p",
             { class: "muted small" },
-            `${result.engine} · ${(result.elapsedMs / 1000).toFixed(2)} s. Evaluation estimates, not rollouts.`,
+            `${result.engine}${Number.isFinite(result.elapsedMs) ? ` · ${(result.elapsedMs / 1000).toFixed(2)} s` : ""}. Evaluation estimates, not rollouts.`,
           ),
         );
         paginateNotes();
-        showCube(f.best, bestDecisionLabel);
-        body.append(search.node);search.setResult(result);
+        showCube(recordingReview ? f.actual : f.best, recordingReview ? "Played decision" : bestDecisionLabel);
+        if (search) {
+          body.append(search.node);
+          search.setResult(result);
+        }
         return;
       }
       const best = result.candidates[0];
@@ -330,7 +339,8 @@ export function decisionReview(
         el(
           "p",
           { class: "muted small" },
-          `${freshReview ? "Fresh · " : ""}${result.settings.name} · ${result.method === "reference" ? "published XG book" : `${result.settings.plies} ply`} · ${possessive(names?.[source.turn] ?? playerName(source.turn))} perspective`,
+          recordingReview ? `${possessive(names?.[source.turn] ?? playerName(source.turn))} perspective` :
+            `${freshReview ? "Fresh · " : ""}${result.settings.name} · ${result.method === "reference" ? "published XG book" : `${result.settings.plies} ply`} · ${possessive(names?.[source.turn] ?? playerName(source.turn))} perspective`,
         ),
       );
       if (result.actual) {
@@ -338,7 +348,7 @@ export function decisionReview(
         body.append(
           lossSummary(f),
           decisionValues(f, true, { opponent }),
-          lossLegend(),
+          lossLegend(recordingReview),
           el(
             "p",
             { class: "muted small" },
@@ -409,13 +419,13 @@ export function decisionReview(
       });
       const rows = el("div", { class: "review-move-rows" });
       let selected = 0;
-      const position = button('', () => {show([], 'Position');search.loadPosition();}, 'review-move review-position', {
+      const position = button('', () => {show([], 'Position');search?.loadPosition();}, 'review-move review-position', {
         'aria-label':'Position', 'aria-pressed':false, 'data-preview':'position',
       });
       position.append(el('span',{class:'review-rank','aria-hidden':'true'},returnIcon()),
         el('span',{class:'review-notation'},'Position',el('small',{},'Before roll')),
-        search.positionEquity,
-        el('span',{class:'review-position-dice','aria-label':`Rolled ${source.dice.join('–')}`},...source.dice.map(value=>dieFace(value,{player:source.turn}))));
+        search?.positionEquity ?? el('span', {class:'review-number'}, '—'),
+        el('span',{class:'review-position-dice','aria-label':`Rolled ${displayDice.join('–')}`},...displayDice.map(value=>dieFace(value,{player:source.turn}))));
       // Size to the actual first six rows, including wrapped notation/source
       // credits. Extra candidates scroll inside this fixed-height list.
       const sizeMoves = () => {
@@ -446,6 +456,9 @@ export function decisionReview(
                   ),
                 );
             const loss = Math.max(0, best.equity - c.equity);
+            const status = recordingReview
+              ? [played ? "Played" : "", rank === 0 ? "Best" : ""].filter(Boolean).join(" · ")
+              : played ? (rank === 0 ? bestPreviewLabel : opponent ? "Opponent’s choice" : "Your choice") : "";
             const row = button(
               "",
               () => {
@@ -468,15 +481,7 @@ export function decisionReview(
                 { class: "review-notation" },
                 c.notation,
                 ...(c.referenceCredit ? [el("small", {}, `XG · ${c.referenceCredit.author}`)] : []),
-                ...(played
-                  ? [
-                      el(
-                        "small",
-                        {},
-                        rank === 0 ? bestPreviewLabel : opponent ? "Opponent’s choice" : "Your choice",
-                      ),
-                    ]
-                  : []),
+                ...(status ? [el("small", {}, status)] : []),
               ),
               el("span", { class: "review-number" }, equity(c.equity)),
               el(
@@ -485,7 +490,7 @@ export function decisionReview(
                   class: "review-number review-loss",
                   "data-loss-tone": lossTone(loss).tone,
                 },
-                rank === 0 ? "Best" : loss.toFixed(3),
+                rank === 0 && !recordingReview ? "Best" : loss.toFixed(3),
               ),
             );
             return row;
@@ -500,12 +505,13 @@ export function decisionReview(
           "div",
           { class: "review-move-heading" },
           el("strong", {}, `Top ${Math.min(rankedMoveLimit, candidates.length)} moves`),
-          el("span", {}, "Equity"),
-          el("span", {}, "Loss"),
+          el("span", {}, recordingReview ? "EV" : "Equity"),
+          el("span", {}, recordingReview ? "EV loss" : "Loss"),
         ),
         position, rows,
       );
-      body.append(chances,ranked,search.node);
+      body.append(chances, ranked);
+      if (search) body.append(search.node);
       revealSelectedMove = () => {
         const row = rows.querySelector('[aria-pressed="true"]');
         if (!row || !rows.clientHeight) return;
@@ -535,11 +541,11 @@ export function decisionReview(
       paginateNotes();
       redraw();
       show(best.steps, bestPreviewLabel);
-      search.setResult(result);
+      search?.setResult(result);
       // Older saved reviews retained only one candidate. Re-evaluate the entire
       // comparison together; never mix old equities with new candidate scores.
       const preset = ({0:'quick',1:'standard',2:'deep',3:'expert',4:'research'})[result.settings.plies];
-      if (expandSaved && preset && !result.book && result.method !== 'reference' &&
+      if (search && expandSaved && preset && !result.book && result.method !== 'reference' &&
           result.candidates.length < Math.min(10, result.evaluatedCount || 0)) {
         search.run(preset, {expand:true});
       }

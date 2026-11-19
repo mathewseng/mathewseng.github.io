@@ -1,0 +1,17 @@
+.vision-page {
+  --page: #101723;
+  --surface: #1A2639;
+  --ink: #F1F5FA;
+  --muted: #B6C3D9;
+  --line: #303E55;
+  --line-strong: #52617A;
+  --accent: #C5D6FC;
+  --accent-soft: #293B57;
+  --tone-best: #9CE4C6;
+  --tone-close: #A9DCCF;
+  --tone-small: #F1CF88;
+  --tone-medium: #FFAD7D;
+  --tone-large: #FF918C;
+  --vision-white: #F5E6C8;
+  --vision-black: #BCD2FD;
+}

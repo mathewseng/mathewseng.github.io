@@ -57,7 +57,8 @@ for (const game of [1, 2, 3, 4, 5]) {
   };
   let lossIndex = 0;
   let totalLegal = 0;
-  const loss = { white: { loss: 0, count: 0 }, dark: { loss: 0, count: 0 } };
+  const empty = () => ({ loss: 0, count: 0, checkerLoss: 0, cubeLoss: 0 });
+  const loss = { white: empty(), dark: empty() };
   const counts = { checkerBoard: 0, role: 0, currentRoll: 0, completeRoll: 0,
     cube: 0, missingRollRead: 0, anchoredRollRead: 0, carriedCheckerFrames: 0, liveCountFrames: 0, tallStackFrames: 0,
     toRollFrames: 0, cubeOfferFrames: 0 };
@@ -130,6 +131,7 @@ for (const game of [1, 2, 3, 4, 5]) {
         const event = data.losses[lossIndex++];
         loss[event.player].loss += event.loss;
         loss[event.player].count++;
+        loss[event.player][event.kind === 'checker' ? 'checkerLoss' : 'cubeLoss'] += event.loss;
       }
       assert.deepEqual(row.loss, loss);
       counts.role += Number(row.player !== null);
@@ -182,7 +184,7 @@ for (const game of [1, 2, 3, 4, 5]) {
     assert.equal(move.loss.toFixed(3), '0.005');
     assert.equal(data.losses.filter(event => event.decision === 7).length, 1);
     assert(Math.abs(rows[2315].loss.dark.loss - rows[2314].loss.dark.loss - move.loss) < 1e-12);
-    assert.equal(rows[2425].loss.dark.loss, rows[2315].loss.dark.loss);
+    assert.equal(rows[2425].loss.dark.checkerLoss, rows[2315].loss.dark.checkerLoss);
     assert(rows.slice(2315, 2365).every(row => row.playedDecision === 7));
     assert.notEqual(rows[2365].playedDecision, 7);
     assert.deepEqual(data.result, { frame: 6576, winner: 'white', reason: 'pass', points: 1 });

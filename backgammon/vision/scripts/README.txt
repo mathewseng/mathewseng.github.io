@@ -69,12 +69,14 @@ Roll and board state
   player in the timeline. Presentation intervals follow the same physical dice
   through temporary occlusions and clear them at the supported pickup or next
   boundary. The opening cue stays until play begins. Cube offers and replies
-  use a two-second action display. A no-double appears only when the cube is
-  available, the board and actor match across the wait, and the opposing dice
-  were picked up more than two seconds before the roll.
-  Uniquely constrained dice are recovered from the
-  completed checker move. The audit sidecars report the original frame-level
-  vision detections and expose the difference from the inferred replay state.
+  use a two-second action display. Each legal cube opportunity with a
+  supported pre-roll board and cube owner is scored, including no double.
+  Its EV and loss stay alongside the checker options. The totals keep
+  checker and cube losses separate.
+  The fixed pre-roll board and the stable result board constrain dice through
+  complete legal turns. Backfill resolved dice to the start of the physical
+  roll. The public frame data includes both checker snapshots when supported.
+  The audit sidecars retain the original frame-level vision detections.
 
   Game 1 begins with the first captured frame and an open game. Games 2 through
   5 begin at verified opening boards. The original v2 and v3 videos and source
@@ -102,3 +104,10 @@ Refresh an existing reconstructed replay
   folder, and output is the new replay folder. Recovery verifies stable
   camera boards and keeps the existing roll intervals. Four-ply scores are
   reused only when both XGIDs match the complete evaluation context.
+
+  To refresh cube decisions in an existing replay, set OFFICE3_REPLAY_DIR
+  to a new output and run bun v4/cube-rolls.mjs "$previous". To reproduce
+  the Game 3 correction, run v4/recover-opening.mjs against this cube-scored
+  replay with OFFICE3_REPLAY_DIR set to a separate staging folder. Run
+  v4/rescore.mjs 3 against that staging folder via OFFICE3_SCORE_SOURCE.
+  Publication verifies the roll snapshots, action totals and Library backup.

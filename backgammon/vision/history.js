@@ -1,16 +1,31 @@
 import { decisionHistory, groupDecisionTurns } from "../core/decision-history.mjs";
+import { applyBoardTheme } from "../core/appearance.mjs";
+import { decisionFeedback, lossTone } from "../core/decision-feedback.mjs";
 import { decisionReview } from "../ui/decision-review.mjs";
 import { historyTurn } from "../ui/history-turn.mjs";
 import { dieFace, el, button } from "../ui/shell.mjs";
 
 const names = ["White", "Black"];
 const fps = 25;
+const officeBoard = {
+  version: 1, preset: "slate",
+  colors: {
+    frame: "#2B3755", border: "#596986", surface: "#A7B2C0", bar: "#3D4D6C", tray: "#405173",
+    pointA: "#E7E9E2", pointB: "#4B5E89", numbers: "#EDF1F8", caption: "#E5EAF4",
+    checker0: "#F2F2E8", rim0: "#CCD1D3", detail0: "#E0E3DE", count0: "#1E293C",
+    checker1: "#373D48", rim1: "#161F33", detail1: "#505969", count1: "#F1F5FA",
+    die0: "#F2F2E8", pips0: "#252C40", dieBorder0: "#AFB9CA",
+    die1: "#49638F", pips1: "#FFFFFF", dieBorder1: "#BAC8E2",
+    cube: "#E7E9E2", cubeText: "#1A2639", cubeBorder: "#7686A0",
+  },
+};
 const timecode = frame => {
   const seconds = Math.floor(frame / fps);
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 };
 
 export function createHistory(seek, player) {
+  applyBoardTheme(officeBoard, document.body);
   const content = document.querySelector("#history-content");
   const download = document.querySelector("#download-history");
   const heading = document.querySelector("#history-heading");
@@ -54,6 +69,7 @@ export function createHistory(seek, player) {
   const review = (source, { result, action, label, title, player }) => {
     const dialog = decisionReview(source, {
       title, names, opponent: player === 1, rankedMoveLimit: 5, includePlayedInRanking: false,
+      recordingReview: true,
     });
     if (result) dialog.result(result, false);
     else dialog.preview(action?.steps, label);
@@ -64,9 +80,13 @@ export function createHistory(seek, player) {
     const decisions = new Map(data.items.filter(item => item.kind === "match").map(item => [
       item.id, new Map(decisionHistory(item).map(row => [row.index, row])),
     ]));
-    const totals = el("dl", { class: "vision-history-totals", "aria-label": "Total EV loss for confirmed decisions" },
-      ...data.replay.losses.map((loss, player) => el("div", {},
-        el("dt", {}, `${names[player]} EV loss`), el("dd", {}, loss.toFixed(3)))));
+    const score = value => el("td", { "data-loss-tone": lossTone(value).tone }, value.toFixed(3));
+    const totals = el("table", { class: "vision-history-totals" },
+      el("caption", { class: "sr-only" }, "EV loss by decision type"),
+      el("thead", {}, el("tr", {},
+        ...["Player", "Checker EV Loss", "Cube EV Loss"].map(label => el("th", { scope: "col" }, label)))),
+      el("tbody", {}, ...(data.replay.lossBreakdown ?? []).map(({ checkerLoss, cubeLoss }, player) => el("tr", {},
+        el("th", { scope: "row", "data-player": player }, names[player]), score(checkerLoss), score(cubeLoss)))));
     const list = el("ol", { class: "vision-history-list" });
     chapters = [];
     for (const entry of data.replay.timeline) {
@@ -85,11 +105,12 @@ export function createHistory(seek, player) {
         if (Number.isFinite(entry.endFrame)) {
           const label = entry.kind === "checker"
             ? `${names[row.player]}’s ${[...row.source.dice].sort((a, b) => b - a).join("–")}`
-            : `${names[row.player]}’s ${row.action.type}`;
+            : `${names[row.player]}’s ${row.action.type === "roll"
+              ? row.source.cube.value === 1 ? "no double" : "no redouble" : row.action.type}`;
           chapters.push({ start: entry.rollFrame ?? entry.frame, end: entry.endFrame, label, open });
         }
         const node = historyTurn({ ...group, turn: entry.turn }, {
-          names, viewer: 0, local: true, actions: () => ({ review: open, preview: open }),
+          names, viewer: 0, local: true, showQuietCube: true, actions: () => ({ review: open, preview: open }),
         });
         if (entry.checkpoint) node.classList.add("vision-history-checkpoint");
         item.append(node);
@@ -107,9 +128,22 @@ export function createHistory(seek, player) {
           ...[...entry.dice].sort((a, b) => (b || 0) - (a || 0))
             .map(value => value ? dieFace(value, { player }) : el("span", { class: "muted" }, "?"))));
         }
-        if (position?.analysis) information.append(button("Review position", () => review(position.state, {
-          title: `${names[player]} · Observed position · ${time}`, player, result: position.analysis,
-        }), "ghost"));
+        if (position?.analysis) {
+          const isCube = position.analysis.type === "cube";
+          const seat = position.state.turn;
+          const open = () => review(position.state, {
+            title: `${names[seat]} · ${isCube ? "Cube decision" : "Observed position"} · ${time}`,
+            player: seat, result: position.analysis,
+          });
+          if (isCube) {
+            const feedback = decisionFeedback(position.analysis, position.state);
+            information.append(el("span", { class: "vision-loss-value", "data-loss-tone": feedback.tone },
+              `${feedback.value} EV loss`));
+            chapters.push({ start: entry.rollFrame ?? entry.frame, end: entry.endFrame,
+              label: `${names[seat]}’s ${entry.label.toLowerCase()}`, open });
+          }
+          information.append(button(isCube ? "Review cube" : "Review position", open, "ghost"));
+        }
         item.append(information);
       }
       list.append(item);

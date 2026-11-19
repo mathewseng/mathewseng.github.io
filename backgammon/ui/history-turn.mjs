@@ -7,7 +7,7 @@ import { equity, chanceLines } from './analysis.mjs';
 import { applyStep, boardKey } from '../core/rules.mjs';
 
 // Shared by the active game and one lazily opened archived game.
-export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
+export function historyTurn(group, {names, viewer, local, actions, reviewIndex, showQuietCube = false,
   pending = row => row.forced ? 'Forced · no choice' : 'Not analyzed'} = {}) {
   const side = group.player === viewer ? "self" : "opponent";
   const playerLabel = local ? names[group.player]
@@ -51,9 +51,9 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
     const choice = (action, label) => {
       if (!cube) return el("span", { class: "history-played" }, label);
       const c = presentCubeAction(row.source, action.type);
-      if (!c.displayLabel) return null;
+      if (!c.displayLabel && !showQuietCube) return null;
       return el("span", { class: "history-played history-cube-action", title: c.description },
-        ...(c.icon ? [cubeActionIcon(c.icon)] : []), el("span", {}, c.displayLabel));
+        ...(c.icon ? [cubeActionIcon(c.icon)] : []), el("span", {}, c.displayLabel || c.label));
     };
     const initialChoices = () => revised.map((attempt, index) => {
       const f = attempt.feedback;
@@ -68,7 +68,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
     });
     const played = () => {
       // A correct no-double has no action to repeat beneath its equity.
-      if (cube && !cube.displayLabel && bestPlayed) return null;
+      if (cube && !cube.displayLabel && bestPlayed && !showQuietCube) return null;
       return el("span", { class: "history-accepted" },
         el("span", {class:"history-choice-heading"},
           el("span", {
@@ -84,7 +84,7 @@ export function historyTurn(group, {names, viewer, local, actions, reviewIndex,
             ? [el("span", {class:"history-choice-equity", "aria-label":`Played equity ${equity(row.feedback.actual.equity)}`}, equity(row.feedback.actual.equity))] : []),
         ),
         choice(row.action, row.label),
-        ...(row.feedback && !bestPlayed ? [el("span", { class: "history-loss" },
+        ...(row.feedback && (!bestPlayed || showQuietCube) ? [el("span", { class: "history-loss" },
           el("strong", { class: "value" }, row.feedback.value),
           el("span", { class: "muted" }, row.feedback.label),
         )] : []),

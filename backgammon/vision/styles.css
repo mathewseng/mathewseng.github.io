@@ -367,28 +367,45 @@
 }
 
 .vision-history-totals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
+  width: 100%;
+  max-width: 36rem;
   margin: 0 0 1rem;
-}
-
-.vision-history-totals div {
-  display: flex;
-  gap: 0.85rem;
-  padding: 0.55rem 0.75rem;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-spacing: 0;
+  border-radius: var(--r-md);
   background: var(--surface);
+  font-variant-numeric: tabular-nums;
 }
 
-.vision-history-totals dt {
+.vision-history-totals :is(th, td) {
+  padding: 0.65rem clamp(0.45rem, 2vw, 0.9rem);
+  text-align: right;
+}
+
+.vision-history-totals th:first-child {
+  text-align: left;
+}
+
+.vision-history-totals thead {
   color: var(--muted);
+  font-size: 0.85rem;
 }
 
-.vision-history-totals dd {
-  margin: 0;
+.vision-history-totals tbody :is(th, td) {
+  border-top: 1px solid var(--line);
   font-weight: 650;
+}
+
+.vision-history-totals td, .vision-loss-value {
+  color: var(--loss-color);
+}
+
+.vision-history-totals [data-player="0"] {
+  color: var(--vision-white);
+}
+
+.vision-history-totals [data-player="1"] {
+  color: var(--vision-black);
 }
 
 .vision-history-list {
@@ -488,4 +505,19 @@
 .vision-decision-navigation button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.vision-page [data-cube-loss] tr[data-played] {
+  background: var(--accent-soft);
+}
+
+.vision-page [data-cube-loss] td[data-loss-tone] {
+  color: var(--loss-color);
+  font-weight: 650;
+}
+
+@media (max-width: 700px) and (min-height: 501px) {
+  .vision-page .recording-review[data-decision-kind="cube"][data-review-view="decision"] .decision-layout {
+    grid-template-rows: min(42dvh, calc((100vw - 2.25rem) * 0.75)) minmax(0, 1fr);
+  }
 }

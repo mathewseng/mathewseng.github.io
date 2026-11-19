@@ -1,10 +1,11 @@
 /** Export recoverable camera history as Backgammon Library items and a seekable index. */
 import fs from 'node:fs';
 import path from 'node:path';
-import { boardKey, commitTurn, decisionPlayer, initialState, positionKey, transition } from '../../../core/rules.mjs';
+import { blockedBarRoll, boardKey, commitTurn, decisionPlayer, initialState, positionKey, transition } from '../../../core/rules.mjs';
 import { fromXGID } from '../../../core/xgid.mjs';
 import { parseBackup } from '../../../core/storage.mjs';
 import { ENGINE_VERSION } from '../../../engine/metadata.mjs';
+import { gradeCube } from '../../../engine/cube-grade.mjs';
 import { replayDir } from '../project_paths.mjs';
 import { cubeContext } from './cube-context.mjs';
 import { exclusive, loadEvaluator, rowsFrom } from '../v2/solve_games.mjs';
@@ -114,6 +115,23 @@ function makeHistory(game, rows, extraCubeChances) {
     if (state.phase === 'over') active.status = 'game-complete';
     return { item: active.id, event: active.events.push(event) - 1 };
   };
+  const noDoubles = new Map((game.presentation?.cubeRolls ?? []).map(entry => [entry.frame, entry]));
+  const recordNoDouble = (choice, source, dice, turn, checkpoint) => {
+    if (!choice) return null;
+    const result = cubeResult(choice, source, choice.outcomeProbabilities);
+    const entry = { frame: choice.frame, rollFrame: choice.start, endFrame: choice.end, turn, kind: 'cube' };
+    if (completeDice(dice) && !blockedBarRoll(source)) {
+      chapter(source);
+      timeline.push({ ...entry, checkpoint, ...action({ type: 'roll', dice }, choice.frame, result) });
+      return active.state;
+    }
+    const item = record('position', `Turn ${turn} cube decision`, 'The pre-roll cube decision is scored from the visible board.');
+    item.state = source;
+    item.analysis = gradeCube(source, result, 'roll');
+    timeline.push({ ...entry, kind: 'cube-review', item: item.id,
+      label: source.cube.value === 1 ? 'No double' : 'No redouble' });
+    return null;
+  };
   const cubeEntry = game.decisions.cube;
   const episodes = game.presentation?.rolls.flatMap(roll => {
     const verified = roll.sourceTurns.filter(id => game.decisions[id]?.countedInGameLoss);
@@ -157,7 +175,10 @@ function makeHistory(game, rows, extraCubeChances) {
     const cube = cubeContext(game, rows[frame]);
     const source = observedPosition(turn, cube, number);
     const steps = decision?.countedInGameLoss ? decision.played.steps : turn.steps;
+    const cubeChoice = noDoubles.get(frame);
+    const preRoll = source && { ...source, dice: [], phase: 'roll' };
     if (!validMove(source, steps, turn.after)) {
+      if (preRoll) recordNoDouble(cubeChoice, preRoll, turn.dice, observedTurn, true);
       const entry = { frame, turn: observedTurn, kind: 'gap', player: turn.player, dice: rolledDice,
         label: 'Checker move unconfirmed' };
       if (source) {
@@ -171,15 +192,15 @@ function makeHistory(game, rows, extraCubeChances) {
       continue;
     }
 
-    const start = { ...source, dice: [], phase: 'roll' };
+    const start = preRoll;
     const openingTurn = rows[0].phase === 'opening' && observedTurn === 1 &&
       boardKey(opening) === boardKey(source) && source.dice[0] !== source.dice[1];
     const needsCheckpoint = !active || positionKey(active.state) !== positionKey(start);
     chapter(openingTurn ? opening : start);
     const { dice } = source;
     const [low, high] = [...dice].sort((a, b) => a - b);
-    action(openingTurn ? { type: 'opening', dice: source.turn ? [low, high] : [high, low] } :
-      { type: 'roll', dice }, frame);
+    if (openingTurn) action({ type: 'opening', dice: source.turn ? [low, high] : [high, low] }, frame);
+    else if (!recordNoDouble(cubeChoice, start, dice, observedTurn, needsCheckpoint)) action({ type: 'roll', dice }, frame);
     const resultFrame = turn.resultFrame ?? frame;
     timeline.push({
       frame: resultFrame, rollFrame: frame, endFrame: Math.max(end, resultFrame + 50),
@@ -196,7 +217,10 @@ function makeHistory(game, rows, extraCubeChances) {
   const lastLoss = rows.at(-1).loss;
   return {
     version: 1, format: 'backgammon-library', progress: [], items,
-    replay: { game: number, frameData: Boolean(game.presentation), timeline, losses: [lastLoss.white.loss, lastLoss.dark.loss] },
+    replay: { game: number, frameData: Boolean(game.presentation), timeline,
+      losses: [lastLoss.white.loss, lastLoss.dark.loss],
+      lossBreakdown: [lastLoss.white, lastLoss.dark].map(({ checkerLoss, cubeLoss }) => ({ checkerLoss, cubeLoss })),
+    },
   };
 }
 

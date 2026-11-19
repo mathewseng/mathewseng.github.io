@@ -1,12 +1,11 @@
 /** Build viewer intervals from the complete recording without retiming the game events. */
 import fs from 'node:fs';
 import path from 'node:path';
-import { artifactDir, replayDir, solverUrl } from '../project_paths.mjs';
-import { loadEvaluator, rowsFrom } from '../v2/solve_games.mjs';
-import { cubeContext } from './cube-context.mjs';
+import { artifactDir, replayDir } from '../project_paths.mjs';
+import { rowsFrom } from '../v2/solve_games.mjs';
+import { rollCubePositions, scoreRollCubes } from './cube-rolls.mjs';
+import { applyAccounting, writeReplay } from './accounting.mjs';
 
-const { canDouble, initialState } = await import(solverUrl('backgammon/core/rules.mjs'));
-const { toXGID } = await import(solverUrl('backgammon/core/xgid.mjs'));
 const FPS = 25;
 const HOLD = 2 * FPS;
 const radius = 14;
@@ -18,7 +17,6 @@ const stationary = (anchor, die) => anchor.value === die.value && distance(ancho
 const senses = (row, anchor) => row?.dice.some(die => stationary(anchor, die));
 const touching = (row, [x, y]) => row?.hands.some(([l, t, r, b]) =>
   x >= l - radius && x <= r + radius && y >= t - radius && y <= b + radius);
-const opposite = player => player === 'white' ? 'dark' : 'white';
 
 function pose(turn, raw) {
   const wanted = faces(turn.dice);
@@ -156,36 +154,6 @@ function rollIntervals(game, rows, raw, breaks) {
   return intervals;
 }
 
-function cubeWaits(game, rows, rolls, breaks, evaluator) {
-  const waits = [];
-  const offer = game.decisions.cube;
-  for (const [index, roll] of rolls.entries()) {
-    const prior = rolls[index - 1];
-    if (!prior || prior.pickup == null || prior.player !== opposite(roll.player) || roll.start - prior.pickup <= HOLD ||
-        breaks.some(frame => frame > prior.pickup && frame <= roll.start) ||
-        (offer && offer.startFrame < roll.start && offer.endFrame >= prior.pickup)) continue;
-    const source = game.turns[(roll.decision ?? roll.sourceTurns[0]) - 1];
-    const previous = game.turns[(prior.decision ?? prior.sourceTurns.at(-1)) - 1];
-    if (!source.before || !previous.after || JSON.stringify(source.before) !== JSON.stringify(previous.after) ||
-        faces(source.dice).length !== 2) continue;
-    const cube = cubeContext(game, rows[roll.start]);
-    if (!cube) continue;
-    const { points, bar, borneOff } = source.before;
-    const state = initialState({
-      points: points.map(([white, dark]) => white - dark), bar, off: borneOff, matchLength: 0,
-      phase: 'roll', turn: Number(roll.player === 'dark'), cube,
-      rules: { cube: true, jacoby: false, immediateRedoubles: 0 },
-    });
-    if (!canDouble(state)) continue;
-    const [noDouble, take, pass] = evaluator.analyze(state, 'research', 'cube').outcomes;
-    waits.push({
-      start: prior.pickup + HOLD, end: roll.start, player: roll.player,
-      preOfferStake: cube.value, options: { noDouble, take, pass }, xgid: toXGID(state),
-    });
-  }
-  return waits;
-}
-
 function rawFrames(recording) {
   return recording.segments.flatMap(part =>
     rowsFrom(path.join(v2, 'state', part.source.replace(/\.mp4$/, '.jsonl.gz')))
@@ -197,7 +165,6 @@ function rawFrames(recording) {
 }
 
 const source = path.resolve(process.argv[2] ?? replayDir);
-const evaluator = await loadEvaluator();
 fs.mkdirSync(replayDir, { recursive: true });
 for (const number of (process.argv.length > 3 ? process.argv.slice(3).map(Number) : [1, 2, 3, 4, 5])) {
   const prefix = `game-0${number}`;
@@ -207,10 +174,9 @@ for (const number of (process.argv.length > 3 ? process.argv.slice(3).map(Number
   const rows = rowsFrom(path.join(source, timeline));
   const breaks = recording.segments.filter(part => part.discontinuity).map(part => part.firstGameFrame);
   const rolls = rollIntervals(game, rows, rawFrames(recording), breaks);
-  const waits = cubeWaits(game, rows, rolls, breaks, evaluator);
-  game.presentation = { rolls, waits };
-  fs.writeFileSync(path.join(replayDir, prefix + '-game.json'), JSON.stringify(game));
-  if (source !== replayDir) fs.copyFileSync(path.join(source, timeline), path.join(replayDir, timeline));
-  console.log(prefix, rolls.length, 'rolls', rolls.filter(roll => roll.sourceTurns.length > 1)
-    .map(roll => [roll.start, roll.end, roll.sourceTurns]), waits.map(wait => [wait.start, wait.end, wait.player]));
+  const cubeRolls = await scoreRollCubes(rollCubePositions(game, rows, rolls, breaks));
+  game.presentation = { rolls, cubeRolls };
+  applyAccounting(game, rows);
+  writeReplay(prefix, game, rows);
+  console.log(prefix, rolls.length, 'rolls', cubeRolls.length, 'no-double decisions');
 }

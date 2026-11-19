@@ -42,6 +42,9 @@ export function applyAccounting(game, rows) {
       loss: cube.options[cube.reply] - Math.min(take, pass),
     });
   }
+  for (const decision of game.presentation?.cubeRolls ?? []) {
+    losses.push({ frame: decision.frame, player: decision.player, kind: 'cube', action: 'roll', loss: decision.evLoss });
+  }
   const seen = new Set();
   for (const [id, decision] of Object.entries(game.decisions)) {
     if (id === 'cube') continue;
@@ -66,7 +69,8 @@ export function applyAccounting(game, rows) {
       kind: 'checker', decision: Number(id) });
   }
   game.losses = losses.sort((a, b) => a.frame - b.frame);
-  const cumulative = { white: { loss: 0, count: 0 }, dark: { loss: 0, count: 0 } };
+  const empty = () => ({ loss: 0, count: 0, checkerLoss: 0, cubeLoss: 0 });
+  const cumulative = { white: empty(), dark: empty() };
   let next = 0;
   let held = null;
   for (const row of rows) {
@@ -74,6 +78,7 @@ export function applyAccounting(game, rows) {
       const result = losses[next++];
       cumulative[result.player].loss += result.loss;
       cumulative[result.player].count++;
+      cumulative[result.player][result.kind === 'checker' ? 'checkerLoss' : 'cubeLoss'] += result.loss;
       if (result.kind === 'checker') held = result;
     }
     row.loss = { white: { ...cumulative.white }, dark: { ...cumulative.dark } };

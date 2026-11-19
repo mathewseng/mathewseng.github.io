@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { el, button } from "./shell.mjs";
 import { equity, percentage } from "./analysis.mjs";
+import { lossTone } from "../core/decision-feedback.mjs";
 export function decisionValues(
   f,
   compact = false,
-  { opponent = false, onChoice, onPosition } = {},
+  { opponent = false, onChoice, onPosition, showLoss = false } = {},
 ) {
   const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
   const seen = new Set();
@@ -61,13 +62,10 @@ export function decisionValues(
         ...f.choices.map((c) => {
           const best = Math.abs(c.equity - f.best.equity) <= 1e-7;
           const played = c.action === f.actual.action;
+          const playedLabel = showLoss ? "Played" : opponent ? "Opponent’s choice" : "Your choice";
           const status = [
-            best ? "Best choice" : "",
-            played && !best
-              ? opponent
-                ? "Opponent’s choice"
-                : "Your choice"
-              : "",
+            played && (showLoss || !best) ? playedLabel : "",
+            best ? (showLoss ? "Best" : "Best choice") : "",
           ].filter(Boolean);
           return [
             el(
@@ -95,6 +93,7 @@ export function decisionValues(
     {
       class: "decision-values",
       ...(f.choices ? { "data-cube-options": "" } : {}),
+      ...(showLoss ? { "data-cube-loss": "" } : {}),
     },
     el(
       "table",
@@ -109,6 +108,7 @@ export function decisionValues(
           el("th", { scope: "col" }, f.choices ? "Decision" : "Position"),
           el("th", { scope: "col" }, "Equity"),
           el("th", { scope: "col" }, f.money ? "EV · points" : "Match win"),
+          ...(showLoss ? [el("th", { scope: "col" }, "EV Loss")] : []),
         ),
       ),
       el(
@@ -117,7 +117,7 @@ export function decisionValues(
         ...tableRows.map(([label, c, kind]) =>
           el(
             "tr",
-            {},
+            showLoss && kind === "actual" ? { "data-played": "" } : {},
             el(
               "th",
               { scope: "row" },
@@ -148,6 +148,8 @@ export function decisionValues(
                   ? percentage(c.mwc)
                   : "—",
             ),
+            ...(showLoss ? [el("td", { "data-loss-tone": lossTone(Math.max(0, f.best.equity - c.equity)).tone },
+              kind === "before" ? "—" : Math.max(0, f.best.equity - c.equity).toFixed(3))] : []),
           ),
         ),
       ),
@@ -166,10 +168,12 @@ export function decisionValues(
     ),
   );
 }
-export function lossLegend() {
+export function lossLegend(recordingReview = false) {
   return el(
     "p",
     { class: "muted small" },
-    "Loss colors: blue = best evaluated; green < 0.020; yellow < 0.050; orange < 0.100; red ≥ 0.100 equity. Display bands are not statistical certainty.",
+    recordingReview
+      ? "Loss colors run from green at zero through teal, gold, orange and red at 0.100 equity or more."
+      : "Loss colors: blue = best evaluated; green < 0.020; yellow < 0.050; orange < 0.100; red ≥ 0.100 equity. Display bands are not statistical certainty.",
   );
 }

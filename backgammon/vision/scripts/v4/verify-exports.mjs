@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseBackup } from '../../../core/storage.mjs';
 import { decisionHistory } from '../../../core/decision-history.mjs';
+import { decisionFeedback } from '../../../core/decision-feedback.mjs';
 import { fromXGID } from '../../../core/xgid.mjs';
 import { replayDir } from '../project_paths.mjs';
 import { rowsFrom } from '../v2/solve_games.mjs';
@@ -29,6 +30,8 @@ for (const number of [1, 2, 3, 4, 5]) {
     while (data.rolls[rollIndex]?.end <= frame) rollIndex++;
     const state = data.changes[changeIndex];
     assert.deepEqual(state.loss, [row.loss.white.loss, row.loss.dark.loss]);
+    assert.deepEqual(state.checkerLoss, [row.loss.white.checkerLoss, row.loss.dark.checkerLoss]);
+    assert.deepEqual(state.cubeLoss, [row.loss.white.cubeLoss, row.loss.dark.cubeLoss]);
     assert.equal(state.roll, data.rolls[rollIndex]?.start <= frame ? rollIndex : null);
     if (state.roll !== null) {
       assert.equal(state.phase, 'checker-turn');
@@ -63,7 +66,24 @@ for (const number of [1, 2, 3, 4, 5]) {
   for (const turn of native) {
     if (turn.feedback) sum[turn.player] += turn.feedback.loss;
   }
+  for (const entry of history.replay.timeline.filter(entry => entry.kind === 'cube-review')) {
+    const item = history.items.find(item => item.id === entry.item);
+    sum[item.state.turn] += decisionFeedback(item.analysis, item.state).loss;
+  }
   assert.deepEqual(history.replay.losses, data.changes.at(-1).loss);
+  assert.equal(history.replay.timeline.filter(entry => entry.kind === 'cube-review' ||
+    (entry.kind === 'cube' && history.items.find(item => item.id === entry.item)?.events[entry.event]?.action.type === 'roll')
+  ).length, data.cubeRolls.length);
+  for (const roll of data.rolls) {
+    for (const board of [roll.before, roll.after].filter(Boolean)) {
+      assert.equal(board.points.length, 24);
+      for (let player = 0; player < 2; player++) {
+        const pointTotal = board.points.reduce((sum, point) => sum + Math.max(0, player ? -point : point), 0);
+        assert.equal(pointTotal + board.bar[player] + board.borneOff[player], 15);
+      }
+    }
+    if (roll.decision && roll.before) assert.deepEqual(fromXGID(data.decisions[roll.decision].xgid).points, roll.before.points);
+  }
   for (const [player, loss] of sum.entries()) {
     assert(Math.abs(loss - history.replay.losses[player]) < 1e-8, `${game} Library EV loss differs`);
   }
