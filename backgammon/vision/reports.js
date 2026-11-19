@@ -501,12 +501,15 @@ function renderReport(report, seek) {
       ]), entry => entry.title));
     }
     if (fans.length) {
-      section.append(element("h4", "Short rolls from the bar"), reviewList(fans.map(roll => ({
-        ...roll, title: roll.blocked.length ? `${player(roll.player)} fans with ${dice(roll.dice)}` :
-          `${player(roll.player)} rolls with unread faces`,
-        detail: roll.blocked.length ? "The camera shows the dice and both entry points are blocked." :
-          "The dice appear and are picked up. The observed checker position stays the same.",
-      })), entry => entry.title));
+      section.append(element("h4", "Short rolls from the bar"), reviewList(fans.flatMap(roll => [
+        ...(roll.outgoingPickup ? [{ frame: roll.outgoingPickup.frame, title: "Previous dice picked up",
+          detail: "Both locations were clear before the next throw." }] : []),
+        { ...roll, title: roll.blocked.length ? `${player(roll.player)} fans with ${dice(roll.dice)}` :
+            `${player(roll.player)} rolls with unread faces`,
+          detail: roll.pipFrames ? `The new reader agrees across both camera crops from ${roll.pipFrames.length} frames. The board blocks entry from the bar.` :
+            roll.blocked.length ? "The camera shows the dice and the board blocks entry from the bar." :
+              "The dice appear and are picked up. The observed checker position stays the same." },
+      ]), entry => entry.title));
     }
     if (report.fanHandoffs?.length) {
       section.append(element("h4", "Corrected handoff in the replay"), reviewList(report.fanHandoffs.flatMap(item => [
@@ -569,8 +572,10 @@ function renderReport(report, seek) {
       excluded.append(element("summary", `Excluded roll proposals (${suppressed.length})`),
         reviewList(suppressed.map(roll => ({
           ...roll,
-          detail: roll.reason === "post-game" ? "After the inferred game end." : "While the cube was awaiting a response.",
-        })), roll => `${player(roll.player)} ${dice(roll.dice)}`));
+          title: roll.reason === "checker-stack" ? "Checker stack read as dice" : `${player(roll.player)} ${dice(roll.dice)}`,
+          detail: roll.reason === "checker-stack" ? "The same checker edges are visible before and after the proposed roll." :
+            roll.reason === "post-game" ? "After the inferred game end." : "While the cube was awaiting a response.",
+        })), roll => roll.title));
       section.append(excluded);
     }
     return section;
@@ -606,13 +611,16 @@ function renderReport(report, seek) {
   }
 
   if (report.pipReader) {
-    const { trainingFaces, previous, added, tests } = report.pipReader;
+    const { trainingFaces, previous, added, tests, followup } = report.pipReader;
     const section = element("section", null, "vision-report-model vision-pip-reader-report");
     section.append(element("h3", "Dice reader trial"), element("p",
       `The trial added ${trainingFaces} hand-labeled face crops. Calibration used separate clips. The blend averages both readers’ scores.`, "muted small"));
     const rows = [
-      ["Earlier controls", previous], ["New difficult reads", added],
+      ["Earlier controls", previous], ["Difficult reads", added],
+      ...(followup ? [["New short-roll review", followup]] : []),
     ];
+    if (followup) section.append(element("p",
+      `The short-roll review added ${followup.trainingFrames} training frames and checked ${followup.heldFrames} frames from separate clips. The trial includes checker-only locations and dice close to stacks.`, "muted small"));
     const table = element("table", null, "vision-history-totals");
     const headings = table.createTHead().insertRow();
     for (const title of ["Dice tracks", "Current", "New", "Blend"]) {
@@ -632,10 +640,11 @@ function renderReport(report, seek) {
     section.append(table);
     if (tests.length) {
       const details = element("details");
-      details.append(element("summary", `Reviewed dice tracks (${tests.length})`), reviewList(tests.map(item => ({
-        ...item, title: `Die ${item.die + 1} shows ${item.expected}`,
-        detail: `Current ${item.baseline || "unread"} · New ${item.candidate || "unread"} · Combined ${item.blend || "unread"}. Reviewed in ${item.views} ${item.views === 1 ? "frame" : "frames"}.`,
-      })), item => item.title));
+      details.append(element("summary", `Reviewed dice tracks (${tests.length})`), reviewList(tests.map(item => {
+        const reading = value => value || (item.expected ? "unread" : "no die");
+        return { ...item, title: item.expected ? `Die ${item.die + 1} shows ${item.expected}` : "Checker edge with no die",
+          detail: `Current ${reading(item.baseline)} · New ${reading(item.candidate)} · Combined ${reading(item.blend)}. Reviewed in ${item.views} ${item.views === 1 ? "frame" : "frames"}.` };
+      }), item => item.title));
       section.append(details);
     }
     fragment.append(section);

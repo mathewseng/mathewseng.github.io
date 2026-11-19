@@ -84,3 +84,71 @@ export function refineIncompletePair(roll, recent) {
   return { ...roll, centers: corroborated[0].centers, dice: [null, null],
     shortPairEvidence: corroborated[0] };
 }
+
+// A dice locator can repeatedly respond to the gap between two checkers.
+// Require the same response and unchanged stack outside the proposed throw.
+export function stationaryCheckerImpostor(roll, states, first, last) {
+  if (!roll.centers || roll.opening || roll.steps || roll.resultFrame != null ||
+      roll.pickupFrame != null || roll.dice?.some(Number.isInteger)) return null;
+  const readable = states.slice(roll.start, roll.end + 1).filter(read => read?.dice?.some(die =>
+    die.score >= .70 && roll.centers.some(center => near(die.center, center, radius))));
+  if (readable.length >= 4) return null;
+  for (const [x, y] of roll.centers) {
+    const center = [x, y];
+    const witnesses = (start, end) => {
+      const matches = [];
+      for (let frame = start; frame < end; frame++) {
+        const read = states[frame];
+        if (!read?.checkers || read.handRegions?.some(
+          ([l, t, r, b]) => x >= l - 8 && x <= r + 8 && y >= t - 8 && y <= b + 8)) continue;
+        const checkers = read.checkers.filter(checker => checker.score >= .60 && near(checker.center, center, 24));
+        const upper = checkers.find(checker => checker.center[1] <= y);
+        const lower = upper && checkers.find(checker => checker.color === upper.color &&
+          checker.zone === upper.zone && checker.center[1] - upper.center[1] >= 25 && checker.center[1] >= y);
+        if (lower) matches.push({ frame, upper, lower, location: read.diceLocations?.some(
+          point => point[2] >= .30 && near(point, center, 5)) });
+      }
+      return matches;
+    };
+    const before = witnesses(Math.max(first, roll.start - 58), roll.start - 8);
+    const during = witnesses(Math.max(roll.start, roll.end - 50), roll.end + 1);
+    const after = witnesses(roll.end + 8, Math.min(last, roll.end + 125));
+    const stack = during.find(sample => sample.location);
+    if (!stack) continue;
+    const sameStack = sample => sample.upper.zone === stack.upper.zone && sample.upper.color === stack.upper.color &&
+      near(sample.upper.center, stack.upper.center, 6) && near(sample.lower.center, stack.lower.center, 6);
+    const earlier = before.filter(sample => sample.location && sameStack(sample));
+    const later = after.filter(sample => sample.location && sameStack(sample));
+    if (earlier.length >= 4 && later.length >= 4 && during.filter(sameStack).length >= 8) {
+      return { center, before: earlier.at(-1).frame, after: later[0].frame };
+    }
+  }
+  return null;
+}
+
+// Re-estimate centers from the common stationary view after a brief pair
+// lands. The initial locator coordinates can come from the last bounce.
+export function settledShortPair(frames, pair) {
+  let best;
+  for (let start = pair.firstTogether; start <= Math.min(pair.end - 7, pair.firstTogether + 14); start++) {
+    const views = frames.slice(start, start + 8);
+    const centers = pair.centers.map(center => {
+      const hits = views.flatMap(read => {
+        const locations = read?.diceLocations ?? [];
+        const found = locations.find(point => point[2] >= .38 && near(point, center, 11));
+        return found ? [found] : [];
+      });
+      // Use a measured center, with explicit joint support below.
+      return hits.map(point => ({ point, support: hits.filter(hit => near(hit, point, 3)).length }))
+        .sort((left, right) => right.support - left.support)[0]?.point.slice(0, 2);
+    });
+    if (centers.some(center => !center) || near(...centers, 18)) continue;
+    const hits = views.map(read => centers.every(center => read?.diceLocations?.some(
+      point => point[2] >= .38 && near(point, center, 3))));
+    const support = hits.filter(Boolean).length;
+    if (support >= 6 && (!best || support > best.support)) {
+      best = { start: start + hits.indexOf(true), centers, support };
+    }
+  }
+  return best;
+}

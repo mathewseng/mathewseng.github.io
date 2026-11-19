@@ -31,7 +31,8 @@ def reviewed_anchors(file):
                 if face is not None:
                     yield dict(game=game, source=part["source"], clip=part["clip"], frame=local,
                                gameFrame=frame, target=center, label=str(face), split=roll["split"],
-                               rollFrame=roll["start"], die=index, views=1)
+                               rollFrame=roll["start"], die=index, views=1,
+                               cohort=roll.get("cohort", "reviewed-native"))
 
 
 def synthetic_face(face, background, color, rng):
@@ -99,10 +100,12 @@ def evaluate(baseline, candidate, patches, rows, group_by_die):
     }
 
 
-def run(cached, output):
+def run(cached, output, additional_labels=None):
     cached_rows = json.loads((cached / "samples.json").read_text())
     patches = np.load(cached / "patches.npy")
     anchors = list(reviewed_anchors(Path(__file__).with_name("reviewed-native-pip-frames.json")))
+    if additional_labels:
+        anchors.extend(reviewed_anchors(additional_labels))
     fresh, fresh_rows = sample(anchors, output, offsets=(0,))
     assert len(fresh_rows) == len(anchors), "Every manually labeled source frame must be sampled."
 
@@ -128,6 +131,15 @@ def run(cached, output):
     result = dict(trainingClips=len(train_clips), priorTrainingTracks=len(training),
                   addedTrainingFaces=len(fresh_train), addedHeldFaces=len(fresh_held),
                   syntheticFaces=synthetic_count, previous=previous, added=added)
+    if additional_labels:
+        cohort = {row["cohort"] for row in reviewed_anchors(additional_labels)}
+        challenge = [index for index in fresh_held if fresh_rows[index]["cohort"] in cohort]
+        result["followup"] = evaluate(baseline, candidate, fresh[challenge],
+                                      [fresh_rows[index] for index in challenge], True)
+        result["followup"]["trainingFrames"] = len({(fresh_rows[index]["clip"], fresh_rows[index]["frame"])
+            for index in fresh_train if fresh_rows[index]["cohort"] in cohort})
+        result["followup"]["heldFrames"] = len({(fresh_rows[index]["clip"], fresh_rows[index]["frame"])
+            for index in challenge})
     (output / "pip-reader-validation.json").write_text(json.dumps(result, indent=2) + "\n")
     torch.save(candidate.state_dict(), output / "dice-pip-candidate.pt")
     torch.onnx.export(candidate, torch.zeros(1, 3, 32, 32), output / "dice-pip-candidate.onnx",
@@ -141,6 +153,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("native_cache", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--additional-labels", type=Path)
     args = parser.parse_args()
     if args.native_cache.resolve() == args.output.resolve():
         parser.error("The trial output must be separate from the original native crop cache.")
@@ -148,4 +161,4 @@ if __name__ == "__main__":
     cv2.setNumThreads(1)
     torch.set_num_threads(3)
     torch.manual_seed(38)
-    run(args.native_cache, args.output)
+    run(args.native_cache, args.output, args.additional_labels)

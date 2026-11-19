@@ -118,7 +118,7 @@ function verifyFans(plan, rolls, game, label) {
     assert(reviewed?.fan && reviewed.player === turn.player, `${label}: unverified fan at ${turn.start}`);
     assert(Math.abs(reviewed.start - turn.start) <= 15 && Math.abs(reviewed.pickup - turn.pickupFrame) <= 15, label);
     assert(!dice(turn.dice).length || match.agreement === 'correct', `${label}: unsupported die face`);
-    const { blocked, lastVisibleDie, before, after } = turn.fanEvidence;
+    const { blocked, lastVisibleDie, before, after, outgoingPickup, pipFrames } = turn.fanEvidence;
     assert(before < lastVisibleDie && lastVisibleDie < turn.pickupFrame && after >= turn.pickupFrame, label);
     const recorded = game.turns[(reviewed.decision ?? reviewed.sourceTurns[0]) - 1];
     if (blocked.length) {
@@ -126,8 +126,20 @@ function verifyFans(plan, rolls, game, label) {
       assert(state.bar[state.turn] > 0 && blocked.every(face => stepsForDie(state, face).length === 0), label);
       assert.deepEqual(turn.steps, [], label);
     } else assert(turn.steps === null && turn.resultFrame === null, label);
+    if (outgoingPickup) {
+      const prior = plan.find(entry => entry.start === outgoingPickup.roll);
+      const priorReview = game.presentation.rolls.find(entry => entry.start === prior?.start);
+      assert(prior?.player !== turn.player && prior.pickupFrame === outgoingPickup.frame &&
+        outgoingPickup.lastSeen < outgoingPickup.frame && outgoingPickup.frame < turn.start, label);
+      assert(Math.abs(priorReview.pickup - outgoingPickup.frame) <= 5, label);
+    }
+    if (pipFrames) {
+      assert(match.agreement === 'correct' && match.beforeMatches && match.afterMatches &&
+        pipFrames.length >= 8 && pipFrames.every(frame => frame >= turn.start && frame <= lastVisibleDie), label);
+    }
     return { frame: reviewed.start, player: turn.player, dice: dice(turn.dice), blocked,
-      lastVisibleDie, clearBy: turn.pickupFrame, boardFrame: after };
+      lastVisibleDie, clearBy: turn.pickupFrame, boardFrame: after,
+      ...(outgoingPickup && { outgoingPickup }), ...(pipFrames && { pipFrames }) };
   });
 }
 
@@ -145,6 +157,11 @@ function verifyTimeline(prefix, boundary, expectedFrames) {
         row.roll.player === turn.player && row.roll.status === 'current' &&
         Boolean(row.roll.fan) === Boolean(turn.fanEvidence.blocked.length)), `${prefix}: lost a short roll`);
       assert(!game.decisions[id]?.countedInGameLoss, `${prefix}: a forced pass accrued checker loss`);
+      const pickup = turn.fanEvidence.outgoingPickup;
+      if (pickup) {
+        assert(rows.slice(pickup.frame, turn.start).every(row => row.roll?.status !== 'current'),
+          `${prefix}: the earlier roll stayed active after pickup`);
+      }
     }
     if (!turn.checkerDice && !turn.physicalHandoff && !turn.movedDie && !turn.poseHistory) continue;
     const id = index + 1;
@@ -225,7 +242,11 @@ const games = read(comparisonPath).map(({ game, current, candidate }) => {
   for (const roll of suppressed) {
     assert(!reference.presentation.rolls.some(expected => roll.frame < expected.end && roll.end >= expected.start),
       `${label}: excluded a reviewed throw`);
-    assert(roll.frame >= (roll.reason === 'post-game' ? reference.ending.frame : reference.decisions.cube.startFrame), label);
+    if (roll.reason === 'checker-stack') {
+      assert(roll.witness.before < roll.frame && roll.witness.after > roll.end && !dice(roll.dice).length, label);
+    } else {
+      assert(roll.frame >= (roll.reason === 'post-game' ? reference.ending.frame : reference.decisions.cube.startFrame), label);
+    }
   }
   if (closingRoll) {
     const recovered = candidate.rolls.find(roll => roll.automaticFrame === closingRoll.frame);

@@ -423,6 +423,10 @@ function report(number) {
       previous: { tracks: pipReader.previous.tracks, correct: pipReader.previous.correct },
       added: { tracks: pipReader.added.tracks, correct: pipReader.added.correct },
       tests: pipReader.added.tests.filter(test => test.game === number),
+      ...(pipReader.followup ? { followup: {
+        tracks: pipReader.followup.tracks, correct: pipReader.followup.correct,
+        trainingFrames: pipReader.followup.trainingFrames, heldFrames: pipReader.followup.heldFrames,
+      } } : {}),
     } } : {}),
     ...(data.result?.reason === "bearoff" ? { result: data.result } : {}),
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>

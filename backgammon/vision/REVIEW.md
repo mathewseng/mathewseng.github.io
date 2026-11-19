@@ -751,6 +751,36 @@ A hand obscures the pickup. Both dice locations are visibly clear by frame
 25035, and White's 5–1 is settled by frame 25042. The replay uses those
 visual boundaries and the Reports tab links to each source witness.
 
+## Separating checker stacks from short throws
+
+At 13:01 in Game 4, a genuine Black throw lands beside a checker stack.
+Two earlier reports of Black dice came from checker edges in the same
+position before and after each report. With those proposals excluded, the
+confirmed dice appearance and pickup recover the throw. One face merges
+into the checker in the camera view, so the automatic read leaves the pair
+unresolved.
+
+At 14:36.36, both locations of White's previous dice are clear. Black's
+following throw settles at 14:37.44 in the automatic timeline. A trained
+reader sees both fives in the original camera crop and the rectified view
+on 12 frames selected from the tracked dice. The same complete board is
+visible before and after, and it blocks Black's entry on five. The pipeline
+marks the 5–5 fan and confirms the stop without accruing checker loss.
+
+Game 1 also regains a short roll with unread faces. Three Game 3 proposals
+show only checker edges in their source crops. Across 163 reviewed throws,
+the automatic comparison improves from 141 to 144 matched throws, 109 to
+110 exact pairs, 124 to 126 matching starting boards, and 92 to 94 matching
+ending boards. There are nine wrong reads and 15 extra proposals remaining.
+
+The reader trial added 96 hand-labeled training frames and 48 frames from
+four held-out clips. The earlier held-out controls score 56/94 for the
+current reader and 69/94 for the candidate. Across the seven newly reviewed
+tracks the blend scores 6/7, while each individual model scores 4/7. The
+candidate is used for this narrowly gated short-roll check. Its outputs
+must agree across both crop versions and the unchanged board must block
+both entries.
+
 ## Pip counts and action review
 
 The game equity panel shows each player's pip count from the current

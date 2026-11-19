@@ -630,3 +630,22 @@ Source-crop pip reader trial
   evaluation. The output includes the candidate weights and the score
   audit. Put pip-reader-validation.json in the replay report directory to
   include the trial in Reports.
+
+Short-roll face qualification
+
+  Use the main and alternate locator archives to generate the first set of
+  automatic plans with v4/reconstruct.mjs --plan. Prepare and evaluate the
+  additional labeled camera crops:
+
+    python calibration/train_pip_reader.py "$native_cache" "$trial" \
+      --additional-labels calibration/reviewed-short-roll-pip-frames.json
+    python calibration/scan_short_roll_faces.py "$plans" "$poses" \
+      "$trial/dice-pip-candidate.pt" "$faces"
+
+  The face scan takes its windows and centers from the automatic plans.
+  Set OFFICE3_SHORT_ROLL_FACES="$faces/short-roll-faces.json" for the next
+  plan and scored timeline runs. Keep the same archive and timing inputs.
+  Reconstruct checks track identity, repeated agreeing native and rectified
+  views, and a matching complete board that blocks either die. Pass the
+  result through the five-game comparison and frame audit before publishing
+  the findings.
