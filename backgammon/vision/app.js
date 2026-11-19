@@ -80,6 +80,7 @@ for (const [number, link] of games) {
 }
 
 function showPlaybackError() {
+  player.pause();
   error.hidden = false;
   play.hidden = false;
 }
