@@ -1,0 +1,30 @@
+{
+  "1": [
+    {"kind":"join","starts":[184.36,222.56],"keep":222.56,"text":"Black’s dice stay in the same locations through the detection gap at 3:42. Keep the later face reading on the original roll."},
+    {"kind":"insert","start":413.88,"pickup":417.12,"player":"dark","dice":[1,null],"text":"Black rolls after White picks up, then moves checkers. The die near the bar reads 1; the other face is blurred."},
+    {"kind":"insert","start":431.52,"pickup":432.96,"player":"white","dice":[6,null],"fan":true,"text":"White rolls from the bar and picks up without entering. One die reads 6."},
+    {"kind":"insert","start":437.56,"pickup":438.52,"player":"white","dice":[null,null],"fan":true,"text":"White shakes out two dice and picks both up without entering. Both faces are blurred."},
+    {"kind":"insert","start":444.64,"pickup":445.68,"player":"white","dice":[1,null],"fan":true,"text":"White rolls from the bar and picks up without entering. One die reads 1."},
+    {"kind":"insert","start":479.32,"pickup":481.24,"player":"dark","dice":[null,null],"text":"Black rolls and plays between White’s two throws. The two faces cannot be confirmed by sight."},
+    {"kind":"insert","start":488.84,"pickup":489.92,"player":"dark","dice":[2,1],"fan":true,"text":"Black’s short 2–1 on the right leaves the checker on the bar."},
+    {"kind":"insert","start":522.12,"pickup":525.96,"player":"dark","dice":[6,1],"text":"Black rolls 6–1, handles the checkers on the far edge, and picks up before White rolls."},
+    {"kind":"insert","start":571.48,"pickup":574.12,"player":"dark","dice":[4,null],"text":"Black rolls and moves checkers between two White turns. One die is readable as 4."}
+  ],
+  "3": [
+    {"kind":"join","starts":[105.28,112.64],"keep":112.64,"text":"Both White dice are stationary across the gap at 1:48–1:52. Keep the one readable 6 on the original roll."},
+    {"kind":"join","starts":[256,262.76],"keep":262.76,"text":"The same two White dice remain at fixed locations across 4:22. The recorded completed move supplies the retained reading and result."},
+    {"kind":"insert","start":930.32,"pickup":934.44,"player":"white","dice":[6,2],"text":"White’s dice settle on the left and White moves before collecting them at 15:34."},
+    {"kind":"join","starts":[941.12,951.24],"keep":941.12,"end":954.12,"text":"Black’s dice stay in the same spots through the split at 15:51. Keep the existing decision and EV loss."},
+    {"kind":"insert","start":1260.56,"pickup":1263.84,"player":"white","dice":[3,null],"text":"White rolls after Black picks up, moves checkers, then picks up the pale dice before Black’s next throw."}
+  ],
+  "4": [
+    {"kind":"replace","starts":[532.08],"start":531.76,"previousPickup":530.72,"player":"dark","dice":[6,1],"text":"Black’s sleeved hand throws dark dice into the left half. The camera shows 6–1. The earlier 5–1 was assigned to White from the landing side."},
+    {"kind":"join","starts":[789.64,789.68],"keep":789.68,"text":"The one-frame report and the following 6–1 describe the same two Black dice. Keep the scored move."},
+    {"kind":"insert","start":805.32,"pickup":808.04,"player":"white","dice":[3,null],"fan":true,"text":"White rolls while on the bar and picks up without entering. One die reads 3."},
+    {"kind":"insert","start":823.32,"pickup":824.32,"player":"dark","dice":[6,2],"fan":true,"text":"Black rolls from the bar and picks up without entering a checker."},
+    {"kind":"insert","start":877.52,"pickup":879.16,"player":"dark","dice":[4,null],"fan":true,"text":"Black’s dice settle on the right. Black picks up without entering from the bar. One face reads 4."},
+    {"kind":"insert","start":895.16,"pickup":896.16,"player":"dark","dice":[6,2],"fan":true,"text":"Black rolls, picks both dice up, and leaves both checkers on the bar."},
+    {"kind":"replace","starts":[1061.32],"player":"dark","dice":[6,2],"text":"Black’s cup releases both dark dice onto the left half. The earlier replay used the landing side and credited White."},
+    {"kind":"replace","starts":[1162.8,1170],"player":"dark","dice":[3,2],"text":"Both dark dice stay on the left through 19:30, while Black’s sleeved hand moves the dark checkers. Join the two reads and correct the actor."}
+  ]
+}

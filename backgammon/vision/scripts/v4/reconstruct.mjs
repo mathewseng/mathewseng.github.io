@@ -14,7 +14,9 @@ const fps = 25;
 const allDice = Array.from({ length: 6 }, (_, i) =>
   Array.from({ length: 6 - i }, (_, j) => [i + 1, i + j + 1])).flat();
 const opening = boardKey(initialState());
-const out = path.join(artifactDir, 'v4');
+const baseline = path.join(artifactDir, 'v4');
+const out = path.resolve(process.env.OFFICE3_REPLAY_DIR ?? baseline);
+const observationsDir = path.resolve(process.env.OFFICE3_VISION_OBSERVATIONS_DIR ?? baseline);
 const v2 = path.join(artifactDir, 'v2');
 
 const load = (dir, file) => JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
@@ -116,7 +118,9 @@ function samePose(a, b) {
 }
 
 function observedRolls(game, observations, rows) {
-  const pairs = observations.pairs.map((r) => ({ ...r, evidence: 'same-half-dice-tracks' }));
+  const pairs = observations.pairs.map(r => ({ ...r,
+    evidence: r.actorEvidence === 'dice-body-agreement' ? 'physical-dice-color-and-stationary-tracks' : 'same-half-dice-tracks',
+  }));
   const legacy = game.conditional.map((entry) => {
     const start = Math.round(entry.startSeconds * fps), end = Math.round(entry.endSeconds * fps);
     const pair = pairs.find((r) => together(r, { start, end }) && sameDice(r.dice, entry.dice));
@@ -531,11 +535,12 @@ const args = process.argv.slice(2);
 const isPlan = args.includes('--plan');
 const gameNumbers = args.filter((a) => a !== '--plan').map(Number);
 if (gameNumbers.some((n) => !Number.isInteger(n) || n < 1 || n > 5)) throw new Error('Use game numbers 1–5');
+fs.mkdirSync(out, { recursive: true });
 const analysis = isPlan ? null : await loadEvaluator();
 for (const number of gameNumbers.length ? gameNumbers : [1, 2, 3, 4, 5]) {
   const prefix = `game-${String(number).padStart(2, '0')}`;
   const game = load(v2, `game-${number}-analysis.json`);
-  const observations = load(out, `${prefix}-observations.json`);
+  const observations = load(observationsDir, `${prefix}-observations.json`);
   const rows = sourceRows(game);
   if (rows.length !== game.frames) throw new Error('Frame count does not match source timeline');
   const groups = reconstruct(game, observations, rows);

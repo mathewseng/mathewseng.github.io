@@ -120,10 +120,34 @@ for (const number of [1, 2, 3, 4, 5]) {
     const corrected = data.rolls.find(roll => roll.start <= 2450 && roll.end > 2450);
     assert.deepEqual(corrected.dice, [6, 4]);
     assert.equal(data.decisions[corrected.decision].evLoss, null);
-    const fans = data.rolls.filter(roll => roll.fan);
+    const fans = data.rolls.filter(roll => roll.fan && [24995, 25192].includes(roll.start));
     assert.deepEqual(fans.map(roll => [roll.player, roll.dice]), [['dark', [4, 1]], ['dark', [2, null]]]);
     assert(fans.every(roll => roll.before.bar[1] === 2 && roll.decision === null));
     assert.deepEqual(fans[0].before, fans[0].after);
+  }
+  if (replay.contextRecovery?.some(entry => entry.kind === 'reviewed-turn-order')) {
+    const verdict = (start, player, dice) => {
+      const roll = data.rolls.find(entry => entry.start === Math.round(start * 25));
+      assert.deepEqual([roll.player, roll.dice], [player, dice]);
+      return roll;
+    };
+    if (number === 1) {
+      assert.equal(verdict(184.36, 'dark', [4, 3]).pickup, Math.round(239.96 * 25));
+      assert(verdict(437.56, 'white', [null, null]).fan);
+      assert(verdict(488.84, 'dark', [2, 1]).fan);
+    }
+    if (number === 3) {
+      assert.equal(verdict(941.12, 'dark', [4, 3]).end, Math.round(954.12 * 25));
+      assert(!data.rolls.some(roll => roll.start === Math.round(951.24 * 25)));
+      verdict(930.32, 'white', [6, 2]);
+    }
+    if (number === 4) {
+      verdict(531.76, 'dark', [6, 1]);
+      verdict(1061.32, 'dark', [6, 2]);
+      verdict(1162.8, 'dark', [3, 2]);
+      const fans = [verdict(823.32, 'dark', [6, 2]), verdict(895.16, 'dark', [6, 2])];
+      assert(fans.every(roll => roll.fan && JSON.stringify(roll.before) === JSON.stringify(roll.after)));
+    }
   }
   if (number === 5) {
     assert.equal(data.cubeOffer.replyInferred, true);

@@ -87,6 +87,16 @@ function renderReport(report, seek) {
     const reviewed = checks.reduce((sum, check) => sum + check.reviewed, 0);
     const unreadable = checks.reduce((sum, check) => sum + check.unreadable, 0);
     section.append(element("p", `${reviewed} frames reviewed across the session. ${unreadable} ambiguous samples were excluded from training and scoring.`, "muted small"));
+    const diceBody = report.diceBody;
+    if (diceBody) {
+      const { baselineCorrect, candidateCorrect, heldOut, pairs, corroboratedPairs, changed } = diceBody;
+      const agreement = changed.length
+        ? ` The color model changed ${changed.length} actor candidates, and ${changed.filter(pair => pair.confirmed).length} agree with the reviewed replay.`
+        : "";
+      section.append(element("p",
+        `Die body color matched ${candidateCorrect}/${heldOut} held-out crops. The brightness heuristic matched ${baselineCorrect}/${heldOut}. Both dice supported the same color in ${corroboratedPairs}/${pairs} tracked pairs.${agreement}`,
+        "muted small"));
+    }
     for (const spot of report.modelSpots ?? []) {
       const row = element("div", null, "vision-report-spot");
       const target = spot.expected.slice().sort((a, b) => b - a).join("–");

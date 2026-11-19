@@ -168,3 +168,22 @@ Manual reader calibration
   Run both through the candidate before exporting the model spot checks:
 
     python3 calibration/verify_spots.py
+
+
+Calibrate die color and review turn order
+
+    python3 calibration/train_dice_body.py
+    python3 calibration/track_dice_body.py
+    python3 v4/observations.py --output "$calibration/observations-baseline"
+    python3 v4/observations.py --tracks "$calibration/value-tracks-body.json" \
+      --output "$calibration/observations-body"
+    OFFICE3_VISION_OBSERVATIONS_DIR="$calibration/observations-body" \
+      OFFICE3_REPLAY_DIR="$candidate" bun v4/reconstruct.mjs --plan 4
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/reconcile-reviewed-turns.mjs "$previous"
+    OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs
+
+  Use a separate directory for the diagnostic reconstruction. The published
+  reconciliation starts with the earlier scored replay and only applies the
+  camera-confirmed cases in reviewed-turn-order.json. A previously scored
+  move can survive a joined episode. A newly observed move is graded only
+  if repeated source boards and legal play support the result.

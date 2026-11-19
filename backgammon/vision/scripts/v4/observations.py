@@ -49,6 +49,11 @@ def stationary_tracks(tracks, breaks):
         supported = best and strongest >= .73 and best[0][1] >= sum(votes.values()) * .67
         track["value"] = best[0][0] if supported else 0
         track["quality"] = max(.67, strongest) if track["samples"] >= 16 else strongest
+        body = {read["bodyColor"] for read in track["reads"]
+                if read.get("bodyConfidence", 0) >= .85 and read.get("bodySamples", 0) >= 5}
+        # Both dice need independent corroboration. Suppress this channel
+        # when a track joins incompatible observations.
+        track["bodyColor"] = next(iter(body)) if len(body) == 1 else None
     return [t for t in merged if t["samples"] >= 13 and t["end"] - t["start"] >= 15]
 
 
@@ -94,15 +99,19 @@ def gather(game, tracks, corrections):
         a, b = pair["tracks"]
         common = half(a["x"])
         opening = common != half(b["x"])
+        body = a["bodyColor"] if a["bodyColor"] == b["bodyColor"] else None
         if opening:
             if not a["value"] or not b["value"]:
                 continue
             common = half(a["x"] if a["value"] > b["value"] else b["x"])
+        elif body:
+            common = body
         events.append({
             "start": pair["start"], "end": pair["end"],
             "dice": (sorted([v for v in pair["dice"] if v]) + [None, None])[:2],
             "quality": pair["quality"], "player": common,
-            "opening": opening, "tracks": [a["id"], b["id"]],
+            "opening": opening, "actorEvidence": "dice-body-agreement" if body and not opening else "landing-side",
+            "tracks": [a["id"], b["id"]],
             "centers": [[a["x"], a["y"]], [b["x"], b["y"]]],
         })
     for track in individual:
@@ -120,14 +129,17 @@ def gather(game, tracks, corrections):
 def main():
     args = argparse.ArgumentParser(description=__doc__)
     args.add_argument("games", nargs="*", type=int, default=range(1, 6))
-    tracks = json.loads((ARTIFACT_DIR / "v3/value-tracks.json").read_text())
+    args.add_argument("--tracks", type=Path, default=ARTIFACT_DIR / "v3/value-tracks.json")
+    args.add_argument("--output", type=Path, default=OUT)
+    options = args.parse_args()
+    tracks = json.loads(options.tracks.read_text())
     corrections = json.loads((ARTIFACT_DIR / "v3/reviewed-corrections.json").read_text())
     corrections.extend(json.loads(Path(__file__).with_name("reviewed_rolls.json").read_text()))
-    OUT.mkdir(exist_ok=True)
-    for number in args.parse_args().games:
+    options.output.mkdir(parents=True, exist_ok=True)
+    for number in options.games:
         game = json.loads((ARTIFACT_DIR / "v2" / f"game-{number}-analysis.json").read_text())
         content = gather(game, tracks, corrections)
-        (OUT / f"game-{number:02}-observations.json").write_text(json.dumps(content) + "\n")
+        (options.output / f"game-{number:02}-observations.json").write_text(json.dumps(content) + "\n")
         print(number, len(content["pairs"]), "paired dice episodes", flush=True)
 
 

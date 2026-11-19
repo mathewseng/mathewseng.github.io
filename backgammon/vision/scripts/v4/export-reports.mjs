@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v10");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v13");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -18,6 +18,8 @@ const validationPath = path.join(artifactDir, "calibration", "validation.json");
 const validation = fs.existsSync(validationPath) ? read(validationPath) : null;
 const spotPath = path.join(artifactDir, "calibration", "spot-validation.json");
 const modelSpots = fs.existsSync(spotPath) ? read(spotPath) : [];
+const bodyReportPath = path.join(artifactDir, "calibration", "dice-body-validation.json");
+const bodyValidation = fs.existsSync(bodyReportPath) ? read(bodyReportPath) : null;
 
 const issueNames = {
   "repeated-player": "Consecutive rolls assigned to the same player",
@@ -35,6 +37,28 @@ const reviewed = {
       { frame: 31300, text: "Earlier clear frames establish Black’s checker on point 7. White’s 6–1 bears off two checkers, taking White from three off to five off." }],
   4: [{ frame: 2450, text: "Black’s visible roll is 6–4. The earlier replay showed 3–1 and attributed a checker error. The corrected replay removes that charge because the completed move remains unverified." }],
 };
+
+function diceBodyEvidence(prefix, rolls) {
+  if (!bodyValidation) return null;
+  const filename = prefix + "-observations.json";
+  const baselinePath = path.join(artifactDir, "calibration", "observations-baseline", filename);
+  const trainedPath = path.join(artifactDir, "calibration", "observations-body", filename);
+  if (!fs.existsSync(baselinePath) || !fs.existsSync(trainedPath)) return null;
+  const { pairs: baseline } = read(baselinePath);
+  const { pairs: trained } = read(trainedPath);
+  assert.equal(trained.length, baseline.length);
+  const changed = trained.flatMap((pair, index) => {
+    assert.deepEqual(pair.tracks, baseline[index].tracks);
+    if (pair.player === baseline[index].player) return [];
+    const mid = Math.floor((pair.start + pair.end) / 2);
+    const confirmed = rolls.some(roll => roll.start <= mid && mid < roll.end && roll.player === pair.player &&
+      ['reviewed-physical-roll', 'reviewed-roll-and-legal-result'].includes(roll.evidence));
+    return [{ frame: pair.start, player: pair.player, confirmed }];
+  });
+  const { reviewed, heldOut, baselineCorrect, candidateCorrect } = bodyValidation;
+  return { reviewed, heldOut, baselineCorrect, candidateCorrect, pairs: trained.length,
+    corroboratedPairs: trained.filter(pair => pair.actorEvidence === "dice-body-agreement").length, changed };
+}
 
 function modelChecks(game) {
   if (!validation) return null;
@@ -192,8 +216,9 @@ function report(number) {
   const footageReview = [...(reviewed[number] ?? []), ...(replay.contextRecovery ?? [])
     .filter(entry => entry.text).map(({ frame, text }) => ({ frame, text }))].sort((a, b) => a.frame - b.frame);
   const report = { game: number, fps: data.fps, counts, issues, issueNames, reviewed: footageReview,
-    confirmedPriorMisreads: number === 4 ? 1 : 0, modelChecks: modelChecks(number),
-    reference: referenceFor(prefix, data.sources), modelSpots: modelSpots.filter(spot => spot.game === number) };
+    confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
+      entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
+    reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls), modelSpots: modelSpots.filter(spot => spot.game === number) };
   fs.writeFileSync(path.join(reportDir, prefix + ".json"), JSON.stringify(report) + "\n");
   console.log(prefix, counts, Object.fromEntries(Object.keys(issueNames).map(kind =>
     [kind, issues.filter(issue => issue.kind === kind).length])));

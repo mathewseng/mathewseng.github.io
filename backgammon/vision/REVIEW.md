@@ -124,3 +124,36 @@ reader. Across 50 frames of each reviewed roll, the fine-tuned reader matched
 95 of 100 dice-face observations for Game 5’s 4–1 versus 91 for the current
 reader. On Game 4’s 6–4, it made 18 accepted misreads where the current reader
 made zero. These spots helped decide which weights to use for the release.
+
+
+## Turn-order audit and die body color
+
+The prior report flagged 40 adjacent same-player rolls. Contact sheets
+and closer source-frame review identified three patterns. Brief rolls
+were absent between indexed turns, stationary dice were counted again
+after a detector gap, and dark dice on the left were attributed to White.
+The maintained replay adds 14 visible rolls, joins six duplicate reports,
+and reassigns three physical rolls in Game 4. The turn-order flags fell
+from 40 to 16. Both faces are known for 124 of 153 indexed rolls. There
+are 32 unknown faces, up from 26 as short rolls with unreadable faces
+became visible in the timeline.
+
+Game 1's missed exchanges include White's short rolls from the bar
+around 7:11, 7:17 and 7:24. Game 3 now keeps the same original decision
+across the stationary dice at 4:22 and 15:51. In Game 4, Black throws
+dark dice onto the left around 8:52 and 17:41, and the two detections at
+19:23 and 19:30 correspond to one of Black's rolls. The earlier Game 4
+5–1 is corrected to 6–1. All 86 previously scored results, EV losses and
+result timestamps are preserved. The two newly scored fans are legal
+no-move results and contribute zero checker EV loss.
+
+A source clip holdout tested physical die color. Of 175 crops with new
+body-color annotations, 170 were readable and 42 belonged to test clips.
+The previous brightness cutoff classified 25/42. The trained body reader
+classified 42/42. It produced a corroborated color on 585/599 archived
+stationary tracks. Rebuilding the observation layer kept all 108 paired
+candidate intervals and changed actor attribution on four candidate
+reports. All four correspond to three reviewed Black rolls in Game 4.
+The observation model requires agreement from both dice. The published
+timeline uses the reviewed throws, pickups and rules checks to verify
+those corrections.

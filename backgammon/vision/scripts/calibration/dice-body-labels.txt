@@ -1,0 +1,23 @@
+# Source crop index matches the dice records in labels.json. w = pale, d = dark, ? = covered or unclear.
+w d d d w w d w
+w d d w w w d w
+w d d w d d d d
+w w w d d w d ?
+? w d w w w w w
+d w d w w d d w
+d d d d d d d d
+d w w w w d d d
+d w d d d d w w
+w w w d d ? w w
+d d d d d d d w
+w d d d w w w w
+? w w d d d d w
+w w d d d d d d
+w w d d d d d d
+d w w d w d d w
+d d d w d d d w
+d w d d d d d d
+d d ? d w w w d
+d w d d d d d d
+d d d d d d d w
+w d d d w d d
