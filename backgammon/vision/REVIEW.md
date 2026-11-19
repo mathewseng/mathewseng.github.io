@@ -90,9 +90,11 @@ not establish consecutive rolls and complete legal turns there.
 | --- | --- | --- |
 | Game 3, 11:15–11:30 | Black's 1–1 stayed on the board. One die shifted while Black handled checkers. | Join the split into one roll and keep the original options visible. |
 | Game 3, 18:04 | A sixth checker was counted on White's first point and also detected in the middle of the board. The tray corroborates two White checkers off. | Recover the checker inventory and show Black's 4–3 options from the fixed board. |
+| Game 3, 19:31–20:16 | The reports found a stationary pair during the apparent gap. Black’s 4–3 remained on the table until pickup at 20:12. White rolled on the other half immediately afterward. | Keep Black’s roll through pickup. Index White’s next roll with one readable 2 and one unresolved face. |
 | Game 3, 20:52 | Black's checker on point 7 is supported before the occlusion. The next board confirms two White bear-offs. | Keep the checker count, show reconstructed markers in Vision, and preserve the legal 6–1 result. |
 | Game 4, 1:38 | Black's settled dice show 6–4. The old 3–1 grade was tied to a different move. | Show 6–4 and remove the unsupported checker loss. |
 | Game 4, 16:39 and 16:47 | Black rolled twice from the bar between distinct White rolls. Neither Black roll changed the board. | Show both fans. The second die of the later roll is unreadable. |
+| Game 5, 8:14 | The reports found White’s 4–1 before the checker left the bar. Repeated frames before and after play support a single legal result, `bar/21 8/7`. | Start the roll when the dice settle and analyze from the pre-roll board. |
 
 316 distinct source frames were inspected. The 175 dice crops produced 90
 training labels and 31 held-out labels. The 141 checker crops produced 104
@@ -109,3 +111,16 @@ training split differed. The fine-tuned dice reader improved this test overall
 and regressed on some clips, so the published state uses the calibrated
 baseline with revised temporal inference. Game reports list remaining pickup
 and turn-order flags with links to seek the footage.
+
+Compared with the earlier replay, 117 complete rolls became 121, unknown
+faces fell from 31 to 26, and consecutive same-player flags fell from 46 to
+40. The reports' stationary-pair check found no remaining unindexed pair with
+enough raw detector support to meet its threshold. These checks cannot rule
+out additional missed rolls. All 86 graded checker plays reproduce a legal
+result for the reconstructed board and dice.
+
+Both candidate networks were also exercised through the existing camera
+reader. Across 50 frames of each reviewed roll, the fine-tuned reader matched
+95 of 100 dice-face observations for Game 5’s 4–1 versus 91 for the current
+reader. On Game 4’s 6–4, it made 18 accepted misreads where the current reader
+made zero. These spots helped decide which weights to use for the release.

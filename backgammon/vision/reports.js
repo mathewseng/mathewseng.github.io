@@ -29,6 +29,13 @@ function renderReport(report, seek) {
     summary.append(stat);
   }
   fragment.append(summary);
+  if (report.reference) {
+    const previous = report.reference;
+    const repeated = issues.filter(issue => issue.kind === "repeated-player").length;
+    fragment.append(element("p",
+      `Since the earlier replay · Complete rolls ${previous.completeRolls} → ${counts.completeRolls} · Unknown faces ${previous.missingFaces} → ${counts.missingFaces} · Same-player flags ${previous.repeatedPlayers} → ${repeated}`,
+      "muted small vision-report-comparison"));
+  }
 
   const coverage = element("section", null, "vision-report-coverage");
   coverage.append(element("h3", "Detector coverage"));
@@ -80,6 +87,13 @@ function renderReport(report, seek) {
     const reviewed = checks.reduce((sum, check) => sum + check.reviewed, 0);
     const unreadable = checks.reduce((sum, check) => sum + check.unreadable, 0);
     section.append(element("p", `${reviewed} frames reviewed across the session. ${unreadable} ambiguous samples were excluded from training and scoring.`, "muted small"));
+    for (const spot of report.modelSpots ?? []) {
+      const row = element("div", null, "vision-report-spot");
+      const target = spot.expected.slice().sort((a, b) => b - a).join("–");
+      const describe = result => `${result.correct}/${spot.frames * 2} faces matched, ${result.misread} misread, ${result.unread} unread`;
+      row.append(timestamp(spot.firstFrame), element("p", `Reviewed ${target} roll · Current reader ${describe(spot.current)}. Fine-tuned reader ${describe(spot.candidate)}.`, "muted small"));
+      section.append(row);
+    }
     fragment.append(section);
   }
 

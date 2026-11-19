@@ -9,12 +9,15 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v10");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
 fs.mkdirSync(reportDir, { recursive: true });
 const validationPath = path.join(artifactDir, "calibration", "validation.json");
 const validation = fs.existsSync(validationPath) ? read(validationPath) : null;
+const spotPath = path.join(artifactDir, "calibration", "spot-validation.json");
+const modelSpots = fs.existsSync(spotPath) ? read(spotPath) : [];
 
 const issueNames = {
   "repeated-player": "Consecutive rolls assigned to the same player",
@@ -29,10 +32,8 @@ const issueNames = {
 };
 const reviewed = {
   3: [{ frame: 27100, text: "Black’s 4–3 remains on the table through occlusions. A sixth checker on White’s first point was detected twice. White has two checkers off." },
-      { frame: 29288, text: "The same two Black dice remain on the right half after the replay clears the roll. The footage still shows them during the pause. The exact pickup and following roll need a separate timing review." },
       { frame: 31300, text: "Earlier clear frames establish Black’s checker on point 7. White’s 6–1 bears off two checkers, taking White from three off to five off." }],
   4: [{ frame: 2450, text: "Black’s visible roll is 6–4. The earlier replay showed 3–1 and attributed a checker error. The corrected replay removes that charge because the completed move remains unverified." }],
-  5: [{ frame: 12399, text: "The footage shows White shaking the cup and moving a checker from the bar while the detector reads a stationary pair on the left. The replay starts this roll later. Check the roll and pickup before regrading the move." }],
 };
 
 function modelChecks(game) {
@@ -92,6 +93,24 @@ function unindexedPairs(raw, data) {
   return pairs;
 }
 
+function repeatedPlayer(roll, next, sources) {
+  return next?.player === roll.player && !sources.some(source => source.discontinuity &&
+    source.firstGameFrame > roll.start && source.firstGameFrame <= next.start);
+}
+
+function referenceFor(prefix, sources) {
+  const file = path.join(referenceDir, prefix + "-game.json");
+  if (!fs.existsSync(file)) return null;
+  const { presentation, decisions } = read(file);
+  const rolls = presentation.rolls;
+  return {
+    completeRolls: rolls.filter(roll => roll.dice.every(Number.isInteger)).length,
+    missingFaces: rolls.flatMap(roll => roll.dice).filter(face => face === null).length,
+    repeatedPlayers: rolls.filter((roll, i) => repeatedPlayer(roll, rolls[i + 1], sources)).length,
+    gradedPlays: Object.values(decisions).filter(decision => decision.player && decision.countedInGameLoss).length,
+  };
+}
+
 function report(number) {
   const prefix = `game-0${number}`;
   const data = read(path.join(output, "state", prefix + ".json"));
@@ -145,9 +164,7 @@ function report(number) {
       add("no-pickup", roll, roll.end - 1);
     }
     if (next?.start < roll.end) add("overlapping-rolls", next);
-    if (next?.player === roll.player &&
-        !data.sources.some(source => source.discontinuity && source.firstGameFrame > roll.start &&
-          source.firstGameFrame <= next.start)) add("repeated-player", next);
+    if (repeatedPlayer(roll, next, data.sources)) add("repeated-player", next);
     for (let f = roll.start; f < roll.end; f++) {
       const detected = raw[f]?.dice?.filter(die => die.value && die.locationScore >= .25) ?? [];
       counts.rollFrames++;
@@ -175,7 +192,8 @@ function report(number) {
   const footageReview = [...(reviewed[number] ?? []), ...(replay.contextRecovery ?? [])
     .filter(entry => entry.text).map(({ frame, text }) => ({ frame, text }))].sort((a, b) => a.frame - b.frame);
   const report = { game: number, fps: data.fps, counts, issues, issueNames, reviewed: footageReview,
-    confirmedPriorMisreads: number === 4 ? 1 : 0, modelChecks: modelChecks(number) };
+    confirmedPriorMisreads: number === 4 ? 1 : 0, modelChecks: modelChecks(number),
+    reference: referenceFor(prefix, data.sources), modelSpots: modelSpots.filter(spot => spot.game === number) };
   fs.writeFileSync(path.join(reportDir, prefix + ".json"), JSON.stringify(report) + "\n");
   console.log(prefix, counts, Object.fromEntries(Object.keys(issueNames).map(kind =>
     [kind, issues.filter(issue => issue.kind === kind).length])));

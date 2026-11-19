@@ -36,10 +36,10 @@ def slot_decode(candidate):
     return ((candidate-1)//SLOT_CLASSES,(candidate-1)%SLOT_CLASSES+1) if candidate else (None,0)
 
 class CameraReader:
-    def __init__(self):
-        self.slot=load('slots')
+    def __init__(self, face_reader=None, checker_reader=None):
+        self.slot=cv2.dnn.readNetFromONNX(str(checker_reader or OUT/'slots.onnx'))
         self.dice=load('dice-locator')
-        self.face=cv2.dnn.readNetFromONNX(str(ROOT/'models/dice_real.onnx'))
+        self.face=cv2.dnn.readNetFromONNX(str(face_reader or ROOT/'models/dice_real.onnx'))
         self.template=cv2.imread(str(ROOT/'models/cube-four-template.png'),cv2.IMREAD_GRAYSCALE)
 
     def correct_stacks(self,pixels,state):
@@ -155,15 +155,15 @@ class CameraReader:
         return state
 
 def replay(job):
-    video,force=job
+    video,force,state_dir,face_reader,checker_reader=job
     cv2.setNumThreads(1)
     name=f'{video.stem}.jsonl.gz'
     source=ROOT/'state'/name
-    final=OUT/'state'/name
+    final=state_dir/name
     staged=final.with_suffix('.part.gz')
     if final.exists() and not force:
         return {'source':video.name,'status':'existing'}
-    reader=CameraReader()
+    reader=CameraReader(face_reader, checker_reader)
     roll=RollState()
     counts=Counter()
     with av.open(str(video)) as media,gzip.open(source,'rt') as rows,gzip.open(staged,'wt',compresslevel=2) as result:
@@ -217,12 +217,21 @@ def main():
     p.add_argument('--jobs',type=int,default=6)
     p.add_argument('--force',action='store_true')
     p.add_argument('--test',action='store_true')
+    p.add_argument('--dice-reader', type=Path, help='Candidate face reader ONNX file')
+    p.add_argument('--checker-reader', type=Path, help='Candidate checker point reader ONNX file')
+    p.add_argument('--state-dir', type=Path, help='Output directory for candidate observations')
     args=p.parse_args()
     cv2.setNumThreads(1)
     if args.test:
         test();return
-    (OUT/'state').mkdir(exist_ok=True)
-    items=[(p,args.force) for p in sorted((ROOT/'board').glob('*.mp4'))[args.start:args.stop]]
+    state_dir = (args.state_dir or OUT/'state').resolve()
+    if state_dir == (ROOT/'state').resolve():
+        p.error('Choose a derived state directory to preserve the input observations.')
+    if (args.dice_reader or args.checker_reader) and state_dir == (OUT/'state').resolve():
+        p.error('Candidate readers require a separate --state-dir for their observations.')
+    state_dir.mkdir(parents=True, exist_ok=True)
+    videos = sorted((ROOT/'board').glob('*.mp4'))[args.start:args.stop]
+    items = [(video, args.force, state_dir, args.dice_reader, args.checker_reader) for video in videos]
     if args.jobs==1:
         for item in items:print(json.dumps(replay(item)),flush=True)
     else:

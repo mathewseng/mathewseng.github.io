@@ -131,7 +131,9 @@ Refresh the context and reviewed episodes
 
     OFFICE3_REPLAY_DIR="$prepared" bun v4/recover-context.mjs "$previous"
     OFFICE3_REPLAY_DIR="$scored" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs
-    OFFICE3_REPLAY_DIR="$output" bun v4/review-episodes.mjs "$scored"
+    OFFICE3_REPLAY_DIR="$reviewed" bun v4/review-episodes.mjs "$scored"
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/repair-reviewed-handoffs.mjs "$reviewed"
+    OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs
 
   The source-frame review notes for a continuous roll and short fans live in
   v4/reviewed_episodes.json. Apply them only to the corresponding Office-3
@@ -150,3 +152,19 @@ Manual reader calibration
   The released replay continues to use the existing readers. The small
   benchmark is biased toward difficult detections and includes nearby frames
   from the same physical episode, so its counts describe reviewed patches.
+
+
+  To benchmark the full reader pipeline while retaining the analyzed evidence,
+  use a separate observations directory:
+
+    python3 v2/vision.py --start 39 --stop 40 --jobs 1 \
+      --dice-reader "$calibration/dice-candidate.onnx" \
+      --checker-reader "$calibration/checkers-candidate.onnx" \
+      --state-dir "$calibration/candidate-state"
+
+  Here calibration is the generated calibration directory in Downloads.
+  Omit start and stop to analyze all source clips.
+  The reviewed comparison uses raw states from source clips 39 and 67.
+  Run both through the candidate before exporting the model spot checks:
+
+    python3 calibration/verify_spots.py

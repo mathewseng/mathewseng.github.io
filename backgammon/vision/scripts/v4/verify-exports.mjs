@@ -106,6 +106,12 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.deepEqual(bearoff.dice, [4, 3]);
     assert.deepEqual(bearoff.before.borneOff, [2, 0]);
     assert(bearoff.decision && data.decisions[bearoff.decision].moves.length > 0);
+    if (replay.contextRecovery.some(entry => entry.kind === 'reviewed-pickup')) {
+      assert.equal(bearoff.end, 30300);
+      assert.equal(bearoff.pickup, 30300);
+      const successor = data.rolls[data.rolls.indexOf(bearoff) + 1];
+      assert.deepEqual([successor.start, successor.player, successor.dice], [30325, 'white', [2, null]]);
+    }
     const white = data.rolls.find(roll => roll.start <= 31300 && roll.end > 31300);
     assert.equal(white.before.points[6], -1);
     assert.deepEqual(white.after.borneOff, [5, 0]);
@@ -121,6 +127,14 @@ for (const number of [1, 2, 3, 4, 5]) {
   }
   if (number === 5) {
     assert.equal(data.cubeOffer.replyInferred, true);
+    if (replay.contextRecovery?.some(entry => entry.kind === 'reviewed-early-roll')) {
+      const entered = data.rolls.find(roll => roll.start === 12367);
+      assert.deepEqual(entered.dice, [4, 1]);
+      assert.deepEqual(entered.before.bar, [1, 0]);
+      assert.deepEqual(entered.after.bar, [0, 0]);
+      assert.equal(data.decisions[entered.decision].played.notation, 'bar/21 8/7');
+      assert.equal(entered.resultFrame, 12826);
+    }
     const pass = history.replay.timeline.find(entry => entry.frame === data.ending.frame && entry.kind === 'cube');
     assert.equal(pass.note, 'Pass inferred from pack-up');
     const segment = history.items.find(item => item.id === pass.item);

@@ -868,3 +868,13 @@
 @media (min-width: 1050px) {
   .vision-stage { max-width: 990px; }
 }
+
+.vision-report-comparison { margin: -.7rem 0 0; }
+
+.vision-report-spot {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  gap: .75rem;
+  align-items: start;
+  margin-top: .65rem;
+}
