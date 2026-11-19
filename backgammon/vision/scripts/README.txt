@@ -605,6 +605,10 @@ Audit game boundaries
   including roll ownership, pickup timing, both legal boards, and the
   cumulative loss in the scored frame stream. The Reports roll continuity
   links use the reviewed throw timestamps and camera confirmation frames.
+  For longer rolls, the alternate locator archive can link earlier settled
+  pairs through several covered shifts. It needs a consistently read face,
+  an unambiguous history, and a single legal dice pair reaching the confirmed
+  board after pickup. Reports includes the individual shifts.
 
 Source-crop pip reader trial
   Run calibration/train_native_face_tracks.py to prepare the camera crop

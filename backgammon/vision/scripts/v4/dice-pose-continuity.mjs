@@ -11,6 +11,20 @@ export function pairVisible(frame, [first, second]) {
     locations.some((other, otherIndex) => otherIndex !== index && supports(other, second)));
 }
 
+export function stationaryPoseOnset(frames, centers, first, last) {
+  // The locator reports on a two-pixel grid. Both dice must stay within
+  // roughly one grid step of their tracked centers for six frames.
+  let run = 0;
+  for (let frame = first; frame <= last; frame++) {
+    const locations = frames[frame]?.diceLocations ?? [];
+    const hits = centers.map(([x, y]) => locations.findIndex(([px, py, score]) =>
+      score >= .38 && Math.hypot(x - px, y - py) <= 3));
+    run = hits.every(index => index >= 0) && hits[0] !== hits[1] ? run + 1 : 0;
+    if (run === 6) return frame - run + 1;
+  }
+  return null;
+}
+
 function continuedTo(frames, centers, start, limit) {
   let end = start + 5, run = 6;
   for (let frame = end + 1; frame < limit && frame - end <= 150; frame++) {
@@ -122,15 +136,96 @@ export function rejoinDicePose(roll, followup, proof, frames, limit) {
     unsupported = visible(read, fixed) || covered(read, fixed) ? 0 : unsupported + 1;
     if (unsupported > 8) return null;
   }
-  let coveredDice = false, run = 0, lastSeen = proof.lastTogether;
-  for (let frame = lastSeen + 1; frame < Math.min(limit, proof.lastTogether + 50); frame++) {
+  const pickup = confirmedPosePickup(frames, proof.centers, proof.lastTogether, limit);
+  return pickup ? { start: roll.start, relocatedAt: proof.firstTogether, ...pickup, fixedFace: face } : null;
+}
+
+function confirmedPosePickup(frames, centers, after, limit) {
+  const masked = centers.map(() => false);
+  let run = 0, lastSeen = after;
+  for (let frame = after + 1; frame < Math.min(limit, after + 50); frame++) {
     const read = frames[frame];
-    const empty = read && proof.centers.every(center => !visible(read, center) && !covered(read, center));
-    if (pairVisible(read, proof.centers)) lastSeen = frame;
-    if (proof.centers.every(center => covered(read, center))) coveredDice = true;
-    run = empty && coveredDice ? run + 1 : 0;
-    if (run >= 8) return { start: roll.start, relocatedAt: proof.firstTogether,
-      pickupFrame: frame - run + 1, poseLastSeen: lastSeen, fixedFace: face };
+    const empty = read && centers.every(center => !visible(read, center) && !covered(read, center));
+    if (pairVisible(read, centers)) lastSeen = frame;
+    for (const [index, center] of centers.entries()) {
+      if (covered(read, center)) masked[index] = true;
+      else if (visible(read, center)) masked[index] = false;
+    }
+    run = empty && masked.every(Boolean) ? run + 1 : 0;
+    if (run >= 8) return { pickupFrame: frame - run + 1, poseLastSeen: lastSeen };
   }
   return null;
+}
+
+export function pickupAfterPose(roll, frames, limit) {
+  const from = Math.max(roll.start, roll.end - 15);
+  const last = frames.slice(from, roll.end + 1).findLastIndex(read => pairVisible(read, roll.centers));
+  return last < 0 ? null : confirmedPosePickup(frames, roll.centers, from + last, limit);
+}
+
+function firstVisible(frames, centers, last, lower) {
+  let first = last;
+  for (let frame = last - 1; frame >= lower && first - frame <= 8; frame--) {
+    if (pairVisible(frames[frame], centers)) first = frame;
+  }
+  return first;
+}
+
+function linkedThroughHand(frames, earlier, later, first, stop) {
+  return earlier.every((center, slot) => {
+    const next = later[slot];
+    let uncovered = 0, masked = false;
+    for (let frame = first; frame < stop; frame++) {
+      const read = frames[frame];
+      const hand = covered(read, center) || covered(read, next);
+      masked ||= hand;
+      uncovered = hand || visible(read, center) || visible(read, next) ? 0 : uncovered + 1;
+      if (uncovered > 8) return false;
+    }
+    return close(center, next) || masked;
+  });
+}
+
+function earlierDicePose(frames, later, lower, face) {
+  const minimum = Math.max(lower + 20, later.first - 90);
+  const found = [];
+  for (let frame = later.first - 1; frame >= minimum; frame -= 2) {
+    const points = frames[frame]?.diceLocations?.filter(point => point[2] >= .38) ?? [];
+    const nearby = later.centers.map(center => points.filter(point =>
+      Math.hypot(point[0] - center[0], point[1] - center[1]) <= 65));
+    const recent = frames.slice(frame - 20, frame + 1);
+    for (const known of nearby[0]) {
+      if (faceAt(recent, known) !== face) continue;
+      for (const other of nearby[1]) {
+        if (Math.hypot(known[0] - other[0], known[1] - other[1]) < 18 ||
+            close(known, later.centers[0]) && close(other, later.centers[1])) continue;
+        const centers = [known.slice(0, 2), other.slice(0, 2)];
+        if (found.some(candidate => candidate.centers.every((center, index) => close(center, centers[index])))) continue;
+        if (recent.filter(read => pairVisible(read, centers)).length < 15 ||
+            !linkedThroughHand(frames, centers, later.centers, frame + 1, later.first + 1)) continue;
+        const first = firstVisible(frames, centers, frame, lower);
+        if (frame - first >= 25) found.push({ centers, first, last: frame });
+      }
+    }
+  }
+  return found.length === 1 ? found[0] : null;
+}
+
+/** Recover earlier settled positions of a long roll with one readable face. */
+export function traceDicePoseHistory(roll, frames, lower, limit) {
+  const face = roll.dice[0];
+  const tail = frames.slice(Math.max(roll.start, roll.end - 40), roll.end + 1);
+  const identified = roll.centers.filter(center => faceAt(tail, center) === face);
+  if (identified.length !== 1) return null;
+  const centers = [identified[0], roll.centers.find(center => center !== identified[0])];
+  const pickup = pickupAfterPose({ ...roll, centers }, frames, limit);
+  if (!pickup) return null;
+
+  const history = [{ centers, first: firstVisible(frames, centers, pickup.poseLastSeen, lower), last: pickup.poseLastSeen }];
+  for (let earlier = earlierDicePose(frames, history[0], lower, face); earlier;
+    earlier = earlierDicePose(frames, history[0], lower, face)) history.unshift(earlier);
+  if (history.length < 2) return null;
+  const first = history[0].first;
+  const start = stationaryPoseOnset(frames, history[0].centers, first, first + 25);
+  return start !== null && start < roll.start - 25 ? { start, face, history, ...pickup } : null;
 }

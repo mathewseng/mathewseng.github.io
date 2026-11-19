@@ -427,7 +427,7 @@ function renderReport(report, seek) {
   }
 
   function automaticReconstruction({ current, updated, review, extra, boundary, closingRoll, suppressed,
-    checkerRecoveries, handoffs = [], relocatedDice = [] }, recoveries) {
+    checkerRecoveries, handoffs = [], relocatedDice = [], poseHistories = [] }, recoveries) {
     const section = element("section", null, "vision-report-model vision-automatic-report");
     section.append(element("h3", "Automatic reconstruction"), element("p",
       "Both runs use the same footage and are compared with the reviewed replay. Dice accuracy uses rolls with two verified faces.",
@@ -500,12 +500,14 @@ function renderReport(report, seek) {
         { frame: roll.resultFrame, title: "Ending checker position" },
       ]), entry => entry.title));
     }
-    if (handoffs.length || relocatedDice.length) {
+    if (handoffs.length || relocatedDice.length || poseHistories.length) {
       const describeRoll = roll => `${player(roll.player)} ${dice(roll.dice)}`;
       section.append(element("h4", "Roll continuity"), reviewList([
         ...handoffs.flatMap(({ outgoing, incoming, sharedBoard }) => [
           { frame: outgoing.frame, title: describeRoll(outgoing), detail: "The earlier dice track belongs to the scored move." },
-          { frame: incoming.frame, title: describeRoll(incoming), detail: "Both dice settle for the next turn." },
+          { frame: incoming.frame, title: describeRoll(incoming), detail: incoming.observedFace
+            ? `The visible ${incoming.observedFace} and the verified checker move determine the roll.`
+            : "Both dice settle for the next turn." },
           { frame: sharedBoard, title: "Board confirmed at the handoff",
             detail: `${player(outgoing.player)}’s ending position is ${player(incoming.player)}’s starting position.` },
         ]),
@@ -513,6 +515,14 @@ function renderReport(report, seek) {
           { frame: roll.frame, title: describeRoll(roll) },
           { frame: roll.relocatedAt, title: "Same roll after a die moved",
             detail: `The die showing ${roll.fixedFace} reappears in the same spot after the hand clears.` },
+          { frame: roll.pickupFrame, title: "Both dice picked up" },
+          { frame: roll.resultFrame, title: "Ending checker position",
+            detail: `Board confirmed ${((roll.resultFrame - roll.pickupFrame) / report.fps).toFixed(2)} s after pickup.` },
+        ]),
+        ...poseHistories.flatMap(roll => [
+          { frame: roll.frame, title: describeRoll(roll),
+            detail: `The earlier detection was ${((roll.previousStart - roll.frame) / report.fps).toFixed(2)} s late. The visible ${roll.observedFace} and the verified checker move determine the roll.` },
+          ...roll.shifts.map((frame, index) => ({ frame, title: `Dice shift ${index + 1} during the same roll` })),
           { frame: roll.pickupFrame, title: "Both dice picked up" },
           { frame: roll.resultFrame, title: "Ending checker position",
             detail: `Board confirmed ${((roll.resultFrame - roll.pickupFrame) / report.fps).toFixed(2)} s after pickup.` },

@@ -824,3 +824,29 @@ reads fall from 11 to 9, and the two wrong rollers among matched throws are
 corrected. Matching starting boards rise from 118 to 120 and ending boards
 from 84 to 87. The comparison still matches 136 of 163 reviewed throws,
 with 22 extra proposals remaining.
+
+## Following a roll through multiple dice shifts
+
+At 3:04.72 in Game 1, Black rolls 5–3. The earlier automatic timeline first
+recognized the three at 3:42.80. The locator archive has both dice long before
+that read, including two times when a hand moves the dice to new positions.
+The reconstruction follows the three and its companion backward through
+those positions. It requires hand coverage where a die changes location and
+uses a settled pose for the onset. That places the roll at 3:04.68, one frame
+earlier than the reviewed start. The pickup at 3:59.92 is also one frame
+earlier than review.
+
+The three and the verified ending board leave 5–3 as the only legal roll.
+The scored move stays on the original starting board through the discussion
+and is recorded once at the confirmed result.
+
+At 2:09.88 in Game 2, White rolls immediately after Black clears the dice.
+The older pipeline let Black's late board confirmation hide White's throw.
+Both pickups are now visible even when a hand takes the dice separately.
+The board confirmed at 2:10.04 is both Black's ending position and White's
+starting position. The visible four and the completed `13/9 13/8` allow only
+5–4. All ten reviewed throws in Game 2 now match.
+
+The five-game comparison moves from 104 to 106 exact dice pairs, 136 to 137
+matched throws, 120 to 122 matching starting boards and 87 to 89 matching
+endings. Two extra candidates disappear, leaving 20.

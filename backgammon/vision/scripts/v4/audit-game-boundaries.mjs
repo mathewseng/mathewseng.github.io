@@ -58,28 +58,57 @@ function verifyPhysicalTiming(plan, rolls, reference, label) {
       boardKey(stateFor(turn.after, turn)), label);
     return { frame: roll.frame, player: turn.player, dice: dice(turn.dice) };
   }
+  function verifyPickup(turn, frame) {
+    const reviewed = reference.find(roll => roll.start === frame);
+    assert(Number.isInteger(reviewed?.pickup) && Math.abs(reviewed.pickup - turn.pickupFrame) <= 5, label);
+  }
+  function verifyCompanionFace(turn, face) {
+    const end = boardKey(stateFor(turn.after, turn));
+    const possible = Array.from({ length: 6 }, (_, index) => index + 1)
+      .map(other => [face, other].sort((a, b) => a - b))
+      .filter(pair => legalTurns(stateFor(turn.before, turn, pair)).some(path => path.key === end));
+    assert.deepEqual(possible, [turn.dice], `${label}: indistinguishable companion face`);
+  }
   const handoffs = plan.flatMap((outgoing, index) => {
     const proof = outgoing.physicalHandoff;
     if (!proof || proof.outgoingStart !== outgoing.start) return [];
     const incoming = plan[index + 1];
     assert(incoming?.start === proof.incomingStart && incoming.player !== outgoing.player &&
-      incoming.start === outgoing.end + 1 && proof.outgoingSeen < incoming.start, label);
+      outgoing.end < incoming.start && proof.outgoingSeen < incoming.start, label);
     assert.deepEqual(incoming.physicalHandoff, proof, label);
     assert.equal(boardKey(stateFor(outgoing.after, outgoing)), boardKey(stateFor(incoming.before, incoming)), label);
-    return [{ outgoing: verifyMove(outgoing), incoming: verifyMove(incoming), sharedBoard: proof.sharedBoard,
-      previousGradeStart: proof.previousGradeStart }];
+    const previous = verifyMove(outgoing), next = verifyMove(incoming);
+    if (proof.observedFace) {
+      verifyPickup(outgoing, previous.frame);
+      verifyPickup(incoming, next.frame);
+      verifyCompanionFace(incoming, proof.observedFace);
+      assert(outgoing.pickupFrame === outgoing.end + 1 && outgoing.pickupFrame <= incoming.start, label);
+      next.observedFace = proof.observedFace;
+    } else assert(incoming.start === outgoing.end + 1, label);
+    return [{ outgoing: previous, incoming: next, sharedBoard: proof.sharedBoard, previousGradeStart: proof.previousGradeStart }];
   });
   assert.equal(plan.filter(turn => turn.physicalHandoff).length, 2 * handoffs.length, label);
   const relocatedDice = plan.filter(turn => turn.movedDie).map(turn => {
     const move = verifyMove(turn);
-    const reviewed = reference.find(roll => roll.start === move.frame);
-    assert(Number.isInteger(reviewed?.pickup) && Math.abs(reviewed.pickup - turn.pickupFrame) <= 5, label);
+    verifyPickup(turn, move.frame);
     assert(turn.start < turn.relocatedAt && turn.relocatedAt < turn.poseLastSeen &&
       turn.poseLastSeen < turn.pickupFrame && turn.pickupFrame < turn.resultFrame, label);
     return { ...move, relocatedAt: turn.relocatedAt, pickupFrame: turn.pickupFrame,
       resultFrame: turn.resultFrame, fixedFace: turn.movedDie.fixedFace };
   });
-  return { handoffs, relocatedDice };
+  const poseHistories = plan.filter(turn => turn.poseHistory).map(turn => {
+    const move = verifyMove(turn);
+    verifyPickup(turn, move.frame);
+    const { history, face, seedStart } = turn.poseHistory;
+    assert(history.length >= 2 && history[0].first <= turn.start && history[0].last > turn.start &&
+      history.at(-1).last < turn.pickupFrame && turn.pickupFrame < turn.resultFrame, label);
+    verifyCompanionFace(turn, face);
+    assert(history.every((stage, index) => stage.last >= stage.first &&
+      (!index || stage.first > history[index - 1].last)), label);
+    return { ...move, observedFace: face, previousStart: seedStart, shifts: history.slice(1).map(stage => stage.first),
+      pickupFrame: turn.pickupFrame, resultFrame: turn.resultFrame };
+  });
+  return { handoffs, relocatedDice, poseHistories };
 }
 
 function verifyTimeline(prefix, boundary, expectedFrames) {
@@ -90,7 +119,7 @@ function verifyTimeline(prefix, boundary, expectedFrames) {
   assert.deepEqual(game.boundary, boundary, prefix);
   assert(rows.every((row, frame) => row.frame === frame), prefix);
   for (const [index, turn] of game.turns.entries()) {
-    if (!turn.checkerDice && !turn.physicalHandoff && !turn.movedDie) continue;
+    if (!turn.checkerDice && !turn.physicalHandoff && !turn.movedDie && !turn.poseHistory) continue;
     const id = index + 1;
     const label = `${prefix}, roll ${turn.start}`;
     const decision = game.decisions[id];
@@ -100,16 +129,20 @@ function verifyTimeline(prefix, boundary, expectedFrames) {
     assert(rows.slice(turn.start, showUntil).every(row =>
       row.turn === id && row.roll?.id === id && row.roll.player === turn.player &&
       JSON.stringify(row.roll.dice) === JSON.stringify(turn.dice)), `${label}: dice changed during play`);
-    if (turn.physicalHandoff || turn.movedDie) {
+    if (turn.physicalHandoff || turn.movedDie || turn.poseHistory) {
       for (const [frame, expected] of [[turn.start, turn.before], [turn.resultFrame, turn.after]]) {
         const board = game.positions[rows[frame].position];
         assert(board && boardKey(stateFor(board, turn)) === boardKey(stateFor(expected, turn)),
           `${label}: displayed checker state disagrees at frame ${frame}`);
       }
     }
-    if (turn.movedDie) {
+    if (turn.movedDie || turn.poseHistory) {
       assert(rows.slice(turn.pickupFrame, turn.resultFrame).every(row => row.phase === 'checker-result-pending' &&
         row.roll === null && row.player === turn.player), `${label}: new turn before the result`);
+    }
+    if (turn.physicalHandoff?.observedFace && turn.start === turn.physicalHandoff.outgoingStart) {
+      assert(rows.slice(turn.pickupFrame, turn.physicalHandoff.incomingStart).every(row => row.roll?.status !== 'current'),
+        `${label}: dice remained active after pickup`);
     }
     assert.deepEqual(game.losses.filter(event => event.frame === turn.resultFrame && event.player === turn.player),
       [{ frame: turn.resultFrame, player: turn.player, loss: decision.evLoss, kind: 'checker' }], label);
