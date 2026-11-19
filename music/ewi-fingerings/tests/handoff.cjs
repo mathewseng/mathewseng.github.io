@@ -39,17 +39,19 @@ async function check(browser, url, mobile) {
     assert.equal(await page.locator('#add-note').textContent(), 'Add G5 to melody');
     await activate('#add-note');
     assert.equal(await melody.inputValue(), 'G4 A5 G5');
-    assert.equal(await page.locator('#step-variant [aria-pressed="true"]').getAttribute('data-fingering-choice'), imported);
-    assert.equal(await page.locator(':focus').getAttribute('id'), 'step-variant');
     const lastStep = page.locator('[data-step="2"]');
+    assert.equal(await page.locator(':focus').getAttribute('data-step'), '2');
     assert.match(await lastStep.getAttribute('aria-label'), /G5, locked/);
     assert.equal(await lastStep.locator('svg').getAttribute('aria-label'), chartTouch);
+    await activate('[data-step="2"]');
+    assert.equal(await page.locator('#step-variant [aria-pressed="true"]').getAttribute('data-fingering-choice'), imported);
 
     // Unlock and select the same chart option again, then recalculate and play.
     await activate('#unlock');
     assert.equal(await page.locator('#step-variant [aria-pressed="true"]').getAttribute('data-fingering-choice'), '');
     await activate('[data-fingering-choice="' + imported + '"]');
     assert.equal(await page.locator('#step-variant [aria-pressed="true"]').getAttribute('data-fingering-choice'), imported);
+    await activate('#close-melody-choices');
     await activate('#melody-form button[type=submit]');
     assert.equal(await lastStep.locator('svg').getAttribute('aria-label'), chartTouch);
     await page.locator('#tempo').fill('240');
@@ -67,6 +69,8 @@ async function check(browser, url, mobile) {
     assert.equal(await page.locator('#add-note').textContent(), 'Add G4 to melody');
     await activate('#add-note');
     assert.equal(await melody.inputValue(), 'G4');
+    assert.equal(await page.locator('.phrase-step').count(), 1);
+    assert.match(await page.locator('[data-step="0"]').getAttribute('aria-label'), /G4, locked/);
     await melody.fill('G4 G5');
     await activate('#melody-form button[type=submit]');
     assert.match(await page.locator('[data-step="0"]').getAttribute('aria-label'), /G4, locked/);

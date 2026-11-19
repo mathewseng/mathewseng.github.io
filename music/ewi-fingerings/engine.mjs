@@ -91,7 +91,7 @@ export function routeCost(path, weights = DEFAULT_WEIGHTS) {
 }
 export function parseMelody(input) {
   const tokens = input.trim().split(/[\s,;|]+/).filter(Boolean);
-  if (!tokens.length) throw new Error('Enter at least two notes, for example B4 C5 D5.');
+  if (!tokens.length) throw new Error('Enter a note or phrase, for example B4 C5 D5.');
   if (tokens.length > 64) throw new Error('Use up to 64 notes per phrase.');
   const pitch = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   return tokens.map(token => {

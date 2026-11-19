@@ -1,7 +1,7 @@
 import { KEY_RULES, isEligibleFingering, keyPitch, toggleKey, signedSteps } from './key-rules.mjs?v=20261118-key-labels';
 import { KEY_SYMBOLS, KEY_LAYOUT, keySideEdge } from './key-artwork.mjs?v=20261118-manual-keys';
 import { staffSvg } from './notation.mjs';
-import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-layout';
+import { SHARPS, FLATS, KEYS, supportsMidi, candidates, noteName, registerName, changes, optimize, parseMelody } from './engine.mjs?v=20261118-melody-list';
 import { rankedFingerings } from './ranking.mjs?v=20261118-layout';
 import { bestNoteMoves, noteMoveCounts, MOVE_PITCHES } from './note-moves.mjs?v=20261118-keys';
 import { SCALE_GROUPS, scalePhrase } from './scales.mjs?v=20261118-scales';
@@ -13,7 +13,7 @@ const openKeys = '0'.repeat(KEYS.length);
 const openPitch = keyPitch(openKeys).midi;
 const pitchDropGroups = [[0, 1, 2], [3, 7]];
 const pitchDropKeys = pitchDropGroups.flat();
-const state = { pitch: 7, selected: null, flats: true, view: 'guide', melody: parseMelody(defaultPhrase), usePhraseOctave: false, plan: null, step: 1, locks: {}, chartChoices: {}, key: 0, keyBits: openKeys, keyRegister: 0, keyFilter: 'all' };
+const state = { pitch: 7, selected: null, flats: true, view: 'guide', melody: parseMelody(defaultPhrase), usePhraseOctave: false, plan: null, step: 0, locks: {}, chartChoices: {}, key: 0, keyBits: openKeys, keyRegister: 0, keyFilter: 'all' };
 const referenceMidi = () => 60 + state.pitch;
 const pianoColumn = [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13];
 const pianoPlacement = pitch => `class="${pianoColumn[pitch] % 2 === 0 ? 'accidental' : ''}" style="--piano-column:${pianoColumn[pitch]}"`;
@@ -45,7 +45,7 @@ function markChoice(button) {
     choice.setAttribute('aria-pressed', String(choice === button));
   });
 }
-function navigateButtons(container, selector, arrows) {
+function navigateButtons(container, selector, arrows, select = button => button.click()) {
   $(container).addEventListener('keydown', event => {
     const step = arrows[event.key];
     const current = event.target.closest(selector);
@@ -56,7 +56,7 @@ function navigateButtons(container, selector, arrows) {
     event.preventDefault();
     const button = buttons[Math.min(buttons.length - 1, Math.max(0, next))];
     button.focus();
-    button.click();
+    select(button);
   });
 }
 function updateSpellingButtons() {
@@ -99,19 +99,18 @@ function showView(view) {
   say('');
 }
 
-function physicalKeys(bits, { interactive = false, before } = {}) {
+function physicalKeys(bits, { interactive = false } = {}) {
   return KEY_LAYOUT.map(({ shape, x, y, width, height }, i) => {
     const interactiveKey = interactive ? ` data-key-shape="${i}"` : '';
     const keyShape = `<use class="key-shape" href="#ewi-key-${shape}" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}"/>`;
     const hitTarget = interactive && i === 1
       ? `<rect fill="transparent" x="${-width / 2 - 1}" y="${-height / 2 - 2}" width="${width + 2}" height="${height + 4}"/>` : '';
-    const outline = before && before[i] !== bits[i]
-      ? `<rect class="change-outline" x="${-width / 2 - 2}" y="${-height / 2 - 2}" width="${width + 4}" height="${height + 4}" rx="3"/>` : '';
-    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y})"${interactiveKey}>${keyShape}${outline}${hitTarget}</g>`;
+    return `<g class="diagram-key ${bits[i] === '1' ? 'on' : ''}" transform="translate(${x} ${y})"${interactiveKey}>${keyShape}${hitTarget}</g>`;
   }).join('');
 }
-function keyDiagram(bits, { horizontal = false, before, decorative = false, viewBox } = {}) {
-  const keys = physicalKeys(bits, { before });
+const compactKeyViewBox = '16 -209.5 387 100';
+function keyDiagram(bits, { horizontal = false, decorative = false, viewBox } = {}) {
+  const keys = physicalKeys(bits);
   const accessibility = decorative ? 'aria-hidden="true"' : `role="img" aria-label="Touch ${keyList(bits)}"`;
   const box = viewBox ?? (horizontal ? '16 -216 387 113' : '103 16 113 387');
   return `<svg class="${horizontal ? 'mini-diagram' : 'upright-diagram'}" viewBox="${box}" ${accessibility}>${horizontal ? `<g transform="rotate(-90)">${keys}</g>` : keys}</svg>`;
@@ -184,7 +183,7 @@ function renderScaleLibrary() {
 function useScale(offsets) {
   $('melody').value = scalePhrase(scaleSelection.root, offsets, state.flats);
   state.usePhraseOctave = false;
-  state.step = 1;
+  state.step = 0;
   state.locks = {};
   state.chartChoices = {};
   $('scale-library').close();
@@ -200,7 +199,7 @@ function chartCard(f) {
   const label = `Rank ${f.rank}, ${f.heldCount} keys down. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than rank 1.` : ''}`;
   return `<button class="alternate" type="button" data-fingering="${f.rank}" aria-pressed="${f.rank === state.selected}" aria-label="${label}">
     <span class="alternate-label">#${f.rank}</span><span class="alternate-count"><span class="alternate-held">${f.heldCount}</span><span class="alternate-count-suffix"> down</span></span>
-    ${keyDiagram(f.bits, { horizontal: true, decorative: true, viewBox: '16 -209.5 387 100' })}
+    ${keyDiagram(f.bits, { horizontal: true, decorative: true, viewBox: compactKeyViewBox })}
   </button>`;
 }
 
@@ -402,21 +401,19 @@ function calculate() {
   try {
     const melody = parseMelody($('melody').value);
     keepUnchangedChoices(melody);
-    if (melody.length < 2) throw new Error('Add one more note to compare a transition.');
     const plan = optimize(melody, weights(), state.locks, state.chartChoices);
     if (!plan) throw new Error('A locked fingering is unavailable. Reset your choices and try again.');
     state.plan = plan;
     state.step = Math.min(Math.max(0, state.step), melody.length - 1);
     $('melody-error').hidden = true; $('melody').removeAttribute('aria-invalid');
-    $('phrase-steps').hidden = false; document.querySelector('.transition-inspector').hidden = false;
     renderPlan(); save();
     return true;
   } catch (error) {
     $('melody-error').textContent = error.message; $('melody-error').hidden = false; $('melody').setAttribute('aria-invalid', 'true');
     state.plan = null;
-    $('phrase-steps').innerHTML = ''; $('transition-diagrams').innerHTML = '';
-    $('plan-summary').textContent = 'Edit the melody to calculate a fingering path.';
-    document.querySelector('.transition-inspector').hidden = true;
+    $('phrase-steps').replaceChildren();
+    $('plan-summary').textContent = '';
+    if ($('melody-choices').open) $('melody-choices').close();
     return false;
   }
 }
@@ -428,8 +425,15 @@ function routeStats(path) {
 function renderPlan() {
   const path = state.plan.path, stats = routeStats(path);
   $('plan-summary').innerHTML = `<span><b>${stats.keys}</b> key changes</span><span><b>${stats.rollers}</b> thumb octave steps</span><span><b>${Number(state.plan.cost.toFixed(2))}</b> movement score</span>`;
-  $('phrase-steps').innerHTML = path.map((f, i) => `<button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-label="Step ${i + 1}: ${name(state.melody[i])}${state.locks[i] ? ', locked' : ''}"><span class="step-heading"><b>${name(state.melody[i])}</b><span>${i + 1}${state.locks[i] ? ' / locked' : ''}</span></span>${keyDiagram(f.bits, { horizontal: true })}<span class="step-caption">${i ? `${changes(path[i - 1], f).keys} key changes` : 'Start here'}</span></button>`).join('');
-  renderTransition();
+  $('phrase-steps').innerHTML = path.map((f, i) => {
+    const note = name(state.melody[i]), thumb = registerName(f.shift), locked = Boolean(state.locks[i]);
+    const label = `Step ${i + 1}, ${note}${locked ? ', locked' : ''}. Thumb ${thumb}. Touch ${keyList(f.bits)}.`;
+    return `<li><button type="button" class="phrase-step" data-step="${i}" aria-pressed="${i === state.step}" tabindex="${i === state.step ? 0 : -1}" aria-haspopup="dialog" aria-label="${label}">
+      <strong>${note}</strong>${keyDiagram(f.bits, { horizontal: true, viewBox: compactKeyViewBox })}
+      <span class="phrase-thumb">Thumb ${thumb}${locked ? '<span>Locked</span>' : ''}</span>
+    </button></li>`;
+  }).join('');
+  if ($('melody-choices').open) renderMelodyChoices();
 }
 function updatePhraseSteps(playing = false) {
   $('phrase-steps').querySelectorAll('[data-step]').forEach((button, i) => {
@@ -439,23 +443,20 @@ function updatePhraseSteps(playing = false) {
     button.classList.toggle('playing', playing && current);
   });
 }
-function renderTransition() {
-  const i = state.step, path = state.plan.path, to = path[i], from = path[Math.max(0, i - 1)];
-  $('transition-title').textContent = i ? `${name(state.melody[i - 1])} → ${name(state.melody[i])}` : `Start on ${name(state.melody[0])}`;
-  const panel = (f, midi, previous) => `<div class="transition-note"><strong>${name(midi)}</strong>${keyDiagram(f.bits, { horizontal: true, before: previous?.bits })}</div>`;
-  $('transition-diagrams').innerHTML = i ? panel(from, state.melody[i - 1]) + '<span class="transition-arrow" aria-hidden="true">→</span>' + panel(to, state.melody[i], from) : panel(to, state.melody[i]);
-  if (i) {
-    const diff = changes(from, to);
-    $('transition-detail').innerHTML = `<div class="move-grid"><div><strong>Touch</strong><p>${diff.touch.join(', ') || 'No new keys'}</p></div><div><strong>Release</strong><p>${diff.release.join(', ') || 'No keys'}</p></div><div><strong>Keep touching</strong><p>${diff.keep.join(', ') || 'No keys'}</p></div></div><p class="thumb-move">${diff.rollers ? `Left thumb: ${diff.direction > 0 ? 'up toward the mouthpiece' : 'down away from the mouthpiece'} ${diff.rollers} ${diff.rollers === 1 ? 'octave' : 'octaves'}.` : 'Keep your thumb in place.'}</p>`;
-  } else {
-    $('transition-detail').innerHTML = `<p class="thumb-move">Touch ${keyList(to.bits)}.</p>`;
-  }
+function selectPhraseStep(button) {
+  stopAudio();
+  state.step = Number(button.dataset.step);
+  updatePhraseSteps();
+}
+function renderMelodyChoices() {
+  const i = state.step, current = state.plan.path[i];
+  $('melody-choice-title').textContent = `Fingering for ${name(state.melody[i])}`;
   const options = candidates(state.melody[i], state.chartChoices[i]);
   const lock = state.locks[i] ?? '';
   const choice = (id, text, label) =>
     `<button type="button" data-fingering-choice="${id}" aria-pressed="${id === lock}" aria-label="${label}" title="${label}">${text}</button>`;
   $('step-variant').innerHTML = choice('', 'Auto', 'Use suggested fingering') + options.map((f, j) => {
-    const offset = f.shift - to.shift;
+    const offset = f.shift - current.shift;
     const label = `${f.fromChart ? 'From chart' : variantLabel(f, j)}. Touch ${keyList(f.bits)}.${offset ? ` ${thumbOffset(offset)} than the current choice.` : ''}`;
     return choice(f.id, f.fromChart ? 'Chart' : f.main ? 'Main' : j + 1, label);
   }).join('');
@@ -511,9 +512,7 @@ async function playPhrase() {
       audioTimers.push(setTimeout(() => {
         state.step = i;
         updatePhraseSteps(true);
-        const step = $('phrase-steps').children[i];
-        $('phrase-steps').scrollTo({ left: Math.max(0, step.offsetLeft - $('phrase-steps').offsetLeft - 16), behavior: 'instant' });
-        renderTransition();
+        $('phrase-steps').children[i].scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
       }, (i * duration + .05) * 1000));
     });
     audioTimers.push(setTimeout(stopAudio, (state.melody.length * duration + .1) * 1000));
@@ -584,33 +583,37 @@ $('add-note').addEventListener('click', () => {
   input.value = `${input.value.trim()} ${note}`.trim();
   state.plan = null;
   showView('plan');
-  (state.plan ? $('step-variant') : input).focus();
+  ($('phrase-steps').querySelector('[aria-pressed="true"]') ?? input).focus();
   save();
   say(`Added ${note} and locked its fingering.`);
 });
 $('melody-form').addEventListener('submit', event => { event.preventDefault(); calculate(); });
 $('melody').addEventListener('input', () => {
   state.usePhraseOctave = true;
-  stopAudio(); state.plan = null; $('phrase-steps').innerHTML = '';
-  document.querySelector('.transition-inspector').hidden = true;
-  $('plan-summary').textContent = 'Melody changed. Choose Find fingerings to update the path.';
+  stopAudio(); state.plan = null; $('phrase-steps').replaceChildren();
+  $('plan-summary').textContent = 'Choose Find fingerings to update the list.';
   $('melody-error').hidden = true; $('melody').removeAttribute('aria-invalid'); save();
 });
 document.querySelectorAll('[data-phrase]').forEach(button => button.addEventListener('click', () => {
   $('melody').value = button.dataset.phrase;
   state.usePhraseOctave = false;
-  state.step = 1;
+  state.step = 0;
   state.locks = {};
   state.chartChoices = {};
   calculate();
 }));
 $('phrase-steps').addEventListener('click', event => {
   const button = event.target.closest('[data-step]'); if (!button) return;
-  stopAudio(); state.step = Number(button.dataset.step);
-  updatePhraseSteps();
-  renderTransition();
+  selectPhraseStep(button);
+  renderMelodyChoices();
+  $('melody-choices').showModal();
+  $('step-variant').focus();
 });
-navigateButtons('phrase-steps', '[data-step]', { ArrowLeft: -1, ArrowRight: 1 });
+navigateButtons('phrase-steps', '[data-step]', { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -1, ArrowRight: 1 }, selectPhraseStep);
+$('close-melody-choices').addEventListener('click', () => $('melody-choices').close());
+$('melody-choices').addEventListener('close', () => {
+  ($('phrase-steps').querySelector('[aria-pressed="true"]') ?? $('melody')).focus();
+});
 navigateButtons('alternates', '[data-fingering]', { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -1, ArrowRight: 1 });
 $('step-variant').addEventListener('click', event => {
   const button = event.target.closest('[data-fingering-choice]');
@@ -666,7 +669,10 @@ document.querySelectorAll('[data-rule-filter]').forEach(button => button.addEven
   markChoice(button);
   renderKeyExplorer();
 }));
-$('unlock').addEventListener('click', () => { state.locks = {}; calculate(); });
+$('unlock').addEventListener('click', () => {
+  state.locks = {};
+  if (calculate()) $('step-variant').querySelector('[aria-pressed="true"]').focus();
+});
 $('open-scales').addEventListener('click', () => {
   renderScaleLibrary();
   $('scale-library').showModal();

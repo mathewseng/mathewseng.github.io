@@ -17,6 +17,8 @@ The comparison chart uses compact horizontal key diagrams with each fingering’
 
 The Key Explorer places 13 keys in playing position, with round-key labels on the left and side-key and bis labels on the right. A thumb stepper changes the letter name, MIDI pitch and staff. K2 lowers the pitch by one semitone on its own. It drops out when K1 and K3 are both held. Descriptions put the usual effect first, followed by exceptions and live examples. Blue means usually −2 semitones, violet −1, and green +1. Dashed outlines and dependency labels mark conditional or linked keys. The Pitch drops table pairs K2 with K1 and lists combinations in order of each group’s effect. Selecting a total loads its keys into Key Explorer.
 
+Melody shows the entire phrase in playing order, one note per row with its front-key diagram and thumb register. Select a row to edit its fingering. The Up and Down arrows move through the list, and playback highlights and follows the current note.
+
 ## Register convention
 
 Middle C is C4 / MIDI 60. Written chart pitches are B♭3 (58) through D5 (74), and a register shift adds 12 semitones. The UI shows relative thumb positions −2 through +4 from Akai's chart. This implementation conservatively supports chart candidates within MIDI 34–111; it does not claim to cover every hardware endpoint. Patch octave shifts and transpose can change the sounding pitch. Confirm the neutral register with a tuner on the actual instrument.

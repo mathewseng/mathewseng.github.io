@@ -26,6 +26,15 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       [key.parentElement.getAttribute('transform'), key.getAttribute('href'), key.width.baseVal.value, key.height.baseVal.value]
     ));
   }
+  async function checkMelodyColumn() {
+    const rows = await page.locator('.phrase-step').evaluateAll(steps => steps.map(step => {
+      const { left, right, top, bottom } = step.getBoundingClientRect();
+      return { left, right, top, bottom };
+    }));
+    assert.ok(rows.length > 1, 'the phrase has multiple notes');
+    assert.ok(rows.every(({ left, right, top }, i) => left === rows[0].left && right === rows[0].right && (!i || top >= rows[i - 1].bottom)),
+      'every note occupies its own row in the same column');
+  }
   async function openFingerings() {
     await page.locator('[data-view="explore"]').click();
     await page.waitForSelector('.alternate');
@@ -192,20 +201,28 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.match(await page.locator('#melody').inputValue(), / E♭4$/);
     await page.getByRole('button', { name: 'Across the break', exact: true }).click();
     assert.equal(await page.locator('.phrase-step').count(), 5);
+    assert.deepEqual(await page.locator('.phrase-step strong').allTextContents(), ['B4', 'C5', 'D5', 'C5', 'B4']);
+    await checkMelodyColumn();
     assert.deepEqual(await keyGeometry('.phrase-step .mini-diagram'), referenceGeometry);
     assert.equal(await page.locator('.phrase-step .mini-diagram > g').first().getAttribute('transform'), 'rotate(-90)');
     await page.screenshot({ path: '/tmp/ewi-redesign/planner-desktop.png' });
     await page.locator('#melody').fill('G4 G5');
     await page.locator('#melody-form').getByRole('button', { name: 'Find fingerings' }).click();
     await page.locator('[data-step="0"]').focus();
-    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowDown');
     assert.equal(await page.locator('[data-step="1"]').getAttribute('aria-pressed'), 'true');
-    assert.match(await page.locator('#transition-detail').textContent(), /up toward the mouthpiece 1 octave/);
-    assert.match(await page.locator('#transition-detail').textContent(), /No new keys/);
+    assert.deepEqual(await page.locator('.phrase-thumb').allTextContents(), ['Thumb 0', 'Thumb +1']);
+    assert.deepEqual(await page.locator('.phrase-step svg').evaluateAll(diagrams => diagrams.map(svg => svg.getAttribute('aria-label'))),
+      ['Touch K1, K3, K4', 'Touch K1, K3, K4']);
+    assert.equal(await page.locator('#melody-choices').isVisible(), false);
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#melody-choice-title').textContent(), 'Fingering for G5');
     await page.locator('#step-variant button').nth(1).click();
-    assert.match(await page.locator('.phrase-step').nth(1).textContent(), /locked/);
+    assert.match(await page.locator('.phrase-step').nth(1).textContent(), /Locked/);
     await page.locator('#unlock').click();
     assert.equal(await page.locator('#unlock').isDisabled(), true);
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('[data-step="1"]:focus');
     await page.locator('#melody').fill('C#5 D5 C#5');
     await page.locator('#melody-form').getByRole('button', { name: 'Find fingerings' }).click();
     await page.locator('[data-weight="roller"][data-value="10"]').click();
@@ -222,7 +239,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     assert.equal(await page.locator('.phrase-step').count(), 0);
     await page.locator('#melody-form').getByRole('button', { name: 'Find fingerings' }).click();
     assert.equal(await page.locator('#melody-error').isVisible(), true);
-    assert.equal(await page.locator('.transition-inspector').isVisible(), false);
+    assert.equal(await page.locator('#melody-choices').isVisible(), false);
     await page.locator('#open-scales').click();
     await page.getByRole('button', { name: 'Major (Ionian)', exact: true }).click();
     assert.equal(await page.locator('.phrase-step').count(), 8);
@@ -250,6 +267,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
     await page.locator('#melody').fill(Array(8).fill('C4 D4 E4 F4 G4 A4 B4 C5').join(' '));
     await page.locator('#melody-form').getByRole('button', { name: 'Find fingerings' }).click();
     assert.equal(await page.locator('.phrase-step').count(), 64);
+    await checkMelodyColumn();
     await page.locator('[data-phrase="B4 C5 D5 C5 B4"]').click();
 
     // Latching input, live staff, and examples must agree across key interactions.
@@ -432,6 +450,7 @@ const { serveSite } = require('../../../scripts/site-pages.cjs');
       for (const view of ['explore', 'plan', 'guide', 'moves']) {
         await page.locator(`[data-view="${view}"]`).click();
         assert.equal(await page.locator('#workspace-spelling').isVisible(), true);
+        if (view === 'plan') await checkMelodyColumn();
         if (view === 'explore' && viewport.width <= 375) {
           const proportion = await page.locator('.ranked-rows .alternate svg').first()
             .evaluate(svg => svg.getBoundingClientRect().width / innerWidth);
