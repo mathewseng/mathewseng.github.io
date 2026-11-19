@@ -1,0 +1,43 @@
+{
+  "3": [
+    {
+      "kind": "replace",
+      "starts": [1260.56],
+      "player": "white",
+      "dice": [3, null],
+      "beforeBoard": {
+        "seconds": 1260.28, "clip": 36, "sourceFrame": 1147,
+        "points": {"1": 5, "2": 3, "3": 2, "13": -1, "17": -1, "19": -3, "20": -3, "21": -2, "22": -2, "23": -2, "24": -1},
+        "bar": [0, 0], "off": [5, 0]
+      },
+      "afterBoard": {
+        "seconds": 1264.04, "clip": 36, "sourceFrame": 1241,
+        "points": {"1": 5, "2": 3, "13": -1, "17": -1, "19": -3, "20": -3, "21": -2, "22": -2, "23": -2, "24": -1},
+        "bar": [0, 0], "off": [7, 0]
+      },
+      "resultAtWitness": true,
+      "supersedesReview": true,
+      "text": "White bears both checkers off point 3. The original camera leaves one die unreadable. The compatible rolls 4–3, 5–3 and 6–3 each force 3/off 3/off, so the confirmed play costs zero EV."
+    },
+    {
+      "kind": "replace",
+      "starts": [1273.52],
+      "player": "white",
+      "dice": [4, 1],
+      "beforeBoard": {
+        "seconds": 1273.08, "clip": 36, "sourceFrame": 1467,
+        "points": {"1": 5, "2": 3, "17": -1, "18": -1, "19": -3, "20": -3, "21": -2, "22": -2, "23": -2, "24": -1},
+        "bar": [0, 0], "off": [7, 0]
+      },
+      "afterBoard": null,
+      "unconfirmedResult": "Two checkers are lifted and handled during setup. The tray still shows seven checkers.",
+      "nativeFaceWitnesses": [
+        {"frame": 31863, "clip": 36, "sourceFrame": 1503, "centers": [[607, 669], [632, 540]]},
+        {"frame": 31895, "clip": 37, "sourceFrame": 31, "centers": [[607, 669], [632, 540]]},
+        {"frame": 31956, "clip": 37, "sourceFrame": 92, "centers": [[607, 669], [632, 540]]}
+      ],
+      "supersedesReview": true,
+      "text": "Original camera pixels show White’s 4–1 before and after the clip boundary. The wider view shows two lifted checkers held and placed back on point 6. The tray still shows seven before the reset. The replay scores the options from the original board and leaves the played move open."
+    }
+  ]
+}

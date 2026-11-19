@@ -1,0 +1,13 @@
+[
+  {"game":1,"seconds":431.92,"dice":[[82,208,null],[100,217,null]],"split":"spotExtra","cohort":"unresolved"},
+  {"game":1,"seconds":437.96,"dice":[[148,92,null],[190,134,null]],"split":"spotExtra","cohort":"unresolved"},
+  {"game":1,"seconds":453.8,"dice":[[68,206,null],[188,192,null]],"split":"spotExtra","cohort":"unresolved"},
+  {"game":3,"seconds":1261.6,"dice":[[89,186,3],[74,304,null]],"split":"spotExtra","cohort":"unresolved"},
+  {"game":3,"seconds":1262.4,"dice":[[89,186,3],[74,304,null]],"split":"spotExtra","cohort":"unresolved"},
+  {"game":3,"seconds":1274.52,"dice":[[208,194,1],[190,365,null]],"split":"spotExtra","cohort":"unresolved"},
+  {"game":3,"seconds":1275.8,"dice":[[208,194,1],[190,365,null]],"split":"spotExtra","cohort":"unresolved"},
+  {"game":3,"seconds":1278.24,"dice":[[208,194,1],[190,365,null]],"split":"spotExtra","cohort":"unresolved"},
+  {"game":3,"seconds":44.72,"dice":[[104,338,4]],"split":"spotExtra","cohort":"native-controls"},
+  {"game":3,"seconds":1214.36,"dice":[[236,306,2],[108,377,6]],"split":"spotExtra","cohort":"native-controls"},
+  {"game":3,"seconds":1265.48,"dice":[[466,216,4],[418,226,1]],"split":"spotExtra","cohort":"native-controls"}
+]

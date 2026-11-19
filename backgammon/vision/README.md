@@ -5,7 +5,7 @@ Office-3 game replays from November 17, 2026. Add `?game=1` through `?game=5`
 to link to a specific game.
 
 The 1080p video files are assets on the
-[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v35).
+[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v36).
 The Pages build copies those MP4s into the published site for streaming and
 seeking. The files load over the network on playback. For a local replay build,
 run `node scripts/package-vision-replays.mjs _site` after assembling the site.
@@ -57,6 +57,10 @@ An `adjustment` records a separately witnessed rearrangement during a roll.
 Its fixed points describe the net transfer, and its position is the visible
 board after that transfer. The grade uses the frozen roll position and the
 roller’s own moves.
+A `forcedPlay` records a verified checker result with an unresolved die when
+every compatible roll leaves exactly the same one legal play. Its notation
+and zero EV loss can be shown with the partial dice. The Library history
+preserves the observed result and the unknown face.
 A null die face means the other face could not be established. An unknown cube
 owner stays explicit even when the face or stake is readable. Use `sources` to
 locate the original camera clip and frame offset.

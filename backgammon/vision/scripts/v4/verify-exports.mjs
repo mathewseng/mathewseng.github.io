@@ -5,9 +5,10 @@ import path from 'node:path';
 import { parseBackup } from '../../../core/storage.mjs';
 import { decisionHistory } from '../../../core/decision-history.mjs';
 import { decisionFeedback } from '../../../core/decision-feedback.mjs';
+import { boardKey, legalTurns, notation } from '../../../core/rules.mjs';
 import { fromXGID } from '../../../core/xgid.mjs';
 import { replayDir } from '../project_paths.mjs';
-import { rowsFrom } from '../v2/solve_games.mjs';
+import { rowsFrom, stateFor } from '../v2/solve_games.mjs';
 import { cubeContext } from './cube-context.mjs';
 
 const read = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
@@ -489,17 +490,47 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert.equal(at(first.resultFrame).pendingDecision, undefined);
     assert(at(first.resultFrame).checkerLoss[1] > afterPickup.checkerLoss[1]);
     assert.equal(data.cubeRolls.find(item => item.frame === 4122).start, white.resultFrame);
-    for (const [start, resultFrame, dice, off] of [[31514, 31601, [3, null], 7], [31838, 31992, [1, null], 9]]) {
-      const roll = data.rolls.find(item => item.start === start);
-      assert.deepEqual(roll.dice, dice);
-      assert.equal(roll.resultFrame, resultFrame);
-      assert.equal(roll.decision, null);
-      assert.deepEqual(roll.after.borneOff, [off, 0]);
-      assert(history.replay.timeline.some(item => item.kind === 'board-result' && item.frame === resultFrame));
-    }
+    const earlier = data.rolls.find(item => item.start === 31514);
+    assert.deepEqual([earlier.dice, earlier.resultFrame, earlier.decision, earlier.after.borneOff],
+      [[3, null], 31601, null, [7, 0]]);
+    const shown = history.replay.timeline.find(item => item.kind === 'board-result' && item.frame === earlier.resultFrame);
+    assert(shown);
     const last = data.rolls.at(-1);
     assert.equal(last.end, data.ending.frame);
-    assert(last.resultFrame + 50 < last.end);
+    const native = replay.contextRecovery.find(note => note.frame === last.start && note.nativeFaceWitnesses);
+    if (native) {
+      assert.deepEqual(native.nativeFaceWitnesses.map(({ frame, clip, sourceFrame }) => [frame, clip, sourceFrame]),
+        [[31863, 36, 1503], [31895, 37, 31], [31956, 37, 92]]);
+      assert.deepEqual([last.dice, last.pickup, last.resultFrame, last.after, last.before.borneOff],
+        [[4, 1], null, null, null, [7, 0]]);
+      const decision = data.decisions[last.decision];
+      assert(decision.moves.length > 1);
+      assert.equal(decision.played, null);
+      assert.equal(decision.evLoss, null);
+      assert(!history.replay.timeline.some(item => item.kind === 'checker' && item.rollFrame === last.start));
+      const current = history.replay.timeline.find(item => item.kind === 'gap' && item.frame === last.start);
+      assert.equal(current.endFrame, last.end);
+      const position = history.items.find(item => item.id === current.item);
+      assert.equal(position.analysis.type, 'checker');
+      assert.equal(position.analysis.actual, null);
+      assert.deepEqual(earlier.forcedPlay, { notation: '3/off 3/off', evLoss: 0, possibleDice: [[4, 3], [5, 3], [6, 3]] });
+      const turn = replay.turns[earlier.sourceTurns[0] - 1];
+      const final = boardKey(stateFor(turn.after, 0, [3, 4]));
+      const possible = [1, 2, 3, 4, 5, 6].flatMap(value => {
+        const dice = [3, value].sort((a, b) => a - b);
+        const moves = legalTurns(stateFor(turn.before, 0, dice));
+        if (!moves.some(move => move.key === final)) return [];
+        assert.equal(moves.length, 1);
+        assert.equal(notation(moves[0].steps, 0), earlier.forcedPlay.notation);
+        return [[dice[1], dice[0]]];
+      });
+      assert.deepEqual(possible, earlier.forcedPlay.possibleDice);
+      assert.equal(shown.label, 'Played 3/off 3/off');
+    } else {
+      assert.deepEqual([last.dice, last.resultFrame, last.decision, last.after.borneOff],
+        [[1, null], 31992, null, [9, 0]]);
+      assert(last.resultFrame + 50 < last.end);
+    }
   }
   if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 1283 && entry.confirmedDetectorMisread)) {
     const roll = data.rolls.find(item => item.start === 8436);

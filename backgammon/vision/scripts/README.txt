@@ -153,6 +153,18 @@ Refresh the context and reviewed episodes
     OFFICE3_REPLAY_DIR="$prepared" bun v4/reconcile-reviewed-turns.mjs "$previous" v4/reviewed-opponent-adjustment.json
     OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs 3
 
+  The later review in v4/reviewed-native-bearoff.json applies to the v35 replay.
+  It checks the original camera evidence for the last Game 3 roll and
+  preserves the partial earlier roll with its forced checker play.
+
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/reconcile-reviewed-turns.mjs "$previous" v4/reviewed-native-bearoff.json
+    OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs 3
+
+  Run calibration/train_native_face_tracks.py with an output directory to
+  reproduce the trial on timestamp-matched source crops. Add --contrast in a
+  separate directory for the local pip contrast trial. The probe labels are
+  excluded from training even when the same clip contains earlier labels.
+
   To reproduce the stationary-dice review, provide the clip-specific dice
   locations and source windows from reviewed-settled-dice.json. The reader
   filters hand occlusions before pooling face probabilities. Reconstruction

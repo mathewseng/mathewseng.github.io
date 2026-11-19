@@ -274,6 +274,9 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
             write(draw, x, 145, "Confirming the checker result", BODY, MUTED)
         elif roll.get("fan"):
             write(draw, x, 145, "Fanned · no checker entered", BODY, MUTED)
+        elif forced := roll.get("forcedPlay"):
+            write(draw, x, 145, f"Forced play · {forced['notation']}", BODY, TEXT, True)
+            write(draw, x, 184, "One die unreadable", META, MUTED)
         elif roll["evidence"] == "reviewed-roll-with-confirmed-board" and roll.get("sourceMismatch"):
             write(draw, x, 145, "Visible dice and checker result disagree", BODY, MUTED)
         elif roll["evidence"] == "reviewed-roll-with-confirmed-board":
@@ -290,12 +293,17 @@ def action_panel(state, roll, entry, cube, cube_mode, cube_roll, events, opening
     elif (featured := next((event for event in reversed(events) if event["kind"] in ("checker", "board-result")), None)):
         player = featured["player"]
         fan = featured.get("fan")
-        title = f"{PLAYER_NAME[player]} " + ("fanned" if fan else "finished moving" if featured["kind"] == "board-result" else "played")
+        forced = featured.get("forcedPlay")
+        title = f"{PLAYER_NAME[player]} " + ("fanned" if fan else
+                                            "finished moving" if featured["kind"] == "board-result" and not forced else "played")
         write(draw, x, 79, title, HEADLINE, PLAYER_TONE[player], True)
         if fan:
             draw_dice(draw, x + draw.textlength(title, font=face(HEADLINE, True)) + 25,
                       78, featured["roll"]["dice"], player)
-        if featured["kind"] == "board-result":
+        if forced:
+            write(draw, x, 135, forced["notation"], BODY, TEXT)
+            write(draw, x, 183, "Forced play · EV loss 0.000", BODY, loss_color(forced["evLoss"]))
+        elif featured["kind"] == "board-result":
             write(draw, x, 135, "No checker entered" if fan else "Checker position confirmed", BODY, MUTED)
         else:
             rank = featured["rank"]
@@ -339,8 +347,11 @@ def viewer_frames(data, states):
     for item in data["presentation"]["rolls"]:
         if item["evidence"] == "reviewed-roll-with-confirmed-board":
             turn = data["turns"][item["sourceTurns"][0] - 1]
-            actions.append({"frame": turn["resultFrame"], "kind": "board-result", "player": item["player"],
-                            "label": "fanned" if item.get("fan") else "finished moving", "fan": item.get("fan", False), "roll": item})
+            event = {"frame": turn["resultFrame"], "kind": "board-result", "player": item["player"],
+                     "label": "fanned" if item.get("fan") else "finished moving", "fan": item.get("fan", False), "roll": item}
+            if forced := item.get("forcedPlay"):
+                event.update(label=f"played   {forced['notation']}", loss=forced["evLoss"], forcedPlay=forced)
+            actions.append(event)
         if item["end"] - item["start"] < ACTION_HOLD:
             actions.append({"frame": item["start"], "kind": "roll", "player": item["player"], "roll": item,
                             "label": "rolled" if item.get("fan") else f"rolled   {dice_label(item['dice'])}"})

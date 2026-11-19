@@ -441,6 +441,36 @@ function renderReport(report, seek) {
     fragment.append(section);
   }
 
+  if (report.nativeDice) {
+    const section = element("section");
+    const { benchmark, accepted } = report.nativeDice;
+    const { trainingTracks, trainingViews, heldTracks, board, native, contrast } = benchmark;
+    section.append(element("h3", "Original camera dice review"), element("p",
+      `The trial used ${trainingViews} camera views from ${trainingTracks} labeled tracks. On ${heldTracks} held-out labels, the current reader matched ${board}, the original-camera trial matched ${native}, and the contrast trial matched ${contrast}. The current reader remains in use.`, "muted small"));
+    if (accepted.length) section.append(reviewList(accepted.map(entry => ({
+      ...entry, detail: `The original camera shows both faces in ${entry.witnesses.length} reviewed frames.`,
+    })), entry => `Verified roll ${entry.dice.join("–")}`));
+    fragment.append(section);
+  }
+
+  if (report.forcedPlays?.length) {
+    const section = element("section");
+    section.append(element("h3", "Forced checker plays"), reviewList(report.forcedPlays.map(play => ({
+      ...play, detail: `${play.possibleDice.map(dice => dice.join("–")).join(", ")} each force the same play. EV loss ${play.evLoss.toFixed(3)}.`,
+    })), play => play.notation));
+    fragment.append(section);
+  }
+
+  if (report.partialDice?.length) {
+    const section = element("section");
+    section.append(element("h3", "Possible dice from checker context"), reviewList(report.partialDice.map(roll => ({
+      ...roll, detail: roll.possibleDice.length
+        ? roll.possibleDice.map(pair => pair.join("–")).join(", ")
+        : "The observed checker counts leave no compatible legal pair.",
+    })), roll => roll.dice.map(face => face ?? "?").join("–")));
+    fragment.append(section);
+  }
+
   if (reviewed.length) {
     const notes = element("section");
     const notesWithTiming = reviewed.map(entry => {

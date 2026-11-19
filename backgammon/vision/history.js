@@ -117,9 +117,11 @@ export function createHistory(seek, player, replayAsset) {
         }
         if (position?.state) {
           const isCube = position.analysis?.type === "cube";
+          const isChecker = position.analysis?.type === "checker";
           const seat = position.state.turn;
+          const decisionName = isCube ? "Cube decision" : isChecker ? "Checker decision" : "Observed position";
           const open = () => review(position.state, {
-            title: `${names[seat]} · ${isCube ? "Cube decision" : "Observed position"} · ${time}`,
+            title: `${names[seat]} · ${decisionName} · ${time}`,
             player: seat, result: position.analysis,
           });
           if (isCube) {
@@ -128,8 +130,11 @@ export function createHistory(seek, player, replayAsset) {
               `${feedback.value} EV loss`));
             chapters.push({ start: entry.rollFrame ?? entry.frame, end: entry.endFrame,
               label: `${names[seat]}’s ${entry.label.toLowerCase()}`, open });
+          } else if (isChecker && Number.isFinite(entry.endFrame)) {
+            const dice = [...position.state.dice].sort((a, b) => b - a).join("–");
+            chapters.push({ start: entry.frame, end: entry.endFrame, label: `${names[seat]}’s ${dice}`, open });
           }
-          information.append(button(isCube ? "Review cube" : "Review position", open, "ghost"));
+          information.append(button(isCube ? "Review cube" : isChecker ? "Review checker options" : "Review position", open, "ghost"));
         }
         item.append(information);
       }

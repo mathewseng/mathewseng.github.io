@@ -1,4 +1,13 @@
 /** Choose between several legal results using paired stationary camera evidence. */
+const pairs = Array.from({ length: 6 }, (_, low) =>
+  Array.from({ length: 6 - low }, (_, high) => [low + 1, low + high + 1])).flat();
+
+export function dicePairsIncluding(faces) {
+  const known = faces.filter(Number.isInteger);
+  return pairs.filter(pair => known.every((face, index) =>
+    pair.filter(value => value === face).length >= known.slice(0, index + 1).filter(value => value === face).length));
+}
+
 export function rankLegalDice(pairs, observation) {
   const [left, right] = observation?.odds ?? [];
   const frames = observation?.frames ?? [];

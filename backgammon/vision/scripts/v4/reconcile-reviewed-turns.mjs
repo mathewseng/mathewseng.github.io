@@ -9,7 +9,7 @@ import { toXGID } from '../../../core/xgid.mjs';
 import { checkerStages, trackCheckerCounts } from './checker-counts.mjs';
 import { turnResult } from './checker-adjustment.mjs';
 import { observedBoard } from './bearoff-board.mjs';
-import { chooseLegalDice } from './legal-face-evidence.mjs';
+import { chooseLegalDice, dicePairsIncluding } from './legal-face-evidence.mjs';
 import { applyAccounting, writeReplay } from './accounting.mjs';
 import { rollCubePositions, scoreRollCubes } from './cube-rolls.mjs';
 
@@ -26,8 +26,6 @@ const keyOf = pos => pos && boardKey({
   points: pos.points.map(([white, dark]) => white - dark), bar: pos.bar, off: pos.borneOff,
 });
 const playable = dice => dice.every(Number.isInteger);
-const combinations = Array.from({ length: 6 }, (_, low) =>
-  Array.from({ length: 6 - low }, (_, high) => [low + 1, low + high + 1])).flat();
 
 function snapshot(boards, start, stop) {
   const byKey = new Map();
@@ -48,9 +46,7 @@ function snapshot(boards, start, stop) {
 function legalAnalysis(before, after, player, evidence, stationary) {
   if (!before) return null;
   const physical = [...evidence].reverse();
-  const known = evidence.filter(Number.isInteger);
-  const choices = playable(physical) ? [physical] : combinations.filter(roll =>
-    known.every((value, index) => roll.filter(face => face === value).length >= known.slice(0, index+1).filter(face => face === value).length));
+  const choices = playable(physical) ? [physical] : dicePairsIncluding(physical);
   const checked = choices.map(dice => {
     const state = stateFor(before, player, dice);
     const actions = legalTurns(state);
@@ -61,7 +57,12 @@ function legalAnalysis(before, after, player, evidence, stationary) {
   if (confirmed.length > 1) {
     const best = chooseLegalDice(confirmed.map(entry => entry.state.dice), stationary);
     const match = confirmed.find(entry => best === entry.state.dice);
-    return match ? { ...match, faceEvidence: true } : { ambiguous: true };
+    if (match) return { ...match, faceEvidence: true };
+    const label = notation(confirmed[0].played.steps, player);
+    const forced = confirmed.every(entry => entry.actions.length === 1 && entry.played.steps.length &&
+      notation(entry.played.steps, player) === label);
+    return { ambiguous: true, ...(forced ? { forcedPlay: { notation: label, evLoss: 0,
+      possibleDice: confirmed.map(entry => entry.state.dice.slice().reverse()) } } : {}) };
   }
   if (playable(physical)) return { ...checked[0], played: null };
   return null;
@@ -184,8 +185,9 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   const player = Number(note.player === 'dark');
   const initial = reviewedBoard(rows, note.beforeBoard, prior ? prior.end - 25 : 0, start + 6)
     ?? snapshot(boards, start - 26, start + 7);
-  const following = reviewedBoard(rows, note.afterBoard, start, afterLimit)
-    ?? snapshot(boards, end - 9, Math.min(afterLimit + 1, end + 24));
+  const following = note.afterBoard === null ? null :
+    reviewedBoard(rows, note.afterBoard, start, afterLimit)
+      ?? snapshot(boards, end - 9, Math.min(afterLimit + 1, end + 24));
   const before = initial?.position ?? null;
   const after = following?.position ?? null;
   let adjustment, adjustmentBoard;
@@ -242,6 +244,7 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   game.turns.push(turn);
   const roll = { start, end, pickup: note.pickupFrame, player: note.player, dice: [...dice].reverse(),
     decision: canScore ? id : null, sourceTurns: [id], evidence, ...(note.fan ? { fan: true } : {}),
+    ...(analysis?.forcedPlay ? { forcedPlay: analysis.forcedPlay } : {}),
     ...(sourceMismatch ? { sourceMismatch: true } : {}) };
   if (canScore) {
     const { state, actions } = analysis;
@@ -354,6 +357,16 @@ async function recover(game, rows, recording) {
       rolls.splice(index, selection.length, replacement.roll);
     }
     const result = rolls[index];
+    const nativeFaces = note.nativeFaceWitnesses;
+    if (nativeFaces) {
+      assert(playable(result.dice) && nativeFaces.length >= 3);
+      for (const { frame, clip, sourceFrame, centers } of nativeFaces) {
+        assert(frame >= result.start && frame < result.end);
+        assert.equal(rows[frame].clip, clip);
+        assert.equal(rows[frame].sourceFrame, sourceFrame);
+        assert.equal(centers.length, result.dice.length);
+      }
+    }
     if (note.supersedesReview) {
       const earlier = changes.findLast(entry => entry.kind === 'reviewed-turn-order' &&
         entry.frame === starts[0] && !entry.superseded);
@@ -361,6 +374,8 @@ async function recover(game, rows, recording) {
       earlier.superseded = true;
     }
     changes.push({ kind: 'reviewed-turn-order', frame: result.start, end: result.end, text: note.text,
+      ...(nativeFaces ? { nativeFaceWitnesses: nativeFaces } : {}),
+      ...(note.unconfirmedResult ? { unconfirmedResult: note.unconfirmedResult } : {}),
       ...(note.confirmedDetectorMisread ? { confirmedDetectorMisread: true } : {}),
       ...(note.resultAtWitness ? {
         boardWitnesses: [note.beforeBoard, note.afterBoard].filter(Boolean)

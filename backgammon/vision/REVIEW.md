@@ -703,3 +703,18 @@ previous release. Reports links directly to the changed frames.
 All 163 indexed throws retain their actor, dice and pickup timing. The ledger
 adds one graded move for Game 3 at zero loss. There are six unresolved die faces
 across Games 1 and 3.
+
+## Original camera dice and late Game 3 bear-offs
+
+| Game and time | Source evidence and replay behavior |
+| --- | --- |
+| Game 3, 21:00.56 | One die is readable as a three. The verified board removes both White checkers from point 3. The 4–3, 5–3 and 6–3 are the only legal matches, and each forces **3/off 3/off**. The replay shows the move and **0.000 EV loss**, with the unresolved face still visible as a question mark. |
+| Game 3, 21:13.52 | The original camera pixel crops show four distinct corner pips and a separate one in clips 36 and 37. The replay shows **4–1** and scored options from the board at the roll. The wider footage shows White lifting two checkers and putting them back on point 6 as the reset begins. The tray remains at seven, so the played move and final game outcome stay open. |
+| Game 1, 7:11–7:35 | The four remaining unclear faces appear during three fans. Reports lists the dice pairs compatible with each filmed board. |
+
+Two native-camera dice models trained on 555 views from 82 labeled tracks.
+On 94 held-out face labels from 27 clips, the current reader matched 56,
+the native-camera trial matched 51, and the native-camera contrast trial
+matched 49. The existing reader remains active. The resolved 4–1 comes
+from a direct review of the original camera. All roll starts and pickups,
+and accumulated checker and cube losses, remain as in the preceding release.

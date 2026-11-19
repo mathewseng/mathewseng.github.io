@@ -7,8 +7,10 @@ import { rowsFrom, stateFor } from "../v2/solve_games.mjs";
 import { observedBoard } from "./bearoff-board.mjs";
 import { boardKey, legalTurns } from "../../../core/rules.mjs";
 import { adjustPoints } from "./checker-adjustment.mjs";
+import { dicePairsIncluding } from "./legal-face-evidence.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
+const snapshot = board => ({ ...board, points: board.points.map(value => [Math.max(value, 0), Math.max(-value, 0)]) });
 const rawDir = path.join(artifactDir, "v2");
 const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v25");
 const output = process.argv[2];
@@ -25,6 +27,8 @@ const trackReportPath = path.join(artifactDir, "calibration", "dice-track-valida
 const trackValidation = fs.existsSync(trackReportPath) ? read(trackReportPath) : null;
 const faceReportPath = path.join(replayDir, "settled-face-validation.json");
 const faceValidation = fs.existsSync(faceReportPath) ? read(faceReportPath) : null;
+const nativeFacePath = path.join(replayDir, "native-face-review.json");
+const nativeFaceReview = fs.existsSync(nativeFacePath) ? read(nativeFacePath) : null;
 const boardTrialPath = path.join(replayDir, "board-witness-training", "validation.json");
 const boardTrial = fs.existsSync(boardTrialPath) ? read(boardTrialPath) : null;
 const diceTrialPath = path.join(replayDir, "dice-witness-training", "dice-track-validation.json");
@@ -281,6 +285,8 @@ function report(number) {
     if (board.equities) counts.equityFrames += frames;
   }
   const issues = [];
+  const forcedPlays = [];
+  const partialDice = [];
   const unresolvedFaces = { fans: 0, confirmedResults: 0, unconfirmedResults: 0 };
   const add = (kind, roll, frame = roll.start, detail = "") =>
     issues.push({ kind, frame, player: roll.player, detail });
@@ -302,7 +308,16 @@ function report(number) {
       };
       add("unknown-face", roll, roll.start,
         `${missing === 2 ? "Both faces are unknown." : "One face is unknown."} ${detail[reason]}`);
+      if (roll.before && roll.after) {
+        const player = Number(roll.player === "dark");
+        const endBoard = boardKey(stateFor(snapshot(roll.after), player, [1, 2]));
+        const possibleDice = dicePairsIncluding(dice)
+          .filter(pair => legalTurns(stateFor(snapshot(roll.before), player, pair)).some(turn => turn.key === endBoard))
+          .map(pair => pair.slice().reverse());
+        partialDice.push({ frame: roll.start, dice: roll.dice, possibleDice });
+      }
     }
+    if (roll.forcedPlay) forcedPlays.push({ frame: roll.resultFrame, player: roll.player, ...roll.forcedPlay });
     if (roll.decision) counts.availableDecisions++;
     if (missing && roll.evidence === "reviewed-roll-with-confirmed-board") counts.confirmedBoardsWithMissingDice++;
     if (roll.fan) counts.fans++;
@@ -311,12 +326,13 @@ function report(number) {
       "The reviewed checker arrangement at pickup falls outside the legal results for the frozen starting board and dice.");
     else if (roll.decision && !confirmed) {
       const forcedFinish = data.result?.reason === "bearoff" && data.result.rollFrame === roll.start;
+      const missingResult = replay.contextRecovery?.find(entry => entry.frame === roll.start &&
+        entry.unconfirmedResult && !entry.superseded)?.unconfirmedResult;
       add("unconfirmed-play", roll, roll.start, forcedFinish
         ? "The only legal play bears off both checkers. The camera shows the players proceeding directly to the reset."
-        : "");
+        : missingResult ?? "");
     }
     if (confirmed) {
-      const snapshot = board => ({ ...board, points: board.points.map(value => [Math.max(value, 0), Math.max(-value, 0)]) });
       const player = Number(roll.player === "dark");
       const from = stateFor(snapshot(roll.before), player, dice);
       const scored = { ...roll.after, points: adjustPoints(roll.after.points, roll.adjustment, true) };
@@ -388,6 +404,14 @@ function report(number) {
   const stack = stackChecks.find(item => item.game === number);
   const checker = stationaryCheckers?.games.find(item => item.game === number);
   const report = { game: number, fps: data.fps, counts, unresolvedFaces, issues, issueNames, reviewed: footageReview,
+    ...(forcedPlays.length ? { forcedPlays } : {}),
+    ...(partialDice.length ? { partialDice } : {}),
+    ...(nativeFaceReview?.games.includes(number) ? { nativeDice: {
+      benchmark: nativeFaceReview.benchmark,
+      accepted: (replay.contextRecovery ?? []).filter(entry => entry.nativeFaceWitnesses && !entry.superseded)
+        .map(({ frame, nativeFaceWitnesses }) => ({ frame,
+          dice: data.rolls.find(roll => roll.start === frame).dice, witnesses: nativeFaceWitnesses })),
+    } } : {}),
     ...(data.result?.reason === "bearoff" ? { result: data.result } : {}),
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
