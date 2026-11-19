@@ -26,6 +26,9 @@ async function assertHomepage(page) {
     dates: [...item.querySelectorAll(".project-dates time")].map((time) => time.getAttribute("datetime")),
   })));
   assert.equal(rows.length, map.projects.length, "every project is directly linked from the homepage");
+  const ewi = page.locator('section[aria-labelledby="group-apps"] a[href="/music/ewi-fingerings/"]');
+  assert.equal(await ewi.count(), 1, "EWI is featured in Apps & experiments");
+  assert.equal(await ewi.locator(".art-ewi use").count(), 13, "the featured tile shows the instrument's key layout");
   for (const project of map.projects) {
     const row = rows.find((item) => item.path === project.path);
     assert.deepEqual(row, { path: project.path, href: project.path, name: project.name, dates: [project.created, project.updated] }, `${project.name} keeps its link and dates`);
@@ -124,7 +127,7 @@ async function assertCategoryInView(page, id) {
       await assertHomepage(staticPage);
       await staticPage.locator('li[data-project="/music/ewi-fingerings/"] a').click();
       assert.equal(new URL(staticPage.url()).pathname, "/music/ewi-fingerings/", "project links navigate without JavaScript");
-      assert.equal(await staticPage.title(), "EWI Fingerings", "the imported destination is served");
+      assert.equal(await staticPage.title(), "EWI Fingerings · Music", "the imported destination is served");
       assert.equal(await staticPage.locator(".legacy-header time").count(), 2, "the destination dates remain available without JavaScript");
       await withoutJS.close();
       console.log(`Homepage and project directories passed at ${viewport.width}×${viewport.height}, with and without JavaScript.`);

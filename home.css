@@ -30,6 +30,30 @@
   }
 }
 
+.home .art-ewi {
+  width: min(210px, 88%);
+  color: var(--muted);
+}
+
+.home .art-ewi .key-face {
+  fill: var(--ewi-tile-fill, var(--surface-2));
+  stroke: currentColor;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.home .art-ewi .key-detail-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  opacity: .6;
+}
+
+.home .art-ewi .ewi-held {
+  --ewi-tile-fill: color-mix(in srgb, var(--accent) 42%, var(--surface-2));
+  color: var(--accent);
+}
+
 .home .project-dates {
   display: flex;
   flex-wrap: wrap;

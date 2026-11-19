@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { updateProjectDates } from './update-project-dates.mjs';
+import { KEY_LAYOUT, KEY_SYMBOLS } from '../music/ewi-fingerings/key-artwork.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const mapFile = resolve(root, 'shared/site-map.json');
@@ -76,9 +77,19 @@ function directory(category) {
 </html>\n`;
 }
 
+function ewiTileArt() {
+  // G fingering, drawn with the same key shapes and positions as Key Explorer.
+  const held = '1011000000000';
+  const keys = KEY_LAYOUT.map(({ shape, x, y, width, height }, i) =>
+    `<use href="#ewi-key-${shape}" transform="translate(${x} ${y})" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}"${held[i] === '1' ? ' class="ewi-held"' : ''}/>`
+  ).join('');
+  return `<svg class="art-ewi" viewBox="16 -216 387 113" focusable="false"><defs>${KEY_SYMBOLS}</defs><g transform="rotate(-90)">${keys}</g></svg>`;
+}
+
 function homepage() {
   const featured = new Set();
-  let html = readFileSync(resolve(root, 'scripts/templates/home.html'), 'utf8');
+  let html = readFileSync(resolve(root, 'scripts/templates/home.html'), 'utf8')
+    .replace('<!-- ewi-tile-art -->', ewiTileArt());
   // Keep the original illustrated tiles and source link, adding only their dates.
   html = html.replace(/<li\b([^>]*)>([\s\S]*?)<\/li>/g, (item, attributes, body) => {
     const path = body.match(/<a\b[^>]*href="([^"]+)"/)?.[1];
