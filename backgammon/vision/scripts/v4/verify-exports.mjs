@@ -331,6 +331,19 @@ for (const number of [1, 2, 3, 4, 5]) {
     }
   }
   if (number === 1 && replay.contextRecovery.some(entry => entry.frame === 3684 && entry.kind === 'reviewed-turn-order')) {
+    const pickup = replay.contextRecovery.find(entry => entry.kind === 'reviewed-checker-pickup-timing');
+    if (pickup) {
+      const white = data.rolls.find(roll => roll.start === pickup.frame);
+      assert.equal(white.pickup, 3915);
+      assert.equal(white.resultFrame, 3948);
+      const before = data.changes.findLast(change => change.frame < pickup.clear);
+      const clear = data.changes.findLast(change => change.frame <= pickup.clear);
+      assert.equal(before.roll, data.rolls.indexOf(white));
+      assert.equal(clear.roll, null);
+      assert.equal(clear.phase, 'checker-result-pending');
+      const play = data.actions.find(action => action.rollStart === white.start);
+      assert.equal(play.frame, pickup.result);
+    }
     const bearoff = replay.contextRecovery.some(entry => entry.frame === 11166 && entry.text.includes('bears one off'));
     const laterHandoff = replay.contextRecovery.some(entry => entry.frame === 12221 && entry.text.includes('unchanged board'));
     for (const [time, player, dice, hasPlayed] of [[147.36, 'white', [6, 1], true], [413.88, 'dark', [5, 1], true],

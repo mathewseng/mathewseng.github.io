@@ -85,23 +85,27 @@ export function offerPosition(offer) {
   }));
 }
 
-export function refreshCubeOffer(game, scored) {
-  const offer = game.decisions.cube;
-  if (!offer) return;
+export function cubeOfferValues(offer, scored) {
   const { options, outcomeProbabilities } = scored;
   const [reply, equity] = bestCubeReply(options);
   const offerEvLoss = Math.max(0, options.noDouble - equity);
-  Object.assign(offer, { options, outcomeProbabilities, offerEvLoss,
+  return { options, outcomeProbabilities, offerEvLoss,
     recommendation: equity >= options.noDouble ? 'Double' : 'No double',
     bestReply: reply[0].toUpperCase() + reply.slice(1),
     ...(offer.reply && { replyEvLoss: Math.max(0, options[offer.reply] - equity) }),
-  });
+  };
+}
+
+export function refreshCubeOffer(game, scored) {
+  const offer = game.decisions.cube;
+  if (!offer) return;
+  Object.assign(offer, cubeOfferValues(offer, scored));
   for (const action of game.losses) {
-    if (action.kind === 'cube' && !action.action && action.frame === offer.startFrame) action.loss = offerEvLoss;
+    if (action.kind === 'cube' && !action.action && action.frame === offer.startFrame) action.loss = offer.offerEvLoss;
   }
 }
 
-function evaluateOptions(evaluator, xgid) {
+export function evaluateOptions(evaluator, xgid) {
   const before = fromXGID(xgid);
   const source = { ...before, rules: { ...before.rules, immediateRedoubles: 1 } };
   const offered = transition(source, { type: 'double' }, source.turn);

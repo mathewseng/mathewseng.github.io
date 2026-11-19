@@ -427,7 +427,8 @@ function renderReport(report, seek) {
   }
 
   function automaticReconstruction({ current, updated, review, extra, boundary, closingRoll, suppressed,
-    checkerRecoveries, handoffs = [], relocatedDice = [], poseHistories = [], fans = [] }, recoveries) {
+    checkerRecoveries, handoffs = [], relocatedDice = [], poseHistories = [], fans = [], foregroundDice = [],
+    cubeTransfers = [] }, recoveries) {
     const section = element("section", null, "vision-report-model vision-automatic-report");
     section.append(element("h3", "Automatic reconstruction"), element("p",
       "Both runs use the same footage and are compared with the reviewed replay. Dice accuracy uses rolls with two verified faces.",
@@ -498,6 +499,23 @@ function renderReport(report, seek) {
           detail: `Both dice were tracked in ${roll.positions} frames. Only this roll can produce the verified checker move.` },
         { frame: roll.beforeFrame, title: "Starting checker position" },
         { frame: roll.resultFrame, title: "Ending checker position" },
+      ]), entry => entry.title));
+    }
+    if (foregroundDice.length) {
+      section.append(element("h4", "Dice recovered from the camera"), reviewList(foregroundDice.flatMap(roll => [
+        { frame: roll.previousPickup, title: "Opponent’s dice clear" },
+        { frame: roll.frame, title: `${player(roll.player)} rolls ${dice(roll.dice)}`,
+          detail: `Both dice are visible in ${roll.samples} sampled frames. The ending board confirms the legal move.` },
+        { frame: roll.clear, title: "Both dice locations clear after pickup" },
+        { frame: roll.resultFrame, title: "Ending checker position confirmed" },
+      ]), entry => entry.title));
+    }
+    if (cubeTransfers.length) {
+      section.append(element("h4", "Doubles taken on camera"), reviewList(cubeTransfers.flatMap(offer => [
+        { frame: offer.start, title: `${player(offer.offerer)} doubles to ${offer.offered}`,
+          detail: `The cube is visible on the felt in ${offer.views} sampled frames.` },
+        { frame: offer.take, title: `${player(offer.responder)} takes`,
+          detail: "The new cube face is visible in the responder’s tray. The checker board stays the same." },
       ]), entry => entry.title));
     }
     if (fans.length) {

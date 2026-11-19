@@ -12,6 +12,8 @@ if (!source) throw new Error('Supply the scored source replay directory.');
 const corrections = JSON.parse(fs.readFileSync(new URL('./reviewed_episodes.json', import.meta.url)));
 const timingOnly = process.argv.includes('--handoff-timing');
 const handoffs = JSON.parse(fs.readFileSync(new URL('./reviewed-fan-handoffs.json', import.meta.url)));
+const pickupOnly = process.argv.includes('--pickup-timing');
+const pickups = JSON.parse(fs.readFileSync(new URL('./reviewed-checker-pickups.json', import.meta.url)));
 fs.mkdirSync(replayDir, { recursive: true });
 const sides = ['white', 'dark'];
 const board = record => record && boardKey({
@@ -74,6 +76,35 @@ function retimeFanHandoff(game, rows, note) {
     next: note.next, text: note.text });
 }
 
+function retimeCheckerPickup(game, rows, note) {
+  const roll = game.presentation.rolls.find(entry => entry.start === note.start);
+  assert(roll?.decision && roll.pickup === note.oldPickup && roll.end === note.oldPickup);
+  const turn = game.turns[roll.decision - 1];
+  assert(turn.resultFrame === note.result && turn.pickupFrame === note.oldPickup && turn.steps?.length);
+  assert(note.lastVisible < note.clear && note.clear < note.oldPickup && note.oldPickup < note.result);
+  for (const [frame, sourceFrame] of note.witnesses) {
+    assert.equal(rows[frame].clip, note.clip);
+    assert.equal(rows[frame].sourceFrame, sourceFrame);
+  }
+  assert.equal(board(game.positions[rows[note.result].position]), board(turn.after));
+  for (const row of rows.slice(note.clear, note.result)) {
+    assert(row.turn === roll.decision && row.roll?.status === 'current' && !row.cube?.offered);
+    row.phase = 'checker-result-pending';
+    row.roll = null;
+    row.decision = null;
+    delete row.displayPoints;
+  }
+  if (rows[note.result].roll?.id === roll.decision) {
+    rows[note.result].roll.status = 'last';
+    rows[note.result].decision = null;
+  }
+  roll.end = roll.pickup = turn.pickupFrame = note.clear;
+  const cube = game.presentation.cubeRolls.find(entry => entry.frame === roll.start);
+  if (cube?.end === note.oldPickup) cube.end = note.clear;
+  game.contextRecovery.push({ kind: 'reviewed-checker-pickup-timing', frame: note.start,
+    lastVisible: note.lastVisible, clear: note.clear, previousPickup: note.oldPickup, result: note.result });
+}
+
 function recoverEpisodes(game, rows) {
   const rolls = game.presentation.rolls;
   const changes = game.contextRecovery ??= [];
@@ -129,12 +160,14 @@ function recoverEpisodes(game, rows) {
   }
 }
 
-for (const number of timingOnly ? Object.keys(handoffs).map(Number) : [1, 2, 3, 4, 5]) {
+for (const number of timingOnly ? Object.keys(handoffs).map(Number) : pickupOnly ? Object.keys(pickups).map(Number) : [1, 2, 3, 4, 5]) {
   const prefix = `game-0${number}`;
   const game = JSON.parse(fs.readFileSync(path.join(source, prefix + '-game.json')));
   const rows = rowsFrom(path.join(source, prefix + '-state.jsonl.gz'));
   if (timingOnly) {
     for (const handoff of handoffs[number]) retimeFanHandoff(game, rows, handoff);
+  } else if (pickupOnly) {
+    for (const pickup of pickups[number]) retimeCheckerPickup(game, rows, pickup);
   } else recoverEpisodes(game, rows);
   applyAccounting(game, rows);
   writeReplay(prefix, game, rows);

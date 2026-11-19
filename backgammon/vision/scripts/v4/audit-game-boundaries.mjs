@@ -143,13 +143,60 @@ function verifyFans(plan, rolls, game, label) {
   });
 }
 
-function verifyTimeline(prefix, boundary, expectedFrames) {
+function verifyForegroundDice(plan, candidates, referenced, label) {
+  return plan.filter(turn => turn.foregroundDice).map(turn => {
+    const match = candidates.find(entry => entry.automaticFrame === turn.start);
+    assert(match?.agreement === 'correct' && match.player === turn.player &&
+      match.beforeMatches && match.afterMatches, `${label}: foreground roll does not match review`);
+    const { samples, faces, previous, previousPickup } = turn.foregroundDice;
+    const review = referenced.presentation.rolls.find(entry => entry.start === match.frame);
+    const prior = plan.find(entry => entry.start === previous);
+    const priorMatch = candidates.find(entry => entry.automaticFrame === previous);
+    const reviewedPrior = referenced.presentation.rolls.find(entry => entry.start === priorMatch?.frame);
+    assert(Math.abs(review.start - turn.start) <= 10 && Math.abs(review.pickup - turn.pickupFrame) <= 5, label);
+    assert(prior.player !== turn.player && Math.abs(reviewedPrior?.pickup - previousPickup) <= 5 &&
+      prior.pickupFrame === previousPickup && previousPickup < turn.start && samples >= 10, label);
+    assert.equal(boardKey(stateFor(prior.after, turn)), boardKey(stateFor(turn.before, turn)), label);
+    assert.equal(boardKey(commitTurn(stateFor(turn.before, turn), turn.steps)), boardKey(stateFor(turn.after, turn)), label);
+    return { frame: review.start, player: turn.player, dice: dice(turn.dice), samples,
+      faceReads: faces.map(face => face.face), previousPickup, clear: turn.pickupFrame, resultFrame: turn.resultFrame };
+  });
+}
+
+function verifyCubeTakes(transfers, reference, label) {
+  for (const item of transfers) {
+    const expected = reference.decisions.cube;
+    assert(expected?.reply === 'take' && expected.offerer === item.offerer && expected.responder === item.responder &&
+      expected.offeredFace === item.offered && expected.preOfferStake === item.stake &&
+      Math.abs(expected.startFrame - item.start) <= 5 && expected.endFrame === item.take, label);
+    assert.deepEqual(item.position, expected.position, `${label}: cube starting board`);
+    assert(item.start <= item.lastSeen && item.lastSeen < item.take && item.views >= 4, label);
+  }
+  return transfers.map(({ position, ...witness }) => witness);
+}
+
+function verifyTimeline(prefix, boundary, expectedFrames, transfers, expectedCube) {
   const game = read(path.join(timelineDir, prefix + '-game.json'));
   const rows = gunzipSync(fs.readFileSync(path.join(timelineDir, prefix + '-state.jsonl.gz')))
     .toString('utf8').trim().split('\n').map(line => JSON.parse(line));
   assert.equal(rows.length, expectedFrames, prefix);
   assert.deepEqual(game.boundary, boundary, prefix);
   assert(rows.every((row, frame) => row.frame === frame), prefix);
+  for (const transfer of transfers) {
+    const cube = Object.values(game.decisions).find(decision => decision.kind === 'cube' && decision.startFrame === transfer.start);
+    assert(cube?.reply === 'take' && cube.endFrame === transfer.take, prefix);
+    assert.deepEqual(cube.options, expectedCube.options, `${prefix}: cube equity differs on the same board`);
+    assert(rows.slice(transfer.start, transfer.take).every(row => row.phase === 'cube-response' && row.roll === null &&
+      row.player === transfer.responder && row.cube?.offered === transfer.offered && row.decision), prefix);
+    assert.equal(rows[transfer.take].cube?.stake, transfer.offered, prefix);
+    assert.equal(rows[transfer.take].cube?.side, transfer.side, prefix);
+    assert.deepEqual(game.losses.filter(event => event.kind === 'cube' &&
+      (event.frame === transfer.start || event.frame === transfer.take)), [
+      { frame: transfer.start, player: transfer.offerer, loss: cube.offerEvLoss, kind: 'cube' },
+      { frame: transfer.take, player: transfer.responder, loss: cube.replyEvLoss, kind: 'cube', action: 'take' },
+    ], prefix);
+  }
+
   for (const [index, turn] of game.turns.entries()) {
     if (turn.fanEvidence) {
       const id = index + 1;
@@ -163,7 +210,7 @@ function verifyTimeline(prefix, boundary, expectedFrames) {
           `${prefix}: the earlier roll stayed active after pickup`);
       }
     }
-    if (!turn.checkerDice && !turn.physicalHandoff && !turn.movedDie && !turn.poseHistory) continue;
+    if (!turn.checkerDice && !turn.physicalHandoff && !turn.movedDie && !turn.poseHistory && !turn.foregroundDice) continue;
     const id = index + 1;
     const label = `${prefix}, roll ${turn.start}`;
     const decision = game.decisions[id];
@@ -173,16 +220,20 @@ function verifyTimeline(prefix, boundary, expectedFrames) {
     assert(rows.slice(turn.start, showUntil).every(row =>
       row.turn === id && row.roll?.id === id && row.roll.player === turn.player &&
       JSON.stringify(row.roll.dice) === JSON.stringify(turn.dice)), `${label}: dice changed during play`);
-    if (turn.physicalHandoff || turn.movedDie || turn.poseHistory) {
+    if (turn.physicalHandoff || turn.movedDie || turn.poseHistory || turn.foregroundDice) {
       for (const [frame, expected] of [[turn.start, turn.before], [turn.resultFrame, turn.after]]) {
         const board = game.positions[rows[frame].position];
         assert(board && boardKey(stateFor(board, turn)) === boardKey(stateFor(expected, turn)),
           `${label}: displayed checker state disagrees at frame ${frame}`);
       }
     }
-    if (turn.movedDie || turn.poseHistory) {
+    if (turn.movedDie || turn.poseHistory || turn.foregroundDice) {
       assert(rows.slice(turn.pickupFrame, turn.resultFrame).every(row => row.phase === 'checker-result-pending' &&
         row.roll === null && row.player === turn.player), `${label}: new turn before the result`);
+    }
+    if (turn.foregroundDice) {
+      assert(rows.slice(turn.foregroundDice.previousPickup, turn.start).every(row => row.roll?.status !== 'current'),
+        `${label}: previous dice were carried into the next roll`);
     }
     if (turn.physicalHandoff?.observedFace && turn.start === turn.physicalHandoff.outgoingStart) {
       assert(rows.slice(turn.pickupFrame, turn.physicalHandoff.incomingStart).every(row => row.roll?.status !== 'current'),
@@ -213,7 +264,7 @@ const games = read(comparisonPath).map(({ game, current, candidate }) => {
   const prefix = `game-${String(game).padStart(2, '0')}`;
   const reference = read(path.join(referenceDir, prefix + '-game.json'));
   const plan = read(path.join(candidateDir, prefix + '-plan.json'));
-  const { boundary, closingRoll, suppressed } = read(path.join(candidateDir, prefix + '-boundary.json'));
+  const { boundary, closingRoll, suppressed, cubeTransfers = [] } = read(path.join(candidateDir, prefix + '-boundary.json'));
   const label = `Game ${game}`;
   assert(boundary && reference.ending, `${label}: missing end`);
   assert(Math.abs(boundary.frame - reference.ending.frame) <= 50, `${label}: end moved by more than two seconds`);
@@ -227,7 +278,7 @@ const games = read(comparisonPath).map(({ game, current, candidate }) => {
   const stop = boundary.offerFrame ?? boundary.frame;
   assert(plan.every(turn => turn.start < stop && turn.end < stop &&
     (turn.resultFrame == null || turn.resultFrame < stop)), `${label}: live turn after closure`);
-  if (timelineDir) verifyTimeline(prefix, boundary, reference.frames);
+  if (timelineDir) verifyTimeline(prefix, boundary, reference.frames, cubeTransfers, reference.decisions.cube);
   assert(candidate.unmatched.length <= current.unmatched.length, `${label}: added extra roll`);
   for (const [index, previous] of current.rolls.entries()) {
     const next = candidate.rolls[index];
@@ -244,6 +295,8 @@ const games = read(comparisonPath).map(({ game, current, candidate }) => {
       `${label}: excluded a reviewed throw`);
     if (roll.reason === 'checker-stack') {
       assert(roll.witness.before < roll.frame && roll.witness.after > roll.end && !dice(roll.dice).length, label);
+    } else if (roll.reason === 'accepted-cube-response') {
+      assert(cubeTransfers.some(offer => roll.frame >= offer.start && roll.end < offer.take), label);
     } else {
       assert(roll.frame >= (roll.reason === 'post-game' ? reference.ending.frame : reference.decisions.cube.startFrame), label);
     }
@@ -261,6 +314,8 @@ const games = read(comparisonPath).map(({ game, current, candidate }) => {
   return { game, current: summarize(current), updated: summarize(candidate), review, extra,
     checkerRecoveries: verifyCheckerDice(plan, candidate.rolls, label),
     fans: verifyFans(plan, candidate.rolls, reference, label),
+    foregroundDice: verifyForegroundDice(plan, candidate.rolls, reference, label),
+    cubeTransfers: verifyCubeTakes(cubeTransfers, reference, label),
     ...verifyPhysicalTiming(plan, candidate.rolls, reference.presentation.rolls, label),
     boundary: { ...boundary, reviewedFrame: reference.ending.frame },
     closingRoll: closingRoll && { ...closingRoll, dice: dice(closingRoll.dice) },

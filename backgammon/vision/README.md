@@ -5,7 +5,7 @@ Office-3 game replays from November 17, 2026. Add `?game=1` through `?game=5`
 to link to a specific game.
 
 The 1080p video files are assets on the
-[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v42).
+[Office-3 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261117-v44).
 The Pages build copies those MP4s into the published site for streaming and
 seeking. The files load over the network on playback. For a local replay build,
 run `node scripts/package-vision-replays.mjs _site` after assembling the site.

@@ -781,6 +781,31 @@ candidate is used for this narrowly gated short-roll check. Its outputs
 must agree across both crop versions and the unchanged board must block
 both entries.
 
+## Dice near the center stripe and doubles taken on camera
+
+The camera scan now compares stationary changes on the felt with clean views
+before the throw and after pickup. The dice reader checks the recovered
+locations. The reconstruction also requires the outgoing pickup and a legal
+move from the verified starting board to the verified ending board.
+
+Game 1 regains White's 6–1 around 2:27. Both locations are visibly clear by
+2:36.60. The old video displayed the dice for 0.8 seconds longer. The revised
+video clears them at the first confirmed empty view and marks the move
+after the reviewed ending board at 2:37.92. The hand obscures the removal.
+Game 4 regains White's 2–1 around 1:14. The visible one and the verified
+checker move determine the other face.
+
+The surface cube reader locates the three doubles that were taken in Games
+1, 3, and 4. The checker board and the cube in the responder's tray
+corroborate each transfer. This excludes two Game 3 roll proposals generated
+by the offered cube and nearby checker edges. Dice remain inactive through
+the response window.
+
+The five-game comparison now matches 146 of 163 reviewed rolls, up from
+144. Exact pairs rise from 110 to 112, starting boards from 126 to 128 and
+ending boards from 94 to 96. There are nine wrong reads and 13 extra
+proposals remaining.
+
 ## Pip counts and action review
 
 The game equity panel shows each player's pip count from the current

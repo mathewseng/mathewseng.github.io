@@ -649,3 +649,21 @@ Short-roll face qualification
   views, and a matching complete board that blocks either die. Pass the
   result through the five-game comparison and frame audit before publishing
   the findings.
+
+Camera checks for the felt and cube transfers
+
+  Start with the five-game automatic plans and the temporal cube and dice
+  archive. Run the camera scans against the rectified source footage:
+
+    python v4/camera-dice-appearances.py "$plans" "$observations" \
+      "$trained/dice-pip-candidate.onnx" "$evidence/dice-appearances.json"
+    python v4/camera-cube-transfers.py "$observations" "$evidence/cube-transfers.json"
+
+  The scans use the automatically observed timings and positions. Set
+  OFFICE3_FOREGROUND_DICE and OFFICE3_CUBE_TRANSFERS to those JSON paths for
+  plan and scored reconstruction. Audit legal results, prior pickups,
+  cube responses and scores with v4/audit-game-boundaries.mjs.
+
+  For the reviewed Game 1 pickup, set OFFICE3_REPLAY_DIR to a new directory
+  and run bun v4/review-episodes.mjs "$previous" --pickup-timing. The checked
+  source positions and frame references are in reviewed-checker-pickups.json.

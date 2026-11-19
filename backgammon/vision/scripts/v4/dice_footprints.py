@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from project_paths import ARTIFACT_DIR
 
 
-def patches(game, frames, centers, *, color=False):
+def images(game, frames):
     manifest = ARTIFACT_DIR / 'v2' / f'game-{game}-analysis.json'
     segments = json.loads(manifest.read_text())['segments']
     requested = defaultdict(list)
@@ -22,7 +22,6 @@ def patches(game, frames, centers, *, color=False):
             raise ValueError(f'Timing samples cross missing footage in game {game}')
         requested[segment['source']].append((frame, offset))
 
-    result = {}
     for source, requests in requested.items():
         capture = cv2.VideoCapture(str(ARTIFACT_DIR / 'board' / source))
         previous = -2
@@ -36,14 +35,20 @@ def patches(game, frames, centers, *, color=False):
             ok, image = capture.read()
             if not ok:
                 raise ValueError(f'Cannot read {source} frame {offset}')
-            height, width = image.shape[:2]
-            if any(not 11 <= x < width - 11 or not 11 <= y < height - 11 for x, y in centers):
-                raise ValueError(f'Die center outside the camera crop in game {game}')
-            crops = [image[y-11:y+12, x-11:x+12] for x, y in centers]
-            result[frame] = [crop.copy() for crop in crops] if color else [
-                cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY) for crop in crops]
+            yield frame, image
             previous = offset
         capture.release()
+
+
+def patches(game, frames, centers, *, color=False):
+    result = {}
+    for frame, image in images(game, frames):
+        height, width = image.shape[:2]
+        if any(not 11 <= x < width - 11 or not 11 <= y < height - 11 for x, y in centers):
+            raise ValueError(f'Die center outside the camera crop in game {game}')
+        crops = [image[y-11:y+12, x-11:x+12] for x, y in centers]
+        result[frame] = [crop.copy() for crop in crops] if color else [
+            cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY) for crop in crops]
     return result
 
 

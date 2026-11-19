@@ -9,6 +9,8 @@ import { faceAt, pairVisible, pickupAfterPose, rejoinDicePose, stationaryPoseOns
 import { refineIncompletePair, settledShortPair, shortDicePairs, stationaryCheckerImpostor } from './short-dice-pairs.mjs';
 import { recoverStationaryFaces } from './stationary-face-votes.mjs';
 import { backfillClosingRoll, inferGameBoundary } from './game-boundary.mjs';
+import { resolveCubeTakes, suppressDuringTakes } from './cube-transfers.mjs';
+import { cubeOfferValues, evaluateOptions, offerPosition } from './cube-rolls.mjs';
 import {
   evaluateDecision, loadEvaluator, matchingTurns, okay, positional, rowsFrom, stateFor,
 } from '../v2/solve_games.mjs';
@@ -28,6 +30,10 @@ const poseStateDir = process.env.OFFICE3_VISION_POSE_STATE_DIR;
 const longFootprintFile = process.env.OFFICE3_VISION_LONG_FOOTPRINTS;
 const longFootprints = longFootprintFile ? JSON.parse(fs.readFileSync(longFootprintFile, 'utf8')) : {};
 const v2 = path.join(artifactDir, 'v2');
+const foregroundFile = process.env.OFFICE3_FOREGROUND_DICE;
+const foregroundDice = foregroundFile ? JSON.parse(fs.readFileSync(foregroundFile, 'utf8')) : [];
+const cubeTransferFile = process.env.OFFICE3_CUBE_TRANSFERS;
+const cubeTransferCandidates = cubeTransferFile ? JSON.parse(fs.readFileSync(cubeTransferFile, 'utf8')) : [];
 const shortRollFacesFile = process.env.OFFICE3_SHORT_ROLL_FACES;
 const shortRollFaces = new Map((shortRollFacesFile ? JSON.parse(fs.readFileSync(shortRollFacesFile, 'utf8')) : [])
   .map(record => [`${record.game}:${record.start}`, record.tracks]));
@@ -718,6 +724,41 @@ function findBlockedFans(gameNumber, turns, pairs, fresh, rows, poses, runs, fir
   return result;
 }
 
+function recoverForegroundDice(turns, candidates, runs, poses, first, last, offers) {
+  if (!poses) return turns;
+  for (const proof of candidates) {
+    const priorIndex = turns.findIndex(turn => turn.start === proof.previous);
+    const prior = turns[priorIndex];
+    const next = turns[priorIndex + 1];
+    const { start, lastTogether, pickup, centers, samples, faces, player } = proof;
+    if (!prior?.after || prior.resultFrame >= start || !next || prior.player === player || next.player !== prior.player ||
+        !prior.centers || start < first || pickup >= last || next.start <= pickup || samples < 10 ||
+        !(start < lastTogether && lastTogether < pickup) || offers.some(offer => start < offer.endFrame && pickup >= offer.startFrame)) continue;
+    const previousPickup = pickupAfterPose({ ...prior, end: prior.poseLastSeen }, poses, start);
+    if (!previousPickup || previousPickup.pickupFrame >= start) continue;
+    const known = faces.filter(read => read.face >= 1 && read.face <= 6 && Number.isInteger(read.face) &&
+      read.views >= 10 && read.probability >= .84 && read.agree >= .85 * read.views &&
+      read.frames.every(frame => frame >= start && frame <= lastTogether));
+    if (!known.length || known.length !== faces.length || known.length > 2) continue;
+    const guesses = known.length === 2 ? [known.map(read => read.face).sort((a, b) => a - b)] :
+      allDice.filter(pair => pair.includes(known[0].face));
+    const before = prior.after;
+    const results = runs.filter(run => run.first >= pickup - 16 && run.first <= Math.min(next.start - 1, pickup + 55) &&
+      run.last >= pickup && run.count >= 12 && run.key !== before.key);
+    const moves = results.flatMap(after => matchingTurns(before, after, guesses, names.indexOf(player)));
+    const distinct = [...new Map(moves.map(move => [`${move.after.key}:${move.dice.join('-')}`, move])).values()];
+    if (distinct.length !== 1) continue;
+    const [move] = distinct;
+    if (move.after.first >= next.start) continue;
+    Object.assign(prior, previousPickup, { end: Math.max(previousPickup.pickupFrame - 1, prior.resultFrame) });
+    turns.splice(priorIndex + 1, 0, { start, end: Math.max(pickup - 1, move.after.first), pickupFrame: pickup,
+      poseLastSeen: lastTogether, centers, player, dice: move.dice, before, after: move.after, steps: move.steps,
+      resultFrame: move.after.first, evidence: 'foreground-dice-and-legal-result', priority: 12,
+      foregroundDice: { samples, faces: known, previous: prior.start, previousPickup: previousPickup.pickupFrame } });
+  }
+  return turns;
+}
+
 function reconstruct(game, observations, rows, poseFrames) {
   const brief = poseFrames ? shortDicePairs(poseFrames, observations.breaks) : [];
   if (poseFrames && process.env.OFFICE3_TRIAL_SHORT_DICE === '1') {
@@ -756,12 +797,14 @@ function reconstruct(game, observations, rows, poseFrames) {
           dice: turn.dice, reason: 'checker-stack', witness });
         return !witness;
       });
-    return { first, last, runs, suppressed, turns: findBlockedFans(game.number, turns, observations.pairs, brief, rows, poseFrames,
-      runs, first, last, game.reviewedCubeOffers) };
+    const withForeground = recoverForegroundDice(turns, foregroundDice.filter(proof => proof.game === game.number),
+      runs, poseFrames, first, last, game.reviewedCubeOffers);
+    return { first, last, runs, suppressed, turns: findBlockedFans(game.number, withForeground, observations.pairs, brief, rows,
+      poseFrames, runs, first, last, game.reviewedCubeOffers) };
   });
 }
 
-function cubeTimeline(game, observations) {
+function cubeTimeline(game, observations, cameraOffers) {
   const changes = [];
   let current;
   const update = (frame, cube) => {
@@ -779,11 +822,19 @@ function cubeTimeline(game, observations) {
     // showing from the preceding game. A raise needs a post-opening change.
     if (game.number > 1 && e.start < 150 && e.stake !== 1) continue;
     if (e.end - e.start < 24 && e.visibleSamples < 20) continue;
+    // A verified transfer establishes the preceding stake. A brief tray
+    // proposal cannot have raised it before a persistent lower face.
+    if (cameraOffers.some(offer => e.start < offer.previous && e.stake > offer.stake)) continue;
     if (current?.stake && e.stake < current.stake) continue;
     if (current?.stake && e.stake > current.stake * 2) continue;
     update(e.start, { stake: e.stake, side: e.side, evidence: e.evidence });
   }
-  if (offers.length) {
+  for (const offer of cameraOffers) {
+    changes.push({ frame: offer.start, stake: offer.stake, side: offer.oldSide, offered: offer.offered,
+      offerer: offer.offerer, responder: offer.responder, end: offer.take,
+      evidence: 'surface-cube-and-recipient-tray' });
+  }
+  if (offers.length && !cameraOffers.length) {
     const first = offers[0];
     const end = changes.find((c) => c.frame > first.startFrame && c.stake === first.offeredFace)?.frame ?? game.frames;
     const before = changes.filter((c) => c.frame < first.startFrame).at(-1);
@@ -900,7 +951,7 @@ function chooseBoardChanges(group) {
   return unique.filter((c, i) => unique[i - 1]?.run.key !== c.run.key);
 }
 
-function buildTimeline(game, groups, cubes, rows, analysis, result) {
+function buildTimeline(game, groups, cubes, rows, analysis, result, transfers) {
   const turns = groups.flatMap((g) => g.turns);
   for (const [i, turn] of turns.entries()) turn.id = i + 1;
   const decisions = {};
@@ -912,7 +963,7 @@ function buildTimeline(game, groups, cubes, rows, analysis, result) {
     const d = turn.decision;
     if (!d) continue;
     const grade = d.evLoss !== null &&
-      (turn.existing?.countedInGameLoss || turn.checkerDice || turn.physicalHandoff || turn.movedDie || turn.poseHistory ||
+      (turn.existing?.countedInGameLoss || turn.checkerDice || turn.physicalHandoff || turn.movedDie || turn.poseHistory || turn.foregroundDice ||
         turn.evidence === 'reviewed-roll-and-legal-result' ||
         turn.evidence === 'stationary-footprints-and-legal-result' ||
         turn.evidence === 'stationary-faces-and-legal-result' ||
@@ -928,8 +979,23 @@ function buildTimeline(game, groups, cubes, rows, analysis, result) {
       }
     }
   }
-  if (game.reviewedCubeOffers.length) {
+  const evaluatedCubes = new Map();
+  for (const transfer of transfers) {
+    const { start, take, offered, stake, offerer, responder, position } = transfer;
+    if (!cubes.some(event => event.frame === start && event.offered === offered)) continue;
+    const offer = { kind: 'cube', startFrame: start, endFrame: take, offeredFace: offered, preOfferStake: stake,
+      offerer, responder, position, reply: 'take', evidence: 'surface-cube-and-recipient-tray' };
+    const xgid = offerPosition(offer);
+    Object.assign(offer, cubeOfferValues(offer, evaluateOptions(analysis, xgid)));
+    const id = evaluatedCubes.size ? `cube:${start}` : 'cube';
+    evaluatedCubes.set(start, id);
+    decisions[id] = offer;
+    losses.push({ frame: start, player: offerer, loss: offer.offerEvLoss, kind: 'cube' },
+      { frame: take, player: responder, loss: offer.replyEvLoss, kind: 'cube', action: 'take' });
+  }
+  if (!evaluatedCubes.size && game.reviewedCubeOffers.length) {
     const offer = game.reviewedCubeOffers[0];
+    evaluatedCubes.set(offer.startFrame, 'cube');
     decisions.cube = offer;
     losses.push({ frame: offer.startFrame, player: offer.offerer, loss: offer.offerEvLoss, kind: 'cube' });
   }
@@ -980,7 +1046,8 @@ function buildTimeline(game, groups, cubes, rows, analysis, result) {
         phase = 'opening';
       }
       const printRoll = current && !['cube-response', 'game-closed', 'checker-result-pending'].includes(phase);
-      let decision = gapCube?.offered && decisions.cube ? 'cube' : onBoard && decisions[current.id] ? current.id : null;
+      let decision = gapCube?.offered ? evaluatedCubes.get(gapCube.frame) ?? null :
+        onBoard && decisions[current.id] ? current.id : null;
       if (phase === 'game-closed') decision = null;
       const markerPlayer = !board || phase === 'game-closed' ? null :
         phase === 'cube-response' ? gapCube.offerer :
@@ -1042,7 +1109,9 @@ for (const number of gameNumbers.length ? gameNumbers : [1, 2, 3, 4, 5]) {
   if (rows.length !== game.frames) throw new Error('Frame count does not match source timeline');
   const poseFrames = dicePoseFrames(game);
   const groups = reconstruct(game, observations, rows, poseFrames);
-  const cubeEvents = cubeTimeline(game, observations);
+  const cubeTransfers = resolveCubeTakes(observations, groups, cubeTransferCandidates.filter(offer => offer.game === number));
+  suppressDuringTakes(groups, cubeTransfers);
+  const cubeEvents = cubeTimeline(game, observations, cubeTransfers);
   const boundary = inferGameBoundary(rows, groups, observations, cubeEvents, openingState.points);
   const closingGroup = boundary && groups.find(group => group.first <= boundary.frame && boundary.frame < group.last);
   const closingRoll = closingGroup ? backfillClosingRoll(closingGroup, rows, poseFrames, boundary) : null;
@@ -1054,7 +1123,7 @@ for (const number of gameNumbers.length ? gameNumbers : [1, 2, 3, 4, 5]) {
   }));
   if (isPlan) {
     writeAtomic(path.join(out, `${prefix}-plan.json`), JSON.stringify(authored));
-    writeAtomic(path.join(out, `${prefix}-boundary.json`), JSON.stringify({ boundary, closingRoll, suppressed }));
+    writeAtomic(path.join(out, `${prefix}-boundary.json`), JSON.stringify({ boundary, closingRoll, suppressed, ...(cubeTransfers.length && { cubeTransfers }) }));
     console.log(JSON.stringify({ game: number, turns: turns.length, complete: turns.filter((r) => r.dice?.[1]).length,
       boardResults: turns.filter((r) => r.after).length, boundary, suppressed: suppressed.length,
       cubeChanges: changes, ...scores }));
@@ -1062,13 +1131,13 @@ for (const number of gameNumbers.length ? gameNumbers : [1, 2, 3, 4, 5]) {
   }
   const result = boundary?.winner ? { frame: boundary.frame, winner: boundary.winner,
     points: boundary.points, reason: 'pass', inferred: true } : null;
-  const { output, ...lookup } = buildTimeline(game, groups, changes, rows, analysis, result);
+  const { output, ...lookup } = buildTimeline(game, groups, changes, rows, analysis, result, cubeTransfers);
   writeAtomic(path.join(out, `${prefix}-state.jsonl.gz`),
     gzipSync(output.map((row) => JSON.stringify(row)).join('\n') + '\n'));
   writeAtomic(path.join(out, `${prefix}-game.json`),
     JSON.stringify({ game: number, frames: game.frames, turns: authored, ...lookup,
       ...(boundary ? { ending: { frame: boundary.frame, kind: boundary.kind }, boundary } : {}),
-      ...(result && { result }),
+      ...(cubeTransfers.length && { cubeTransfers }), ...(result && { result }),
     }));
   console.log(JSON.stringify({ game: number, frames: rows.length, turns: turns.length,
     decisions: Object.keys(lookup.decisions).length, ...scores }));
