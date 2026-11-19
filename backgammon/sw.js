@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later. Scope is /backgammon/ only. */
 // Release URL is generated with the manifest; keep the registration URL stable.
-importScripts("./offline-manifest.js?v=b53c7989964f8d4b");
+importScripts("./offline-manifest.js?v=9bba88138827ac20");
 const PREFIX = "backgammon-assets-",
   CACHE = PREFIX + self.BG_CACHE_VERSION;
 async function cacheShell() {
@@ -270,6 +270,8 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || u.origin !== location.origin) return;
   // A standalone escape hatch must always be reachable through the network.
   if (u.pathname.startsWith("/backgammon/refresh/")) return;
+  // Let the browser stream and seek replays directly using HTTP byte ranges.
+  if (u.pathname.startsWith("/backgammon/vision/media/")) return;
   if (
     !u.pathname.startsWith("/backgammon/") &&
     !self.BG_SHELL.includes(u.pathname)

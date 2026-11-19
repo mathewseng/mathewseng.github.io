@@ -18,7 +18,7 @@ function indexedActions(data) {
   return actions.sort((a, b) => a.frame - b.frame);
 }
 
-export function createTransport(player, onData, replayAsset) {
+export function createTransport(player, onData, replayAsset, requestPlayback) {
   const shell = document.querySelector("#replay-shell");
   const transport = shell.querySelector(".replay-transport");
   const markers = document.querySelector("#replay-markers");
@@ -114,7 +114,7 @@ export function createTransport(player, onData, replayAsset) {
   }
 
   const togglePlayback = () => {
-    if (player.paused) void player.play().catch(() => {});
+    if (player.paused) void requestPlayback();
     else player.pause();
   };
   toggle.addEventListener("click", togglePlayback);
@@ -132,7 +132,7 @@ export function createTransport(player, onData, replayAsset) {
     else player.webkitEnterFullscreen?.();
   });
   fullscreen.hidden = !shell.requestFullscreen && !player.webkitEnterFullscreen;
-  for (const event of ["timeupdate", "loadedmetadata", "play", "pause", "seeking", "seeked", "volumechange", "ended"]) {
+  for (const event of ["timeupdate", "loadedmetadata", "play", "pause", "seeking", "seeked", "volumechange", "ended", "error"]) {
     player.addEventListener(event, synchronize);
   }
   document.addEventListener("fullscreenchange", synchronize);

@@ -56,6 +56,11 @@ jobs:
       - name: Assemble complete user site
         run: sh scripts/assemble-site.sh _site
 
+      - name: Package Backgammon replay videos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/package-vision-replays.mjs _site
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

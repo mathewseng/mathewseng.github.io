@@ -19,9 +19,10 @@ const games = new Map(
   [...document.querySelectorAll("[data-game]")].map((link) => [link.dataset.game, link]),
 );
 const release = new URL("./", download.href);
+const media = new URL("./", player.src);
 let currentGame = "1";
 const audit = createAudit(player, replayAsset);
-const transport = createTransport(player, data => audit.setFrameData(data), replayAsset);
+const transport = createTransport(player, data => audit.setFrameData(data), replayAsset, requestPlayback);
 function seekDecision(time, focusVideo = true) {
   player.pause();
   transport.seek(time);
@@ -44,15 +45,15 @@ function selectGame(number) {
   nextGame.setAttribute("aria-current", "true");
   currentGame = number;
   const label = `Game ${number}`;
-  const asset = new URL(`game-${id}-analysis.mp4`, release);
+  const asset = `game-${id}-analysis.mp4`;
   title.textContent = label;
   play.setAttribute("aria-label", `Play ${label}`);
   note.textContent = nextGame.dataset.note ?? "";
   note.hidden = !note.textContent;
-  download.href = asset;
+  download.href = new URL(asset, release);
   error.hidden = true;
   player.poster = `posters/game-${id}.jpg`;
-  player.src = asset;
+  player.src = new URL(asset, media);
   player.preload = "none";
   player.load();
   audit.select(number);
@@ -78,20 +79,28 @@ for (const [number, link] of games) {
   });
 }
 
-play.addEventListener("click", () => {
-  player.play().catch(() => {
-    if (player.error) error.hidden = false;
+function showPlaybackError() {
+  error.hidden = false;
+  play.hidden = false;
+}
+
+function requestPlayback() {
+  const source = player.src;
+  error.hidden = true;
+  if (player.error) player.load();
+  return player.play().catch(failure => {
+    if (failure.name !== "AbortError" && player.src === source) showPlaybackError();
   });
-});
-player.addEventListener("play", () => {
+}
+
+play.addEventListener("click", requestPlayback);
+player.addEventListener("playing", () => {
+  error.hidden = true;
   if (document.activeElement === play) player.focus();
   play.hidden = true;
 });
 player.addEventListener("ended", () => { play.hidden = false; });
-player.addEventListener("error", () => {
-  error.hidden = false;
-  play.hidden = true;
-});
+player.addEventListener("error", showPlaybackError);
 player.addEventListener("loadeddata", () => {
   if (player.currentTime > 0) play.hidden = true;
 });
