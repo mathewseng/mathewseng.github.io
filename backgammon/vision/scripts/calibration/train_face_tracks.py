@@ -1,4 +1,5 @@
 """Train dice faces on visible frames around independently reviewed stationary dice."""
+import argparse
 from collections import defaultdict
 import gzip
 import json
@@ -75,6 +76,22 @@ def test_spots():
     return spots
 
 
+def reviewed_tracks(file):
+    rows = []
+    for item in json.loads(file.read_text()):
+        game, split = item["game"], item["split"]
+        assert split in ("train", "spotExtra")
+        frame = round(25 * item["seconds"])
+        recording = json.loads((ARTIFACT_DIR / "v2" / f"game-{game}-analysis.json").read_text())
+        source = next(part for part in reversed(recording["segments"]) if part["firstGameFrame"] <= frame)
+        local = source["firstFrame"] + frame - source["firstGameFrame"]
+        assert local < source["lastExclusive"]
+        for x, y, face in item["dice"]:
+            rows.append(dict(game=game, source=source["source"], clip=source["clip"],
+                             frame=local, target=[x, y], label=str(face), split=split))
+    return rows
+
+
 def fit(baseline, candidate, patches, labels, rng):
     examples, targets = [], []
     for group, label in zip(patches, labels):
@@ -102,14 +119,20 @@ def fit(baseline, candidate, patches, labels, rng):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--reviewed", type=Path, help="Additional labeled dice tracks")
+    parser.add_argument("--output", type=Path)
+    args = parser.parse_args()
     cv2.setNumThreads(1)
     torch.set_num_threads(2)
     torch.manual_seed(372)
     rng = np.random.default_rng(372)
     reviewed = json.loads(Path(__file__).with_name("labels.json").read_text())["dice"]
-    spots = test_spots()
+    extra = reviewed_tracks(args.reviewed) if args.reviewed else []
+    extra_training = [item for item in extra if item["split"] == "train"]
+    spots = [item for item in extra if item["split"] == "spotExtra"] + test_spots()
     held_clips = {item["clip"] for item in spots}
-    training = [item for item in reviewed if item["split"] == "train" and item["label"] != "?"
+    training = [item for item in reviewed + extra_training if item["split"] == "train" and item["label"] != "?"
                 and item["clip"] not in held_clips]
     held = [item for item in reviewed if item["split"] == "test" and item["label"] != "?"]
     assert not ({item["clip"] for item in training} & {item["clip"] for item in held + spots})
@@ -119,7 +142,7 @@ def main():
     baseline.load_state_dict(weights)
     candidate.load_state_dict(weights)
     fit(baseline, candidate, groups[:len(training)], [int(row["label"]) for row in training], rng)
-    tests = {"test": [], "spot": []}
+    tests = {kind: [] for kind in (["test", "spot", "spotExtra"] if extra else ["test", "spot"])}
     for item, group in zip(held + spots, groups[len(training):]):
         old, new = probabilities(baseline, group, True), probabilities(candidate, group, True)
         tests[item["split"]].append(dict(game=item["game"], clip=item["clip"], patches=len(group),
@@ -129,10 +152,15 @@ def main():
         key: sum(row[key] == row["expected"] for row in rows)
         for key in ("baselineFrame", "baselineTrack", "candidateTrack")
     }) for kind, rows in tests.items()}
-    directory = ARTIFACT_DIR / "calibration"
+    directory = args.output or ARTIFACT_DIR / "calibration"
+    if args.output is None and extra:
+        directory /= "extra-dice-tracks"
+    directory.mkdir(parents=True, exist_ok=True)
     torch.save(candidate.state_dict(), directory / "dice-track-candidate.pt")
     result = dict(trainingTracks=len(training), trainingFrames=sum(map(len, groups[:len(training)])),
                   summary=summary, tests=tests)
+    if extra:
+        result["extraTrainingTracks"] = sum(item in extra_training for item in training)
     (directory / "dice-track-validation.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({k: v for k, v in result.items() if k != "tests"}), flush=True)
 

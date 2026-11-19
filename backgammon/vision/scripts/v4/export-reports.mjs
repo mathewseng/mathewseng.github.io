@@ -9,7 +9,7 @@ import { boardKey, legalTurns } from "../../../core/rules.mjs";
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const rawDir = path.join(artifactDir, "v2");
-const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v15");
+const referenceDir = process.env.OFFICE3_REPORT_REFERENCE ?? path.join(artifactDir, "v16");
 const output = process.argv[2];
 if (!output) throw new Error("Supply the Backgammon Vision directory.");
 const reportDir = path.join(output, "reports");
@@ -22,6 +22,12 @@ const bodyReportPath = path.join(artifactDir, "calibration", "dice-body-validati
 const bodyValidation = fs.existsSync(bodyReportPath) ? read(bodyReportPath) : null;
 const trackReportPath = path.join(artifactDir, "calibration", "dice-track-validation.json");
 const trackValidation = fs.existsSync(trackReportPath) ? read(trackReportPath) : null;
+const faceReportPath = path.join(replayDir, "settled-face-validation.json");
+const faceValidation = fs.existsSync(faceReportPath) ? read(faceReportPath) : null;
+const boardTrialPath = path.join(replayDir, "board-witness-training", "validation.json");
+const boardTrial = fs.existsSync(boardTrialPath) ? read(boardTrialPath) : null;
+const diceTrialPath = path.join(replayDir, "dice-witness-training", "dice-track-validation.json");
+const diceTrial = fs.existsSync(diceTrialPath) ? read(diceTrialPath) : null;
 
 const issueNames = {
   "repeated-player": "Consecutive rolls assigned to the same player",
@@ -39,6 +45,7 @@ const reviewed = {
   3: [{ frame: 27100, text: "Black’s 4–3 remains on the table through occlusions. A sixth checker on White’s first point was detected twice. White has two checkers off." },
       { frame: 31300, text: "Earlier clear frames establish Black’s checker on point 7. White’s 6–1 bears off two checkers, taking White from three off to five off." }],
   4: [{ frame: 2450, text: "Black’s visible roll is 6–4. The earlier replay showed 3–1 and attributed a checker error. The corrected replay removes that charge because the completed move remains unverified." }],
+  5: [{ frame: 4850, text: "White moves checkers back and forth during the pause after Black’s pickup. The footage shows no settled dice during these demonstration moves. The next verified roll is White’s 6–6 at 5:01." }],
 };
 
 function diceBodyEvidence(prefix, rolls) {
@@ -245,11 +252,20 @@ function report(number) {
   issues.sort((a, b) => a.frame - b.frame);
   const footageReview = [...(reviewed[number] ?? []), ...(replay.contextRecovery ?? [])
     .filter(entry => entry.text).map(({ frame, text }) => ({ frame, text }))].sort((a, b) => a.frame - b.frame);
+  const faceResolutions = (replay.contextRecovery ?? []).filter(entry => entry.diceFrames?.length)
+    .map(({ frame, diceFrames }) => ({ frame, frames: diceFrames.length }));
   const report = { game: number, fps: data.fps, counts, issues, issueNames, reviewed: footageReview,
     confirmedPriorMisreads: number === 4 ? 1 + Number(replay.contextRecovery?.some(entry =>
       entry.kind === "reviewed-turn-order" && entry.frame === 13294)) : 0, modelChecks: modelChecks(number),
     reference: referenceFor(prefix, data.sources), diceBody: diceBodyEvidence(prefix, data.rolls),
-    diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number) };
+    diceTracks: diceTrackEvidence(number), modelSpots: modelSpots.filter(spot => spot.game === number),
+    settledFaces: faceValidation && {
+      ...faceValidation.summary, tests: faceValidation.tests.filter(test => test.game === number), resolutions: faceResolutions,
+    }, witnessTrials: {
+      checkers: boardTrial && { training: boardTrial.extraLabels.train, results: boardTrial.witnessSummary },
+      dice: diceTrial && { extraTracks: diceTrial.extraTrainingTracks, frames: diceTrial.trainingFrames, results: diceTrial.summary },
+    },
+  };
   fs.writeFileSync(path.join(reportDir, prefix + ".json"), JSON.stringify(report) + "\n");
   console.log(prefix, counts, Object.fromEntries(Object.keys(issueNames).map(kind =>
     [kind, issues.filter(issue => issue.kind === kind).length])));

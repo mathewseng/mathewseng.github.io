@@ -8,6 +8,7 @@ import { boardKey, initialState, legalTurns, notation } from '../../../core/rule
 import { toXGID } from '../../../core/xgid.mjs';
 import { trackCheckerCounts } from './checker-counts.mjs';
 import { observedBoard } from './bearoff-board.mjs';
+import { chooseLegalDice } from './legal-face-evidence.mjs';
 import { applyAccounting, writeReplay } from './accounting.mjs';
 import { rollCubePositions, scoreRollCubes } from './cube-rolls.mjs';
 
@@ -15,6 +16,7 @@ const source = process.argv[2];
 if (!source) throw new Error('Supply the scored input replay directory.');
 const notesFile = process.argv[3] ?? new URL('./reviewed-turn-order.json', import.meta.url);
 const notes = JSON.parse(fs.readFileSync(notesFile));
+const faceEvidence = process.argv[4] ? JSON.parse(fs.readFileSync(process.argv[4])) : {};
 const read = (dir, name) => JSON.parse(fs.readFileSync(path.join(dir, name)));
 const frames = seconds => Math.round(seconds * 25);
 const idOf = roll => roll.decision ?? roll.sourceTurns[0];
@@ -41,7 +43,7 @@ function snapshot(boards, start, stop) {
   return { frame: main[0], position: boards[main[0]] };
 }
 
-function legalAnalysis(before, after, player, evidence) {
+function legalAnalysis(before, after, player, evidence, stationary) {
   if (!before) return null;
   const physical = [...evidence].reverse();
   const known = evidence.filter(Number.isInteger);
@@ -54,7 +56,11 @@ function legalAnalysis(before, after, player, evidence) {
   });
   const confirmed = checked.filter(entry => entry.played);
   if (confirmed.length === 1) return confirmed[0];
-  if (confirmed.length > 1) return { ambiguous: true };
+  if (confirmed.length > 1) {
+    const best = chooseLegalDice(confirmed.map(entry => entry.state.dice), stationary);
+    const match = confirmed.find(entry => best === entry.state.dice);
+    return match ? { ...match, faceEvidence: true } : { ambiguous: true };
+  }
   if (playable(physical)) return { ...checked[0], played: null };
   return null;
 }
@@ -143,14 +149,22 @@ function observed(game, rows, boards, note, prior, start, end, afterLimit, nextP
   const before = initial?.position ?? null;
   const after = following?.position ?? null;
   const pass = note.fan && before?.bar[player] > 0 && keyOf(before) === keyOf(after);
+  const stationary = note.settledFaces && faceEvidence[game.game]?.[start];
+  if (stationary) {
+    const [first, stop] = note.settledFaces.frames;
+    assert(note.beforeBoard && note.afterBoard, `Settled dice need both board witnesses at ${start / 25}.`);
+    assert(first >= start && stop <= end && stationary.frames.every(frame => frame >= first && frame < stop),
+      `Settled dice evidence outside its roll at ${start / 25}.`);
+  }
   const analysis = legalAnalysis(before, before && after && (pass || keyOf(before) !== keyOf(after)) ? after : null,
-    player, note.dice);
+    player, note.dice, stationary);
   const played = analysis?.played;
   const canScore = Boolean(analysis?.state);
   const verifiedResult = Boolean(played || (analysis?.ambiguous && note.afterBoard));
   const finish = verifiedResult ? Math.min(afterLimit, Math.max(following.frame, end)) : null;
   const dice = canScore ? [...analysis.state.dice] : [...note.dice].reverse();
-  const evidence = played ? 'reviewed-roll-and-legal-result' :
+  const evidence = analysis?.faceEvidence ? 'settled-dice-and-legal-result' :
+    played ? 'reviewed-roll-and-legal-result' :
     verifiedResult ? 'reviewed-roll-with-confirmed-board' : 'reviewed-physical-roll';
   const id = game.turns.length + 1;
   const turn = {
@@ -251,7 +265,9 @@ async function recover(game, rows, recording) {
     }
     const result = rolls[index];
     changes.push({ kind: 'reviewed-turn-order', frame: result.start, end: result.end, text: note.text,
-      ...(note.confirmedDetectorMisread ? { confirmedDetectorMisread: true } : {}) });
+      ...(note.confirmedDetectorMisread ? { confirmedDetectorMisread: true } : {}),
+      ...(result.evidence === 'settled-dice-and-legal-result' ?
+        { diceFrames: faceEvidence[game.game][result.start].frames } : {}) });
     console.log(game.game, start / 25, note.kind, result.player, result.dice, 'before/after',
       game.turns[idOf(result)-1].before?.bar, game.turns[idOf(result)-1].after?.bar);
   }

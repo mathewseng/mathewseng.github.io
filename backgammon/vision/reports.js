@@ -117,6 +117,16 @@ function renderReport(report, seek) {
       row.append(timestamp(spot.firstFrame), element("p", `Reviewed ${target} roll · Current reader ${describe(spot.current)}. Fine-tuned reader ${describe(spot.candidate)}.`, "muted small"));
       section.append(row);
     }
+    if (report.witnessTrials?.checkers) {
+      const { training, results } = report.witnessTrials.checkers;
+      const { original, "verified-board": verified } = results;
+      section.append(element("p", `The checker trial added ${training} crops from manually verified boards. On newly held-out clips, the current reader matched ${verified.baseline}/${verified.count} point counts and the candidate matched ${verified.candidate}/${verified.count}. On the original test crops, they matched ${original.baseline}/${original.count} and ${original.candidate}/${original.count}.`, "muted small"));
+    }
+    if (report.witnessTrials?.dice) {
+      const { extraTracks, frames, results } = report.witnessTrials.dice;
+      const { test, spot, spotExtra } = results;
+      section.append(element("p", `The dice trial added ${extraTracks} hand-labeled tracks and trained on ${frames} frames. It matched ${test.candidateTrack}/${test.tracks} general test tracks, up from ${test.baselineTrack}/${test.tracks}. On the separately reviewed roll faces it matched ${spot.candidateTrack}/${spot.tracks}, compared with ${spot.baselineTrack}/${spot.tracks} for the current reader. Both readers matched ${spotExtra.baselineTrack}/${spotExtra.tracks} on the new reviewed faces.`, "muted small"));
+    }
     fragment.append(section);
   }
 
@@ -141,6 +151,23 @@ function renderReport(report, seek) {
     return list;
   }
 
+  if (report.settledFaces) {
+    const section = element("section");
+    const { baselineCorrect, controls, correct, wrong, abstained, tests, resolutions } = report.settledFaces;
+    section.append(element("h3", "Dice and checker movement"), element("p",
+      `On ${controls} previously scored rolls with several legal dice pairs, the pooled face reader matched ${baselineCorrect}. With the legal board result and a confidence threshold, the system matched ${correct}, made ${wrong} wrong calls and left ${abstained} unresolved.`,
+      "muted small"));
+    const pair = dice => dice.join("–");
+    const details = [
+      ...resolutions.map(item => ({ ...item,
+        title: `Roll resolved from ${item.frames} views and the verified checker move` })),
+      ...tests.map(test => ({ ...test, title: `Control roll ${pair(test.expected)}`,
+        detail: `Face reader ${pair(test.baseline)}. With checker movement, ${test.verdict ? pair(test.verdict) : "unresolved"}.` })),
+    ].sort((a, b) => a.frame - b.frame);
+    if (details.length) section.append(reviewList(details, entry => entry.title));
+    fragment.append(section);
+  }
+
   if (reviewed.length) {
     const notes = element("section");
     notes.append(element("h3", "Reviewed footage"), reviewList(reviewed, entry => entry.text));
@@ -155,8 +182,10 @@ function renderReport(report, seek) {
     flagged.append(element("p", `${counts.reviewedDetectorMisreads} additional detector misreads were confirmed by comparing the legal move with the visible checkers before and after the roll.`, "muted small"));
   }
   if (counts.confirmedBoardsWithMissingDice) {
+    const result = counts.confirmedBoardsWithMissingDice === 1 ? "checker result has a verified final board" :
+      "checker results have verified final boards";
     flagged.append(element("p",
-      `${counts.confirmedBoardsWithMissingDice} checker results have verified final boards and unresolved dice. Open those boards in Game history.`, "muted small"));
+      `${counts.confirmedBoardsWithMissingDice} ${result} and unresolved dice. Open the verified positions in Game history.`, "muted small"));
   }
   if (counts.confirmedConsecutive) {
     flagged.append(element("p", "The footage confirms successive throws from the same player. See the timestamped review above.", "muted small"));

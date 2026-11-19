@@ -466,7 +466,7 @@ def game_frames(game, start=0):
                     yield seg["firstGameFrame"] + frame - seg["firstFrame"], image
 
 
-def render(number, limit, software):
+def render(number, limit, software, crf):
     game = json.loads((BASE / f"game-{number}-analysis.json").read_text())
     prefix = f"game-{number:02}"
     data = json.loads((OUT / f"{prefix}-game.json").read_text())
@@ -486,7 +486,7 @@ def render(number, limit, software):
         "-movflags", "+faststart", str(staging),
     ], stdin=subprocess.PIPE)
     try:
-        frame_count = render_frames(muxer.stdin, data, game, number, footage, software)
+        frame_count = render_frames(muxer.stdin, data, game, number, footage, software, crf=crf)
     finally:
         muxer.stdin.close()
         status = muxer.wait()
@@ -497,9 +497,9 @@ def render(number, limit, software):
                       "video": str(final)}), flush=True)
 
 
-def render_frames(output, data, game, number, footage, software, start=0):
+def render_frames(output, data, game, number, footage, software, start=0, *, crf=21):
     prefix = f"game-{number:02}"
-    writer = FrameWriter(output, software, bitrate=2_450_000, software_preset="veryfast", software_crf=21)
+    writer = FrameWriter(output, software, bitrate=2_450_000, software_preset="veryfast", software_crf=crf)
     canvas = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
     canvas[:] = (35, 23, 16)
     board_region = canvas[BY:BY + BH, BX:BX + BW]
@@ -546,10 +546,14 @@ def main():
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("--preview", type=int, metavar="SECONDS")
     parser.add_argument("--software", action="store_true")
+    parser.add_argument("--crf", type=int, help="Constant rate factor for software encoding (default 21)")
     args = parser.parse_args()
+    if args.crf is not None and (not args.software or not 0 <= args.crf <= 51):
+        parser.error("--crf requires --software and a value from 0 to 51")
     cv2.setNumThreads(1)
     with ThreadPoolExecutor(max_workers=args.jobs) as workers:
-        list(workers.map(lambda game: render(game, args.preview, args.software), args.games))
+        crf = args.crf if args.crf is not None else 21
+        list(workers.map(lambda game: render(game, args.preview, args.software, crf), args.games))
 
 
 if __name__ == "__main__":

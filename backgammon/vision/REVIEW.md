@@ -46,6 +46,29 @@ The public state index, Library replay, and video use the same roll intervals
 and cumulative loss ledger. Verification checks every frame’s state and checks
 the Library analysis totals against the scored replay.
 
+## Stationary dice and legal results
+
+| Game and time | Source evidence | Replay change |
+| --- | --- | --- |
+| Game 1, 2:27 and 6:54 | One face is visible for each roll. Verified checker endpoints uniquely determine the other face. | White’s 6–1 and Black’s 5–1 keep their original roll intervals and receive checker analysis. |
+| Game 1, 7:02, 7:26 and 9:31 | Repeated original-camera crops show both faces. The 7:02 sequence also shows Black hitting a blot. | Show Black’s 3–1, 3–1 and 4–3. Charge checker EVL only where the final board is verified. |
+| Game 3, 7:51 | The bar entry and transfer from 13 to 7 fit 6–2 or double twos. 13 clear views support 6–2. | Keep the original starting board and render 6–2 and the graded legal play. |
+| Game 4, 10:39 and 13:25 | Original-camera crops show both dice and the checker remains on the bar after pickup. | Black fans on 6–3 and White fans on 3–2. Both have zero checker EVL. |
+
+On six previously scored rolls with multiple legal dice pairs, face pooling
+alone matched four rolls. The confidence-gated legal comparison matched three
+and abstained on three, with zero wrong assignments. These controls assess the
+fallback on stationary dice with a verified result. At Game 3 20:13 the board
+and bear-off are confirmed, and the second die remains unresolved.
+
+The checker trial added 314 clear training crops and 95 held-out crops from
+manually verified positions. Both readers got 92 of the 95 new crops correct.
+The dice trial trained on 638 frames across 91 tracks, including eight new
+hand-labeled tracks. The candidate improved from 16 to 21 correct on 31 test
+tracks and dropped from 8 to 5 correct on 10 separately reviewed faces.
+Both read the four newly held-out faces correctly. Replay inference keeps the
+current reader weights. Reports record both trials.
+
 ## Opening and overlay review
 
 - Game 3’s opening toss is visible from about 0:03.4. The settled board at
@@ -79,9 +102,10 @@ the last scored position. The end card shows only the two cumulative EV-loss
 columns. The playable history row for a move outside the top five previews
 the actual move and its resulting probabilities.
 
-Game 5 still has an unscored stretch from about 2:09 to 5:30. The recorded
-board changes across that interval, but the footage and detector records did
-not establish consecutive rolls and complete legal turns there.
+In Game 5, Black picks up around 2:08. White moves checkers back and forth
+during the pause around 3:12–3:21 with no settled dice in view. The next
+verified roll is White’s 6–6 at 5:01. The starting checker position for
+Black’s earlier 6–4 still needs a source review.
 
 
 ## Reports and model review

@@ -120,6 +120,9 @@ Refresh an existing reconstructed replay
   Apply the reviewed endings to an existing replay with
   OFFICE3_REPLAY_DIR="$output" bun v4/accounting.mjs "$previous".
   Render that output with --software for the compact H.264 export.
+  When space is limited, --software --crf 26 keeps the same frame size and
+  soundtrack with a smaller video stream. Verify the exported video and read
+  the overlay at a few decision changes before publishing.
 
 
 Refresh the context and reviewed episodes
@@ -138,6 +141,35 @@ Refresh the context and reviewed episodes
   The source-frame review notes for a continuous roll and short fans live in
   v4/reviewed_episodes.json. Apply them only to the corresponding Office-3
   session. Export state, history and reports from the same output directory.
+
+  To reproduce the stationary-dice review, provide the clip-specific dice
+  locations and source windows from reviewed-settled-dice.json. The reader
+  filters hand occlusions before pooling face probabilities. Reconstruction
+  can use the result only when both verified checker boards admit multiple
+  rolls and one pair clears the evidence threshold.
+
+    python3 v4/settled-face-evidence.py v4/reviewed-settled-dice.json "$prepared-odds.json"
+    OFFICE3_REPLAY_DIR="$prepared" bun v4/reconcile-reviewed-turns.mjs \
+      "$previous" v4/reviewed-settled-dice.json "$prepared-odds.json"
+    OFFICE3_REPLAY_DIR="$output" OFFICE3_SCORE_SOURCE="$prepared" bun v4/rescore.mjs
+    python3 v4/settled-face-evidence.py v4/settled-face-controls.json "$prepared-controls.json"
+    bun v4/verify-settled-faces.mjs "$previous" "$prepared-controls.json" "$output/settled-face-validation.json"
+
+  Use the v16 replay as previous for this review. The control summary is
+  included in the exported reports when its validation file is available.
+
+  Reproduce the two candidate-reader trials with the manually verified dice
+  and checker witnesses. Added checker strips use only clear board points;
+  the source clips are disjoint between training and validation.
+
+    python3 calibration/train_board_witnesses.py "$output/board-witness-training" \
+      --holdout 16 --holdout 17 --holdout 50 \
+      v4/reviewed-settled-dice.json calibration/reviewed-board-witnesses.json
+    python3 calibration/train_face_tracks.py --reviewed calibration/reviewed-dice-tracks.json \
+      --output "$output/dice-witness-training"
+
+  These outputs add candidate benchmark results to Reports. Model weights
+  are saved beside their validation results for further comparison.
 
 Manual reader calibration
 

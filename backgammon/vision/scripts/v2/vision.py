@@ -32,6 +32,14 @@ def strips(pixels):
 def load(name):
     return cv2.dnn.readNetFromONNX(str(OUT/f'{name}.onnx'))
 
+def face_probabilities(network, patches):
+    """Blend the same augmented views for single-frame and settled-track reads."""
+    augmented = [view for patch in patches for view in
+                 (patch, np.rot90(patch, 2).copy(), np.roll(patch, 2, axis=1), np.roll(patch, -2, axis=0))]
+    probs = evaluate_patches(network, augmented).reshape(len(patches), 4, -1)
+    return probs[:, 0] * .58 + probs[:, 1] * .14 + probs[:, 2] * .14 + probs[:, 3] * .14
+
+
 def slot_decode(candidate):
     return ((candidate-1)//SLOT_CLASSES,(candidate-1)%SLOT_CLASSES+1) if candidate else (None,0)
 
@@ -125,9 +133,7 @@ class CameraReader:
         patches=[center_crop(pixels,x,y) for x,y,_ in candidates]
         if not patches:
             return []
-        augmented=[im for p in patches for im in (p,np.rot90(p,2).copy(),np.roll(p,2,axis=1),np.roll(p,-2,axis=0))]
-        probs=evaluate_patches(self.face,augmented).reshape(len(patches),4,-1)
-        blend=probs[:,0]*.58+probs[:,1]*.14+probs[:,2]*.14+probs[:,3]*.14
+        blend = face_probabilities(self.face, patches)
         result=[]
         for (x,y,track),odds,p in zip(candidates,blend,patches):
             face=int(odds.argmax())

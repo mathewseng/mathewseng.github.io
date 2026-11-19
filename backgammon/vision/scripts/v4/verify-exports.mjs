@@ -164,7 +164,8 @@ for (const number of [1, 2, 3, 4, 5]) {
     }
   }
   if (number === 3 && replay.contextRecovery.some(entry => entry.frame === 22851 && entry.confirmedDetectorMisread)) {
-    for (const [time, dice] of [[471.04, [2, null]], [914.04, [5, 5]], [981.44, [5, 5]], [1213, [2, null]]]) {
+    const pooled = replay.contextRecovery.find(entry => entry.frame === 11776 && entry.diceFrames?.length);
+    for (const [time, dice] of [[471.04, pooled ? [6, 2] : [2, null]], [914.04, [5, 5]], [981.44, [5, 5]], [1213, [2, null]]]) {
       const roll = data.rolls.find(item => item.start === Math.round(time * 25));
       assert.deepEqual(roll.dice, dice);
       assert(roll.after && Number.isInteger(roll.resultFrame));
@@ -176,6 +177,12 @@ for (const number of [1, 2, 3, 4, 5]) {
         assert.deepEqual(saved.points, roll.after.points);
         assert.deepEqual(saved.off, roll.after.borneOff);
       } else assert(data.decisions[roll.decision].played);
+      if (time === 471.04 && pooled) {
+        assert.equal(roll.evidence, 'settled-dice-and-legal-result');
+        assert.deepEqual(roll.before.bar, [1, 0]);
+        assert.deepEqual(roll.after.bar, [0, 0]);
+        assert(pooled.diceFrames.length >= 4 && pooled.diceFrames.every(frame => frame >= roll.start && frame < roll.end));
+      }
     }
     const handoff = data.rolls.find(item => item.start === 30421);
     if (handoff.evidence === 'reviewed-physical-roll') {
@@ -186,6 +193,14 @@ for (const number of [1, 2, 3, 4, 5]) {
       assert.equal(handoff.sourceMismatch, true);
     }
   }
+  if (number === 1 && replay.contextRecovery.some(entry => entry.frame === 3684 && entry.kind === 'reviewed-turn-order')) {
+    for (const [time, player, dice, hasPlayed] of [[147.36, 'white', [6, 1], true], [413.88, 'dark', [5, 1], true],
+      [422.6, 'dark', [3, 1], true], [446.64, 'dark', [3, 1], false], [571.48, 'dark', [4, 3], false]]) {
+      const roll = data.rolls.find(item => item.start === Math.round(time * 25));
+      assert.deepEqual([roll.player, roll.dice], [player, dice]);
+      assert.equal(Boolean(data.decisions[roll.decision]?.played), hasPlayed);
+    }
+  }
   if (number === 4 && replay.contextRecovery.some(entry => entry.frame === 1283 && entry.confirmedDetectorMisread)) {
     const roll = data.rolls.find(item => item.start === 8436);
     assert.deepEqual(roll.dice, [6, 4]);
@@ -193,6 +208,15 @@ for (const number of [1, 2, 3, 4, 5]) {
     assert(data.decisions[roll.decision].played);
     assert(replay.contextRecovery.some(item => item.kind === 'confirmed-consecutive' &&
       item.previousFrame === 22435 && item.frame === 24716));
+    if (replay.contextRecovery.some(item => item.frame === 15990 && item.text.includes('Both entry points'))) {
+      for (const [frame, dice, bar] of [[15990, [6, 3], [0, 1]], [20133, [3, 2], [1, 0]]]) {
+        const fan = data.rolls.find(item => item.start === frame);
+        assert.deepEqual(fan.dice, dice);
+        assert(fan.fan && data.decisions[fan.decision].played);
+        assert.deepEqual(fan.before.bar, bar);
+        assert.deepEqual(fan.before, fan.after);
+      }
+    }
   }
   if (number === 5) {
     assert.equal(data.cubeOffer.replyInferred, true);

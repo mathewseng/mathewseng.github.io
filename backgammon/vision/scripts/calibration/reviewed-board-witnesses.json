@@ -1,0 +1,196 @@
+{
+  "3": [
+    {
+      "kind": "replace",
+      "starts": [
+        74.32
+      ],
+      "start": 42.84,
+      "pickup": 89.48,
+      "player": "white",
+      "dice": [
+        4,
+        3
+      ],
+      "beforeBoard": {
+        "seconds": 41.2,
+        "clip": 16,
+        "sourceFrame": 676,
+        "points": {
+          "1": -1,
+          "5": -1,
+          "6": 5,
+          "7": 2,
+          "8": 2,
+          "12": -4,
+          "13": 4,
+          "15": -1,
+          "17": -3,
+          "19": -5,
+          "24": 2
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 89.88,
+        "clip": 17,
+        "sourceFrame": 389,
+        "points": {
+          "1": 1,
+          "6": 5,
+          "7": 2,
+          "8": 1,
+          "12": -4,
+          "13": 4,
+          "15": -1,
+          "17": -3,
+          "19": -5,
+          "24": 2
+        },
+        "bar": [
+          0,
+          2
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "text": "White throws at 0:42 and the two dice stay at their original locations until pickup. The 4\u20133 plays 8/5/1 and hits both blots."
+    }
+  ],
+  "5": [
+    {
+      "kind": "replace",
+      "starts": [
+        25.44
+      ],
+      "start": 25.44,
+      "pickup": 128.52,
+      "player": "dark",
+      "dice": [
+        6,
+        4
+      ],
+      "beforeBoard": {
+        "seconds": 24.8,
+        "clip": 59,
+        "sourceFrame": 1310,
+        "points": {
+          "1": -2,
+          "6": 5,
+          "8": 3,
+          "12": -5,
+          "13": 6,
+          "17": -3,
+          "19": -5,
+          "24": 1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "afterBoard": {
+        "seconds": 127.52,
+        "clip": 61,
+        "sourceFrame": 870,
+        "points": {
+          "1": -1,
+          "6": 5,
+          "8": 3,
+          "12": -5,
+          "13": 6,
+          "17": -3,
+          "19": -5,
+          "24": 1,
+          "11": -1
+        },
+        "bar": [
+          0,
+          0
+        ],
+        "off": [
+          0,
+          0
+        ]
+      },
+      "text": "Black plays 1/11 in the fixed board numbering, leaving one checker on the opening point. The same 6\u20134 stays in view until pickup."
+    }
+  ],
+  "1": [
+    {
+      "kind": "replace",
+      "starts": [
+        446.64
+      ],
+      "player": "dark",
+      "dice": [
+        3,
+        1
+      ],
+      "beforeBoard": {
+        "seconds": 445.84,
+        "clip": 7,
+        "sourceFrame": 634,
+        "points": {
+          "1": 2,
+          "2": 2,
+          "3": 3,
+          "4": 3,
+          "5": 3,
+          "17": 1,
+          "20": -2,
+          "22": -5,
+          "23": -3,
+          "24": -2
+        },
+        "bar": [
+          1,
+          0
+        ],
+        "off": [
+          0,
+          3
+        ]
+      },
+      "afterBoard": {
+        "seconds": 451.72,
+        "clip": 7,
+        "sourceFrame": 781,
+        "points": {
+          "1": 2,
+          "2": 2,
+          "3": 3,
+          "4": 3,
+          "5": 3,
+          "17": 1,
+          "20": -2,
+          "22": -4,
+          "23": -2,
+          "24": -3
+        },
+        "bar": [
+          1,
+          0
+        ],
+        "off": [
+          0,
+          4
+        ]
+      },
+      "text": "With the starting and resulting boards visible, Black bears one off from point 22 and shifts another from 23 to 24 in fixed numbering. White remains on the bar."
+    }
+  ]
+}

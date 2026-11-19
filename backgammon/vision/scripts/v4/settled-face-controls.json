@@ -1,0 +1,14 @@
+{
+  "3": [
+    {"starts":[479.32],"expected":[3,1],"settledFaces":{"frames":[11987,12073],"centers":[[316,254],[312,208]]}},
+    {"starts":[1251],"expected":[6,1],"settledFaces":{"frames":[31279,31363],"centers":[[104,110],[66,268]]}},
+    {"starts":[1264.28],"expected":[4,1],"settledFaces":{"frames":[31611,31697],"centers":[[418,226],[466,216]]}}
+  ],
+  "4": [
+    {"starts":[809.04],"expected":[6,4],"settledFaces":{"frames":[20230,20316],"centers":[[403,302],[350,256]]}},
+    {"starts":[1035.6],"expected":[5,3],"settledFaces":{"frames":[25894,25980],"centers":[[364,220],[352,328]]}}
+  ],
+  "5": [
+    {"starts":[702.68],"expected":[6,1],"settledFaces":{"frames":[17571,17657],"centers":[[324,130],[376,342]]}}
+  ]
+}
