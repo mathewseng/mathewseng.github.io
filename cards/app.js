@@ -55,8 +55,15 @@
 
   const prefs = Object.assign({
     size: "m", felt: "green", motion: true, evals: true,
-    tab: "play", side: !isCompact(), viewMode: "hands",
+    tab: "play", side: true, viewMode: "hands",
   }, load(STORE.prefs, {}));
+  let compactSideOpen = false;
+  const sideIsOpen = () => isCompact() ? compactSideOpen : prefs.side;
+  function setSideOpen(open) {
+    if (isCompact()) compactSideOpen = open;
+    else prefs.side = open;
+    savePrefs();
+  }
   // Five side tabs; Tools and Log open as a sheet (#paneDialog) from the topbar and the More menu.
   // A saved "tools" or "log" tab from before the redesign falls back to Play.
   const SIDE_TABS = ["play", "deck", "seats", "scores", "rules"];
@@ -70,8 +77,15 @@
     document.body.dataset.felt = prefs.felt;
     document.body.dataset.motion = prefs.motion ? "1" : "0";
     document.body.dataset.contrast = prefs.contrast ? "1" : "0";
-    document.body.classList.toggle("side-collapsed", !prefs.side);
-    document.getElementById("sideToggle")?.setAttribute("aria-pressed", String(Boolean(prefs.side)));
+    const open = sideIsOpen();
+    const side = $("#side");
+    const toggle = isCompact() ? $("#mobileControls") : $("#sideToggle");
+    $("#mobileNav").hidden = !isCompact();
+    if (!open && side.contains(document.activeElement)) toggle.focus({ preventScroll: true });
+    document.body.classList.toggle("side-collapsed", !open);
+    side.inert = !open;
+    $("#sideToggle").setAttribute("aria-pressed", String(Boolean(prefs.side)));
+    $("#mobileControls").setAttribute("aria-expanded", String(isCompact() && open));
   }
 
   // ---------------------------------------------------------------- state
@@ -523,6 +537,7 @@
     const v = view;
     const cards = zone.cards.map((id) => v.cards[id]).filter(Boolean);
     const layout = zone.layout || "spread";
+    const fanned = layout === "fan" && !isCompact();
     const inSel = selection.size && !Array.from(selection).every((id) => zone.cards.includes(id));
     const isStack = layout === "stack";
     const deckLike = zone.kind === "deck";
@@ -534,7 +549,7 @@
       body = (cards.length > 1 ? `<div class="stack-depth"></div>` : "") + cardHTML(cards[top], zone, zone.cards.length - 1) + `<span class="stack-count">${cards.length}</span>`;
     } else if (layout === "free") {
       body = cards.map((card, i) => cardHTML(card, zone, i, `left:calc(${(card.x ?? 0.1).toFixed(3)} * (100% - var(--card-width)));top:calc(${(card.y ?? 0.1).toFixed(3)} * (100% - var(--card-width) * 1.4));z-index:${i + 1}`)).join("");
-    } else if (layout === "fan") {
+    } else if (fanned) {
       const n = cards.length;
       const spread = Math.min(6, 44 / Math.max(1, n));
       body = cards.map((card, i) => {
@@ -562,8 +577,8 @@
     const evals = prefs.evals && cards.length ? evalsHTML(zone) : "";
     const manyClass = layout === "fan" ? (cards.length > 9 ? " many" : cards.length <= 3 ? " few" : "") : "";
     // Tilted outer cards swing past their slot; pad the fan so they stay inside the group.
-    const fanTilt = layout === "fan" ? (Math.min(6, 44 / Math.max(1, cards.length)) * (cards.length - 1) / 2) * Math.PI / 180 : 0;
-    const fanStyle = layout === "fan" ? ` style="--fan-pad:${Math.max(0.1, 0.5 * Math.cos(fanTilt) + 1.68 * Math.sin(fanTilt) - 0.36).toFixed(3)}"` : "";
+    const fanTilt = fanned ? (Math.min(6, 44 / Math.max(1, cards.length)) * (cards.length - 1) / 2) * Math.PI / 180 : 0;
+    const fanStyle = fanned ? ` style="--fan-pad:${Math.max(0.1, 0.5 * Math.cos(fanTilt) + 1.68 * Math.sin(fanTilt) - 0.36).toFixed(3)}"` : "";
     const verdict = legalMap.get(zone.id);
     const legalClass = verdict ? (verdict.ok ? " legal" : " illegal") : "";
     return `<section class="zone kind-${zone.kind}${zone.wide || layout === "free" ? " wide" : ""}${inSel ? " can-drop" : ""}${legalClass}" data-zone-id="${zone.id}"${verdict && !verdict.ok ? ` data-why="${esc(verdict.why)}"` : ""}>
@@ -655,7 +670,7 @@
     legalMap = computeLegal(orderedSelection());
     const v = view;
     evalCache = evaluateAll(v);
-    const around = prefs.layout === "around" && window.innerWidth > 900 && v.players.length > 1;
+    const around = !isCompact() && prefs.layout === "around" && window.innerWidth > 900 && v.players.length > 1;
     $("#around").hidden = !around;
     $$("#table > .table-section").forEach((el) => { el.hidden = around; });
     if (around) {
@@ -677,6 +692,7 @@
     if (document.activeElement !== title) title.value = v.title;
     const current = v.players[v.turn.index];
     const dealer = v.players[v.turn.dealer];
+    $("#jumpSeat span").textContent = mySeatId(v) ? "Your seat" : !v.realtime && current ? "Current seat" : "Seats";
     const parts = [];
     if (current) parts.push(`<span class="pill" style="--c:${esc(current.color)}"><span class="dot"></span>${esc(current.name)}</span>`);
     parts.push(`<button type="button" class="btn btn--sm btn--icon" data-act="prev-turn" title="Previous player" aria-label="Previous player">${ICON("chevron-left")}</button><button type="button" class="btn btn--sm" data-act="next-turn" title="Next player (T)">Next ${ICON("chevron-right")}</button>`);
@@ -778,26 +794,30 @@
   function renderSelectionBar() {
     const bar = $("#selectionBar");
     if (!selection.size) { bar.hidden = true; return; }
+    const scroll = bar.querySelector(".selection-actions")?.scrollLeft || 0;
     const v = view;
     const ids = Array.from(selection);
     const anyHidden = ids.some((id) => !v.cards[id]?.visible);
     const discardZone = E.orderedZones(v, "table").find((zone) => zone.kind === "discard");
     bar.hidden = false;
+    const plays = [...legalMap.entries()].filter(([, verdict]) => verdict.ok).slice(0, 3);
     bar.innerHTML = `
       <span class="count">${ids.length} selected</span>
-      <button class="btn btn--sm" data-sel="flip" title="Flip (F)">Flip</button>
-      <button type="button" class="btn btn--sm" data-sel="move" title="Move to…" aria-haspopup="menu">Move to ${ICON("chevron-down")}</button>
-      <button class="btn btn--sm" data-sel="group" title="Put these in a new group (G)">New group</button>
-      ${anyHidden && mySeatId() ? `<button class="btn btn--sm" data-sel="peek" title="Look without revealing">Peek</button>` : ""}
-      <button class="btn btn--sm" data-sel="sortsel" title="Order these cards by rank inside their group">Sort</button>
-      <button type="button" class="btn btn--sm btn--icon" data-sel="rotate" title="Rotate 90°" aria-label="Rotate 90 degrees">${ICON("refresh")}</button>
-      <button type="button" class="btn btn--sm btn--icon" data-sel="mark" title="Mark" aria-label="Mark" aria-haspopup="menu">${ICON("mark")}</button>
-      ${discardZone ? `<button class="btn btn--sm" data-sel="discard" title="Move to ${esc(discardZone.name)} (Del)">${esc(discardZone.name)}</button>` : ""}
-      <button class="btn btn--sm" data-sel="deck" title="Return to the deck">To deck</button>
-      ${tradeOwner(ids) ? `<button class="btn btn--sm" data-sel="offer" title="Offer these cards to another player in a trade">${ICON("handshake")} Offer</button>` : ""}
+      <div class="selection-actions">
+        <button type="button" class="btn btn--sm" data-sel="move" aria-haspopup="menu">Move to ${ICON("chevron-down")}</button>
+        ${plays.map(([zoneId], i) => `<button class="btn btn--sm ct-btn-good" data-sel="play" data-to="${zoneId}" title="${i === 0 ? "Play (P or Enter)" : "Play"}">Play ${ICON("arrow-right")} ${esc(v.zones[zoneId]?.name || "")}</button>`).join("")}
+        <button class="btn btn--sm" data-sel="flip" title="Flip (F)">Flip</button>
+        <button class="btn btn--sm" data-sel="group" title="Put these in a new group (G)">New group</button>
+        ${anyHidden && mySeatId() ? `<button class="btn btn--sm" data-sel="peek" title="Look without revealing">Peek</button>` : ""}
+        <button class="btn btn--sm" data-sel="sortsel" title="Order these cards by rank inside their group">Sort</button>
+        <button type="button" class="btn btn--sm btn--icon" data-sel="rotate" title="Rotate 90°" aria-label="Rotate 90 degrees">${ICON("refresh")}</button>
+        <button type="button" class="btn btn--sm btn--icon" data-sel="mark" title="Mark" aria-label="Mark" aria-haspopup="menu">${ICON("mark")}</button>
+        ${discardZone ? `<button class="btn btn--sm" data-sel="discard" title="Move to ${esc(discardZone.name)} (Del)">${esc(discardZone.name)}</button>` : ""}
+        <button class="btn btn--sm" data-sel="deck" title="Return to the deck">To deck</button>
+        ${tradeOwner(ids) ? `<button class="btn btn--sm" data-sel="offer" title="Offer these cards to another player in a trade">${ICON("handshake")} Offer</button>` : ""}
+      </div>
       <button type="button" class="btn btn--sm btn--icon btn--ghost" data-sel="clear" title="Clear selection (Esc)" aria-label="Clear selection">${ICON("close")}</button>`;
-    const plays = [...legalMap.entries()].filter(([, verdict]) => verdict.ok).slice(0, 3);
-    bar.querySelector(".count").insertAdjacentHTML("afterend", plays.map(([zoneId], i) => `<button class="btn btn--sm ct-btn-good" data-sel="play" data-to="${zoneId}" title="${i === 0 ? "Play (P or Enter)" : "Play"}">Play ${ICON("arrow-right")} ${esc(v.zones[zoneId]?.name || "")}</button>`).join(""));
+    bar.querySelector(".selection-actions").scrollLeft = scroll;
   }
 
   /** The seat that owns every selected card, if this screen may trade for it. */
@@ -911,6 +931,7 @@
   function fitRows() {
     const els = $$(".cards.layout-fan, .cards.layout-overlap");
     els.forEach((el) => el.style.removeProperty("--overlap"));
+    if (isCompact()) return; // Touch rows scroll instead of squeezing cards together.
     const rows = els.map((el) => {
       const cards = el.querySelectorAll(".card").length;
       const area = el.closest(".seat-zones, .table-zones");
@@ -937,8 +958,14 @@
     const focused = document.activeElement;
     const focusHost = focused && focused !== document.body ? focused.closest("#table, #turnStrip, #stage") : null;
     const focusKey = focusHost ? focusSignature(focused) : null;
+    const rowScroll = isCompact() ? new Map($$("#table .cards[data-drop]").filter((el) => el.scrollLeft).map((el) => [el.dataset.drop, el.scrollLeft])) : null;
     renderTop();
     renderTable();
+    if (rowScroll?.size) {
+      for (const el of $$("#table .cards[data-drop]")) {
+        if (rowScroll.has(el.dataset.drop)) el.scrollLeft = rowScroll.get(el.dataset.drop);
+      }
+    }
     renderGuestChrome();
     if (prefs.motion && backsBefore.size) {
       // Hidden cards carry placeholder ids, so a card that just turned up face-up is new here too.
@@ -2887,7 +2914,6 @@
       case "print-all": printSheet(true); break;
       case "replay": startReplay(); break;
       case "hint": showHint(); break;
-      case "open-side": prefs.side = true; savePrefs(); renderPane(); break;
       case "rec-start": startRecording(); break;
       case "rec-stop": stopRecording(); break;
       case "reset-pacing": Object.assign(pacing, { game: null }); trackPacing(net.mode === "client" ? view : state); renderPane(); break;
@@ -3127,11 +3153,10 @@
     $("#tabs").addEventListener("click", (event) => {
       const tab = event.target.closest("[data-tab]");
       if (!tab) return;
-      if (prefs.tab === tab.dataset.tab && isCompact() && prefs.side) { prefs.side = false; savePrefs(); return; }
+      if (isCompact() && prefs.tab === tab.dataset.tab) return;
       prefs.tab = tab.dataset.tab;
-      prefs.side = true;
       if (prefs.tab === "deck") deckDraft = null;
-      savePrefs();
+      setSideOpen(true);
       renderPane();
     });
     // A real tablist: arrow keys, Home and End move between the side tabs.
@@ -3152,7 +3177,12 @@
     });
     $("#logBtn").addEventListener("click", () => openPaneSheet("log"));
     $("#paneDialogClose").addEventListener("click", () => $("#paneDialog").close());
-    $(".sheet-handle").addEventListener("click", () => { prefs.side = false; savePrefs(); });
+    $(".sheet-handle").addEventListener("click", () => setSideOpen(false));
+    $("#side").addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !isCompact()) return;
+      event.stopPropagation();
+      setSideOpen(false);
+    });
     // Phones: swipe the sheet's handle or tab bar down to put it away.
     const sheetTop = $(".side > div");
     let swipe = null;
@@ -3160,7 +3190,7 @@
     sheetTop.addEventListener("touchend", (event) => {
       if (!swipe) return;
       const dy = event.changedTouches[0].clientY - swipe.y;
-      if (dy > 48 && performance.now() - swipe.t < 700 && isCompact()) { prefs.side = false; savePrefs(); }
+      if (dy > 48 && performance.now() - swipe.t < 700 && isCompact()) setSideOpen(false);
       swipe = null;
     }, { passive: true });
 
@@ -3191,6 +3221,24 @@
       const act = event.target.closest("[data-act]");
       if (act) handleAct(act, event);
     });
+    $("#jumpTable").addEventListener("click", () => {
+      if (sideIsOpen()) setSideOpen(false);
+      const table = $("#table");
+      table.scrollTop = 0;
+      table.focus({ preventScroll: true });
+    });
+    $("#jumpSeat").addEventListener("click", () => {
+      if (sideIsOpen()) setSideOpen(false);
+      const seat = mySeatId(view) || (!view.realtime && view.players[view.turn.index]?.id);
+      const player = seat && $(`#seats [data-seat="${CSS.escape(seat)}"]`);
+      const target = player || $("#seatsSection");
+      target.scrollIntoView({ block: "start", inline: "nearest" });
+      (player?.querySelector(".seat-name") || target).focus({ preventScroll: true });
+    });
+    $("#mobileControls").addEventListener("click", () => {
+      setSideOpen(!sideIsOpen());
+      if (sideIsOpen()) $("#tabs [aria-selected=true]")?.focus({ preventScroll: true });
+    });
     $("#turnStrip").addEventListener("click", (event) => {
       const act = event.target.closest("[data-act]");
       if (act) handleAct(act, event);
@@ -3203,7 +3251,7 @@
     $("#roomBtn").addEventListener("click", () => openRoomDialog());
     $("#reactBtn").addEventListener("click", (event) => showMenu(event.currentTarget, REACTIONS.map((emoji) => ({ label: emoji, run: () => emit({ kind: "react", emoji }) }))));
     $("#addSeatBtn").addEventListener("click", () => dispatch({ type: "addPlayer" }));
-    $("#sideToggle").addEventListener("click", () => { prefs.side = !prefs.side; savePrefs(); });
+    $("#sideToggle").addEventListener("click", () => setSideOpen(!sideIsOpen()));
     $("#menuBtn").addEventListener("click", (event) => {
       // Phones fold the view picker and the online button into this menu.
       const compact = isCompact();
@@ -3271,6 +3319,7 @@
       if (wide !== wasWide && prefs.layout === "around") render();
       wasWide = wide;
     });
+    COMPACT.addEventListener?.("change", () => { applyPrefs(); render(); });
     if (typeof ResizeObserver === "function") new ResizeObserver(() => fitRows()).observe($("#table"));
     bindStage();
     $("#table").addEventListener("scroll", closeMenu);
@@ -3349,7 +3398,7 @@
           break;
         }
         case "n": openNewGame(); break;
-        case "\\": prefs.side = !prefs.side; savePrefs(); break;
+        case "\\": setSideOpen(!sideIsOpen()); break;
         case "?": openHelp(); break;
         case "/": openPalette(); break;
         case "i": if (hoverCard && view.cards[hoverCard]) inspectCard(hoverCard); else return; break;
@@ -4193,7 +4242,7 @@
     add("Design", "My games…", openLibrary);
     add("Design", "Share design link", () => shareLink("design", stripDesign(E.toPreset(state || v))));
     add("Design", "Share table link (includes hidden cards)", () => shareLink("table", net.mode === "client" ? v : state));
-    add("Design", "Generate rules from table", () => { prefs.tab = "rules"; prefs.side = true; savePrefs(); dispatch({ type: "setNotes", notes: E.describeGame(state || v) }); });
+    add("Design", "Generate rules from table", () => { prefs.tab = "rules"; setSideOpen(true); dispatch({ type: "setNotes", notes: E.describeGame(state || v) }); });
     for (const [mode, label] of Object.entries(E.RULES_MODES)) add("Rules", `Rule checks: ${label}`, () => dispatch({ type: "setRules", mode }));
     add("Tools", "Simulate an action", () => openTab("tools"));
     add("Tools", "Record result", () => recordResult(state || v));
@@ -4219,8 +4268,7 @@
     if (SHEET_PANES[tab]) { openPaneSheet(tab); return; }
     if (!SIDE_TABS.includes(tab)) tab = "play";
     prefs.tab = tab;
-    prefs.side = true;
-    savePrefs();
+    setSideOpen(true);
     renderPane();
   }
 
@@ -4869,8 +4917,7 @@
         replaceState(next, `Designed “${design.name}”. Press ${design.macros[0].label} to play, and save it from Rules when you like it.`);
         prefs.tab = "rules";
         prefs.rulesView = "preview";
-        prefs.side = true;
-        savePrefs();
+        setSideOpen(true);
         store(STORE.seen, true);
         renderPane();
       },
@@ -4951,6 +4998,7 @@
     replay.active = true;
     selection.clear();
     closeDialog();
+    if ($("#paneDialog").open) $("#paneDialog").close();
     render();
     renderReplayBar();
   }
@@ -4975,8 +5023,10 @@
     if (!replay.active) { bar.hidden = true; return; }
     const frame = replay.frames[replay.index];
     const last = frame.log[frame.log.length - 1];
+    const scroll = bar.querySelector(".replay-actions")?.scrollLeft || 0;
+    const control = bar.contains(document.activeElement) ? document.activeElement.dataset.rp : null;
     bar.hidden = false;
-    bar.innerHTML = `<span class="replay-tag">Replay</span>
+    bar.innerHTML = `<div class="replay-actions"><span class="replay-tag">Replay</span>
       <button type="button" class="btn btn--sm btn--icon" data-rp="first" title="First" aria-label="First">${ICON("arrow-left")}</button>
       <button type="button" class="btn btn--sm btn--icon" data-rp="prev" title="Back (←)" aria-label="Back">${ICON("chevron-left")}</button>
       <button class="btn btn--sm btn--icon" aria-pressed="${Boolean(replay.timer)}" data-rp="play" title="Play / pause (space)" aria-label="${replay.timer ? "Pause" : "Play"}">${replay.timer ? ICON("pause") : ICON("play")}</button>
@@ -4985,7 +5035,10 @@
       <span class="replay-step small mono">${replay.index + 1}/${replay.frames.length}</span>
       <span class="replay-text small grow">${last ? `${last.who ? `<b>${esc(last.who)}</b> ` : ""}${esc(last.text)}` : ""}</span>
       ${replay.index < replay.frames.length - 1 ? `<button class="btn btn--sm" data-rp="resume" title="Undo back to this moment and keep playing from here">Play from here</button>` : ""}
+      </div>
       <button class="btn btn--sm btn--primary" data-rp="exit">Exit</button>`;
+    bar.querySelector(".replay-actions").scrollLeft = scroll;
+    if (control) bar.querySelector(`[data-rp="${CSS.escape(control)}"]`)?.focus({ preventScroll: true });
   }
 
   function handleReplay(el) {
@@ -5316,9 +5369,8 @@
     const step = TOUR[tour.step];
     if (!step) return endTour();
     if (step.tab || step.target.startsWith("#tabs") || step.target === ".macro-grid") {
-      prefs.side = true;
       if (step.tab) prefs.tab = step.tab;
-      savePrefs();
+      setSideOpen(true);
       render();
     }
     const target = $$(step.target).find((el) => el.getBoundingClientRect().width > 0);
@@ -5345,7 +5397,7 @@
 
   // =============================================================== STAGE
   /**
-   * The one bottom stage holds the dock, the selection actions and the replay transport.
+   * The bottom stage holds the action bars and phone navigation.
    * It shows while any of them shows, and its height is measured into --stage-h so the
    * felt, the phone sheet and the toasts sit above it instead of computing offsets from
    * each other. A landscape phone puts the stage in a side column, where it takes no height.
@@ -5353,7 +5405,7 @@
   function bindStage() {
     const stage = $("#stage");
     if (!stage) return;
-    const bars = ["#selectionBar", "#replayBar", "#dock"].map((selector) => $(selector));
+    const bars = ["#selectionBar", "#replayBar", "#dock", "#mobileNav"].map((selector) => $(selector));
     const measure = () => {
       const docked = !stage.hidden && getComputedStyle(stage).position !== "static";
       document.body.style.setProperty("--stage-h", (docked ? Math.ceil(stage.getBoundingClientRect().height) : 0) + "px");
@@ -5373,14 +5425,15 @@
   /** On phones, keep the main actions one tap away while the panel is closed. */
   function renderDock() {
     const dock = $("#dock");
-    const show = isCompact() && !prefs.side && !selection.size && !replay.active && view && view.macros.length > 0;
+    const show = isCompact() && !sideIsOpen() && !selection.size && !replay.active && view && view.macros.length > 0;
     dock.hidden = !show;
     if (!show) return;
     const macros = view.macros.slice(0, 6).map((macro) => `<button class="btn btn--sm" data-act="macro" data-id="${macro.id}">${esc(macro.label)}</button>`).join("");
     const next = view.realtime ? "" : `<button type="button" class="btn btn--sm btn--primary" data-act="next-turn">Next ${ICON("chevron-right")}</button>`;
-    dock.innerHTML = `<button type="button" class="btn btn--sm btn--icon" data-act="open-side" title="Controls" aria-label="Open controls">${ICON("menu")}</button>
-      <div class="dock-scroll">${macros}</div>
+    const scroll = dock.querySelector(".dock-scroll")?.scrollLeft || 0;
+    dock.innerHTML = `<div class="dock-scroll">${macros}</div>
       <button type="button" class="btn btn--sm btn--icon" data-act="hint" title="Hint" aria-label="Hint">${ICON("bulb")}</button>${next}`;
+    dock.querySelector(".dock-scroll").scrollLeft = scroll;
   }
 
   /** Slaps, calls, challenges and trades per player, once any have happened. */

@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="../shared/tokens.css?v=20261016" />
     <link rel="stylesheet" href="../shared/app.css?v=20261016" />
     <link rel="stylesheet" href="../shared/cards.css?v=20261016" />
-    <link rel="stylesheet" href="./styles.css?v=20261021-less" />
+    <link rel="stylesheet" href="./styles.css?v=20261120-mobile" />
     <script>document.documentElement.classList.add("is-ready");</script>
   </head>
   <body>
@@ -54,7 +54,7 @@
           <button class="btn btn--sm btn--icon" id="menuBtn" type="button" title="More" aria-label="More" aria-haspopup="menu">
             <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-more" /></svg>
           </button>
-          <button class="btn btn--sm btn--icon" id="sideToggle" type="button" title="Toggle panel (\)" aria-label="Toggle side panel" aria-pressed="true">
+          <button class="btn btn--sm btn--icon" id="sideToggle" type="button" title="Toggle panel (\)" aria-label="Toggle side panel" aria-controls="side" aria-pressed="true">
             <svg class="icon" aria-hidden="true" viewBox="0 0 20 20"><rect x="2.5" y="4" width="15" height="12" rx="1.5" /><path d="M12.5 4v12" /></svg>
           </button>
         </div>
@@ -69,7 +69,7 @@
       </div>
 
       <main class="workspace" id="main" tabindex="-1">
-        <section class="table" id="table" aria-label="Card table">
+        <section class="table" id="table" aria-label="Card table" tabindex="-1">
           <div class="game-over" id="gameOver" role="region" aria-label="Game over" hidden></div>
           <div class="offers" id="offers" hidden></div>
           <div id="around" hidden></div>
@@ -80,7 +80,7 @@
             </div>
             <div class="table-zones" id="tableZones"></div>
           </section>
-          <section class="table-section">
+          <section class="table-section" id="seatsSection" tabindex="-1">
             <div class="area-label">
               <span>Seats</span>
               <button class="btn btn--sm btn--ghost" type="button" id="addSeatBtn">+ Player</button>
@@ -116,9 +116,22 @@
       </main>
 
       <div class="ct-stage" id="stage" hidden>
-        <div class="selection-bar" id="selectionBar" role="toolbar" aria-label="Selected cards" hidden></div>
-        <div class="replay-bar" id="replayBar" role="toolbar" aria-label="Replay" hidden></div>
-        <div class="dock" id="dock" role="toolbar" aria-label="Quick actions" hidden></div>
+        <div class="stage-actions">
+          <div class="selection-bar" id="selectionBar" role="toolbar" aria-label="Selected cards" hidden></div>
+          <div class="replay-bar" id="replayBar" role="toolbar" aria-label="Replay" hidden></div>
+          <div class="dock" id="dock" role="toolbar" aria-label="Quick actions" hidden></div>
+        </div>
+        <nav class="mobile-nav" id="mobileNav" aria-label="Table shortcuts" hidden>
+          <button class="btn btn--ghost" id="jumpTable" type="button" aria-controls="table">
+            <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-cards" /></svg>Table
+          </button>
+          <button class="btn btn--ghost" id="jumpSeat" type="button" aria-controls="seats">
+            <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-users" /></svg><span>Seats</span>
+          </button>
+          <button class="btn btn--ghost" id="mobileControls" type="button" aria-controls="side" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="../shared/icons.svg#i-menu" /></svg>Controls
+          </button>
+        </nav>
       </div>
     </div>
 
@@ -153,6 +166,6 @@
     <script src="./evaluators.js?v=20261016"></script>
     <script src="./engine.js?v=20261016"></script>
     <script src="./presets.js?v=20261016"></script>
-    <script src="./app.js?v=20261021-less"></script>
+    <script src="./app.js?v=20261120-mobile"></script>
   </body>
 </html>
