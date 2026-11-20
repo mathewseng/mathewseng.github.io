@@ -518,12 +518,13 @@
     return map;
   }
 
-  function applyLegalClasses(map) {
+  function applyLegalClasses(map, updateReasons = true) {
     $$(".zone[data-zone-id]").forEach((el) => {
       const verdict = map.get(el.dataset.zoneId);
       el.classList.toggle("legal", Boolean(verdict?.ok));
       el.classList.toggle("illegal", Boolean(verdict && !verdict.ok));
       if (verdict && !verdict.ok) el.dataset.why = verdict.why; else delete el.dataset.why;
+      if (!updateReasons) return;
       // The reason is real text, not a CSS-only attr() string.
       let why = el.querySelector(":scope > .zone-why");
       if (verdict && !verdict.ok) {
@@ -1238,6 +1239,7 @@
     drag.started = true;
     const ghost = document.createElement("div");
     ghost.className = "drag-ghost";
+    ghost.toggleAttribute("data-touch", drag.touch);
     const shown = ids.slice(0, 6);
     shown.forEach((id, i) => {
       const src = document.querySelector(`.card[data-card-id="${CSS.escape(id)}"]`) || drag.el;
@@ -1249,7 +1251,8 @@
     if (ids.length > 1) ghost.insertAdjacentHTML("beforeend", `<span class="count">${ids.length}</span>`);
     document.body.appendChild(ghost);
     drag.ghost = ghost;
-    applyLegalClasses(computeLegal(ids));
+    // Keep touch drop targets in place while the player is holding a card.
+    applyLegalClasses(computeLegal(ids), !drag.touch);
     ids.forEach((id) => document.querySelector(`.card[data-card-id="${CSS.escape(id)}"]`)?.classList.add("dragging"));
     moveGhost(event);
   }
@@ -1317,11 +1320,11 @@
     else clearTimeout(d.press);
     if (!d.started) return;
     suppressClick = performance.now() + 250;
+    const target = dropTargetAt(event.clientX, event.clientY);
     d.ghost.remove();
     applyLegalClasses(legalMap);
     $$(".dragging").forEach((el) => el.classList.remove("dragging"));
     $$(".zone.drop-hover").forEach((el) => el.classList.remove("drop-hover"));
-    const target = dropTargetAt(event.clientX, event.clientY);
     if (!target) return;
     const zoneId = target.dataset.zoneId;
     const zone = view.zones[zoneId];
@@ -1343,6 +1346,7 @@
 
   function onPointerCancel() {
     if (!drag) return;
+    if (drag.started) applyLegalClasses(legalMap);
     if (drag.touch) endTouchArm(drag);
     clearTimeout(drag.press);
     drag.ghost?.remove();

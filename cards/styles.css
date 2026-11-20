@@ -590,7 +590,6 @@ body.side-collapsed .side {
 
 /* The reason a move is illegal, as real text under the cards. */
 .zone-why {
-  display: none;
   margin-top: 4px;
   color: var(--bad);
   font-size: var(--t-xs);
@@ -600,8 +599,8 @@ body.side-collapsed .side {
   text-overflow: ellipsis;
 }
 
-.zone.illegal .zone-why {
-  display: block;
+body:has(> .drag-ghost[data-touch]) :is(.zone-why, #toasts) {
+  visibility: hidden;
 }
 
 .zone.drop-hover {
