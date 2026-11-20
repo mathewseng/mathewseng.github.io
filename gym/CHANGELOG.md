@@ -2,6 +2,11 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-11-19 — Push Workout
+
+- Logged four sets of six at 95 lb flat bench and 65 lb incline, with about 1–2 reps in reserve per bench set.
+- Recorded three mixed dumbbell shoulder raise sets at 10 lb per arm.
+
 ## 2026-11-17 — Legs Workout
 
 - Logged the 10:35 PM, 70-minute legs session, including five RDL sets and four calf-raise sets.

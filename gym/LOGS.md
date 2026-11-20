@@ -1515,6 +1515,18 @@ Start: 10:35 PM. Duration: 70 minutes.
 
 18 completed sets, 220 entered reps, and 13,900 lb entered-load volume. Squat uses the existing Smith squat history with equipment unconfirmed. RDL and calf-raise equipment, calf-raise load convention, and cable kick reps per leg were not specified.
 
+# 31. Push Workout — November 19, 2026
+
+Start: 9:25 PM. Duration: 70 minutes.
+
+- Bench: 95 lb × 6, 6, 6, 6
+- Incline bench: 65 lb × 6, 6, 6, 6
+- Tricep pushdown: 35 lb × 8, 8, 8, 8
+- Ab cable crunch: 70 lb × 10, 10, 10
+- Dumbbell lateral and front raise: 10 lb per arm × 10, 10, 10, logged together as three sets
+
+First 40 minutes spent on bench work with long rests. Approximately 1–2 reps in reserve on each bench set. Smith setup inferred from the workout plan and prior history. The split between lateral and front raises was not specified.
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench

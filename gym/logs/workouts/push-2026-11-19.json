@@ -1,0 +1,175 @@
+{
+  "id": "push-2026-11-19",
+  "date": "2026-11-19",
+  "startTime": "21:25",
+  "durationMinutes": 70,
+  "type": "push",
+  "title": "November 19 Push Workout",
+  "chronologyIndex": 31,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-19-smith-flat-bench-1",
+          "weightLb": 95,
+          "reps": 6,
+          "completed": true,
+          "rirRange": [1, 2]
+        },
+        {
+          "id": "2026-11-19-smith-flat-bench-2",
+          "weightLb": 95,
+          "reps": 6,
+          "completed": true,
+          "rirRange": [1, 2]
+        },
+        {
+          "id": "2026-11-19-smith-flat-bench-3",
+          "weightLb": 95,
+          "reps": 6,
+          "completed": true,
+          "rirRange": [1, 2]
+        },
+        {
+          "id": "2026-11-19-smith-flat-bench-4",
+          "weightLb": 95,
+          "reps": 6,
+          "completed": true,
+          "rirRange": [1, 2]
+        }
+      ],
+      "notes": "Smith setup inferred from the workout plan and prior history. About 1\u20132 reps in reserve per bench set."
+    },
+    {
+      "exerciseId": "smith-incline-bench",
+      "name": "Smith-Machine Incline Bench",
+      "equipment": "Smith machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-19-smith-incline-bench-1",
+          "weightLb": 65,
+          "reps": 6,
+          "completed": true,
+          "rirRange": [1, 2]
+        },
+        {
+          "id": "2026-11-19-smith-incline-bench-2",
+          "weightLb": 65,
+          "reps": 6,
+          "completed": true,
+          "rirRange": [1, 2]
+        },
+        {
+          "id": "2026-11-19-smith-incline-bench-3",
+          "weightLb": 65,
+          "reps": 6,
+          "completed": true,
+          "rirRange": [1, 2]
+        },
+        {
+          "id": "2026-11-19-smith-incline-bench-4",
+          "weightLb": 65,
+          "reps": 6,
+          "completed": true,
+          "rirRange": [1, 2]
+        }
+      ],
+      "notes": "Smith setup inferred from the workout plan and prior history. About 1\u20132 reps in reserve per bench set."
+    },
+    {
+      "exerciseId": "triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-19-triceps-pushdown-1",
+          "weightLb": 35,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-19-triceps-pushdown-2",
+          "weightLb": 35,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-19-triceps-pushdown-3",
+          "weightLb": 35,
+          "reps": 8,
+          "completed": true
+        },
+        {
+          "id": "2026-11-19-triceps-pushdown-4",
+          "weightLb": 35,
+          "reps": 8,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "exerciseId": "cable-ab-crunch",
+      "name": "Cable Ab Crunch",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-19-cable-ab-crunch-1",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-19-cable-ab-crunch-2",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-19-cable-ab-crunch-3",
+          "weightLb": 70,
+          "reps": 10,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "exerciseId": "dumbbell-shoulder-raise-mixed",
+      "name": "Dumbbell Lateral and Front Raise",
+      "equipment": "Dumbbells",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-19-dumbbell-shoulder-raise-mixed-1",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-19-dumbbell-shoulder-raise-mixed-2",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-19-dumbbell-shoulder-raise-mixed-3",
+          "weightLb": 10,
+          "reps": 10,
+          "completed": true,
+          "perSide": true
+        }
+      ],
+      "notes": "Recorded as three mixed sets. Repetition allocation between lateral and front raises was not specified."
+    }
+  ],
+  "notes": "First 40 minutes spent on bench work with long rests between sets. Rest lengths were not timed in the report."
+}
