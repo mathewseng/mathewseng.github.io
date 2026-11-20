@@ -3,6 +3,8 @@ Office-3 backgammon analysis
 The source is a standalone project. The rectified board clips, original camera
 recordings, trained weights, and generated state/video files remain in Downloads.
 
+To capture new footage, see RECORDING.md for the Office-3 recorder CLI.
+
     OFFICE3_ARTIFACT_DIR    ~/Downloads/office-3-backgammon-20261117
     OFFICE3_RECORDING_DIR   ~/Downloads/office-3-wide-20261117-185027
     OFFICE3_CALIBRATION_REPO  ~/Documents/GitHub/gigarepo

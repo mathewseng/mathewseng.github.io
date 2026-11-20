@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""Record the Office-3 wide camera to local MP4 files."""
+
+import argparse
+from contextlib import contextmanager
+from datetime import datetime
+import fcntl
+import os
+from pathlib import Path
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+
+
+SSH_HOST = "rf-admin@office-3"
+RELAY = "127.0.0.1:18554"
+MIN_FREE = 2 * 1024**3
+START_TIMEOUT = 35
+STOP_TIMEOUT = 25
+STATE = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "office3-record"
+
+
+@contextmanager
+def locked_file(name):
+    with (STATE / name).open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield lock
+
+
+def is_recording():
+    with (STATE / "recorder.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True
+    return False
+
+
+def latest_folder():
+    latest = STATE / "latest"
+    return Path(latest.read_text().rstrip("\n")) if latest.exists() else None
+
+
+def first_clip_exists(folder):
+    return any(clip.stat().st_size for clip in folder.glob("office-3-wide_*.mp4"))
+
+
+@contextmanager
+def wide_feed():
+    with socket.socket() as reservation:
+        reservation.bind(("127.0.0.1", 0))
+        port = reservation.getsockname()[1]
+    tunnel = subprocess.Popen([
+        "ssh", "-NT", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+        "-o", "ExitOnForwardFailure=yes", "-o", "ControlPath=none",
+        "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3",
+        "-L", f"127.0.0.1:{port}:{RELAY}", SSH_HOST,
+    ], stdin=subprocess.DEVNULL)
+    try:
+        deadline = time.monotonic() + 10
+        while tunnel.poll() is None and time.monotonic() < deadline:
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=0.25):
+                    break
+            except ConnectionRefusedError:
+                time.sleep(0.1)
+        else:
+            raise RuntimeError(f"Could not open the SSH tunnel to {SSH_HOST}")
+        yield f"rtsp://127.0.0.1:{port}/overhead-preview"
+    finally:
+        if tunnel.poll() is None:
+            tunnel.terminate()
+            try:
+                tunnel.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                tunnel.kill()
+                tunnel.wait()
+
+
+def capture(folder, url, attempt, stop_request):
+    # Separate filename sequences preserve clips if the connection drops and restarts.
+    pattern = f"office-3-wide_{attempt:02d}_%06d.mp4"
+    with subprocess.Popen([
+        "ffmpeg", "-hide_banner", "-nostdin", "-nostats", "-loglevel", "info",
+        "-rtsp_transport", "tcp", "-timeout", "15000000", "-i", url,
+        "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy",
+        "-f", "segment", "-segment_time", "60", "-reset_timestamps", "1",
+        "-segment_format_options", "movflags=+faststart", pattern,
+    ], cwd=folder) as recorder:
+        while recorder.poll() is None:
+            low_disk = shutil.disk_usage(folder).free < MIN_FREE
+            if stop_request.exists() or low_disk:
+                if low_disk:
+                    print("Less than 2 GiB free. Finalizing the last clip.")
+                    stop_request.touch()
+                recorder.send_signal(signal.SIGINT)
+                return recorder.wait()
+            time.sleep(0.25)
+        return recorder.returncode
+
+
+def record(folder, lock_fd):
+    # Keep the inherited lock open for the lifetime of both child processes.
+    with os.fdopen(lock_fd, "a"):
+        stop_request = folder / ".stop-requested"
+        for attempt in range(1, 4):
+            if stop_request.exists() or shutil.disk_usage(folder).free < MIN_FREE:
+                break
+            print(f"{datetime.now().astimezone().isoformat()} Starting attempt {attempt}/3.")
+            try:
+                with wide_feed() as url:
+                    if stop_request.exists():
+                        break
+                    result = capture(folder, url, attempt, stop_request)
+                print(f"FFmpeg exited with status {result}.")
+            except RuntimeError as error:
+                print(error)
+        print(f"{datetime.now().astimezone().isoformat()} Recorder stopped.")
+
+
+def wait_for_stop(folder):
+    if folder.is_dir():
+        (folder / ".stop-requested").touch()
+    deadline = time.monotonic() + STOP_TIMEOUT
+    while is_recording():
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"Still stopping. Check {folder / '.recording.log'}")
+        time.sleep(0.2)
+
+
+def start(output_dir):
+    if is_recording():
+        raise RuntimeError(f"Already recording in {latest_folder()}")
+    for tool in ("ffmpeg", "ssh"):
+        if not shutil.which(tool):
+            raise RuntimeError(f"{tool} is required on PATH")
+    output_dir = output_dir.expanduser().resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if shutil.disk_usage(output_dir).free < MIN_FREE:
+        raise RuntimeError(f"At least 2 GiB of free space is required in {output_dir}")
+
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    folder = Path(tempfile.mkdtemp(prefix=f"office-3-wide-{stamp}-", dir=output_dir))
+    log_file = folder / ".recording.log"
+    (STATE / "latest").write_text(f"{folder}\n")
+    with locked_file("recorder.lock") as lock, log_file.open("a") as log:
+        fd = lock.fileno()
+        worker = subprocess.Popen([
+            sys.executable, "-u", str(Path(__file__).resolve()), "_record", str(folder), str(fd),
+        ], stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
+            pass_fds=(fd,), start_new_session=True)
+
+    deadline = time.monotonic() + START_TIMEOUT
+    try:
+        while worker.poll() is None and time.monotonic() < deadline:
+            if first_clip_exists(folder):
+                print(f"Recording to {folder}")
+                return
+            time.sleep(0.2)
+    except KeyboardInterrupt:
+        wait_for_stop(folder)
+        raise
+    wait_for_stop(folder)
+    raise RuntimeError(f"No video was written. Check {log_file}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    start_command = commands.add_parser("start", help="Start a background recording")
+    start_command.add_argument("--output-dir", type=Path, default=Path.home() / "Downloads",
+                               help="Parent folder for new recordings (default: ~/Downloads)")
+    commands.add_parser("stop", help="Stop recording and finalize the last MP4")
+    commands.add_parser("status", help="Show whether recording is active and where clips are saved")
+    args = parser.parse_args()
+    STATE.mkdir(parents=True, mode=0o700, exist_ok=True)
+    with locked_file("control.lock"):
+        if args.command == "start":
+            start(args.output_dir)
+            return
+        folder = latest_folder()
+        if not is_recording():
+            print(f"No active recording. Last folder: {folder}" if folder else "No active recording.")
+        elif args.command == "stop":
+            wait_for_stop(folder)
+            print(f"Stopped. Clips are in {folder}")
+        else:
+            print(f"Recording to {folder}")
+
+
+if __name__ == "__main__":
+    try:
+        if len(sys.argv) == 4 and sys.argv[1] == "_record":
+            record(Path(sys.argv[2]), int(sys.argv[3]))
+        else:
+            main()
+    except (OSError, RuntimeError) as error:
+        print(f"office3-record: {error}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(130)
