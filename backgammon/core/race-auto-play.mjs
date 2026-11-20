@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { decisionPlayer, positionKey, transition, legalTurns, boardKey, commitTurn } from './rules.mjs';
+import { decisionPlayer, positionKey, transition, legalPaths, matchingPaths, boardKey, commitTurn } from './rules.mjs';
 import { cubeChoices } from '../engine/cube-grade.mjs';
 
 export const RACE_CUBE_MARGIN = 0.05;
@@ -35,20 +35,36 @@ export function clearRaceCubeAction(state, result) {
 }
 
 // Auto play bears off whenever that is the best evaluated play: the engine's
-// first choice must take off as many checkers as this roll allows. Any other
-// best move, or a roll that cannot bear off, is left for the player.
-export function raceBearoffMove(state, result) {
+// first choice must take off as many checkers as this roll allows. Favor a
+// legal order that bears off early, so any choice with the leftover dice stays
+// with the player. A suffix with only one final position can finish by itself.
+export function raceBearoffMove(state, result, paths, draft = []) {
   if (!bearingOffRace(state) || state.phase !== 'move' || result?.status !== 'complete' ||
       result.type !== 'checker' || result.positionKey !== positionKey(state) ||
       result.perspective !== state.turn || (result.settings?.noise ?? 0) !== 0) return null;
   const steps = result.candidates?.[0]?.steps;
   if (!Array.isArray(steps)) return null;
-  const off = steps => steps.filter(step => step.to === 'off').length;
   try {
-    const turns = legalTurns(state), key = boardKey(commitTurn(state, steps));
-    const most = Math.max(...turns.map(turn => off(turn.steps)));
-    if (!most || off(steps) < most || !turns.some(turn => turn.key === key)) return null;
-    return {type:'move', steps};
+    paths ??= legalPaths(state);
+    const best = commitTurn(state, steps);
+    const player = state.turn;
+    if (best.off[player] === state.off[player] ||
+        paths.some(path => path.state.off[player] > best.off[player])) return null;
+    const key = boardKey(best);
+    let order = null, end = Infinity;
+    for (const path of matchingPaths(paths, draft)) {
+      if (boardKey(path.state) !== key) continue;
+      const afterLastOff = path.steps.findLastIndex(step => step.to === 'off') + 1;
+      if (afterLastOff < end) {
+        order = path.steps;
+        end = afterLastOff;
+      }
+    }
+    if (!order) return null;
+    const prefix = order.slice(0, Math.max(end, draft.length));
+    return matchingPaths(paths, prefix).every(path => boardKey(path.state) === key)
+      ? {type:'move', steps:order}
+      : {type:'draft', steps:prefix};
   } catch { return null; }
 }
 

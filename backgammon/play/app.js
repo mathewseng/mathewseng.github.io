@@ -603,6 +603,7 @@ draft.beforeChange = () => {
   // Revise before the mutation renders, so its normal move/undo animation and
   // dice state are preserved. A late grade belongs only to the old draft.
   if (assistanceJob?.revisable) releaseAssistance();
+  if (raceAutoPlay.active && draft.state === state()) raceChoice = draft.state;
 };
 draft.shortcutsEnabled = true;
 const prethink = new Prethink({
@@ -640,7 +641,7 @@ ui.board.onRoll = (event = {}) => {
   if (repeatBarRoll(point)) return true;
   if (raceAutoPlay.active && (event.target?.closest('.board-caption') ||
       (state().phase === 'roll' && state().turn === raceAutoPlay.active.player))) {
-    if (raceAutoPlay.skipping || event.clientX === undefined) {
+    if (raceChoice === state() || raceAutoPlay.skipping || event.clientX === undefined) {
       raceAutoPlay.reset(); actions(); return true;
     }
     // As with auto roll: hold the next action briefly so a second tap can
@@ -1097,12 +1098,20 @@ function scheduleBarAutoRoll() {
   }, barAutoRoll.skipping ? 0 : motionDuration(900));
 }
 function syncRaceAutoPlay(current = state()) {
-  const s = state();
+  const m = model(), s = state();
   if (config.mode !== 'computer') raceAutoPlay.reset();
+  // Legal turn paths already show whether any checker can come off. Leave a
+  // non-forced roll to the player immediately, without waiting for analysis.
+  if (raceAutoPlay.valid(raceAutoPlay.active, m) && draft.state === s &&
+      s.phase === 'move' && myTurn(s) && raceChoice !== s &&
+      !draft.paths.some(path => path.state.off[s.turn] > s.off[s.turn]) &&
+      !forcedTurn(s) && !certainBearoff(s)) {
+    raceChoice = s;
+  }
   // A checker play left to the player ends skipping; auto play resumes after it.
   const choice = !!document.querySelector('dialog[open]') || raceChoice === s ||
     (myTurn(s) && s.phase === 'move' && draft.state === s && draft.draft.length > draft.minDraft);
-  const active = raceAutoPlay.sync(model(), current, choice);
+  const active = raceAutoPlay.sync(m, current, choice);
   ui.board.motion = !barAutoRoll.skipping && !raceAutoPlay.skipping;
   return active;
 }
@@ -1111,7 +1120,7 @@ function scheduleRaceAutoPlay() {
   const ready = () => raceAutoPlay.active === active && raceAutoPlay.valid(active,model()) &&
     !raceAutoPlay.waitingForRepeat &&
     state() === s && epoch === token && myTurn(s) && config.mode === 'computer' &&
-    (moving ? raceChoice !== s && !forcedTurn(s) && !automaticDraft && !draft.preview &&
+    (moving ? raceChoice !== s && !forcedTurn(s) && !automaticDraft && !draft.preview && !draft.dragging &&
         draft.state === s && draft.draft.length <= draft.minDraft
       : ['roll','double'].includes(s.phase)) && !certainBearoff(s) &&
     !document.hidden && !leaving && !committing && !botBusy && !assistanceJob &&
@@ -1129,8 +1138,22 @@ function scheduleRaceAutoPlay() {
         // (so the game's own analysis agrees). Otherwise the player chooses.
         const result = await analysis.engine.analyze(s,{preset:config.reviewStrength || 'auto',priority:5});
         if (!ready()) return;
-        action = raceBearoffMove(s,result);
+        action = raceBearoffMove(s, result, draft.paths, draft.draft);
         if (!action) { raceChoice = s; return; }
+        if (action.type === 'draft') {
+          const before = draft.current();
+          const usedDice = draft.draft.map(step => step.die);
+          const steps = action.steps.slice(draft.draft.length);
+          raceChoice = s;
+          draft.draft = action.steps;
+          draft.selected = null;
+          draft.hint = "";
+          draft.render({before, steps, usedDice});
+          actions();
+          detailDraft();
+          await persist();
+          return;
+        }
         evaluation = {source:clone(s),result:{...result,actual:result.candidates[0],error:0}};
       } else if (s.phase === 'double' || canDouble(s)) {
         let result = analysis.engine.peek(s,{preset:null});
@@ -1145,7 +1168,7 @@ function scheduleRaceAutoPlay() {
       }
       if (ready()) await commit(action,evaluation);
     } catch (error) {
-      if (raceAutoPlay.active === active) {
+      if (ready()) {
         if (moving) raceChoice = s;
         else {
           raceAutoPlay.reset();
@@ -1772,7 +1795,8 @@ function actions() {
     if (race && s.phase === 'double') cubeReplies.hidden = true;
     ui.board.setRollPrompt({ready:rollReady && !acceptedCubeKey && !(closedOutCheck?.pending && closedOutCheck.key === closedOutKey(s)),pass:blockedBarRoll(s),canAutoRoll:canAutoRollFromBar(s) && !model().reviewingTurn,
       canAutoPlay:config.mode === 'computer' && bearingOffRace(s) && !model().reviewingTurn,
-      auto:!!active,skipping:barAutoRoll.skipping || raceAutoPlay.skipping,raceAuto:!!race});
+      auto:!!active,skipping:barAutoRoll.skipping || raceAutoPlay.skipping,
+      raceAuto:!!race,racePaused:!!race && raceChoice === s});
     ui.board.container.classList.toggle("roll-ready", rollReady);
     scheduleBarAutoRoll();
     scheduleRaceAutoPlay();

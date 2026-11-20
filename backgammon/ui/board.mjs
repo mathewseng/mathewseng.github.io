@@ -1009,7 +1009,9 @@ export class Board {
       await new Promise(resolve => setTimeout(resolve, 32));
     }
   }
-  playTurn(before, steps, { automatic = false, rolled = false, final = this.state, options = this.renderOptions } = {}) {
+  playTurn(before, steps, {
+    automatic = false, rolled = false, final = this.state, options = this.renderOptions, usedDice = [],
+  } = {}) {
     if (!steps.length) return;
     if (this.reducedMotion() || document.hidden) {
       const after = steps.reduce((s, step) => applyStep(s, step), before);
@@ -1043,7 +1045,7 @@ export class Board {
         destinations: [],
         moves: [],
         lastMove: null,
-        usedDice: steps.slice(0, index).map(st => st.die),
+        usedDice: [...usedDice, ...steps.slice(0, index).map(st => st.die)],
         forcedDice: automatic ? steps.slice(0, index).map(st => st.die) : options.forcedDice,
         playback: true,
       });
@@ -1092,7 +1094,8 @@ export class Board {
       p,
       to,
       { via: this.dropOrigin ? [] : via, drop: !!this.dropOrigin,
-        residentCount: typeof to === 'number' ? Math.max(0, before.points[to] * (p ? -1 : 1)) : 0 },
+        residentCount: to === "off" ? before.off[p]
+          : typeof to === "number" ? Math.max(0, before.points[to] * (p ? -1 : 1)) : 0 },
     );
     if (reverse)
       this.feedbackTimers.push(
@@ -1167,11 +1170,13 @@ export class Board {
       ) || candidates.at(-1);
     piece.arrival = landed;
     piece.arrivalTarget = { raw, destination };
-    // The stack cap represents existing checkers too. Keep its previous face
-    // and count visible until this arriving checker covers it at touchdown.
-    if (landed && typeof target === 'number' && residentCount >= STACK_LIMIT) {
+    // Tray markers and stack caps represent resident checkers as well as the
+    // arrival. Keep the old count in place while the incoming checker flies.
+    const tray = target === "off";
+    if (landed && (tray ? residentCount > 0 : typeof target === "number" && residentCount >= STACK_LIMIT)) {
       piece.resident = checker(destination.x, destination.y, player,
-        residentCount > STACK_LIMIT ? residentCount : 0);
+        tray || residentCount > STACK_LIMIT ? residentCount : 0,
+        tray && this.container.clientWidth < 600, false, false, tray);
       piece.resident.classList.add('arrival-resident');
       piece.resident.setAttribute('aria-hidden','true');
       piece.resident.style.pointerEvents = 'none';
@@ -2248,12 +2253,13 @@ export class Board {
     if (!node) return;
     const {preview,editor,hideDice} = this.renderOptions || {};
     const prompt = this.rollPrompt || {}, touch = this.touchInput.matches;
-    const active = !preview && !editor && !hideDice && (prompt.auto || prompt.skipping || prompt.raceAuto);
+    const raceCube = prompt.raceAuto && this.state?.phase === 'double';
+    const active = !preview && !editor && (!hideDice || raceCube) && (prompt.auto || prompt.skipping || prompt.raceAuto);
     const ready = !preview && !editor && !hideDice && prompt.ready && this.state?.phase === 'roll';
     // Previews and the editor are named by their page; a passive in-board
     // label would be too small to read on phones.
-    const main = active ? (prompt.skipping ? 'Skipping to your choice' : prompt.raceAuto ? 'Auto play on' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to ${prompt.pass ? 'pass' : 'roll'}` : '';
-    const detail = active ? (prompt.skipping ? `${touch ? 'Tap' : 'Click'} to stop` : `Double ${touch ? 'tap' : 'click'} to skip`) :
+    const main = active ? (prompt.racePaused ? 'Auto play paused' : prompt.skipping ? 'Skipping to your choice' : prompt.raceAuto ? 'Auto play on' : 'Auto roll on') : ready ? `${touch ? 'Tap' : 'Click'} to ${prompt.pass ? 'pass' : 'roll'}` : '';
+    const detail = active ? (prompt.racePaused ? 'Choose your checker move' : prompt.skipping ? `${touch ? 'Tap' : 'Click'} to stop` : `Double ${touch ? 'tap' : 'click'} to skip`) :
       ready && prompt.canAutoPlay ? `Double ${touch ? 'tap' : 'click'} to auto play` :
         ready && prompt.canAutoRoll && !prompt.pass ? `Double ${touch ? 'tap' : 'click'} to auto roll` : '';
     // Roll instructions sit in the roller's own dice lane, which the previous

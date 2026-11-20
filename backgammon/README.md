@@ -673,8 +673,12 @@ In computer games, a contact-free race with all your checkers home offers **Doub
 tap/click to auto play** in the dice lane. It rolls and lets fully forced turns
 continue. On a checker choice it bears off whenever the best evaluated move (at
 your hint/review strength, so the game's analysis agrees) takes off as many
-checkers as the roll allows; any other best move is left for you, and auto play
-carries on after you play it. Double tap/click **Auto play on** to skip the
+checkers as the roll allows. When a roll offers a checker choice and nothing can
+come off, the board immediately shows **Auto play paused**. If bearing off
+leaves a choice with the remaining dice, auto play stages the bear-off steps
+and hands you the rest of the turn. An evaluated turn
+whose best move bears off fewer than possible is also left to you. Auto play
+carries on after you confirm your move. Double tap/click **Auto play on** to skip the
 waits until your next choice. Cube choices use a
 completed, noiseless, context-matched cubeful search of at least 3 ply; auto play
 continues only when the best legal action leads the next by more than 0.05 equity

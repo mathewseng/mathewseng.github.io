@@ -107,7 +107,13 @@ test('auto play bears off only when the best evaluated move takes off every chec
   const turns=legalTurns(s),most=Math.max(...turns.map(t=>offCount(t.steps)));
   assert.equal(most,1,'5-1 bears one checker off here');
   const bearing=turns.find(t=>offCount(t.steps)===1),quiet=turns.find(t=>offCount(t.steps)===0);
-  assert.deepEqual(raceBearoffMove(s,analysed(s,bearing.steps)),{type:'move',steps:bearing.steps});
+  assert.deepEqual(raceBearoffMove(s,analysed(s,[...bearing.steps].reverse())),
+    {type:'draft',steps:[{from:4,to:'off',die:5}]},
+    'bear off first even when the engine lists the remaining checker choice first');
+  const forcedSuffix=position([0,0,0,0,0,3],[6,2]);
+  const bestForced=legalTurns(forcedSuffix).find(t=>offCount(t.steps));
+  assert.deepEqual(raceBearoffMove(forcedSuffix,analysed(forcedSuffix,bestForced.steps)),
+    {type:'move',steps:bestForced.steps}, 'a quiet step with one outcome can finish automatically');
   assert.ok(quiet,'this roll can also be played without bearing off');
   assert.equal(raceBearoffMove(s,analysed(s,quiet.steps)),null,'a better quiet move is left to the player');
   // Two can come off with 2-1 from the ace and deuce points; one alone is not the maximum.
