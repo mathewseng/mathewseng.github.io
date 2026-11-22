@@ -75,6 +75,16 @@ the outcome while the final move remains ungraded. Game 5’s inferred pass
 is marked in both `result` and `cubeOffer`. Its `postGamePlay` entry marks
 the separate throws after the game board was cleared.
 
+## Nov 21, 2026 session
+
+The [Nov 21 page](2026-11-21/) shows four games played on the orange wooden
+board, with Board-camera audio. Its MP4s are assets on the
+[Office-3 Nov 21 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261121-v1).
+The checker, dice and cube readers were retrained for the new board, and
+every turn is reconstructed as a legal move chain and scored at four ply.
+The session links above the game list switch between recordings. The
+pipeline for this board is in [scripts/v5](scripts/v5/README.txt).
+
 The [vision pipeline](scripts/README.txt) contains the source used to reconstruct
 the game state, score the decisions with GNUbg, and render the overlays. Site
 assembly excludes this research code. The local footage, model weights and

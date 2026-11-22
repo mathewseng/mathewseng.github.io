@@ -1,0 +1,72 @@
+[
+ {
+  "game": 1,
+  "resultFrame": 25127,
+  "player": "white",
+  "roll": [
+   6,
+   2
+  ],
+  "note": "Second die shows a six on the cream point next to the two."
+ },
+ {
+  "game": 4,
+  "resultFrame": 59333,
+  "player": "white",
+  "roll": [
+   6,
+   2
+  ],
+  "note": "Dice read as six and two."
+ },
+ {
+  "game": 4,
+  "resultFrame": 80140,
+  "player": "dark",
+  "roll": [
+   5,
+   4
+  ],
+  "note": "Visible red die shows four; only 5-4 among the legal candidates contains a four."
+ },
+ {
+  "game": 2,
+  "resultFrame": 37880,
+  "player": "white",
+  "roll": [
+   3,
+   1
+  ],
+  "note": "One die shows three; 3-1 is the only candidate with a three."
+ },
+ {
+  "game": 2,
+  "resultFrame": 47103,
+  "player": "white",
+  "roll": [
+   6,
+   3
+  ],
+  "note": "Visible die shows six."
+ },
+ {
+  "game": 2,
+  "resultFrame": 47243,
+  "player": "dark",
+  "roll": [
+   4,
+   1
+  ],
+  "note": "Visible red die shows four."
+ },
+ {
+  "game": 2,
+  "resultFrame": 49067,
+  "player": "white",
+  "roll": [
+   6,
+   4
+  ],
+  "note": "Dice show six and four."
+ }
+]

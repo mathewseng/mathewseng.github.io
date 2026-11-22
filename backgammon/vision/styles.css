@@ -951,3 +951,34 @@
   align-items: start;
   margin-top: .65rem;
 }
+
+.vision-sessions {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.vision-sessions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 640;
+  text-decoration: none;
+}
+
+.vision-sessions a[aria-current="page"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.vision-sessions a:hover {
+  color: var(--accent);
+}
+
+.vision-sessions time {
+  color: inherit;
+}

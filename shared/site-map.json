@@ -876,7 +876,7 @@
         "backgammon/"
       ],
       "kind": "hub",
-      "updated": "2026-11-14",
+      "updated": "2026-11-22",
       "created": "2026-10-04"
     },
     {
@@ -888,7 +888,7 @@
       "sourcePaths": [
         "backgammon/play/"
       ],
-      "updated": "2026-11-14",
+      "updated": "2026-11-20",
       "created": "2026-10-04"
     },
     {
@@ -900,7 +900,7 @@
       "sourcePaths": [
         "backgammon/trainer/"
       ],
-      "updated": "2026-11-14",
+      "updated": "2026-11-20",
       "created": "2026-10-04"
     },
     {
@@ -912,7 +912,7 @@
       "sourcePaths": [
         "backgammon/solver/"
       ],
-      "updated": "2026-11-14",
+      "updated": "2026-11-20",
       "created": "2026-10-04"
     },
     {
@@ -924,7 +924,7 @@
       "sourcePaths": [
         "backgammon/library/"
       ],
-      "updated": "2026-11-14",
+      "updated": "2026-11-20",
       "created": "2026-10-04"
     },
     {
@@ -936,7 +936,7 @@
       "sourcePaths": [
         "backgammon/openings/"
       ],
-      "updated": "2026-11-14",
+      "updated": "2026-11-20",
       "created": "2026-10-22"
     },
     {
@@ -948,8 +948,20 @@
       "sourcePaths": [
         "backgammon/vision/"
       ],
-      "updated": "2026-11-18",
+      "updated": "2026-11-22",
       "created": "2026-11-18"
+    },
+    {
+      "name": "Backgammon Vision · Nov 21",
+      "path": "/backgammon/vision/2026-11-21/",
+      "category": "backgammon",
+      "description": "Four games on the orange board with detected rolls, cube actions, and four-ply GNUbg analysis.",
+      "historyPath": "backgammon/vision/2026-11-21/index.html",
+      "sourcePaths": [
+        "backgammon/vision/2026-11-21/"
+      ],
+      "updated": "2026-11-21",
+      "created": "2026-11-21"
     },
     {
       "name": "Backgammon Controls",
@@ -960,7 +972,7 @@
       "sourcePaths": [
         "backgammon/controls/"
       ],
-      "updated": "2026-11-14",
+      "updated": "2026-11-20",
       "created": "2026-10-06"
     },
     {
@@ -972,7 +984,7 @@
       "sourcePaths": [
         "backgammon/reports/"
       ],
-      "updated": "2026-11-14",
+      "updated": "2026-11-20",
       "created": "2026-10-06"
     },
     {
@@ -1022,7 +1034,7 @@
         "dice/"
       ],
       "kind": "hub",
-      "updated": "2026-10-27",
+      "updated": "2026-11-14",
       "created": "2026-10-07"
     },
     {
@@ -1163,7 +1175,7 @@
       "sourcePaths": [
         "cards/"
       ],
-      "updated": "2026-10-21",
+      "updated": "2026-11-20",
       "created": "2026-09-26"
     },
     {
@@ -1459,7 +1471,7 @@
       "category": "music",
       "description": "A visual reference for electronic wind instrument fingerings.",
       "created": "2019-06-19",
-      "updated": "2026-10-22",
+      "updated": "2026-11-19",
       "historyPath": "music/ewi-fingerings/index.html",
       "sourcePaths": [
         "music/ewi-fingerings/"
@@ -1517,7 +1529,7 @@
       "sourcePaths": [
         "gym/"
       ],
-      "updated": "2026-11-11",
+      "updated": "2026-11-20",
       "created": "2026-07-28"
     },
     {
