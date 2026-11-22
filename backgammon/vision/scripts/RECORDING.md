@@ -22,9 +22,15 @@ Start, check, and stop the recording.
 ~/.local/bin/office3-record stop
 ```
 
-- Each start creates a new `office-3-wide-…` folder in `~/Downloads` and
-  prints its path once video is being written. The recorder continues after
-  you close the terminal. Keep your Mac awake and connected to Office-3.
+- `start` hands the recording to a launchd watchdog and prints the folder
+  once video is being written. The recording continues after you close the
+  terminal, and the Mac stays awake while it runs. Keep it connected to
+  Office-3.
+- Every 30 seconds the watchdog restarts the recording if it has stopped or
+  written no video for 150 seconds, and restarts Board audio if it has
+  stopped. Each restart creates a new `office-3-wide-…` folder in
+  `~/Downloads`. The watchdog stays on until `stop`, and its log is
+  `~/.local/state/office3-record/watch.log`.
 - `start` reports `Board audio: recording` once the first Board chunk
   arrives, and `status` shows how recent the newest chunk is. If Board audio
   is missing from a running recording, run `start` again to add it.
@@ -34,8 +40,10 @@ Start, check, and stop the recording.
   first number is the connection attempt and the second is the clip sequence.
   A change in attempt number means the stream reconnected. The folder name
   records local start time, and the log records connection attempt times.
-- `stop` waits for FFmpeg to finish the last clip, which can be shorter than
-  a minute. It leaves completed clips and the log in the folder.
+- `stop` turns off the watchdog and waits for FFmpeg to finish the last clip,
+  which can be shorter than a minute. It leaves completed clips and the log
+  in the folder. A clip cut off by a crash has no index and won't play. The
+  combined export skips it.
 - To record to an external drive, use
   `~/.local/bin/office3-record start --output-dir "/Volumes/Your Drive/Recordings"`.
 
@@ -49,7 +57,8 @@ until the wide recording stops. The receiver works in the container's 64 MiB
 `/dev/shm`, which the hand recorder also uses, so it stops if chunks back up
 there.
 
-`stop` writes one `wide-with-board-audio.mp4`. It keeps every wide video frame and uses the
+`stop` writes one `wide-with-board-audio.mp4` in each folder the watched
+session recorded. It keeps every wide video frame and uses the
 original wide soundtrack before Board capture starts and wherever Board samples
 are missing. The wide MP4s and Board WAVs stay in the recording folder.
 

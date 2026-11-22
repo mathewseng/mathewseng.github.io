@@ -7,6 +7,7 @@ from datetime import datetime
 import fcntl
 import os
 from pathlib import Path
+import plistlib
 import shutil
 import signal
 import socket
@@ -21,6 +22,9 @@ RELAY = "127.0.0.1:18554"
 MIN_FREE = 2 * 1024**3
 START_TIMEOUT = 35
 BOARD_START_TIMEOUT = 20
+WATCH_SECONDS = 30
+STALL_SECONDS = 150
+WATCH_LABEL = "com.office3-record.watch"
 STOP_TIMEOUT = 25
 STATE = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "office3-record"
 
@@ -107,6 +111,9 @@ def capture(folder, url, attempt, stop_request):
 def record(folder, lock_fd):
     # Keep the inherited lock open for the lifetime of both child processes.
     with os.fdopen(lock_fd, "a"):
+        # Idle sleep would pause the feed, so hold it off while this worker runs.
+        if shutil.which("caffeinate"):
+            subprocess.Popen(["caffeinate", "-i", "-w", str(os.getpid())], stdin=subprocess.DEVNULL)
         stop_request = folder / ".stop-requested"
         for attempt in range(1, 4):
             if stop_request.exists() or shutil.disk_usage(folder).free < MIN_FREE:
@@ -159,6 +166,25 @@ def board_status(folder):
     return f"Board audio: {state}, {len(receipts)} chunks, newest {age:.0f} s ago"
 
 
+def finalize_session(latest):
+    listed = STATE / "session-folders"
+    folders = [Path(line) for line in listed.read_text().splitlines() if line] if listed.exists() else []
+    if latest not in folders:
+        folders.append(latest)
+    failed = []
+    for folder in dict.fromkeys(folders):
+        if not folder.is_dir():
+            continue
+        try:
+            finalize_board(folder, wait=True)
+        except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+            print(f"office3-record: {folder.name}: {error}", file=sys.stderr)
+            failed.append(folder)
+    listed.write_text("")
+    if failed:
+        raise RuntimeError("Retry each failed folder with office3-record combine <folder>")
+
+
 def start_board(folder):
     board = board_module()
     if board.is_capturing(folder):
@@ -209,6 +235,105 @@ def finalize_board(folder, wait=False):
         print(f"Combined MP4: {combine(folder, SSH_HOST)}")
 
 
+def now():
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def keep_file():
+    return STATE / "keep-recording"
+
+
+def launchd(*args):
+    return subprocess.run(["launchctl", *args], capture_output=True, text=True)
+
+
+def watch_loaded():
+    return launchd("print", f"gui/{os.getuid()}/{WATCH_LABEL}").returncode == 0
+
+
+def enable_watch(output_dir):
+    if not keep_file().exists():
+        # A new watched session. Remember any recording it adopts.
+        folder = latest_folder()
+        (STATE / "session-folders").write_text(f"{folder}\n" if folder and is_recording() else "")
+    keep_file().write_text(f"{output_dir}\n")
+    plist = STATE / f"{WATCH_LABEL}.plist"
+    with plist.open("wb") as file:
+        plistlib.dump({
+            "Label": WATCH_LABEL,
+            "ProgramArguments": [sys.executable, "-u", str(Path(__file__).resolve()), "_watch"],
+            "EnvironmentVariables": {"PATH": os.environ.get("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")},
+            "RunAtLoad": True,
+            "StartInterval": WATCH_SECONDS,
+            "AbandonProcessGroup": True,
+            "StandardOutPath": str(STATE / "watch.log"),
+            "StandardErrorPath": str(STATE / "watch.log"),
+        }, file)
+    # launchd owns the workers, so closing a terminal or agent session can't end them.
+    if watch_loaded():
+        launchd("kickstart", f"gui/{os.getuid()}/{WATCH_LABEL}")
+    else:
+        result = launchd("bootstrap", f"gui/{os.getuid()}", str(plist))
+        if result.returncode:
+            raise RuntimeError(f"Could not start the recording watchdog: {result.stderr.strip()}")
+
+
+def disable_watch():
+    keep_file().unlink(missing_ok=True)
+    if watch_loaded():
+        launchd("bootout", f"gui/{os.getuid()}/{WATCH_LABEL}")
+
+
+def stalled(folder):
+    clips = list(folder.glob("office-3-wide_*.mp4"))
+    newest = max((clip.stat().st_mtime for clip in clips), default=folder.stat().st_mtime)
+    return time.time() - newest > STALL_SECONDS
+
+
+def watch():
+    with locked_file("control.lock"):
+        if not keep_file().exists():
+            return
+        folder = latest_folder()
+        if is_recording():
+            if not stalled(folder):
+                if not board_module().is_capturing(folder):
+                    print(f"{now()} Board audio is not running. Restarting it.")
+                    start_board(folder)
+                return
+            print(f"{now()} No new video for {STALL_SECONDS} s in {folder}. Restarting.")
+            wait_for_stop(folder)
+        else:
+            print(f"{now()} Recording is not running. Starting a new one.")
+        try:
+            start(Path(keep_file().read_text().rstrip("\n")))
+        except RuntimeError:
+            # Keep retries during an outage from leaving a trail of empty folders.
+            failed = latest_folder()
+            if failed and failed.is_dir() and not any(failed.glob("office-3-wide_*.mp4")):
+                print((failed / ".recording.log").read_text(errors="replace")[-2000:])
+                shutil.rmtree(failed)
+            raise
+
+
+def wait_until_recording(previous, adopted):
+    deadline = time.monotonic() + START_TIMEOUT + WATCH_SECONDS
+    while time.monotonic() < deadline:
+        folder = latest_folder()
+        if adopted or folder and folder != previous and first_clip_exists(folder):
+            break
+        time.sleep(0.5)
+    else:
+        raise RuntimeError(f"No recording started. Check {STATE / 'watch.log'}")
+    folder = latest_folder()
+    deadline = time.monotonic() + BOARD_START_TIMEOUT
+    while time.monotonic() < deadline and not board_receipts(folder):
+        time.sleep(0.5)
+    print(f"Recording to {folder}")
+    print(board_status(folder))
+    print("Watchdog: on, checking every 30 s")
+
+
 def start(output_dir):
     if is_recording():
         # Starting again adds Board audio to a wide recording that lacks it.
@@ -228,6 +353,8 @@ def start(output_dir):
     folder = Path(tempfile.mkdtemp(prefix=f"office-3-wide-{stamp}-", dir=output_dir))
     log_file = folder / ".recording.log"
     (STATE / "latest").write_text(f"{folder}\n")
+    with (STATE / "session-folders").open("a") as folders:
+        folders.write(f"{folder}\n")
     with locked_file("recorder.lock") as lock, log_file.open("a") as log:
         fd = lock.fileno()
         worker = subprocess.Popen([
@@ -253,7 +380,7 @@ def start(output_dir):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    start_command = commands.add_parser("start", help="Start a background recording, or add missing Board audio")
+    start_command = commands.add_parser("start", help="Start a watched background recording that restarts if it stops")
     start_command.add_argument("--output-dir", type=Path, default=Path.home() / "Downloads",
                                help="Parent folder for new recordings (default: ~/Downloads)")
     commands.add_parser("stop", help="Stop recording and combine the Board audio with the wide clips")
@@ -262,10 +389,21 @@ def main():
     combine_command.add_argument("folder", type=Path, nargs="?", help="Recording directory (default: last session)")
     args = parser.parse_args()
     STATE.mkdir(parents=True, mode=0o700, exist_ok=True)
+    if args.command == "start":
+        with locked_file("control.lock"):
+            for tool in ("ffmpeg", "ssh"):
+                if not shutil.which(tool):
+                    raise RuntimeError(f"{tool} is required on PATH")
+            output_dir = args.output_dir.expanduser().resolve()
+            output_dir.mkdir(parents=True, exist_ok=True)
+            previous, adopted = latest_folder(), is_recording()
+            enable_watch(output_dir)
+        # The watchdog takes the control lock to start the recording.
+        wait_until_recording(previous, adopted)
+        return
     with locked_file("control.lock"):
-        if args.command == "start":
-            start(args.output_dir)
-            return
+        if args.command == "stop":
+            disable_watch()
         folder = latest_folder()
         active = is_recording()
         if args.command == "combine":
@@ -278,7 +416,7 @@ def main():
         elif args.command == "stop" and folder and (active or board_lock(folder).exists()):
             wait_for_stop(folder)
             print(f"Stopped. Clips are in {folder}", flush=True)
-            finalize_board(folder, wait=True)
+            finalize_session(folder)
         elif not active:
             print(f"No active recording. Last folder: {folder}" if folder else "No active recording.")
             if folder and folder.is_dir() and args.command == "status":
@@ -286,6 +424,8 @@ def main():
         else:
             print(f"Recording to {folder}")
             print(board_status(folder))
+        if args.command == "status":
+            print("Watchdog: on" if keep_file().exists() and watch_loaded() else "Watchdog: off")
 
 
 if __name__ == "__main__":
@@ -294,6 +434,9 @@ if __name__ == "__main__":
             record(Path(sys.argv[2]), int(sys.argv[3]))
         elif len(sys.argv) == 3 and sys.argv[1] == "_board":
             record_board(Path(sys.argv[2]))
+        elif len(sys.argv) == 2 and sys.argv[1] == "_watch":
+            STATE.mkdir(parents=True, mode=0o700, exist_ok=True)
+            watch()
         else:
             main()
     except (OSError, RuntimeError, subprocess.CalledProcessError) as error:

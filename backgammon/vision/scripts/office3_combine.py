@@ -46,8 +46,13 @@ def probe(path):
 def align_wide_clips(folder):
     clips = []
     for path in sorted(folder.glob("office-3-wide_*.mp4")):
-        streams = probe(path)
-        video = next(stream for stream in streams if stream["codec_type"] == "video")
+        try:
+            streams = probe(path)
+            video = next(stream for stream in streams if stream["codec_type"] == "video")
+        except (subprocess.CalledProcessError, StopIteration):
+            # A recorder killed mid-clip leaves a file without its index.
+            print(f"Skipping unreadable clip {path.name}")
+            continue
         clips.append(WideClip(path, path.stat().st_birthtime, float(video["duration"]),
                               int(video["nb_frames"]), any(s["codec_type"] == "audio" for s in streams),
                               float(video.get("start_time", 0))))
