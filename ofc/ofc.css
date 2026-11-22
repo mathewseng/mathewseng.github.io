@@ -756,12 +756,16 @@ body:has(> .ofc-shell) {
   font-size: var(--t-xs);
 }
 
-.cribbage-garbage-row {
-  grid-template-columns: minmax(0, 190px) minmax(0, 1fr);
+.cribbage-hand-reference [hidden] {
+  display: none;
+}
+
+.cribbage-bonus-row {
+  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
   align-items: start;
 }
 
-.rules-article .cribbage-garbage-hands {
+.rules-article .cribbage-hand-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 2px 12px;
@@ -769,13 +773,66 @@ body:has(> .ofc-shell) {
   list-style: none;
 }
 
-.rules-article .cribbage-garbage-hands li {
+.rules-article .cribbage-hand-chips li {
   font-size: var(--t-sm);
 }
 
-.cribbage-hand-explanation,
-.cribbage-hand-breakdown,
-.cribbage-score-gap-note {
+.rules-article .cribbage-hand-chips li.is-exact {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.cribbage-hand-search {
+  max-width: 320px;
+  padding-bottom: 4px;
+}
+
+.cribbage-hand-search input {
+  font-family: var(--font-mono);
+}
+
+.cribbage-score-jump {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 0;
+  background: var(--surface);
+}
+
+.cribbage-score-jump button {
+  min-width: 34px;
+  min-height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--line-opaque);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.cribbage-score-jump button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cribbage-score-group {
+  scroll-margin-top: 52px;
+}
+
+.cribbage-hand-search-status {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.cribbage-hand-breakdown {
   color: var(--muted);
   font-size: var(--t-sm);
 }
@@ -792,8 +849,18 @@ body:has(> .ofc-shell) {
     grid-template-columns: 1fr;
   }
 
-  .cribbage-garbage-row {
+  .cribbage-bonus-row {
     grid-template-columns: 1fr;
+  }
+
+  .cribbage-score-jump {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .cribbage-score-jump button {
+    flex: none;
   }
 }
 
