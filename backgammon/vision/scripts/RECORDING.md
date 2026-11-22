@@ -1,8 +1,9 @@
-# Office-3 wide camera recording
+# Office-3 recording
 
 Run the recorder on your Mac from a terminal. It needs Python 3, FFmpeg and
-ffprobe on your `PATH`, and SSH key access to `rf-admin@office-3`. It uses the
-Office-3 wide RTSP relay through its own SSH tunnel.
+ffprobe on your `PATH`, and SSH key access to `rf-admin@office-3` with
+passwordless `sudo`. It records video from the Office-3 wide RTSP relay through
+its own SSH tunnel and audio from the Board camera's NDI feed.
 
 From the root of the `mathewseng.github.io` checkout, install it once.
 
@@ -10,6 +11,7 @@ From the root of the `mathewseng.github.io` checkout, install it once.
 mkdir -p "$HOME/.local/bin"
 install -m 755 backgammon/vision/scripts/office3-record "$HOME/.local/bin/office3-record"
 install -m 644 backgammon/vision/scripts/office3_combine.py "$HOME/.local/bin/office3_combine.py"
+install -m 644 backgammon/vision/scripts/office3_board_audio.py "$HOME/.local/bin/office3_board_audio.py"
 ```
 
 Start, check, and stop the recording.
@@ -23,8 +25,10 @@ Start, check, and stop the recording.
 - Each start creates a new `office-3-wide-…` folder in `~/Downloads` and
   prints its path once video is being written. The recorder continues after
   you close the terminal. Keep your Mac awake and connected to Office-3.
-- Clips are playable MP4s with the camera video and audio when the feed
-  provides it. The recorder targets 60 seconds per clip and splits on the
+- `start` reports `Board audio: recording` once the first Board chunk
+  arrives, and `status` shows how recent the newest chunk is. If Board audio
+  is missing from a running recording, run `start` again to add it.
+- Clips are playable MP4s with the wide video and its own soundtrack. The recorder targets 60 seconds per clip and splits on the
   camera's keyframes, so the actual lengths can vary slightly.
 - Sort the clips by filename to get recording order within the folder. The
   first number is the connection attempt and the second is the clip sequence.
@@ -35,11 +39,17 @@ Start, check, and stop the recording.
 - To record to an external drive, use
   `~/.local/bin/office3-record start --output-dir "/Volumes/Your Drive/Recordings"`.
 
-## Combine with Board camera audio
+## Board camera audio
 
-For a session that has a `board-audio/` directory with WAVs and timestamp
-receipts from the native NDI receiver, `stop` also writes one
-`wide-with-board-audio.mp4`. It keeps every wide video frame and uses the
+While the wide camera records, the recorder runs the hand recorder's native NDI
+audio receiver inside `rf-os-hand-recorder-1` on Office-3. It saves 5-second
+WAVs with timestamp receipts in the session's `board-audio/` folder and logs to
+`.board-audio.log`. If the connection drops, it reconnects every 10 seconds
+until the wide recording stops. The receiver works in the container's 64 MiB
+`/dev/shm`, which the hand recorder also uses, so it stops if chunks back up
+there.
+
+`stop` writes one `wide-with-board-audio.mp4`. It keeps every wide video frame and uses the
 original wide soundtrack before Board capture starts and wherever Board samples
 are missing. The wide MP4s and Board WAVs stay in the recording folder.
 
@@ -57,7 +67,9 @@ wide video.
 ## Troubleshooting
 
 If nothing starts or a recording ends early, run `status` for the last
-folder and read its `.recording.log`. Check the Office-3 connection with
+folder and read its `.recording.log`, or `.board-audio.log` for Board audio.
+Board audio needs `rf-os-hand-recorder-1` running and free space on Office-3.
+Check both with `ssh rf-admin@office-3 'df -h /; sudo docker ps'`. Check the Office-3 connection with
 `ssh -o BatchMode=yes rf-admin@office-3 true`. The recorder retries dropped
 streams up to twice per session. It requires 2 GiB of free space and stops
 gracefully if the volume drops below that threshold. The previous wide

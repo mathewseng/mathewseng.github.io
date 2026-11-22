@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Record the Office-3 wide camera to local MP4 files."""
+"""Record the Office-3 wide camera video and Board camera audio to local files."""
 
 import argparse
 from contextlib import contextmanager
@@ -20,6 +20,7 @@ SSH_HOST = "rf-admin@office-3"
 RELAY = "127.0.0.1:18554"
 MIN_FREE = 2 * 1024**3
 START_TIMEOUT = 35
+BOARD_START_TIMEOUT = 20
 STOP_TIMEOUT = 25
 STATE = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "office3-record"
 
@@ -136,6 +137,56 @@ def board_lock(folder):
     return folder / "board-audio" / ".lock"
 
 
+def board_module():
+    try:
+        import office3_board_audio
+    except ImportError as error:
+        raise RuntimeError("Install office3_board_audio.py next to office3-record to record Board audio") from error
+    return office3_board_audio
+
+
+def board_receipts(folder):
+    return sorted((folder / "board-audio").glob("board_*.json"))
+
+
+def board_status(folder):
+    receipts = board_receipts(folder)
+    running = board_module().is_capturing(folder)
+    if not receipts:
+        return "Board audio: connecting" if running else "Board audio: not recorded"
+    age = time.time() - receipts[-1].stat().st_mtime
+    state = "recording" if running else "stopped"
+    return f"Board audio: {state}, {len(receipts)} chunks, newest {age:.0f} s ago"
+
+
+def start_board(folder):
+    board = board_module()
+    if board.is_capturing(folder):
+        print(board_status(folder))
+        return
+    before = len(board_receipts(folder))
+    log_file = folder / ".board-audio.log"
+    with log_file.open("a") as log:
+        worker = subprocess.Popen([
+            sys.executable, "-u", str(Path(__file__).resolve()), "_board", str(folder),
+        ], stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+    deadline = time.monotonic() + BOARD_START_TIMEOUT
+    while worker.poll() is None and time.monotonic() < deadline:
+        if len(board_receipts(folder)) > before:
+            print("Board audio: recording")
+            return
+        time.sleep(0.2)
+    if worker.poll() is None:
+        print(f"Board audio has not arrived yet. It keeps retrying. Check {log_file}")
+    else:
+        print(f"Board audio did not start. Check {log_file}")
+
+
+def record_board(folder):
+    stop_request = folder / ".stop-requested"
+    board_module().capture(folder, SSH_HOST, lambda: stop_request.exists() or not is_recording())
+
+
 def finalize_board(folder, wait=False):
     if not (folder / "board-audio").is_dir():
         if wait:
@@ -160,7 +211,11 @@ def finalize_board(folder, wait=False):
 
 def start(output_dir):
     if is_recording():
-        raise RuntimeError(f"Already recording in {latest_folder()}")
+        # Starting again adds Board audio to a wide recording that lacks it.
+        folder = latest_folder()
+        print(f"Already recording to {folder}")
+        start_board(folder)
+        return
     for tool in ("ffmpeg", "ssh"):
         if not shutil.which(tool):
             raise RuntimeError(f"{tool} is required on PATH")
@@ -185,6 +240,7 @@ def start(output_dir):
         while worker.poll() is None and time.monotonic() < deadline:
             if first_clip_exists(folder):
                 print(f"Recording to {folder}")
+                start_board(folder)
                 return
             time.sleep(0.2)
     except KeyboardInterrupt:
@@ -197,10 +253,10 @@ def start(output_dir):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    start_command = commands.add_parser("start", help="Start a background recording")
+    start_command = commands.add_parser("start", help="Start a background recording, or add missing Board audio")
     start_command.add_argument("--output-dir", type=Path, default=Path.home() / "Downloads",
                                help="Parent folder for new recordings (default: ~/Downloads)")
-    commands.add_parser("stop", help="Stop recording and combine available Board audio with the wide clips")
+    commands.add_parser("stop", help="Stop recording and combine the Board audio with the wide clips")
     commands.add_parser("status", help="Show whether recording is active and where clips are saved")
     combine_command = commands.add_parser("combine", help="Retry a combined export from a stopped recording")
     combine_command.add_argument("folder", type=Path, nargs="?", help="Recording directory (default: last session)")
@@ -225,14 +281,19 @@ def main():
             finalize_board(folder, wait=True)
         elif not active:
             print(f"No active recording. Last folder: {folder}" if folder else "No active recording.")
+            if folder and folder.is_dir() and args.command == "status":
+                print(board_status(folder))
         else:
             print(f"Recording to {folder}")
+            print(board_status(folder))
 
 
 if __name__ == "__main__":
     try:
         if len(sys.argv) == 4 and sys.argv[1] == "_record":
             record(Path(sys.argv[2]), int(sys.argv[3]))
+        elif len(sys.argv) == 3 and sys.argv[1] == "_board":
+            record_board(Path(sys.argv[2]))
         else:
             main()
     except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
