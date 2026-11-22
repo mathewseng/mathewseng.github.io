@@ -77,9 +77,11 @@ the separate throws after the game board was cleared.
 
 ## Nov 21, 2026 session
 
-The [Nov 21 page](2026-11-21/) shows four games played on the orange wooden
-board, with Board-camera audio. Its MP4s are assets on the
-[Office-3 Nov 21 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261121-v1).
+The [Nov 21 page](2026-11-21/) shows nine games played on the orange wooden
+board, with Board-camera audio. Games 1–4 come from the 7:01 PM recording,
+Games 5–6 from 9:33 PM and Games 7–9 from 10:19 PM. Game 6 and Game 9
+continue past the end of their recordings, so they have no result. Its MP4s are assets on the
+[Office-3 Nov 21 release](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261121-v2).
 The checker, dice and cube readers were retrained for the new board, and
 every turn is reconstructed as a legal move chain and scored at four ply.
 The session links above the game list switch between recordings. The

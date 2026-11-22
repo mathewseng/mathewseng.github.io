@@ -76,3 +76,25 @@ Review
   review_sheet.py draws the decoded counts over the board after every turn.
   dice_review.py shows both dice for every turn whose roll the move does not
   fix. Both were used for the published v1 replay.
+
+Several recordings in one evening
+
+  Each recording gets its own work directory (BG_RECORDING_DIR and
+  BG_WORK_DIR); copy ref/ and the models from the first one when the board
+  has not moved. A clip cut off by a hard stop is skipped, matching the
+  combined MP4. A recording that begins mid-game starts a fragment game at
+  its first long, complete view; bar and borne-off counts follow from the
+  15-checker inventory. The face reader can learn from every recording:
+
+    python3 dice_faces.py decode.json faces.pt --extra other-decode.json@other-work-dir ...
+    python3 die_filter.py --score models/die-v0.pt
+
+  Games are numbered across the evening in one combined analysis folder
+  (game-NN.json carries the source recording in "session"); render each game
+  with its own recording's environment. Dances get a roll from the rolls that
+  block every entry (resolve_dances.mjs). The page serves 720p copies
+  (libx264 CRF 28) because the published site includes every video and
+  GitHub Pages caps the site at about 1 GB.
+
+  Reviewed rolls for the later recordings are in reviewed-rolls-2133.json and
+  reviewed-rolls-2219.json (game numbers there are per recording).

@@ -955,7 +955,7 @@
       "name": "Backgammon Vision · Nov 21",
       "path": "/backgammon/vision/2026-11-21/",
       "category": "backgammon",
-      "description": "Four games on the orange board with detected rolls, cube actions, and four-ply GNUbg analysis.",
+      "description": "Nine games on the orange board with detected rolls, cube actions, and four-ply GNUbg analysis.",
       "historyPath": "backgammon/vision/2026-11-21/index.html",
       "sourcePaths": [
         "backgammon/vision/2026-11-21/"

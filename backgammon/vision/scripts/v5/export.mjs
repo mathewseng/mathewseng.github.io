@@ -106,7 +106,13 @@ for (const g of games.map(Number)) {
         state = transition(state, { type: 'roll', dice: t.roll }, s);
       }
       rolls.push({ start: rollAt, player: t.player, dice: t.roll, pickup: t.pickupFrame ? vf(t.pickupFrame) : null, resultFrame: resultAt, source: t.rollSource });
-      if (t.dance || !t.steps) { if (!t.dance) throw new Error('move unknown'); continue; }
+      if (t.dance) {
+        events.push({ action: { type: 'move', steps: [] }, actor: s, videoFrame: resultAt });
+        actions.push({ frame: resultAt, player: t.player, kind: 'checker', label: 'cannot enter', equity: null, loss: null });
+        state = transition(state, { type: 'move', steps: [] }, s);
+        continue;
+      }
+      if (!t.steps) throw new Error('move unknown');
       const res = t.analysis ? checkerResult(state, t) : null;
       const ev = { action: { type: 'move', steps: t.steps }, actor: s, videoFrame: resultAt };
       if (res) ev.evaluation = { result: res };

@@ -1,0 +1,122 @@
+[
+ {
+  "game": 1,
+  "resultFrame": 7714,
+  "player": "white",
+  "roll": [
+   6,
+   1
+  ],
+  "note": "Visible die shows six."
+ },
+ {
+  "game": 1,
+  "resultFrame": 16063,
+  "player": "white",
+  "roll": [
+   3,
+   1
+  ],
+  "note": "Visible die shows three."
+ },
+ {
+  "game": 1,
+  "resultFrame": 19491,
+  "player": "dark",
+  "roll": [
+   5,
+   1
+  ],
+  "note": "A die shows five."
+ },
+ {
+  "game": 1,
+  "resultFrame": 19910,
+  "player": "dark",
+  "roll": [
+   4,
+   3
+  ],
+  "note": "Dice show three and four."
+ },
+ {
+  "game": 3,
+  "resultFrame": 47700,
+  "player": "dark",
+  "roll": [
+   3,
+   2
+  ],
+  "note": "Visible die shows three."
+ },
+ {
+  "game": 3,
+  "resultFrame": 48228,
+  "player": "white",
+  "roll": [
+   6,
+   1
+  ],
+  "note": "Visible die shows one."
+ },
+ {
+  "game": 3,
+  "resultFrame": 67098,
+  "player": "white",
+  "roll": [
+   6,
+   1
+  ],
+  "note": "Dice show six and one."
+ },
+ {
+  "game": 3,
+  "resultFrame": 70040,
+  "player": "white",
+  "roll": [
+   6,
+   1
+  ],
+  "note": "A die shows six; 6-1 is the only candidate with a six."
+ },
+ {
+  "game": 3,
+  "resultFrame": 82020,
+  "player": "dark",
+  "roll": [
+   3,
+   2
+  ],
+  "note": "Dice show two and three."
+ },
+ {
+  "game": 3,
+  "resultFrame": 83629,
+  "player": "white",
+  "roll": [
+   6,
+   2
+  ],
+  "note": "Visible die shows six."
+ },
+ {
+  "game": 3,
+  "resultFrame": 84418,
+  "player": "white",
+  "roll": [
+   6,
+   3
+  ],
+  "note": "Visible die shows six."
+ },
+ {
+  "game": 3,
+  "resultFrame": 85128,
+  "player": "white",
+  "roll": [
+   6,
+   3
+  ],
+  "note": "Visible die shows three."
+ }
+]

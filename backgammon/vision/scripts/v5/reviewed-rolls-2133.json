@@ -1,0 +1,22 @@
+[
+ {
+  "game": 2,
+  "resultFrame": 4403,
+  "player": "dark",
+  "roll": [
+   3,
+   1
+  ],
+  "note": "Dice show one and three."
+ },
+ {
+  "game": 3,
+  "resultFrame": 8319,
+  "player": "white",
+  "roll": [
+   3,
+   1
+  ],
+  "note": "Visible die shows three; 3-1 is the only candidate with a three."
+ }
+]

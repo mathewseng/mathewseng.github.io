@@ -105,7 +105,8 @@ for (const g of gameArgs.map(Number)) {
       out.position = { equity: c.equity, probabilities: c.probabilities };
     }
     // offered cube inside this window
-    const offer = events.find(e => e.type === 'offer' && e.player === t.player && e.frame > prevFrame && e.frame <= rollAt);
+    const offer = (cube.owner === null || cube.owner === s) &&
+      events.find(e => e.type === 'offer' && e.player === t.player && e.frame > prevFrame && e.frame <= rollAt);
     if (offer) {
       const reply = events.find(e => e.frame > offer.frame && (e.type === 'take' || e.type === 'pass'));
       offer.value = cube.value * 2;
@@ -141,8 +142,10 @@ for (const g of gameArgs.map(Number)) {
   // An offer after the last turn: the next player's pre-roll cube action ends the game.
   const lastTurn = decodeTurns.at(-1);
   const trailing = !result && events.find(e => e.type === 'offer' && !e.player && e.frame > (lastTurn?.frame ?? game.startFrame));
-  if (trailing) {
-    const p = lastTurn ? (lastTurn.player === 'white' ? 'dark' : 'white') : null;
+  const nextPlayer = lastTurn ? (lastTurn.player === 'white' ? 'dark' : 'white') : null;
+  // Only a player who may double can make an offer; other cube movements are handling.
+  if (trailing && (cube.owner === null || cube.owner === SIDE[nextPlayer])) {
+    const p = nextPlayer;
     const s = SIDE[p], before = lastTurn.after;
     trailing.player = p; trailing.value = cube.value * 2;
     const reply = events.find(e => e.frame > trailing.frame && (e.type === 'take' || e.type === 'pass'));

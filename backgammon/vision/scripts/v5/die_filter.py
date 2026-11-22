@@ -27,6 +27,13 @@ def score(net, patches, idx, batch=512):
 
 
 if __name__ == '__main__':
+    if sys.argv[1] == '--score':
+        # Score this session's candidates with an existing model.
+        meta, patches = df.load_scan()
+        net = DieNet(); net.load_state_dict(torch.load(sys.argv[2], map_location='cpu')); net.eval().to(dev)
+        sc = score(net, patches, np.arange(len(meta)))
+        np.save(WORK / 'dice-scan/die-score.npy', sc); print('dice-like', int((sc > .5).sum()), 'of', len(sc))
+        sys.exit(0)
     meta, patches = df.load_scan()
     pick = np.load(WORK / 'labels/die-grid-idx.npy')
     pos = set(json.loads((WORK / 'labels/die-grid.json').read_text())['positive'])

@@ -15,19 +15,22 @@ dev = 'mps' if torch.backends.mps.is_available() else 'cpu'
 COLOUR = {'white': 0, 'dark': 1}  # meta[:,4]: 1 = red (dark)
 
 
-def load_scan():
+def load_scan(work=None):
+    work = Path(work) if work else WORK
     metas, patches = [], []
-    for p in sorted(glob.glob(str(WORK / 'dice-scan/clip-*.npz'))):
+    for p in sorted(glob.glob(str(work / 'dice-scan/clip-*.npz'))):
         z = np.load(p); metas.append(z['meta']); patches.append(z['patches'])
     return np.concatenate(metas), np.concatenate(patches)
 
 
 DIE_SCORE = None
-def tracks(meta, f0, f1, red):
+def tracks(meta, f0, f1, red, score=None):
     """Persistent dice in a frame window: list of index arrays, most persistent first."""
     global DIE_SCORE
-    if DIE_SCORE is None: DIE_SCORE = np.load(WORK / 'dice-scan/die-score.npy')
-    sel = np.nonzero((meta[:, 0] > f0) & (meta[:, 0] <= f1) & (meta[:, 4] == red) & (DIE_SCORE > .5))[0]
+    if score is None:
+        if DIE_SCORE is None: DIE_SCORE = np.load(WORK / 'dice-scan/die-score.npy')
+        score = DIE_SCORE
+    sel = np.nonzero((meta[:, 0] > f0) & (meta[:, 0] <= f1) & (meta[:, 4] == red) & (score > .5))[0]
     cells = collections.defaultdict(list)
     for i in sel: cells[(int(meta[i, 1] // 10), int(meta[i, 2] // 10))].append(i)
     # merge neighbouring cells
@@ -40,17 +43,17 @@ def tracks(meta, f0, f1, red):
     return sorted(groups, key=len, reverse=True)
 
 
-def examples(decode, meta):
+def examples(decode, meta, score=None, source=0):
     out = []
     for gi, g in enumerate(decode['games'], 1):
         prev = g['startFrame']
         for t in g['turns']:
             red = 1 if t['player'] == 'dark' else 0
             start = t.get('fromFrame', prev)
-            tr = tracks(meta, start, t['frame'], red)
+            tr = tracks(meta, start, t['frame'], red, score)
             if t['rolls'] and len(tr) >= 2 and not t.get('inferred'):
                 sets = [tuple(map(int, r.split('-'))) for r in t['rolls']]
-                out.append({'game': gi, 'frame': t['frame'], 'faces': sets[0], 'sets': sets, 'tracks': tr[:2]})
+                out.append({'game': gi, 'source': source, 'frame': t['frame'], 'faces': sets[0], 'sets': sets, 'tracks': tr[:2]})
             prev = t['frame']
     return out
 
@@ -103,9 +106,17 @@ def pair_prob(lp1, lp2):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('decode'); ap.add_argument('out')
     ap.add_argument('--holdout-games', type=int, nargs='*', default=[]); ap.add_argument('--steps', type=int, default=2500)
+    ap.add_argument('--extra', nargs='*', default=[], help='more sessions as decode.json@work-dir (training only)')
     a = ap.parse_args()
     meta, patches = load_scan()
     ex = examples(json.loads(Path(a.decode).read_text()), meta)
+    for k, pair in enumerate(a.extra, 1):
+        dec, work = pair.split('@')
+        m2, p2 = load_scan(work); sc2 = np.load(Path(work) / 'dice-scan/die-score.npy')
+        offset = len(patches)
+        more = examples(json.loads(Path(dec).read_text()), m2, sc2, k)
+        for e in more: e['tracks'] = [t + offset for t in e['tracks']]; e['game'] = 1000 * k + e['game']
+        patches = np.concatenate([patches, p2]); ex += more
     train = [e for e in ex if e['game'] not in a.holdout_games]; test = [e for e in ex if e['game'] in a.holdout_games]
     print('examples', len(ex), 'train', len(train), 'test', len(test))
     net = FaceNet().to(dev); opt = torch.optim.AdamW(net.parameters(), 2e-3, weight_decay=1e-4)

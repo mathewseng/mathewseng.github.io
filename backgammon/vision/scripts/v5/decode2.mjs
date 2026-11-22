@@ -37,9 +37,9 @@ function observations() {
     const pos = r.pos.map((v, i) => known[i] ? v : null);
     if (cur && pos.every((v, i) => v === null || cur.pos[i] === null || v === cur.pos[i])) {
       for (let i = 0; i < 24; i++) if (cur.pos[i] === null && pos[i] !== null) cur.pos[i] = pos[i];
-      cur.n++; cur.f1 = r.f; cur.gap = 0; continue;
+      cur.n++; cur.f1 = r.f; cur.gap = 0; cur.raw = r.pos; continue;
     }
-    flush(); cur = { f0: r.f, f1: r.f, n: 1, gap: 0, pos };
+    flush(); cur = { f0: r.f, f1: r.f, n: 1, gap: 0, pos, raw: r.pos };
   }
   flush();
   for (const o of out) { o.full = o.pos.every(v => v !== null); o.tall = o.pos.some(v => v !== null && Math.abs(v) >= 5); o.key = o.full ? pkey(o.pos) : null; o.w = Math.min(o.n, 60); }
@@ -111,10 +111,24 @@ function partialOf(o, a, b) {
 }
 
 // ---- dynamic programme per game ----------------------------------------
-function decodeGame(obs, g0, g1) {
+/** Full state for a mid-game first view: missing checkers are on the bar, or
+ * borne off once every remaining checker of that side is home. */
+function stateFromObservation(points) {
+  const bar = [0, 0], off = [0, 0];
+  for (const side of [0, 1]) {
+    const sg = side ? -1 : 1;
+    const onBoard = points.reduce((n, v) => n + Math.max(0, v * sg), 0);
+    const missing = 15 - onBoard;
+    const allHome = points.every((v, i) => v * sg <= 0 || (side ? i >= 18 : i <= 5));
+    if (allHome) off[side] = missing; else bar[side] = missing;
+  }
+  return { points, bar, off };
+}
+
+function decodeGame(obs, g0, g1, fragment = false) {
   // nodes[k] : Map stateKey -> {cost, prev, state, mover, turns}
   const nodes = Array.from({ length: g1 - g0 }, () => new Map());
-  const startState = { points: START, bar: [0, 0], off: [0, 0] };
+  const startState = fragment ? stateFromObservation(obs[g0].pos.map((v, i) => v ?? obs[g0].raw[i])) : { points: START, bar: [0, 0], off: [0, 0] };
   nodes[0].set('start', { cost: 0, state: startState, mover: null, turns: [], k: 0 });
   const relax = (k, key, cand) => {
     const cur = nodes[k].get(key);
@@ -198,16 +212,23 @@ const starts = [];
 for (let i = 0; i < obs.length; i++) {
   if (obs[i].key === START_KEY && obs[i].n >= 10 && (!starts.length || obs.slice(starts.at(-1) + 1, i).some(o => o.key !== START_KEY))) starts.push(i);
 }
+// A recording that begins mid-game: the first long, complete view starts a fragment.
+const firstStart = starts.length ? starts[0] : obs.length;
+const lead = obs.slice(0, firstStart).findIndex(o => o.n >= 20 && o.pos.filter(v => v === null).length <= 1);
+const segments = starts.map(s => ({ s, fragment: false }));
+if (lead >= 0) segments.unshift({ s: lead, fragment: true });
 const games = [];
-for (let g = 0; g < starts.length; g++) {
+for (let g = 0; g < segments.length; g++) {
   // a game's observations begin at its last opening view
-  let g0 = starts[g]; const g1 = g + 1 < starts.length ? starts[g + 1] : obs.length;
-  while (g0 + 1 < g1 && obs[g0 + 1].key === START_KEY) g0++;
-  const best = decodeGame(obs, g0, g1);
+  let g0 = segments[g].s; const g1 = g + 1 < segments.length ? segments[g + 1].s : obs.length;
+  const fragment = segments[g].fragment;
+  while (!fragment && g0 + 1 < g1 && obs[g0 + 1].key === START_KEY) g0++;
+  const best = decodeGame(obs, g0, g1, fragment);
   const turns = best.turns.map(t => ({ ...t, frame: obs[t.obs].f0, fromFrame: obs[t.fromObs].f1,
     rolls: [...new Set(t.plays.map(p => p.dice.join('-')))], plays: t.plays.slice(0, 60) }));
   const explained = new Set(best.turns.map(t => t.obs));
-  games.push({ startFrame: obs[g0].f0, endFrame: obs[g1 - 1].f1, cost: +best.total.toFixed(1), turns,
+  games.push({ startFrame: obs[g0].f0, endFrame: obs[g1 - 1].f1, cost: +best.total.toFixed(1), turns, fragment,
+    initial: fragment ? stateFromObservation(obs[g0].pos.map((v, i) => v ?? obs[g0].raw[i])) : null,
     final: best.state, unexplained: obs.slice(g0, g1).filter((o, i) => !explained.has(g0 + i) && o.n >= 25 && !consistent(o, best.state.points)).length });
 }
 fs.writeFileSync(outFile, JSON.stringify({ observations: obs.length, games }, null, 1));
