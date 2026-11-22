@@ -501,6 +501,42 @@ assert.equal(
   "cribbage reference: exactly 764 natural five-card hands should score 24+"
 );
 
+// Garbage reference: every poker high-card rank set (no pair, straight or
+// five-card flush) whose best suiting reaches 11 cribbage points.
+const listedGarbageHands = new Map();
+core.cribbageGarbageHands().forEach((tier, tierIndex, tiers) => {
+  if (tierIndex) assert.ok(tiers[tierIndex - 1].rankPoints < tier.rankPoints, "cribbage garbage: tiers should run lowest to highest");
+  tier.groups.forEach(({ components, hands }) => {
+    assert.equal(components.reduce((sum, [, points]) => sum + points, 0), tier.rankPoints, "cribbage garbage: breakdown should total the tier");
+    hands.forEach((label) => listedGarbageHands.set(label, tier.rankPoints));
+  });
+});
+const actualGarbageHands = new Map();
+const garbageRankLabels = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"];
+for (let set = 0; set < 1 << 13; set += 1) {
+  const values = garbageRankLabels.map((_, index) => index + 1).filter((value) => set & (1 << (value - 1)));
+  if (values.length !== 5) continue;
+  if (values[4] - values[0] === 4 || values.join() === "1,10,11,12,13") continue;
+  const label = values.map((value) => garbageRankLabels[value - 1]).join("");
+  let minimum = Infinity;
+  let maximum = -Infinity;
+  for (let suiting = 0; suiting < 1024; suiting += 1) {
+    const suits = values.map((_, index) => "shdc"[(suiting >> (index * 2)) & 3]);
+    if (new Set(suits).size === 1) continue;
+    const score = core.cribbageScoreTotal(values.map((_, index) => core.makeCard(`${label[index]}${suits[index]}`)));
+    minimum = Math.min(minimum, score);
+    maximum = Math.max(maximum, score);
+  }
+  if (maximum >= 11) actualGarbageHands.set(label, minimum);
+}
+assert.deepEqual(
+  sortedEntries(listedGarbageHands),
+  sortedEntries(actualGarbageHands),
+  "cribbage garbage: the list should cover exactly the high-card rank sets that can score 11+, at their suitless rank points"
+);
+assert.equal(listedGarbageHands.size, 251, "cribbage garbage: 251 high-card rank sets can score 11+");
+assert.equal(listedGarbageHands.get("5TJQK"), 12, "cribbage garbage: 5TJQK qualifies on ranks alone");
+
 const cribbageOuterRows = {
   top: ["2c", "3d", "4h"],
   bottom: ["As", "Ah", "Ad", "9c", "8d"],
