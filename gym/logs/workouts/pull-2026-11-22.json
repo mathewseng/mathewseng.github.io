@@ -1,0 +1,215 @@
+{
+  "id": "pull-2026-11-22",
+  "date": "2026-11-22",
+  "startTime": "14:00",
+  "durationMinutes": 80,
+  "type": "pull",
+  "title": "November 22 Pull Workout",
+  "chronologyIndex": 32,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "strict-pull-up",
+      "name": "Overhand Pull-Up",
+      "equipment": "Pull-up bar",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-22-strict-pull-up-1",
+          "reps": 5,
+          "completed": true
+        },
+        {
+          "id": "2026-11-22-strict-pull-up-2",
+          "reps": 4,
+          "completed": true
+        },
+        {
+          "id": "2026-11-22-strict-pull-up-3",
+          "reps": 4,
+          "completed": true
+        },
+        {
+          "id": "2026-11-22-strict-pull-up-4",
+          "reps": 4,
+          "completed": true
+        }
+      ],
+      "notes": "Overhand grip confirmed. Strict form not specified."
+    },
+    {
+      "exerciseId": "reverse-cable-fly",
+      "name": "Reverse Cable Fly",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-22-reverse-cable-fly-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 10
+        },
+        {
+          "id": "2026-11-22-reverse-cable-fly-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 12.5
+        },
+        {
+          "id": "2026-11-22-reverse-cable-fly-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15
+        }
+      ],
+      "notes": "Ten reps at each reported load. Cable setup and load convention unspecified."
+    },
+    {
+      "exerciseId": "seated-cable-row",
+      "name": "Seated Two-Arm Cable Row",
+      "equipment": "Cable machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-22-seated-cable-row-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 80
+        },
+        {
+          "id": "2026-11-22-seated-cable-row-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 80
+        },
+        {
+          "id": "2026-11-22-seated-cable-row-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 80
+        },
+        {
+          "id": "2026-11-22-seated-cable-row-4",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 80
+        }
+      ],
+      "notes": "Seated bilateral setup. Machine identity unspecified."
+    },
+    {
+      "exerciseId": "incline-curl",
+      "name": "Incline Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-22-incline-curl-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-22-incline-curl-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-22-incline-curl-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15,
+          "perSide": true
+        }
+      ],
+      "notes": "Per-dumbbell load follows prior records."
+    },
+    {
+      "exerciseId": "spider-curl",
+      "name": "Spider Dumbbell Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-22-spider-curl-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 20,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-22-spider-curl-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 20,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-22-spider-curl-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 20,
+          "perSide": true
+        }
+      ],
+      "notes": "Per-dumbbell load follows prior records."
+    },
+    {
+      "exerciseId": "preacher-dumbbell-curl",
+      "name": "Single-Arm Dumbbell Preacher Curl",
+      "equipment": "Dumbbells",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-22-preacher-dumbbell-curl-1",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-22-preacher-dumbbell-curl-2",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15,
+          "perSide": true
+        },
+        {
+          "id": "2026-11-22-preacher-dumbbell-curl-3",
+          "reps": 10,
+          "completed": true,
+          "weightLb": 15,
+          "perSide": true
+        }
+      ],
+      "notes": "Single-arm exercise. Reps recorded as supplied, with completion on both arms unconfirmed."
+    },
+    {
+      "exerciseId": "reverse-crunch",
+      "name": "Bench Reverse Crunch",
+      "equipment": "Bench",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "2026-11-22-reverse-crunch-1",
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-22-reverse-crunch-2",
+          "reps": 10,
+          "completed": true
+        },
+        {
+          "id": "2026-11-22-reverse-crunch-3",
+          "reps": 10,
+          "completed": true
+        }
+      ],
+      "notes": "Lying bench leg raise with a hip lift, as clarified before logging."
+    }
+  ]
+}

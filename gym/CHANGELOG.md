@@ -2,6 +2,10 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-11-22 — Pull Workout
+
+- Logged 17 overhand pull-ups, seated two-arm cable rows, and bench reverse crunches in the 80-minute session.
+
 ## 2026-11-19 — Push Workout
 
 - Logged four sets of six at 95 lb flat bench and 65 lb incline, with about 1–2 reps in reserve per bench set.
