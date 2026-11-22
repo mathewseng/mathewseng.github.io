@@ -132,6 +132,32 @@ def wait_for_stop(folder):
         time.sleep(0.2)
 
 
+def board_lock(folder):
+    return folder / "board-audio" / ".lock"
+
+
+def finalize_board(folder, wait=False):
+    if not (folder / "board-audio").is_dir():
+        if wait:
+            return
+        raise RuntimeError(f"No Board audio directory in {folder}")
+    try:
+        from office3_combine import combine
+    except ImportError as error:
+        raise RuntimeError("Install office3_combine.py next to office3-record to combine Board audio") from error
+    deadline = time.monotonic() + (STOP_TIMEOUT if wait else 0)
+    with board_lock(folder).open("a") as lock:
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(f"Board audio is still recording in {folder}")
+                time.sleep(0.2)
+        print(f"Combined MP4: {combine(folder, SSH_HOST)}")
+
+
 def start(output_dir):
     if is_recording():
         raise RuntimeError(f"Already recording in {latest_folder()}")
@@ -174,8 +200,10 @@ def main():
     start_command = commands.add_parser("start", help="Start a background recording")
     start_command.add_argument("--output-dir", type=Path, default=Path.home() / "Downloads",
                                help="Parent folder for new recordings (default: ~/Downloads)")
-    commands.add_parser("stop", help="Stop recording and finalize the last MP4")
+    commands.add_parser("stop", help="Stop recording and combine available Board audio with the wide clips")
     commands.add_parser("status", help="Show whether recording is active and where clips are saved")
+    combine_command = commands.add_parser("combine", help="Retry a combined export from a stopped recording")
+    combine_command.add_argument("folder", type=Path, nargs="?", help="Recording directory (default: last session)")
     args = parser.parse_args()
     STATE.mkdir(parents=True, mode=0o700, exist_ok=True)
     with locked_file("control.lock"):
@@ -183,11 +211,20 @@ def main():
             start(args.output_dir)
             return
         folder = latest_folder()
-        if not is_recording():
-            print(f"No active recording. Last folder: {folder}" if folder else "No active recording.")
-        elif args.command == "stop":
+        active = is_recording()
+        if args.command == "combine":
+            target = args.folder.expanduser().resolve() if args.folder else folder
+            if not target or not target.is_dir():
+                raise RuntimeError("Choose a completed recording folder")
+            if active and target == folder:
+                raise RuntimeError("Stop the wide recording before combining it")
+            finalize_board(target)
+        elif args.command == "stop" and folder and (active or board_lock(folder).exists()):
             wait_for_stop(folder)
-            print(f"Stopped. Clips are in {folder}")
+            print(f"Stopped. Clips are in {folder}", flush=True)
+            finalize_board(folder, wait=True)
+        elif not active:
+            print(f"No active recording. Last folder: {folder}" if folder else "No active recording.")
         else:
             print(f"Recording to {folder}")
 
@@ -198,7 +235,7 @@ if __name__ == "__main__":
             record(Path(sys.argv[2]), int(sys.argv[3]))
         else:
             main()
-    except (OSError, RuntimeError) as error:
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
         print(f"office3-record: {error}", file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:
