@@ -888,7 +888,7 @@
       "sourcePaths": [
         "backgammon/play/"
       ],
-      "updated": "2026-11-20",
+      "updated": "2026-11-22",
       "created": "2026-10-04"
     },
     {
@@ -900,7 +900,7 @@
       "sourcePaths": [
         "backgammon/trainer/"
       ],
-      "updated": "2026-11-20",
+      "updated": "2026-11-22",
       "created": "2026-10-04"
     },
     {
@@ -912,7 +912,7 @@
       "sourcePaths": [
         "backgammon/solver/"
       ],
-      "updated": "2026-11-20",
+      "updated": "2026-11-22",
       "created": "2026-10-04"
     },
     {
@@ -924,7 +924,7 @@
       "sourcePaths": [
         "backgammon/library/"
       ],
-      "updated": "2026-11-20",
+      "updated": "2026-11-22",
       "created": "2026-10-04"
     },
     {
@@ -936,7 +936,7 @@
       "sourcePaths": [
         "backgammon/openings/"
       ],
-      "updated": "2026-11-20",
+      "updated": "2026-11-22",
       "created": "2026-10-22"
     },
     {
@@ -960,7 +960,7 @@
       "sourcePaths": [
         "backgammon/vision/2026-11-21/"
       ],
-      "updated": "2026-11-21",
+      "updated": "2026-11-22",
       "created": "2026-11-21"
     },
     {
@@ -972,7 +972,7 @@
       "sourcePaths": [
         "backgammon/controls/"
       ],
-      "updated": "2026-11-20",
+      "updated": "2026-11-22",
       "created": "2026-10-06"
     },
     {
@@ -984,7 +984,7 @@
       "sourcePaths": [
         "backgammon/reports/"
       ],
-      "updated": "2026-11-20",
+      "updated": "2026-11-22",
       "created": "2026-10-06"
     },
     {
@@ -1471,7 +1471,7 @@
       "category": "music",
       "description": "A visual reference for electronic wind instrument fingerings.",
       "created": "2019-06-19",
-      "updated": "2026-11-19",
+      "updated": "2026-11-22",
       "historyPath": "music/ewi-fingerings/index.html",
       "sourcePaths": [
         "music/ewi-fingerings/"
