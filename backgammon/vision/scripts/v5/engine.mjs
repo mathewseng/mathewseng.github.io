@@ -1,6 +1,7 @@
 /** Load the site's GNUbg evaluator from this checkout. */
 import fs from 'node:fs';
 import { createEvaluator } from '../../../engine/evaluate.mjs';
+import { PreferredOpeningBook } from '../../../engine/xg-reference-book.mjs';
 import engineFactory from '../../../engine/vendor/simd/gnubg-core-module.js';
 
 const engineDir = new URL('../../../engine/vendor/', import.meta.url);
@@ -16,4 +17,10 @@ export async function loadEvaluator() {
     print: () => {}, printErr: v => process.stderr.write(v + '\n'),
   });
   return createEvaluator(module);
+}
+
+/** The bot's opening book (XG reference first, GNUbg book otherwise), read from this checkout. */
+export function openingBook() {
+  const fetcher = async url => { try { return new Response(fs.readFileSync(url)); } catch { return new Response('', { status: 404 }); } };
+  return new PreferredOpeningBook({ fetcher });
 }

@@ -12,14 +12,19 @@ net = df.FaceNet(); net.load_state_dict(torch.load(sys.argv[2], map_location='cp
 meta, patches = df.load_scan()
 out = []
 for gi, g in enumerate(decode['games'], 1):
-    prev = g['startFrame']; turns = []
+    prev = start = g['startFrame']; turns = []
     for t in g['turns']:
         red = 1 if t['player'] == 'dark' else 0
-        start = t.get('fromFrame', prev)
+        start = df.window_start(prev, start, t['frame'])  # the dice land while the old position is still on the board
         tr = df.tracks(meta, start, t['frame'], red)
         e = {'frame': t['frame'], 'player': t['player'], 'tracks': len(tr)}
-        # roll onset: first time the roller's dice are detected at least 3 times within 2 s
-        sel = np.nonzero((meta[:, 0] > start - 125) & (meta[:, 0] <= t['frame']) & (meta[:, 4] == red) & (df.DIE_SCORE > .5))[0]
+        # roll onset: first time the roller's dice are detected at least 3 times within 2 s,
+        # not counting dice still lying where the roller's previous dice were
+        sel = np.nonzero((meta[:, 0] > start) & (meta[:, 0] <= t['frame']) & (meta[:, 4] == red) & (df.DIE_SCORE > .3))[0]
+        stale = df.stale_positions(meta, start, red, df.DIE_SCORE)
+        if len(stale):
+            d = np.abs(meta[sel, None, 1:3] - stale[None]).max(-1).min(-1)
+            sel = sel[d > 12]
         fs = np.sort(meta[sel, 0])
         for k in range(len(fs) - 2):
             if fs[k + 2] - fs[k] <= 50: e['onsetFrame'] = int(fs[k]); break

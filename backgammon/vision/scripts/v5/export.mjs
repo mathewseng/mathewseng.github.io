@@ -11,13 +11,18 @@ import { initialState, transition, positionKey, legalTurns, notation, boardKey, 
 
 const [analysisDir, renderDir, pageDir, ...games] = process.argv.slice(2);
 const SIDE = { white: 0, dark: 1 }, NAME = { white: 'White', dark: 'Black' };
-const RULES = { cube: true, jacoby: false, automaticDoubles: 0, immediateRedoubles: 1 };
+import { RULES } from './scoring.mjs';
 const ENGINE = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg10';
 const SETTINGS = { name: 'Research', plies: 4, cubeful: true, pruning: true, deterministic: true, noise: 0, finalists: 4, threshold: 0.04 };
 const DATE = 'Nov 21, 2026', CREATED = Date.UTC(2026, 10, 22);
 for (const dir of ['state', 'history', 'reports']) fs.mkdirSync(path.join(pageDir, dir), { recursive: true });
 
 function checkerResult(source, t) {
+  // Opening-book plays keep the book's own result (method, provenance, credits), as the bot stores them.
+  if (t.analysis.result) {
+    const { requestId, elapsedMs, ...book } = t.analysis.result;
+    return { ...book, positionKey: positionKey(source), cached: true };
+  }
   const turns = legalTurns(source);
   const byNotation = new Map(turns.map(x => [notation(x.steps, source.turn), x]));
   const cand = t.analysis.candidates.map(c => {
@@ -131,7 +136,7 @@ for (const g of games.map(Number)) {
   const result = A.result;
   const item = { version: 1, kind: 'match', id: `office3-20261121-game-${g}`, title: `Office-3 Nov 21 · Game ${g}`, collection: `Office-3 · ${DATE}`,
     tags: ['office-3', 'video'], createdAt: CREATED, updatedAt: CREATED, notes: 'Reconstructed from the Nov 21 Office-3 recording (orange board).',
-    initial, state, events, names: ['White', 'Black'], gameNumber: g, gameCount: 1, status: state.phase === 'over' ? 'complete' : 'in-progress' };
+    initial, state, events, names: ['White', 'Black'], gameNumber: g, gameCount: 1, status: state.phase === 'over' ? 'game-complete' : 'in-progress' };
   const lossBreakdown = ['white', 'dark'].map(p => ({ checkerLoss: loss[p].checker, cubeLoss: loss[p].cube }));
   fs.writeFileSync(path.join(pageDir, 'history', `game-${id}.json`), JSON.stringify({ version: 1, format: 'backgammon-library', progress: [], items: [item],
     replay: { game: g, frameData: true, timeline, losses: lossBreakdown.map(l => l.checkerLoss + l.cubeLoss), lossBreakdown } }));

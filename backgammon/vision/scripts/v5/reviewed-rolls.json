@@ -44,10 +44,10 @@
   "resultFrame": 47103,
   "player": "white",
   "roll": [
-   6,
-   3
+   5,
+   4
   ],
-  "note": "Visible die shows six."
+  "note": "One die shows four; 5-4 is the only candidate with a four (rechecked with the new dice detector)."
  },
  {
   "game": 2,
@@ -68,5 +68,15 @@
    4
   ],
   "note": "Dice show six and four."
+ },
+ {
+  "game": 2,
+  "resultFrame": 38745,
+  "player": "white",
+  "roll": [
+   4,
+   1
+  ],
+  "note": "One die shows four; 4-1 is the only candidate with a four (new dice detector)."
  }
 ]

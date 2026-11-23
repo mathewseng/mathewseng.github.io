@@ -25,16 +25,14 @@ Steps
     python3 train_slots.py MODEL LABELS...   slot classifier (empty/white/black/occluded)
     python3 observe.py MODEL obs-dir 0..56   checker readings every 5th frame
     bun decode2.mjs obs-dir decode.json      legal-turn reconstruction (all games)
-    python3 dice_scan.py                     dice candidates and patches
-    python3 die_filter.py MODEL              die / not-die scores (labelled grid)
+    python3 objects_scan.py objects/models/obj.pt   dice and cube detector, every 5th frame
     python3 dice_faces.py decode.json MODEL  face reader (labels from legal moves)
     python3 dice_evidence.py decode.json MODEL evidence.json
-    python3 cube_scan.py                     cube location every second
     bun analyze.mjs decode.json evidence.json cube-scan.json analysis-dir GAME
     bun patch_rolls.mjs analysis-dir reviewed-rolls.json
     python3 render.py analysis-dir render-dir GAME...
     bun export.mjs analysis-dir render-dir ../../2026-11-21 GAME...
-    python3 export_audit.py obs-dir render-dir ../../2026-11-21 GAME...
+    python3 export_audit.py obs-dir analysis-dir render-dir ../../2026-11-21 faces.pt GAME...
     python3 finalize_page.py analysis-dir render-dir ../../2026-11-21 TAG GAME...
 
 Checker readings
@@ -58,6 +56,26 @@ Turn reconstruction (decode2.mjs)
 
 Dice and cube
 
+  One detector (objects.py, ObjNet) finds both: a small fully convolutional
+  network predicts centre heatmaps at a quarter of the 800x590 board for
+  yellow dice, red dice and the cube (about 18 and 46 pixels across). It was
+  trained on 1,983 frames sampled every 5 s from all three recordings
+  (objects_sample.py). Cube labels came from per-zone template matching of
+  the cube's grey number oval (holder, either side tray, board); dice labels
+  from the earlier colour-blob detector, then three rounds of reviewing every
+  disagreement with the detector as crop sheets (objects_review.py,
+  objects_grid.py). Training pastes dice cut out by their colour hull onto
+  random places, so dice on cream or orange points and against checkers are
+  seen; unreviewed die-sized colour blobs are ignored rather than counted as
+  background. Held-out frames: 97% of labelled dice found; the cube scores at
+  least 0.5 in 1,945 of 1,948 labelled frames. objects_train.py retrains it;
+  rebuild_evening.sh reruns the scan, face reader and analysis for the evening.
+
+  The colour-blob candidates (dice.py, dice_scan.py, die_filter.py) and the
+  cube template tracker (cube_scan.py) were the first version; they missed
+  most small, pale red dice and yellow dice on the points, and the cube in the
+  trays.
+
   White rolls the yellow pair and Black the red pair. The face reader is
   trained only from rolls that a legal move determines uniquely; non-doubles
   use an order-free pair loss. When several rolls reproduce the observed move,
@@ -70,6 +88,14 @@ Dice and cube
   the player on roll; board to a side tray is a take (top-left White,
   bottom-left Black); board back to the holder is a pass. A cube that goes
   straight from the holder to a tray is a double that was taken at once.
+
+Analysis rules and opening book
+
+  The analysis uses the site's money rules against the bot (scoring.mjs):
+  Jacoby on, beavers and raccoons allowed. Opening moves and replies come from
+  the bot's opening book (the XG published rollouts, else the GNUbg book), as
+  in play against the bot; a played move the book does not list, and every
+  later move, is scored with GNUbg at four ply.
 
 Review
 

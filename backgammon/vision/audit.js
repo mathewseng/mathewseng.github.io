@@ -60,12 +60,13 @@ export function createAudit(player, replayAsset) {
       context.fillStyle = CHECKER[side];
       context.fillText(label, x(center) - context.measureText(label).width / 2, at + 21);
     }
-    for (const [cx, cy, value, candidate, score] of dice) {
-      mark(x(cx), y(cy), DIE, value ? `${value} · ${score}%` : `${candidate}?`);
+    // Optional last element: box side in source units (the Nov 21 board's dice and cube sizes).
+    for (const [cx, cy, value, candidate, score, size] of dice) {
+      mark(x(cx), y(cy), DIE, value ? `${value} · ${score}%` : `${candidate}?`, size && size * scale);
     }
     if (cube) {
-      const [cx, cy, face, score] = cube;
-      mark(x(cx), y(cy), CUBE, `Cube ${face || "?"} · ${score}%`);
+      const [cx, cy, face, score, size] = cube;
+      mark(x(cx), y(cy), CUBE, `Cube ${face || "?"} · ${score}%`, size && size * scale);
     }
   }
 
@@ -95,13 +96,14 @@ export function createAudit(player, replayAsset) {
     context.restore();
   }
 
-  function mark(x, y, color, label) {
+  function mark(x, y, color, label, side = 34) {
+    const half = side / 2;
     context.strokeStyle = color;
-    context.strokeRect(x - 17, y - 17, 34, 34);
+    context.strokeRect(x - half, y - half, side, side);
     context.font = "bold 20px system-ui";
     const w = context.measureText(label).width + 12;
-    const left = Math.min(x + 18, BOARD.x + BOARD.width - w);
-    const top = Math.max(BOARD.y + 1, y - 29);
+    const left = Math.min(x + half + 1, BOARD.x + BOARD.width - w);
+    const top = Math.max(BOARD.y + 1, y - half - 12);
     context.fillStyle = "#10151c";
     context.fillRect(left, top, w, 25);
     context.fillStyle = color;

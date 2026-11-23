@@ -10,6 +10,8 @@ import argparse, collections, glob, json, random
 from pathlib import Path
 import numpy as np, torch, torch.nn as nn, cv2
 from session import WORK
+import os
+SCAN = os.environ.get('BG_DICE_SCAN', 'objects-scan')  # 'dice-scan' for the colour-blob candidates
 
 dev = 'mps' if torch.backends.mps.is_available() else 'cpu'
 COLOUR = {'white': 0, 'dark': 1}  # meta[:,4]: 1 = red (dark)
@@ -18,7 +20,7 @@ COLOUR = {'white': 0, 'dark': 1}  # meta[:,4]: 1 = red (dark)
 def load_scan(work=None):
     work = Path(work) if work else WORK
     metas, patches = [], []
-    for p in sorted(glob.glob(str(work / 'dice-scan/clip-*.npz'))):
+    for p in sorted(glob.glob(str(work / SCAN / 'clip-*.npz'))):
         z = np.load(p); metas.append(z['meta']); patches.append(z['patches'])
     return np.concatenate(metas), np.concatenate(patches)
 
@@ -28,9 +30,9 @@ def tracks(meta, f0, f1, red, score=None):
     """Persistent dice in a frame window: list of index arrays, most persistent first."""
     global DIE_SCORE
     if score is None:
-        if DIE_SCORE is None: DIE_SCORE = np.load(WORK / 'dice-scan/die-score.npy')
+        if DIE_SCORE is None: DIE_SCORE = np.load(WORK / SCAN / 'die-score.npy')
         score = DIE_SCORE
-    sel = np.nonzero((meta[:, 0] > f0) & (meta[:, 0] <= f1) & (meta[:, 4] == red) & (score > .5))[0]
+    sel = np.nonzero((meta[:, 0] > f0) & (meta[:, 0] <= f1) & (meta[:, 4] == red) & (score > .3))[0]
     cells = collections.defaultdict(list)
     for i in sel: cells[(int(meta[i, 1] // 10), int(meta[i, 2] // 10))].append(i)
     # merge neighbouring cells
@@ -40,16 +42,36 @@ def tracks(meta, f0, f1, red, score=None):
             if abs(g['key'][0] - key[0]) <= 1 and abs(g['key'][1] - key[1]) <= 1: g['idx'] += idx; break
         else: groups.append({'key': key, 'idx': list(idx)})
     groups = [np.array(g['idx']) for g in groups if len(g['idx']) >= 5]
+    # The window starts at the previous turn's end, so the roller's dice from two
+    # turns ago are usually still there until they are picked up to roll. Leave
+    # out dice already present when the window opens, then prefer dice still
+    # seen in the last 10 s before the move.
+    fresh = [g for g in groups if meta[g, 0].min() > f0 + 25]
+    if len(fresh) >= 2: groups = fresh
+    recent = [g for g in groups if meta[g, 0].max() >= f1 - 250]
+    if len(recent) >= 2: groups = recent
     return sorted(groups, key=len, reverse=True)
+
+
+def stale_positions(meta, f0, red, score):
+    """Where the roller's previous dice lie when the window opens (frames f0-25..f0+25)."""
+    sel = np.nonzero((np.abs(meta[:, 0] - f0) <= 25) & (meta[:, 4] == red) & (score > .3))[0]
+    return meta[sel, 1:3]
+
+
+def window_start(prev, last_start, frame):
+    """A turn's dice window starts where the previous turn ended; two turns decoded from one
+    jump share an end frame, so the second shares the first one's window (other colour)."""
+    return last_start if frame - prev < 25 else prev
 
 
 def examples(decode, meta, score=None, source=0):
     out = []
     for gi, g in enumerate(decode['games'], 1):
-        prev = g['startFrame']
+        prev = start = g['startFrame']
         for t in g['turns']:
             red = 1 if t['player'] == 'dark' else 0
-            start = t.get('fromFrame', prev)
+            start = window_start(prev, start, t['frame'])
             tr = tracks(meta, start, t['frame'], red, score)
             if t['rolls'] and len(tr) >= 2 and not t.get('inferred'):
                 sets = [tuple(map(int, r.split('-'))) for r in t['rolls']]
@@ -67,6 +89,11 @@ class FaceNet(nn.Module):
     def forward(self, x): return self.h(self.f(x))
 
 
+# The detector centres on a die's coloured side face; its pip face is about 10 px
+# to the left (the camera sees the dice from one side), so the crop leans left.
+CROP_X = int(os.environ.get('BG_FACE_CROP_X', '4'))
+
+
 def prep(p, train):
     p = p.astype(np.float32)
     if train:
@@ -76,7 +103,7 @@ def prep(p, train):
         M[:, 2] += np.random.uniform(-3, 3, 2)
         p = cv2.warpAffine(np.ascontiguousarray(p), M, (40, 40), borderMode=cv2.BORDER_REFLECT)
         p = p * random.uniform(.8, 1.2) + random.uniform(-20, 20)
-    p = np.ascontiguousarray(p[4:36, 4:36, ::-1])
+    p = np.ascontiguousarray(p[4:36, CROP_X:CROP_X + 32, ::-1])
     return (torch.from_numpy(p).permute(2, 0, 1).contiguous() / 255. - .5) / .25
 
 
@@ -112,7 +139,7 @@ if __name__ == '__main__':
     ex = examples(json.loads(Path(a.decode).read_text()), meta)
     for k, pair in enumerate(a.extra, 1):
         dec, work = pair.split('@')
-        m2, p2 = load_scan(work); sc2 = np.load(Path(work) / 'dice-scan/die-score.npy')
+        m2, p2 = load_scan(work); sc2 = np.load(Path(work) / SCAN / 'die-score.npy')
         offset = len(patches)
         more = examples(json.loads(Path(dec).read_text()), m2, sc2, k)
         for e in more: e['tracks'] = [t + offset for t in e['tracks']]; e['game'] = 1000 * k + e['game']

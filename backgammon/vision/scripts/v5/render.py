@@ -263,7 +263,7 @@ def decision_panel(game, f, info):
             if a:
                 rows = [(c["notation"], c["notation"], c["equity"]) for c in a["candidates"]]
                 played = a["played"]["notation"] if kind == "played" and a.get("played") else None
-                table(d, 190, "Top checker moves", rows, rows[0][2], played)
+                table(d, 190, "Top checker moves · XG opening book" if a.get("method") == "reference" else "Top checker moves · opening book" if a.get("method") else "Top checker moves", rows, rows[0][2], played)
                 if played and a["played"]["rank"] > len(rows):
                     write(d, PAD, 190 + 37 + len(rows) * 52 + 6, f"Played {played} · rank {a['played']['rank']} of {a['legalMoves']} · EV {a['played']['equity']:+.3f} · loss {a['evLoss']:.3f}", BODY, loss_color(a['evLoss']), True)
             elif t.get("dance"):

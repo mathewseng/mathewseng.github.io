@@ -13,20 +13,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { initialState, canDouble } from '../../../core/rules.mjs';
-import { loadEvaluator } from './engine.mjs';
+import { createScorer, RULES, PRESET } from './scoring.mjs';
 
 const [decodeFile, diceFile, cubeFile, outDir, ...gameArgs] = process.argv.slice(2);
 const decode = JSON.parse(fs.readFileSync(decodeFile, 'utf8'));
 const dice = JSON.parse(fs.readFileSync(diceFile, 'utf8'));
 const cubeScan = JSON.parse(fs.readFileSync(cubeFile, 'utf8'));
-const PRESET = 'research', TOP = 5;
 const SIDE = { white: 0, dark: 1 };
-const RULES = { cube: true, jacoby: false, immediateRedoubles: 1 };
+
 fs.mkdirSync(outDir, { recursive: true });
 
 function cubeZones() {
   const zone = ([, score, x, y]) => {
-    if (score < 0.6) return null;
+    if (score < 0.5) return null;
     if (x < 90) return y < 250 ? 'white' : y > 350 ? 'dark' : 'holder';
     if (x < 700) return 'board';
     return null;
@@ -37,13 +36,14 @@ function cubeZones() {
     const last = runs.at(-1);
     if (last && last.zone === z) { last.f1 = s[0]; last.n++; } else runs.push({ zone: z, f0: s[0], f1: s[0], n: 1 });
   }
-  const stable = runs.filter(r => r.n >= 3);
+  // at least three sightings spanning 1.6 s (the scan is every 5th frame)
+  const stable = runs.filter(r => r.n >= 3 && r.f1 - r.f0 >= 40);
   const merged = [];
   for (const r of stable) { const l = merged.at(-1); if (l && l.zone === r.zone) l.f1 = r.f1; else merged.push({ ...r }); }
   return merged;
 }
 
-const evaluator = await loadEvaluator();
+const scorer = await createScorer(), evaluator = scorer.evaluator;
 const zones = cubeZones();
 
 for (const g of gameArgs.map(Number)) {
@@ -128,13 +128,8 @@ for (const g of gameArgs.map(Number)) {
       const play = t.plays.find(p => p.dice.join('-') === roll);
       out.steps = play?.steps ?? null;
       const st = initialState({ points: t.before.points, bar: t.before.bar, off: t.before.off, turn: s, dice: out.roll, phase: 'move', matchLength: 0, cube: { ...cube }, rules: RULES });
-      try {
-        const a = evaluator.analyze(st, PRESET, 'checker', out.steps);
-        const rank = a.candidates.findIndex(c => c.key === a.actual?.key);
-        out.analysis = { candidates: a.candidates.slice(0, TOP).map(c => ({ notation: c.notation, equity: c.equity, probabilities: c.probabilities })),
-          played: a.actual ? { notation: a.actual.notation, equity: a.actual.equity, probabilities: a.actual.probabilities, rank: rank + 1 } : null,
-          evLoss: a.error, legalMoves: a.candidates.length };
-      } catch (err) { out.analysisError = String(err.message || err); }
+      try { out.analysis = await scorer.checker(st, out.steps); }
+      catch (err) { out.analysisError = String(err.message || err); }
     }
     turns.push(out);
     process.stdout.write(`game ${g} turn ${i + 1}/${decodeTurns.length}\r`);
