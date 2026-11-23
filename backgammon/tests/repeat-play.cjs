@@ -133,9 +133,13 @@ module.exports = async function repeatPlay(browser, base, out, name) {
         const {r,d}=repeatTest;
         const s=r.initialState({phase:"move",dice:[3,1]});
         s.points[23]--; s.bar[0]++;
+        // Entering pairs with any checker that can use the other die, so
+        // block both of point 7's landings to leave it genuinely unavailable.
+        s.points[11]+=4; s.points[4]=-2; s.points[6]=-2;
         d.set(s,r.legalPaths(s));
       });
       assert.equal((await read()).selected,"bar");
+      assert.equal(await page.locator('[data-point="7"].movable').count(),0);
       await tap(7,true);
       assert.equal((await read()).selected,null,"unavailable checker clears bar selection without playing");
       await page.locator('[data-point="bar0"]').click();

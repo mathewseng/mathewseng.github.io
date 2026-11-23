@@ -96,6 +96,8 @@ const E = require("../engine.js");
         await page.waitForFunction(() => document.querySelector(".encounter.is-tilting")?.style.getPropertyValue("--tilt-y"));
         assert.ok((await card.evaluate(el => getComputedStyle(el).transform)).startsWith("matrix3d"));
         await page.emulateMedia({ reducedMotion: "reduce" });
+        // The media query change event that clears the tilt is dispatched asynchronously.
+        await page.waitForFunction(() => !document.querySelector(".encounter.is-tilting"));
         assert.equal(await card.evaluate(el => el.style.getPropertyValue("--tilt-y")), "");
         assert.equal(await card.evaluate(el => getComputedStyle(el).transform), "none");
         assert.deepEqual(errors, []);

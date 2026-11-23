@@ -79,15 +79,14 @@ module.exports = async function cubeHistory(browser, base, out, name) {
       const paired = await page.locator('.history-turn-decisions[data-paired="true"]').evaluateAll(groups => groups.map(group => {
         const cubes = [...group.querySelectorAll('[data-decision-type="cube"]')].map(n => n.getBoundingClientRect());
         const move = group.querySelector('[data-decision-type="checker"]').getBoundingClientRect();
-        // Narrow history columns split evenly so chance lines fit; wide ones give the move twice the cube's width.
-        const box = group.closest('.play-feedback'), style = getComputedStyle(box);
-        const ratio = box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) < 600 ? 1 : 2;
+        // Since 79b1d338 the move always takes twice the cube's width, leaving room for checker moves and revisions.
+        const ratio = 2;
         return {sameRow: move.y === cubes[0].y, sideBySide: cubes.every(c => c.right <= move.x + 1),
           spansExchange: move.bottom >= cubes.at(-1).bottom - 1,
           proportions: cubes.every(c => Math.abs(move.width - c.width * ratio) < 1)};
       }));
       assert.equal(paired.length, 2);
-      assert.ok(paired.every(g => g.sameRow && g.sideBySide && g.spansExchange && g.proportions), `checker stays beside its entire cube exchange (even split when narrow, twice its width when wide) at ${width}px`);
+      assert.ok(paired.every(g => g.sameRow && g.sideBySide && g.spansExchange && g.proportions), `checker stays beside its entire cube exchange at twice its width at ${width}px`);
       assert.ok(await page.locator('.decision-value-grid').evaluateAll(groups => groups.every(group => {
         const values = [...group.querySelectorAll('strong')].map(n => n.textContent);
         return new Set(values).size === values.length;

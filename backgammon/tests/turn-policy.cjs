@@ -1,4 +1,4 @@
-const { showPlayControls } = require("./play-helpers.cjs");
+const { revealPlayControl } = require("./play-helpers.cjs");
 const { openingComplete, seedOpening, roll } = require("./play-helpers.cjs");
 // Real browser controls, IndexedDB, exports, and real GNUbg opponent.
 const assert = require("node:assert/strict");
@@ -73,18 +73,19 @@ module.exports = async function turnPolicy(
     const original = (await saved()).game;
     await finish();
     const committed = await wait((s) => s?.game.events.length === 2);
-    await page.locator("#undo-turn").click();
+    await (await revealPlayControl(page, "#undo-turn")).click();
     await page.locator("#decline-undo").click();
     assert.deepEqual((await saved()).game.state, committed.game.state);
-    await page.locator("#undo-turn").click();
+    await (await revealPlayControl(page, "#undo-turn")).click();
     await page.setViewportSize({ width: 375, height: 667 });
     await shot("approval-phone");
     await page.locator("#accept-undo").click();
     await wait((s) => s?.game.undoLog?.length === 1 && !s.game.undoRequest);
     assert.deepEqual((await saved()).game.state, original.state);
-    await showPlayControls(page);
+    await revealPlayControl(page, "#undo-turn");
     assert.equal(await page.locator("#undo-turn").isVisible(), true);
     assert.equal(await page.locator("#undo-turn").isDisabled(), true);
+    await page.locator(".practice-controls-dialog .close").click();
     await page.setViewportSize({ width: 1366, height: 768 });
     await finish();
     await roll(page);
@@ -92,7 +93,7 @@ module.exports = async function turnPolicy(
       (s) => s?.game.state.phase === "move" && s.game.state.turn === 1,
     );
     const rolled = (await saved()).game.state.dice;
-    await page.locator("#undo-turn").click();
+    await (await revealPlayControl(page, "#undo-turn")).click();
     await page.locator("#accept-undo").click();
     await wait((s) => s?.game.undoLog?.length === 2 && !s.game.undoRequest);
     assert.deepEqual((await saved()).game.replayDice, [
@@ -120,7 +121,7 @@ module.exports = async function turnPolicy(
       const dimensions = await page.evaluate(() => ({
         width: document.documentElement.scrollWidth,
         height: document.querySelector(".app").getBoundingClientRect().height,
-        bottom: document.querySelector("#undo-turn").getBoundingClientRect()
+        bottom: document.querySelector("#all-controls").getBoundingClientRect()
           .bottom,
       }));
       assert.ok(dimensions.width <= width + 1, JSON.stringify(dimensions));
@@ -253,11 +254,12 @@ module.exports = async function turnPolicy(
         type === "bearoff" ? "over" : "roll",
       );
       assert.equal(await page.locator("#confirm").count(), 0);
-      await showPlayControls(page);
-    assert.equal(await page.locator("#undo-turn").isVisible(), true);
+      await revealPlayControl(page, "#undo-turn");
+      assert.equal(await page.locator("#undo-turn").isVisible(), true);
       assert.equal(await page.locator("#undo-turn").isDisabled(), type !== "bearoff", "finished games can be reopened; a forced pass has no player choice to undo");
       assert.equal(await page.locator("#hint").count(), 0);
       await shot(type);
+      await page.locator(".practice-controls-dialog .close").click();
     }
     // Genuine engine reply can be rewound with the human's last chosen turn.
     await page
@@ -279,7 +281,7 @@ module.exports = async function turnPolicy(
     await wait(
       (s) => s?.game.state.turn === 0 && s.game.state.phase === "roll",
     );
-    await page.locator("#undo-turn").click();
+    await (await revealPlayControl(page, "#undo-turn")).click();
     const rewound = await wait(
       (s) => s?.game.state.phase === "move" && s.game.undoLog?.length,
     );

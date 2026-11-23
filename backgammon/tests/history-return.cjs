@@ -155,14 +155,16 @@ module.exports = async function historyReturn(browser, base, out, name) {
       assert.equal(row.count,1);
       assert.equal(new Set(row.values).size,row.values.length,'equal displayed equities appear only once');
       assert.equal(row.duplicatedMove,!row.best,"only show a best alternative when it differs");
-      assert.equal(row.identity,row.side === 'opponent' ? 'Opponent' : 'You');
+      // Computer games label history by player name since c06ee0db; only online games say Opponent.
+      assert.equal(row.identity,row.side === 'opponent' ? 'GNUbg' : 'You');
     }
     // Long names and the effective viewport at 200% zoom may add height,
     // but never hide a value. This emulates layout width, not physical zoom.
     for (const [width, height] of [[390,844],[1366,768]]) {
       await page.setViewportSize({width: Math.round(width / 2), height: Math.round(height / 2)});
       const overflow = await page.evaluate(async () => {
-        const detail = document.querySelector('.history-detail'), old = detail.textContent;
+        // Named games put the name in the player label itself (c06ee0db).
+        const detail = document.querySelector('.history-detail') || document.querySelector('.history-player'), old = detail.textContent;
         detail.textContent = 'Alexandria-with-a-very-long-player-name · Move · Standard';
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         const clipped = [...document.querySelectorAll('#move-feedback, #move-feedback .feedback-review, #move-feedback .decision-value')]

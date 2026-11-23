@@ -149,7 +149,12 @@ module.exports = async function diceUndo(browser, base, out, name) {
       await page.keyboard.press('z'); await count(0);
       assert.equal((await read()).game.events.length, 0);
       assert.equal(await page.locator('#undo,#reset-draft,.board-undo').count(),0);
-      assert.equal(await page.locator('.draft-shortcuts').isVisible(),!touch);
+      // The live table keeps the Z/X legend in Help & practice, not inline.
+      assert.equal(await page.locator('.draft-shortcuts').isVisible(),false);
+      await tap(page.locator('#all-controls'));
+      assert.equal(await page.locator('.practice-controls-dialog .draft-shortcuts').isVisible(),!touch);
+      await tap(page.locator('.practice-controls-dialog .close'));
+      await page.locator('.practice-controls-dialog').waitFor({state:'detached'});
       assert.equal(await page.locator('.draft-shortcuts').textContent().then(s=>s.includes('Z')&&s.includes('X')),true);
       // Forced dice are kept when a user taps a locked step or uses reset.
       const forced = JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/forced-seven.json'))).state;
@@ -173,10 +178,12 @@ module.exports = async function diceUndo(browser, base, out, name) {
         const geometry = await page.evaluate(() => {
           const rect = s => document.querySelector(s).getBoundingClientRect().toJSON();
           const dice = [...document.querySelectorAll('#board .board-die-face > rect:first-child')].map(n=>n.getBoundingClientRect().toJSON());
-          return {board:rect('#board .bg-board'),confirm:rect('#confirm'),swap:rect('#board .dice-switch-surface'),dice,overflow:document.documentElement.scrollWidth > innerWidth+1};
+          const before = getComputedStyle(document.querySelector('#confirm'),'::before'), box = rect('#confirm');
+          return {board:rect('#board .bg-board'),confirm:box,hit:{width:Math.max(box.width,parseFloat(before.width)||0),height:Math.max(box.height,parseFloat(before.height)||0)},swap:rect('#board .dice-switch-surface'),dice,overflow:document.documentElement.scrollWidth > innerWidth+1};
         });
         assert.equal(geometry.overflow,false);
-        assert.ok(geometry.confirm.width>=44&&geometry.confirm.height>=44);
+        // Confirm draws at one and a half dice; its ::before keeps a 44px tap area.
+        assert.ok(geometry.hit.width>=44&&geometry.hit.height>=44,`confirm touch target ${JSON.stringify({viewport,geometry})}`);
         assert.ok(geometry.confirm.bottom<=viewport.height+2,`reachable confirm ${JSON.stringify({viewport,geometry})}`);
         for(const die of geometry.dice) assert.ok(die.right<geometry.swap.left||die.left>geometry.swap.right,'switch never covers enlarged dice');
         // Eight pixels of page gutters plus the 32px equity rail.

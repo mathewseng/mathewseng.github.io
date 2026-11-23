@@ -135,8 +135,13 @@ export class EquityBar {
   }
   position() {
     const rail = this.enabled ? this.node : this.reveal;
-    const r = this.board.svg.getBoundingClientRect(),
-      c = this.board.container.getBoundingClientRect();
+    // Rects are in zoomed pixels; inline lengths are zoomed again under CSS zoom.
+    const zoom = this.board.container.currentCSSZoom || 1, rect = node => {
+      const b = node.getBoundingClientRect();
+      return { left: b.left / zoom, top: b.top / zoom, width: b.width / zoom, height: b.height / zoom };
+    };
+    const r = rect(this.board.svg),
+      c = rect(this.board.container);
     const width = Math.min(r.width, (r.height * 876) / 660),
       height = (width * 660) / 876;
     const top = r.top - c.top + (this.board.svg.getAttribute('preserveAspectRatio')?.includes('YMin')

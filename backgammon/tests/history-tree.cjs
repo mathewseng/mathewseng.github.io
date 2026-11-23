@@ -78,7 +78,13 @@ module.exports = async function historyTreeUX(browser, base, out, name) {
     await page.goto(base + "/backgammon/play/#resume=" + fixture.id);
     await page.locator("#roll").waitFor({state:"attached"});
     assert.ok(await page.locator("#undo-turn").isEnabled());
-    const initial = JSON.stringify((await read()).game);
+    // Resuming saves normalized config defaults; snapshot after that settles.
+    let initial = JSON.stringify((await read()).game);
+    for (let previous = ""; previous !== initial; ) {
+      previous = initial;
+      await page.waitForTimeout(250);
+      initial = JSON.stringify((await read()).game);
+    }
     await page.keyboard.press("z");
     await page.keyboard.press("z");
     assert.equal(

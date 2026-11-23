@@ -53,7 +53,8 @@ module.exports = async function reviewSelection(browser, base, out, name) {
       const fits=await page.locator('.decision-dialog').evaluate(d=>({
         x:d.scrollWidth<=d.clientWidth+1, y:d.scrollHeight<=d.clientHeight+1,
         controls:[...d.querySelectorAll('.review-position, .review-depth-options button')]
-          .filter(b=>b.getBoundingClientRect().height).every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1}),
+          // Short screens scroll the comparison column (005c0984); every control must still be reachable on screen.
+          .filter(b=>b.getBoundingClientRect().height).every(b=>{b.scrollIntoView({block:'nearest',inline:'nearest'});const r=b.getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1}),
       }));
       assert.deepEqual(fits,{x:true,y:true,controls:true},`${width}×${height}`);
       await page.screenshot({path:path.join(out,`${name}-review-selection-${width}.png`)});

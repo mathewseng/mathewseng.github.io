@@ -8,6 +8,18 @@ exports.showPlayControls = async page => {
   const summary = page.locator('#mobile-game-summary[open]:not([hidden]) > summary');
   if (await summary.isVisible()) await summary.click();
 };
+// The live table keeps Undo, Analysis and practice tools behind the Controls
+// sheet. Open it only when the control is not already on screen, and return
+// the now-visible control.
+exports.revealPlayControl = async (page, selector, method = 'click') => {
+  const target = page.locator(selector).first();
+  if (!await target.isVisible()) await exports.showPlayControls(page);
+  if (!await target.isVisible()) {
+    await page.locator('#all-controls')[method]();
+    await target.waitFor({ state: 'visible' });
+  }
+  return target;
+};
 // Playwright's in-page poll treats an async predicate's Promise as truthy,
 // even when that Promise resolves to false. Await the actual result in Node.
 exports.waitForAsync = async (page, predicate, argument, {timeout = 30000} = {}) => {

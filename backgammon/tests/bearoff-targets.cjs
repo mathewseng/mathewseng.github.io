@@ -58,10 +58,11 @@ module.exports = async function bearoffTargets(browser, base, out, name) {
           const top = turn !== orientation;
           assert.equal(await page.locator('.bearoff-hit').count(),1);
           assert.equal(await page.locator(`[data-point="off${turn}"] .bearoff-hit`).count(),1);
-          // Far above/below the small count tray, plus the outside edge beside
-          // it. These locations were all background before the expanded target.
+          // Far above/below the small count tray, past the owned cube, plus the
+          // outside edge beside it. These locations were all background before
+          // the expanded target.
           const x = preferred === 1 ? 805 : 870;
-          const y = preferred === 1 ? (top ? 260 : 400) : (top ? 75 : 585);
+          const y = preferred === 1 ? (top ? 160 : 500) : (top ? 75 : 585);
           await tap(x,y);
           const first = {from:turn ? 24-preferred : preferred-1,to:'off',die:preferred};
           assert.deepEqual(await page.evaluate(() => bearoff.d.draft),[first],
@@ -71,7 +72,7 @@ module.exports = async function bearoffTargets(browser, base, out, name) {
           await tap(870,top ? 585 : 75);
           assert.deepEqual(await page.evaluate(() => bearoff.d.draft),[first]);
           // A cube owned by this player overlaps the lane and must win hit testing.
-          await tap(843,top ? 160 : 500);
+          await tap(843,top ? 240 : 420);
           assert.equal(await page.evaluate(() => bearoff.cubes),1);
           assert.deepEqual(await page.evaluate(() => bearoff.d.draft),[first]);
           // A further side tap plays the remaining die rather than returning
@@ -92,11 +93,11 @@ module.exports = async function bearoffTargets(browser, base, out, name) {
       for (const variant of ['outside','bar','disabled','preview']) {
         await fixture('advanced',0,0,3,variant);
         assert.equal(await page.locator('.bearoff-hit').count(),0,`${variant}: no bear-off shortcut`);
-        await tap(805,400);
+        await tap(805,500);
         assert.deepEqual(await page.evaluate(() => bearoff.d.draft),[],`${variant}: no illegal bearoff`);
       }
       await fixture('advanced',0,0,3);
-      await tap(805,400);
+      await tap(805,500);
       // The expanded destination belongs to a group with an undoable checker,
       // but pressing that empty space must not begin dragging the off counter.
       await page.locator('.bearoff-hit').dispatchEvent('pointerdown',{

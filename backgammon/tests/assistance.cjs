@@ -1,4 +1,4 @@
-const { roll, openingComplete, seedOpening, waitWork } = require("./play-helpers.cjs");
+const { roll, openingComplete, seedOpening, waitWork, revealPlayControl } = require("./play-helpers.cjs");
 const { clickTool } = require("./tool-access.cjs");
 // Hints and turn feedback against real GNUbg, served from the assembled site.
 const assert = require("node:assert/strict");
@@ -86,7 +86,14 @@ module.exports = async function assistanceUX(
     await page.goto(base + "/backgammon/play/");
     await page.getByLabel("Warn before confirming a costly move").uncheck();
     await page.locator("#start-match").click();
-    assert.equal(await page.locator("#hint").count(), 0);
+    // Against GNUbg, Hint keeps its slot but is disabled until the player has
+    // checkers to move (cf581a93). The automatic opening may already be done.
+    // Read both controls in one task: a live Hint only accompanies Confirm.
+    const openingHint = await page.evaluate(() => ({
+      live: !!document.querySelector("#hint:not(:disabled)"),
+      confirm: !!document.querySelector("#confirm"),
+    }));
+    assert.ok(!openingHint.live || openingHint.confirm, JSON.stringify(openingHint));
     await openingComplete(page);
     await page
       .getByLabel("Accessible move selection", { exact: true })
@@ -100,7 +107,10 @@ module.exports = async function assistanceUX(
       await page.locator("[data-best-move]").innerText(),
       "13/7 8/7",
     );
-    assert.deepEqual((await saved()).game, partial.game);
+    // Viewing a hint only records that decision's hint marker (11df2ce1).
+    const { hintDecision, ...afterHint } = (await saved()).game;
+    assert.deepEqual(afterHint, partial.game);
+    assert.equal(hintDecision?.index, partial.game.events.length);
     assert.deepEqual((await saved()).draft, partial.draft);
     await shot("hint-desktop");
     await page.setViewportSize({ width: 375, height: 667 });
@@ -140,7 +150,7 @@ module.exports = async function assistanceUX(
     await page.keyboard.press("Escape");
     await require("./play-helpers.cjs").stageSteps(page,[{from:12,to:6,die:6},{from:7,to:6,die:1}]);
     await waitSaved((s) => s?.draft.length === 2);
-    assert.deepEqual((await saved()).game, partial.game);
+    assert.deepEqual((await saved()).game, {...partial.game, hintDecision});
     assert.ok(await page.locator("#confirm").isEnabled());
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("z");
@@ -232,7 +242,8 @@ module.exports = async function assistanceUX(
       historyColors.opponent.border,
     );
     assert.equal(historyColors.self.label, "You");
-    assert.equal(historyColors.opponent.label, "Opponent");
+    // Computer games show the engine's own name (c06ee0db); only online uses You/Opponent.
+    assert.equal(historyColors.opponent.label, "GNUbg");
     assert.notEqual(historyColors.ev, historyColors.identity);
     assert.deepEqual(r.actual.steps, submitted.draft);
     cases.push(
@@ -381,7 +392,9 @@ module.exports = async function assistanceUX(
     );
     await page.getByLabel("Show move feedback", { exact: true }).uncheck();
     await close();
-    assert.ok(await page.locator("#move-feedback").isHidden());
+    // Turning feedback off stops grading, but explicit history stays (41ebf6f8).
+    assert.equal((await waitSaved((s) => s?.game.config.tutor === false)).game.config.tutor, false);
+    assert.ok(await page.locator("#move-feedback").isVisible());
     await page.locator("#panel-toggle").click();
     await page.getByLabel("Show move feedback", { exact: true }).check();
     await close();
@@ -390,7 +403,8 @@ module.exports = async function assistanceUX(
     );
 
     const feedbackBeforeNavigation = (await saved()).feedback;
-    await page.getByRole("link", { name: "Solver", exact: true }).click();
+    // Portrait play reaches the other pages through the Controls sheet (79b1d338).
+    await (await revealPlayControl(page, '.practice-controls-dialog .controls-nav a[href="/backgammon/solver/"]')).click();
     if (
       await page
         .getByRole("dialog", { name: "Open the committed position?" })
@@ -414,7 +428,8 @@ module.exports = async function assistanceUX(
     // The native close event removes the dialog on a later browser task.
     // Count only after cleanup, rather than its now-inaccessible old toggle.
     await page.locator("dialog").waitFor({ state: "detached" });
-    assert.ok(await page.locator("#move-feedback").isHidden());
+    // History stays readable in every mode (41ebf6f8); grading controls do not.
+    assert.ok(await page.locator("#move-feedback").isVisible());
     assert.equal(
       await page.getByLabel("Show move feedback", { exact: true }).count(),
       0,
@@ -507,7 +522,7 @@ module.exports = async function assistanceUX(
       await waitHeld();
       const pendingReview = page.locator('.decision-prompt');
       assert.match(await pendingReview.innerText(), /Still calculating EV/);
-      await page.locator('#board .board-die.consumed').last().click();
+      await page.locator('#board .board-die.consumed:not(.forced)').last().click(); // forced dice have no choice to undo
       await waitSaved(s => s?.draft.length < pending.draft.length);
       assert.ok((await saved()).draft.length < pending.draft.length);
       await finishDraft();
@@ -599,9 +614,15 @@ module.exports = async function assistanceUX(
             .getByRole("button", { name: "Close", exact: true })
             .click();
           await edge.locator("#confirm").click();
-          await edge
-            .getByRole("button", { name: "Revise", exact: true })
-            .click();
+          // The warning is an inline review (79b1d338); revising means editing
+          // the board, which clears the review and restores confirmation.
+          await edge.getByRole("region", { name: "Review before confirming?", exact: true }).waitFor();
+          await edge.locator("#board .board-die.consumed:not(.forced)").last().click();
+          await edge.locator(".inline-decision-review").waitFor({ state: "detached" });
+          await edge.locator("#panel-toggle").click();
+          for (let i = 0; i < 4 && (await edge.locator("#confirm").isDisabled()); i++)
+            await edge.getByLabel("Accessible move selection", { exact: true }).selectOption({ index: 1 });
+          await edge.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).click();
           assert.ok(await edge.locator("#confirm").isEnabled());
           assert.equal(
             await edge.evaluate(
@@ -624,7 +645,8 @@ module.exports = async function assistanceUX(
         await edge.locator("#review-feedback").waitFor({ timeout: 60000 });
         // Inspect the rendered review after scrolling, including WebKit on phones.
         await edge.locator("#review-feedback").scrollIntoViewIfNeeded();
-        await edge.waitForFunction(() => document.querySelector("#review-feedback")?.innerText.includes("lost"));
+        // A best play is labelled instead of showing zero loss (42ddcfe0).
+        await edge.waitForFunction(() => /lost|Played best/.test(document.querySelector("#review-feedback")?.innerText || ""));
         const latestHumanMove = work => work?.game.events.filter(e =>
           e.actor === work.game.config.humanSide && e.action.type === 'move').at(-1);
         const result = latestHumanMove(await waitWork(edge, work =>
@@ -633,12 +655,10 @@ module.exports = async function assistanceUX(
         assert.equal(result.perspective, scenario === "match-teal" ? 1 : 0);
         assert.match(
           (await edge.locator("#move-feedback").innerText()).replace(/\s+/g, " "),
-          scenario === "match-teal"
-            ? /Equity lost 0.000/
-            : scenario === "warning"
-              ? /EV lost/
-              : /EV lost 0.000/,
+          scenario === "warning" ? /EV lost/ : /Played best/,
         );
+        if (scenario === "match-teal")
+          assert.match(await edge.locator("#review-feedback").getAttribute("title"), /match equity/);
         if (scenario === "match-teal")
           assert.ok(Number.isFinite(result.actual.mwc));
         await edge.locator("#review-feedback").click();

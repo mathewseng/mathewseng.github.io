@@ -289,6 +289,7 @@ module.exports = async function directPlay(browser, base, out, name) {
                 sw: n.scrollWidth,
                 h: n.clientHeight,
                 sh: n.scrollHeight,
+                scrolls: /auto|scroll/.test(getComputedStyle(n).overflowY),
                 children: [...n.children].map(c => ({class: c.className, height: c.getBoundingClientRect().height})),
               })),
             rect: d.getBoundingClientRect().toJSON(),
@@ -298,9 +299,11 @@ module.exports = async function directPlay(browser, base, out, name) {
             geometry.scrollHeight <= geometry.height + 1,
           `${view} modal ${width}x${height}: ${JSON.stringify(geometry)}`,
         );
+        // The comparison column scrolls by design on short screens (005c0984);
+        // nothing may overflow sideways or be clipped by a non-scrolling box.
         for (const n of geometry.body)
           assert.ok(
-            n.sh <= n.h + 1 && n.sw <= n.w + 1,
+            (n.sh <= n.h + 1 || (n.scrolls && n.class.includes("decision-content"))) && n.sw <= n.w + 1,
             `${view} inner overflow ${width}x${height}: ${JSON.stringify(geometry)}`,
           );
         assert.ok(
@@ -415,8 +418,9 @@ module.exports = async function directPlay(browser, base, out, name) {
             .querySelector("#board")
             .getBoundingClientRect()
             .toJSON(),
+          // Hint and Controls hold the footer since f5b3a76d; the rest live in Controls.
           controls: document
-            .querySelector(".help-cluster")
+            .querySelector(".turn-tools")
             .getBoundingClientRect()
             .toJSON(),
           review: document
@@ -440,7 +444,7 @@ module.exports = async function directPlay(browser, base, out, name) {
       cases: [
         "disc selection; point-space selected/nearest move; explicit return and alternate first die",
         "five touching checker slots and overflow counts; uniform pips; right-side cube",
-        "real-engine review with three non-scrolling views at nine sizes",
+        "real-engine review at nine sizes; only its comparison column scrolls",
       ],
     };
   } finally {

@@ -35,7 +35,15 @@ module.exports = async function mobileFlow(browser, base, out, name) {
         assert.ok(await page.locator(".touch-moves").isVisible());
         const picker=await page.locator(".touch-moves").boundingBox(), submit=await page.locator("#submit-decision").boundingBox();
         assert.ok(picker.y+picker.height<=submit.y,"pickers precede the primary action");
-        assert.ok((await page.locator("#board").boundingBox()).height>height-110,"larger study board in landscape");
+        // Since 7275f8aa the Trainer reserves rows for both player strips; the board
+        // fills the whole middle row without painting over either label.
+        const fit=await page.evaluate(()=>{
+          const strips=[...document.querySelectorAll(".stage .player-strip")].map(n=>n.getBoundingClientRect()).sort((a,b)=>a.top-b.top);
+          const svg=document.querySelector("#board .bg-board").getBoundingClientRect();
+          return {top:strips[0].bottom,bottom:strips.at(-1).top,svgTop:svg.top,svgBottom:svg.bottom,svgHeight:svg.height};
+        });
+        assert.ok(fit.svgTop>=fit.top-1&&fit.svgBottom<=fit.bottom+1&&fit.svgHeight>=fit.bottom-fit.top-12,
+          `larger study board in landscape fills the row between players at ${width}x${height}: ${JSON.stringify(fit)}`);
       }
       await shot(`trainer-${width}`);
     }

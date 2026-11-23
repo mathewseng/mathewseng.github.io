@@ -151,7 +151,12 @@ module.exports = async function originReturns(browser, base, out, name) {
               ),
             );
           assert.equal(strokes["point-hit"].stroke, "none");
-          assert.equal(strokes["point-shape"].stroke, "none");
+          // Skins may outline every point; a return must not restyle that outline.
+          const plainShape = await page
+            .locator('.point:not(.movable,.reachable,.destination,.return-destination,.selected)[data-point] .point-shape')
+            .first()
+            .evaluate((e) => getComputedStyle(e).stroke);
+          assert.equal(strokes["point-shape"].stroke, plainShape);
           assert.notEqual(strokes["point-wash"].stroke, "none");
           assert.equal(strokes["point-wash"].dash, "none");
           if (!turn && !orientation)

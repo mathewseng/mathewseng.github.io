@@ -15,7 +15,7 @@ module.exports=async function openingHints(browser,base,out,name){
       });
       await page.goto(base+"/backgammon/play/");
       await click(page.getByRole("button",{name:"Same device",exact:true}));
-      await page.clock.install(); await page.clock.pauseAt(new Date());
+      const start = Date.now(); await page.clock.install({ time: start }); await page.clock.pauseAt(start + 1000);
       await click(page.locator("#start-match"));
       await page.clock.runFor(310);
       await page.locator(".opening-die .die[aria-label='3']").first().waitFor();

@@ -203,7 +203,12 @@ module.exports = async function diceSwitchMotion(browser, base, out, name) {
       // Shortcuts disappear in both mobile orientations, not point numbers.
       for (const viewport of touch ? [{width:390,height:844}, {width:844,height:390}] : [{width:1366,height:768}]) {
         await page.setViewportSize(viewport);
-        assert.equal(await page.locator('.draft-shortcuts kbd.keycap').first().isVisible(), !touch);
+        // The live table keeps the Z/X legend in Help & practice, not inline.
+        assert.equal(await page.locator('.draft-shortcuts kbd.keycap').first().isVisible(), false);
+        await page.locator('#all-controls')[touch ? 'tap' : 'click']();
+        assert.equal(await page.locator('.practice-controls-dialog .draft-shortcuts kbd.keycap').first().isVisible(), !touch);
+        await page.locator('.practice-controls-dialog .close')[touch ? 'tap' : 'click']();
+        await page.locator('.practice-controls-dialog').waitFor({state:'detached'});
         assert.equal(await page.locator('#board .point-shortcut').first().isVisible(), !touch);
         assert.equal(await page.locator('#board .dice-switch .keycap-art').isVisible(), !touch);
         assert.equal(await page.locator('#board .point-number-hit + text').count(), 24);

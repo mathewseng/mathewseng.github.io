@@ -55,7 +55,7 @@ module.exports = async function mobileLayout(browser, base, out, name) {
         const box = s => { const r = document.querySelector(s).getBoundingClientRect(); return {top:r.top,bottom:r.bottom,width:r.width,height:r.height}; };
         const svg=document.querySelector('.bg-board'), matrix=svg.getScreenCTM(), vb=svg.viewBox.baseVal;
         const a=new DOMPoint(vb.x,vb.y).matrixTransform(matrix), b=new DOMPoint(vb.width,vb.height).matrixTransform(matrix);
-        return {board:box("#board"), renderedBoard:{top:a.y,bottom:b.y,width:b.x-a.x,height:b.y-a.y},opponent:box("#opponent"),player:box("#player"),confirm:box("#confirm"),overflow:document.documentElement.scrollWidth > innerWidth + 1};
+        return {board:box("#board"), renderedBoard:{top:a.y,bottom:b.y,width:b.x-a.x,height:b.y-a.y},opponent:box("#opponent"),player:box("#player"),confirm:box("#confirm"),confirmTarget:(n=>Math.max(n.getBoundingClientRect().height,parseFloat(getComputedStyle(n,"::before").height)||0))(document.querySelector("#confirm")),overflow:document.documentElement.scrollWidth > innerWidth + 1};
       });
       assert.ok(!metrics.overflow, `horizontal overflow ${width}`);
       if (width >= 375) assert.ok(metrics.confirm.bottom <= height + 1, `confirm offscreen ${width}: ${JSON.stringify(metrics)}`);
@@ -66,23 +66,33 @@ module.exports = async function mobileLayout(browser, base, out, name) {
         assert.ok(metrics.renderedBoard.top >= metrics.board.top-1 && metrics.renderedBoard.bottom <= metrics.board.bottom+1);
         for (const gap of [metrics.board.top - metrics.opponent.bottom, metrics.player.top - metrics.board.bottom])
           assert.ok(gap >= -1 && gap < 3, "player strips hug the board without overlap");
-        assert.ok(metrics.confirm.height >= 48, "large primary touch target");
-        const help = await page.locator(".help-cluster").boundingBox();
-        assert.ok(metrics.confirm.bottom <= help.y + 1, "confirmation stays directly below the board, before secondary controls");
+        // Confirm is drawn at 1.5 dice; its ::before keeps the hit area at least 44px.
+        assert.ok(metrics.confirmTarget >= 44, "large primary touch target");
+        // Since f5b3a76d Confirm sits in the board's lane; secondary actions live in Controls.
+        assert.ok(metrics.confirm.top >= metrics.renderedBoard.top - 1 && metrics.confirm.bottom <= metrics.renderedBoard.bottom + 1,
+          `confirmation stays on the board, ahead of secondary controls at ${width}x${height}: ${JSON.stringify(metrics)}`);
       }
-      if (width <= 700 || height <= 500)
-        assert.ok(await page.locator(".touch-moves").isVisible(), "large move controls work in portrait and landscape");
+      if (width <= 700 || height <= 500) {
+        // Since f5b3a76d portrait phones keep a fixed summary footer with Controls
+        // (and Hint, in computer games) above it.
+        if (await page.locator("#mobile-game-summary").isVisible())
+          assert.ok(await page.locator(".turn-tools #all-controls").isVisible(), `Controls stays above the portrait summary at ${width}x${height}`);
+        // Landscape hides the empty action dock (7275f8aa); Details keeps the accessible move picker.
+        else assert.ok(await page.locator("#panel-toggle").isVisible(), `Details move selection stays reachable at ${width}x${height}`);
+      }
       await shot(`play-${width}`);
       if (width >= 650 && height <= 500) {
         const detail = await page.locator("#panel-toggle").boundingBox();
         const dock = await page.locator(".action-area").boundingBox();
-        assert.ok(detail.y + detail.height <= dock.y + 1, "landscape tools never overlap the action dock");
+        // The dock is hidden while it has no actions (7275f8aa).
+        if (dock) assert.ok(detail.y + detail.height <= dock.y + 1, "landscape tools never overlap the action dock");
         assert.ok(metrics.board.height > height - 110, "landscape reclaims the redundant header row for the board");
         await page.locator("#mobile-tools").tap();
         await page.locator(".tool-menu-dialog .close").tap();
         await page.locator(".tool-menu-dialog").waitFor({state:"detached"});
       }
       if (width <=700 || height <=500) {
+        if (!await page.locator("#analysis-jump").isVisible()) await page.locator("#all-controls").tap();
         await page.locator("#analysis-jump").tap();
         assert.ok(await page.locator("#review-heading").evaluate(e => document.activeElement === e));
         await shot(`analysis-${width}`);
@@ -119,11 +129,14 @@ module.exports = async function mobileLayout(browser, base, out, name) {
     const before = await page.locator("#board").boundingBox();
     await page.locator('#board [data-point="12"] .checker > circle').first().tap();
     await page.locator('#board [data-point="6"] .point-number-hit').tap();
-    for (const id of ["undo-turn", "all-controls"]) {
+    // Undo turn lives in the Controls sheet on portrait phones (f5b3a76d).
+    const fits = async id => {
       const box = await page.locator(`#${id}`).boundingBox();
       assert.ok(box && box.x >=0 && box.x+box.width<=390 && box.height>=44, `${id} needs no horizontal scrolling`);
-    }
+    };
+    await fits("all-controls");
     await page.locator("#all-controls").tap();
+    await fits("undo-turn");
     await page.locator(".practice-controls-dialog .close").tap();
     await page.locator("#board .board-die.consumed").first().tap();
     await page.locator(".practice-controls-dialog").waitFor({state:"detached"});
@@ -150,9 +163,10 @@ module.exports = async function mobileLayout(browser, base, out, name) {
       document.documentElement.style.zoom = "1.4";
       document.querySelector("#player .player-name strong").textContent = "A very long player name for narrow screen testing";
     });
-    await page.locator("#analysis-jump").scrollIntoViewIfNeeded();
+    await page.locator("#all-controls").scrollIntoViewIfNeeded();
     await shot("enlarged");
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `enlarged content reflows: ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll(".app *")].filter(n => n.getBoundingClientRect().right > innerWidth + 1).slice(0,12).map(n => ({tag:n.tagName,id:n.id,width:n.getBoundingClientRect().width}))))}`);
+    await page.locator("#all-controls").tap();
     await page.locator("#analysis-jump").tap();
     await page.getByRole("button",{name:"Back to board ↑",exact:true}).tap();
     await page.evaluate(() => document.documentElement.style.zoom = "");

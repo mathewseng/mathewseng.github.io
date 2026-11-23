@@ -29,8 +29,13 @@ module.exports=async function actionReadiness(browser,base,out,name){
      return analyze.call(this,state,options).then(result=>{row.result=result;row.ms=performance.now()-row.at;return result},error=>{row.error=error.name;throw error});
     };
    });
+   // The opponent's checker animation is brief; record it rather than poll for it.
+   await page.evaluate(()=>{
+    const seen=()=>document.querySelector('#board .moving-checker')&&(readiness.sawMovingChecker=true);
+    new MutationObserver(seen).observe(document.querySelector('#board'),{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+   });
    await page.locator('#resume-match')[touch?'tap':'click']();
-   await page.locator('#board .moving-checker').first().waitFor({timeout:90000});
+   await page.waitForFunction(()=>readiness.sawMovingChecker,null,{timeout:90000});
    await page.locator('#board .last-move-ghost').first().waitFor({state:'attached',timeout:90000});
    await page.waitForFunction(()=>readiness.calls.some(c=>c.state.phase==='move'&&c.state.turn===0&&c.options.priority===-20&&c.result),null,{timeout:90000});
    await page.waitForFunction(()=>document.querySelector('#roll')&&!document.querySelector('#roll').disabled);

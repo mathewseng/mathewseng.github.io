@@ -7,6 +7,20 @@ module.exports = async function landscapeViewport(browser, base, out, name) {
   page.on('pageerror', e => errors.push(e.message));
   try {
     await page.goto(base + '/backgammon/');
+    // Undo turn and Analysis live in the Controls sheet (f5b3a76d).
+    const controlsSheetFits = async (width,height,label='') => {
+      await page.locator('#all-controls').tap();
+      await page.locator('.practice-controls-dialog').waitFor();
+      for (const selector of ['#undo-turn','#analysis-jump']) {
+        // Short landscape sheets scroll internally; each action must still be reachable.
+        await page.locator(`.practice-controls-dialog ${selector}`).scrollIntoViewIfNeeded();
+        const box=await page.locator(`.practice-controls-dialog ${selector}`).boundingBox();
+        assert.ok(box && box.y>=-1 && box.y+box.height<=height+1 && box.x>=0 && box.x+box.width<=width+1 && box.height>=44,
+          `${label}${selector} fits in Controls at ${width}x${height}: ${JSON.stringify(box)}`);
+      }
+      await page.locator('.practice-controls-dialog .close').tap();
+      await page.locator('.practice-controls-dialog').waitFor({state:'detached'});
+    };
     await page.evaluate(async () => {
       const r = await import('/backgammon/core/rules.mjs'), s = await import('/backgammon/core/storage.mjs');
       s.saveSettings({equityBar:true, analysisAhead:false, interactionMode:'advanced', motion:'reduce'});
@@ -40,16 +54,21 @@ module.exports = async function landscapeViewport(browser, base, out, name) {
         assert.ok(Math.abs(metrics.rail.top-metrics.board.top)<2 && Math.abs(metrics.rail.bottom-metrics.board.bottom)<2,
           'equity rail including end labels fits the full board height: '+JSON.stringify(metrics));
         await assertVerticalEquity(page);
-        for (const selector of ['#confirm','#preferences','#sound-toggle','#screen-toggle','#panel-toggle','#mobile-tools','#undo-turn','#hint','#all-controls','#analysis-jump']) {
+        for (const selector of ['#confirm','#preferences','#sound-toggle','#screen-toggle','#panel-toggle','#mobile-tools','#hint','#all-controls']) {
           const box=await page.locator(selector).boundingBox();
           assert.ok(box && box.y >= -1 && box.y+box.height <= height+1 && box.x>=0 && box.x+box.width<=width+1,
             `${selector} fits at ${width}x${height}: ${JSON.stringify(box)}`);
-          assert.ok(box.height>=44, selector+' keeps a touch target');
+          // Board Confirm is drawn at 1.5 dice and extends its hit area with ::before.
+          const target=await page.locator(selector).evaluate(n=>Math.max(n.getBoundingClientRect().height,parseFloat(getComputedStyle(n,'::before').height)||0));
+          assert.ok(target>=44, selector+' keeps a touch target');
           assert.ok(await page.locator(selector).evaluate(n => {
             const r=n.getBoundingClientRect(), hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+            // A disabled board Confirm is transparent and lets taps reach the board (f5b3a76d).
+            if (n.id === 'confirm' && n.disabled) return getComputedStyle(n).pointerEvents === 'none' && !!hit?.closest('#board');
             return n === hit || n.contains(hit);
           }), selector+' is not obscured');
         }
+        await controlsSheetFits(width,height);
         await page.locator('.equity-meter').tap();
         await page.getByRole('button',{name:'Show equity bar',exact:true}).tap();
         await page.locator('#equity-bar[data-state="ready"]').waitFor({timeout:60000});
@@ -127,11 +146,14 @@ module.exports = async function landscapeViewport(browser, base, out, name) {
       await page.waitForTimeout(80);
       const selectors=phase==='double'?['#drop-cube','#take-cube','#immediate-redouble']:
         phase==='over'?['#next-game','#game-review']:['#screen-toggle'];
-      for (const selector of [...selectors,'#undo-turn','#all-controls','#analysis-jump']) {
+      for (const selector of [...selectors,'#all-controls']) {
+        // Primary decisions fit outright; secondary Controls may scroll within the dock after game over.
+        if (selector==='#all-controls') await page.locator(selector).scrollIntoViewIfNeeded();
         const box=await page.locator(selector).boundingBox();
         assert.ok(box && box.y>=0 && box.y+box.height<=261 && box.height>=44,
           `${phase}: ${selector} fits with browser chrome: ${JSON.stringify(box)}`);
       }
+      await controlsSheetFits(667,260,phase+': ');
       await page.screenshot({path:path.join(out,`${name}-landscape-${phase}.png`)});
     }
     assert.deepEqual(errors,[]);

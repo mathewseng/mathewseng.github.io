@@ -275,7 +275,8 @@ module.exports = async function checkerUX(browser, base, out, browserName) {
     );
     await load("bar");
     assert.equal((await info()).selected, "bar");
-    assert.equal(await page.locator(".movable").count(), 1);
+    // With a choice of entry, moving another checker enters with the other die.
+    assert.deepEqual(await page.locator(".movable").evaluateAll(es => es.map(e => e.dataset.point).sort()), ["5", "bar0"]);
     await drag("bar", 23);
     assert.equal((await info()).state.bar[1], 1);
     assert.equal((await info()).state.points[23], 1);

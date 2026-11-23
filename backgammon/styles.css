@@ -3408,6 +3408,15 @@ html[data-focus-navigation="true"] .board-die:focus-visible .board-die-face > re
   .play-feedback .history-turn-decisions[data-paired="true"] > [data-decision-type="cube"] {
     padding-inline: 8px;
   }
+  /* The cube third is too narrow to hang figures after the name: give the
+     name its own line and wrap the figures beneath it. */
+  .history-turn-decisions[data-paired="true"] > [data-decision-type="cube"] .chance-lines:not(.chance-table) .chance-line {
+    padding-left: 0;
+  }
+  .history-turn-decisions[data-paired="true"] > [data-decision-type="cube"] .chance-lines:not(.chance-table) .chance-name {
+    width: 100%;
+    margin-left: 0;
+  }
   .play-feedback .history-turn-decisions[data-paired="true"] > [data-decision-type="checker"] {
     border-left: 1px solid color-mix(in srgb, var(--history-color) 15%, transparent);
   }

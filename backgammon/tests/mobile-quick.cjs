@@ -136,13 +136,20 @@ module.exports = async function mobileQuick(browser, base, out, name) {
     await page.locator("#confirm").waitFor();
     await showPlayControls(page);
     const board=await page.locator("#board").boundingBox(), confirm=await page.locator("#confirm").boundingBox();
-    await select(12);await tap(7);
+    // Portrait play keeps the game summary under the board instead of the
+    // picker rows (79b1d338), so the board itself is the touch control here.
+    assert.ok(await page.getByLabel("Select a checker",{exact:true}).isHidden(),"portrait play shows the summary, not picker rows");
+    const checker = point => page.locator(`#board [data-point="${point}"] .checker > circle`).first();
+    const point = point => page.locator(`#board [data-point="${point}"] .point-hit`);
+    await checker(12).tap();await point(8).tap();await checker(5).tap();await point(4).tap();
     assert.ok(await page.locator("#confirm").isEnabled(),"a chosen complete turn still waits for confirmation");
     const saved=await page.evaluate(async()=>(await import("/backgammon/core/storage.mjs")).get("work","play"));
     assert.equal(saved.game.events.length,0,"quick actions never auto-commit a chosen turn");
     assert.deepEqual(await page.locator("#board").boundingBox(),board);
     assert.deepEqual(await page.locator("#confirm").boundingBox(),confirm,"primary action remains in place");
-    await tap(12);
+    // Tapping a used die returns its checker; the board is ready to replay.
+    while(await page.locator("#board .board-die.consumed").count()) await page.locator("#board .board-die.consumed").first().tap();
+    assert.equal((await page.evaluate(async()=>(await import("/backgammon/core/storage.mjs")).get("work","play"))).game.events.length,0);
     for(const [width,height] of [[320,568],[375,667],[390,844],[430,932],[844,390],[768,1024],[1024,768],[1366,768]]) {
       await page.setViewportSize({width,height});
       await page.evaluate(()=>scrollTo(0,0));
@@ -158,7 +165,7 @@ module.exports = async function mobileQuick(browser, base, out, name) {
       }
       await page.locator('#board [data-point="12"] .checker > circle').first().tap();
     }
-    await page.setViewportSize({width:390,height:844});await select(12);
+    await page.setViewportSize({width:390,height:844});await checker(12).tap();
     await page.evaluate(()=>document.documentElement.style.zoom="1.4");
     await page.locator("#confirm").scrollIntoViewIfNeeded();
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"enlarged text reflows without sideways scrolling");
