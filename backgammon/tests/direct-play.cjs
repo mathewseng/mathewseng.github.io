@@ -270,6 +270,13 @@ module.exports = async function directPlay(browser, base, out, name) {
       await page.setViewportSize({ width, height });
       for (const view of ["decision", "notes"]) {
         if (await page.locator(".decision-dialog").getAttribute("data-review-view") !== view) await page.locator(".decision-details-toggle").click();
+        // Let the resize/view transitions settle; slow CI runners otherwise measure mid-transition.
+        await page.locator(".decision-dialog").evaluate(async (d) => {
+          await Promise.all(d.getAnimations({ subtree: true })
+            .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+            .map((a) => a.finished.catch(() => {})));
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        });
         const geometry = await page
           .locator(".decision-dialog")
           .evaluate((d) => ({
@@ -308,6 +315,7 @@ module.exports = async function directPlay(browser, base, out, name) {
           );
         assert.ok(
           geometry.rect.top >= 0 && geometry.rect.bottom <= height + 1,
+          `${view} modal fits the viewport ${width}x${height}: ${JSON.stringify(geometry.rect)}`,
         );
       }
       await page.locator(".decision-details-toggle").click();
