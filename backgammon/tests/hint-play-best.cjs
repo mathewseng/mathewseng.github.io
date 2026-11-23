@@ -45,7 +45,8 @@ module.exports=async(browser,base,out,name)=>{
       if(touch)await button.tap();else await button.click();
       await page.waitForFunction(()=>hintMotion.some(r=>r.kind==='restore'));
       assert.equal(await page.locator('.decision-dialog[open]').count(),0,'return is visible on the live board');
-      assert.equal(await page.locator('#confirm').isDisabled(),true,'input stays locked during return');
+      // Confirm may be disabled or not rendered while Play best runs; never live.
+      assert.equal(await page.locator('#confirm:not(:disabled)').count(),0,'input stays locked during return');
       await page.screenshot({path:path.join(out,`${name}-hint-return-${touch?'phone':'desktop'}.png`)});
       await page.waitForFunction(()=>hintMotion.some(r=>r.kind==='play'));
       const trace=await page.evaluate(()=>hintMotion);

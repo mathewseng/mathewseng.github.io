@@ -43,6 +43,8 @@ module.exports=async function prethinkUI(browser,base,out,name){
   // A complete draft is prepared before confirmation too.
   await page.waitForFunction(()=>thinking.some(t=>t.opts.priority===-4&&t.result?.actual),{},{timeout:180000});
   const grade=await page.evaluate(()=>thinking.find(t=>t.opts.priority===-4&&t.result));
+  // stageSteps leaves focus in the move picker, where C is ordinary select input.
+  await page.evaluate(()=>document.activeElement?.blur());
   const before=performance.now();await page.keyboard.press('c');
   await page.waitForFunction(()=>thinking.some(t=>t.opts.priority===20&&t.opts.submitted&&t.result?.actual),{},{timeout:30000});
   const confirmed=await page.evaluate(()=>thinking.find(t=>t.opts.priority===20&&t.opts.submitted&&t.result?.actual));

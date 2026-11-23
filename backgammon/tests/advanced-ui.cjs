@@ -1,4 +1,4 @@
-const { showPlayControls } = require("./play-helpers.cjs");
+const { revealPlayControl } = require("./play-helpers.cjs");
 const assert = require('node:assert/strict'), path = require('node:path');
 module.exports = async function advancedUI(browser,base,out,name='browser') {
   const report={cases:[],screenshots:[]};
@@ -12,7 +12,8 @@ module.exports = async function advancedUI(browser,base,out,name='browser') {
     assert.equal(await page.getByLabel('Show move feedback',{exact:true}).isChecked(),true);
     assert.equal(await page.getByLabel('Warn before confirming a costly move').isChecked(),true);
     assert.equal(await page.getByLabel('Automatic opening doubles',{exact:true}).inputValue(),'-1');
-    assert.equal(await page.getByLabel('Immediate redoubles',{exact:true}).inputValue(),'2');
+    // Unlimited alternating beavers/raccoons are the money default (df3ae53e).
+    assert.equal(await page.getByLabel('Immediate redoubles',{exact:true}).inputValue(),'-1');
     assert.deepEqual(await page.getByLabel('Computer strength',{exact:true}).locator('option').evaluateAll(nodes=>nodes.map(node=>node.value)),
       ['auto','quick','standard','deep','expert','research','verify']);
     await page.locator('#preferences').click();
@@ -101,7 +102,7 @@ module.exports = async function advancedUI(browser,base,out,name='browser') {
       if(width>height&&height<=500)assert.ok(dims.board.height>height*.85,'landscape board uses almost all height');
       const shot=`${name}-advanced-${width}x${height}.png`;await page.screenshot({path:path.join(out,shot)});report.screenshots.push(shot);
     }
-    await page.setViewportSize({width:390,height:844});await showPlayControls(page);await page.locator('#analysis-jump').click();assert.ok(await page.locator('#review-heading').isVisible());
+    await page.setViewportSize({width:390,height:844});await (await revealPlayControl(page,'#analysis-jump')).click();assert.ok(await page.locator('#review-heading').isVisible());
     assert.deepEqual(errors,[]);return report;
   } finally {await ctx.close();}
 };

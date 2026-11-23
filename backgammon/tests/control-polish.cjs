@@ -52,11 +52,15 @@ module.exports = async function controlPolish(browser, base, out, name) {
       await page.waitForTimeout(70);
       const layout=await page.evaluate(()=>{
         const rect=s=>document.querySelector(s).getBoundingClientRect().toJSON();
-        return {board:rect('#board > svg'),confirm:rect('#confirm'),overflow:document.documentElement.scrollWidth>innerWidth+1};
+        // Confirm is drawn at 1.5 dice (e284a713); its ::before keeps the hit area at least 44px.
+        const c=document.querySelector('#confirm'),hit=getComputedStyle(c,'::before');
+        return {board:rect('#board > svg'),confirm:rect('#confirm'),
+          confirmTarget:{width:Math.max(c.getBoundingClientRect().width,parseFloat(hit.width)||0),height:Math.max(c.getBoundingClientRect().height,parseFloat(hit.height)||0)},
+          overflow:document.documentElement.scrollWidth>innerWidth+1};
       });
       assert.equal(layout.overflow,false,`horizontal overflow ${width}x${height}`);
       for(const key of ['confirm']){
-        assert.ok(layout[key].width>=44&&layout[key].height>=44,`touch target ${key} ${width}`);
+        assert.ok(layout.confirmTarget.width>=44&&layout.confirmTarget.height>=44,`touch target ${key} ${width}: ${JSON.stringify(layout.confirmTarget)}`);
         assert.ok(layout[key].bottom<=height+2,`visible ${key} ${width}: ${JSON.stringify(layout)}`);
       }
       assert.ok(layout.confirm.top>=layout.board.top && layout.confirm.bottom<=layout.board.bottom,'confirmation sits inside the board');

@@ -29,7 +29,10 @@ module.exports = async function playFooter(browser, base, out, name) {
     await page.waitForFunction(skin => document.documentElement.dataset.skin===skin, skin);
     const summary=page.locator('#mobile-game-summary');
     if(await summary.isVisible()) {
-      assert.ok(await summary.evaluate(n=>n.open),'summary defaults open in '+phase);
+      // Portrait keeps the summary collapsed until asked (79b1d338); open it to check its fit.
+      assert.equal(await summary.evaluate(n=>n.open),false,'summary defaults collapsed in '+phase);
+      await summary.locator(':scope > summary').tap();
+      assert.ok(await summary.evaluate(n=>n.open),'summary opens in '+phase);
       const bounds=await summary.boundingBox();
       assert.ok(bounds.y+bounds.height<=page.viewportSize().height+1,'summary fits in '+phase+' / '+mode);
       if(mode==='local') {
@@ -96,7 +99,9 @@ module.exports = async function playFooter(browser, base, out, name) {
       if (phase === 'move') {
         const bounds=await page.locator('#confirm').boundingBox();
         const board=await page.locator('#board').boundingBox();
-        assert.ok(bounds.width>=44 && bounds.height>=44,'accessible touch target');
+        // Confirm is drawn at 1.5 dice (e284a713); its ::before keeps the hit area at least 44px.
+        const target=await page.locator('#confirm').evaluate(n=>{const h=getComputedStyle(n,'::before');return {width:Math.max(n.getBoundingClientRect().width,parseFloat(h.width)||0),height:Math.max(n.getBoundingClientRect().height,parseFloat(h.height)||0)};});
+        assert.ok(target.width>=44 && target.height>=44,'accessible touch target: '+JSON.stringify(target));
         assert.ok(bounds.y>=board.y && bounds.y+bounds.height<=board.y+board.height,'Confirm is inside board');
         assert.equal(await page.locator('#confirm .confirm-copy').count(),0,'icon-only confirmation');
       }
