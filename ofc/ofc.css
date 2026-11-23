@@ -777,6 +777,12 @@ body:has(> .ofc-shell) {
   font-size: var(--t-sm);
 }
 
+.rules-article .cribbage-hand-chips li small {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 500;
+}
+
 .rules-article .cribbage-hand-chips li.is-exact {
   padding: 0 4px;
   border-radius: 4px;

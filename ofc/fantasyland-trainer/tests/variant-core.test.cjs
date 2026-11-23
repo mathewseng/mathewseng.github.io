@@ -419,13 +419,29 @@ cribbageReference.forEach((group, index) => {
   assert.equal(group.royalties, group.score - 10, `cribbage reference: ${group.score} points should convert to royalties`);
   assert.equal(group.count, group.groups.reduce((sum, bonus) => sum + bonus.hands.length, 0), `cribbage reference: ${group.score}-point count`);
   group.groups.forEach((bonus) => {
-    bonus.hands.forEach((hand) => {
-      const key = `${hand}|${bonus.flush}|${bonus.nobs}`;
-      assert.ok(!listedCribbageEntries.has(key), `cribbage reference: ${key} should be listed once`);
-      listedCribbageEntries.set(key, group.score);
+    bonus.hands.forEach((pattern) => {
+      assert.ok(pattern.members.length, `cribbage reference: ${pattern.label} should cover at least one hand`);
+      pattern.members.forEach((hand) => {
+        // X stands only for cards that score nothing: the scoring ranks of
+        // every member, plus one X per remaining card, rebuild the pattern.
+        const kept = pattern.label.replace(/X/g, "");
+        assert.ok(
+          hand.length === 5 && pattern.label.length === 5 && kept.split("").every((rank) => hand.includes(rank)),
+          `cribbage reference: ${hand} should fit ${pattern.label}`
+        );
+        const key = `${hand}|${bonus.flush}|${bonus.nobs}`;
+        assert.ok(!listedCribbageEntries.has(key), `cribbage reference: ${key} should be listed once`);
+        listedCribbageEntries.set(key, group.score);
+      });
     });
   });
 });
+assert.deepEqual(
+  core.cribbageHandReference().find(({ score }) => score === 20).groups[0].hands.find(({ label }) => label === "5555X").members,
+  ["A5555", "25555", "35555", "45555", "55556", "55557", "55558", "55559"],
+  "cribbage reference: 5555X should cover every non-scoring fifth card"
+);
+assert.equal(core.cribbageHandReference().reduce((sum, { count }) => sum + count, 0), 1802, "cribbage reference: 1,802 patterns");
 const cribbageReferenceLabel = (rank) => (rank === 14 ? "A" : ({ 13: "K", 12: "Q", 11: "J", 10: "T" })[rank] || String(rank));
 const cribbageReferenceValue = (rank) => (rank === 14 ? 1 : rank);
 const actualCribbageEntries = new Map();
@@ -480,8 +496,14 @@ assert.deepEqual(
   [29, 28, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11],
   "cribbage reference: no hand scores 25, 26, or 27"
 );
-assert.equal(core.cribbageLookupRanks("5h 5d Jc Qs Kd"), "55JQK", "cribbage lookup: suits and spaces are ignored");
-assert.equal(core.cribbageLookupRanks("10 j q"), "TJQ", "cribbage lookup: 10 reads as T");
+assert.deepEqual(
+  core.cribbageParseCards("5h 5d 10c q").cards,
+  [{ value: 5, suit: "h" }, { value: 5, suit: "d" }, { value: 10, suit: "c" }, { value: 12, suit: null }],
+  "cribbage lookup: ranks, 10, and optional suits are read"
+);
+assert.equal(core.cribbageParseCards("5h 5d 10c q").suited, false, "cribbage lookup: one unsuited card means ranks only");
+assert.equal(core.cribbageParseCards("55555"), null, "cribbage lookup: five of a rank is rejected");
+assert.equal(core.cribbageParseCards("5z"), null, "cribbage lookup: unknown characters are rejected");
 assert.deepEqual(
   (({ score, flush, nobs }) => ({ score, flush, nobs }))(core.cribbageLookupCards("5h 5d Jh Qh Kh")),
   { score: 22, flush: 4, nobs: 1 },
@@ -490,6 +512,71 @@ assert.deepEqual(
 assert.equal(core.cribbageLookupCards("10s J♠ Q♠ K♠ 5d").score, 17, "cribbage lookup: 10 and suit symbols are read");
 assert.equal(core.cribbageLookupCards("55JQK"), null, "cribbage lookup: ranks without suits are not an exact hand");
 assert.equal(core.cribbageLookupCards("5h 5h 5d Jc Qs"), null, "cribbage lookup: repeated cards are rejected");
+
+// Draws: with suits, outs per score should match scoring every card left in
+// the deck; without suits, the reachable scores should match every suiting.
+const drawCardIds = (text) => text.trim().split(/\s+/).map((id) => core.makeCard(id.replace("10", "T")));
+const drawDeck = ["s", "h", "d", "c"].flatMap((suit) => ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"].map((rank) => core.makeCard(`${rank}${suit}`)));
+["5h 5d Jh Qh", "As 2s 3s", "7c 8d 8h", "Jd 5s 5c 5h", "2c 4d 6h 9s"].forEach((text) => {
+  const held = drawCardIds(text);
+  const left = drawDeck.filter((card) => !held.some((other) => other.id === card.id));
+  const expected = new Map();
+  const take = (start, picked) => {
+    if (held.length + picked.length === 5) {
+      const score = core.cribbageScoreTotal(held.concat(picked));
+      if (score >= 11) expected.set(score, (expected.get(score) || 0) + 1);
+      return;
+    }
+    for (let index = start; index < left.length; index += 1) take(index + 1, picked.concat(left[index]));
+  };
+  take(0, []);
+  const result = core.cribbageDraws(text);
+  assert.equal(result.suited, true, `cribbage draws: ${text} should use suits`);
+  const actual = new Map(result.scores.map(({ score, groups }) => [score, groups.reduce((sum, { hands }) => sum + hands.reduce((outs, draw) => outs + draw.outs, 0), 0)]));
+  assert.deepEqual(sortedEntries(actual), sortedEntries(expected), `cribbage draws: ${text} outs per score`);
+});
+["55JQ", "A23", "777", "9TJQ"].forEach((text) => {
+  const result = core.cribbageDraws(text);
+  assert.equal(result.suited, false, `cribbage draws: ${text} should be ranks only`);
+  const expected = new Set();
+  const ranks = text.split("");
+  // Every suiting of the typed ranks (repeats are harmless for a set).
+  const suitings = [];
+  const pick = (index, chosen) => {
+    if (index === ranks.length) {
+      suitings.push(chosen);
+      return;
+    }
+    drawDeck.forEach((card) => {
+      if (card.id[0] === ranks[index] && !chosen.some((other) => other.id === card.id)) pick(index + 1, chosen.concat(card));
+    });
+  };
+  pick(0, []);
+  suitings.forEach((held) => {
+    const left = drawDeck.filter((card) => !held.some((other) => other.id === card.id));
+    const take = (start, picked) => {
+      if (held.length + picked.length === 5) {
+        const score = core.cribbageScoreTotal(held.concat(picked));
+        if (score >= 11) expected.add(score);
+        return;
+      }
+      for (let index = start; index < left.length; index += 1) take(index + 1, picked.concat(left[index]));
+    };
+    take(0, []);
+  });
+  assert.deepEqual(result.scores.map(({ score }) => score), [...expected].sort((a, b) => b - a), `cribbage draws: ${text} reachable scores`);
+});
+const fiveFiveJackQueen = core.cribbageDraws("5h 5d Jh Qh");
+assert.deepEqual(
+  fiveFiveJackQueen.scores[0].groups[0].hands.map(({ label, outs }) => [label, outs]),
+  [["T", 1], ["K", 1]],
+  "cribbage draws: 5h 5d Jh Qh makes 22 with Th or Kh"
+);
+assert.ok(
+  core.cribbageDraws("2222").scores.some(({ score, groups }) => score === 12 && groups.some(({ hands }) => hands.some(({ label }) => label === "X"))),
+  "cribbage draws: a card that scores nothing is written X"
+);
+assert.equal(core.cribbageDraws("55"), null, "cribbage draws: two cards are not a draw lookup");
 
 const cribbageOuterRows = {
   top: ["2c", "3d", "4h"],

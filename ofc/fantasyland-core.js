@@ -233,12 +233,12 @@
     },
   ];
 
-  // Every natural five-card cribbage middle worth 11+ points, by rank
-  // combination (ace low) and the suit bonus that gets it there: no flush or
-  // nobs, nobs, 2 nobs, a four-card flush, or a five-card flush, the flushes
-  // with or without nobs. Ranks fix the 15s, pairs, and runs; each suiting a
-  // rank combination allows adds its flush and nobs points on top. Built on
-  // first use (about 20 ms) and grouped by score, highest first.
+  // Cribbage middles worth 11+ points, for the rules reference and its lookup.
+  // Ranks are values 1-13 with the ace low. Ranks fix the 15s, pairs, and
+  // runs; a suiting adds a flush (4 or 5) and nobs (1 per J sharing a suit).
+  // A card that scores nothing is written X, so 2222X stands for every 2222
+  // plus a card that adds no points. Built on first use and grouped by score,
+  // highest first, then by suit bonus.
   const CRIBBAGE_SUIT_BONUSES = Object.freeze([
     { flush: 0, nobs: 0, label: "No flush or nobs" },
     { flush: 0, nobs: 1, label: "Nobs" },
@@ -248,28 +248,65 @@
     { flush: 5, nobs: 0, label: "5-flush" },
     { flush: 5, nobs: 1, label: "5-flush + nobs" },
   ]);
+  const CRIBBAGE_VALUE_LABEL = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"];
   let cribbageHandReferenceCache = null;
 
-  function cribbageRankPoints(values) {
+  function cribbageBonus(flush, nobs) {
+    return CRIBBAGE_SUIT_BONUSES.find((bonus) => bonus.flush === flush && bonus.nobs === nobs);
+  }
+
+  // Rank points for five values, and which values score (are in a 15, a
+  // pair, or a counted run). Equal values always score together as a pair.
+  function cribbageRankAnalysis(values) {
     let points = 0;
+    const live = new Set();
     for (let mask = 3; mask < 32; mask += 1) {
       if ((mask & (mask - 1)) === 0) continue;
       let total = 0;
       for (let index = 0; index < 5; index += 1) if (mask & (1 << index)) total += Math.min(values[index], 10);
-      if (total === 15) points += 2;
+      if (total !== 15) continue;
+      points += 2;
+      for (let index = 0; index < 5; index += 1) if (mask & (1 << index)) live.add(values[index]);
     }
     const counts = Array(15).fill(0);
     values.forEach((value) => { counts[value] += 1; });
-    for (let rank = 1; rank <= 13; rank += 1) points += counts[rank] * (counts[rank] - 1);
+    for (let value = 1; value <= 13; value += 1) {
+      points += counts[value] * (counts[value] - 1);
+      if (counts[value] > 1) live.add(value);
+    }
     let runPoints = 0;
     for (let length = 5; length >= 3 && runPoints === 0; length -= 1) {
       for (let start = 1; start + length - 1 <= 13; start += 1) {
         let multiplier = 1;
-        for (let rank = start; rank < start + length; rank += 1) multiplier *= counts[rank];
+        for (let value = start; value < start + length; value += 1) multiplier *= counts[value];
+        if (!multiplier) continue;
         runPoints += length * multiplier;
+        for (let value = start; value < start + length; value += 1) live.add(value);
       }
     }
-    return points + runPoints;
+    return { points: points + runPoints, live };
+  }
+
+  // Sorted label for some of a hand's values: scoring values (and a J that
+  // scores nobs) keep their rank; the rest become X, listed last.
+  function cribbagePatternLabel(values, live, nobs) {
+    const kept = [];
+    let blanks = 0;
+    values.forEach((value) => {
+      if (live.has(value) || (value === 11 && nobs > 0)) kept.push(value);
+      else blanks += 1;
+    });
+    return kept.sort((left, right) => left - right).map((value) => CRIBBAGE_VALUE_LABEL[value]).join("") + "X".repeat(blanks);
+  }
+
+  function comparePatternLabels(left, right) {
+    const order = (label) => label.split("").map((rank) => (rank === "X" ? 14 : CRIBBAGE_VALUE_LABEL.indexOf(rank)));
+    const a = order(left);
+    const b = order(right);
+    for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
+      if ((a[index] || 0) !== (b[index] || 0)) return (a[index] || 0) - (b[index] || 0);
+    }
+    return 0;
   }
 
   // Flush/nobs pairs a rank combination can take, found by trying each
@@ -297,18 +334,44 @@
     return CRIBBAGE_SUIT_BONUSES.filter((bonus) => found.has(`${bonus.flush}|${bonus.nobs}`));
   }
 
+  // Groups scored items into [{ score, royalties, count, groups: [{ label,
+  // flush, nobs, hands: [{ label, ... }] }] }], highest score first.
+  function groupCribbageByScore(items) {
+    const scores = new Map();
+    items.forEach((item) => {
+      if (!scores.has(item.score)) scores.set(item.score, new Map());
+      const bonuses = scores.get(item.score);
+      if (!bonuses.has(item.bonus)) bonuses.set(item.bonus, []);
+      bonuses.get(item.bonus).push(item);
+    });
+    return [...scores.entries()]
+      .sort(([left], [right]) => right - left)
+      .map(([score, bonuses]) => {
+        const groups = CRIBBAGE_SUIT_BONUSES.filter((bonus) => bonuses.has(bonus)).map((bonus) => ({
+          label: bonus.label,
+          flush: bonus.flush,
+          nobs: bonus.nobs,
+          hands: bonuses.get(bonus).sort((left, right) => comparePatternLabels(left.label, right.label)),
+        }));
+        return { score, royalties: score - 10, count: groups.reduce((sum, group) => sum + group.hands.length, 0), groups };
+      });
+  }
+
+  // Every rank combination and suit bonus worth 11+, collapsed to patterns.
+  // Each pattern lists the exact rank combinations (`members`) it covers.
   function cribbageHandReference() {
     if (cribbageHandReferenceCache) return cribbageHandReferenceCache;
-    const label = (value) => (value === 1 ? "A" : RANK_LABEL[value]);
-    const scores = new Map();
+    const patterns = new Map();
     const visit = (start, values) => {
       if (values.length === 5) {
-        const rankPoints = cribbageRankPoints(values);
+        const { points, live } = cribbageRankAnalysis(values);
         cribbageSuitBonuses(values).forEach((bonus) => {
-          const score = rankPoints + bonus.flush + bonus.nobs;
+          const score = points + bonus.flush + bonus.nobs;
           if (score < 11) return;
-          if (!scores.has(score)) scores.set(score, new Map(CRIBBAGE_SUIT_BONUSES.map((entry) => [entry, []])));
-          scores.get(score).get(bonus).push(values.map(label).join(""));
+          const label = cribbagePatternLabel(values, live, bonus.nobs);
+          const key = `${score}|${bonus.label}|${label}`;
+          if (!patterns.has(key)) patterns.set(key, { label, score, bonus, members: [] });
+          patterns.get(key).members.push(values.map((value) => CRIBBAGE_VALUE_LABEL[value]).join(""));
         });
         return;
       }
@@ -317,22 +380,107 @@
       }
     };
     visit(1, []);
-    cribbageHandReferenceCache = Object.freeze(
-      [...scores.entries()]
-        .sort(([left], [right]) => right - left)
-        .map(([score, bonuses]) => {
-          const groups = [...bonuses.entries()]
-            .filter(([, hands]) => hands.length)
-            .map(([bonus, hands]) => Object.freeze({ label: bonus.label, flush: bonus.flush, nobs: bonus.nobs, hands: Object.freeze(hands) }));
-          return Object.freeze({
-            score,
-            royalties: score - 10,
-            count: groups.reduce((sum, group) => sum + group.hands.length, 0),
-            groups: Object.freeze(groups),
-          });
-        })
-    );
+    cribbageHandReferenceCache = groupCribbageByScore([...patterns.values()]);
     return cribbageHandReferenceCache;
+  }
+
+  // Reads typed cards: ranks (A, 2-9, T or 10, J, Q, K) each optionally
+  // followed by a suit letter or symbol, with spaces and commas ignored.
+  // Returns { cards: [{ value, suit }], suited } or null when unreadable.
+  function cribbageParseCards(text) {
+    const symbols = { "♠": "S", "♥": "H", "♦": "D", "♣": "C" };
+    const compact = String(text || "")
+      .toUpperCase()
+      .replace(/[♠♥♦♣]/g, (symbol) => symbols[symbol])
+      .replace(/10/g, "T")
+      .replace(/[\s,]/g, "");
+    if (!compact) return { cards: [], suited: false };
+    if (!/^([A2-9TJQK][SHDC]?)+$/.test(compact) || compact.length > 10) return null;
+    const cards = (compact.match(/[A2-9TJQK][SHDC]?/g) || []).map((token) => ({
+      value: CRIBBAGE_VALUE_LABEL.indexOf(token[0]),
+      suit: token[1] ? token[1].toLowerCase() : null,
+    }));
+    if (cards.length > 5) return null;
+    const counts = {};
+    if (cards.some(({ value }) => (counts[value] = (counts[value] || 0) + 1) > 4)) return null;
+    const suited = cards.every(({ suit }) => suit);
+    if (suited && new Set(cards.map(({ value, suit }) => `${value}${suit}`)).size !== cards.length) return null;
+    return { cards, suited };
+  }
+
+  function cribbageSuitedBonus(cards) {
+    const counts = {};
+    cards.forEach(({ suit }) => { counts[suit] = (counts[suit] || 0) + 1; });
+    const longest = Math.max(...Object.values(counts));
+    const nobs = cards.filter(({ value, suit }) => value === 11 && counts[suit] > 1).length;
+    return cribbageBonus(longest === 5 ? 5 : longest === 4 ? 4 : 0, nobs);
+  }
+
+  // Score of five typed cards with suits; null for anything else.
+  function cribbageLookupCards(text) {
+    const parsed = cribbageParseCards(text);
+    if (!parsed || !parsed.suited || parsed.cards.length !== 5) return null;
+    const values = parsed.cards.map(({ value }) => value).sort((left, right) => left - right);
+    const bonus = cribbageSuitedBonus(parsed.cards);
+    const score = cribbageRankAnalysis(values).points + bonus.flush + bonus.nobs;
+    return { score, flush: bonus.flush, nobs: bonus.nobs, ranks: values.map((value) => CRIBBAGE_VALUE_LABEL[value]).join("") };
+  }
+
+  // The 1 or 2 cards that take three or four typed cards to 11+, grouped like
+  // the reference. Drawn cards that score nothing are written X. With suits
+  // on every typed card, draws come from the cards left in the deck and each
+  // carries its number of outs; without suits, any suiting is allowed.
+  function cribbageDraws(text) {
+    const parsed = typeof text === "string" ? cribbageParseCards(text) : text;
+    if (!parsed || parsed.cards.length < 3 || parsed.cards.length > 4) return null;
+    const held = parsed.cards;
+    const need = 5 - held.length;
+    const draws = new Map();
+    const record = (drawn, bonus, outs) => {
+      const values = held.map(({ value }) => value).concat(drawn).sort((left, right) => left - right);
+      const { points, live } = cribbageRankAnalysis(values);
+      const score = points + bonus.flush + bonus.nobs;
+      if (score < 11) return;
+      const label = cribbagePatternLabel(drawn, live, bonus.nobs);
+      const key = `${score}|${bonus.label}|${label}`;
+      if (!draws.has(key)) draws.set(key, { label, score, bonus, outs: 0 });
+      draws.get(key).outs += outs;
+    };
+    if (parsed.suited) {
+      const used = new Set(held.map(({ value, suit }) => `${value}${suit}`));
+      const deck = [];
+      for (let value = 1; value <= 13; value += 1) {
+        ["s", "h", "d", "c"].forEach((suit) => { if (!used.has(`${value}${suit}`)) deck.push({ value, suit }); });
+      }
+      const take = (start, picked) => {
+        if (picked.length === need) {
+          record(picked.map(({ value }) => value), cribbageSuitedBonus(held.concat(picked)), 1);
+          return;
+        }
+        for (let index = start; index < deck.length; index += 1) take(index + 1, picked.concat(deck[index]));
+      };
+      take(0, []);
+    } else {
+      const counts = Array(14).fill(0);
+      held.forEach(({ value }) => { counts[value] += 1; });
+      const take = (start, picked) => {
+        if (picked.length === need) {
+          const values = held.map(({ value }) => value).concat(picked).sort((left, right) => left - right);
+          cribbageSuitBonuses(values).forEach((bonus) => record(picked, bonus, 0));
+          return;
+        }
+        for (let value = start; value <= 13; value += 1) {
+          if (counts[value] + picked.filter((card) => card === value).length < 4) take(value, picked.concat(value));
+        }
+      };
+      take(1, []);
+    }
+    return {
+      held: held.map(({ value }) => CRIBBAGE_VALUE_LABEL[value]).join(""),
+      suited: parsed.suited,
+      need,
+      scores: groupCribbageByScore([...draws.values()]),
+    };
   }
 
   const virtualDeck = [];
@@ -2951,34 +3099,6 @@
     return wrapper;
   }
 
-  // Typed ranks to look up: "10" reads as T, and suit letters, spaces, and
-  // other characters are ignored, so "5h 5d Jc Qs Kd" finds 55JQK.
-  function cribbageLookupRanks(text) {
-    return String(text || "").toUpperCase().replace(/10/g, "T").replace(/[^A2-9TJQK]/g, "").slice(0, 5);
-  }
-
-  // Five typed cards with suits ("5h 5d Jc Qs Kd", "10s", or suit symbols)
-  // score that exact hand; anything else returns null.
-  function cribbageLookupCards(text) {
-    const symbols = { "♠": "S", "♥": "H", "♦": "D", "♣": "C" };
-    const normalized = String(text || "").toUpperCase().replace(/[♠♥♦♣]/g, (symbol) => symbols[symbol]).replace(/10/g, "T");
-    if (/[^A2-9TJQKSHDC\s,]/.test(normalized)) return null;
-    const tokens = normalized.replace(/[\s,]/g, "").match(/[A2-9TJQK][SHDC]/g) || [];
-    if (tokens.length !== 5 || tokens.join("") !== normalized.replace(/[\s,]/g, "")) return null;
-    const ids = tokens.map((token) => `${token[0]}${token[1].toLowerCase()}`);
-    if (new Set(ids).size !== 5) return null;
-    const cards = ids.map(makeCard);
-    const counts = {};
-    cards.forEach(({ suit }) => { counts[suit] = (counts[suit] || 0) + 1; });
-    const longest = Math.max(...Object.values(counts));
-    return {
-      cards,
-      score: cribbageScoreTotal(cards),
-      flush: longest === 5 ? 5 : longest === 4 ? 4 : 0,
-      nobs: cards.filter(({ rank, suit }) => rank === 11 && counts[suit] > 1).length,
-    };
-  }
-
   function cribbageHandContains(hand, ranks) {
     const remaining = hand.split("");
     return ranks.split("").every((rank) => {
@@ -2987,6 +3107,49 @@
       remaining.splice(index, 1);
       return true;
     });
+  }
+
+  // One score section: a heading, then a row of chips per suit bonus.
+  // `chip(hand)` returns the chip's text and optional detail.
+  function createCribbageScoreGroup(doc, scoreGroup, chip) {
+    const group = doc.createElement("div");
+    group.className = "cribbage-score-group";
+    const heading = doc.createElement("div");
+    heading.className = "cribbage-score-heading";
+    heading.innerHTML = `
+      <strong><mark>${scoreGroup.score}</mark> points</strong>
+      <span>${scoreGroup.royalties} royalt${scoreGroup.royalties === 1 ? "y" : "ies"}</span>
+    `;
+    group.appendChild(heading);
+    const rows = [];
+    scoreGroup.groups.forEach((bonus) => {
+      const row = doc.createElement("div");
+      row.className = "cribbage-hand-row cribbage-bonus-row";
+      const label = doc.createElement("span");
+      label.className = "cribbage-hand-breakdown";
+      label.textContent = bonus.label;
+      const list = doc.createElement("ul");
+      list.className = "cribbage-hand-chips";
+      const items = bonus.hands.map((hand) => {
+        const { text, detail } = chip(hand);
+        const item = doc.createElement("li");
+        item.className = "cribbage-hand-pattern";
+        item.textContent = text;
+        item.setAttribute("aria-label", `${text.split("").join(" ")}${detail ? `, ${detail}` : ""}`);
+        if (detail) {
+          const small = doc.createElement("small");
+          small.textContent = ` ${detail}`;
+          small.setAttribute("aria-hidden", "true");
+          item.appendChild(small);
+        }
+        list.appendChild(item);
+        return { item, hand, bonus };
+      });
+      row.append(label, list);
+      group.appendChild(row);
+      rows.push({ row, items });
+    });
+    return { group, rows };
   }
 
   function createCribbageHandReference(doc) {
@@ -3003,13 +3166,14 @@
     const searchId = `cribbage-hand-search-${Math.random().toString(36).slice(2, 8)}`;
     const searchLabel = doc.createElement("label");
     searchLabel.htmlFor = searchId;
-    searchLabel.textContent = "Find ranks";
+    searchLabel.textContent = "Your cards";
     const input = doc.createElement("input");
     input.id = searchId;
     input.type = "search";
     input.autocomplete = "off";
+    input.autocapitalize = "characters";
     input.spellcheck = false;
-    input.placeholder = "55JQK or 5h 5d Jc Qs Kd";
+    input.placeholder = "55JQ or 5h 5d Jh Qh";
     const status = doc.createElement("p");
     status.className = "cribbage-hand-search-status";
     status.setAttribute("aria-live", "polite");
@@ -3017,73 +3181,91 @@
     const jump = doc.createElement("nav");
     jump.className = "cribbage-score-jump";
     jump.setAttribute("aria-label", "Jump to score");
-    body.append(search, jump);
+    const list = doc.createElement("div");
+    list.className = "cribbage-hand-list-all";
+    const draws = doc.createElement("div");
+    draws.className = "cribbage-draws";
+    draws.hidden = true;
+    body.append(search, jump, list, draws);
 
     const entries = [];
-    const rows = [];
-    const scoreGroups = [];
+    const sections = [];
     reference.forEach((scoreGroup) => {
-      const group = doc.createElement("div");
-      group.className = "cribbage-score-group";
-      const jumpButton = doc.createElement("button");
-      jumpButton.type = "button";
-      jumpButton.textContent = scoreGroup.score;
-      jumpButton.setAttribute("aria-label", `${scoreGroup.score} points`);
-      jumpButton.addEventListener("click", () => group.scrollIntoView({ block: "start", behavior: "smooth" }));
-      jump.appendChild(jumpButton);
-      const heading = doc.createElement("div");
-      heading.className = "cribbage-score-heading";
-      heading.innerHTML = `
-        <strong><mark>${scoreGroup.score}</mark> points</strong>
-        <span>${scoreGroup.royalties} royalt${scoreGroup.royalties === 1 ? "y" : "ies"}</span>
-      `;
-      group.appendChild(heading);
-      const groupRows = [];
-      scoreGroup.groups.forEach((bonus) => {
-        const row = doc.createElement("div");
-        row.className = "cribbage-hand-row cribbage-bonus-row";
-        const label = doc.createElement("span");
-        label.className = "cribbage-hand-breakdown";
-        label.textContent = bonus.label;
-        const list = doc.createElement("ul");
-        list.className = "cribbage-hand-chips";
-        const items = bonus.hands.map((hand) => {
-          const item = doc.createElement("li");
-          item.className = "cribbage-hand-pattern";
-          item.textContent = hand;
-          item.setAttribute("aria-label", hand.split("").join(" "));
-          list.appendChild(item);
-          entries.push({ hand, item, flush: bonus.flush, nobs: bonus.nobs });
-          return item;
-        });
-        row.append(label, list);
-        group.appendChild(row);
-        const rowRef = { row, items };
-        rows.push(rowRef);
-        groupRows.push(rowRef);
-      });
-      body.appendChild(group);
-      scoreGroups.push({ group, rows: groupRows, button: jumpButton });
+      const { group, rows } = createCribbageScoreGroup(doc, scoreGroup, (pattern) => ({ text: pattern.label }));
+      const button = doc.createElement("button");
+      button.type = "button";
+      button.textContent = scoreGroup.score;
+      button.setAttribute("aria-label", `${scoreGroup.score} points`);
+      button.addEventListener("click", () => group.scrollIntoView({ block: "start", behavior: "smooth" }));
+      jump.appendChild(button);
+      list.appendChild(group);
+      rows.forEach(({ items }) => items.forEach((entry) => entries.push(entry)));
+      sections.push({ group, rows, button });
     });
-
     const total = entries.length;
-    const update = () => {
-      const ranks = cribbageLookupRanks(input.value);
-      const exact = cribbageLookupCards(input.value);
+
+    const showList = (filter) => {
       let shown = 0;
-      entries.forEach(({ hand, item, flush, nobs }) => {
-        const match = !ranks || cribbageHandContains(hand, ranks);
+      entries.forEach(({ item, hand, bonus }) => {
+        const match = filter(hand, bonus);
         item.hidden = !match;
-        const highlighted = exact
-          ? hand === ranks && flush === exact.flush && nobs === exact.nobs
-          : ranks.length === 5 && match;
-        item.classList.toggle("is-exact", highlighted);
+        item.classList.toggle("is-exact", match === "exact");
         if (match) shown += 1;
       });
-      rows.forEach(({ row, items }) => { row.hidden = items.every((item) => item.hidden); });
-      scoreGroups.forEach(({ group, rows: groupRows, button }) => {
-        group.hidden = groupRows.every(({ row }) => row.hidden);
+      sections.forEach(({ group, rows, button }) => {
+        rows.forEach(({ row, items }) => { row.hidden = items.every(({ item }) => item.hidden); });
+        group.hidden = rows.every(({ row }) => row.hidden);
         button.hidden = group.hidden;
+      });
+      return shown;
+    };
+
+    const showDraws = (result) => {
+      const groups = result.scores.map((scoreGroup) => createCribbageScoreGroup(doc, scoreGroup, (draw) => ({
+        text: `+${draw.label}`,
+        detail: result.suited ? `×${draw.outs}` : "",
+      })).group);
+      draws.replaceChildren(...groups);
+    };
+
+    const update = () => {
+      const parsed = cribbageParseCards(input.value);
+      const count = parsed ? parsed.cards.length : 0;
+      const drawing = parsed && count >= 3 && count <= 4;
+      list.hidden = drawing;
+      jump.hidden = drawing;
+      draws.hidden = !drawing;
+      if (!parsed) {
+        showList(() => false);
+        status.textContent = "Type ranks like 55JQ, or cards like 5h 5d Jh Qh";
+        return;
+      }
+      const ranks = parsed.cards
+        .map(({ value }) => value)
+        .sort((left, right) => left - right)
+        .map((value) => CRIBBAGE_VALUE_LABEL[value])
+        .join("");
+      if (drawing) {
+        const result = cribbageDraws(parsed);
+        showDraws(result);
+        const cardWord = result.need === 1 ? "card" : "cards";
+        status.textContent = result.scores.length
+          ? `${result.need} more ${cardWord} for ${ranks}: best ${result.scores[0].score}${result.suited ? ". ×n is how many unseen cards do it." : ""}`
+          : `No ${result.need} ${cardWord} take ${ranks} to 11`;
+        return;
+      }
+      if (!count) {
+        showList(() => true);
+        status.textContent = `${total.toLocaleString("en-US")} patterns. X is any card that scores nothing.`;
+        return;
+      }
+      const exact = parsed.suited && count === 5 ? cribbageLookupCards(input.value) : null;
+      const shown = showList((pattern, bonus) => {
+        const members = pattern.members.filter((member) => cribbageHandContains(member, ranks));
+        if (!members.length) return false;
+        if (count < 5) return true;
+        if (exact) return bonus.flush === exact.flush && bonus.nobs === exact.nobs ? "exact" : true;
+        return "exact";
       });
       if (exact) {
         const royalties = exact.score - 10;
@@ -3091,10 +3273,10 @@
           ? `Scores ${exact.score}: ${royalties} royalt${royalties === 1 ? "y" : "ies"}`
           : `Scores ${exact.score}: does not qualify`;
       } else {
-        status.textContent = !ranks
-          ? `${total.toLocaleString("en-US")} rank and suit combinations`
-          : shown
-            ? `${shown.toLocaleString("en-US")} with ${ranks}`
+        status.textContent = shown
+          ? `${shown.toLocaleString("en-US")} pattern${shown === 1 ? "" : "s"} with ${ranks}`
+          : count === 5
+            ? `${ranks} scores under 11 with any suits`
             : `No 11+ hand has ${ranks}`;
       }
     };
@@ -3152,8 +3334,9 @@
     RULE_SECTIONS,
     CRIBBAGE_SUIT_BONUSES,
     cribbageHandReference,
-    cribbageLookupRanks,
+    cribbageParseCards,
     cribbageLookupCards,
+    cribbageDraws,
     normalizeVariant,
     variantCardCounts,
     variantScenarios,
