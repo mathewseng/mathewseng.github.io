@@ -418,6 +418,31 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
 
 // 11+ reference: every natural five-card hand, scored by the real evaluator,
 // should appear under its rank combination and flush/nobs bonus at its score.
+// A label fits a hand when its ranks are in the hand, X, Y, Z are different
+// ten-cards (as many copies as letters), and ? takes up the rest.
+const cribbageLabelFits = (label, hand) => {
+  const remaining = hand.split("");
+  const take = (rank) => {
+    const index = remaining.indexOf(rank);
+    if (index < 0) return false;
+    remaining.splice(index, 1);
+    return true;
+  };
+  if (!label.replace(/[XYZ?]/g, "").split("").every(take)) return false;
+  const letters = [..."XYZ"].map((letter) => label.split(letter).length - 1).filter(Boolean);
+  const tryAssign = (index, used) => {
+    if (index === letters.length) return remaining.length === label.split("?").length - 1;
+    return ["T", "J", "Q", "K"].some((rank) => {
+      if (used.includes(rank) || remaining.filter((card) => card === rank).length < letters[index]) return false;
+      const saved = remaining.slice();
+      for (let copy = 0; copy < letters[index]; copy += 1) take(rank);
+      if (tryAssign(index + 1, used.concat(rank))) return true;
+      remaining.splice(0, remaining.length, ...saved);
+      return false;
+    });
+  };
+  return tryAssign(0, []);
+};
 const cribbageReference = core.cribbageHandReference();
 const listedCribbageEntries = new Map();
 cribbageReference.forEach((group, index) => {
@@ -428,13 +453,7 @@ cribbageReference.forEach((group, index) => {
     bonus.hands.forEach((pattern) => {
       assert.ok(pattern.members.length, `cribbage reference: ${pattern.label} should cover at least one hand`);
       pattern.members.forEach((hand) => {
-        // X stands only for cards that score nothing: the scoring ranks of
-        // every member, plus one X per remaining card, rebuild the pattern.
-        const kept = pattern.label.replace(/X/g, "");
-        assert.ok(
-          hand.length === 5 && pattern.label.length === 5 && kept.split("").every((rank) => hand.includes(rank)),
-          `cribbage reference: ${hand} should fit ${pattern.label}`
-        );
+        assert.ok(hand.length === 5 && pattern.label.length === 5 && cribbageLabelFits(pattern.label, hand), `cribbage reference: ${hand} should fit ${pattern.label}`);
         const key = `${hand}|${bonus.flush}|${bonus.nobs}`;
         assert.ok(!listedCribbageEntries.has(key), `cribbage reference: ${key} should be listed once`);
         listedCribbageEntries.set(key, group.score);
@@ -443,11 +462,20 @@ cribbageReference.forEach((group, index) => {
   });
 });
 assert.deepEqual(
-  core.cribbageHandReference().find(({ score }) => score === 20).groups[0].hands.find(({ label }) => label === "5555X").members,
+  core.cribbageHandReference().find(({ score }) => score === 20).groups[0].hands.find(({ label }) => label === "5555?").members,
   ["A5555", "25555", "35555", "45555", "55556", "55557", "55558", "55559"],
-  "cribbage reference: 5555X should cover every non-scoring fifth card"
+  "cribbage reference: 5555? should cover every non-scoring fifth card"
 );
-assert.equal(core.cribbageHandReference().reduce((sum, { count }) => sum + count, 0), 1802, "cribbage reference: 1,802 patterns");
+assert.deepEqual(
+  core.cribbageHandReference().find(({ score }) => score === 15).groups[0].hands.find(({ label }) => label === "XXXYZ").members,
+  ["TTTJQ", "TJJJQ", "TJQQQ", "JJJQK", "JQQQK", "JQKKK"],
+  "cribbage reference: XXXYZ should cover trips plus a run of ten-cards"
+);
+assert.ok(
+  core.cribbageHandReference().find(({ score }) => score === 12).groups[0].hands.some(({ label }) => label === "5TJQK"),
+  "cribbage reference: four different ten-cards keep their ranks"
+);
+assert.equal(core.cribbageHandReference().reduce((sum, { count }) => sum + count, 0), 1182, "cribbage reference: 1,182 patterns");
 const cribbageReferenceLabel = (rank) => (rank === 14 ? "A" : ({ 13: "K", 12: "Q", 11: "J", 10: "T" })[rank] || String(rank));
 const cribbageReferenceValue = (rank) => (rank === 14 ? 1 : rank);
 const actualCribbageEntries = new Map();
@@ -600,8 +628,8 @@ assert.deepEqual(
   "cribbage draws: suited draws name the cards drawn"
 );
 assert.ok(
-  core.cribbageDraws("2222").scores.some(({ score, groups }) => score === 12 && groups.some(({ hands }) => hands.some(({ label }) => label === "X"))),
-  "cribbage draws: a card that scores nothing is written X"
+  core.cribbageDraws("2222").scores.some(({ score, groups }) => score === 12 && groups.some(({ hands }) => hands.some(({ label }) => label === "?"))),
+  "cribbage draws: a card that scores nothing is written ?"
 );
 assert.equal(core.cribbageDraws("55"), null, "cribbage draws: two cards are not a draw lookup");
 

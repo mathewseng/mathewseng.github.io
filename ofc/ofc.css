@@ -857,6 +857,17 @@ body:has(> .ofc-shell) {
   font-size: var(--t-sm);
 }
 
+.cribbage-hand-legend {
+  padding-bottom: 6px;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.cribbage-hand-legend b {
+  color: var(--ink);
+  font-family: var(--font-mono);
+}
+
 .cribbage-hand-results {
   min-width: 0;
 }

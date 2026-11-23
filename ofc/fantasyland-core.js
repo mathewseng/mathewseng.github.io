@@ -237,9 +237,11 @@
   // Cribbage middles worth 11+ points, for the rules reference and its lookup.
   // Ranks are values 1-13 with the ace low. Ranks fix the 15s, pairs, and
   // runs; a suiting adds a flush (4 or 5) and nobs (1 per J sharing a suit).
-  // A card that scores nothing is written X, so 2222X stands for every 2222
-  // plus a card that adds no points. Built on first use and grouped by score,
-  // highest first, then by suit bonus.
+  // A card that scores nothing is written ?, so 2222? stands for every 2222
+  // plus a card that adds no points. Ten-cards (T, J, Q, K) whose exact ranks
+  // can vary are written X, Y, Z: one letter per rank, so XXXYZ covers
+  // TTTJQ, JJJQK, and the rest at that score. In nobs rows a J stays a J.
+  // Built on first use and grouped by score, highest first, then by bonus.
   const CRIBBAGE_SUIT_BONUSES = Object.freeze([
     { flush: 0, nobs: 0, label: "No flush or nobs" },
     { flush: 0, nobs: 1, label: "Nobs" },
@@ -290,7 +292,7 @@
   }
 
   // Sorted label for some of a hand's values: scoring values (and a J that
-  // scores nobs) keep their rank; the rest become X, listed last.
+  // scores nobs) keep their rank; the rest become ?, listed last.
   function cribbagePatternLabel(values, live, nobs) {
     const kept = [];
     let blanks = 0;
@@ -298,11 +300,27 @@
       if (live.has(value) || (value === 11 && nobs > 0)) kept.push(value);
       else blanks += 1;
     });
-    return kept.sort((left, right) => left - right).map((value) => CRIBBAGE_VALUE_LABEL[value]).join("") + "X".repeat(blanks);
+    return kept.sort((left, right) => left - right).map((value) => CRIBBAGE_VALUE_LABEL[value]).join("") + "?".repeat(blanks);
+  }
+
+  // The same label with interchangeable ten-cards written X, Y, Z: ranks
+  // with more copies come first, then lower ranks. Four different
+  // ten-cards (TJQK) have only one choice and keep their ranks.
+  function cribbageVariableLabel(values, live, nobs) {
+    const kept = values.filter((value) => live.has(value) || (value === 11 && nobs > 0)).sort((left, right) => left - right);
+    const blanks = "?".repeat(values.length - kept.length);
+    const isVariable = (value) => value >= 10 && !(value === 11 && nobs > 0);
+    const tens = kept.filter(isVariable);
+    const ranks = [...new Set(tens)];
+    if (ranks.length > 3) return null;
+    const count = (rank) => tens.filter((value) => value === rank).length;
+    ranks.sort((left, right) => count(right) - count(left) || left - right);
+    const fixed = kept.filter((value) => !isVariable(value)).map((value) => CRIBBAGE_VALUE_LABEL[value]).join("");
+    return fixed + tens.map((value) => "XYZ"[ranks.indexOf(value)]).sort().join("") + blanks;
   }
 
   function comparePatternLabels(left, right) {
-    const order = (label) => label.split("").map((rank) => (rank === "X" ? 14 : CRIBBAGE_VALUE_LABEL.indexOf(rank)));
+    const order = (label) => label.split("").map((rank) => (rank === "?" ? 17 : "XYZ".includes(rank) ? 14 + "XYZ".indexOf(rank) : CRIBBAGE_VALUE_LABEL.indexOf(rank)));
     const a = order(left);
     const b = order(right);
     for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
@@ -361,6 +379,8 @@
 
   // Every rank combination and suit bonus worth 11+, collapsed to patterns.
   // Each pattern lists the exact rank combinations (`members`) it covers.
+  // Hands at one score and bonus that differ only in which ten-cards they
+  // hold share an X/Y/Z label; a label that covers one ranking keeps ranks.
   function cribbageHandReference() {
     if (cribbageHandReferenceCache) return cribbageHandReferenceCache;
     const patterns = new Map();
@@ -370,10 +390,13 @@
         cribbageSuitBonuses(values).forEach((bonus) => {
           const score = points + bonus.flush + bonus.nobs;
           if (score < 11) return;
-          const label = cribbagePatternLabel(values, live, bonus.nobs);
-          const key = `${score}|${bonus.label}|${label}`;
-          if (!patterns.has(key)) patterns.set(key, { label, score, bonus, members: [] });
-          patterns.get(key).members.push(values.map((value) => CRIBBAGE_VALUE_LABEL[value]).join(""));
+          const exact = cribbagePatternLabel(values, live, bonus.nobs);
+          const variable = cribbageVariableLabel(values, live, bonus.nobs) || exact;
+          const key = `${score}|${bonus.label}|${variable}`;
+          if (!patterns.has(key)) patterns.set(key, { label: exact, variable, exact: new Set(), score, bonus, members: [] });
+          const pattern = patterns.get(key);
+          pattern.exact.add(exact);
+          pattern.members.push(values.map((value) => CRIBBAGE_VALUE_LABEL[value]).join(""));
         });
         return;
       }
@@ -382,7 +405,12 @@
       }
     };
     visit(1, []);
-    cribbageHandReferenceCache = groupCribbageByScore([...patterns.values()]);
+    cribbageHandReferenceCache = groupCribbageByScore([...patterns.values()].map(({ label, variable, exact, score, bonus, members }) => ({
+      label: exact.size > 1 ? variable : label,
+      score,
+      bonus,
+      members,
+    })));
     return cribbageHandReferenceCache;
   }
 
@@ -464,7 +492,7 @@
   }
 
   // The 1 or 2 cards that take three or four typed cards to 11+, grouped like
-  // the reference. Drawn cards that score nothing are written X. With suits
+  // the reference. Drawn cards that score nothing are written ?. With suits
   // on every typed card, draws come from the cards left in the deck and each
   // carries its number of outs; without suits, any suiting is allowed.
   function cribbageDraws(text) {
@@ -3312,7 +3340,10 @@
     tabs.setAttribute("aria-label", "Score");
     const results = doc.createElement("div");
     results.className = "cribbage-hand-results";
-    body.append(search, keypad, status, tabs, results);
+    const legend = doc.createElement("p");
+    legend.className = "cribbage-hand-legend";
+    legend.innerHTML = "<b>?</b> any card that scores nothing · <b>X Y Z</b> different ten-cards (T J Q K)";
+    body.append(search, keypad, status, legend, tabs, results);
 
     // "all" shows every score stacked; a number shows just that score.
     let selectedScore = "all";
@@ -3427,9 +3458,9 @@
         const shown = showBrowse(ranksText);
         status.textContent = count
           ? shown
-            ? `${shown.toLocaleString("en-US")} hands with ${ranksText}. X is any card that scores nothing.`
+            ? `${shown.toLocaleString("en-US")} hands with ${ranksText}.`
             : `No 11+ hand has ${ranksText}.`
-          : `${shown.toLocaleString("en-US")} hands. Add 3 or 4 cards to see what to draw. X is any card that scores nothing.`;
+          : `${shown.toLocaleString("en-US")} hands. Add 3 or 4 cards to see what to draw.`;
       }
     };
     input.addEventListener("input", update);
