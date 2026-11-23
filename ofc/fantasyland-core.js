@@ -414,6 +414,82 @@
     return cribbageHandReferenceCache;
   }
 
+  // The same hands with suit bonuses folded in: one entry per rank shape,
+  // grouped by its score from the ranks alone (`score`, which can be under
+  // 11 when only a flush or nobs gets there), then by what suits can add:
+  //   [{ score, royalties, count, groups: [{ label, plain, outcomes, hands }] }]
+  // `outcomes` are the scores a suiting adds, as [{ score, label }]; `plain`
+  // is false when every suiting adds one (a J that always matches a suit).
+  let cribbageRankShapesCache = null;
+  function cribbageRankShapes() {
+    if (cribbageRankShapesCache) return cribbageRankShapesCache;
+    const shapes = new Map();
+    const visit = (start, values) => {
+      if (values.length === 5) {
+        const { points, live } = cribbageRankAnalysis(values);
+        const bonuses = cribbageSuitBonuses(values);
+        if (!bonuses.some((bonus) => points + bonus.flush + bonus.nobs >= 11)) return;
+        const plain = bonuses.includes(CRIBBAGE_SUIT_BONUSES[0]);
+        const extras = bonuses.filter((bonus) => bonus.flush || bonus.nobs);
+        const nobs = extras.some((bonus) => bonus.nobs) ? 1 : 0;
+        const exact = cribbagePatternLabel(values, live, nobs);
+        const variable = cribbageVariableLabel(values, live, nobs) || exact;
+        const signature = bonuses.map((bonus) => CRIBBAGE_SUIT_BONUSES.indexOf(bonus));
+        const key = `${points}|${signature.join(",")}|${variable}`;
+        if (!shapes.has(key)) shapes.set(key, { points, plain, extras, signature, variable, exact: new Set(), members: [] });
+        const shape = shapes.get(key);
+        shape.exact.add(exact);
+        shape.members.push(values.map((value) => CRIBBAGE_VALUE_LABEL[value]).join(""));
+        return;
+      }
+      for (let value = start; value <= 13; value += 1) {
+        if (values.filter((card) => card === value).length < 4) visit(value, values.concat(value));
+      }
+    };
+    visit(1, []);
+    const scores = new Map();
+    shapes.forEach((shape) => {
+      if (!scores.has(shape.points)) scores.set(shape.points, new Map());
+      const rows = scores.get(shape.points);
+      const rowKey = shape.signature.join(",");
+      if (!rows.has(rowKey)) {
+        const outcomes = shape.extras.map((bonus) => ({ score: shape.points + bonus.flush + bonus.nobs, label: bonus.label }));
+        const list = outcomes.map(({ score, label }) => `${label.toLowerCase()} → ${score}`).join(" · ");
+        rows.set(rowKey, {
+          label: !outcomes.length ? "No suit bonus" : shape.plain ? list.charAt(0).toUpperCase() + list.slice(1) : `Always ${list}`,
+          plain: shape.plain,
+          outcomes,
+          signature: shape.signature,
+          hands: [],
+        });
+      }
+      rows.get(rowKey).hands.push({ label: shape.exact.size > 1 ? shape.variable : [...shape.exact][0], members: shape.members });
+    });
+    const compareSignatures = (left, right) => {
+      if (left.length !== right.length) return left.length - right.length;
+      for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+        const a = left[index] ?? 99;
+        const b = right[index] ?? 99;
+        if (a !== b) return a - b;
+      }
+      return 0;
+    };
+    cribbageRankShapesCache = [...scores.entries()]
+      .sort(([left], [right]) => right - left)
+      .map(([score, rows]) => {
+        const groups = [...rows.values()]
+          .sort((left, right) => compareSignatures(left.signature, right.signature))
+          .map(({ label, plain, outcomes, hands }) => ({
+            label,
+            plain,
+            outcomes,
+            hands: hands.sort((left, right) => comparePatternLabels(left.label, right.label)),
+          }));
+        return { score, royalties: score - 10, count: groups.reduce((sum, group) => sum + group.hands.length, 0), groups };
+      });
+    return cribbageRankShapesCache;
+  }
+
   // Reads typed cards: ranks (A, 2-9, T or 10, J, Q, K) each optionally
   // followed by a suit letter or symbol, with spaces and commas ignored.
   // Returns { cards: [{ value, suit }], suited } or null when unreadable.
@@ -3343,7 +3419,26 @@
     const legend = doc.createElement("p");
     legend.className = "cribbage-hand-legend";
     legend.innerHTML = "<b>?</b> any card that scores nothing · <b>X Y Z</b> different ten-cards (T J Q K)";
-    body.append(search, keypad, status, legend, tabs, results);
+    const options = doc.createElement("div");
+    options.className = "cribbage-hand-options";
+    const option = (text, onChange) => {
+      const label = doc.createElement("label");
+      const box = doc.createElement("input");
+      box.type = "checkbox";
+      box.checked = true;
+      box.addEventListener("change", () => {
+        onChange(box.checked);
+        update();
+      });
+      label.append(box, ` ${text}`);
+      options.appendChild(label);
+    };
+    // Both start on: one entry per hand, and only hands that need no suits.
+    let combineSuits = true;
+    let ranksOnly = true;
+    option("Combine flush and nobs into each hand", (checked) => { combineSuits = checked; });
+    option("Only hands that make 11 without suits", (checked) => { ranksOnly = checked; });
+    body.append(search, keypad, status, legend, options, tabs, results);
 
     // "all" shows every score stacked; a number shows just that score.
     let selectedScore = "all";
@@ -3353,7 +3448,8 @@
       group.className = "cribbage-score-group";
       const heading = doc.createElement("p");
       heading.className = "cribbage-score-heading";
-      heading.innerHTML = `<strong><mark>${scoreGroup.score}</mark> points</strong><span>${royaltiesText(scoreGroup.score)}</span>`;
+      const note = scoreGroup.score >= 11 ? royaltiesText(scoreGroup.score) : "needs suits";
+      heading.innerHTML = `<strong><mark>${scoreGroup.score}</mark> points</strong><span>${note}</span>`;
       group.appendChild(heading);
       scoreGroup.groups.forEach((bonusGroup) => {
         const label = doc.createElement("span");
@@ -3364,12 +3460,17 @@
       return group;
     };
 
-    // Patterns with the typed ranks: every score, or one at a time.
+    // Patterns with the typed ranks: every score, or one at a time. With
+    // suits combined, scores are from the ranks alone.
     const showBrowse = (ranksText) => {
-      const matches = reference
+      const source = combineSuits
+        ? cribbageRankShapes().filter(({ score }) => !ranksOnly || score >= 11)
+        : reference;
+      const matches = source
         .map((scoreGroup) => ({
           score: scoreGroup.score,
           groups: scoreGroup.groups
+            .filter((group) => combineSuits || !ranksOnly || scoreGroup.score - group.flush - group.nobs >= 11)
             .map((group) => ({ ...group, hands: group.hands.filter((pattern) => !ranksText || pattern.members.some((member) => cribbageHandContains(member, ranksText))) }))
             .filter((group) => group.hands.length),
         }))
@@ -3438,6 +3539,7 @@
     const update = () => {
       const parsed = cribbageParseCards(input.value);
       tabs.hidden = true;
+      options.hidden = true;
       if (!parsed) {
         results.replaceChildren();
         status.textContent = "Use ranks A 2-9 T J Q K, each with an optional suit: 5h 5d Jh Qh.";
@@ -3455,11 +3557,12 @@
         showScore(parsed);
       } else {
         tabs.hidden = false;
+        options.hidden = false;
         const shown = showBrowse(ranksText);
         status.textContent = count
           ? shown
             ? `${shown.toLocaleString("en-US")} hands with ${ranksText}.`
-            : `No 11+ hand has ${ranksText}.`
+            : ranksOnly ? `No hand with ${ranksText} makes 11 without suits.` : `No 11+ hand has ${ranksText}.`
           : `${shown.toLocaleString("en-US")} hands. Add 3 or 4 cards to see what to draw.`;
       }
     };
@@ -3517,6 +3620,7 @@
     RULE_SECTIONS,
     CRIBBAGE_SUIT_BONUSES,
     cribbageHandReference,
+    cribbageRankShapes,
     cribbageParseCards,
     cribbageLookupCards,
     cribbageRankScores,

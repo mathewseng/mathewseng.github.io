@@ -738,7 +738,7 @@ body:has(> .ofc-shell) {
 
 .cribbage-hand-row {
   display: grid;
-  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 190px) minmax(0, 1fr);
   gap: 4px 12px;
   align-items: start;
   padding: 6px 0;
@@ -866,6 +866,25 @@ body:has(> .ofc-shell) {
 .cribbage-hand-legend b {
   color: var(--ink);
   font-family: var(--font-mono);
+}
+
+.cribbage-hand-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding-bottom: 8px;
+  font-size: var(--t-sm);
+}
+
+.cribbage-hand-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.cribbage-hand-options input {
+  accent-color: var(--accent);
 }
 
 .cribbage-hand-results {

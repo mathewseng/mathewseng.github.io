@@ -476,6 +476,30 @@ assert.ok(
   "cribbage reference: four different ten-cards keep their ranks"
 );
 assert.equal(core.cribbageHandReference().reduce((sum, { count }) => sum + count, 0), 1182, "cribbage reference: 1,182 patterns");
+
+// Combined view: every rank combination that reaches 11 with some suiting
+// appears once, under its score from the ranks alone, with what suits add.
+const cribbageShapes = core.cribbageRankShapes();
+const listedShapeHands = new Set();
+cribbageShapes.forEach((group, index) => {
+  if (index) assert.ok(cribbageShapes[index - 1].score > group.score, "cribbage shapes: scores should run highest to lowest");
+  group.groups.forEach((row) => {
+    row.hands.forEach((pattern) => {
+      pattern.members.forEach((hand) => {
+        const ranks = core.cribbageRankScores(hand);
+        assert.equal(ranks.score, group.score, `cribbage shapes: ${hand} should sit under its rank score`);
+        assert.deepEqual(row.outcomes, ranks.suitings, `cribbage shapes: ${hand} suit outcomes`);
+        assert.ok(cribbageLabelFits(pattern.label, hand), `cribbage shapes: ${hand} should fit ${pattern.label}`);
+        assert.ok(!listedShapeHands.has(hand), `cribbage shapes: ${hand} should be listed once`);
+        listedShapeHands.add(hand);
+      });
+    });
+  });
+});
+const handsReaching11 = new Set([...listedCribbageEntries.keys()].map((key) => key.split("|")[0]));
+assert.deepEqual([...listedShapeHands].sort(), [...handsReaching11].sort(), "cribbage shapes: the same hands as the full list");
+assert.equal(cribbageShapes.reduce((sum, { count }) => sum + count, 0), 836, "cribbage shapes: 836 entries");
+assert.equal(cribbageShapes.filter(({ score }) => score >= 11).reduce((sum, { count }) => sum + count, 0), 357, "cribbage shapes: 357 make 11 from ranks");
 const cribbageReferenceLabel = (rank) => (rank === 14 ? "A" : ({ 13: "K", 12: "Q", 11: "J", 10: "T" })[rank] || String(rank));
 const cribbageReferenceValue = (rank) => (rank === 14 ? 1 : rank);
 const actualCribbageEntries = new Map();
