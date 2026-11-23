@@ -3314,9 +3314,26 @@
     results.className = "cribbage-hand-results";
     body.append(search, keypad, status, tabs, results);
 
-    let selectedScore = null;
+    // "all" shows every score stacked; a number shows just that score.
+    let selectedScore = "all";
 
-    // Patterns with the typed ranks, one score at a time.
+    const createScoreSection = (scoreGroup) => {
+      const group = doc.createElement("div");
+      group.className = "cribbage-score-group";
+      const heading = doc.createElement("p");
+      heading.className = "cribbage-score-heading";
+      heading.innerHTML = `<strong><mark>${scoreGroup.score}</mark> points</strong><span>${royaltiesText(scoreGroup.score)}</span>`;
+      group.appendChild(heading);
+      scoreGroup.groups.forEach((bonusGroup) => {
+        const label = doc.createElement("span");
+        label.className = "cribbage-hand-breakdown";
+        label.textContent = bonusGroup.label;
+        group.appendChild(createCribbageRow(doc, label, bonusGroup.hands.map((pattern) => ({ text: pattern.label }))));
+      });
+      return group;
+    };
+
+    // Patterns with the typed ranks: every score, or one at a time.
     const showBrowse = (ranksText) => {
       const matches = reference
         .map((scoreGroup) => ({
@@ -3326,12 +3343,12 @@
             .filter((group) => group.hands.length),
         }))
         .filter((scoreGroup) => scoreGroup.groups.length);
-      if (!matches.some(({ score }) => score === selectedScore)) selectedScore = matches.length ? matches[0].score : null;
-      tabs.replaceChildren(...matches.map(({ score }) => {
+      if (selectedScore !== "all" && !matches.some(({ score }) => score === selectedScore)) selectedScore = "all";
+      tabs.replaceChildren(...["all", ...matches.map(({ score }) => score)].map((score) => {
         const button = doc.createElement("button");
         button.type = "button";
-        button.textContent = score;
-        button.setAttribute("aria-label", `${score} points`);
+        button.textContent = score === "all" ? "All" : score;
+        button.setAttribute("aria-label", score === "all" ? "All scores" : `${score} points`);
         button.setAttribute("aria-pressed", String(score === selectedScore));
         button.addEventListener("click", () => {
           selectedScore = score;
@@ -3339,21 +3356,8 @@
         });
         return button;
       }));
-      const current = matches.find(({ score }) => score === selectedScore);
-      if (!current) {
-        results.replaceChildren();
-        return 0;
-      }
-      const heading = doc.createElement("p");
-      heading.className = "cribbage-score-heading";
-      heading.innerHTML = `<strong><mark>${current.score}</mark> points</strong><span>${royaltiesText(current.score)}</span>`;
-      const rows = current.groups.map((group) => {
-        const label = doc.createElement("span");
-        label.className = "cribbage-hand-breakdown";
-        label.textContent = group.label;
-        return createCribbageRow(doc, label, group.hands.map((pattern) => ({ text: pattern.label })));
-      });
-      results.replaceChildren(heading, ...rows);
+      const shownScores = selectedScore === "all" ? matches : matches.filter(({ score }) => score === selectedScore);
+      results.replaceChildren(...shownScores.map(createScoreSection));
       return matches.reduce((sum, scoreGroup) => sum + scoreGroup.groups.reduce((total, group) => total + group.hands.length, 0), 0);
     };
 
@@ -3425,7 +3429,7 @@
           ? shown
             ? `${shown.toLocaleString("en-US")} hands with ${ranksText}. X is any card that scores nothing.`
             : `No 11+ hand has ${ranksText}.`
-          : "Add 3 or 4 cards to see what to draw, or pick a score. X is any card that scores nothing.";
+          : `${shown.toLocaleString("en-US")} hands. Add 3 or 4 cards to see what to draw. X is any card that scores nothing.`;
       }
     };
     input.addEventListener("input", update);
