@@ -510,6 +510,10 @@ export class EngineClient {
       await ready;
       if (generation !== this.generation) return;
       if (!this.queue.length) return;
+      // A higher-priority request may have been queued while the worker
+      // started. Re-pump so it gets its own reuse and opening-book checks
+      // instead of going straight to WASM.
+      if (this.queue[0] !== pending) return;
       const job = this.queue.shift();
       this.active = job;
       job.started = performance.now();

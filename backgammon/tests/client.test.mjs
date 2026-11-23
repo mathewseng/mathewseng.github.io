@@ -698,3 +698,35 @@ test('a hung display-only quick search has a short bounded timeout and can retry
     assert.equal((await retry).valid,true);
   } finally {client.destroy();}
 });
+test("a book-eligible request queued during worker startup still uses the opening book", async () => {
+  // A display-only quick search starts the worker. A bot decision for a book
+  // position, queued at higher priority before startup finishes, must not be
+  // sent straight to WASM once the worker is ready.
+  class SlowStartWorker extends WorkerMock {
+    postMessage(m) { this.messages.push(m); }
+    ready() { this.onmessage({ data: { id: 0, type: "ready", elapsedMs: 2 } }); }
+  }
+  const worker = new SlowStartWorker();
+  const book = {
+    eligible: (_state, { useBook = true } = {}) => useBook,
+    mayHave: () => true,
+    lookup: async () => ({ type: "checker", status: "complete", method: "precomputed", book: { stage: "third-turn" },
+      settings: { plies: 3 }, candidates: [{ steps: [], equity: 0, key: "book" }] }),
+  };
+  const client = new EngineClient({ workerFactory: () => worker, openingBook: book });
+  const state = initialState({ phase: "move", dice: [3, 1], matchLength: 0, rules: { jacoby: true } });
+  try {
+    client.analyze(state, { preset: "quick", useBook: false, displayOnly: true, priority: 0 }).catch(() => {});
+    await wait();
+    const decision = client.analyze(state, { preset: "quick", priority: 10 });
+    await wait();
+    worker.ready();
+    const result = await Promise.race([decision, new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Book-eligible decision was sent to the worker")), 1000))]);
+    assert.equal(result.book?.stage, "third-turn");
+    // Only the display-only search may reach the worker.
+    assert.ok(worker.messages.filter(m => m.type === "analyze").length <= 1);
+  } finally {
+    client.destroy();
+  }
+});
