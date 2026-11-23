@@ -233,9 +233,14 @@ assert.deepEqual(
   "BDP natural: all three entry conditions should stack"
 );
 assert.deepEqual(
-  core.naturalFantasyTriggers("cribbage", naturalTriggerFixture({ middle: { cribbagePoints: 18 } })).map(({ key }) => key),
+  core.naturalFantasyTriggers("cribbage", naturalTriggerFixture({ middle: { cribbagePoints: 20 } })).map(({ key }) => key),
   ["middle"],
-  "cribbage natural: 18 middle points should enter Fantasyland"
+  "cribbage natural: 20 middle points should enter Fantasyland"
+);
+assert.deepEqual(
+  core.naturalFantasyTriggers("cribbage", naturalTriggerFixture({ middle: { cribbagePoints: 19 } })),
+  [],
+  "cribbage natural: 19 middle points should not enter Fantasyland"
 );
 
 [
@@ -395,7 +400,8 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
   [["As", "Ks", "Qs", "Js", "Ts"], 10, false, 0, false, false, false],
   [["As", "Ks", "Qs", "Ts", "5s"], 11, true, 1, false, false, false],
   [["As", "Js", "3s", "2s", "Ah"], 17, true, 7, false, false, false],
-  [["As", "Ks", "3s", "2s", "2h"], 18, true, 8, true, false, false],
+  [["As", "Ks", "3s", "2s", "2h"], 18, true, 8, false, false, false],
+  [["5s", "5h", "5d", "5c", "Ah"], 20, true, 10, true, false, false],
   [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, false, false],
   [["Ks", "Qs", "Js", "5s", "5h"], 22, true, 12, true, false, false],
   [["Js", "Jh", "5s", "5h", "5d"], 24, true, 14, true, true, true],
@@ -509,6 +515,22 @@ assert.deepEqual(
   { score: 22, flush: 4, nobs: 1 },
   "cribbage lookup: five suited cards score the exact hand"
 );
+assert.deepEqual(
+  core.cribbageLookupCards("5h 5d Jh Qh Kh").parts,
+  [{ label: "Fifteens", points: 12 }, { label: "Pairs", points: 2 }, { label: "Runs", points: 3 }, { label: "4-flush", points: 4 }, { label: "Nobs", points: 1 }],
+  "cribbage lookup: the score is split into its parts"
+);
+assert.deepEqual(
+  (({ score, suitings }) => ({ score, suitings }))(core.cribbageRankScores("55JQK")),
+  {
+    score: 17,
+    suitings: [
+      { score: 18, label: "Nobs" },
+      { score: 22, label: "4-flush + nobs" },
+    ],
+  },
+  "cribbage lookup: five ranks give their score and what suits can add"
+);
 assert.equal(core.cribbageLookupCards("10s J♠ Q♠ K♠ 5d").score, 17, "cribbage lookup: 10 and suit symbols are read");
 assert.equal(core.cribbageLookupCards("55JQK"), null, "cribbage lookup: ranks without suits are not an exact hand");
 assert.equal(core.cribbageLookupCards("5h 5h 5d Jc Qs"), null, "cribbage lookup: repeated cards are rejected");
@@ -571,6 +593,11 @@ assert.deepEqual(
   fiveFiveJackQueen.scores[0].groups[0].hands.map(({ label, outs }) => [label, outs]),
   [["T", 1], ["K", 1]],
   "cribbage draws: 5h 5d Jh Qh makes 22 with Th or Kh"
+);
+assert.deepEqual(
+  fiveFiveJackQueen.scores[0].groups[0].hands.map(({ cards }) => cards),
+  [["Th"], ["Kh"]],
+  "cribbage draws: suited draws name the cards drawn"
 );
 assert.ok(
   core.cribbageDraws("2222").scores.some(({ score, groups }) => score === 12 && groups.some(({ hands }) => hands.some(({ label }) => label === "X"))),

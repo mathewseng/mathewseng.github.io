@@ -711,7 +711,6 @@ body:has(> .ofc-shell) {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
   gap: 2px 12px;
   padding: 10px 0 4px;
   border-top: 1px solid var(--line-opaque);
@@ -739,9 +738,9 @@ body:has(> .ofc-shell) {
 
 .cribbage-hand-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
   gap: 4px 12px;
-  align-items: center;
+  align-items: start;
   padding: 6px 0;
   border-bottom: 1px solid var(--line);
 }
@@ -752,23 +751,14 @@ body:has(> .ofc-shell) {
   font-weight: 600;
 }
 
-.cribbage-hand-pattern small {
-  font-size: var(--t-xs);
-}
-
 .cribbage-hand-reference [hidden] {
   display: none;
-}
-
-.cribbage-bonus-row {
-  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
-  align-items: start;
 }
 
 .rules-article .cribbage-hand-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 12px;
+  gap: 2px 14px;
   padding: 0;
   list-style: none;
 }
@@ -778,62 +768,112 @@ body:has(> .ofc-shell) {
 }
 
 .rules-article .cribbage-hand-chips li small {
+  margin-left: 4px;
   color: var(--muted);
+  font-family: var(--font-sans);
   font-size: var(--t-xs);
   font-weight: 500;
 }
 
-.rules-article .cribbage-hand-chips li.is-exact {
+.cribbage-row-score {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cribbage-row-score mark,
+.cribbage-hand-score mark {
   padding: 0 4px;
   border-radius: 4px;
   background: var(--accent-soft);
   color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cribbage-row-score small {
+  color: var(--muted);
+  font-size: var(--t-xs);
 }
 
 .cribbage-hand-search {
   max-width: 320px;
-  padding-bottom: 4px;
 }
 
 .cribbage-hand-search input {
   font-family: var(--font-mono);
 }
 
-.cribbage-score-jump {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+.cribbage-keypad {
+  display: grid;
+  gap: 4px;
+  max-width: 520px;
+  padding: 8px 0 4px;
+}
+
+.cribbage-keypad-ranks,
+.cribbage-keypad-suits,
+.cribbage-score-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 6px 0;
-  background: var(--surface);
 }
 
-.cribbage-score-jump button {
+.cribbage-keypad button,
+.cribbage-score-tabs button {
   min-width: 34px;
-  min-height: 30px;
-  padding: 0 6px;
+  min-height: 34px;
+  padding: 0 8px;
   border: 1px solid var(--line-opaque);
   border-radius: var(--r-sm);
   background: transparent;
   color: var(--ink);
   font: inherit;
   font-size: var(--t-sm);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 
-.cribbage-score-jump button:hover {
+.cribbage-keypad button.is-red {
+  color: var(--bad);
+}
+
+.cribbage-keypad button:hover,
+.cribbage-score-tabs button:hover {
   border-color: var(--accent);
+}
+
+.cribbage-score-tabs button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
   color: var(--accent);
 }
 
-.cribbage-score-group {
-  scroll-margin-top: 52px;
+.cribbage-hand-search-status {
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
 }
 
-.cribbage-hand-search-status {
+.cribbage-hand-results {
+  min-width: 0;
+}
+
+.cribbage-hand-score {
+  display: grid;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.cribbage-hand-score > strong {
+  color: var(--ink);
+  font-size: var(--t-lg);
+}
+
+.cribbage-hand-score > span,
+.cribbage-hand-score > p {
   color: var(--muted);
   font-size: var(--t-sm);
 }
@@ -855,18 +895,8 @@ body:has(> .ofc-shell) {
     grid-template-columns: 1fr;
   }
 
-  .cribbage-bonus-row {
+  .cribbage-hand-row {
     grid-template-columns: 1fr;
-  }
-
-  .cribbage-score-jump {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .cribbage-score-jump button {
-    flex: none;
   }
 }
 
