@@ -84,6 +84,8 @@ const E = require("../engine.js");
             assert.equal(await page.locator(".deck-bottom").evaluate(e => e.scrollWidth > e.clientWidth + 1), false);
             if (process.env.SCOUNDREL_SCREENSHOTS) await page.locator("#deck-dialog").screenshot({ path: path.join(process.env.SCOUNDREL_SCREENSHOTS, `${name}-bottom-${viewport.width}.png`) });
           }
+          // The matrix re-renders for the final viewport on an asynchronous media query change.
+          await page.waitForFunction(() => document.querySelector("#deck-matrix").dataset.orientation === (matchMedia("(max-width: 900px) and (orientation: portrait)").matches ? "columns" : "rows"));
           const snapshot = await page.locator(".deck-card").evaluateAll(es => es.map(e => ({ id: e.dataset.inventoryCard, state: e.dataset.state, dimmed: e.classList.contains("is-dimmed") })));
           await page.locator("#deck-dialog [data-close]").click(); return snapshot;
         }
