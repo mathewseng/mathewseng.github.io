@@ -75,6 +75,9 @@ jobs:
           node scoundrel/tests/responsive.cjs
 
       - name: Test assembled Backgammon application
+        env:
+          # Report every failing module in one run; the step still fails.
+          BG_KEEP_GOING: "1"
         run: node backgammon/tests/browser.cjs
 
       - name: Test Backgammon opening book against live GNUbg

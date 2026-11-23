@@ -24,21 +24,23 @@ module.exports=async function sealedRoll(browser,base){
    await page.locator('#board.roll-ready').waitFor();
    await page.waitForTimeout(850);
    assert.equal((await work(page)).game.state.phase,'roll');
-   const start=Date.now();
+   // Time the reveal in the page, from the dice-roll animation to the result,
+   // so CI polling and IndexedDB reads do not count against it.
+   await page.evaluate(()=>{window.sealedRoll={};new MutationObserver((_,o)=>{if(document.querySelector('#next-game')){sealedRoll.resultAt=document.timeline.currentTime;o.disconnect();}}).observe(document.body,{subtree:true,childList:true});});
    if(touch){const b=await page.locator('#board .bg-board').boundingBox();await page.touchscreen.tap(b.x+b.width*.3,b.y+b.height*.5);}
    else await page.keyboard.press('c');
-   await page.waitForFunction(()=>document.getAnimations().some(a=>a.id==='dice-roll'));
+   await page.waitForFunction(()=>{const a=document.getAnimations().find(a=>a.id==='dice-roll');if(a&&a.startTime!==null)sealedRoll.rollAt??=a.startTime;return sealedRoll.rollAt!==undefined;});
    assert.equal(await page.locator('.moving-checker').count(),0,'no meaningless checker animation before the award');
    const rolled=await waitWork(page,w=>w?.game.state.phase==='move');
    assert.deepEqual(rolled.game.state.dice,dice);
    assert.equal(await page.locator('#confirm:visible').count(),0,'sealed roll needs no confirmation');
    await page.locator('#next-game').waitFor();
-   const elapsedMs=Date.now()-start,ended=(await waitWork(page,w=>w?.game.state.phase==='over')).game;
+   const elapsedMs=await page.evaluate(()=>sealedRoll.resultAt-sealedRoll.rollAt),ended=(await waitWork(page,w=>w?.game.state.phase==='over')).game;
    assert.deepEqual(ended.events.map(e=>e.action.type),['roll','finish-race']);
    assert.deepEqual(ended.state.points,initial.points,'end without fabricated moves');
    assert.equal(ended.state.result.level,gammon?2:1);
    assert.equal(ended.state.result.points,gammon?8:4);
-   assert.ok(elapsedMs>=500&&elapsedMs<2500,'only the brief roll reveal precedes the result');
+   assert.ok(elapsedMs>=200&&elapsedMs<2000,'only the brief roll reveal precedes the result: '+elapsedMs+'ms');
    await page.reload();await page.locator('#next-game').waitFor();
    assert.deepEqual((await work(page)).game.state.scores,ended.state.scores,'reload does not award again');
    await (await revealPlayControl(page,'#undo-turn',touch?'tap':'click'))[touch?'tap':'click']();
