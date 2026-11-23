@@ -1527,6 +1527,20 @@ Start: 9:25 PM. Duration: 70 minutes.
 
 First 40 minutes spent on bench work with long rests. Approximately 1–2 reps in reserve on each bench set. Smith setup inferred from the workout plan and prior history. The split between lateral and front raises was not specified.
 
+# 32. Pull Workout — November 22, 2026
+
+Start: 2:00 PM. Duration: 80 minutes.
+
+- Overhand pull-ups: 5, 4, 4, 4
+- Reverse cable fly: 10 reps each at 10, 12.5, and 15 lb
+- Seated two-arm cable row: 80 lb × 10, 10, 10, 10
+- Incline dumbbell curl: 15 lb × 10, 10, 10
+- Spider dumbbell curl: 20 lb × 10, 10, 10
+- Single-arm dumbbell preacher curl: 15 lb × 10, 10, 10
+- Bench reverse crunch: 10, 10, 10
+
+17 overhand pull-up reps across four sets. Strict form was not specified. Incline and spider curl weights follow the prior per-dumbbell convention. Preacher curl reps are recorded as supplied, with completion on both arms unconfirmed.
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench

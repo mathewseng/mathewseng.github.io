@@ -233,9 +233,14 @@ assert.deepEqual(
   "BDP natural: all three entry conditions should stack"
 );
 assert.deepEqual(
-  core.naturalFantasyTriggers("cribbage", naturalTriggerFixture({ middle: { cribbagePoints: 18 } })).map(({ key }) => key),
+  core.naturalFantasyTriggers("cribbage", naturalTriggerFixture({ middle: { cribbagePoints: 20 } })).map(({ key }) => key),
   ["middle"],
-  "cribbage natural: 18 middle points should enter Fantasyland"
+  "cribbage natural: 20 middle points should enter Fantasyland"
+);
+assert.deepEqual(
+  core.naturalFantasyTriggers("cribbage", naturalTriggerFixture({ middle: { cribbagePoints: 19 } })),
+  [],
+  "cribbage natural: 19 middle points should not enter Fantasyland"
 );
 
 [
@@ -395,7 +400,8 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
   [["As", "Ks", "Qs", "Js", "Ts"], 10, false, 0, false, false, false],
   [["As", "Ks", "Qs", "Ts", "5s"], 11, true, 1, false, false, false],
   [["As", "Js", "3s", "2s", "Ah"], 17, true, 7, false, false, false],
-  [["As", "Ks", "3s", "2s", "2h"], 18, true, 8, true, false, false],
+  [["As", "Ks", "3s", "2s", "2h"], 18, true, 8, false, false, false],
+  [["5s", "5h", "5d", "5c", "Ah"], 20, true, 10, true, false, false],
   [["Ks", "Qs", "Js", "5s", "Kh"], 21, true, 11, true, false, false],
   [["Ks", "Qs", "Js", "5s", "5h"], 22, true, 12, true, false, false],
   [["Js", "Jh", "5s", "5h", "5d"], 24, true, 14, true, true, true],
@@ -410,54 +416,42 @@ assert.ok(partialCribbageJokerPreview.rowEvals.middle.cribbagePoints >= 2, "crib
   assert.equal(evaluation.extraFantasyCard, extraFantasyCard, `cribbage: ${rawPoints} raw points extra-card threshold`);
 });
 
-const listedCribbageRepeatHands = new Map();
-const listedCribbageScoreCounts = new Map();
-const cribbageReferenceRankValue = (rank) => (rank === 14 ? 1 : rank);
-const cribbageReferenceRankLabel = (rank) => ({ 14: "A", 13: "K", 12: "Q", 11: "J", 10: "T" })[rank] || String(rank);
-const compareCribbageReferenceRanks = (left, right) => {
-  const leftRanks = left.ranks.map(cribbageReferenceRankValue).sort((a, b) => a - b);
-  const rightRanks = right.ranks.map(cribbageReferenceRankValue).sort((a, b) => a - b);
-  for (let index = 0; index < leftRanks.length; index += 1) {
-    if (leftRanks[index] !== rightRanks[index]) return leftRanks[index] - rightRanks[index];
-  }
-  return 0;
-};
-assert.deepEqual(
-  core.CRIBBAGE_24_PLUS_HANDS.map(({ score }) => score),
-  [24, 28, 29],
-  "cribbage reference: score sections should be listed from lowest to highest"
-);
-core.CRIBBAGE_24_PLUS_HANDS.forEach((group) => {
-  const patternTotal = group.patterns.reduce((sum, pattern) => sum + pattern.exactHands, 0);
-  assert.equal(patternTotal, group.exactHands, `cribbage reference: ${group.score}-point pattern counts should match the group total`);
+// 11+ reference: every natural five-card hand, scored by the real evaluator,
+// should appear under its rank combination and flush/nobs bonus at its score.
+const cribbageReference = core.cribbageHandReference();
+const listedCribbageEntries = new Map();
+cribbageReference.forEach((group, index) => {
+  if (index) assert.ok(cribbageReference[index - 1].score > group.score, "cribbage reference: scores should run highest to lowest");
   assert.equal(group.royalties, group.score - 10, `cribbage reference: ${group.score} points should convert to royalties`);
-  group.patterns.forEach((pattern, index) => {
-    const ascendingLabel = pattern.ranks
-      .slice()
-      .sort((left, right) => cribbageReferenceRankValue(left) - cribbageReferenceRankValue(right))
-      .map(cribbageReferenceRankLabel)
-      .join("");
-    assert.equal(pattern.label, ascendingLabel, `cribbage reference: ${pattern.label} should show every rank low to high with ace low`);
-    if (index) {
-      assert.ok(
-        compareCribbageReferenceRanks(group.patterns[index - 1], pattern) <= 0,
-        `cribbage reference: ${pattern.label} should follow the previous hand in ascending rank order`
-      );
-    }
-    assert.equal(
-      pattern.components.reduce((sum, [, points]) => sum + points, 0),
-      group.score,
-      `cribbage reference: ${pattern.label} components should total ${group.score}`
-    );
-    listedCribbageRepeatHands.set(`${group.score}|${pattern.ranks.join(",")}`, pattern.exactHands);
+  assert.equal(group.count, group.groups.reduce((sum, bonus) => sum + bonus.hands.length, 0), `cribbage reference: ${group.score}-point count`);
+  group.groups.forEach((bonus) => {
+    bonus.hands.forEach((pattern) => {
+      assert.ok(pattern.members.length, `cribbage reference: ${pattern.label} should cover at least one hand`);
+      pattern.members.forEach((hand) => {
+        // X stands only for cards that score nothing: the scoring ranks of
+        // every member, plus one X per remaining card, rebuild the pattern.
+        const kept = pattern.label.replace(/X/g, "");
+        assert.ok(
+          hand.length === 5 && pattern.label.length === 5 && kept.split("").every((rank) => hand.includes(rank)),
+          `cribbage reference: ${hand} should fit ${pattern.label}`
+        );
+        const key = `${hand}|${bonus.flush}|${bonus.nobs}`;
+        assert.ok(!listedCribbageEntries.has(key), `cribbage reference: ${key} should be listed once`);
+        listedCribbageEntries.set(key, group.score);
+      });
+    });
   });
-  listedCribbageScoreCounts.set(group.score, group.exactHands);
 });
-const listedJacksFives = core.CRIBBAGE_24_PLUS_HANDS.flatMap(({ patterns }) => patterns).find(({ label }) => label === "555JJ");
-assert.equal(listedJacksFives.note, "2 nobs", "cribbage reference: 555JJ should carry the concise two-nobs qualifier");
-
-const actualCribbageRepeatHands = new Map();
-const actualCribbageScoreCounts = new Map();
+assert.deepEqual(
+  core.cribbageHandReference().find(({ score }) => score === 20).groups[0].hands.find(({ label }) => label === "5555X").members,
+  ["A5555", "25555", "35555", "45555", "55556", "55557", "55558", "55559"],
+  "cribbage reference: 5555X should cover every non-scoring fifth card"
+);
+assert.equal(core.cribbageHandReference().reduce((sum, { count }) => sum + count, 0), 1802, "cribbage reference: 1,802 patterns");
+const cribbageReferenceLabel = (rank) => (rank === 14 ? "A" : ({ 13: "K", 12: "Q", 11: "J", 10: "T" })[rank] || String(rank));
+const cribbageReferenceValue = (rank) => (rank === 14 ? 1 : rank);
+const actualCribbageEntries = new Map();
+let cribbageRepeatHands = 0;
 const cribbageReferenceDeck = ["s", "h", "d", "c"].flatMap((suit) =>
   ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"].map((rank) => core.makeCard(`${rank}${suit}`))
 );
@@ -474,11 +468,22 @@ for (let first = 0; first < 48; first += 1) {
             cribbageReferenceDeck[fifth],
           ];
           const score = core.cribbageScoreTotalFast(hand);
-          if (score < 24) continue;
-          const ranks = hand.map(({ rank }) => rank).sort((left, right) => right - left);
-          const key = `${score}|${ranks.join(",")}`;
-          actualCribbageRepeatHands.set(key, (actualCribbageRepeatHands.get(key) || 0) + 1);
-          actualCribbageScoreCounts.set(score, (actualCribbageScoreCounts.get(score) || 0) + 1);
+          if (score < 11) continue;
+          if (score >= 24) cribbageRepeatHands += 1;
+          const suitCounts = {};
+          hand.forEach(({ suit }) => { suitCounts[suit] = (suitCounts[suit] || 0) + 1; });
+          const longest = Math.max(...Object.values(suitCounts));
+          const flush = longest === 5 ? 5 : longest === 4 ? 4 : 0;
+          const nobs = hand.filter(({ rank, suit }) => rank === 11 && suitCounts[suit] > 1).length;
+          const label = hand
+            .map(({ rank }) => rank)
+            .sort((left, right) => cribbageReferenceValue(left) - cribbageReferenceValue(right))
+            .map(cribbageReferenceLabel)
+            .join("");
+          const key = `${label}|${flush}|${nobs}`;
+          const seen = actualCribbageEntries.get(key);
+          assert.ok(seen === undefined || seen === score, `cribbage reference: ${key} should always score the same`);
+          actualCribbageEntries.set(key, score);
         }
       }
     }
@@ -486,56 +491,119 @@ for (let first = 0; first < 48; first += 1) {
 }
 const sortedEntries = (map) => [...map.entries()].sort(([left], [right]) => String(left).localeCompare(String(right)));
 assert.deepEqual(
-  sortedEntries(actualCribbageRepeatHands),
-  sortedEntries(listedCribbageRepeatHands),
-  "cribbage reference: the listed rank patterns should exactly cover every natural five-card hand scoring 24+"
+  sortedEntries(listedCribbageEntries),
+  sortedEntries(actualCribbageEntries),
+  "cribbage reference: the list should cover exactly every natural 11+ hand at its score"
+);
+assert.equal(listedCribbageEntries.size, 2602, "cribbage reference: 2,602 rank and suit-bonus combinations score 11+");
+assert.equal(cribbageRepeatHands, 764, "cribbage reference: exactly 764 natural five-card hands should score 24+");
+assert.deepEqual(
+  cribbageReference.map(({ score }) => score),
+  [29, 28, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11],
+  "cribbage reference: no hand scores 25, 26, or 27"
 );
 assert.deepEqual(
-  sortedEntries(actualCribbageScoreCounts),
-  sortedEntries(listedCribbageScoreCounts),
-  "cribbage reference: score-section counts should exactly match exhaustive deck enumeration"
+  core.cribbageParseCards("5h 5d 10c q").cards,
+  [{ value: 5, suit: "h" }, { value: 5, suit: "d" }, { value: 10, suit: "c" }, { value: 12, suit: null }],
+  "cribbage lookup: ranks, 10, and optional suits are read"
 );
-assert.equal(
-  [...actualCribbageScoreCounts.values()].reduce((sum, count) => sum + count, 0),
-  764,
-  "cribbage reference: exactly 764 natural five-card hands should score 24+"
+assert.equal(core.cribbageParseCards("5h 5d 10c q").suited, false, "cribbage lookup: one unsuited card means ranks only");
+assert.equal(core.cribbageParseCards("55555"), null, "cribbage lookup: five of a rank is rejected");
+assert.equal(core.cribbageParseCards("5z"), null, "cribbage lookup: unknown characters are rejected");
+assert.deepEqual(
+  (({ score, flush, nobs }) => ({ score, flush, nobs }))(core.cribbageLookupCards("5h 5d Jh Qh Kh")),
+  { score: 22, flush: 4, nobs: 1 },
+  "cribbage lookup: five suited cards score the exact hand"
 );
+assert.deepEqual(
+  core.cribbageLookupCards("5h 5d Jh Qh Kh").parts,
+  [{ label: "Fifteens", points: 12 }, { label: "Pairs", points: 2 }, { label: "Runs", points: 3 }, { label: "4-flush", points: 4 }, { label: "Nobs", points: 1 }],
+  "cribbage lookup: the score is split into its parts"
+);
+assert.deepEqual(
+  (({ score, suitings }) => ({ score, suitings }))(core.cribbageRankScores("55JQK")),
+  {
+    score: 17,
+    suitings: [
+      { score: 18, label: "Nobs" },
+      { score: 22, label: "4-flush + nobs" },
+    ],
+  },
+  "cribbage lookup: five ranks give their score and what suits can add"
+);
+assert.equal(core.cribbageLookupCards("10s J♠ Q♠ K♠ 5d").score, 17, "cribbage lookup: 10 and suit symbols are read");
+assert.equal(core.cribbageLookupCards("55JQK"), null, "cribbage lookup: ranks without suits are not an exact hand");
+assert.equal(core.cribbageLookupCards("5h 5h 5d Jc Qs"), null, "cribbage lookup: repeated cards are rejected");
 
-// Garbage reference: every poker high-card rank set (no pair, straight or
-// five-card flush) whose best suiting reaches 11 cribbage points.
-const listedGarbageHands = new Map();
-core.cribbageGarbageHands().forEach((tier, tierIndex, tiers) => {
-  if (tierIndex) assert.ok(tiers[tierIndex - 1].rankPoints < tier.rankPoints, "cribbage garbage: tiers should run lowest to highest");
-  tier.groups.forEach(({ components, hands }) => {
-    assert.equal(components.reduce((sum, [, points]) => sum + points, 0), tier.rankPoints, "cribbage garbage: breakdown should total the tier");
-    hands.forEach((label) => listedGarbageHands.set(label, tier.rankPoints));
-  });
+// Draws: with suits, outs per score should match scoring every card left in
+// the deck; without suits, the reachable scores should match every suiting.
+const drawCardIds = (text) => text.trim().split(/\s+/).map((id) => core.makeCard(id.replace("10", "T")));
+const drawDeck = ["s", "h", "d", "c"].flatMap((suit) => ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"].map((rank) => core.makeCard(`${rank}${suit}`)));
+["5h 5d Jh Qh", "As 2s 3s", "7c 8d 8h", "Jd 5s 5c 5h", "2c 4d 6h 9s"].forEach((text) => {
+  const held = drawCardIds(text);
+  const left = drawDeck.filter((card) => !held.some((other) => other.id === card.id));
+  const expected = new Map();
+  const take = (start, picked) => {
+    if (held.length + picked.length === 5) {
+      const score = core.cribbageScoreTotal(held.concat(picked));
+      if (score >= 11) expected.set(score, (expected.get(score) || 0) + 1);
+      return;
+    }
+    for (let index = start; index < left.length; index += 1) take(index + 1, picked.concat(left[index]));
+  };
+  take(0, []);
+  const result = core.cribbageDraws(text);
+  assert.equal(result.suited, true, `cribbage draws: ${text} should use suits`);
+  const actual = new Map(result.scores.map(({ score, groups }) => [score, groups.reduce((sum, { hands }) => sum + hands.reduce((outs, draw) => outs + draw.outs, 0), 0)]));
+  assert.deepEqual(sortedEntries(actual), sortedEntries(expected), `cribbage draws: ${text} outs per score`);
 });
-const actualGarbageHands = new Map();
-const garbageRankLabels = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"];
-for (let set = 0; set < 1 << 13; set += 1) {
-  const values = garbageRankLabels.map((_, index) => index + 1).filter((value) => set & (1 << (value - 1)));
-  if (values.length !== 5) continue;
-  if (values[4] - values[0] === 4 || values.join() === "1,10,11,12,13") continue;
-  const label = values.map((value) => garbageRankLabels[value - 1]).join("");
-  let minimum = Infinity;
-  let maximum = -Infinity;
-  for (let suiting = 0; suiting < 1024; suiting += 1) {
-    const suits = values.map((_, index) => "shdc"[(suiting >> (index * 2)) & 3]);
-    if (new Set(suits).size === 1) continue;
-    const score = core.cribbageScoreTotal(values.map((_, index) => core.makeCard(`${label[index]}${suits[index]}`)));
-    minimum = Math.min(minimum, score);
-    maximum = Math.max(maximum, score);
-  }
-  if (maximum >= 11) actualGarbageHands.set(label, minimum);
-}
+["55JQ", "A23", "777", "9TJQ"].forEach((text) => {
+  const result = core.cribbageDraws(text);
+  assert.equal(result.suited, false, `cribbage draws: ${text} should be ranks only`);
+  const expected = new Set();
+  const ranks = text.split("");
+  // Every suiting of the typed ranks (repeats are harmless for a set).
+  const suitings = [];
+  const pick = (index, chosen) => {
+    if (index === ranks.length) {
+      suitings.push(chosen);
+      return;
+    }
+    drawDeck.forEach((card) => {
+      if (card.id[0] === ranks[index] && !chosen.some((other) => other.id === card.id)) pick(index + 1, chosen.concat(card));
+    });
+  };
+  pick(0, []);
+  suitings.forEach((held) => {
+    const left = drawDeck.filter((card) => !held.some((other) => other.id === card.id));
+    const take = (start, picked) => {
+      if (held.length + picked.length === 5) {
+        const score = core.cribbageScoreTotal(held.concat(picked));
+        if (score >= 11) expected.add(score);
+        return;
+      }
+      for (let index = start; index < left.length; index += 1) take(index + 1, picked.concat(left[index]));
+    };
+    take(0, []);
+  });
+  assert.deepEqual(result.scores.map(({ score }) => score), [...expected].sort((a, b) => b - a), `cribbage draws: ${text} reachable scores`);
+});
+const fiveFiveJackQueen = core.cribbageDraws("5h 5d Jh Qh");
 assert.deepEqual(
-  sortedEntries(listedGarbageHands),
-  sortedEntries(actualGarbageHands),
-  "cribbage garbage: the list should cover exactly the high-card rank sets that can score 11+, at their suitless rank points"
+  fiveFiveJackQueen.scores[0].groups[0].hands.map(({ label, outs }) => [label, outs]),
+  [["T", 1], ["K", 1]],
+  "cribbage draws: 5h 5d Jh Qh makes 22 with Th or Kh"
 );
-assert.equal(listedGarbageHands.size, 251, "cribbage garbage: 251 high-card rank sets can score 11+");
-assert.equal(listedGarbageHands.get("5TJQK"), 12, "cribbage garbage: 5TJQK qualifies on ranks alone");
+assert.deepEqual(
+  fiveFiveJackQueen.scores[0].groups[0].hands.map(({ cards }) => cards),
+  [["Th"], ["Kh"]],
+  "cribbage draws: suited draws name the cards drawn"
+);
+assert.ok(
+  core.cribbageDraws("2222").scores.some(({ score, groups }) => score === 12 && groups.some(({ hands }) => hands.some(({ label }) => label === "X"))),
+  "cribbage draws: a card that scores nothing is written X"
+);
+assert.equal(core.cribbageDraws("55"), null, "cribbage draws: two cards are not a draw lookup");
 
 const cribbageOuterRows = {
   top: ["2c", "3d", "4h"],
