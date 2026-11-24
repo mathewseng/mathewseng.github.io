@@ -379,7 +379,7 @@ module.exports = async function assistanceUX(
     const reviewed = page.locator('[data-decision-type="checker"]').first();
     const opponent = await reviewed.getAttribute("data-history-side") === "opponent";
     await reviewed.click();
-    const played = page.locator('.review-move[data-rank]').filter({hasText:opponent ? /Opponent’s choice|Best\/their move/ : /Your choice|Best\/your move/});
+    const played = page.locator('.review-move[data-rank]').filter({hasText:opponent ? /GNUbg’s choice|Best\/their move/ : /Your choice|Best\/your move/});
     assert.equal(await played.count(),1,'review labels the actual player’s move');
     await played.click();
     await shot("review-phone");

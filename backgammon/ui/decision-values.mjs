@@ -5,14 +5,14 @@ import { lossTone } from "../core/decision-feedback.mjs";
 export function decisionValues(
   f,
   compact = false,
-  { opponent = false, onChoice, onPosition, showLoss = false } = {},
+  { opponent = false, choiceLabel = opponent ? "Opponent’s choice" : "Your choice", onChoice, onPosition, showLoss = false } = {},
 ) {
   const bestPlayed = Math.abs(f.best.equity - f.actual.equity) <= 1e-7;
   const seen = new Set();
   const rows = [
     ["Best equity", f.before, "before"],
     ...(!bestPlayed
-      ? [[opponent ? "Opponent’s choice" : "Your choice", f.actual, "actual"]]
+      ? [[choiceLabel, f.actual, "actual"]]
       : []),
     ["Best choice", f.best, "best"],
   ].filter(([, choice]) => {
@@ -62,7 +62,7 @@ export function decisionValues(
         ...f.choices.map((c) => {
           const best = Math.abs(c.equity - f.best.equity) <= 1e-7;
           const played = c.action === f.actual.action;
-          const playedLabel = showLoss ? "Played" : opponent ? "Opponent’s choice" : "Your choice";
+          const playedLabel = showLoss ? "Played" : choiceLabel;
           const status = [
             played && (showLoss || !best) ? playedLabel : "",
             best ? (showLoss ? "Best" : "Best choice") : "",

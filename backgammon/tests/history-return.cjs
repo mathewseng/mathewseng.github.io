@@ -283,9 +283,9 @@ module.exports = async function historyReturn(browser, base, out, name) {
       )
       .click();
     await page.locator("#return-position").waitFor();
-    assert.ok((await page.getByRole("dialog").innerText()).includes("Opponent’s choice"));
+    assert.ok((await page.getByRole("dialog").innerText()).includes("GNUbg’s choice"));
     const moves = page.locator('.review-move-rows');
-    assert.equal(await moves.getByRole('button', {name:/opponent’s choice/}).count(),1);
+    assert.equal(await moves.getByRole('button', {name:/GNUbg’s choice/}).count(),1);
     assert.equal(await moves.getByRole('button', {name:/your choice/}).count(),0);
     assert.equal(await moves.locator('[data-rank="1"]').getAttribute('aria-pressed'),'true');
     await page.screenshot({

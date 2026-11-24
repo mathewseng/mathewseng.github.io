@@ -47,6 +47,9 @@ export function decisionReview(
     recordingReview = false,
   } = {},
 ) {
+  // Name the other player as the table does ("GNUbg’s choice"); unnamed callers keep "Opponent".
+  const chooser = names?.[decisionPlayer(source)];
+  const theirChoice = chooser ? `${possessive(chooser)} choice` : "Opponent’s choice";
   const slot = el("div", { class: "decision-board" });
   const body = el("div", { class: "decision-content" });
   const caption = el("p", { class: "decision-caption sr-only", role: "status" });
@@ -290,6 +293,7 @@ export function decisionReview(
           lossSummary(f),
           decisionValues(f, false, {
             opponent,
+            choiceLabel: opponent ? theirChoice : undefined,
             showLoss: recordingReview,
             onPosition: () => showCube(null, "Position"),
             onChoice: (choice) => {
@@ -348,7 +352,7 @@ export function decisionReview(
         const f = decisionFeedback(result, source);
         body.append(
           lossSummary(f),
-          decisionValues(f, true, { opponent }),
+          decisionValues(f, true, { opponent, choiceLabel: opponent ? theirChoice : undefined }),
           lossLegend(recordingReview),
           el(
             "p",
@@ -470,7 +474,7 @@ export function decisionReview(
             const loss = Math.max(0, best.equity - c.equity);
             const status = recordingReview
               ? [played ? "Played" : "", rank === 0 ? "Best" : ""].filter(Boolean).join(" · ")
-              : played ? (rank === 0 ? bestPreviewLabel : opponent ? "Opponent’s choice" : "Your choice") : "";
+              : played ? (rank === 0 ? bestPreviewLabel : opponent ? theirChoice : "Your choice") : "";
             const row = button(
               "",
               () => {
@@ -483,7 +487,7 @@ export function decisionReview(
               {
                 "data-rank": rank + 1,
                 "aria-pressed": String(rank === selected),
-                "aria-label": `Move ${rank + 1}: ${c.notation}${played ? (opponent ? ", opponent’s choice" : ", your choice") : ""}. Equity ${equity(c.equity)}. Loss ${loss.toFixed(3)}. Preview move`,
+                "aria-label": `Move ${rank + 1}: ${c.notation}${played ? (opponent ? `, ${chooser ? theirChoice : "opponent’s choice"}` : ", your choice") : ""}. Equity ${equity(c.equity)}. Loss ${loss.toFixed(3)}. Preview move`,
               },
             );
             row.append(

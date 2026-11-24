@@ -281,7 +281,7 @@ function gameSummaryCard(game, rows, viewer) {
   const signature = JSON.stringify([game, s.matchLength, names(), players]);
   let card = feedbackView.cards.get(game);
   if (card?.dataset.signature === signature) return card;
-  const label = player => config.mode === "local" ? names()[player.player]
+  const label = player => config.mode !== "online" ? names()[player.player]
     : player.player === viewer ? "You" : "Opponent";
   const total = player => {
     const checker = player.checker.accepted, cube = player.cube.accepted;
@@ -2195,8 +2195,9 @@ function renderActions() {
       ? shortcutBadge(prefs.shortcuts[action][0]) : "";
     // Name whose turn was automatic; only the player on roll gets instructions.
     const auto = previous?.automatic ? `${names()[previous.actor]}: ${previous.action.steps?.length ? "forced turn" : "no legal move"} · ` : "";
-    // After a take the doubler's dice roll by themselves: name the take instead.
-    const taken = !!acceptedCubeKey && previous?.action.type === "take";
+    // After a take the doubler's dice roll by themselves: name the take instead,
+    // also during that roll's commit frame.
+    const taken = (!!acceptedCubeKey || committing && myTurn(s)) && previous?.action.type === "take";
     $("message").replaceChildren(
       taken ? `${names()[previous.actor]} takes.`
         : !myTurn(s) ? `${auto}${names()[s.turn]} to ${closed ? "pass" : "roll"}`
