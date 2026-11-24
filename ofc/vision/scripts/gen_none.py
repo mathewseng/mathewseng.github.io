@@ -27,5 +27,7 @@ for s in sys.argv[1:]:
             if rng.random() < 0.5: dx, dy = f * d['w'] * math.cos(a), f * d['w'] * math.sin(a)
             else: dx, dy = -f * d['h'] * math.sin(a), f * d['h'] * math.cos(a)
             q = card_quad(d['x'] + dx, d['y'] + dy, d['w'], d['h'], d['deg'])
+            # skip shifts that land on another card body: in a fanned row that box is a real (covered) card
+            if any(j != k and poly_overlap(q, quads[j]) > 0.5 for j in range(len(quads))): continue
             name = f'{out}/{s}-{os.path.basename(p)[:-4]}-s{k}.jpg'; cv2.imwrite(name, rectify(img, q, 64, 96, 0.10)); index.append(dict(path=os.path.abspath(name), label='none'))
 json.dump(index, open('../data/none.json', 'w')); print(len(index))

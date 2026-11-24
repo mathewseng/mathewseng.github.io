@@ -85,6 +85,26 @@
           </ul>
         </section>
 
+        <section aria-labelledby="hand-title">
+          <h2 id="hand-title">Covered cards</h2>
+          <p>An OFC card never moves once it is placed, so a card named while it was fully visible keeps its name after later cards are fanned over it. The reader keeps the table for the whole hand. Each card is anchored where it lies, stays on the table while other cards cover it, and appears only once per hand. A view that looks like a different card says nothing.</p>
+          <div class="cv-scroll">
+            <table class="cv-table">
+              <thead><tr><th>Cards on the table at hand end</th><th>Three players (fans)</th><th>Two players</th></tr></thead>
+              <tbody>
+                <tr><td>Named from the current view</td><td>33 / 70 (47%)</td><td>282 / 384 (73%)</td></tr>
+                <tr class="is-chosen"><td>Named with the hand state</td><td>51 / 70 (73%)</td><td>330 / 384 (86%)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Same held-out sessions, 3 and 17 hands. No wrong names were found among 28,192 reference views or in an eye check of every covered card it named. Cards laid down already fanned, never seen whole, stay unnamed. A strip reader for them was tried but not shipped, because its reads can't be checked at this resolution.</p>
+          <div class="cv-key"><span><i style="border-color:#3cdc3c"></i>named from this view</span><span><i style="border-color:#00c8c8"></i>name carried from earlier (covered now)</span><span><i style="border-color:#ffa500"></i>not named</span></div>
+          <ul class="cv-grid" role="list">
+            <li><figure><img src="samples/hand-s0023-00537-left.jpg" width="380" height="380" loading="lazy" alt="One player's overlapping rows, most cards named, several from earlier views." /><figcaption>Nov 24 00:32:05 EST · one player's rows · 9 boxes: 3 named from this view, 6 with the hand state, plus 5 hidden cards named earlier</figcaption></figure></li>
+            <li><figure><img src="samples/hand-s0023-00537-top.jpg" width="380" height="420" loading="lazy" alt="Rows laid down already fanned, with only the left card of each row named." /><figcaption>Nov 24 00:32:05 EST · rows laid down already fanned: the court cards underneath were never seen whole and stay unnamed</figcaption></figure></li>
+          </ul>
+        </section>
+
         <section aria-labelledby="how-title">
           <h2 id="how-title">How it works</h2>
           <p>A card-body detector borrowed from an earlier poker-table project, unchanged, finds cards on this deck without retraining. A small classifier trained on 51,000 views from about 3.5 hours of this table names the card or says it isn't one. Training labels came from hand-checked court cards and aces, and confident tracks of number cards that lay still on the table. Recipe and scripts: <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/ofc/vision">ofc/vision</a>.</p>

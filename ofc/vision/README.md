@@ -17,8 +17,12 @@ frames.
 
 ```sh
 python3 ofc/vision/ofc_card_vision.py frame.jpg --overlay out.jpg      # JSON of every body + its card or null
-python3 ofc/vision/ofc_card_vision.py video.mp4 --start 60 --end 120 --jsonl reads.jsonl   # keyframes (0.64 s)
+python3 ofc/vision/ofc_card_vision.py video.mp4 --start 60 --end 120 --jsonl reads.jsonl   # keyframes (0.64 s), hand state
 ```
+
+In video mode each line has `cards` (every box: `card` = this view's read, `handCard` = the name to report,
+`source` = `view` | `carried`) and `covered` (cards named earlier that are now hidden under others and no longer boxed).
+Start a run at the beginning of a hand: names are carried from views seen earlier in that hand.
 
 Needs `onnxruntime`, `opencv-python` and `numpy`, plus `av` for video. `profile.json` pins both models by SHA-256.
 
@@ -77,9 +81,76 @@ Crops were taken every third keyframe (about 1.9 s).
   - the deck box is boxed and classed `none`.
 - **Unverifiable reads:** 468 views on the 196 "too covered to read by eye" tracks were named at 0.8. A sampled sheet looked plausible, but they cannot be confirmed from pixels.
 
+## Hand state: covered and fanned cards
+
+An OFC card does not move once it is placed, so a card named while it was fully visible keeps its name after later
+cards are fanned over it. `OfcHandState` (in `ofc_card_vision.py`, used by `OfcCardReader.read_hand`) keeps the table
+for the current hand:
+
+- **Slots.** Each placed card is a slot anchored where it lies (median of its boxes). A box joins a slot only within
+  6 px and 8°: still cards jitter 0.4 px median, under 4 px for 95 % of views, while a card fanned over another sits
+  10+ px away. The first version used the 12 px track gap from training and slid onto the top card of a fan.
+- **Covered cards live on.** A placed slot stays while any detected box covers its anchor, so a card buried in a
+  fan, whose own box the detector suppresses, is still on the table (`covered` in the output).
+- **Naming.** A slot is named after 2 single-view reads that pass the reader gate, at least 80 % of its votes, and
+  only if the median of its last 10 views up to the latest vote puts that card on top at >= 0.8. (An ornate A♠ that
+  v3 reads as 7♠ at 0.77–0.81 was named 7♠ without the median check.)
+- **Saying nothing.** A view whose own read contradicts the slot says nothing; 2 in a row start a new slot (a card
+  replaced). A view whose probabilities put another card at >= 0.3 also says nothing, unless that card is one known
+  to lie on top of this one. (An 8♠ laid exactly on a 7♦ was carried as 7♦ for 8 s before this rule.)
+- **One card, one place, one hand.** Names seen since the table was last empty (<= 1 card for 3 s) belong to one
+  slot. The same name on an overlapping slot (a nudged card), or on a hidden slot while a visible slot holds it (a card
+  moved while its old spot stays covered), folds into the current slot; any other clash keeps only the best-supported
+  slot. A single-view read of a name another slot holds is dropped.
+
+### Held-out results (same two sessions)
+
+The runtime was run over the scanned keyframes (every keyframe, 0.64 s) with the shipped classifier (`scripts/sim.py`).
+
+| | s0023 (3 players, fanned rows) | s1836 (2 players) |
+| --- | --- | --- |
+| card boxes named, single view | 4469 / 8260 (54 %) | 22654 / 26739 (85 %) |
+| card boxes named, hand state | **5705 (69 %)** | **23137 (87 %)** |
+| of which covered (no single read) | 1328 | 698 |
+| cards on the table at hand end*, single view | 33 / 70 (47 %) | 282 / 384 (73 %) |
+| cards on the table at hand end*, hand state | **51 / 70 (73 %)** | **330 / 384 (86 %)** |
+
+\* Busiest keyframe in the 20 s before each hand is cleared: boxes on placed cards plus covered cards named earlier
+and no longer boxed (unnamed hidden cards are not counted). 3 and 17 hands.
+
+**Wrong names.**
+
+- **Reference check:** 0 wrong against the reference over 28,192 views. The reference is the offline hand state
+  (`scripts/hand_state.py`) built on v3's single-view reads.
+- **Eye check:** every held-out slot where a name was carried onto views the single-view gate could not read was
+  checked on filmstrips and full-resolution zooms:
+  - 16 + 30 slots carried onto covered views;
+  - 3 + 54 slots named only by the runtime (mostly cards a player moved, earlier blanked as duplicates).
+
+  One error was found: the 8♠-on-7♦ case. The contradiction rule removes it.
+
+### Strip reader (not shipped)
+
+For fans laid down already fanned (three-player pineapple rows, Fantasyland), the cards underneath are never seen
+whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px tall.
+
+- **Training data:** carried names label real covered views (2,812 in the training sessions).
+- **Synthetic fans:** cards pasted over clean crops, or grey card-shaped masks, cover all 52 cards.
+- **Models:**
+  - **v5 (pasted fans):** read a covered A♥ as 2♥ in 218 views. A♦ lay over it and J♠ over that, so its box showed
+    one thin index strip next to the A♦'s blank half.
+  - **v6 (masked):** greys out of each crop the cards that the hand state knows lie on top (`cover_mask`). On cards
+    of known identity it named 25 covered views with 0 wrong. On never-seen fans it named 5 + 7 slots: most look right
+    at 5× zoom (K♥, J♠, 6♣, A♠, Q♠), and 3 cannot be confirmed by eye.
+- **Not shipped:** a never-seen fanned card cannot be verified from these pixels, so no strip model ships and
+  `handState.stripProbability` is 2 (off).
+- **Recipe:** `masks.py` → `make_strip_index.py` (MASKED=1) → `train_strip.py --mode mask`; add `stripReader` to the
+  profile to try it.
+
 ## What still fails
 
-- **Fanned rows** (three-player pineapple, Fantasyland 14+ cards) leave only a corner index showing. The detector boxes them, but the whole-card classifier leaves them unnamed. Reading these needs a corner-index reader.
+- **Fans laid down already fanned** (three-player pineapple, Fantasyland 14+ cards): cards never seen whole stay
+  unnamed. Cards seen whole before being covered are now carried (hand state above).
 - **Hands over cards** cause most pip-count errors below the gate.
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
 - The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
@@ -107,7 +178,15 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
    - `train_cls.py` then trains v2 and v3. Each run is 16–20 epochs × 300 steps × 128 on MPS, about 3 min.
 6. **`split_tracks.py`** splits a track where a confident different card persists. When a hand was cleared, a new card was sometimes placed on the same spot within the 4 s link gap. Before this split, most "wrong" held-out reads were actually two cards sharing one track. The 26 new held-out segments were checked by eye.
 7. **`eval_cls.py`** sweeps the gate on held-out crops. `show_wrong.py` and `show_unk.py` make sheets of wrong reads and of reads on unreadable tracks.
-8. **`fp16_storage.py`** stores the detector weights as fp16 with a Cast back to fp32: 10.9 → 5.5 MB, max confidence change 0.003. **`render_samples.py`** makes the page overlays.
+8. **Hand state.**
+   - `scan_state.py` stores every box on every keyframe, with v3 probabilities and a crop each.
+   - `hand_state.py` is the offline reference, and `film.py` / `final_film.py` / `review_new.py` / `ctx.py` make the
+     review sheets.
+   - `sim.py` runs the shipped runtime over a scan and scores it; `hand_end_sim.py` gives the hand-end table.
+   - `masks.py`, `make_strip_index.py`, `train_strip.py`, `classify_all.py` and `eval_fused.py` are the strip-reader
+     experiment.
+   - `render_hand_samples.py` makes the page's hand-state overlays.
+9. **`fp16_storage.py`** stores the detector weights as fp16 with a Cast back to fp32: 10.9 → 5.5 MB, max confidence change 0.003. **`render_samples.py`** makes the page overlays.
 
 **Dataset sizes:**
 
