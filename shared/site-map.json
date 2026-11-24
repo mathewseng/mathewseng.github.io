@@ -867,6 +867,18 @@
       "created": "2026-06-29"
     },
     {
+      "name": "OFC Card Vision",
+      "path": "/ofc/vision/",
+      "category": "poker",
+      "description": "Cards found and named on office-3's overhead camera during OFC, with held-out accuracy and sample frames.",
+      "historyPath": "ofc/vision/index.html",
+      "sourcePaths": [
+        "ofc/vision/"
+      ],
+      "updated": "2026-11-24",
+      "created": "2026-11-24"
+    },
+    {
       "name": "Backgammon",
       "path": "/backgammon/",
       "category": "backgammon",
@@ -1187,7 +1199,7 @@
       "sourcePaths": [
         "scoundrel/"
       ],
-      "updated": "2026-10-28",
+      "updated": "2026-11-23",
       "created": "2026-10-22"
     },
     {

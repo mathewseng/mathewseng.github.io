@@ -1,0 +1,184 @@
+{
+"session": "s1953",
+"file": "ofc/ofc-20261123-1953.mp4",
+"split": "train",
+"note": "Hand-checked track labels. Seconds are positions in the file; x, y are the card centre in the 1920x1080 frame. '?' = not readable by eye (not scored); 'none' = not a face-up card. Train sessions: court cards and aces only (number cards were pseudo-labelled).",
+"tracks": [
+{
+"id": "s1953-00001",
+"firstSeconds": 0.01,
+"lastSeconds": 23.69,
+"x": 700.2,
+"y": 603.4,
+"label": "DK"
+},
+{
+"id": "s1953-00004",
+"firstSeconds": 0.01,
+"lastSeconds": 23.69,
+"x": 661.6,
+"y": 588.3,
+"label": "CA"
+},
+{
+"id": "s1953-00013",
+"firstSeconds": 10.89,
+"lastSeconds": 23.69,
+"x": 736.5,
+"y": 625.1,
+"label": "HA"
+},
+{
+"id": "s1953-00020",
+"firstSeconds": 27.53,
+"lastSeconds": 46.73,
+"x": 710.6,
+"y": 302.7,
+"label": "HK"
+},
+{
+"id": "s1953-00023",
+"firstSeconds": 28.17,
+"lastSeconds": 46.73,
+"x": 695.5,
+"y": 459.3,
+"label": "HQ"
+},
+{
+"id": "s1953-00038",
+"firstSeconds": 72.33,
+"lastSeconds": 116.49,
+"x": 644.2,
+"y": 579.6,
+"label": "DK"
+},
+{
+"id": "s1953-00045",
+"firstSeconds": 81.29,
+"lastSeconds": 116.49,
+"x": 671.2,
+"y": 742.4,
+"label": "CJ"
+},
+{
+"id": "s1953-00047",
+"firstSeconds": 92.81,
+"lastSeconds": 115.85,
+"x": 755.1,
+"y": 783.4,
+"label": "SQ"
+},
+{
+"id": "s1953-00048",
+"firstSeconds": 96.01,
+"lastSeconds": 118.41,
+"x": 544.4,
+"y": 498.7,
+"label": "?"
+},
+{
+"id": "s1953-00055",
+"firstSeconds": 106.89,
+"lastSeconds": 117.13,
+"x": 698.8,
+"y": 540.1,
+"label": "HA"
+},
+{
+"id": "s1953-00069",
+"firstSeconds": 136.97,
+"lastSeconds": 147.21,
+"x": 760.4,
+"y": 321.7,
+"label": "CK"
+},
+{
+"id": "s1953-00070",
+"firstSeconds": 138.89,
+"lastSeconds": 147.85,
+"x": 688.9,
+"y": 460.8,
+"label": "CQ"
+},
+{
+"id": "s1953-00076",
+"firstSeconds": 165.77,
+"lastSeconds": 322.57,
+"x": 627.2,
+"y": 756.6,
+"label": "SQ"
+},
+{
+"id": "s1953-00077",
+"firstSeconds": 168.97,
+"lastSeconds": 322.57,
+"x": 664.0,
+"y": 776.4,
+"label": "SJ"
+},
+{
+"id": "s1953-00078",
+"firstSeconds": 168.97,
+"lastSeconds": 324.49,
+"x": 632.6,
+"y": 622.1,
+"label": "HA"
+},
+{
+"id": "s1953-00087",
+"firstSeconds": 193.29,
+"lastSeconds": 322.57,
+"x": 703.3,
+"y": 796.2,
+"label": "SK"
+},
+{
+"id": "s1953-00088",
+"firstSeconds": 196.49,
+"lastSeconds": 324.49,
+"x": 671.0,
+"y": 638.2,
+"label": "CQ"
+},
+{
+"id": "s1953-00094",
+"firstSeconds": 209.93,
+"lastSeconds": 322.57,
+"x": 740.2,
+"y": 821.7,
+"label": "HQ"
+},
+{
+"id": "s1953-00096",
+"firstSeconds": 211.85,
+"lastSeconds": 324.49,
+"x": 709.8,
+"y": 648.0,
+"label": "CJ"
+},
+{
+"id": "s1953-00118",
+"firstSeconds": 286.09,
+"lastSeconds": 327.69,
+"x": 688.7,
+"y": 500.0,
+"label": "DJ"
+},
+{
+"id": "s1953-00131",
+"firstSeconds": 330.25,
+"lastSeconds": 344.97,
+"x": 656.1,
+"y": 524.3,
+"label": "?"
+},
+{
+"id": "s1953-00134",
+"firstSeconds": 330.89,
+"lastSeconds": 339.85,
+"x": 611.6,
+"y": 564.1,
+"label": "?"
+}
+]
+}

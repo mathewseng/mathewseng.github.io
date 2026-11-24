@@ -1,0 +1,120 @@
+[
+ {
+  "file": "samples/s1836-00962.58.jpg",
+  "session": "s1836",
+  "clockEST": "18:52:12",
+  "bodies": 24,
+  "read": [
+   "C2",
+   "C5",
+   "C7",
+   "C9",
+   "CA",
+   "CQ",
+   "D2",
+   "D4",
+   "D6",
+   "D8",
+   "DK",
+   "H7",
+   "H9",
+   "HA",
+   "HJ",
+   "HQ",
+   "S3",
+   "S5",
+   "S6",
+   "S8",
+   "S9",
+   "SJ",
+   "SK",
+   "SQ"
+  ]
+ },
+ {
+  "file": "samples/s1836-00360.98.jpg",
+  "session": "s1836",
+  "clockEST": "18:42:10",
+  "bodies": 19,
+  "read": [
+   "C2",
+   "C6",
+   "CJ",
+   "CK",
+   "CT",
+   "D6",
+   "DJ",
+   "H4",
+   "H9",
+   "HA",
+   "HK",
+   "HT",
+   "S2",
+   "S6",
+   "SA",
+   "SQ"
+  ]
+ },
+ {
+  "file": "samples/s1836-01082.90.jpg",
+  "session": "s1836",
+  "clockEST": "18:54:12",
+  "bodies": 21,
+  "read": [
+   "C2",
+   "C4",
+   "C5",
+   "CJ",
+   "CQ",
+   "D7",
+   "D8",
+   "D9",
+   "HQ",
+   "S4",
+   "S8",
+   "ST"
+  ]
+ },
+ {
+  "file": "samples/s0023-00300.80.jpg",
+  "session": "s0023",
+  "clockEST": "00:28:08",
+  "bodies": 13,
+  "read": [
+   "C8",
+   "CJ",
+   "DA",
+   "H7",
+   "SQ",
+   "ST"
+  ]
+ },
+ {
+  "file": "samples/s0023-00541.44.jpg",
+  "session": "s0023",
+  "clockEST": "00:32:09",
+  "bodies": 21,
+  "read": [
+   "C2",
+   "D5",
+   "H3",
+   "H5",
+   "S2",
+   "S3",
+   "S9",
+   "SJ",
+   "ST"
+  ]
+ },
+ {
+  "file": "samples/s1836-01684.94.jpg",
+  "session": "s1836",
+  "clockEST": "19:04:14",
+  "bodies": 11,
+  "read": [
+   "C7",
+   "C9",
+   "HK"
+  ]
+ }
+]

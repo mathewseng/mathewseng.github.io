@@ -1,0 +1,544 @@
+{
+"session": "stud",
+"file": "other/stud-poker-20261124-0023-starts-1000.mp4",
+"split": "train",
+"note": "Hand-checked track labels. Seconds are positions in the file; x, y are the card centre in the 1920x1080 frame. '?' = not readable by eye (not scored); 'none' = not a face-up card. Train sessions: court cards and aces only (number cards were pseudo-labelled).",
+"tracks": [
+{
+"id": "stud-00003",
+"firstSeconds": 660.88,
+"lastSeconds": 669.84,
+"x": 961.4,
+"y": 317.9,
+"label": "CQ"
+},
+{
+"id": "stud-00005",
+"firstSeconds": 667.28,
+"lastSeconds": 701.84,
+"x": 944.3,
+"y": 310.5,
+"label": "DJ"
+},
+{
+"id": "stud-00016",
+"firstSeconds": 683.92,
+"lastSeconds": 696.08,
+"x": 682.1,
+"y": 606.8,
+"label": "HK"
+},
+{
+"id": "stud-00027",
+"firstSeconds": 697.36,
+"lastSeconds": 707.6,
+"x": 708.2,
+"y": 612.8,
+"label": "HK"
+},
+{
+"id": "stud-00047",
+"firstSeconds": 824.72,
+"lastSeconds": 836.88,
+"x": 667.3,
+"y": 694.9,
+"label": "DA"
+},
+{
+"id": "stud-00048",
+"firstSeconds": 838.16,
+"lastSeconds": 874.64,
+"x": 681.0,
+"y": 689.6,
+"label": "DA"
+},
+{
+"id": "stud-00054",
+"firstSeconds": 879.76,
+"lastSeconds": 909.2,
+"x": 680.8,
+"y": 689.7,
+"label": "DA"
+},
+{
+"id": "stud-00064",
+"firstSeconds": 917.52,
+"lastSeconds": 936.08,
+"x": 677.5,
+"y": 688.8,
+"label": "?"
+},
+{
+"id": "stud-00077",
+"firstSeconds": 970.0,
+"lastSeconds": 972.56,
+"x": 678.2,
+"y": 690.5,
+"label": "?"
+},
+{
+"id": "stud-00078",
+"firstSeconds": 973.84,
+"lastSeconds": 1010.32,
+"x": 676.5,
+"y": 686.7,
+"label": "?"
+},
+{
+"id": "stud-00097",
+"firstSeconds": 1071.12,
+"lastSeconds": 1078.8,
+"x": 702.9,
+"y": 468.5,
+"label": "DJ"
+},
+{
+"id": "stud-00105",
+"firstSeconds": 1118.48,
+"lastSeconds": 1155.6,
+"x": 712.0,
+"y": 640.5,
+"label": "DA"
+},
+{
+"id": "stud-00117",
+"firstSeconds": 1154.32,
+"lastSeconds": 1213.84,
+"x": 639.6,
+"y": 626.9,
+"label": "CJ"
+},
+{
+"id": "stud-00119",
+"firstSeconds": 1156.24,
+"lastSeconds": 1214.48,
+"x": 697.6,
+"y": 680.2,
+"label": "DA"
+},
+{
+"id": "stud-00140",
+"firstSeconds": 1314.96,
+"lastSeconds": 1346.96,
+"x": 690.3,
+"y": 491.9,
+"label": "CQ"
+},
+{
+"id": "stud-00151",
+"firstSeconds": 1386.0,
+"lastSeconds": 1393.68,
+"x": 658.2,
+"y": 719.4,
+"label": "HJ"
+},
+{
+"id": "stud-00153",
+"firstSeconds": 1396.24,
+"lastSeconds": 1403.92,
+"x": 677.4,
+"y": 713.7,
+"label": "HJ"
+},
+{
+"id": "stud-00154",
+"firstSeconds": 1404.56,
+"lastSeconds": 1437.2,
+"x": 711.6,
+"y": 689.5,
+"label": "HJ"
+},
+{
+"id": "stud-00172",
+"firstSeconds": 1508.12,
+"lastSeconds": 1521.56,
+"x": 865.1,
+"y": 660.9,
+"label": "CJ"
+},
+{
+"id": "stud-00175",
+"firstSeconds": 1513.88,
+"lastSeconds": 1521.56,
+"x": 918.4,
+"y": 660.1,
+"label": "DQ"
+},
+{
+"id": "stud-00176",
+"firstSeconds": 1515.16,
+"lastSeconds": 1518.36,
+"x": 854.9,
+"y": 467.1,
+"label": "CA"
+},
+{
+"id": "stud-00183",
+"firstSeconds": 1526.04,
+"lastSeconds": 1557.4,
+"x": 675.9,
+"y": 673.8,
+"label": "CK"
+},
+{
+"id": "stud-00189",
+"firstSeconds": 1558.04,
+"lastSeconds": 1616.28,
+"x": 728.5,
+"y": 655.0,
+"label": "CK"
+},
+{
+"id": "stud-00190",
+"firstSeconds": 1563.16,
+"lastSeconds": 1566.36,
+"x": 895.9,
+"y": 493.1,
+"label": "DQ"
+},
+{
+"id": "stud-00211",
+"firstSeconds": 1590.04,
+"lastSeconds": 1615.64,
+"x": 659.4,
+"y": 599.0,
+"label": "SK"
+},
+{
+"id": "stud-00227",
+"firstSeconds": 1638.68,
+"lastSeconds": 1658.52,
+"x": 816.7,
+"y": 621.2,
+"label": "HQ"
+},
+{
+"id": "stud-00252",
+"firstSeconds": 1762.2,
+"lastSeconds": 1776.92,
+"x": 952.0,
+"y": 434.6,
+"label": "CK"
+},
+{
+"id": "stud-00254",
+"firstSeconds": 1778.2,
+"lastSeconds": 1782.68,
+"x": 1002.9,
+"y": 427.3,
+"label": "CK"
+},
+{
+"id": "stud-00264",
+"firstSeconds": 1805.08,
+"lastSeconds": 1843.48,
+"x": 551.0,
+"y": 505.7,
+"label": "DK"
+},
+{
+"id": "stud-00265",
+"firstSeconds": 1805.08,
+"lastSeconds": 1846.68,
+"x": 631.1,
+"y": 572.5,
+"label": "CQ"
+},
+{
+"id": "stud-00284",
+"firstSeconds": 1844.12,
+"lastSeconds": 1846.68,
+"x": 637.0,
+"y": 692.0,
+"label": "CA"
+},
+{
+"id": "stud-00292",
+"firstSeconds": 1856.92,
+"lastSeconds": 1915.16,
+"x": 725.7,
+"y": 452.5,
+"label": "DJ"
+},
+{
+"id": "stud-00313",
+"firstSeconds": 1959.32,
+"lastSeconds": 2006.04,
+"x": 844.2,
+"y": 449.1,
+"label": "DA"
+},
+{
+"id": "stud-00325",
+"firstSeconds": 2029.08,
+"lastSeconds": 2044.44,
+"x": 784.0,
+"y": 593.5,
+"label": "DJ"
+},
+{
+"id": "stud-00339",
+"firstSeconds": 2089.24,
+"lastSeconds": 2105.88,
+"x": 625.2,
+"y": 570.8,
+"label": "HJ"
+},
+{
+"id": "stud-00344",
+"firstSeconds": 2123.8,
+"lastSeconds": 2132.12,
+"x": 766.5,
+"y": 634.7,
+"label": "HQ"
+},
+{
+"id": "stud-00351",
+"firstSeconds": 2149.4,
+"lastSeconds": 2169.24,
+"x": 813.3,
+"y": 430.1,
+"label": "SA"
+},
+{
+"id": "stud-00352",
+"firstSeconds": 2150.04,
+"lastSeconds": 2154.52,
+"x": 1010.5,
+"y": 403.2,
+"label": "DK"
+},
+{
+"id": "stud-00362",
+"firstSeconds": 2187.8,
+"lastSeconds": 2207.64,
+"x": 937.2,
+"y": 573.3,
+"label": "HJ"
+},
+{
+"id": "stud-00383",
+"firstSeconds": 2281.24,
+"lastSeconds": 2292.12,
+"x": 652.5,
+"y": 624.5,
+"label": "CQ"
+},
+{
+"id": "stud-00393",
+"firstSeconds": 2308.12,
+"lastSeconds": 2349.72,
+"x": 841.3,
+"y": 367.9,
+"label": "SK"
+},
+{
+"id": "stud-00396",
+"firstSeconds": 2323.48,
+"lastSeconds": 2333.08,
+"x": 657.7,
+"y": 625.2,
+"label": "?"
+},
+{
+"id": "stud-00402",
+"firstSeconds": 2362.52,
+"lastSeconds": 2375.32,
+"x": 703.1,
+"y": 632.0,
+"label": "DJ"
+},
+{
+"id": "stud-00412",
+"firstSeconds": 2400.28,
+"lastSeconds": 2411.8,
+"x": 901.9,
+"y": 454.8,
+"label": "SA"
+},
+{
+"id": "stud-00421",
+"firstSeconds": 2421.4,
+"lastSeconds": 2434.2,
+"x": 991.9,
+"y": 365.6,
+"label": "DJ"
+},
+{
+"id": "stud-00425",
+"firstSeconds": 2435.48,
+"lastSeconds": 2440.6,
+"x": 981.0,
+"y": 411.7,
+"label": "DJ"
+},
+{
+"id": "stud-00428",
+"firstSeconds": 2460.44,
+"lastSeconds": 2477.08,
+"x": 740.8,
+"y": 620.8,
+"label": "SJ"
+},
+{
+"id": "stud-00430",
+"firstSeconds": 2463.0,
+"lastSeconds": 2465.56,
+"x": 851.9,
+"y": 458.1,
+"label": "DQ"
+},
+{
+"id": "stud-00431",
+"firstSeconds": 2466.84,
+"lastSeconds": 2483.48,
+"x": 970.0,
+"y": 478.0,
+"label": "DQ"
+},
+{
+"id": "stud-00446",
+"firstSeconds": 2507.8,
+"lastSeconds": 2515.48,
+"x": 639.4,
+"y": 642.5,
+"label": "DQ"
+},
+{
+"id": "stud-00447",
+"firstSeconds": 2509.72,
+"lastSeconds": 2515.48,
+"x": 949.3,
+"y": 396.6,
+"label": "HA"
+},
+{
+"id": "stud-00469",
+"firstSeconds": 2539.16,
+"lastSeconds": 2587.16,
+"x": 956.1,
+"y": 463.5,
+"label": "CA"
+},
+{
+"id": "stud-00485",
+"firstSeconds": 2605.08,
+"lastSeconds": 2615.96,
+"x": 735.7,
+"y": 625.3,
+"label": "CQ"
+},
+{
+"id": "stud-00486",
+"firstSeconds": 2605.72,
+"lastSeconds": 2610.2,
+"x": 711.8,
+"y": 458.9,
+"label": "HJ"
+},
+{
+"id": "stud-00500",
+"firstSeconds": 2642.84,
+"lastSeconds": 2663.32,
+"x": 979.8,
+"y": 402.9,
+"label": "CJ"
+},
+{
+"id": "stud-00501",
+"firstSeconds": 2643.48,
+"lastSeconds": 2658.2,
+"x": 764.3,
+"y": 470.2,
+"label": "CA"
+},
+{
+"id": "stud-00527",
+"firstSeconds": 2708.12,
+"lastSeconds": 2722.84,
+"x": 721.3,
+"y": 420.2,
+"label": "?"
+},
+{
+"id": "stud-00529",
+"firstSeconds": 2709.4,
+"lastSeconds": 2715.8,
+"x": 933.3,
+"y": 452.6,
+"label": "CJ"
+},
+{
+"id": "stud-00532",
+"firstSeconds": 2730.52,
+"lastSeconds": 2763.8,
+"x": 864.6,
+"y": 647.5,
+"label": "CQ"
+},
+{
+"id": "stud-00533",
+"firstSeconds": 2731.16,
+"lastSeconds": 2736.92,
+"x": 798.4,
+"y": 428.8,
+"label": "CJ"
+},
+{
+"id": "stud-00557",
+"firstSeconds": 2836.12,
+"lastSeconds": 2846.36,
+"x": 720.8,
+"y": 475.4,
+"label": "CA"
+},
+{
+"id": "stud-00561",
+"firstSeconds": 2842.52,
+"lastSeconds": 2916.76,
+"x": 687.2,
+"y": 616.3,
+"label": "SQ"
+},
+{
+"id": "stud-00568",
+"firstSeconds": 2865.56,
+"lastSeconds": 2913.56,
+"x": 719.4,
+"y": 475.0,
+"label": "?"
+},
+{
+"id": "stud-00602",
+"firstSeconds": 2988.44,
+"lastSeconds": 3059.48,
+"x": 711.2,
+"y": 612.8,
+"label": "SJ"
+},
+{
+"id": "stud-00611",
+"firstSeconds": 3044.12,
+"lastSeconds": 3056.28,
+"x": 712.3,
+"y": 469.4,
+"label": "CJ"
+},
+{
+"id": "stud-00637",
+"firstSeconds": 3075.48,
+"lastSeconds": 3122.2,
+"x": 735.3,
+"y": 591.3,
+"label": "DK"
+},
+{
+"id": "stud-00663",
+"firstSeconds": 3127.96,
+"lastSeconds": 3140.12,
+"x": 1005.1,
+"y": 364.0,
+"label": "HQ"
+}
+]
+}

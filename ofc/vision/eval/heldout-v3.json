@@ -1,0 +1,143 @@
+{
+ "model": "cls-v3 (card-identity.onnx)",
+ "heldoutSessions": [
+  "s1836 (Nov 23 18:36-19:12 EST, 2-player)",
+  "s0023 (Nov 24 00:23-00:33 EST, 3-player)"
+ ],
+ "tracks": {
+  "card": 446,
+  "none": 8
+ },
+ "sweep": [
+  {
+   "probability": 0.5,
+   "margin": 0.3,
+   "cardCrops": 8858,
+   "read": 8680,
+   "right": 8670,
+   "wrong": 10,
+   "noneCrops": 41,
+   "noneRead": 0,
+   "wrongPairs": {
+    "S8->S7": 2,
+    "C2->C3": 2,
+    "D8->D7": 1,
+    "C7->C8": 1,
+    "C7->C6": 1,
+    "S5->D5": 1,
+    "C3->H5": 1,
+    "C2->S5": 1
+   }
+  },
+  {
+   "probability": 0.6,
+   "margin": 0.3,
+   "cardCrops": 8858,
+   "read": 8609,
+   "right": 8606,
+   "wrong": 3,
+   "noneCrops": 41,
+   "noneRead": 0,
+   "wrongPairs": {
+    "D8->D7": 1,
+    "C7->C6": 1,
+    "C2->C3": 1
+   }
+  },
+  {
+   "probability": 0.7,
+   "margin": 0.3,
+   "cardCrops": 8858,
+   "read": 8555,
+   "right": 8553,
+   "wrong": 2,
+   "noneCrops": 41,
+   "noneRead": 0,
+   "wrongPairs": {
+    "C7->C6": 1,
+    "C2->C3": 1
+   }
+  },
+  {
+   "probability": 0.8,
+   "margin": 0.3,
+   "cardCrops": 8858,
+   "read": 8504,
+   "right": 8504,
+   "wrong": 0,
+   "noneCrops": 41,
+   "noneRead": 0,
+   "wrongPairs": {}
+  },
+  {
+   "probability": 0.9,
+   "margin": 0.3,
+   "cardCrops": 8858,
+   "read": 8287,
+   "right": 8287,
+   "wrong": 0,
+   "noneCrops": 41,
+   "noneRead": 0,
+   "wrongPairs": {}
+  }
+ ],
+ "perClassReadRateAt0.8": {
+  "C2": 0.967,
+  "C3": 0.981,
+  "C4": 0.994,
+  "C5": 0.991,
+  "C6": 1.0,
+  "C7": 0.93,
+  "C8": 0.98,
+  "C9": 1.0,
+  "CA": 0.984,
+  "CJ": 0.89,
+  "CK": 1.0,
+  "CQ": 0.986,
+  "CT": 1.0,
+  "D2": 0.995,
+  "D3": 1.0,
+  "D4": 0.991,
+  "D5": 0.993,
+  "D6": 0.986,
+  "D7": 0.924,
+  "D8": 0.951,
+  "D9": 1.0,
+  "DA": 0.992,
+  "DJ": 0.956,
+  "DK": 0.965,
+  "DQ": 0.99,
+  "DT": 0.988,
+  "H2": 0.985,
+  "H3": 1.0,
+  "H4": 0.986,
+  "H5": 1.0,
+  "H6": 0.966,
+  "H7": 0.974,
+  "H8": 1.0,
+  "H9": 0.596,
+  "HA": 1.0,
+  "HJ": 1.0,
+  "HK": 0.974,
+  "HQ": 1.0,
+  "HT": 1.0,
+  "S2": 0.961,
+  "S3": 0.982,
+  "S4": 0.966,
+  "S5": 0.989,
+  "S6": 0.994,
+  "S7": 0.995,
+  "S8": 0.964,
+  "S9": 0.993,
+  "SA": 0.532,
+  "SJ": 0.934,
+  "SK": 0.995,
+  "SQ": 0.988,
+  "ST": 0.995
+ },
+ "readRateByKindAt0.8": {
+  "pip (2-10)": 0.967,
+  "ace": 0.857,
+  "court (J/Q/K)": 0.974
+ }
+}

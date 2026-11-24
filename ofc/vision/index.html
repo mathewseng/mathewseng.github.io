@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-family="ofc">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Card detection and identification on office-3's overhead camera during open-face Chinese poker, with held-out accuracy." />
+    <title>OFC Card Vision</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='15' fill='%238fd9b6'/%3E%3Ctext x='32' y='49' font-family='Inter, system-ui, sans-serif' font-size='48' font-weight='800' text-anchor='middle' fill='%230b0d12'%3E♣%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../../shared/tokens.css?v=20261124" />
+    <link rel="stylesheet" href="../../shared/app.css?v=20261124" />
+    <style>
+      .cv-main { display: grid; gap: 28px; align-content: start; padding-bottom: 48px; }
+      .cv-main > * { min-width: 0; }
+      .cv-table td:last-child, .cv-table th:last-child { text-align: left; }
+      .cv-main h1 { margin: 0 0 6px; }
+      .cv-main p { margin: 0; color: var(--muted); max-width: 72ch; line-height: var(--lh-body, 1.5); }
+      .cv-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+      .cv-stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md, 12px); padding: 14px 16px; }
+      .cv-stat b { display: block; font-size: var(--t-lg, 1.4rem); font-variant-numeric: tabular-nums; }
+      .cv-stat span { color: var(--muted); font-size: var(--t-sm, .875rem); }
+      .cv-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--t-sm, .875rem); }
+      .cv-table th, .cv-table td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+      .cv-table th:first-child, .cv-table td:first-child { text-align: left; }
+      .cv-table tr.is-chosen td { font-weight: 700; }
+      .cv-scroll { overflow-x: auto; }
+      .cv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 16px; list-style: none; margin: 0; padding: 0; }
+      .cv-grid figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md, 12px); overflow: hidden; }
+      .cv-grid img { display: block; width: 100%; height: auto; }
+      .cv-grid figcaption { padding: 10px 12px; font-size: var(--t-sm, .875rem); color: var(--muted); }
+      .cv-key { display: flex; gap: 16px; flex-wrap: wrap; font-size: var(--t-sm, .875rem); color: var(--muted); }
+      .cv-key i { display: inline-block; width: 14px; height: 10px; border: 2px solid; margin-right: 6px; vertical-align: -1px; }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell">
+      <header class="topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">All projects</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <a href="/ofc/">OFC</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Card vision</span>
+        </nav>
+      </header>
+      <main id="main" class="cv-main" tabindex="-1">
+        <section>
+          <h1>OFC card vision</h1>
+          <p>Face-up cards on office-3's overhead camera, found and named one frame at a time. The reader would rather say nothing than name the wrong card. Every number below comes from two sessions that were kept out of training: 18:36–19:12 EST on Nov 23 (two players) and 00:23–00:33 EST on Nov 24 (three players).</p>
+        </section>
+
+        <section class="cv-stats" aria-label="Held-out results">
+          <div class="cv-stat"><b>96.0%</b><span>of readable card views named</span></div>
+          <div class="cv-stat"><b>0</b><span>wrong names in 8,858 card views</span></div>
+          <div class="cv-stat"><b>429 / 446</b><span>cards named once their views are averaged; 0 wrong</span></div>
+          <div class="cv-stat"><b>~93%</b><span>of frames find a card while it is on the table</span></div>
+        </section>
+
+        <section aria-labelledby="gate-title">
+          <h2 id="gate-title">Confidence gate</h2>
+          <p>A view is named only if the classifier's top card clears the probability, beats the runner-up by 0.3, and both 180° turns of the crop agree. The bold row is the setting the reader ships with.</p>
+          <div class="cv-scroll">
+            <table class="cv-table">
+              <thead><tr><th>Probability</th><th>Named</th><th>Wrong</th><th>Wrong cards</th></tr></thead>
+              <tbody>
+                <tr><td>0.5</td><td>98.0%</td><td>10</td><td>8♠→7♠ ×2, 2♣→3♣ ×2, 8♦→7♦, 7♣→8♣, 7♣→6♣, 5♠→5♦, 3♣→5♥, 2♣→5♠</td></tr>
+                <tr><td>0.7</td><td>96.6%</td><td>2</td><td>7♣→6♣, 2♣→3♣</td></tr>
+                <tr class="is-chosen"><td>0.8</td><td>96.0%</td><td>0</td><td>—</td></tr>
+                <tr><td>0.9</td><td>93.6%</td><td>0</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section aria-labelledby="samples-title">
+          <h2 id="samples-title">Held-out frames</h2>
+          <div class="cv-key"><span><i style="border-color:#3cdc3c"></i>named</span><span><i style="border-color:#ffa500"></i>card found, not named</span></div>
+          <ul class="cv-grid" role="list">
+            <li><figure><img src="samples/s1836-00962.58.jpg" width="820" height="700" loading="lazy" alt="Two finished 13-card OFC hands, all 24 visible cards named." /><figcaption>Nov 23 18:52:12 EST · end of hand · 24 cards found, 24 named</figcaption></figure></li>
+            <li><figure><img src="samples/s1836-00360.98.jpg" width="820" height="700" loading="lazy" alt="Two OFC hands in progress, most cards named." /><figcaption>Nov 23 18:42:10 EST · 19 found, 16 named</figcaption></figure></li>
+            <li><figure><img src="samples/s1836-01082.90.jpg" width="820" height="700" loading="lazy" alt="Overlapping cards left unnamed beside named ones." /><figcaption>Nov 23 18:54:12 EST · 21 found, 12 named; overlapped cards stay unnamed</figcaption></figure></li>
+            <li><figure><img src="samples/s0023-00300.80.jpg" width="820" height="700" loading="lazy" alt="Three-player OFC with fanned rows." /><figcaption>Nov 24 00:28:08 EST · three players · 13 found, 6 named</figcaption></figure></li>
+            <li><figure><img src="samples/s0023-00541.44.jpg" width="820" height="700" loading="lazy" alt="Three-player OFC with rows fanned so only the corner shows." /><figcaption>Nov 24 00:32:09 EST · fanned rows show only corners · 21 found, 9 named</figcaption></figure></li>
+            <li><figure><img src="samples/s1836-01684.94.jpg" width="820" height="700" loading="lazy" alt="A fanned row being built; covered cards unnamed." /><figcaption>Nov 23 19:04:14 EST · 11 found, 3 named</figcaption></figure></li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="how-title">
+          <h2 id="how-title">How it works</h2>
+          <p>A card-body detector borrowed from an earlier poker-table project, unchanged, finds cards on this deck without retraining. A small classifier trained on 51,000 views from about 3.5 hours of this table names the card or says it isn't one. Training labels came from hand-checked court cards and aces, and confident tracks of number cards that lay still on the table. Recipe and scripts: <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/ofc/vision">ofc/vision</a>.</p>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

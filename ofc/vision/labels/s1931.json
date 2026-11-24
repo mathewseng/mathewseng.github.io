@@ -1,0 +1,608 @@
+{
+"session": "s1931",
+"file": "ofc/ofc-20261123-1931-no-board-audio.mp4",
+"split": "train",
+"note": "Hand-checked track labels. Seconds are positions in the file; x, y are the card centre in the 1920x1080 frame. '?' = not readable by eye (not scored); 'none' = not a face-up card. Train sessions: court cards and aces only (number cards were pseudo-labelled).",
+"tracks": [
+{
+"id": "s1931-00001",
+"firstSeconds": 0.52,
+"lastSeconds": 879.43,
+"x": 872.0,
+"y": 562.7,
+"label": "SQ"
+},
+{
+"id": "s1931-00006",
+"firstSeconds": 0.52,
+"lastSeconds": 9.48,
+"x": 722.4,
+"y": 452.6,
+"label": "HK"
+},
+{
+"id": "s1931-00008",
+"firstSeconds": 0.52,
+"lastSeconds": 715.55,
+"x": 912.0,
+"y": 587.0,
+"label": "SA"
+},
+{
+"id": "s1931-00017",
+"firstSeconds": 6.28,
+"lastSeconds": 65.17,
+"x": 666.9,
+"y": 610.4,
+"label": "SK"
+},
+{
+"id": "s1931-00019",
+"firstSeconds": 10.76,
+"lastSeconds": 61.33,
+"x": 706.1,
+"y": 461.2,
+"label": "DK"
+},
+{
+"id": "s1931-00020",
+"firstSeconds": 10.76,
+"lastSeconds": 61.33,
+"x": 726.2,
+"y": 473.0,
+"label": "?"
+},
+{
+"id": "s1931-00023",
+"firstSeconds": 22.28,
+"lastSeconds": 65.17,
+"x": 697.3,
+"y": 633.6,
+"label": "HQ"
+},
+{
+"id": "s1931-00027",
+"firstSeconds": 29.32,
+"lastSeconds": 38.92,
+"x": 729.4,
+"y": 475.1,
+"label": "?"
+},
+{
+"id": "s1931-00029",
+"firstSeconds": 47.24,
+"lastSeconds": 82.45,
+"x": 728.8,
+"y": 474.6,
+"label": "?"
+},
+{
+"id": "s1931-00030",
+"firstSeconds": 47.24,
+"lastSeconds": 65.17,
+"x": 695.7,
+"y": 789.5,
+"label": "SJ"
+},
+{
+"id": "s1931-00039",
+"firstSeconds": 62.61,
+"lastSeconds": 84.37,
+"x": 687.1,
+"y": 458.4,
+"label": "DQ"
+},
+{
+"id": "s1931-00049",
+"firstSeconds": 92.05,
+"lastSeconds": 125.35,
+"x": 505.5,
+"y": 837.7,
+"label": "none"
+},
+{
+"id": "s1931-00052",
+"firstSeconds": 114.45,
+"lastSeconds": 202.8,
+"x": 800.4,
+"y": 366.9,
+"label": "CQ"
+},
+{
+"id": "s1931-00053",
+"firstSeconds": 115.73,
+"lastSeconds": 202.8,
+"x": 715.4,
+"y": 454.5,
+"label": "HA"
+},
+{
+"id": "s1931-00055",
+"firstSeconds": 132.39,
+"lastSeconds": 213.04,
+"x": 670.7,
+"y": 593.6,
+"label": "SK"
+},
+{
+"id": "s1931-00059",
+"firstSeconds": 134.31,
+"lastSeconds": 212.4,
+"x": 602.5,
+"y": 698.0,
+"label": "CJ"
+},
+{
+"id": "s1931-00060",
+"firstSeconds": 134.95,
+"lastSeconds": 213.04,
+"x": 636.8,
+"y": 726.6,
+"label": "DJ"
+},
+{
+"id": "s1931-00061",
+"firstSeconds": 143.27,
+"lastSeconds": 202.8,
+"x": 763.8,
+"y": 354.1,
+"label": "SQ"
+},
+{
+"id": "s1931-00066",
+"firstSeconds": 159.27,
+"lastSeconds": 202.8,
+"x": 684.5,
+"y": 441.9,
+"label": "DA"
+},
+{
+"id": "s1931-00068",
+"firstSeconds": 165.03,
+"lastSeconds": 211.76,
+"x": 708.1,
+"y": 783.9,
+"label": "SJ"
+},
+{
+"id": "s1931-00091",
+"firstSeconds": 246.97,
+"lastSeconds": 252.73,
+"x": 691.7,
+"y": 593.9,
+"label": "HQ"
+},
+{
+"id": "s1931-00092",
+"firstSeconds": 248.25,
+"lastSeconds": 252.09,
+"x": 653.2,
+"y": 639.2,
+"label": "?"
+},
+{
+"id": "s1931-00095",
+"firstSeconds": 253.37,
+"lastSeconds": 344.27,
+"x": 621.1,
+"y": 552.5,
+"label": "HQ"
+},
+{
+"id": "s1931-00096",
+"firstSeconds": 253.37,
+"lastSeconds": 346.83,
+"x": 581.0,
+"y": 665.6,
+"label": "DJ"
+},
+{
+"id": "s1931-00097",
+"firstSeconds": 254.65,
+"lastSeconds": 342.35,
+"x": 601.7,
+"y": 611.0,
+"label": "DA"
+},
+{
+"id": "s1931-00100",
+"firstSeconds": 257.85,
+"lastSeconds": 294.33,
+"x": 747.6,
+"y": 332.1,
+"label": "CJ"
+},
+{
+"id": "s1931-00101",
+"firstSeconds": 258.49,
+"lastSeconds": 293.69,
+"x": 692.4,
+"y": 439.8,
+"label": "DK"
+},
+{
+"id": "s1931-00105",
+"firstSeconds": 266.81,
+"lastSeconds": 346.83,
+"x": 673.7,
+"y": 643.9,
+"label": "CA"
+},
+{
+"id": "s1931-00106",
+"firstSeconds": 267.45,
+"lastSeconds": 346.83,
+"x": 654.2,
+"y": 704.2,
+"label": "SJ"
+},
+{
+"id": "s1931-00107",
+"firstSeconds": 267.45,
+"lastSeconds": 342.35,
+"x": 781.6,
+"y": 346.3,
+"label": "HJ"
+},
+{
+"id": "s1931-00111",
+"firstSeconds": 280.89,
+"lastSeconds": 347.47,
+"x": 657.8,
+"y": 566.9,
+"label": "CQ"
+},
+{
+"id": "s1931-00114",
+"firstSeconds": 294.33,
+"lastSeconds": 314.83,
+"x": 668.0,
+"y": 430.2,
+"label": "SK"
+},
+{
+"id": "s1931-00118",
+"firstSeconds": 298.81,
+"lastSeconds": 316.11,
+"x": 747.7,
+"y": 332.2,
+"label": "CJ"
+},
+{
+"id": "s1931-00132",
+"firstSeconds": 320.59,
+"lastSeconds": 342.35,
+"x": 748.4,
+"y": 332.0,
+"label": "CJ"
+},
+{
+"id": "s1931-00133",
+"firstSeconds": 320.59,
+"lastSeconds": 342.99,
+"x": 668.5,
+"y": 430.2,
+"label": "SK"
+},
+{
+"id": "s1931-00138",
+"firstSeconds": 328.91,
+"lastSeconds": 347.47,
+"x": 698.1,
+"y": 582.6,
+"label": "HA"
+},
+{
+"id": "s1931-00148",
+"firstSeconds": 376.92,
+"lastSeconds": 419.8,
+"x": 698.9,
+"y": 456.5,
+"label": "DK"
+},
+{
+"id": "s1931-00150",
+"firstSeconds": 377.56,
+"lastSeconds": 460.13,
+"x": 782.5,
+"y": 363.8,
+"label": "HJ"
+},
+{
+"id": "s1931-00158",
+"firstSeconds": 394.84,
+"lastSeconds": 460.13,
+"x": 716.0,
+"y": 336.8,
+"label": "DJ"
+},
+{
+"id": "s1931-00159",
+"firstSeconds": 399.32,
+"lastSeconds": 442.21,
+"x": 645.9,
+"y": 568.4,
+"label": "CK"
+},
+{
+"id": "s1931-00160",
+"firstSeconds": 401.24,
+"lastSeconds": 442.21,
+"x": 701.8,
+"y": 752.0,
+"label": "DQ"
+},
+{
+"id": "s1931-00164",
+"firstSeconds": 417.88,
+"lastSeconds": 441.57,
+"x": 739.9,
+"y": 782.8,
+"label": "SQ"
+},
+{
+"id": "s1931-00166",
+"firstSeconds": 419.16,
+"lastSeconds": 442.21,
+"x": 684.2,
+"y": 585.5,
+"label": "SA"
+},
+{
+"id": "s1931-00167",
+"firstSeconds": 420.44,
+"lastSeconds": 428.13,
+"x": 705.5,
+"y": 457.5,
+"label": "DK"
+},
+{
+"id": "s1931-00171",
+"firstSeconds": 429.41,
+"lastSeconds": 460.77,
+"x": 701.1,
+"y": 458.3,
+"label": "DK"
+},
+{
+"id": "s1931-00195",
+"firstSeconds": 505.59,
+"lastSeconds": 590.72,
+"x": 729.0,
+"y": 454.1,
+"label": "CQ"
+},
+{
+"id": "s1931-00203",
+"firstSeconds": 516.47,
+"lastSeconds": 590.72,
+"x": 740.1,
+"y": 318.9,
+"label": "DK"
+},
+{
+"id": "s1931-00205",
+"firstSeconds": 536.31,
+"lastSeconds": 538.87,
+"x": 564.9,
+"y": 576.8,
+"label": "SA"
+},
+{
+"id": "s1931-00223",
+"firstSeconds": 540.8,
+"lastSeconds": 552.96,
+"x": 592.8,
+"y": 496.6,
+"label": "SA"
+},
+{
+"id": "s1931-00224",
+"firstSeconds": 540.8,
+"lastSeconds": 552.96,
+"x": 613.1,
+"y": 505.4,
+"label": "CA"
+},
+{
+"id": "s1931-00237",
+"firstSeconds": 551.68,
+"lastSeconds": 554.88,
+"x": 603.9,
+"y": 591.0,
+"label": "?"
+},
+{
+"id": "s1931-00242",
+"firstSeconds": 554.24,
+"lastSeconds": 592.0,
+"x": 678.9,
+"y": 555.1,
+"label": "CA"
+},
+{
+"id": "s1931-00243",
+"firstSeconds": 554.24,
+"lastSeconds": 592.0,
+"x": 651.6,
+"y": 541.9,
+"label": "SA"
+},
+{
+"id": "s1931-00269",
+"firstSeconds": 571.52,
+"lastSeconds": 594.56,
+"x": 681.0,
+"y": 840.7,
+"label": "?"
+},
+{
+"id": "s1931-00292",
+"firstSeconds": 622.74,
+"lastSeconds": 702.11,
+"x": 621.4,
+"y": 759.5,
+"label": "HJ"
+},
+{
+"id": "s1931-00295",
+"firstSeconds": 629.78,
+"lastSeconds": 702.11,
+"x": 692.3,
+"y": 814.5,
+"label": "DJ"
+},
+{
+"id": "s1931-00297",
+"firstSeconds": 632.98,
+"lastSeconds": 701.47,
+"x": 654.8,
+"y": 640.8,
+"label": "SQ"
+},
+{
+"id": "s1931-00302",
+"firstSeconds": 640.66,
+"lastSeconds": 667.55,
+"x": 668.5,
+"y": 652.8,
+"label": "?"
+},
+{
+"id": "s1931-00303",
+"firstSeconds": 641.3,
+"lastSeconds": 701.47,
+"x": 685.9,
+"y": 738.1,
+"label": "CA"
+},
+{
+"id": "s1931-00304",
+"firstSeconds": 649.62,
+"lastSeconds": 702.11,
+"x": 730.4,
+"y": 844.9,
+"label": "CJ"
+},
+{
+"id": "s1931-00305",
+"firstSeconds": 651.54,
+"lastSeconds": 701.47,
+"x": 705.2,
+"y": 671.0,
+"label": "SK"
+},
+{
+"id": "s1931-00310",
+"firstSeconds": 672.03,
+"lastSeconds": 701.47,
+"x": 668.6,
+"y": 652.8,
+"label": "?"
+},
+{
+"id": "s1931-00319",
+"firstSeconds": 720.68,
+"lastSeconds": 743.72,
+"x": 913.4,
+"y": 583.7,
+"label": "SA"
+},
+{
+"id": "s1931-00325",
+"firstSeconds": 752.68,
+"lastSeconds": 781.5,
+"x": 741.0,
+"y": 445.5,
+"label": "H2"
+},
+{
+"id": "s1931-00329",
+"firstSeconds": 757.16,
+"lastSeconds": 761.0,
+"x": 913.5,
+"y": 583.8,
+"label": "SA"
+},
+{
+"id": "s1931-00335",
+"firstSeconds": 769.96,
+"lastSeconds": 777.64,
+"x": 913.4,
+"y": 583.9,
+"label": "SA"
+},
+{
+"id": "s1931-00341",
+"firstSeconds": 782.13,
+"lastSeconds": 840.38,
+"x": 724.1,
+"y": 436.7,
+"label": "HK"
+},
+{
+"id": "s1931-00347",
+"firstSeconds": 785.34,
+"lastSeconds": 794.94,
+"x": 653.6,
+"y": 649.7,
+"label": "HJ"
+},
+{
+"id": "s1931-00349",
+"firstSeconds": 785.34,
+"lastSeconds": 794.94,
+"x": 680.0,
+"y": 665.1,
+"label": "DJ"
+},
+{
+"id": "s1931-00360",
+"firstSeconds": 787.26,
+"lastSeconds": 819.25,
+"x": 570.8,
+"y": 620.6,
+"label": "DK"
+},
+{
+"id": "s1931-00371",
+"firstSeconds": 795.58,
+"lastSeconds": 810.94,
+"x": 610.2,
+"y": 798.5,
+"label": "CQ"
+},
+{
+"id": "s1931-00375",
+"firstSeconds": 796.22,
+"lastSeconds": 806.46,
+"x": 656.6,
+"y": 601.8,
+"label": "DJ"
+},
+{
+"id": "s1931-00376",
+"firstSeconds": 796.22,
+"lastSeconds": 806.46,
+"x": 629.7,
+"y": 590.8,
+"label": "?"
+},
+{
+"id": "s1931-00415",
+"firstSeconds": 820.53,
+"lastSeconds": 839.74,
+"x": 664.3,
+"y": 674.3,
+"label": "CQ"
+},
+{
+"id": "s1931-00416",
+"firstSeconds": 823.1,
+"lastSeconds": 841.03,
+"x": 681.8,
+"y": 603.6,
+"label": "DJ"
+}
+]
+}
