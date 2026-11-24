@@ -19,6 +19,13 @@ async function assertHomepage(page) {
   assert.equal(await page.locator(".hero--home .fan .playing-card").count(), 4, "the original four-card hero remains");
   assert.deepEqual(await page.locator(".tiles--hubs a.tile").evaluateAll((links) => links.map((link) => link.getAttribute("href"))),
     ["/ofc/", "/poker/", "/blackjack/", "/backgammon/", "/dice/"], "the original game hubs remain in their original order");
+  if (page.viewportSize().width >= 1180) {
+    const appTops = await page.locator('section[aria-labelledby="group-apps"] .tiles > li').evaluateAll(
+      (items) => items.map((item) => item.getBoundingClientRect().top)
+    );
+    assert.equal(appTops.length, 5, "Apps & experiments has five featured tiles");
+    assert.equal(new Set(appTops).size, 1, "all five featured apps fit in one row on wide screens");
+  }
   const rows = await page.locator("li[data-project]").evaluateAll((items) => items.map((item) => ({
     path: item.dataset.project,
     href: item.querySelector("a").getAttribute("href"),
