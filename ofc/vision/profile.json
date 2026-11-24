@@ -86,7 +86,13 @@
   "probability": 0.8,
   "margin": 0.3,
   "orientationsAgree": true,
-  "oneCopyPerIdentity": true
+  "oneCopyPerIdentity": true,
+  "perClass": {
+   "SA": {
+    "probability": 0.5,
+    "margin": 0.2
+   }
+  }
  },
  "handState": {
   "dist": 6,
@@ -99,7 +105,10 @@
   "medianProbability": 0.8,
   "contradiction": 0.3,
   "emptySeconds": 3.0,
-  "stripProbability": 2.0
+  "stripProbability": 2.0,
+  "perClassMedian": {
+   "SA": 0.5
+  }
  },
  "handStateNote": "OfcHandState parameters (video). stripProbability > 1 turns strip reads of never-seen covered cards off; no strip reader is shipped (see README)."
 }

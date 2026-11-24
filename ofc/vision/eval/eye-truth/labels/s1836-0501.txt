@@ -1,0 +1,26 @@
+# top player re-laid a row at 496 s
+1 C8
+2 C6
+3 C7
+4 ?
+5 CA
+6 DT
+7 SA
+8 C4
+9 CK
+10 SK
+11 D2
+12 CT
+13 HJ
+14 ST
+15 D3
+16 H6
+17 D8
+18 H7
+19 S7
+20 C9
+21 H2
+22 H5
+23 D7
+24 D6
+missed: H4 (middle row, between 3 and the 5c, no box); C5 (middle row right of the 4h, no box)

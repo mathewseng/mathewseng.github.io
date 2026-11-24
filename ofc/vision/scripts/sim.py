@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 RT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, RT)
 from ofc_card_vision import OfcCardReader, OfcHandState, cover_mask, card_quad
+import glob
 def reader(model, strip=None):
     r = OfcCardReader(RT + '/profile.json')
     o = ort.SessionOptions(); o.intra_op_num_threads = 4
@@ -13,13 +14,15 @@ def reader(model, strip=None):
     r.strip = ort.InferenceSession(strip, o, providers=['CPUExecutionProvider']) if strip else None
     return r
 def simulate(r, s, masked, params):  # masked: a strip reader is attached
-    st = OfcHandState(**params); out = []
+    st = OfcHandState(**dict(r.profile.get('handState', {}), **params)); out = []
+    if not glob.glob(f'../scan/{s}/thumbs/*.png'): print('no thumbs: bare-felt check off', s)
     for line in open(f'../scan/{s}/state.jsonl'):
         row = json.loads(line); t = row['t']
         boxes = [dict(x=d['x'], y=d['y'], width=d['w'], height=d['h'], angleDegrees=d['deg'], detectorConfidence=d['conf'],
                       quad=card_quad(d['x'], d['y'], d['w'], d['h'], d['deg']), crop=d.get('crop')) for d in row['dets']]
         bodies = [b for b in boxes if b['detectorConfidence'] >= 0.25]
-        st.associate(t, bodies, boxes)
+        th = f"../scan/{s}/thumbs/{t:08.3f}.png"
+        st.associate(t, bodies, boxes, cv2.imread(th) if os.path.exists(th) else None)
         crops = [cv2.imread(f"../scan/{s}/crops/{b['crop']}") for b in bodies]
         r.identify_crops(bodies, [c.copy() for c in crops])
         if r.strip is not None:
@@ -42,7 +45,7 @@ if __name__ == '__main__':
     r = reader(model, strip)
     for s in sessions:
         ref = run(s, 'v3'); out = simulate(r, s, masked, params)
-        json.dump(out, open(f'../sim-{os.path.basename(model)[:-5]}-{s}{"-m" if masked else ""}.json', 'w'), default=float)
+        json.dump(out, open(f'../sim-{os.path.basename(model)[:-5]}{os.environ.get("SIM_TAG", "")}-{s}{"-m" if masked else ""}.json', 'w'), default=float)
         c = Counter(); w = Counter(); novel = defaultdict(Counter)
         for fr, fo in zip(ref, out):
             assert len(fr['bodies']) == len(fo['bodies'])

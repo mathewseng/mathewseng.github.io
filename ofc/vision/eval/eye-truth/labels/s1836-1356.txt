@@ -1,0 +1,27 @@
+# top player Fantasyland fans laid at the end
+1 X (off the table, player lap)
+2 H6
+3 dup:2
+4 ?
+5 C8
+6 CQ
+7 ?
+8 dup:6
+9 S6
+10 dup:9
+11 CA
+12 HA
+13 DK
+14 H2
+15 SK
+16 HQ
+17 C5
+18 D8
+19 SA
+20 C4
+21 C2
+22 C6
+23 HT
+24 DA
+25 H3
+missed: 5 ? (top player fans: 13 cards, 8 distinct objects)

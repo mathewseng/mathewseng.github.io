@@ -1,0 +1,43 @@
+# hand end chosen mid-Fantasyland: bottom player still spreading 14 cards when the table was cleared (transitional)
+# C? = covered at this frame; named from an earlier view; presence cannot be checked (not scored)
+1 ST
+2 ?
+3 dup:2
+4 C9
+5 dup:4
+6 dup:7
+7 CJ
+8 ?~ (rightmost back-row card: clubs column + index that may be 10)
+9 D7
+10 ?
+11 D5
+12 H4
+13 H3
+14 ?
+15 dup:14
+16 C?
+17 D2
+18 C4
+19 SQ
+20 SA
+21 HQ
+22 CQ
+23 ?
+24 DK
+25 dup:24
+26 HK
+27 D9
+28 dup:29
+29 H7
+30 ?
+31 D8
+32 dup:33
+33 C5
+34 C? (S3 lifted off at 1071-1073 s with the fan, a group put back at 1074 s; presence unverified)
+35 dup:34
+36 C3
+37 S4
+38 dup:37
+39 ?
+40 C2
+missed: 1 ? (top middle row: a spade card under the 4h, index may be 5)

@@ -129,6 +129,78 @@ and no longer boxed (unnamed hidden cards are not counted). 3 and 17 hands.
 
   One error was found: the 8♠-on-7♦ case. The contradiction rule removes it.
 
+### Eye-checked hand ends (2026-11-24)
+
+The numbers above compare the runtime with a reference built from the same classifier. An independent truth set was
+then labelled by eye: every object at each hand end of both held-out sessions (19 keyframes, 16 + 3 hands; format in
+`eval/eye-truth/README.md`). Every legible card was named from 4x crops, multi-frame averages and filmstrips, with no
+model names shown. Then each disagreement with the runtime was zoomed. 8 first-pass reads were pip-count slips on the
+4x tiles (7♣ for 8♣, 9♠ for 10♠, …), and the zoomed and averaged views agreed with the model. No disagreement went the
+other way.
+
+| hand ends | s0023 (3 players) before → after | s1836 (2 players) before → after |
+| --- | --- | --- |
+| legible cards named right | 51 / 57 → **52 / 57** | 298 / 311 → **303 / 311** |
+| legible cards named wrong | 0 → **0** | 0 → **0** |
+| names reported for a card that had left the spot | 0 → 0 | 5 → **0** |
+| objects with no card under them (ghost slots) | 0 → 0 | 12 → **2** (both unnamed) |
+| illegible objects (`?`) given a name | 0 / 29 → 0 / 29 | 0 / 71 → 0 / 71 |
+| legible cards with no object (detector misses) | 0 | 3 → 3 |
+| never-seen fanned cards with no object (countable frames) | not countable | 24 → 24 |
+
+`dup` objects (31 in s1836, a second box on the same card) are never named. The old metric (cards at hand end named,
+`hand_end_sim.py`) moves 51/70 → 52/70 (s0023) and 330/384 → 329/378 (s1836): the 7 ghost slots it used to count as
+named covered cards are gone.
+
+**Changes shipped** (all `OfcHandState` parameters in `profile.json`; sim with `scripts/sim.py`, which now reads 4x
+keyframe thumbnails from `scripts/eye/thumbs.py` for the felt check):
+
+- **Bare felt ends a slot** (`feltReads` 2): a hidden slot whose centre shows felt blue on 2 keyframes in a row
+  (`bare_felt` on the frame area-downscaled 4x) is dropped and its name freed. Fanned cards keep a buried card's
+  centre covered by white. This removed 4 wrong reports of cards that had been picked up or moved (6♥, 4♣, K♠ on
+  empty felt; 2♠ moved).
+- **A glimpse is not a placed card** (`glimpseSeconds` 1.5): a name seen for less than 1.5 s is carried under cover
+  only if a later card lies on top of it. Removed an 8♥ that was only ever in a player's hand.
+- **Moved cards** (`moveReads` 2): a hidden named slot whose name is read whole ≥ 30 px away on 2 keyframes is
+  dropped (a read within 30 px is the same card nudged and keeps its slot).
+- **No contradiction from an unnamed card on top** (`coveredContradiction`): the view of a covered card often shows
+  the card on top. When that card has no name yet, it no longer cancels the carried name (J♠ under a 5♦, 2♣).
+- **Ornate A♠ gate** (`acceptance.perClass.SA` 0.5 / margin 0.2, `handState.perClassMedian.SA` 0.5): v3 tops the
+  deck-A ace at 0.55–0.75 against 7♠. Over all 7 sessions, every slot where v3 puts A♠ first in both turns at ≥ 0.5
+  with margin ≥ 0.2 and the old gate left it unnamed was checked on a sheet: 73 slots, all A♠ (both decks). The 268
+  views this newly names on held-out are all A♠.
+
+**Tried, not shipped:**
+
+- **Classifier v4** (`scripts/eye/make_index4.py`, 64.5k crops from the training sessions only, labels = hand-checked
+  tracks + carried names on covered views). Its first label sheets had real errors. Hand-checked track intervals span a
+  card laid exactly on another (an A♣ track also holds the A♥ put on it). Covered views often show the card on top.
+  Even after filters (keep a covered view only when v3 already leans to its label), v4 named a 4♦ as 4♥ for 47 views
+  (a heart card's pip column over the 4♦'s left half). Rejected.
+- **v4b** (whole views only + the ornate A♠): 299 vs 301 at hand end, and 2 new single-view pip-count misreads.
+  Rejected.
+- **One-vote naming at p ≥ 0.9** (`singleVoteProbability`): +1 card (Q♥ seen whole once), but 3 names on illegible
+  objects and 5 on duplicate objects. Off (2.0).
+
+**What is still wrong or missing at hand end (all unnamed, none wrong):**
+
+- s1836, 8 legible cards unnamed:
+  - deck-A A♠ under a fan, only its pip showing;
+  - A♣ half covered (v3 0.4);
+  - 10♣ seen whole for 2 keyframes at the very end;
+  - 7♥ (v3 0.74 every view);
+  - 6♥ boxed only at detector 0.1–0.25;
+  - 4♦ ×2 (a heart card fanned over one, v3 reads 4♥ at 0.65; the other at 0.4–0.6);
+  - Q♥ seen whole once.
+- s0023, 5 legible cards unnamed: 5♦ never boxed on its own; 8♠ laid exactly on a 7♦ (v3 reads 6♠); 8♥ under the
+  3♥ after a re-lay; Q♠ and K♠ in a fan (v3 none / 0.42).
+- Detector: 3 legible cards with no box (4♥ and 5♣ in s1836 501 s; 2♠ in 959 s, where one box spans the J♦ and the 2♠).
+- **Exclusions (illegible, counted):** 100 objects (29 + 71) and 24 countable cards with no object. All lie in rows
+  laid down already fanned (Fantasyland and three-player pineapple), shown only as 10–20 px strips with ~7 px
+  indices. The labels file of each frame says where. Placement-time views (`scripts/eye/qsheet.py`) show neighbouring
+  cards over them from the moment they land. Four s1836 hand ends (1104, 1469, 1697, 1791 s) are mid-Fantasyland
+  sorting; cards there are moving in groups.
+
 ### Strip reader (not shipped)
 
 For fans laid down already fanned (three-player pineapple rows, Fantasyland), the cards underneath are never seen

@@ -1,0 +1,44 @@
+# bottom player mid-Fantasyland: cards spread and being sorted (transitional)
+1 CA
+2 ?
+3 ?
+4 S7
+5 D5
+6 S5
+7 D4
+8 ST
+9 DT
+10 DA
+11 DK
+12 ?
+13 D3
+14 HT
+15 C2
+16 D9
+17 ?
+18 C?
+19 ?
+20 ?
+21 C?
+22 H9
+23 ?
+24 ?
+25 H2
+26 X (hidden slot on empty felt)
+27 X (hidden slot on empty felt)
+28 S6
+29 dup:28
+30 ?
+31 C3
+32 ?
+33 D8
+34 X (2s moved away; slot left on other cards)
+35 ?
+36 C5
+37 dup:38
+38 C8
+39 ?
+40 S2
+41 dup:40
+42 ?
+missed: ?

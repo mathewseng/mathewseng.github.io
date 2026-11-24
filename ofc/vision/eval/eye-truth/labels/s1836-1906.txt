@@ -1,0 +1,26 @@
+1 S9
+2 HQ
+3 C2
+4 S8
+5 DQ
+6 SJ
+7 HJ
+8 SK
+9 DA
+10 D5
+11 ST
+12 CA
+13 DK
+14 D2
+15 CQ
+16 CK
+17 D9
+18 H3
+19 S7
+20 S5
+21 H4
+22 HT
+23 DT
+24 C9
+25 CT
+missed: 1 ? (top middle row, diamond card between the 8s and 5d, mostly covered; no object)

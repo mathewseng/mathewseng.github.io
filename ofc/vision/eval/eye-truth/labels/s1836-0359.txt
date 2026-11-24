@@ -1,0 +1,28 @@
+# top player Fantasyland rows laid down already fanned (340-352 s): only the top card of each row seen whole
+1 C6
+2 ?
+3 ?
+4 dup:3
+5 ?
+6 ?
+7 CT
+8 D2
+9 ?
+10 ?
+11 ?
+12 DJ
+13 ?
+14 SQ
+15 CJ
+16 SA
+17 S2
+18 D6
+19 CK
+20 S6
+21 H9
+22 HT
+23 HK
+24 HA
+25 C2
+26 H4
+missed: 1 ? top row (3 cards: J-diamonds + 2 strips; one strip has no object)

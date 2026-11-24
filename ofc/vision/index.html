@@ -105,6 +105,25 @@
           </ul>
         </section>
 
+        <section aria-labelledby="eye-title">
+          <h2 id="eye-title">Checked by eye</h2>
+          <p>Every object at every hand end of both held-out sessions was labelled by eye from zoomed crops, with no model names shown: 19 hand ends. Cards whose own face never shows were marked illegible rather than guessed.</p>
+          <div class="cv-scroll">
+            <table class="cv-table">
+              <thead><tr><th>At hand end</th><th>Three players</th><th>Two players</th></tr></thead>
+              <tbody>
+                <tr class="is-chosen"><td>Legible cards named right</td><td>52 / 57 (was 51)</td><td>303 / 311 (was 298)</td></tr>
+                <tr><td>Legible cards named wrong</td><td>0</td><td>0</td></tr>
+                <tr><td>Names for a card that had left the spot</td><td>0</td><td>0 (was 5)</td></tr>
+                <tr><td>Objects with no card under them</td><td>0</td><td>2, unnamed (was 12)</td></tr>
+                <tr><td>Illegible fanned cards given a name</td><td>0 / 29</td><td>0 / 71</td></tr>
+                <tr><td>Legible cards with no box</td><td>0</td><td>3</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>What changed: a covered card's slot ends when bare felt shows where it lay, a name glimpsed for under 1.5 s is not carried, a card read whole elsewhere has moved, and the ornate ace of spades is named at a lower gate. That last change was checked on all 73 slots where the classifier leans to it; every one is an A♠. Still unnamed: 13 legible cards, mostly partly covered (a 4♦ under a heart card, a Q♠ and K♠ in a fan, a 7♥ the classifier holds at 0.74). Cards laid down already fanned show only 10–20 px strips. They stay unnamed and are counted as exclusions: 100 objects, plus 24 countable cards the detector never boxed. A retrained classifier that also learned covered views was tried and rejected: it called a 4♦ under a heart card 4♥.</p>
+        </section>
+
         <section aria-labelledby="how-title">
           <h2 id="how-title">How it works</h2>
           <p>A card-body detector borrowed from an earlier poker-table project, unchanged, finds cards on this deck without retraining. A small classifier trained on 51,000 views from about 3.5 hours of this table names the card or says it isn't one. Training labels came from hand-checked court cards and aces, and confident tracks of number cards that lay still on the table. Recipe and scripts: <a href="https://github.com/mathewseng/mathewseng.github.io/tree/main/ofc/vision">ofc/vision</a>.</p>

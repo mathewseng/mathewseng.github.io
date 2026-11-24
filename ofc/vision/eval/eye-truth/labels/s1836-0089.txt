@@ -1,0 +1,14 @@
+1 D3
+2 C3
+3 HJ
+4 ST
+5 S8
+6 S6
+7 CQ
+8 DQ
+9 HQ
+10 S5
+11 S4
+12 SA
+13 CA
+missed: none

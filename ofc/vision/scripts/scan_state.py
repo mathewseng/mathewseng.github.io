@@ -12,6 +12,7 @@ SESS = {  # same sessions as scan.py
     's1953': ('ofc/ofc-20261123-1953.mp4', 0, 345),
     's2310': ('ofc/ofc-20261123-2310-three-players.mp4', 0, 4202),
     's0023': ('ofc/ofc-20261124-0023.mp4', 0, 600),
+    'stud': ('other/stud-poker-20261124-0023-starts-1000.mp4', 660, 3150),
 }
 r = OfcCardReader(threads=2); r.profile['detector']['confidence'] = 0.1
 c = r.profile['classifier']

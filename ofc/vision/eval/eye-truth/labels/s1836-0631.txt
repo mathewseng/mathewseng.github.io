@@ -1,0 +1,23 @@
+# top player Fantasyland: rows laid already fanned at 625-630 s; only bottom index strips show
+1 ?~ (back-row strips read 10 J Q K A, black; suit pips too small)
+2 CT
+3 ?
+4 ?
+5 ?
+6 H6
+7 ?
+8 C9
+9 SA
+10 D2
+11 S3
+12 HA
+13 SQ
+14 S2
+15 H7
+16 C5
+17 S4
+18 H2
+19 DQ
+20 CK
+21 X (card held in a hand at 623 s, never on the table at hand end)
+missed: 6 ? (top player fan: 13 cards, 7 objects)

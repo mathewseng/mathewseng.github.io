@@ -59,6 +59,13 @@ def rotated_nms(boxes, scores, iou):
     return keep
 
 
+def gate_for(accept, code):
+    """Acceptance probability and margin for one card: acceptance.perClass overrides the global gate (the ornate
+    deck-A ace of spades, which the model tops at 0.55-0.75, see README)."""
+    pc = accept.get('perClass', {}).get(code, {})
+    return dict(probability=pc.get('probability', accept['probability']), margin=pc.get('margin', accept['margin']))
+
+
 def _sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -128,9 +135,10 @@ class OfcCardReader:
             b['probabilities'] = p
             b['label'] = 'none' if top == 52 else CODES[top]
             b['probability'], b['margin'] = float(p[top]), float(p[top] - p[o[1]])
-            ok = top != 52 and b['probability'] >= a['probability'] and b['margin'] >= a['margin']
+            g = gate_for(a, b['label'])
+            ok = top != 52 and b['probability'] >= g['probability'] and b['margin'] >= g['margin']
             if a.get('orientationsAgree'):
-                ok = ok and int(p1.argmax()) == top == int(p2.argmax()) and min(p1[top], p2[top]) >= a['probability']
+                ok = ok and int(p1.argmax()) == top == int(p2.argmax()) and min(p1[top], p2[top]) >= g['probability']
             b['card'] = b['label'] if ok else None
         if a.get('oneCopyPerIdentity'):
             best = {}
@@ -156,7 +164,7 @@ class OfcCardReader:
         earlier), b['card'] the single-view read; state.table(t) also lists covered cards no longer boxed."""
         boxes = self.detect(frame, cover_confidence)
         bodies = [b for b in boxes if b['detectorConfidence'] >= self.profile['detector']['confidence']]
-        state.associate(t, bodies, boxes)
+        state.associate(t, bodies, boxes, small_frame(frame))
         self.identify(frame, bodies)
         if self.strip is not None:
             c = self.profile['classifier']; todo, crops = [], []
@@ -202,6 +210,21 @@ class StaticCardFuser:
         return bodies
 
 
+def small_frame(frame):
+    """The frame area-downscaled 4x (480x270): what the bare-felt check reads."""
+    return cv2.resize(frame, (frame.shape[1] // 4, frame.shape[0] // 4), interpolation=cv2.INTER_AREA)
+
+
+def bare_felt(small, x, y, frac=0.8):
+    """True when the felt shows at full-frame point (x, y): >= frac of a 5x7 patch (20x28 px full size) is felt blue
+    (B > 120, B - R > 60, B - G > 40). Card faces are white, skin and sleeves are not blue."""
+    cx, cy = int(round(x / 4)), int(round(y / 4))
+    p = small[max(cy - 3, 0):cy + 4, max(cx - 2, 0):cx + 3].reshape(-1, 3).astype(np.int16)
+    if not len(p): return False
+    b, g, r = p[:, 0], p[:, 1], p[:, 2]
+    return float(np.mean((b > 120) & (b - r > 60) & (b - g > 40))) >= frac
+
+
 def _angdiff(a, b):
     d = abs(a - b) % 180
     return min(d, 180 - d)
@@ -232,7 +255,7 @@ class OfcHandState:
       a single-view or strip read of a name held by another slot is dropped.
     - Strip reads (covered cards never seen whole) are off unless `stripProbability` <= 1; see README."""
     DEFAULTS = dict(dist=6, angle=8, gap=4.0, gapNamed=12.0, swapReads=2, minVotes=2, purity=0.8, medianProbability=0.8,
-                    emptySeconds=3.0, contradiction=0.3, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5)
+                    emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5)
 
     def __init__(self, **params):
         self.p = dict(self.DEFAULTS, **params); self.slots = []; self.n = 0
@@ -243,8 +266,9 @@ class OfcHandState:
                   first=t, last=t, seen=t, votes={}, name=None, pend=None, npend=0, dead=False, views=[], stripViews=[], recent=None)
         self.n += 1; self.slots.append(sl); return sl
 
-    def associate(self, t, bodies, cover):
-        """Match bodies to slots by pose (b['slot']); cover = every detected box, also weak ones."""
+    def associate(self, t, bodies, cover, small=None):
+        """Match bodies to slots by pose (b['slot']); cover = every detected box, also weak ones; small = the frame
+        downscaled 4x (small_frame) for the bare-felt check, or None to skip it."""
         p = self.p
         if len(bodies) <= 1:
             self.empty_since = t if self.empty_since is None else self.empty_since
@@ -253,7 +277,13 @@ class OfcHandState:
             self.empty_since = None
         for sl in self.slots:
             if any(_inside(sl['x'], sl['y'], c) for c in cover): sl['last'] = t
-            keep = sl['name'] or sl['seen'] - sl['first'] >= 2.5
+            # felt where a card lay: it was picked up or moved (fanned cards keep its centre covered)
+            if small is not None and p['feltReads'] and sl['seen'] < t:
+                sl['felt'] = sl.get('felt', 0) + 1 if bare_felt(small, sl['x'], sl['y']) else 0
+                if sl['felt'] >= p['feltReads']: self._forget(sl); continue
+            # a name seen only in a brief glimpse (a card in a hand) is carried only if a later card covers it
+            glimpse = sl['seen'] - sl['first'] < p['glimpseSeconds'] and not self.covering(sl)
+            keep = (sl['name'] and not glimpse) or sl['seen'] - sl['first'] >= 2.5
             if (t - sl['seen'] > (p['gapNamed'] if keep else p['gap']) and t - sl['last'] > p['gap']) or \
                (not keep and t - sl['seen'] > p['gap']): sl['dead'] = True
         self.slots = [sl for sl in self.slots if not sl['dead']]
@@ -267,6 +297,12 @@ class OfcHandState:
         for bi, b in enumerate(bodies):
             b['slot'] = live[ub[bi]] if bi in ub else self._new(t, b)
         return bodies
+
+    def _forget(self, sl):
+        """The card left this spot: drop the slot and free its name for the hand."""
+        sl['dead'] = True
+        for k, v in list(self.hand.items()):
+            if v == sl['id']: del self.hand[k]
 
     def covering(self, sl):
         """Live slots placed after `sl` that overlap it: the cards lying on top of it."""
@@ -285,6 +321,17 @@ class OfcHandState:
         """After identify(): bodies carry 'slot', 'card' (single-view accepted read or None) and 'probabilities'.
         Sets b['handCard'] (the name to report or None), b['source'] ('carried' | 'view' | 'strip') and b['slotId']."""
         p = self.p
+        boxed = {id(b['slot']) for b in bodies}
+        if p['moveReads']:
+            # a card named on a slot that is hidden now, read whole somewhere else: it was moved, not buried
+            for sl in self.slots:
+                if not sl['name'] or id(sl) in boxed: continue
+                if any(b.get('card') == sl['name'] and b['slot'] is not sl and math.hypot(b['x'] - sl['x'], b['y'] - sl['y']) >= 30
+                       for b in bodies):  # (a read within 30 px is the same card nudged: it keeps its slot)
+                    sl['moved'] = sl.get('moved', 0) + 1
+                    if sl['moved'] >= p['moveReads']: self._forget(sl)
+            for sl in self.slots:
+                if id(sl) in boxed: sl['moved'] = 0
         for b in bodies:
             sl = b['slot']; r = b.get('card')
             if r and sl['name'] and r != sl['name']:
@@ -295,16 +342,21 @@ class OfcHandState:
                 sl['pend'], sl['npend'] = None, 0
             if b.get('probabilities') is not None: sl['views'].append(b['probabilities']); sl['views'] = sl['views'][-200:]
             if b.get('stripProbabilities') is not None: sl['stripViews'].append(b['stripProbabilities']); sl['stripViews'] = sl['stripViews'][-60:]
-            if r: sl['votes'][r] = sl['votes'].get(r, 0) + 1; sl['recent'] = sl['views'][-10:]
+            if r:
+                sl['votes'][r] = sl['votes'].get(r, 0) + 1; sl['recent'] = sl['views'][-10:]
+                sl['voteP'] = max(sl.get('voteP', 0), b['probability'])
             sl['xs'].append((b['x'], b['y'], b['angleDegrees'], b['width'], b['height'])); sl['xs'] = sl['xs'][-50:]
             m = np.median(np.array(sl['xs']), 0)
             sl.update(x=float(m[0]), y=float(m[1]), angle=float(m[2]), width=float(m[3]), height=float(m[4]), seen=t, last=t)
             if sl['votes']:
                 top, n = max(sl['votes'].items(), key=lambda kv: kv[1])
-                ok = n >= p['minVotes'] and n >= p['purity'] * sum(sl['votes'].values())
+                # one vote is enough for a card read whole at >= singleVoteProbability (seen once, then covered)
+                ok = (n >= p['minVotes'] or (len(sl['votes']) == 1 and sl.get('voteP', 0) >= p['singleVoteProbability'])) \
+                    and n >= p['purity'] * sum(sl['votes'].values())
                 if ok and sl['recent']:
                     med = np.median(np.array(sl['recent']), 0)
-                    ok = int(med.argmax()) == CODES.index(top) and med[CODES.index(top)] >= p['medianProbability']
+                    mp = (p['perClassMedian'] or {}).get(top, p['medianProbability'])
+                    ok = int(med.argmax()) == CODES.index(top) and med[CODES.index(top)] >= mp
                 sl['name'] = top if ok else None
         self.slots = [sl for sl in self.slots if not sl['dead']]
         byname = {}
@@ -340,7 +392,10 @@ class OfcHandState:
                 q = int(np.argmax(pr[:52]))
                 # the view looks like another card that is not one of the cards known to lie on top of this one:
                 # something new is on the spot (a card slid over it, a replacement not yet read), say nothing
-                if CODES[q] != c and pr[q] >= p['contradiction'] and CODES[q] not in {o['name'] for o in self.covering(sl)}:
+                over = self.covering(sl)
+                # a card on top that has no name yet may be what the view shows: no contradiction
+                if p['coveredContradiction'] and any(not o['name'] for o in over): over = None
+                if over is not None and CODES[q] != c and pr[q] >= p['contradiction'] and CODES[q] not in {o['name'] for o in over}:
                     c = None; b['contradicted'] = True
             carried[id(b)] = c
         held = set(v for v in carried.values() if v)

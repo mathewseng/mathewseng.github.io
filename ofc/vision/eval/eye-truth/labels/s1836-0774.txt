@@ -1,0 +1,22 @@
+# both players laid rows already fanned at 764-773 s
+1 H5
+2 ?
+3 S3
+4 ?~ (middle-row strips: bottom indices read 4 5 6 8, black)
+5 DT
+6 SK
+7 CQ
+8 H9
+9 D6
+10 DJ
+11 C7
+12 S7
+13 ?
+14 dup:13
+15 D5
+16 ?
+17 H3
+18 D2
+19 ?~ (black 2 strip)
+20 H2
+missed: 8 ? (top player: 13 cards, 5 objects)

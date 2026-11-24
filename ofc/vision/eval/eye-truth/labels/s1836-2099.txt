@@ -1,0 +1,28 @@
+# both players laid fans at the end; the top player moved cards after placing them
+1 H7
+2 ?
+3 ?
+4 SA (only the ornate deck-A spade pip shows; unique to the A-spades)
+5 X (hidden slot on empty felt; the K-spades was moved)
+6 X (empty felt)
+7 H3
+8 ?
+9 C?
+10 dup:4
+11 ?
+12 ?
+13 CA
+14 CK
+15 CJ
+16 H4
+17 dup:18
+18 ?
+19 ?~ (strip: 7 index and clubs)
+20 D5
+21 dup:20
+22 DQ
+23 D6
+24 D4
+25 C2
+26 DA
+missed: ?
