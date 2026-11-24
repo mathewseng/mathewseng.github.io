@@ -9,7 +9,7 @@ loss. usage: dice_faces.py decode.json out.pt [--holdout-games 3 4]
 import argparse, collections, glob, json, random
 from pathlib import Path
 import numpy as np, torch, torch.nn as nn, cv2
-from session import WORK
+from session import WORK, red_player
 import os
 SCAN = os.environ.get('BG_DICE_SCAN', 'objects-scan')  # 'dice-scan' for the colour-blob candidates
 
@@ -65,12 +65,12 @@ def window_start(prev, last_start, frame):
     return last_start if frame - prev < 25 else prev
 
 
-def examples(decode, meta, score=None, source=0):
-    out = []
+def examples(decode, meta, score=None, source=0, work=None):
+    out = []; red_side = red_player(work)
     for gi, g in enumerate(decode['games'], 1):
         prev = start = g['startFrame']
         for t in g['turns']:
-            red = 1 if t['player'] == 'dark' else 0
+            red = 1 if t['player'] == red_side else 0
             start = window_start(prev, start, t['frame'])
             tr = tracks(meta, start, t['frame'], red, score)
             if t['rolls'] and len(tr) >= 2 and not t.get('inferred'):
@@ -134,6 +134,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('decode'); ap.add_argument('out')
     ap.add_argument('--holdout-games', type=int, nargs='*', default=[]); ap.add_argument('--steps', type=int, default=2500)
     ap.add_argument('--extra', nargs='*', default=[], help='more sessions as decode.json@work-dir (training only)')
+    ap.add_argument('--eval-only', action='store_true', help='score the existing model at out on the held-out games')
     a = ap.parse_args()
     meta, patches = load_scan()
     ex = examples(json.loads(Path(a.decode).read_text()), meta)
@@ -141,13 +142,16 @@ if __name__ == '__main__':
         dec, work = pair.split('@')
         m2, p2 = load_scan(work); sc2 = np.load(Path(work) / SCAN / 'die-score.npy')
         offset = len(patches)
-        more = examples(json.loads(Path(dec).read_text()), m2, sc2, k)
+        more = examples(json.loads(Path(dec).read_text()), m2, sc2, k, work)
         for e in more: e['tracks'] = [t + offset for t in e['tracks']]; e['game'] = 1000 * k + e['game']
         patches = np.concatenate([patches, p2]); ex += more
     train = [e for e in ex if e['game'] not in a.holdout_games]; test = [e for e in ex if e['game'] in a.holdout_games]
     print('examples', len(ex), 'train', len(train), 'test', len(test))
-    net = FaceNet().to(dev); opt = torch.optim.AdamW(net.parameters(), 2e-3, weight_decay=1e-4)
-    sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=a.steps)
+    if a.eval_only: a.steps = 0
+    net = FaceNet().to(dev)
+    if a.eval_only: net.load_state_dict(torch.load(a.out, map_location='cpu')); net.to(dev)
+    opt = torch.optim.AdamW(net.parameters(), 2e-3, weight_decay=1e-4)
+    sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=max(1, a.steps))
     for step in range(a.steps):
         batch = random.choices(train, k=48)
         x1 = torch.stack([prep(patches[random.choice(e['tracks'][0])], True) for e in batch]).to(dev)
@@ -173,4 +177,9 @@ if __name__ == '__main__':
             ok += best == truth; tot += 1
             if name == 'test' and best != truth: print('  miss', e['frame'], truth, 'read', best)
         print(name, 'unique-roll turns', ok, '/', tot)
-    torch.save(net.cpu().state_dict(), a.out)
+        if name == 'test':
+            for gid in sorted({e['game'] for e in part}):
+                es = [e for e in part if e['game'] == gid and len(e['sets']) == 1]
+                hit = sum(max(pp := pair_prob(read_track(net, patches, e['tracks'][0][:15]), read_track(net, patches, e['tracks'][1][:15])), key=pp.get) == f"{max(e['faces'])}-{min(e['faces'])}" for e in es)
+                print(f'  test game {gid}: {hit} / {len(es)}')
+    if not a.eval_only: torch.save(net.cpu().state_dict(), a.out)

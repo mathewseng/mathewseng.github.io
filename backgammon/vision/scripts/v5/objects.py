@@ -98,9 +98,31 @@ def load(path):
     net = ObjNet(); net.load_state_dict(torch.load(path, map_location='cpu')); return net.eval().to(dev)
 
 
+def extra_sets():
+    """Later sessions added to the training set (objects_add.py): extra/frames-NAME.npz and
+    extra/labels-NAME.json, stored in the Nov 21 view. Their keys follow the Nov 21 frames."""
+    return sorted((OBJ_DIR / 'extra').glob('frames-*.npz'))
+
+
 def load_frames():
     z = np.load(OBJ_DIR / 'frames.npz', allow_pickle=True)
-    return list(z['keys']), z['jpegs']
+    keys, jpegs = list(z['keys']), z['jpegs']
+    for p in extra_sets():
+        e = np.load(p, allow_pickle=True)
+        keys += list(e['keys']); jpegs = np.concatenate([jpegs, e['jpegs']])
+    return keys, jpegs
+
+
+def load_labels():
+    labels = json.loads((OBJ_DIR / 'labels.json').read_text())
+    for p in extra_sets():
+        labels.update(json.loads((p.parent / p.name.replace('frames-', 'labels-').replace('.npz', '.json')).read_text()))
+    return labels
+
+
+def held_out(keys):
+    """Every tenth frame of the training set is held out (as in objects_train.py)."""
+    return [k for i, k in enumerate(keys) if i % 10 == 0]
 
 
 def decode(jpeg):

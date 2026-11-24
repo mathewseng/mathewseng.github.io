@@ -26,14 +26,38 @@ def to_tensor(batch):
     return (x - 0.5) / 0.25
 
 
-def load(label_files):
-    entries = []
+def held_block(frame):
+    """Held-out frames for slots_eval.py: one 3-minute block in five, so no held-out frame shares a
+    position interval with a training frame."""
+    return (int(frame) // 4500) % 5 == 2
+
+
+def load_packed(path, role='all'):
+    """A later session's labels packed with their frames (slots_add.py), already in the Nov 21 view."""
+    z = np.load(path, allow_pickle=True)
+    out = []
+    for e, jpeg in zip(json.loads(str(z['labels'])), z['jpegs']):
+        if role != 'all' and held_block(e['frame']) != (role == 'held'): continue
+        img = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+        out.append((img, {int(k): v for k, v in e['points'].items()}, e.get('ignore', []), e.get('occluded'), e.get('ignore_slots')))
+    return out
+
+
+def load(label_files, packed_role='train', json_role='all'):
+    """Label files are JSON lists for the current session's frames, or .npz sets from slots_add.py.
+    Packed sets are split by held_block for slots_eval.py (role 'train' or 'held'); JSON lists
+    are used whole unless json_role is 'train' or 'held' as well."""
+    entries = []; packed = []
     for f in label_files:
+        if str(f).endswith('.npz'):
+            packed += load_packed(f, packed_role)
+            continue
         for e in json.loads(Path(f).read_text()):
+            if json_role != 'all' and held_block(e['frame']) != (json_role == 'held'): continue
             entries.append((int(e['frame']), {int(k): v for k, v in e['points'].items()}, e.get('ignore', []),
                             e.get('occluded'), e.get('ignore_slots')))
-    imgs = dict(frames.read([e[0] for e in entries]))
-    return [(imgs[n], pts, ign, occ, isl) for n, pts, ign, occ, isl in entries]
+    imgs = dict(frames.read([e[0] for e in entries])) if entries else {}
+    return [(imgs[n], pts, ign, occ, isl) for n, pts, ign, occ, isl in entries] + packed
 
 
 HANDS = []
@@ -86,11 +110,14 @@ def sample(data, n):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('labels', nargs='+')
-    ap.add_argument('--steps', type=int, default=1500)
+    ap.add_argument('--steps', type=int, default=1500); ap.add_argument('--init')
+    ap.add_argument('--hold-json', action='store_true', help='leave out the held-out blocks of the JSON label lists too')
     a = ap.parse_args()
-    data = load(a.labels); print('frames', len(data))
-    load_hands(Path(a.labels[-1]).parent / 'hands'); print('hand cut-outs', len(HANDS))
-    net = SlotNet().to(dev); opt = torch.optim.AdamW(net.parameters(), 2e-3, weight_decay=1e-4)
+    data = load(a.labels, json_role='train' if a.hold_json else 'all'); print('frames', len(data))
+    load_hands(Path(a.labels[0]).parent / 'hands'); print('hand cut-outs', len(HANDS))
+    net = SlotNet()
+    if a.init: net.load_state_dict(torch.load(a.init, map_location='cpu'))
+    net.to(dev); opt = torch.optim.AdamW(net.parameters(), 2e-3, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=a.steps)
     for step in range(a.steps):
         X, Y = sample(data, 8)

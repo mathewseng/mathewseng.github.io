@@ -4,10 +4,11 @@ import json, sys
 from pathlib import Path
 import cv2, numpy as np
 import dice_faces as df
+from session import red_player
 
 an, out = Path(sys.argv[1]), Path(sys.argv[2]); games = list(map(int, sys.argv[3:]))
 meta, patches = df.load_scan()
-score = np.load(df.WORK / 'dice-scan/die-score.npy')
+score = np.load(df.WORK / df.SCAN / 'die-score.npy')
 rows = []
 for gnum in games:
     A = json.loads((an / f'game-{gnum:02d}.json').read_text())
@@ -15,7 +16,7 @@ for gnum in games:
     for i, t in enumerate(A['turns']):
         if t.get('cubeOnly'): continue
         if t.get('rollSource') in ('dice', 'ambiguous'):
-            red = 1 if t['player'] == 'dark' else 0
+            red = 1 if t['player'] == red_player() else 0
             f0 = t.get('fromFrame') or prev; f0 = min(f0, t.get('rollFrame') or f0) - 25
             tr = df.tracks(meta, f0, t['resultFrame'] + 25, red)
             tiles = []

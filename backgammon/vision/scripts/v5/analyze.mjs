@@ -9,6 +9,14 @@
  * marked "ambiguous". Cube actions come from the tracked cube: holder ->
  * board is an offer by the player on roll, board -> a side tray is a take by
  * that side (top-left White, bottom-left Black), board -> holder is a pass.
+ *
+ * An optional session.json next to the decode file describes a session that
+ * differs: {"cubeRail": "right"} when the cube's holder and trays are on the
+ * right rail, {"initialCube": {"value": 2, "owner": "white"}} for a recording
+ * that begins mid-game with the cube already turned, {"result": {...}} for a game
+ * whose last rolls were not played out ({winner, level, reason: "conceded", frame}; the
+ * points are the level times the cube, and the game's video runs to that frame).
+ * {"danceWindow": true}: see prevFrame below.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,14 +28,18 @@ const decode = JSON.parse(fs.readFileSync(decodeFile, 'utf8'));
 const dice = JSON.parse(fs.readFileSync(diceFile, 'utf8'));
 const cubeScan = JSON.parse(fs.readFileSync(cubeFile, 'utf8'));
 const SIDE = { white: 0, dark: 1 };
+const sessionFile = path.join(path.dirname(decodeFile), 'session.json');
+const session = fs.existsSync(sessionFile) ? JSON.parse(fs.readFileSync(sessionFile, 'utf8')) : {};
+const right = session.cubeRail === 'right';
+const onRail = right ? x => x > 710 : x => x < 90, onBoard = right ? x => x >= 90 : x => x < 700;
 
 fs.mkdirSync(outDir, { recursive: true });
 
 function cubeZones() {
   const zone = ([, score, x, y]) => {
     if (score < 0.5) return null;
-    if (x < 90) return y < 250 ? 'white' : y > 350 ? 'dark' : 'holder';
-    if (x < 700) return 'board';
+    if (onRail(x)) return y < 250 ? 'white' : y > 350 ? 'dark' : 'holder';
+    if (onBoard(x)) return 'board';
     return null;
   };
   const runs = [];
@@ -49,7 +61,9 @@ const zones = cubeZones();
 for (const g of gameArgs.map(Number)) {
   const game = decode.games[g - 1], ev = dice[g - 1];
   const turns = [];
-  let cube = { value: 1, owner: null };
+  const start = game.fragment && session.initialCube;
+  let cube = start ? { value: start.value, owner: start.owner == null ? null : SIDE[start.owner] } : { value: 1, owner: null };
+  const initialCube = { ...cube };
   const events = [];
   // cube events inside this game
   for (let i = 1; i < zones.length; i++) {
@@ -79,9 +93,14 @@ for (const g of gameArgs.map(Number)) {
     const evidence = ev?.[i] ?? {};
     const s = SIDE[t.player];
     const out = { player: t.player, resultFrame: t.frame, fromFrame: t.fromFrame ?? null, before: t.before, after: t.after,
-      inferred: t.inferred ?? null, dance: !!t.dance, rollFrame: evidence.rollFrame ?? null, pickupFrame: evidence.pickupFrame ?? null };
+      inferred: t.inferred ?? null, dance: !!t.dance, rollFrame: evidence.rollFrame ?? null, pickupFrame: evidence.pickupFrame ?? null,
+      ...(t.gapBefore ? { gapBefore: t.gapBefore } : {}) };
     // cube offers between the previous result and this roll belong to this player's pre-roll decision
-    const prevFrame = i ? decodeTurns[i - 1].frame : game.startFrame;
+    let prevFrame = i ? decodeTurns[i - 1].frame : game.startFrame;
+    // session.json "danceWindow": a dance decoded together with the next move happened at its own
+    // roll, so the next player's pre-roll window (a cube offer) starts there.
+    if (session.danceWindow && i && decodeTurns[i - 1].dance && decodeTurns[i - 1].frame === t.frame && ev?.[i - 1]?.rollFrame)
+      prevFrame = ev[i - 1].rollFrame;
     const rollAt = out.rollFrame ?? t.frame;
     for (const e of events) if (!e.player && e.frame > prevFrame && e.frame <= rollAt && e.type === 'offer') e.player = t.player;
     // roll
@@ -137,7 +156,15 @@ for (const g of gameArgs.map(Number)) {
   // An offer after the last turn: the next player's pre-roll cube action ends the game.
   const lastTurn = decodeTurns.at(-1);
   const trailing = !result && events.find(e => e.type === 'offer' && !e.player && e.frame > (lastTurn?.frame ?? game.startFrame));
-  const nextPlayer = lastTurn ? (lastTurn.player === 'white' ? 'dark' : 'white') : null;
+  let nextPlayer = lastTurn ? (lastTurn.player === 'white' ? 'dark' : 'white') : null;
+  // A player on the bar against a closed board cannot enter and needs no roll: when the offer can
+  // only come from the other player (who then owns the cube), that player is on roll after the dance.
+  const closedOut = (pos, s) => pos.bar[s] > 0 && [0, 1, 2, 3, 4, 5].every(k => s === 0 ? pos.points[23 - k] <= -2 : pos.points[k] >= 2);
+  if (trailing && nextPlayer && cube.owner !== null && cube.owner !== SIDE[nextPlayer] && closedOut(lastTurn.after, SIDE[nextPlayer])) {
+    turns.push({ player: nextPlayer, resultFrame: Math.max(lastTurn.frame, trailing.frame - 1), fromFrame: lastTurn.frame, before: lastTurn.after, after: lastTurn.after,
+      inferred: 'closed-out', dance: true, rollFrame: null, pickupFrame: null, roll: null, rollSource: null, cube: { ...cube } });
+    nextPlayer = nextPlayer === 'white' ? 'dark' : 'white';
+  }
   // Only a player who may double can make an offer; other cube movements are handling.
   if (trailing && (cube.owner === null || cube.owner === SIDE[nextPlayer])) {
     const p = nextPlayer;
@@ -164,7 +191,12 @@ for (const g of gameArgs.map(Number)) {
       result = { winner: p, points: cube.value * level, reason: level === 2 ? 'gammon' : 'bear-off', frame: turns.at(-1).resultFrame };
     }
   }
+  let endFrame = game.endFrame;
+  if (!result && game.fragment && session.result) {
+    const { level = 1, ...r } = session.result;
+    result = { ...r, points: cube.value * level }; endFrame = Math.max(endFrame, r.frame);
+  }
   const outFile = path.join(outDir, `game-${String(g).padStart(2, '0')}.json`);
-  fs.writeFileSync(outFile, JSON.stringify({ game: g, fps: 25, startFrame: game.startFrame, endFrame: game.endFrame, turns, cubeEvents: events, finalCube: cube, result }, null, 1));
+  fs.writeFileSync(outFile, JSON.stringify({ game: g, fps: 25, startFrame: game.startFrame, endFrame, ...(game.fragment ? { fragment: true, initialCube } : {}), turns, cubeEvents: events, finalCube: cube, result }, null, 1));
   console.log(`\ngame ${g}: ${turns.length} turns, result ${JSON.stringify(result)}`);
 }

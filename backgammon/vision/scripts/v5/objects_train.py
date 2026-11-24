@@ -137,7 +137,7 @@ def main():
     ap.add_argument('--init'); ap.add_argument('--batch', type=int, default=12)
     a = ap.parse_args()
     keys, jp = ob.load_frames(); frames = dict(zip(keys, jp))
-    labels = json.loads((ob.OBJ_DIR / 'labels.json').read_text())
+    labels = ob.load_labels()
     cubes = json.loads((ob.OBJ_DIR / 'cube-labels.json').read_text())
     for k, c in cubes.items():
         if k in labels and not labels[k].get('reviewed'):

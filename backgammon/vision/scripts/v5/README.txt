@@ -124,3 +124,64 @@ Several recordings in one evening
 
   Reviewed rolls for the later recordings are in reviewed-rolls-2133.json and
   reviewed-rolls-2219.json (game numbers there are per recording).
+
+Later sessions (Nov 23 and Nov 24, 2026)
+
+  Work dirs ~/Downloads/office-3-backgammon-20261123 (BG_RECORDING_DIR is its
+  recording/ folder: links to the first eight one-minute clips and the first
+  eight minutes of the combined file) and ~/Downloads/office-3-backgammon-20261124
+  (BG_RECORDING_DIR ~/Downloads/office-3-wide-20261124-011852-kqjs8qh9).
+
+  Board placement. ref/reference.json may say how the board differs from the
+  Nov 21 view the readers learned: "turned180" (Nov 23: the board turned
+  round, corners listed rotated by two) or "mirrored" (Nov 24: the case sat
+  where it did on Nov 21, found by SIFT against the Nov 21 reference, but the
+  checkers were set up the other way round, so the corners are listed
+  top-right, top-left, bottom-left, bottom-right). Either way the rectified
+  board keeps White's home top-right and the checker reader and the dice and
+  cube detector read each frame turned back (session.board_view, reader_view,
+  reader_points). A mirrored board is shown in the replay as the camera saw it
+  (render.py, export_audit.py); a turned board is shown turned.
+
+  session.json in the work dir holds the rest: "date" (render header),
+  "redDice" (who rolled red: White on Nov 23), "cubeRail": "right" (the cube's
+  holder and trays on the rectified board's right rail), "initialCube" for a
+  recording that starts mid-game, "startFrame"/"endFrame" (readings left out),
+  "minKnown", "branchTies" and "entered" (decode2.mjs), "resume" (frames after
+  play the readings could not follow: more than two unseen turns; the decode
+  continues from the next complete view as a fragment joined to the game, its
+  first turn marked gapBefore) and "result" for a fragment game whose end was
+  not played out. Without session.json and the reference flags every script
+  behaves as on Nov 21.
+
+  Nov 23: the recording starts mid-game (White owns a 2-cube). White redoubles
+  to 4 at 3:40; at 5:04 Black puts the cube back in the centre holder showing
+  64, a pass. The players then played the position out; those moves are not
+  part of the game.
+
+  Nov 24: four games; in the last one about three turns at 40:36-41:33 were
+  not seen and the decode resumes at 41:33 (session.json "resume").
+
+  New pages: new_session_page.py starts a dated page from the Nov 21 page and
+  updates the session links of every vision page; export.mjs takes the session
+  (dates, ids) from the page folder.
+
+Training data from later sessions
+
+  Dice and cube detector: objects_add.py NAME MODEL stores every 125th frame of
+  a session in the Nov 21 view (OBJ_DIR/extra/frames-NAME.npz,
+  labels-NAME.json); labels start from the detector and are reviewed with
+  objects_candidates.py (low-score peaks), objects_grid.py and
+  objects_accept.py. objects.load_frames/load_labels include the extra sets,
+  objects.held_out keeps every tenth frame for scoring, and objects_eval.py
+  scores models per session (s1-s3 Nov 21, s4 Nov 23, s5 Nov 24).
+
+  Checker reader: build_labels.py (decode2 turns; --hard N adds quiet frames
+  the reader was unsure of, labelled with the decoded position) then
+  slots_add.py packs the frames in the Nov 21 view (labels/extra-slots-NAME.npz).
+  train_slots.py takes the packed sets with the JSON lists; one 3-minute block
+  in five is held out (train_slots.held_block, --hold-json for the JSON lists)
+  and slots_eval.py scores it.
+
+  Face reader: dice_faces.py --extra takes each session's own dice colours from
+  its session.json; --eval-only scores an existing model on --holdout-games.

@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np, torch
 import geometry as g, slots
 import dice_faces as df, frames
-from session import WORK
+from session import WORK, red_player, board_view, display_x
 
 SX, SY = 560 / 800, 420 / 590
 DIE_BOX, CUBE_BOX = round(26 * SX, 1), round(48 * SX, 1)
@@ -54,7 +54,7 @@ def roll_windows(A):
         if t.get('cubeOnly'): continue
         start = t.get('rollFrame') or (t.get('fromFrame') or t['resultFrame']) - 50
         known = t.get('roll') if t.get('rollSource') in ('move', 'dice', 'reviewed') or t.get('dance') and t.get('roll') else None
-        win[SIDE[t['player']]].append((start, known))
+        win[1 if t['player'] == red_player() else 0].append((start, known))
     for c in win: win[c].sort(key=lambda w: w[0])
     return win
 
@@ -110,6 +110,9 @@ def cube_timeline(A):
 
 def main():
     obs_dir, an_dir, render_dir, page = map(Path, sys.argv[1:5])
+    view = board_view(); X = lambda x: display_x(x, view)
+    # the camera puts a die's pip face on its left: right on the canonical board when it is turned
+    die_dx = -DIE_DX if view == 'turned' else DIE_DX
     net = df.FaceNet(); net.load_state_dict(torch.load(sys.argv[5], map_location='cpu')); net.eval().to(df.dev)
     rows = {}
     for p in sorted(obs_dir.glob('clip-*.json')):
@@ -141,7 +144,7 @@ def main():
                 for s in range(min(abs(v), slots.NSLOT)):
                     off = slots.SLOT0 + slots.PITCH * s
                     y = g.TOP[0] + off if g.is_top(p) else g.BOTTOM[1] - off
-                    checkers.append([round(g.point_x(p) * SX, 1), round(y * SY, 1), side, 0, 0])
+                    checkers.append([round(X(g.point_x(p)) * SX, 1), round(y * SY, 1), side, 0, 0])
                 if abs(v) >= 5: stacks.append([p, side, abs(v)])
             dice = []
             j = np.searchsorted(dkeys, f, side='right') - 1
@@ -150,13 +153,13 @@ def main():
                 for i in sorted(by_frame[int(dkeys[j])], key=lambda i: -meta[i, 3]):
                     if not any(meta[k, 4] == meta[i, 4] and np.hypot(*(meta[k, 1:3] - meta[i, 1:3])) < 14 for k in kept): kept.append(i)
                 for i in kept:
-                    dice.append([round((float(meta[i, 1]) + DIE_DX) * SX, 1), round(float(meta[i, 2]) * SY, 1), int(face[i]),
+                    dice.append([round((X(float(meta[i, 1])) + die_dx) * SX, 1), round(float(meta[i, 2]) * SY, 1), int(face[i]),
                                  'yellow die' if meta[i, 4] == 0 else 'red die', int(round(float(meta[i, 3]) * 100)), DIE_BOX])
             cb = None
             ci = np.searchsorted(cube_f, f, side='right') - 1
             if ci >= 0 and f - cube_f[ci] < 5 and cube[ci][1] >= .5:
                 c = cube[ci]; fc = ctl[max(0, np.searchsorted(cstarts, f, side='right') - 1)][1]
-                cb = [round(c[2] * SX, 1), round(c[3] * SY, 1), fc, int(round(c[1] * 100)), CUBE_BOX]
+                cb = [round(X(c[2]) * SX, 1), round(c[3] * SY, 1), fc, int(round(c[1] * 100)), CUBE_BOX]
             out.append([checkers, dice, cb, [], stacks])
         with gzip.open(page / 'audit' / f'game-{gnum:02d}.json.gz', 'wt', compresslevel=9) as fh:
             json.dump({'fps': 25, 'frames': out}, fh, separators=(',', ':'))

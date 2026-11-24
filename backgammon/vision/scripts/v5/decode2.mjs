@@ -17,9 +17,25 @@ import { legalTurns, boardKey } from '../../../core/rules.mjs';
 
 const [obsDir, outFile] = process.argv.slice(2);
 const CONF = 0.9, MIN_RUN = 3, WINDOW = 150, MISS = 12, DANCE = 10;
+const minKnown = f => MIN_KNOWN.filter(([from]) => f >= from).at(-1)[1];
 
+// Points that must be read for a stable observation: 21, unless the session's session.json (next
+// to the obs dir) lowers it from some frame on, e.g. {"minKnown": [[0, 21], [8530, 19]]} when tall
+// stacks and a checker on the bar keep the same few points covered through a bear-off.
+// session.json "branchTies": true follows every equally good one-turn result when a reading leaves
+// several (a hidden point or a tall stack's lower bound), instead of dropping the reading.
+const sessionFile = path.join(path.dirname(path.resolve(obsDir)), 'session.json');
+const SESSION = fs.existsSync(sessionFile) ? JSON.parse(fs.readFileSync(sessionFile, 'utf8')) : {};
+const MIN_KNOWN = SESSION.minKnown || [[0, 21]];
+const KEEP = SESSION.branchTies ? 12 : 4;
+// session.json "entered": [[fromFrame, toFrame, "dark"]]: the player was seen leaving the bar then,
+// so no dance is decoded for a turn ending in that window.
+const ENTERED = SESSION.entered ?? [];
+const seenEntering = (p, f) => ENTERED.some(([a, b, who]) => who === PLAYER[p] && f >= a && f <= b);
+// session.json "endFrame": readings after it are left out (play that the readings cannot follow);
+// "startFrame": readings before it are left out (the board being set up).
 const rows = fs.readdirSync(obsDir).filter(f => /^clip-\d+\.json$/.test(f)).sort()
-  .flatMap(f => JSON.parse(fs.readFileSync(path.join(obsDir, f), 'utf8')));
+  .flatMap(f => JSON.parse(fs.readFileSync(path.join(obsDir, f), 'utf8'))).filter(r => !(r.f > SESSION.endFrame) && !(r.f < SESSION.startFrame));
 
 const START = [-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2];
 const pkey = p => p.join(',');
@@ -33,7 +49,7 @@ function observations() {
   for (const r of rows) {
     const known = r.conf.map(c => c >= CONF);
     const nk = known.filter(Boolean).length;
-    if (nk < 21) { if (cur) cur.gap++; if (cur && cur.gap > 3) flush(); continue; }
+    if (nk < minKnown(r.f)) { if (cur) cur.gap++; if (cur && cur.gap > 3) flush(); continue; }
     const pos = r.pos.map((v, i) => known[i] ? v : null);
     if (cur && pos.every((v, i) => v === null || cur.pos[i] === null || v === cur.pos[i])) {
       for (let i = 0; i < 24; i++) if (cur.pos[i] === null && pos[i] !== null) cur.pos[i] = pos[i];
@@ -72,17 +88,18 @@ function results(s, turn) {
 // A reading of five or more checkers is a lower bound: further checkers overlap the stack.
 const same = (v, t) => v === t || (Math.abs(v) >= 5 && Math.sign(v) === Math.sign(t) && Math.abs(t) >= Math.abs(v));
 const consistent = (o, points) => o.pos.every((v, i) => v === null || same(v, points[i]));
-function find(res, o) {
-  if (o.full) { const exact = res.get(o.key); if (exact || !o.tall) return exact ?? null; }
+function find(res, o, all = false) {
+  if (o.full) { const exact = res.get(o.key); if (exact || !o.tall) return all ? (exact ? [exact] : []) : exact ?? null; }
   // Several results can fit when points are unknown or a tall stack is a lower
   // bound. Prefer the unique result with the most exactly matching points.
-  let best = null, bestScore = -1, tie = false;
+  let best = null, bestScore = -1, tie = false, ties = [];
   for (const e of res.values()) {
     if (!consistent(o, e.state.points)) continue;
     let score = 0;
     for (let i = 0; i < 24; i++) if (o.pos[i] !== null && o.pos[i] === e.state.points[i]) score++;
-    if (score > bestScore) { best = e; bestScore = score; tie = false; } else if (score === bestScore) tie = true;
+    if (score > bestScore) { best = e; bestScore = score; tie = false; ties = [e]; } else if (score === bestScore) { tie = true; ties.push(e); }
   }
+  if (all) return best ? ties : [];
   return tie ? null : best;
 }
 /** Checkers of player p (sign) on points agree, except p checkers that may have been hit. */
@@ -136,7 +153,7 @@ function decodeGame(obs, g0, g1, fragment = false) {
   };
   for (let k = 0; k < nodes.length; k++) {
     // prune to the best few hypotheses at this observation
-    const list = [...nodes[k].values()].sort((a, b) => a.cost - b.cost).slice(0, 4);
+    const list = [...nodes[k].values()].sort((a, b) => a.cost - b.cost).slice(0, KEEP);
     for (const node of list) {
       let skipped = 0;
       for (let t = k + 1; t < Math.min(nodes.length, k + 1 + WINDOW); t++) {
@@ -150,8 +167,7 @@ function decodeGame(obs, g0, g1, fragment = false) {
         }
         for (const p of players) {
           const r1 = results(S, p);
-          const e = find(r1, o);
-          if (e) {
+          for (const e of SESSION.branchTies ? find(r1, o, true) : [find(r1, o)].filter(Boolean)) {
             const turn = { player: PLAYER[p], fromObs: g0 + node.k, obs: g0 + t, before: S, after: e.state, plays: e.plays };
             relax(t, `${1 - p}|${boardKey(e.state)}`, { cost: node.cost + skippedPartial(obs, g0, node.k, t, S.points, e.state.points, r1),
               state: e.state, mover: 1 - p, turns: [...node.turns, turn], k: t });
@@ -167,7 +183,7 @@ function decodeGame(obs, g0, g1, fragment = false) {
               state: e2.state, mover: p, turns: [...node.turns, t1, t2], k: t });
           }
           // dance: p cannot enter, then 1-p moves
-          if (S.bar[p] && r1.blocked) {
+          if (S.bar[p] && r1.blocked && !seenEntering(p, o.f0)) {
             const e2 = find(results(S, 1 - p), o);
             if (e2) {
               const t1 = { player: PLAYER[p], fromObs: g0 + node.k, obs: g0 + t, before: S, after: S, plays: [], dance: true };
@@ -217,6 +233,14 @@ const firstStart = starts.length ? starts[0] : obs.length;
 const lead = obs.slice(0, firstStart).findIndex(o => o.n >= 20 && o.pos.filter(v => v === null).length <= 1);
 const segments = starts.map(s => ({ s, fragment: false }));
 if (lead >= 0) segments.unshift({ s: lead, fragment: true });
+// session.json "resume": [frame, ...]: play the readings could not follow (more than two turns unseen)
+// before that frame. The game continues from the first long, complete view after it, decoded as a
+// fragment and joined to the game in progress; its first turn is marked gapBefore.
+for (const f of SESSION.resume ?? []) {
+  const i = obs.findIndex(o => o.f0 >= f && o.n >= 10 && o.pos.filter(v => v === null).length <= 1);
+  if (i >= 0) segments.push({ s: i, fragment: true, resume: true });
+}
+segments.sort((a, b) => a.s - b.s);
 const games = [];
 for (let g = 0; g < segments.length; g++) {
   // a game's observations begin at its last opening view
@@ -227,6 +251,13 @@ for (let g = 0; g < segments.length; g++) {
   const turns = best.turns.map(t => ({ ...t, frame: obs[t.obs].f0, fromFrame: obs[t.fromObs].f1,
     rolls: [...new Set(t.plays.map(p => p.dice.join('-')))], plays: t.plays.slice(0, 60) }));
   const explained = new Set(best.turns.map(t => t.obs));
+  if (segments[g].resume && games.length) {
+    const prev = games.at(-1);
+    if (turns.length) turns[0].gapBefore = { fromFrame: prev.turns.at(-1)?.frame ?? prev.startFrame, position: stateFromObservation(obs[g0].pos.map((v, i) => v ?? obs[g0].raw[i])) };
+    prev.turns.push(...turns); prev.endFrame = obs[g1 - 1].f1; prev.final = best.state; prev.cost = +(prev.cost + best.total).toFixed(1);
+    prev.resumed = [...(prev.resumed ?? []), obs[g0].f0];
+    continue;
+  }
   games.push({ startFrame: obs[g0].f0, endFrame: obs[g1 - 1].f1, cost: +best.total.toFixed(1), turns, fragment,
     initial: fragment ? stateFromObservation(obs[g0].pos.map((v, i) => v ?? obs[g0].raw[i])) : null,
     final: best.state, unexplained: obs.slice(g0, g1).filter((o, i) => !explained.has(g0 + i) && o.n >= 25 && !consistent(o, best.state.points)).length });

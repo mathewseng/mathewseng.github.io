@@ -27,10 +27,11 @@ for g in games:
     r = A.get('result')
     if r:
         pts = f"{r['points']} point{'s' if r['points'] != 1 else ''}"
-        how = {'pass': f"after {NAME['dark' if r['winner'] == 'white' else 'white']} passes the cube", 'gammon': 'with a gammon', 'bear-off': 'by bearing off'}[r['reason']]
+        how = {'pass': f"after {NAME['dark' if r['winner'] == 'white' else 'white']} passes the cube", 'gammon': 'with a gammon', 'bear-off': 'by bearing off', 'conceded': 'once the last rolls no longer matter'}[r['reason']]
         note = f"{NAME[r['winner']]} wins {pts} {how}."
     else:
         note = 'The recording ends before the game finishes.'
+    if A.get('fragment'): note = 'The recording starts mid-game; earlier moves were not recorded. ' + note
     items.append((g, secs, note))
 lis = []
 for i, (g, secs, note) in enumerate(items):
@@ -44,10 +45,10 @@ for i, (g, secs, note) in enumerate(items):
 html = (page / 'index.html').read_text()
 html = re.sub(r'<ol>.*?</ol>', '<ol>\n' + '\n'.join(lis) + '\n            </ol>', html, count=1, flags=re.S)
 html = re.sub(r'<p id="game-note">.*?</p>', f'<p id="game-note">{items[0][2]}</p>', html, count=1)
-html = re.sub(r'View all five MP4s on GitHub', f'View all {len(items)} MP4s on GitHub', html)
 words = {4: 'Four', 5: 'Five', 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten'}
 n = words.get(len(items), str(len(items)))
 html = re.sub(r'<p>\w+ games on the orange board', f'<p>{n} games on the orange board', html)
-html = re.sub(r'Watch \w+ Office-3 backgammon games from Nov 21', f'Watch {n.lower()} Office-3 backgammon games from Nov 21', html)
+html = re.sub(r'Watch \w+ Office-3 backgammon games from (\w+ \d+)', lambda m: f'Watch {n.lower()} Office-3 backgammon games from {m.group(1)}', html)
+html = re.sub(r'View (all \w+ MP4s|the MP4) on GitHub', 'View the MP4 on GitHub' if len(items) == 1 else f'View all {len(items)} MP4s on GitHub', html)
 (page / 'index.html').write_text(html)
 print(items)

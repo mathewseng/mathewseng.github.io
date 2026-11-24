@@ -827,7 +827,7 @@
         "ofc/"
       ],
       "kind": "hub",
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-06-29"
     },
     {
@@ -960,7 +960,7 @@
       "sourcePaths": [
         "backgammon/vision/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-11-18"
     },
     {
@@ -972,8 +972,32 @@
       "sourcePaths": [
         "backgammon/vision/2026-11-21/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-11-21"
+    },
+    {
+      "name": "Backgammon Vision · Nov 23",
+      "path": "/backgammon/vision/2026-11-23/",
+      "category": "backgammon",
+      "description": "The end of one game on the orange board, recorded from the middle, with detected rolls, the cube pass, and four-ply GNUbg analysis.",
+      "historyPath": "backgammon/vision/2026-11-23/index.html",
+      "sourcePaths": [
+        "backgammon/vision/2026-11-23/"
+      ],
+      "updated": "2026-11-24",
+      "created": "2026-11-24"
+    },
+    {
+      "name": "Backgammon Vision · Nov 24",
+      "path": "/backgammon/vision/2026-11-24/",
+      "category": "backgammon",
+      "description": "Four games on the orange board with detected rolls, cube actions, and four-ply GNUbg analysis.",
+      "historyPath": "backgammon/vision/2026-11-24/index.html",
+      "sourcePaths": [
+        "backgammon/vision/2026-11-24/"
+      ],
+      "updated": "2026-11-24",
+      "created": "2026-11-24"
     },
     {
       "name": "Backgammon Controls",

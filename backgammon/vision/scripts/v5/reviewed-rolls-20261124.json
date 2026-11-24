@@ -1,0 +1,22 @@
+[
+ {
+  "game": 1,
+  "resultFrame": 11622,
+  "player": "dark",
+  "roll": [
+   3,
+   1
+  ],
+  "note": "Dice show one and three (the obj-v8 scan's reader would pick 1-1)."
+ },
+ {
+  "game": 1,
+  "resultFrame": 17757,
+  "player": "white",
+  "roll": [
+   3,
+   2
+  ],
+  "note": "The one visible die shows three; 3-2 is the only candidate with a three."
+ }
+]

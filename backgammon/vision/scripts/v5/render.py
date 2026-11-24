@@ -11,7 +11,13 @@ from pathlib import Path
 import av, cv2, numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import frames, geometry as g
-from session import COMBINED, RECT
+from session import COMBINED, RECT, board_view, display_x, settings, red_player
+
+VIEW = board_view()
+# the cube badge sits on the rail that holds the cube in the video
+CUBE_RIGHT = settings().get('cubeRail') == 'right' and VIEW != 'mirrored'
+RED = red_player()  # who rolls the red pair
+DATE = settings().get('date', 'Nov 21')
 
 FPS = 25
 W, H = 1920, 1080
@@ -54,7 +60,7 @@ def card(w, h):
 
 def draw_dice(d, x, y, dice, player, size=44):
     pips = {1: (4,), 2: (0, 8), 3: (0, 4, 8), 4: (0, 2, 6, 8), 5: (0, 2, 4, 6, 8), 6: (0, 2, 3, 5, 6, 8)}
-    fill, ink = ("#F2D35B", BG) if player == "white" else ("#D9534F", TEXT)
+    fill, ink = ("#D9534F", TEXT) if player == RED else ("#F2D35B", BG)
     s = size / 44
     for i, die in enumerate(dice):
         left = x + i * 53 * s
@@ -158,7 +164,7 @@ class Game:
         return pos
 
     def cube(self, f):
-        c = {"value": 1, "owner": None}
+        c = dict(self.d.get("initialCube") or {"value": 1, "owner": None})  # a game recorded mid-way may start with a turned cube
         for t in self.d["turns"]:
             ca = t.get("cubeAction")
             if ca and ca.get("reply") == "take" and (ca.get("replyFrame") or 1e12) <= f: c = t["cubeAfter"]
@@ -229,7 +235,7 @@ def decision_panel(game, f, info):
     T = game.d["turns"]; kind = info["kind"]
     if kind == "end" or "t" not in info:
         r = game.d.get("result")
-        if r: write(d, PAD, 90, f"{NAME[r['winner']]} wins {r['points']} point{'s' if r['points'] != 1 else ''}", HEAD, TONE[r['winner']], True); write(d, PAD, 145, {"pass": "Cube passed", "gammon": "Gammon", "bear-off": "Bore off all checkers"}.get(r["reason"], r["reason"]), BODY, MUTED)
+        if r: write(d, PAD, 90, f"{NAME[r['winner']]} wins {r['points']} point{'s' if r['points'] != 1 else ''}", HEAD, TONE[r['winner']], True); write(d, PAD, 145, {"pass": "Cube passed", "gammon": "Gammon", "bear-off": "Bore off all checkers", "conceded": "Last rolls not played out"}.get(r["reason"], r["reason"]), BODY, MUTED)
         else: write(d, PAD, 90, "Recording ends", HEAD, TEXT, True)
     else:
         t = T[info["t"]]; p = t["player"]; q = "dark" if p == "white" else "white"
@@ -292,23 +298,24 @@ def badges(pos, cube):
         write(d, x, y, n, 20, ink, True, "mm")
     for p in range(1, 25):
         v = pos["points"][p - 1]
-        if v: badge(g.point_x(p) * sx, (14 if g.is_top(p) else 576) * sy, abs(v), "white" if v > 0 else "dark")
-    bx = (g.BAR_X[0] + g.BAR_X[1]) / 2 * sx
+        if v: badge(display_x(g.point_x(p), VIEW) * sx, (14 if g.is_top(p) else 576) * sy, abs(v), "white" if v > 0 else "dark")
+    bx = display_x((g.BAR_X[0] + g.BAR_X[1]) / 2, VIEW) * sx
     if pos["bar"][0]: badge(bx, 250 * sy, f"{pos['bar'][0]}", "white")
     if pos["bar"][1]: badge(bx, 340 * sy, f"{pos['bar'][1]}", "dark")
-    if pos["off"][0]: badge(732 * sx, 150 * sy, pos["off"][0], "white")
-    if pos["off"][1]: badge(732 * sx, 440 * sy, pos["off"][1], "dark")
+    if pos["off"][0]: badge(display_x(732, VIEW) * sx, 150 * sy, pos["off"][0], "white")
+    if pos["off"][1]: badge(display_x(732, VIEW) * sx, 440 * sy, pos["off"][1], "dark")
     if cube["value"] > 1:
         y = 60 if cube["owner"] == 0 else 530
-        d.rounded_rectangle((8, y * sy - 22, 70, y * sy + 22), radius=8, fill="#E8D5B0", outline=BG, width=2)
-        write(d, 39, y * sy, cube["value"], 24, BG, True, "mm")
+        cx = BW - 39 if CUBE_RIGHT else 39
+        d.rounded_rectangle((cx - 31, y * sy - 22, cx + 31, y * sy + 22), radius=8, fill="#E8D5B0", outline=BG, width=2)
+        write(d, cx, y * sy, cube["value"], 24, BG, True, "mm")
     return np.asarray(im)
 
 
 def header(game, f):
     im = Image.new("RGB", (W, 80), BG); d = ImageDraw.Draw(im)
     write(d, 32, 24, "Office-3 Backgammon", 28, TEXT, True)
-    write(d, 392, 26, f"Nov 21 · Game {game.d['game']:02d}", 24, MUTED)
+    write(d, 392, 26, f"{DATE} · Game {game.d['game']:02d}", 24, MUTED)
     s = (f - game.first) // FPS; write(d, W - 32, 24, f"{s // 60:02d}:{s % 60:02d}", 28, TEXT, True, "ra")
     d.line((32, 72, W - 32, 72), fill=LINE)
     return np.asarray(im)[:, :, ::-1]
@@ -334,7 +341,9 @@ def render(game, out, software=False):
                 info = game.at(f); pos = game.position(f); cube = game.cube(f)
                 canvas = base.copy()
                 canvas[:80] = cache.setdefault(('h', (f - game.first) // FPS), header(game, f))
-                board = cv2.LUT(cv2.resize(fr.to_ndarray(format='bgr24'), (BW, BH), interpolation=cv2.INTER_AREA), TONE_LUT)
+                img = fr.to_ndarray(format='bgr24')
+                if VIEW == 'mirrored': img = img[:, ::-1]  # shown as the camera saw it
+                board = cv2.LUT(cv2.resize(img, (BW, BH), interpolation=cv2.INTER_AREA), TONE_LUT)
                 key = ('b', json.dumps(pos), cube['value'], cube['owner'])
                 ov = cache.get(key)
                 if ov is None: ov = cache[key] = badges(pos, cube)

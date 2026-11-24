@@ -11,7 +11,7 @@ usage: objects_scan.py MODEL [--thresh 0.35]
 import argparse, json
 import av, numpy as np, torch
 import dice, frames, objects as ob
-from session import RECT, WORK
+from session import RECT, WORK, board_view, reader_view, reader_xy
 
 OUT = WORK / 'objects-scan'
 
@@ -21,22 +21,27 @@ def main():
     a = ap.parse_args()
     net = ob.load(a.model)
     OUT.mkdir(exist_ok=True)
-    offs = frames.offsets(); cube_rows = []; scores = []
+    offs = frames.offsets(); cube_rows = []; scores = []; view = board_view()
     for clip in range(len(offs) - 1):
         base = int(offs[clip]); meta, patches, batch, nums = [], [], [], []
 
         def flush():
+            # A turned or mirrored board is read in the Nov 21 view (the detector and face reader
+            # learned it, where a die's pip face shows left of its side face); positions are mapped back.
+            ims = [reader_view(im, view) for im in batch]
             with torch.no_grad():
-                x = torch.stack([ob.to_tensor(im) for im in batch]).to(ob.dev)
+                x = torch.stack([ob.to_tensor(im) for im in ims]).to(ob.dev)
                 det = ob.peaks(net(x), a.thresh)
-            for im, n, rows in zip(batch, nums, det):
+            for im, n, rows in zip(ims, nums, det):
+                h, w = im.shape[:2]
+                rows = [(c, *reader_xy(px, py, w, h, view), s, px, py) for c, px, py, s in rows]
                 cubes = [r for r in rows if r[0] == 2]
                 if cubes:
                     c = max(cubes, key=lambda r: r[3]); cube_rows.append([n, round(c[3], 3), round(c[1], 1), round(c[2], 1)])
                 else: cube_rows.append([n, 0.0, 0, 0])
-                for c, px, py, s in rows:
+                for c, px, py, s, ix, iy in rows:
                     if c == 2: continue
-                    meta.append([n, px, py, s, c]); patches.append(dice.patch(im, px, py, 40))
+                    meta.append([n, px, py, s, c]); patches.append(dice.patch(im, ix, iy, 40))
             batch.clear(); nums.clear()
 
         with av.open(str(RECT / f'clip-{clip:03d}.mp4')) as box:

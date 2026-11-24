@@ -6,6 +6,8 @@ usage: dice_evidence.py decode.json faces.pt out.json
 import json, sys
 import numpy as np, torch
 import dice_faces as df
+from session import red_player
+RED = red_player()
 
 decode = json.load(open(sys.argv[1]))
 net = df.FaceNet(); net.load_state_dict(torch.load(sys.argv[2], map_location='cpu')); net.eval().to(df.dev)
@@ -14,7 +16,7 @@ out = []
 for gi, g in enumerate(decode['games'], 1):
     prev = start = g['startFrame']; turns = []
     for t in g['turns']:
-        red = 1 if t['player'] == 'dark' else 0
+        red = 1 if t['player'] == RED else 0
         start = df.window_start(prev, start, t['frame'])  # the dice land while the old position is still on the board
         tr = df.tracks(meta, start, t['frame'], red)
         e = {'frame': t['frame'], 'player': t['player'], 'tracks': len(tr)}

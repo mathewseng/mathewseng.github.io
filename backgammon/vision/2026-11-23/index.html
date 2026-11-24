@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-family="backgammon">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Watch the end of an Office-3 backgammon game from Nov 23, 2026 on the orange board. The recording starts mid-game, so earlier moves were not recorded. Detected rolls, the cube pass, opening-book and GNUbg four-ply analysis." />
+    <title>Backgammon Vision · Nov 23</title>
+    <link rel="icon" href="../../icon.svg" />
+    <link rel="stylesheet" href="../../../shared/tokens.css?bgv=a248121a38b4627e" />
+    <link rel="stylesheet" href="../../../shared/app.css?bgv=a248121a38b4627e" />
+    <link rel="stylesheet" href="../../styles.css?bgv=a248121a38b4627e" />
+    <link rel="stylesheet" href="../palette.css?bgv=a248121a38b4627e" />
+    <link rel="stylesheet" href="../styles.css?bgv=a248121a38b4627e" />
+    <script type="module" src="../app.js?bgv=a248121a38b4627e"></script>
+  </head>
+  <body class="vision-page">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="shell vision-shell">
+      <header class="topbar vision-topbar">
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="/"><span class="mark" aria-hidden="true">MS</span><span class="sr-only">All projects</span></a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <a href="/backgammon/">Backgammon</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <a href="../">Vision</a>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-current" aria-current="page">Nov 23</span>
+        </nav>
+      </header>
+      <main id="main" tabindex="-1">
+        <header class="vision-heading">
+          <div>
+            <h1>Backgammon Vision</h1>
+            <p>The end of one game on the orange board. The recording starts in the middle of the game, so earlier moves were not recorded. Black passes White’s redouble to 4; the players then played the position out, which is not part of the game. Checker counts, dice, the cube and move analysis.</p>
+          </div>
+          <div class="vision-modes" role="group" aria-label="Replay view">
+            <button type="button" data-view="analysis" aria-pressed="true">Analysis</button>
+            <button type="button" data-view="vision" aria-pressed="false">Vision</button>
+          </div>
+        </header>
+        <div class="vision-layout">
+          <section class="vision-stage" aria-labelledby="selected-game">
+            <div id="replay-shell" class="replay-shell">
+              <div class="vision-player">
+                <video id="replay" tabindex="0" controls playsinline preload="none" poster="posters/game-01.jpg"
+                  src="media/office3-backgammon-20261123-v1/game-01-analysis.mp4"
+                  aria-labelledby="selected-game">
+                  Your browser does not support embedded video. Use the download link below.
+                </video>
+                <canvas id="detection-overlay" width="1920" height="1080" aria-hidden="true" hidden></canvas>
+                <button id="play-replay" class="vision-play" type="button" aria-label="Play Game 1" hidden></button>
+              </div>
+              <section class="replay-transport" aria-label="Playback controls" hidden>
+                <div class="replay-timeline-heading">
+                  <p id="replay-action" class="replay-action">Loading actions…</p>
+                  <output id="replay-time" for="replay-seek">0:00</output>
+                </div>
+                <div class="replay-legend" aria-hidden="true">
+                  <span data-player="white">White</span>
+                  <span data-player="dark">Black</span>
+                </div>
+                <div id="replay-markers" class="replay-markers" role="group" aria-label="Game actions"></div>
+                <input id="replay-seek" class="replay-seek" type="range" min="0" max="0" step="0.04" value="0" aria-label="Seek video">
+                <div class="replay-buttons">
+                  <button id="replay-toggle" type="button">Play</button>
+                  <button id="replay-previous" type="button" title="Left Arrow">← Previous action</button>
+                  <button id="replay-next" type="button" title="Right Arrow">Next action →</button>
+                  <div class="replay-options">
+                    <label for="replay-speed">Speed</label>
+                    <select id="replay-speed">
+                      <option value="1">1×</option>
+                      <option value="1.5">1.5×</option>
+                      <option value="2">2×</option>
+                      <option value="3">3×</option>
+                      <option value="5">5×</option>
+                      <option value="10">10×</option>
+                    </select>
+                    <button id="replay-mute" type="button">Mute</button>
+                    <button id="replay-fullscreen" type="button">Full screen</button>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <section id="replay-recent" class="replay-recent" aria-labelledby="replay-recent-heading" hidden>
+              <h2 id="replay-recent-heading">Recent actions</h2>
+              <p>No completed actions yet.</p>
+              <table aria-labelledby="replay-recent-heading" hidden>
+                <thead><tr><th scope="col">Action</th><th scope="col">EV</th><th scope="col">EV loss</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </section>
+            <div class="vision-audit-footer">
+              <p id="audit-status" role="status" hidden></p>
+            </div>
+            <div class="vision-caption">
+              <div>
+                <h2 id="selected-game">Game 1</h2>
+                <p id="game-note">The recording starts mid-game; earlier moves were not recorded. White wins 2 points after Black passes the cube.</p>
+              </div>
+              <div class="vision-player-actions">
+                <a id="download-replay" class="vision-download"
+                  href="https://github.com/mathewseng/mathewseng.github.io/releases/download/office3-backgammon-20261123-v1/game-01-analysis.mp4">
+                  Download MP4 <span aria-hidden="true">↓</span>
+                </a>
+              </div>
+            </div>
+            <div id="decision-navigation" class="vision-decision-navigation" hidden>
+              <button type="button" data-decision-jump="current">Review current decision</button>
+            </div>
+            <p class="vision-error" id="playback-error" role="status" hidden>
+              Playback couldn’t start. Tap Play to retry or use Download MP4 to watch the file.
+            </p>
+          </section>
+          <nav class="vision-queue" aria-labelledby="queue-heading">
+            <div class="vision-session">
+              <h2 id="queue-heading">Office-3 session</h2>
+              <nav class="vision-sessions" aria-label="Recording sessions">
+                <a href="../"><time datetime="2026-11-17">Nov 17</time></a>
+                <a href="../2026-11-21/"><time datetime="2026-11-21">Nov 21</time></a>
+                <a href="./" aria-current="page"><time datetime="2026-11-23">Nov 23</time></a>
+                <a href="../2026-11-24/"><time datetime="2026-11-24">Nov 24</time></a>
+              </nav>
+            </div>
+            <ol>
+              <li>
+                <a href="?game=1" data-game="1" data-note="The recording starts mid-game; earlier moves were not recorded. White wins 2 points after Black passes the cube." aria-current="true">
+                  <img src="posters/game-01-thumb.jpg" width="56" height="42" alt="" />
+                  <span>Game 1</span><time datetime="PT5M6S">5:06</time>
+                </a>
+              </li>
+            </ol>
+            <noscript><p><a href="https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261123-v1">View the MP4 on GitHub</a></p></noscript>
+          </nav>
+        </div>
+        <div class="vision-detail-tabs" role="tablist" aria-label="Game details" hidden>
+          <button id="history-tab" type="button" role="tab" aria-controls="history-panel" aria-selected="true">Game history</button>
+          <button id="reports-tab" type="button" role="tab" aria-controls="reports-panel" aria-selected="false" tabindex="-1">Reports</button>
+        </div>
+        <section id="history-panel" class="vision-history" role="tabpanel" aria-labelledby="history-tab">
+          <header class="vision-history-heading">
+            <h2 id="history-heading">Game history</h2>
+            <div class="vision-player-actions">
+              <a id="download-frame-data" class="vision-download" href="state/game-01.json" download hidden>Frame data</a>
+              <a id="download-history" class="vision-download" href="history/game-01.json" download>
+                Download history <span aria-hidden="true">↓</span>
+              </a>
+            </div>
+          </header>
+          <p class="muted small">Import the JSON backup through <a href="../../library/">Library → Import</a>. Gaps mark actions the footage could not confirm.</p>
+          <div id="history-content" aria-busy="true"></div>
+        </section>
+        <section id="reports-panel" class="vision-history" role="tabpanel" aria-labelledby="reports-tab" hidden>
+          <header class="vision-history-heading">
+            <h2 id="report-heading">Vision report</h2>
+            <a id="download-report" class="vision-download" download>Download report <span aria-hidden="true">↓</span></a>
+          </header>
+          <div id="report-content" aria-busy="true"></div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

@@ -91,6 +91,19 @@ four ply.
 The session links above the game list switch between recordings. The
 pipeline for this board is in [scripts/v5](scripts/v5/README.txt).
 
+## Nov 23 and Nov 24, 2026 sessions
+
+The [Nov 23 page](2026-11-23/) shows the end of one game on the orange board:
+the recording starts in the middle of the game, so earlier moves were not
+recorded. Black passes White's redouble to 4; the players then played the
+position out, which is not part of the game. The [Nov 24 page](2026-11-24/)
+shows four games from one evening recording. Their MP4s are assets on the
+[Nov 23](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261123-v1)
+and [Nov 24](https://github.com/mathewseng/mathewseng.github.io/releases/tag/office3-backgammon-20261124-v1)
+releases. On Nov 23 the board was turned round and on Nov 24 the checkers were
+set up the other way round; [scripts/v5](scripts/v5/README.txt) describes how
+both are read and how frames from these sessions were added to the training data.
+
 The [vision pipeline](scripts/README.txt) contains the source used to reconstruct
 the game state, score the decisions with GNUbg, and render the overlays. Site
 assembly excludes this research code. The local footage, model weights and

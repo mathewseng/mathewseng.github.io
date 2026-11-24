@@ -14,7 +14,12 @@ const SIDE = { white: 0, dark: 1 }, NAME = { white: 'White', dark: 'Black' };
 import { RULES } from './scoring.mjs';
 const ENGINE = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg10';
 const SETTINGS = { name: 'Research', plies: 4, cubeful: true, pruning: true, deterministic: true, noise: 0, finalists: 4, threshold: 0.04 };
-const DATE = 'Nov 21, 2026', CREATED = Date.UTC(2026, 10, 22);
+// The session comes from the page folder (backgammon/vision/YYYY-MM-DD); Nov 21 keeps its published ids and dates.
+const SESSION = path.basename(path.resolve(pageDir));
+const [YEAR, MONTH, DAY] = SESSION.split('-').map(Number);
+const SHORT = new Date(Date.UTC(YEAR, MONTH - 1, DAY)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const DATE = `${SHORT}, ${YEAR}`, CREATED = SESSION === '2026-11-21' ? Date.UTC(2026, 10, 22) : Date.UTC(YEAR, MONTH - 1, DAY + 1);
+const ITEM = g => `office3-${SESSION.replaceAll('-', '')}-game-${g}`;
 for (const dir of ['state', 'history', 'reports']) fs.mkdirSync(path.join(pageDir, dir), { recursive: true });
 
 function checkerResult(source, t) {
@@ -50,6 +55,12 @@ for (const g of games.map(Number)) {
   const vf = f => Math.max(0, Math.min(range.frames - 1, f - range.first));
   // ---- Library history -----------------------------------------------------
   let state = initialState({ matchLength: 0, rules: RULES, gameNumber: g });
+  if (A.fragment) {
+    // A game recorded from the middle starts at its first complete view, before the first decoded roll.
+    const b = A.turns[0].before, c = A.initialCube ?? { value: 1, owner: null };
+    state = { ...state, points: [...b.points], bar: [...b.bar], off: [...b.off], turn: SIDE[A.turns[0].player], phase: 'roll',
+      cube: { value: c.value, owner: c.owner ?? null } };
+  }
   const initial = structuredClone(state);
   const events = [], timeline = [], rolls = [], actions = [];
   let cubeOffer = null;
@@ -61,6 +72,12 @@ for (const g of games.map(Number)) {
     const prevEnd = i ? A.turns[i - 1].resultFrame + 50 : range.first;
     const rollRaw = t.rollFrame ?? Math.max(prevEnd + 25, (t.fromFrame ?? t.resultFrame) - 50);
     const rollAt = vf(Math.min(Math.max(rollRaw, prevEnd + 1), t.resultFrame)), resultAt = vf(t.resultFrame);
+    if (t.gapBefore) {
+      // decode2 resumed after turns it never saw: the history cannot continue as legal play.
+      const at = f => `${Math.floor(f / 1500)}:${String(Math.floor(f / 25) % 60).padStart(2, '0')}`;
+      notes.push(`Turn ${i + 1} (${NAME[t.player]}): turns between ${at(t.gapBefore.fromFrame)} and ${at(t.fromFrame ?? t.resultFrame)} were not seen, so the history stops here; the replay continues.`);
+      break;
+    }
     try {
       if (state.phase === 'opening') {
         if (!t.roll || t.roll[0] === t.roll[1]) throw new Error('opening roll unknown');
@@ -75,7 +92,7 @@ for (const g of games.map(Number)) {
           if (cd) ev.evaluation = { result: cubeResult(state, cd) };
           events.push(ev);
           timeline.push({ frame: vf(t.cubeAction.offerFrame), rollFrame: vf(t.cubeAction.offerFrame), endFrame: vf(t.cubeAction.replyFrame ?? t.cubeAction.offerFrame + 50),
-            turn: i + 1, kind: 'cube', checkpoint: false, item: `office3-20261121-game-${g}`, event: events.length - 1 });
+            turn: i + 1, kind: 'cube', checkpoint: false, item: ITEM(g), event: events.length - 1 });
           state = transition(state, { type: 'double' }, s);
           const opts = { take: null, pass: null };
           for (const o of t.cubeAction.responses ?? []) opts[o.action] = o.equity;
@@ -107,7 +124,7 @@ for (const g of games.map(Number)) {
         if (t.cubeDecision && !t.cubeAction) ev.evaluation = { result: cubeResult(state, t.cubeDecision) };
         events.push(ev);
         if (t.cubeDecision && !t.cubeAction)
-          timeline.push({ frame: rollAt, rollFrame: rollAt, endFrame: resultAt, turn: i + 1, kind: 'cube', checkpoint: false, item: `office3-20261121-game-${g}`, event: events.length - 1 });
+          timeline.push({ frame: rollAt, rollFrame: rollAt, endFrame: resultAt, turn: i + 1, kind: 'cube', checkpoint: false, item: ITEM(g), event: events.length - 1 });
         state = transition(state, { type: 'roll', dice: t.roll }, s);
       }
       rolls.push({ start: rollAt, player: t.player, dice: t.roll, pickup: t.pickupFrame ? vf(t.pickupFrame) : null, resultFrame: resultAt, source: t.rollSource });
@@ -122,7 +139,7 @@ for (const g of games.map(Number)) {
       const ev = { action: { type: 'move', steps: t.steps }, actor: s, videoFrame: resultAt };
       if (res) ev.evaluation = { result: res };
       events.push(ev);
-      timeline.push({ frame: resultAt, rollFrame: rollAt, endFrame: resultAt + 50, turn: i + 1, kind: 'checker', checkpoint: false, item: `office3-20261121-game-${g}`, event: events.length - 1,
+      timeline.push({ frame: resultAt, rollFrame: rollAt, endFrame: resultAt + 50, turn: i + 1, kind: 'checker', checkpoint: false, item: ITEM(g), event: events.length - 1,
         ...(t.rollSource === 'ambiguous' ? { note: 'Several rolls fit this move; the dice were not readable.' } : t.inferred ? { note: 'Move inferred between camera views.' } : {}) });
       const graded = ['move', 'dice', 'reviewed'].includes(t.rollSource) && !t.inferred;
       if (t.analysis && graded) loss[t.player].checker += t.analysis.evLoss;
@@ -134,8 +151,8 @@ for (const g of games.map(Number)) {
     }
   }
   const result = A.result;
-  const item = { version: 1, kind: 'match', id: `office3-20261121-game-${g}`, title: `Office-3 Nov 21 · Game ${g}`, collection: `Office-3 · ${DATE}`,
-    tags: ['office-3', 'video'], createdAt: CREATED, updatedAt: CREATED, notes: 'Reconstructed from the Nov 21 Office-3 recording (orange board).',
+  const item = { version: 1, kind: 'match', id: ITEM(g), title: `Office-3 ${SHORT} · Game ${g}`, collection: `Office-3 · ${DATE}`,
+    tags: ['office-3', 'video'], createdAt: CREATED, updatedAt: CREATED, notes: `Reconstructed from the ${SHORT} Office-3 recording (orange board).${A.fragment ? ' The recording starts in the middle of this game; earlier moves were not recorded.' : ''}`,
     initial, state, events, names: ['White', 'Black'], gameNumber: g, gameCount: 1, status: state.phase === 'over' ? 'game-complete' : 'in-progress' };
   const lossBreakdown = ['white', 'dark'].map(p => ({ checkerLoss: loss[p].checker, cubeLoss: loss[p].cube }));
   fs.writeFileSync(path.join(pageDir, 'history', `game-${id}.json`), JSON.stringify({ version: 1, format: 'backgammon-library', progress: [], items: [item],
@@ -148,7 +165,7 @@ for (const g of games.map(Number)) {
     if (!posId.has(key)) { const n = posId.size + 1; posId.set(key, n); positions[n] = { points: p.points, bar: p.bar, borneOff: p.off, onRoll, source: 'legal-reconstruction', equities: null }; }
     return posId.get(key);
   };
-  let cube = { value: 1, owner: null };
+  let cube = A.initialCube ? { value: A.initialCube.value, owner: A.initialCube.owner == null ? null : A.initialCube.owner === 0 ? 'white' : 'dark' } : { value: 1, owner: null };
   let before = A.turns[0].before;
   changes.push({ frame: 0, phase: 'opening', position: addPos(before, null), roll: null, player: null, cube: { ...cube } });
   for (const t of A.turns) {
@@ -159,7 +176,7 @@ for (const g of games.map(Number)) {
   if (result) changes.push({ frame: vf(result.frame), phase: 'over', position: changes.at(-1).position, roll: null, player: null, cube: { ...cube } });
   changes.sort((a, b) => a.frame - b.frame);
   actions.sort((a, b) => a.frame - b.frame);
-  fs.writeFileSync(path.join(pageDir, 'state', `game-${id}.json`), JSON.stringify({ format: 'office-3-replay-frames', version: 1, session: '2026-11-21', game: g, fps: 25,
+  fs.writeFileSync(path.join(pageDir, 'state', `game-${id}.json`), JSON.stringify({ format: 'office-3-replay-frames', version: 1, session: SESSION, game: g, fps: 25,
     frames: range.frames, sourceFirstFrame: range.first, result, players: ['white', 'dark'], rolls, cubeOffer, actions, changes, positions }));
   // ---- report ----------------------------------------------------------------
   const real = A.turns.filter(t => !t.cubeOnly);

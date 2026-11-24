@@ -33,6 +33,7 @@ def slot_mask_coverage(mask):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('decode'); ap.add_argument('obs'); ap.add_argument('out')
     ap.add_argument('--per-interval', type=int, default=6)
+    ap.add_argument('--hard', type=int, default=0, help='per interval: quiet frames the reader was unsure of, labelled with the decoded position')
     a = ap.parse_args()
     dec = json.loads(Path(a.decode).read_text())
     rows = []
@@ -43,8 +44,10 @@ def main():
     for game in dec['games']:
         turns = game['turns']
         start_pts = [-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2]
+        if game.get('fragment'): start_pts = game['initial']['points']  # a game already in progress
         seq = [(game['startFrame'], start_pts)] + [(t['frame'], t['after']['points']) for t in turns]
-        ends = [t.get('lastBeforeFrame') for t in turns] + [None]
+        # decode2 turns: the position before a turn was last read at its fromFrame
+        ends = [t.get('lastBeforeFrame', t.get('fromFrame')) for t in turns] + [None]
         for (f0, pts), end in zip(seq, ends):
             if end is None or end <= f0: continue
             intervals.append((f0, end, pts))
@@ -57,6 +60,16 @@ def main():
         pick_c = random.sample(clean, min(5, len(clean)))
         pick_h = random.sample(hands, min(a.per_interval, len(hands)))
         for f in pick_c: entries.append({'frame': f, 'points': {str(i + 1): v for i, v in enumerate(pts) if v}})
+        if a.hard:
+            # Hard frames: the board is quiet and nothing is read as covered (conf 0), every point is
+            # either read as decoded or read without confidence, and at least one is unsure.
+            def hard(r):
+                if r['m'] >= 1.5 or min(r['conf']) == 0: return False
+                bad = [i for i in range(24) if not (r['pos'][i] == pts[i] or r['conf'][i] < 0.9)]
+                return not bad and min(r['conf']) < 0.9
+            cand = [f for f in inside if hard(by_f[f])]
+            for f in random.sample(cand, min(a.hard, len(cand))):
+                entries.append({'frame': f, 'points': {str(i + 1): v for i, v in enumerate(pts) if v}, 'hard': True})
         refs = clean[::max(1, len(clean) // 7)][:7]
         for f in pick_h: entries.append({'frame': f, 'refs': refs, 'points': {str(i + 1): v for i, v in enumerate(pts) if v}})
     # occlusion masks

@@ -9,7 +9,7 @@ import argparse, json
 from concurrent.futures import ProcessPoolExecutor
 import av, numpy as np, torch
 import frames, read_slots as rs
-from session import RECT, WORK
+from session import RECT, WORK, board_view, reader_view, reader_points
 
 STEP = 5
 
@@ -21,8 +21,11 @@ def run_clip(clip, reader, outdir):
     m = np.array([x[1] if x else 0 for x in motion])
     base = int(frames.offsets()[clip]); rows = []
     batch = []
+    view = board_view(); order = reader_points(view)
     def flush():
-        prs = reader.probs_batch([img for _, img in batch])
+        # A turned or mirrored board is read in the Nov 21 view, then the points are mapped back.
+        prs = reader.probs_batch([reader_view(img, view) for _, img in batch])
+        if view: prs = [pr[order] for pr in prs]
         for (i, _), pr in zip(batch, prs):
             cls = pr.argmax(-1); conf = pr.max(-1).min(-1)
             if pr.shape[-1] > 3:
