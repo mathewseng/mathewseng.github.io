@@ -163,6 +163,21 @@ const turnTools = el("div", { class: "turn-tools", "aria-label": "Play tools" })
 // The existing #message live region announces this; mobile also needs visible
 // context for offers and waiting states beside their actions.
 const tableActionStatus = el("p", { class: "table-action-status", "aria-hidden": "true" });
+// Every render rewrites #message; rewriting what it already shows would
+// announce it again, so unchanged content is left in place.
+{
+  const message = $("message"), text = Object.getOwnPropertyDescriptor(Node.prototype, "textContent");
+  const replace = message.replaceChildren.bind(message), next = document.createElement("div");
+  Object.defineProperty(message, "textContent", {
+    get: () => text.get.call(message),
+    set: value => { if (message.childElementCount || text.get.call(message) !== String(value ?? "")) text.set.call(message, value); },
+  });
+  message.replaceChildren = (...nodes) => {
+    next.replaceChildren(...nodes);
+    if (next.innerHTML !== message.innerHTML) replace(...next.childNodes);
+    else next.replaceChildren();
+  };
+}
 const boardConfirm = el("div", { class: "board-confirm" });
 function confirmIcon() {
   const icon = el("span", { class: "confirm-check", "aria-hidden": "true" });
