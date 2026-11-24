@@ -888,7 +888,7 @@
         "backgammon/"
       ],
       "kind": "hub",
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-10-04"
     },
     {
@@ -900,7 +900,7 @@
       "sourcePaths": [
         "backgammon/play/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-10-04"
     },
     {
@@ -912,7 +912,7 @@
       "sourcePaths": [
         "backgammon/trainer/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-10-04"
     },
     {
@@ -924,7 +924,7 @@
       "sourcePaths": [
         "backgammon/solver/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-10-04"
     },
     {
@@ -936,7 +936,7 @@
       "sourcePaths": [
         "backgammon/library/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-10-04"
     },
     {
@@ -948,7 +948,7 @@
       "sourcePaths": [
         "backgammon/openings/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-10-22"
     },
     {
@@ -1008,7 +1008,7 @@
       "sourcePaths": [
         "backgammon/controls/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-10-06"
     },
     {
@@ -1020,7 +1020,7 @@
       "sourcePaths": [
         "backgammon/reports/"
       ],
-      "updated": "2026-11-23",
+      "updated": "2026-11-24",
       "created": "2026-10-06"
     },
     {
