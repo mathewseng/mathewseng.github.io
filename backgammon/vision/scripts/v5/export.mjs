@@ -7,7 +7,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { initialState, transition, positionKey, legalTurns, notation, boardKey, commitTurn } from '../../../core/rules.mjs';
+import { initialState, transition, positionKey, boardKey, commitTurn } from '../../../core/rules.mjs';
 
 const [analysisDir, renderDir, pageDir, ...games] = process.argv.slice(2);
 const SIDE = { white: 0, dark: 1 }, NAME = { white: 'White', dark: 'Black' };
@@ -28,12 +28,9 @@ function checkerResult(source, t) {
     const { requestId, elapsedMs, ...book } = t.analysis.result;
     return { ...book, positionKey: positionKey(source), cached: true };
   }
-  const turns = legalTurns(source);
-  const byNotation = new Map(turns.map(x => [notation(x.steps, source.turn), x]));
-  const cand = t.analysis.candidates.map(c => {
-    const x = byNotation.get(c.notation);
-    return x && { steps: x.steps, notation: c.notation, key: boardKey(x.state), equity: c.equity, probabilities: c.probabilities, cubeless: c.equity };
-  }).filter(Boolean);
+  // Candidates carry their steps (present_moves.mjs adds them to older analyses).
+  const cand = t.analysis.candidates.filter(c => c.steps).map(c => ({ steps: c.steps, notation: c.notation,
+    key: boardKey(commitTurn(source, c.steps)), equity: c.equity, probabilities: c.probabilities, cubeless: c.equity }));
   const playedState = commitTurn(source, t.steps);
   const actual = { steps: t.steps, notation: t.analysis.played.notation, key: boardKey(playedState), equity: t.analysis.played.equity,
     probabilities: t.analysis.played.probabilities, cubeless: t.analysis.played.equity };

@@ -299,7 +299,10 @@ def badges(pos, cube):
     for p in range(1, 25):
         v = pos["points"][p - 1]
         if v: badge(display_x(g.point_x(p), VIEW) * sx, (14 if g.is_top(p) else 576) * sy, abs(v), "white" if v > 0 else "dark")
-    bx = display_x((g.BAR_X[0] + g.BAR_X[1]) / 2, VIEW) * sx
+    # The bar is the case's hinge: it stays where the camera sees it, whichever way the
+    # checkers were set up. Only a turned case puts it on the other side of the centre.
+    hinge = (g.BAR_X[0] + g.BAR_X[1]) / 2
+    bx = (799 - hinge if VIEW == 'turned' else hinge) * sx
     if pos["bar"][0]: badge(bx, 250 * sy, f"{pos['bar'][0]}", "white")
     if pos["bar"][1]: badge(bx, 340 * sy, f"{pos['bar'][1]}", "dark")
     if pos["off"][0]: badge(display_x(732, VIEW) * sx, 150 * sy, pos["off"][0], "white")

@@ -30,6 +30,8 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
   const time = document.querySelector("#replay-time");
   const toggle = document.querySelector("#replay-toggle");
   const previous = document.querySelector("#replay-previous");
+  const back = document.querySelector("#replay-back");
+  const forward = document.querySelector("#replay-forward");
   const next = document.querySelector("#replay-next");
   const speed = document.querySelector("#replay-speed");
   const mute = document.querySelector("#replay-mute");
@@ -47,14 +49,20 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
     synchronize();
   };
   const fps = () => source?.fps ?? 25;
+  const SKIP = 5;
+  const skip = seconds => {
+    const end = Number.isFinite(player.duration) ? player.duration : Infinity;
+    seekTo(Math.min(end, Math.max(0, player.currentTime + seconds)));
+  };
   const cursor = () => Math.round(player.currentTime * fps());
   const activeIndex = () => actions.findLastIndex(action => action.frame <= cursor());
   const nextIndex = () => actions.findIndex(action => action.frame > cursor());
+  // Previous restarts the current action, unless it began less than a second
+  // ago: then it goes to the action before, so repeated presses keep going back.
+  const justStarted = active => active >= 0 && cursor() - actions[active].frame < fps();
   const jump = direction => {
     const active = activeIndex();
-    // From between two ticks, Left returns to the preceding action. From a
-    // tick itself it goes to the previous one.
-    const preceding = actions[active]?.frame === cursor() ? active - 1 : active;
+    const preceding = justStarted(active) ? active - 1 : active;
     const target = actions[direction < 0 ? preceding : nextIndex()];
     if (target) seekTo(target.frame / fps());
   };
@@ -95,6 +103,8 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
     seek.max = duration;
     seek.value = Math.min(player.currentTime, duration);
     seek.disabled = duration === 0;
+    if (back) back.disabled = duration === 0 || player.currentTime <= 0;
+    if (forward) forward.disabled = duration === 0 || player.currentTime >= duration;
     seek.setAttribute("aria-valuetext", timecode(player.currentTime));
     const position = duration ? (player.currentTime / duration) * 100 : 0;
     seek.style.setProperty("--replay-progress", `${Math.min(100, position)}%`);
@@ -105,7 +115,7 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
     fullscreen.textContent = document.fullscreenElement === shell ? "Exit full screen" : "Full screen";
     const current = activeIndex();
     const postGame = source?.postGamePlay && cursor() >= source.postGamePlay.frame;
-    previous.disabled = current < 0 || (current === 0 && actions[current].frame === cursor());
+    previous.disabled = current < 0 || (current === 0 && justStarted(current));
     next.disabled = nextIndex() < 0;
     const highlighted = postGame ? -1 : current;
     if (highlighted !== index) {
@@ -159,6 +169,10 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
   previous.addEventListener("click", () => jump(-1));
   next.addEventListener("click", () => jump(1));
   for (const node of [previous, next]) node.setAttribute("aria-keyshortcuts", node === previous ? "ArrowLeft" : "ArrowRight");
+  back?.addEventListener("click", () => skip(-SKIP));
+  forward?.addEventListener("click", () => skip(SKIP));
+  back?.setAttribute("aria-keyshortcuts", "J");
+  forward?.setAttribute("aria-keyshortcuts", "L");
   seek.addEventListener("input", () => seekTo(Number(seek.value)));
   speed.addEventListener("change", () => {
     player.defaultPlaybackRate = player.playbackRate = Number(speed.value);
@@ -181,6 +195,10 @@ export function createTransport(player, onData, replayAsset, togglePlayback) {
       if (!actions.length) return;
       event.preventDefault();
       jump(event.key === "ArrowLeft" ? -1 : 1);
+    } else if (event.key.toLowerCase() === "j" || event.key.toLowerCase() === "l") {
+      if (!source) return;
+      event.preventDefault();
+      skip(event.key.toLowerCase() === "j" ? -SKIP : SKIP);
     } else if ((event.key === " " && event.target === player) || (event.key.toLowerCase() === "k" && !event.repeat)) {
       event.preventDefault();
       togglePlayback();
