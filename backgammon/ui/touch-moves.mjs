@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { returnIcon } from "./return-icon.mjs";
 // Large-target alternative to the board. This is a view of DraftBoard, not a
 // second move controller: legality, route choices and revisions stay shared.
 export class TouchMoves {
@@ -84,8 +85,9 @@ export class TouchMoves {
         target.dataset.destination = String(point);
         target.dataset.kind = kind;
         const action = kind === "return" ? "Return" : kind === "revise" ? "Revise" : "Move";
-        const mark = kind === "return" ? "↶" : kind === "revise" ? "↔" : "→";
-        target.textContent = `${mark} ${label(point)}`;
+        // Returns use the board's return icon; moves and revisions keep their arrows.
+        if (kind === "return") target.replaceChildren(returnIcon(), ` ${label(point)}`);
+        else target.textContent = `${kind === "revise" ? "↔" : "→"} ${label(point)}`;
         target.setAttribute("aria-label", `${action} checker from ${label(selected)} to ${label(point)}`);
         target.title = `${action} to ${label(point)}`;
         return target;

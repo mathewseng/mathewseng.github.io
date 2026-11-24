@@ -3088,7 +3088,8 @@ function assistance(kind) {
     // The undo tip and die switch no longer respond; Revise/Reset/close redraw them.
     if (state().phase === "move") {
       $("draft-line").textContent = notation(draft.draft, state().turn);
-      ui.board.svg.querySelector(".dice-switch")?.setAttribute("visibility", "hidden");
+      for (const node of ui.board.svg.querySelectorAll(".dice-switch, .draft-undo-mark"))
+        node.setAttribute("visibility", "hidden");
     }
   }
   actions();

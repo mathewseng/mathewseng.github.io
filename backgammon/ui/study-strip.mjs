@@ -85,6 +85,12 @@ export class StudyStrip {
     if (focused === this.next && this.next.disabled) this.previous.focus();
     else if (focused === this.previous && this.previous.disabled) (this.current || this.select).focus();
     else if (this.original && focused === this.original && this.original.hidden) this.current.focus();
+    // Speak a new preview or best choice once. A deeper search that only
+    // refines the same choice's value updates silently.
+    const spoken = JSON.stringify([isChecker, chosen, isChecker
+      ? this.candidates[Math.max(0, chosen)]?.notation ?? null : result.action, earlierPreview]);
+    this.value.setAttribute("aria-live", spoken === this.spoken ? "off" : "polite");
+    this.spoken = spoken;
     if (isChecker) {
       this.heading.textContent = `${analysisDepthLabel(result)} · move previews`;
       if (earlierPreview) {

@@ -312,6 +312,11 @@ export class AnalysisPanel {
         // A finished analysis is shown by its results; only progress and
         // errors need the status line.
         const done = type === "ready" && text === "Analysis complete";
+        // Announce the start of work, errors and results; progress while work
+        // is already running (deeper plies, a second engine job) stays silent.
+        const progress = ["busy", "loading"].includes(type) && this.status.dataset.busy === "true";
+        this.status.dataset.busy = String(["busy", "loading"].includes(type));
+        this.status.setAttribute("aria-live", progress ? "off" : "polite");
         this.status.hidden = done;
         if (this.status.textContent !== (done ? "" : text)) this.status.textContent = done ? "" : text;
       };

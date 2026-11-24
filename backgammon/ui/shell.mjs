@@ -49,6 +49,7 @@ import { MOTION_SPEED_OPTIONS } from "../core/motion.mjs";
 
 import { releaseStatus } from "./release-status.mjs";
 import { TouchMoves } from "./touch-moves.mjs";
+import { returnIcon } from "./return-icon.mjs";
 import { installDialogBehavior } from "./dialog-behavior.mjs";
 export const $ = (id) => document.getElementById(id);
 // "Tap" on touch screens, "Click" with a mouse or trackpad.
@@ -1479,8 +1480,8 @@ export class DraftBoard {
       : this.hint ||
         (switchEntry
           ? switchEntry.origin === "bar"
-            ? `${pressVerb()} ↔ to revise this checker’s entry. ↶ returns to the bar.`
-            : `${pressVerb()} ↔ to revise this checker’s dice. ↶ returns to the starting point.`
+            ? `${pressVerb()} ↔ to revise this checker’s entry. ↶ returns it to the bar.`
+            : `${pressVerb()} ↔ to revise this checker’s dice. ↶ returns it to the starting point.`
           : this.enabled && this.state.phase === "move"
             ? this.advanced && !this.complete()
               ? `${pressVerb()} a checker or destination · using die ${this.activeDie() ?? "–"}.`
@@ -1501,7 +1502,12 @@ export class DraftBoard {
     // Pointer coaching stays on screen without being read aloud, and an
     // unchanged line is not rewritten (which would announce it again).
     $("draft-line").setAttribute("aria-live", /^(Last move|Preview only)/.test(line) ? "polite" : "off");
-    if ($("draft-line").textContent !== line) $("draft-line").textContent = line;
+    // "↶" stands for the board's return icon, drawn inline (read as "Return").
+    const parts = line.split("↶"), node = $("draft-line");
+    if (node.textContent !== parts.join("Return") ||
+        node.querySelectorAll(".return-icon").length !== parts.length - 1)
+      node.replaceChildren(...parts.flatMap((part, i) => i
+        ? [returnIcon(), el("span", { class: "sr-only" }, "Return"), part] : [part]));
   }
   picker() {
     const options = this.candidates(),

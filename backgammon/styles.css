@@ -6849,6 +6849,12 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     color: var(--bg-undo);
   }
 
+  .touch-destination-buttons .return-icon {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.12em;
+  }
+
   .action-area:has(.touch-destinations:not([hidden])) {
     grid-template-rows: auto auto auto auto;
   }
@@ -8045,6 +8051,7 @@ html.skin-shader .docs-toc--sticky {
 .review-position .review-notation { font-weight: 650; }
 .review-position .review-rank { display: flex; justify-content: center; color: var(--ink); }
 .review-position .return-icon { flex: none; }
+#draft-line .return-icon { width: 1.1em; height: 1.1em; vertical-align: -0.2em; }
 .decision-dialog .review-position small { color: var(--muted); }
 .review-position-dice { display: flex; gap: 5px; justify-content: flex-end; }
 .review-position-dice .die { width: 23px; height: 23px; min-width: 0; min-height: 0; padding: 3px; gap: 2px; border-radius: 5px; }
