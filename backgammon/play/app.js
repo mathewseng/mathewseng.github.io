@@ -673,8 +673,10 @@ ui.board.onRoll = (event = {}) => {
     const control = $("roll");
     if (state().phase !== "roll" || opening.active || !control || control.disabled) return false;
     if (ui.board.playbackTimer) return queueBoardTap(roll);
-    barAutoRoll.noteRoll(model(), point);
+    // In a bearing-off race a double tap means auto play, not auto roll.
     if (config.mode === 'computer') raceAutoPlay.noteRoll(model(), point);
+    if (raceAutoPlay.gesture) barAutoRoll.gesture = null;
+    else barAutoRoll.noteRoll(model(), point);
     control.click(); return true;
   };
   return roll();
@@ -1059,10 +1061,10 @@ function myTurn(s) {
 function syncBarAutoRoll(current = state()) {
   const m = model(), s = state();
   barAutoRoll.sync(m, current);
+  const checkerChoice = myTurn(s) && s.phase === 'move' && !forcedTurn(s);
   const choice = document.querySelector('dialog[open]') || (myTurn(s) &&
-    (s.pending || (s.phase === 'roll' && !barAutoRoll.active) ||
-      (s.phase === 'move' && !forcedTurn(s))));
-  const active = barAutoRoll.sync(m, current, !!choice);
+    (s.pending || (s.phase === 'roll' && !barAutoRoll.active) || checkerChoice));
+  const active = barAutoRoll.sync(m, current, !!choice, !!checkerChoice);
   ui.board.motion = !barAutoRoll.skipping && !raceAutoPlay.skipping;
   return active;
 }

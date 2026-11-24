@@ -126,7 +126,9 @@ module.exports=async(browser,base,out,name)=>{
         assert.deepEqual(await caption.locator('text').allTextContents(),[`${verb} to roll`],`${entry} entries do not advertise auto roll`);
         await tap(2);
         await waitWork(page,w=>w?.game.localRolls?.cursor===1&&w.game.state.phase==='move');
-        assert.ok(!(await caption.textContent()).includes('Auto roll'),'double tapping cannot enable a hidden auto-roll action');
+        await page.waitForFunction(()=>document.querySelector('#board .board-caption')?.textContent.includes('Auto roll on'));
+        await caption.locator('.board-caption-hit')[touch?'tap':'click']();
+        await page.waitForFunction(()=>!document.querySelector('#board .board-caption')?.textContent.includes('Auto roll'));
       }
 
       assert.deepEqual(await page.evaluate(async()=>{

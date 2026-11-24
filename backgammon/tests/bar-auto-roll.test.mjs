@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BarAutoRoll,canAutoRollFromBar,canAutoRollAfterBarPass} from '../core/bar-auto-roll.mjs';
+import {BarAutoRoll,canAutoRollFromBar,canAutoRollAfterBarPass,forcedRollChance} from '../core/bar-auto-roll.mjs';
 const model = (player=0) => ({id:'game',started:true,state:{phase:'roll',turn:player,
   gameNumber:1,sequence:10,points:Array.from({length:24},(_,i)=>i===(player?0:23)?(player?2:-2):0),bar:player ? [0,2] : [2,0]}});
 const gesture = {x:100,y:100,at:1000};
@@ -31,7 +31,9 @@ test('partial entries keep auto rolling until the last checker leaves the bar',(
     assert.equal(a.canRoll(m),false,'never rolls for the opponent');
     m.state={...m.state,turn:player,sequence:13};
     assert.equal(a.canRoll(m),true,'continues automatically on the next turn');
-    a.sync(m,{...m.state,phase:'move',bar:[0,0]});assert.equal(a.active,null);
+    const entered=[0,0];
+    assert.ok(a.sync(m,{...m.state,phase:'move',bar},true,true),'a checker choice with a checker still on the bar keeps auto roll');
+    assert.equal(a.sync(m,{...m.state,phase:'move',bar:entered},true,true),null,'the final entry with a checker choice stops it');
     a.sync(m);assert.equal(a.active,null,'undoing the final entry does not rearm without consent');
   }
 });
@@ -52,51 +54,40 @@ test('another hit and partial re-entry still leave auto roll enabled',()=>{
   assert.ok(a.active);
   assert.ok(a.sync(m,{...m.state,bar:[2,0]}));
   assert.ok(a.sync(m,{...m.state,bar:[1,0]}));
-  assert.equal(a.sync(m,{...m.state,bar:[0,0]}),null);
+  assert.ok(a.sync(m,{...m.state,bar:[0,0]}),'a forced final entry keeps rolling');
+  assert.equal(a.sync(m,{...m.state,phase:'move',bar:[0,0]},true,true),null,'the first checker choice off the bar stops it');
 });
 
-test('unrelated clicks and non-bar rolls cannot enable automation',()=>{
+test('unrelated clicks cannot enable automation; any roll can',()=>{
   for (const second of [{...gesture,at:1451},{...gesture,at:999},{...gesture,x:160,at:1100}]) {
     const a=new BarAutoRoll(),m=model();a.noteRoll(m,gesture);
     assert.equal(a.repeat(m,second),false);assert.equal(a.active,null);
   }
-  const a=new BarAutoRoll(),m=model();m.state.bar=[0,0];a.noteRoll(m,gesture);
-  assert.equal(a.repeat(m,{...gesture,at:1100}),false);
+  const a=new BarAutoRoll(),m=model();m.state.bar=[0,0];m.state.points.fill(0);m.state.points[0]=2;m.state.points[23]=-2;
+  a.noteRoll(m,gesture);
+  assert.equal(a.repeat(m,{...gesture,at:1100}),true,'off the bar and with every point open');
+  assert.ok(a.canRoll(m));
+  m.state={...m.state,phase:'move',sequence:11};
+  assert.ok(a.sync(m,m.state,false,false),'a forced turn keeps auto roll');
+  assert.equal(a.sync(m,m.state,true,true),null,'a checker choice ends it');
 });
 
-
-test('auto roll needs a checker on the bar and a made opposing point in the entry board',()=>{
+test('the auto-roll hint needs at least a 25% chance of a forced roll',async()=>{
+  const {initialState}=await import('../core/rules.mjs');
+  assert.equal(forcedRollChance(initialState({phase:'roll'})),0);
+  assert.equal(canAutoRollFromBar(initialState({phase:'roll'})),false);
   for (const player of [0,1]) {
     const m=model(player),s=m.state,start=player?0:18,opponent=player?1:-1;
-    for (let offset=0;offset<6;offset++) {
-      s.points.fill(0);s.points[start+offset]=opponent*2;
-      assert.equal(canAutoRollFromBar(s),true,`player ${player}, entry ${offset+1}`);
-      s.points[start+offset]=opponent;
-      assert.equal(canAutoRollFromBar(s),false,'a blot does not block entry');
-      s.points[start+offset]=-opponent*2;
-      assert.equal(canAutoRollFromBar(s),false,'own checkers do not block entry');
-    }
-    s.points.fill(0);s.points[player?6:17]=opponent*2;
-    assert.equal(canAutoRollFromBar(s),false,'opposing points outside the entry board do not count');
-    s.points[start]=opponent*2;s.bar[player]=0;
-    assert.equal(canAutoRollFromBar(s),false,'a player off the bar cannot enable auto roll');
+    s.points.fill(0);for(let i=0;i<5;i++)s.points[start+i]=opponent*2;
+    assert.ok(forcedRollChance(s)>=0.25);assert.equal(canAutoRollFromBar(s),true,`player ${player}, five points closed`);
+    assert.equal(canAutoRollFromBar({...s,phase:'move'}),false,'only offered on a roll');
+    s.points.fill(0);s.points[start]=opponent;s.points[player?12:11]=-opponent*14;s.bar=player?[0,1]:[1,0];
+    assert.ok(forcedRollChance(s)<0.25);assert.equal(canAutoRollFromBar(s),false,'open entry leaves choices');
   }
+  // Every non-double of a lone checker in its home board is forced.
+  const race=initialState({phase:'roll',points:Object.assign(Array(24).fill(0),{3:1,20:-15}),off:[14,0]});
+  assert.equal(canAutoRollFromBar(race),true);
 });
-
-test('all-open entries hide and disable auto roll, including when the last blocking point opens',()=>{
-  for (const player of [0,1]) {
-    const a=new BarAutoRoll(),m=model(player);
-    m.state.points.fill(0);
-    a.noteRoll(m,gesture);assert.equal(a.gesture,null);
-    assert.equal(a.repeat(m,{...gesture,at:1100}),false);
-    m.state.points[player?0:23]=player?2:-2;
-    a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});assert.ok(a.active);
-    m.state.points[player?0:23]=player?1:-1;
-    assert.equal(a.sync(m),null,'opening the last made point cancels existing auto roll');
-    assert.equal(a.canRoll(m),false);
-  }
-});
-
 
 test('a closed-out opponent allows automatic rolling only without a cube choice',async()=>{
   const {initialState}=await import('../core/rules.mjs');
@@ -148,10 +139,12 @@ test('skip can finish a forced entry and opponent turn, but never survive a new 
   const a=new BarAutoRoll(),m=model();a.noteRoll(m,gesture);a.repeat(m,{...gesture,at:1100});
   a.noteSkip(m,gesture);a.repeat(m,{...gesture,at:1200});
   m.state={...m.state,bar:[0,0],turn:1,sequence:12};
-  assert.equal(a.sync(m),null);assert.equal(a.skipping,true,'finish the opponent turn after a fully forced entry');
+  assert.ok(a.sync(m),'a fully forced entry keeps auto roll');assert.equal(a.skipping,true,'finish the opponent turn after a fully forced entry');
   m.state={...m.state,turn:0,sequence:13};a.sync(m,m.state,true);
-  assert.equal(a.skipping,false,'the next manual roll is a decision');
-  assert.equal(a.canRoll(m),false,'never roll after leaving the bar');
+  assert.equal(a.skipping,false,'the next roll stops skipping');
+  assert.equal(a.canRoll(m),true,'auto roll continues until a checker choice');
+  m.state={...m.state,phase:'move',sequence:14};a.sync(m,m.state,true,true);
+  assert.equal(a.canRoll({...m,state:{...m.state,phase:'roll',sequence:15}}),false,'a checker choice off the bar ends it');
 });
 
 test('unrelated/late second taps never skip, and explicit stop clears the pending gesture',()=>{
@@ -164,7 +157,7 @@ test('unrelated/late second taps never skip, and explicit stop clears the pendin
   }
 });
 
-test('auto roll is offered only when some roll of two different dice leaves nothing to decide',()=>{
+test('auto roll is advertised from a 25% chance that the roll leaves nothing to decide',()=>{
   for (const player of [0,1]) {
     const at=i=>player?23-i:i,mine=player?-1:1;
     const state=(blocked,bar,spare=[])=>{
@@ -173,10 +166,10 @@ test('auto roll is offered only when some roll of two different dice leaves noth
       for(const [point,n] of spare)points[at(point-1)]=mine*n;
       return {phase:'roll',turn:player,points,bar:player?[0,bar]:[bar,0],off:[0,0]};
     };
-    assert.equal(canAutoRollFromBar(state([6],1,[[13,2],[8,2]])),false,'one blocked point: the checker enters and the other die is a choice');
-    assert.equal(canAutoRollFromBar(state([6,5],1,[[13,2],[8,2]])),true,'6-5 cannot enter at all');
+    assert.equal(canAutoRollFromBar(state([6],1,[[13,2],[8,2]])),false,'one blocked point: the checker enters and the other die is a choice (1/36)');
+    assert.equal(canAutoRollFromBar(state([6,5],1,[[13,2],[8,2]])),false,'only 6-6, 5-5 and 6-5 are forced (4/36)');
     assert.equal(canAutoRollFromBar(state([6],2,[[13,2]])),true,'two checkers on the bar use both dice to enter');
     assert.equal(canAutoRollFromBar(state([6],1)),true,'a lone checker has one way to play each roll');
-    assert.equal(canAutoRollFromBar(state([],2,[[13,2]])),false,'no blocked entry point');
+    assert.equal(canAutoRollFromBar(state([],2,[[13,2]])),true,'two checkers on the bar enter with both dice on every non-double');
   }
 });

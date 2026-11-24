@@ -11,26 +11,26 @@ export function canAutoRollAfterBarPass(state, lastEvent = null) {
   return missedEntry || blockedBarRoll({...state, turn:opponent});
 }
 
-// Auto roll is worth offering only when a roll could leave nothing to decide:
-// a made point blocks an entry (a lone opposing checker can be hit), and some
-// roll of two different dice has a single legal play, with both dice forced
-// or unplayable. One blocked point with one checker on the bar does not count:
-// the checker enters and the other die is still a free choice.
+// Share of the 36 rolls that would leave the player nothing to decide: a
+// single legal play, or none. The board advertises double tap/click to auto
+// roll at 25% or more; the gesture itself always works on a roll.
+export const AUTO_ROLL_HINT_CHANCE = 0.25;
 const forcedRolls = new Map();
-export function canAutoRollFromBar(state, player = state?.turn) {
-  if (!state?.bar[player]) return false;
-  const start = player === 0 ? 18 : 0, opponent = player === 0 ? -1 : 1;
-  if (!state.points.slice(start, start + 6).some(count => count * opponent >= 2)) return false;
+export function forcedRollChance(state, player = state?.turn) {
+  if (!state?.points || player == null) return 0;
   const off = state.off || [0, 0];
   const key = `${player}:${state.points}:${state.bar}:${off}`;
   if (!forcedRolls.has(key)) {
-    let forced = false;
-    for (let a = 1; a <= 6 && !forced; a++) for (let b = a + 1; b <= 6 && !forced; b++)
-      forced = legalTurns({...state, off, turn:player, phase:'move', dice:[b, a]}).length <= 1;
-    forcedRolls.set(key, forced);
+    let forced = 0;
+    for (let a = 1; a <= 6; a++) for (let b = a; b <= 6; b++)
+      if (legalTurns({...state, off, turn:player, phase:'move', dice:[b, a]}).length <= 1) forced += a === b ? 1 : 2;
+    forcedRolls.set(key, forced / 36);
     if (forcedRolls.size > 256) forcedRolls.delete(forcedRolls.keys().next().value);
   }
   return forcedRolls.get(key);
+}
+export function canAutoRollFromBar(state, player = state?.turn) {
+  return state?.phase === 'roll' && forcedRollChance(state, player) >= AUTO_ROLL_HINT_CHANCE;
 }
 
 // Session-only intent: never consumes dice, chooses an entry, or survives reload.
@@ -47,22 +47,27 @@ export class BarAutoRoll {
       !model.reviewingTurn && !model.undoRequest && current.sequence >= record.sequence;
   }
   valid(record, model, current = model?.state) {
-    return this.validSession(record, model, current) && canAutoRollFromBar(current, record.player);
+    return this.validSession(record, model, current);
   }
-  sync(model, current = model?.state, choice = false) {
+  // `choice`: the player now has something to decide. `checkerChoice`: that
+  // decision is a checker move. Auto roll keeps going through entry choices
+  // while a checker is still on the bar, and otherwise ends at the first roll
+  // that leaves a checker choice.
+  sync(model, current = model?.state, choice = false, checkerChoice = false) {
     if (!this.validSession(this.skip, model, current) || choice) this.skip = null;
-    if (!this.valid(this.active, model, current)) this.active = null;
+    if (!this.valid(this.active, model, current) ||
+        (checkerChoice && current.turn === this.active.player && !current.bar?.[this.active.player])) this.active = null;
     if (!this.valid(this.gesture, model, current)) this.gesture = null;
     for (const record of [this.active,this.gesture,this.skip].filter(Boolean)) {
-      // Partial entries keep the intent. canAutoRollFromBar stops it when the
-      // final checker enters (including an unconfirmed draft).
+      // Partial entries keep the intent; a checker choice off the bar
+      // (including an unconfirmed draft) stops it.
       record.sequence = current.sequence;
     }
     return this.active;
   }
   noteRoll(model, {x = 0, y = 0, at = performance.now()} = {}) {
     const s = model?.state;
-    this.gesture = s?.phase === 'roll' && canAutoRollFromBar(s) ? {
+    this.gesture = s?.phase === 'roll' ? {
       id:model.id, game:s.gameNumber, sequence:s.sequence, player:s.turn,
       x, y, at,
     } : null;
