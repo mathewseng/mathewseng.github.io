@@ -7777,12 +7777,17 @@ html[data-motion="reduce"] .bg-dialog::backdrop { animation: none; transition: n
     margin-top: 2px;
   }
 
-  /* Six tabs fit a phone row, as on the app and docs pages. */
+  /* All seven tabs (with Vision) fit a phone row from 360px, as on the app
+     and docs pages. */
+  .hub-backgammon .hub-tool-tabs {
+    gap: 0;
+  }
+
   .hub-backgammon .hub-tool-tabs a {
     flex: 1 0 auto;
     min-width: 44px;
     justify-content: center;
-    padding-inline: 4px;
+    padding-inline: 2px;
   }
 }
 
