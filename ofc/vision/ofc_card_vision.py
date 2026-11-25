@@ -91,6 +91,17 @@ class OfcCardReader:
             if _sha256(base / fb['path']) != fb['sha256']: raise ValueError(f"model changed: {fb['path']}")
             self.fb = ort.InferenceSession(str(base / fb['path']), o, providers=['CPUExecutionProvider'])
             self.fb_below = fb['below']
+        self.deck = None
+        if p.get('deckGate'):  # classic vs jumbo-index deck per crop: jumbo crops are read by the fallback classifier
+            dg = p['deckGate']
+            if _sha256(base / dg['path']) != dg['sha256']: raise ValueError(f"model changed: {dg['path']}")
+            self.deck = ort.InferenceSession(str(base / dg['path']), o, providers=['CPUExecutionProvider'])
+            self.deck_jumbo = dg['jumbo']
+            self.jumbo = None  # classifier for jumbo crops (default: the fallback classifier)
+            if dg.get('classifier'):
+                jc = dg['classifier']
+                if _sha256(base / jc['path']) != jc['sha256']: raise ValueError(f"model changed: {jc['path']}")
+                self.jumbo = ort.InferenceSession(str(base / jc['path']), o, providers=['CPUExecutionProvider'])
         self.strip = None
         if p.get('stripReader'):  # optional: reads covered cards from crops with the cards on top greyed out
             sr = p['stripReader']
@@ -141,11 +152,23 @@ class OfcCardReader:
             # was not trained on. Read those crops with the fallback classifier instead (see README)
             m = (pr[:n] + pr[n:]) / 2
             ask = [i for i in range(n) if m[i, :52].max() < self.fb_below or m[i].argmax() == 52]
-            if ask:
-                xs = np.concatenate([x[ask], x[[n + i for i in ask]]])
-                lf = self.fb.run(None, {self.fb.get_inputs()[0].name: np.ascontiguousarray(xs.transpose(0, 3, 1, 2))})[0]
-                ef = np.exp(lf - lf.max(1, keepdims=True)); pf = ef / ef.sum(1, keepdims=True); k = len(ask)
-                for j, i in enumerate(ask):
+            jumbo_ask = []
+            if self.deck is not None:
+                # the deck gate says this crop is the jumbo-index deck (both turns): it is read by the deck gate's
+                # classifier (or the fallback) even where the main classifier holds an opinion (see README)
+                ld = self.deck.run(None, {self.deck.get_inputs()[0].name: np.ascontiguousarray(x.transpose(0, 3, 1, 2))})[0]
+                ed = np.exp(ld - ld.max(1, keepdims=True)); pd = ed / ed.sum(1, keepdims=True)
+                jumbo = np.minimum(pd[:n, 1], pd[n:, 1])
+                for i in range(n): bodies[i]['deckJumbo'] = float(jumbo[i])
+                jumbo_ask = [i for i in range(n) if jumbo[i] >= self.deck_jumbo]
+                if self.jumbo is None: ask, jumbo_ask = sorted(set(ask) | set(jumbo_ask)), []
+                else: ask = [i for i in ask if i not in set(jumbo_ask)]
+            for sess, idx in ((self.fb, ask), (getattr(self, 'jumbo', None), jumbo_ask)):
+                if not idx: continue
+                xs = np.concatenate([x[idx], x[[n + i for i in idx]]])
+                lf = sess.run(None, {sess.get_inputs()[0].name: np.ascontiguousarray(xs.transpose(0, 3, 1, 2))})[0]
+                ef = np.exp(lf - lf.max(1, keepdims=True)); pf = ef / ef.sum(1, keepdims=True); k = len(idx)
+                for j, i in enumerate(idx):
                     pr[i], pr[n + i] = pf[j], pf[k + j]; bodies[i]['fallback'] = True
         for b, p1, p2 in zip(bodies, pr[:n], pr[n:]):
             p = (p1 + p2) / 2; o = np.argsort(-p); top = int(o[0])

@@ -12,7 +12,9 @@ frames.
   - deck B has big corner letters and a small figure.
   - A third, dark-backed deck box also appears on the table; it reads as `none`.
 - From Nov 24 about 16:14 EST a **jumbo-index PokerStars deck** (dark patterned backs, big corner indices, small court
-  panels) alternates with the classic decks hand by hand. `cls-v3` never saw it; the fallback classifier below reads it.
+  panels) is used in some hands (n1532: 16:13–16:17, 16:26–16:30, 16:34–16:37 and 16:45–16:48 EST; the other hands
+  are classic, `labels/n1532-deck-hands.json`). `cls-v3` never saw it. A deck gate sends its crops to a jumbo reader
+  (below).
 - Cards are about 50x75 px. Pips are readable, and court ranks are told apart by their artwork more than by the tiny index.
 
 ## Runtime
@@ -32,7 +34,9 @@ Needs `onnxruntime`, `opencv-python` and `numpy`, plus `av` for video. `profile.
 | --- | --- | --- | --- |
 | Card body | `models/card-body.onnx`, YOLO11n-OBB, one class | table crop `frameCrop` = x 130, y 190, 1781x835, area-resized by 0.575 into 1024x480 (grey 114 pad) | (6, N): cx, cy, w, h, conf, angle (rad); conf ≥ 0.25, rotated NMS 0.5 |
 | Identity | `models/card-identity.onnx`, CardNetFast (0.38 M params) | each body rectified to 64x96 BGR, 10 % margin | 52 suit-first codes (`SA`…`DK`) + `none` |
-| Identity fallback | `models/card-identity-fallback.onnx` (cls-v5a, same net) | crops where the main classifier's best card < 0.3 or `none` on top | same |
+| Identity fallback | `models/card-identity-fallback.onnx` (cls-v5a, same net) | crops where the main classifier's best card < 0.3 or `none` on top (and the deck gate says classic) | same |
+| Deck gate | `models/card-deck.onnx` (deck-v1, same net, 3 outputs) | every crop, both turns | classic / jumbo / none |
+| Jumbo reader | `models/card-identity-jumbo.onnx` (cls-f1, same net, factorized head) | crops with p(jumbo) ≥ 0.5 in both turns | 52 codes + `none` (log p) |
 
 **Gate.** A body is named only when all of these hold:
 
@@ -263,8 +267,9 @@ scorable) were added.
 gigarepo's `ept-faceup-v5/full-face.onnx` read only 31 / 47 of those boxes zero-shot, with confident wrong reads
 (6♠ → K♦ at 0.86, K♣ → K♦ at 0.91), so it was not used.
 
-**Training data.** The deck alternates by hand. Dark-backed jumbo hands end at about 2720, 3494, 3746, 3937, 4375 and
-4558 s of n1532's clock; the others are classic.
+**Training data.** The deck changes between hands. (Correction, 2026-11-25: the jumbo hands are the ones ending at
+about 2720, 3494, 3937 and 4558 s of n1532's clock. The hand ending at 3746 s is classic; see
+`labels/n1532-deck-hands.json`.)
 
 - The hand-state slots of 3230–3940 s (16:25–16:37 EST) were rendered at 3x from full-resolution frames
   (`scripts/eye/jslots.py`) and labelled by eye. That gave 106 slots (jumbo plus some clear classic cards, and phone
@@ -317,8 +322,99 @@ fine-tuned for 6 × 300 steps × 128 at lr 1e-3 on v4b's whole-view index (59.5k
   have no box of their own (bottom fans and the right player's stacked columns).
 - 2 false objects (unnamed hidden slots on felt, s1836 1356 and 1791 s) remain.
 
-**Next for the jumbo deck:** label its 12 missing classes from more footage, then try a jumbo-aware main classifier.
-The fallback's checks above are the bar it must pass on old-deck objects.
+**Next for the jumbo deck** (done 2026-11-25, next section): look for more footage of the 12 missing types.
+
+### Deck gate and jumbo reader (2026-11-25)
+
+**No more jumbo footage.** Every other office-3 recording in `~/Downloads` was checked:
+
+- the 15:01 file (n1501) is classic;
+- the Nov 17, 21 and 23 folders hold backgammon and the classic-deck OFC used for training;
+- the 16:47–17:22 EST clips after n1532 are pack-up and a classic-deck hold'em game.
+
+Within n1532, the four hands not yet labelled (2720–3225 and 3937–4375 s) are classic. So is the hand at 3494–3746 s
+inside the old training window. The jumbo deck appears in only four hands: two were trained on (3225–3494 and
+3746–3937 s) and two are the eye-truth hands (2703 and 4544 s). The 12 missing types cannot be filled with real
+labelled views, and there is no unused jumbo hand end left for fresh truth.
+
+**Why the fallback missed so much.** `scripts/eye/objdiag.py` lists, for each unnamed truth card, how its slot's views
+read.
+
+- About 8 jumbo cards were read right and confidently by cls-v5a, but v3 held a weak opinion (≥ 0.3, sometimes the
+  wrong card: 5♥ → 5♠ at 0.65, 7♠ → 9♠ at 0.61, 2♣ → 2♠ at 0.46), so the fallback was never asked.
+- v3 can also be confidently wrong on this deck. The shipped runtime named a jumbo 3♣ as 3♠ for 15 keyframes at
+  16:13:05 EST (2470–2480 s). That is not at a truth hand end, so the score never showed it.
+
+**Shipped: deck gate** (`deckGate`, deck-v1, `scripts/train_deck.py`). This is CardNetFast with v3's convolutions and
+a classic / jumbo / none head. It was trained on whole-hand deck labels, so no identity labels were needed:
+
+- jumbo: every crop of the two jumbo training hands;
+- classic: every crop of the classic n1532 hands at 2720–3225 and 3494–3746 s, plus the old sessions' v4b crops;
+- none: crops both classifiers call `none`.
+
+| p(jumbo) in both turns (`scripts/eye/deckeval.py`) | ≥ 0.5 | ≥ 0.9 | ≥ 0.99 |
+| --- | --- | --- | --- |
+| classic held-out crops: s1836, s0023, n1501, n1532 0–1023 s and 3937–4375 s (84,849) | **2** | 0 | 0 |
+| jumbo truth hand 2703 s (3,484 crops, backs and phones included) | 95 % | 88 % | 34 % |
+| jumbo truth hand 4544 s (3,450 crops) | 80 % | 68 % | 22 % |
+
+A crop with p(jumbo) ≥ 0.5 in both turns is read by the jumbo reader instead of v3. Every other crop keeps v3 and the
+fallback rule (v5a where v3's best card is < 0.3 or `none` is on top). The gate and hand state apply as before. The
+gate costs about 1 ms per card.
+
+**Shipped: jumbo reader** (`deckGate.classifier`, cls-f1, `scripts/ft_fact.py`). This is v3 fine-tuned like v5a, with
+the same data (v4b whole views and the jumbo crops, 2 : 1, 6 × 300 steps). Its head is factorized: rank (13 +
+`none`) × suit (4), and p(card) = p(rank) · p(suit). The 12 missing types are pairs of a rank and a suit that each
+appear in other jumbo cards. The ONNX outputs log p, so it drops in for any classifier.
+
+- On the truth cards it puts the right card on top for H3, H4, H7, D7 and DQ, where v5a had `none` or another card.
+  Few of these reach the 0.8 gate yet.
+- As the fallback for all unsure crops (`f1`), it named a sideways classic 3♦ as **4♦** (3 keyframes, 16:18 EST,
+  2798–2884 s, a classic hand) and a classic multi-card fan as 5♠ (15:42 EST). Both crops came in through the
+  "v3 unsure" route with p(jumbo) ≈ 0.01. So the jumbo reader reads only deck-gated crops, and v5a stays the
+  fallback for the rest.
+- f2 (1 : 1 weighting, 10 epochs) was no better on the truth cards and was not used.
+
+**Checks.** Every name the new runtime reports differently from the shipped one was listed (`scripts/eye/namediff.py`)
+and checked by eye on 4x crop sheets (`diffsheet.py`). Doubtful ones were also checked on full-resolution 5x views and
+1.2 s averages (`slotzoom.py`).
+
+- s1836, s0023, n1501: **0 views differ** (deck gate alone and gate + jumbo reader).
+- n1532, deck gate alone: 129 slots differ. All are names added on blank views, plus the 3♠ → 3♣ fix; all right.
+- n1532, the jumbo reader on top: 34 slots, all right, except one keyframe at 16:29:09 EST (3434.7 s). A 5♠, still
+  in the player's fingers, lands exactly on a Q♦, and its box carries the Q♦'s name. This is the known
+  card-on-card carry (the 8♠-on-7♦ case above); the next keyframe names the 5♠.
+- The only change in a classic n1532 hand is a hidden K♥ (4121–4149 s) that is now carried, and it is right.
+- Every slot named anywhere in the four jumbo hands with the deck gate was also checked (`allslots.py`, 246 slots).
+  All are right.
+
+| hand ends, legible cards named right | shipped (v3 + v5a fallback) | + deck gate | + jumbo reader (shipped) |
+| --- | --- | --- | --- |
+| s1836 | 306 / 314 | 306 | **306 / 314** |
+| s0023 | 53 / 58 | 53 | **53 / 58** |
+| n1501 | 68 / 69 | 68 | **68 / 69** |
+| n1532 | 44 / 86 | 55 | **57 / 86** |
+| named wrong, all four | 0 | 0 | **0** |
+
+New at n1532 hand ends: 5♥, K♦, J♠, 10♠ and 7♠ (2703 s); 7♦, 2♣, 8♠, 10♣, Q♦, A♣, K♠, 5♦ and 6♠ (4544 s). 2♣ and
+8♠ are among the 12 types the jumbo training never saw. 3♠, 8♥ and A♦ are now also named correctly mid-hand.
+
+One truth card went the other way: the hidden 6♣ under the 4544 s fan is no longer carried. It is now unnamed, not
+wrong.
+
+**Still unnamed at hand end (none wrong):**
+
+- s1836 8, s0023 5 and n1501 1, as listed above.
+- n1532 154 s: 9♥, which gets its second gate pass one keyframe after the truth frame; 5♣ (hidden); 4♠, which v3 holds
+  at 0.4–0.85 against 2♠ and which passes the gate only once.
+- n1532 2703 s, 10: 3♠, 4♥, 4♠, 2♦, K♠, Q♦, 6♠, 4♦, 7♦, 7♥.
+- n1532 4544 s, 16: 7♥, J♦, 4♦, 3♥, J♠, Q♣, K♦, A♦, 5♣, K♣, 5♠, 4♠, 8♥, 8♣, 6♣, 3♠.
+- Most of these are fan strips, the right player's stacked columns, or covered views. In this deck the big indices
+  stay legible in a fan, but no reader for never-whole strips ships (see the strip reader below). The others are
+  whole cards the jumbo reader puts first below the 0.8 gate (median p: S3 0.68, H4 0.77, H7 0.80; D4 is a missing type it reads at 0.30).
+- Cards with no object: unchanged (s1836 22 fanned strips, n1532 12 fanned jumbo cards). The detector was not
+  fine-tuned. The 12 n1532 cards are bottom-fan and stacked-column strips: even when boxed, they would need a strip
+  reader.
 
 ### Strip reader (not shipped)
 
@@ -346,8 +442,8 @@ whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px 
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
 - The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
 - **A♠ (deck A)** has too few confident training views.
-- **Jumbo-index deck:** about half its legible cards stay unnamed. 12 classes were never in its training window, and
-  where v3 holds a weak opinion (≥ 0.3) the fallback is not asked.
+- **Jumbo-index deck:** a third of its legible hand-end cards stay unnamed (29 / 86 in n1532, mostly fan strips and
+  stacked columns). Only two hands of it were available for training, and 12 types were never seen whole there.
 - **Cards the detector stops boxing** keep their name only if they were named while whole (`stillKeep`).
 - **The detector is the EPT model, not fine-tuned.** Fine-tuning on this footage would mostly help the corners of fanned rows.
 
@@ -392,6 +488,17 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
       raw detector candidates.
     - `eye/jslots.py` renders training-slot tiles; `eye/boxeval.py` gives box-level gated reads.
     - `ft_cls.py` fine-tunes from the shipped ONNX.
+11. **Deck gate and jumbo reader (2026-11-25),** scratch in `/private/tmp/claude-501/ofc-vision3/` (scan/ links to
+    ofc-vision2's scans):
+    - `eye/deckends.py SIM` lists n1532's hands with the share of crops v3 is unsure about; `eye/jslots.py T0 T1 TAG SIM`
+      renders a window's slots for labelling.
+    - `eye/build_deck_idx.py` builds the deck-gate index (needs `../data/idx4b.json`, the v4b index); `train_deck.py IDX
+      OUT` trains it (about 3.5 min on MPS); `eye/deckeval.py MODEL` scores it on every held-out crop.
+    - `ft_fact.py` trains the factorized jumbo reader (same flags as `ft_cls.py`).
+    - `eye/sim2.py TAG SESS deck=GATE.onnx:0.5[:JUMBO.onnx]` simulates with a candidate gate and reader.
+    - `eye/objdiag.py SIM SESS NAME… [MODEL]` shows how each legible truth card's slot reads.
+    - `eye/namediff.py OLD NEW [OUT]` lists every view whose reported name changed. `eye/diffsheet.py` and
+      `eye/allslots.py` render check sheets, and `eye/slotzoom.py` renders full-resolution views of one slot.
 
 **Dataset sizes:**
 

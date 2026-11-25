@@ -88,6 +88,22 @@
   "below": 0.3,
   "note": "cls-v5a: cls-v3 fine-tuned (scripts/ft_cls.py) on v4b's whole-view crops plus 3,959 eye-labelled crops of the jumbo-index PokerStars deck (n1532 16:25-16:37 EST). Read only for crops where cls-v3's best card is < below or none is on top; same gate after that."
  },
+ "deckGate": {
+  "path": "models/card-deck.onnx",
+  "sha256": "1d386ed081f89c16d9824f0c5026c5f4bc3665042d5591e54bc0514b975a1d78",
+  "jumbo": 0.5,
+  "classes": [
+   "classic",
+   "jumbo",
+   "none"
+  ],
+  "classifier": {
+   "path": "models/card-identity-jumbo.onnx",
+   "sha256": "8a4d8797e175c4fd4b1c98bc7ccf692f1864a5be0980a3c82ec76b1420d0dc79",
+   "note": "cls-f1: cls-v3 fine-tuned (scripts/ft_fact.py) with a factorized head, rank (13 + none) x suit (4); exports log p(52 codes + none). Names jumbo cards whose rank-suit pair was never in its training crops from ranks and suits seen elsewhere."
+  },
+  "note": "deck-v1 (scripts/train_deck.py): cls-v3 convs with a classic / jumbo / none head, trained on whole-hand deck labels (n1532 jumbo hands 3225-3494 and 3746-3937 s, classic hands 2720-3225 and 3494-3746 s, old sessions' v4b crops). A crop whose p(jumbo) >= jumbo in both turns is read by classifier instead of cls-v3; other crops keep cls-v3 and the fallback rule."
+ },
  "acceptance": {
   "probability": 0.8,
   "margin": 0.3,

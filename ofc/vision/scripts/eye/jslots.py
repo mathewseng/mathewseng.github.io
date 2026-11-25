@@ -1,10 +1,10 @@
-"""jslots.py T0 T1 TAG: hand-state slots in [T0, T1] of n1532 with >= 3 crops taken before any later card overlaps them;
+"""jslots.py T0 T1 TAG SIM: hand-state slots in [T0, T1] of n1532 with >= 3 crops taken before any later card overlaps them;
 writes ../TAG-slots.json and 3x full-resolution tiles ../look/TAG-N.jpg (numbered) for eye labelling."""
 import json, math, sys, cv2, numpy as np
 sys.path.insert(0, '.')
 from src import frames, warp
 T0, T1, TAG = float(sys.argv[1]), float(sys.argv[2]), sys.argv[3]
-sim = json.load(open('../sim-sk-n1532.json')); slots = {}
+sim = json.load(open(sys.argv[4])); slots = {}
 for f in sim:
     if not T0 <= f['t'] <= T1: continue
     tab = {s['slotId']: s for s in f['table']}
@@ -32,7 +32,7 @@ for t, fr in frames('n1532', ts[0] - 0.1, ts[-1] + 0.1, keyonly=True):
         w = cv2.resize(warp(im, d['x'], d['y'], d['w'], d['h'], d['deg'], 3.2, 1.2), (180, 270), interpolation=cv2.INTER_CUBIC)
         lab = np.zeros((22, 180, 3), np.uint8); cv2.putText(lab, str(k), (3, 17), 0, 0.6, (0, 255, 255), 2)
         tiles[k] = np.pad(np.vstack([lab, w]), ((2, 2), (2, 2), (0, 0)))
-json.dump([dict(k=a['k'], first=a['first'], clean=a['clean']) for a in good], open(f'../{TAG}-slots.json', 'w'))
+json.dump([dict(k=a['k'], first=a['first'], clean=a['clean'], x=a['x'], y=a['y']) for a in good], open(f'../{TAG}-slots.json', 'w'))
 ks = sorted(tiles); per = 24
 for s in range(0, len(ks), per):
     ch = [tiles[k] for k in ks[s:s + per]]; ch += [np.zeros_like(ch[0])] * ((-len(ch)) % 8)

@@ -1,0 +1,15 @@
+{
+ "session": "n1532",
+ "clock": "global clock of scripts/eye/src.py (15:31:55 EST + t)",
+ "note": "Deck per hand, checked by eye on 3x slot tiles (scripts/eye/jslots.py) and full-frame crops. Hand boundaries from scripts/eye/deckends.py (table empty >= 3 s). The deck gate (scripts/train_deck.py) was trained on crops of the hands marked train; the eye-truth hands (truth) and the rest were never trained on.",
+ "hands": [
+  {"t": [0, 1023.3], "deck": "classic", "use": "truth at 154 s"},
+  {"t": [2440, 2719.8], "deck": "jumbo", "use": "truth at 2703 s (first jumbo cards at about 2470 s, 16:13 EST)"},
+  {"t": [2719.8, 3225.4], "deck": "classic", "use": "train (deck gate, classic)"},
+  {"t": [3225.4, 3494.2], "deck": "jumbo", "use": "train (deck gate; identity labels in n1532-jumbo-slots.json, k 0-70)"},
+  {"t": [3494.2, 3745.8], "deck": "classic", "use": "train (deck gate, classic; identity labels k 71-113 are classic cards)"},
+  {"t": [3745.8, 3937.4], "deck": "jumbo", "use": "train (deck gate; identity labels k 114-157)"},
+  {"t": [3937.4, 4374.7], "deck": "classic", "use": "not used"},
+  {"t": [4374.7, 4600], "deck": "jumbo", "use": "truth at 4544 s"}
+ ]
+}

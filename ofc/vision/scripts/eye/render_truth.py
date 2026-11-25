@@ -2,17 +2,10 @@
 every live hand-state slot (numbered), and a tile sheet per object: the object at this frame and at its earliest
 settled view, both rectified from the full-resolution frame at 4x. No model names are drawn."""
 import sys, json, math, av, cv2, numpy as np
-sys.path.insert(0, '/Users/mathewseng/Documents/GitHub/claude-worktrees/mathewseng.github.io/orange-board/ofc/vision')
+from src import REPO
+sys.path.insert(0, REPO)
 from ofc_card_vision import card_quad, rectify
-F = '/Users/mathewseng/Downloads/office-3-labelled-footage-20261123/ofc/'
-FILES = {'s1836': 'ofc-20261123-1836.mp4', 's0023': 'ofc-20261124-0023.mp4'}
-_cont = {}
-def frame_at(sess, t):
-    if sess not in _cont: _cont[sess] = av.open(F + FILES[sess])
-    c = _cont[sess]; s = c.streams.video[0]
-    c.seek(int((t - 0.05) / s.time_base), stream=s, backward=True)
-    for fr in c.decode(s):
-        if float(fr.pts * s.time_base) >= t - 0.02: return fr.to_ndarray(format='bgr24')
+from src import frame_at
 def objects(sim, t):
     fr = next(f for f in sim if abs(f['t'] - t) < 1e-3)
     return fr
