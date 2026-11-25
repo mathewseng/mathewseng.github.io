@@ -37,6 +37,11 @@ Per frame the dice are those of die_verify.refine (the single-frame result), the
   5. The dice are merged again (objects.merge_dice: a die's two peaks now share a colour), except two
      same-colour peaks 13+ px apart that both scored 0.75+ in half the frames within 10 steps: two
      touching dice.
+  5b. One die seen twice: two same-colour dice 13-24 px apart kept by 5 are checked once per track against
+     the board before the die landed (median of up to 9 frames with no die peak within 30 px, else after it
+     left): the changed region under the two peaks spans 12-24 px for one die (a pale die's pip face and its
+     side, Nov 21 G9 T29) and 29-48 px for two touching dice; under 28 px the weaker peak is dropped. Needs
+     images (Tracker(image=...): scan and testset_eval --track pass them); no clean background, no verdict.
   6. At most two dice of each colour (there are two): a third is dropped, the weakest track first (a
      fingertip, a dark checker's emblem next to a fresh roll).
 The cube: a peak of 0.5 or more stands; otherwise the cube peaks from 0.08 within 10 s either side
@@ -130,8 +135,10 @@ def colour_lo(b):
 class Tracker:
     """Tracks over one recording's raw frames {frame: {'dice': rows, 'cube': peaks}} (every STEP frames)."""
 
-    def __init__(self, frames):
-        self.F = frames; self.T = []; self.blobs = {}
+    def __init__(self, frames, image=None):
+        """image: optional callable (list of frames) -> {frame: reader-view image}, for the one-die check
+        (rule 5); without it two strong peaks of one blob are kept as touching dice, as before."""
+        self.F = frames; self.T = []; self.blobs = {}; self.image = image; self._one = {}; self.one_log = []
         live = []; prev = None
         for f in sorted(frames):
             if prev is not None and f - prev > 10 * STEP: live = []
@@ -240,7 +247,66 @@ class Tracker:
                 tot += 1; rr = [r for r in self.F[g]['dice'] if r[0] == d[0] and r[3] >= smin]
                 if any(math.hypot(r[1] - d[1], r[2] - d[2]) < near for r in rr) and any(math.hypot(r[1] - k[1], r[2] - k[2]) < near for r in rr): hit += 1
             if tot and hit >= frac * tot: kept.append(d)
-        return kept
+        drop = set()  # 5b. one die seen twice
+        for i, k in enumerate(kept):
+            for j in range(i + 1, len(kept)):
+                d = kept[j]
+                if i in drop or j in drop or k[0] != d[0] or not 13 <= math.hypot(k[1] - d[1], k[2] - d[2]) < 24: continue
+                if self._one_die(f, k, d): drop.add(j if d[3] <= k[3] else i)
+        return [k for i, k in enumerate(kept) if i not in drop]
+
+    def _one_die(self, f, k, d):
+        """Rule 5b: are two strong same-colour peaks 13-24 px apart one die? A pale die on a point can give
+        two strong peaks, its pip face and its side (Nov 21 G9 T29, 14.7 px apart), where two touching dice
+        give the same two peaks (Nov 21 G6 T19, 16.8 px). The die's own pixels tell them apart: against the
+        board before the die landed (the median of frames with no die peak near), the changed region around
+        the two peaks is one die's size (spans 12-21 px along the line through the peaks) or two dice's
+        (36-45 px). One check per track (cached); without images or a clean background, two dice."""
+        if self.image is None: return False
+        b = self._blob(f, (k[1] + d[1]) / 2, (k[2] + d[2]) / 2)
+        if b is None: return False
+        key = self.chain_start(b['t'])
+        if key not in self._one:
+            self._one[key] = self._one_die_check(f, key, k, d)
+        return self._one[key]
+
+    def _one_die_check(self, f, key, k, d, half=30, diff=60, span_one=28, look=250, nmax=5):
+        import cv2
+        cx, cy = (k[1] + d[1]) / 2, (k[2] + d[2]) / 2
+        last = key
+        for i, u in enumerate(self.info):
+            if u['pred'] is not None and self.chain_start(i) == key and u['end'] > self.info[last]['end']: last = i
+        S, E = self.info[key]['start'], self.info[last]['end']
+        def clean(g):
+            return g in self.F and not any(math.hypot(r[1] - cx, r[2] - cy) < 30 for r in self.F[g]['dice'])
+        bg = [g for g in range(S - 25, S - 600, -STEP) if clean(g)][::5][:9]
+        if len(bg) < 3: bg = [g for g in range(E + 25, E + 600, STEP) if clean(g)][::5][:9]
+        if len(bg) < 3: self.one_log.append((f, key, None)); return False
+        def both(g):  # both peaks still there (a frame of the pair at rest)
+            rr = [r for r in self.F[g]['dice'] if r[0] == d[0] and r[3] >= .35]
+            return all(any(math.hypot(r[1] - p[1], r[2] - p[2]) < 5 for r in rr) for p in (k, d))
+        cand = [g for g in range(f, f + look + 1, STEP) if g in self.F and both(g)]
+        use = [cand[i] for i in np.linspace(0, len(cand) - 1, min(nmax, len(cand))).astype(int)] if cand else [f]
+        ims = self.image(bg + use)
+        if any(g not in ims for g in bg + use): return False
+        crop = lambda im: cv2.getRectSubPix(im, (2 * half, 2 * half), (cx, cy)).astype(int)
+        B = np.median(np.stack([crop(ims[g]) for g in bg]), 0)
+        ax = np.array([d[1] - k[1], d[2] - k[2]], float); ax /= np.linalg.norm(ax); spans = []
+        for g in use:
+            m = cv2.morphologyEx((np.abs(crop(ims[g]) - B).sum(2) > diff).astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+            if m.mean() > .5: spans.append(99.); continue  # the board changed around it (light, a hand): no verdict
+            n, L, st, _ = cv2.connectedComponentsWithStats(m)
+            near = set()  # the changed regions under either peak (two touching dice can come apart in the mask)
+            for p in (k, d):
+                px, py = int(round(p[1] - cx + half)), int(round(p[2] - cy + half))
+                near |= set(np.unique(L[max(0, py - 4):py + 5, max(0, px - 4):px + 5]).tolist()) - {0}
+            if not near: spans.append(0.); continue
+            ys, xs = np.nonzero(np.isin(L, list(near)))
+            spans.append(float(np.ptp((xs - half) * ax[0] + (ys - half) * ax[1])))
+        span = float(np.median(spans))
+        self.one_log.append((f, key, round(span, 1), [round(v) for v in spans], use, (round(cx, 1), round(cy, 1)), bg,
+                             [round(k[1], 1), round(k[2], 1)], [round(d[1], 1), round(d[2], 1)]))
+        return span < span_one
 
     def cube(self, f, thresh, W=250, low=.08, keep=.5, px=20):
         """(x, y, score) of the cube at frame f in the readers' view, or None."""
@@ -259,6 +325,15 @@ class Tracker:
             mine = next((p for p in places if math.hypot(p[0] - c[0][0], p[1] - c[0][1]) < px), None)
             if mine is not None and mine[2] >= .5 * best[2]: return c[0]
         return (best[0], best[1], max(thresh, best[2] / max(best[3], 1)))
+
+
+def session_images(session):
+    """An image source for Tracker(image=...) on a held-out session key (testset_eval.py --track)."""
+    import heldout as H
+    from testset_build import read
+    from session import reader_view
+    view = H.board_view(session)
+    return lambda fs: {n: reader_view(im, view) for n, im in read(session, sorted(set(fs)))}
 
 
 # ---------------------------------------------------------------- CLI
@@ -291,7 +366,10 @@ def scan(a):
         raw = raw_frames(net, ver, ((n, reader_view(im, view)) for n, im in fr.read(nums)))
         print('raw', len(raw), f'{time.time() - t0:.0f}s', flush=True)
         pickle.dump(raw, open(WORK / (a.out + '.raw.pkl'), 'wb'))
-    tr = Tracker(raw); out = WORK / a.out; out.mkdir(exist_ok=True)
+    import json
+    def image(fs):  # frames for the one-die check (rule 5b)
+        return {n: reader_view(im, view) for n, im in fr.read(sorted(set(fs)))}
+    tr = Tracker(raw, image=None if a.no_one_die else image); out = WORK / a.out; out.mkdir(exist_ok=True)
     dice_at = {n: tr.dice(n) for n in nums}; cube_rows = []
     offs = fr.offsets(); scores = []
     for clip in range(len(offs) - 1):
@@ -310,6 +388,7 @@ def scan(a):
         scores.append(m[:, 3]); print(clip, len(m), flush=True)
     np.save(out / 'die-score.npy', np.concatenate(scores))
     import json
+    json.dump(tr.one_log, open(out / 'one-die.json', 'w'), default=list)
     (WORK / a.cube_out).write_text(json.dumps(cube_rows))
 
 
@@ -320,6 +399,7 @@ def main():
     p = sub.add_parser('scan'); p.add_argument('obj'); p.add_argument('ver'); p.add_argument('--out', default='objects-scan-track')
     p.add_argument('--cube-out', default='cube-scan-track.json'); p.add_argument('--frames', type=int, nargs=2)
     p.add_argument('--raw', help='reuse the raw peaks (OUT.raw.pkl) of an earlier scan')
+    p.add_argument('--no-one-die', action='store_true', help='keep every touching pair (no rule 5b check)')
     a = ap.parse_args()
     {'testcache': testcache, 'scan': scan}[a.cmd](a)
 

@@ -19,9 +19,17 @@ the scan would publish differently.
 Two dice of one colour in one tracked group are split (dice_faces.split_touching) and a die's
 crops are read with a touching neighbour painted out (dice_faces.mask_neighbours); --no-split and
 --no-mask read as before Nov 25 PM. --pool confident reads a track's 10 surest detections (tried, not
-better). The Nov 24 15:31 session's scan is objects-scan: --sessions s6 --scan objects-scan.
+better). Every session's scan is objects-scan-track3 (die_track.py scan --raw with the one-die check, rule 5b;
+the 15:31 session's published scan is objects-scan, the older ones objects-scan-track).
 
-usage: roll_audit.py [--scan objects-scan-track] [--faces s1=M ...] [--sessions s1 s4] [--min-score .3] [--json out.json] [-v]
+Window rules (Nov 25): one die in two groups is one die (dice_faces._joined: duplicate peaks seen by
+turns, a die pushed after it came to rest, read from its first rest, and a short-lived die that is not
+the roll's); two turns decoded from one jump (a dance and the next roll) split their shared window where the
+next roll's dice land; and the roller's only fresh die that landed with one fresh die of the other colour
+takes that die as its pale partner ('otherColour' in the row). --no-join, --no-split-window and
+--no-pale-partner turn them off.
+
+usage: roll_audit.py [--scan objects-scan-track3] [--faces s1=M ...] [--sessions s1 s4] [--min-score .3] [--json out.json] [-v]
 """
 import argparse, collections, json
 from pathlib import Path
@@ -67,8 +75,14 @@ def read(net, patches, t, pool='first', nb=None):
     return lp[np.argsort(-lp.max(1))[:10]].mean(0)
 
 
-def audit(sessions, scan, faces, min_score=.3, verbose=False, split=True, pool='first', mask=True):
-    rows = []; nets = {}; df.SPLIT_TOUCHING = split
+def landing(meta, f0, f1, colour, score):
+    """When a roll of this colour landed in the window: the first fresh die group's first detection."""
+    fresh = [g for g in df.tracks(meta, f0, f1, colour, score) if meta[g, 0].min() > f0 + 25]
+    return int(min(meta[g, 0].min() for g in fresh)) if fresh else None
+
+
+def audit(sessions, scan, faces, min_score=.3, verbose=False, split=True, pool='first', mask=True, join=True, split_window=True, pale_partner=True):
+    rows = []; nets = {}; df.SPLIT_TOUCHING = split; df.JOIN_GROUPS = join
     by_s = collections.defaultdict(list)
     for page, g, p, s in PUBLISHED:
         if s in sessions: by_s[s].append((page, g, p))
@@ -82,20 +96,37 @@ def audit(sessions, scan, faces, min_score=.3, verbose=False, split=True, pool='
         nb = df.neighbour_offsets(meta, H.board_view(s)) if mask else None
         for page, g, p in games:
             A = json.loads(p.read_text())
-            prev = start = A['startFrame']
+            prev = start = A['startFrame']; carry = None
             for i, t in enumerate(A['turns']):
                 if t.get('cubeOnly') or not t.get('roll') or not in_game(A, t):
                     if not t.get('cubeOnly'): prev = t['resultFrame']
                     continue
                 red = 1 if t['player'] == red_side else 0
                 start = df.window_start(prev, start, t['resultFrame'])
+                if carry is not None and t['resultFrame'] - prev < 25: start = carry
+                carry = None; end = t['resultFrame']
+                nxt = next((u for u in A['turns'][i + 1:] if not u.get('cubeOnly')), None)
+                if split_window and nxt is not None and nxt.get('roll') and nxt['player'] != t['player'] and abs(nxt['resultFrame'] - end) < 25:
+                    # two turns decoded from one jump (a dance and the next roll) share a window: this turn's
+                    # ends where the next roll's dice land, the next one's starts just before (Nov 21 G9 T46/T47;
+                    # 30 frames, so its dice count as fresh)
+                    L = landing(meta, start, end, 1 - red, score)
+                    if L is not None and L - 5 > start + 25: end = L - 5; carry = max(start, L - 30)
                 opening = i == 0 and not A['turns'][0].get('gapBefore') and A['turns'][0]['before']['points'] == OPENING
-                if opening: tr = df.tracks(meta, start, t['resultFrame'], 0, score)[:1] + df.tracks(meta, start, t['resultFrame'], 1, score)[:1]
-                else: tr = df.tracks(meta, start, t['resultFrame'], red, score)
+                if opening: tr = df.tracks(meta, start, end, 0, score)[:1] + df.tracks(meta, start, end, 1, score)[:1]
+                else: tr = df.tracks(meta, start, end, red, score)
+                pale = None
+                if not opening and len(tr) == 1 and pale_partner and meta[tr[0], 0].min() > start + 25:
+                    # The roller's only fresh die landed with one fresh die of the other colour: the other
+                    # player's roll already lies on the board (it landed before this window), so that die is
+                    # this roll's pale die read in the wrong colour (Nov 21 G9 T47: a pale yellow five at the rail).
+                    s0 = meta[tr[0], 0].min()
+                    other = [g for g in df.tracks(meta, start, end, 1 - red, score) if abs(meta[g, 0].min() - s0) <= 30]
+                    if len(other) == 1 and len(other[0]) >= .5 * len(tr[0]): tr = tr + other; pale = 'YR'[1 - red]
                 pub = key(t['roll']); cands = t.get('rollCandidates') or [pub]
                 row = {'page': page, 'game': g, 'turn': i + 1, 'session': s, 'player': t['player'], 'red': red, 'opening': opening,
-                       'resultFrame': t['resultFrame'], 'windowStart': int(start), 'published': pub, 'source': t.get('rollSource'),
-                       'candidates': cands, 'dance': bool(t.get('dance')), 'tracks': len(tr), '_tr': tr[:2]}
+                       'resultFrame': t['resultFrame'], 'windowStart': int(start), 'windowEnd': int(end), 'published': pub, 'source': t.get('rollSource'),
+                       'candidates': cands, 'dance': bool(t.get('dance')), 'tracks': len(tr), '_tr': tr[:2], 'otherColour': pale}
                 before = meta[(meta[:, 0] >= start - 100) & (meta[:, 0] < start - 50) & (meta[:, 4] == red) & (score > .3), 1:3]
                 stale = not opening and len(tr) >= 2 and len(before) > 0 and all(
                     np.abs(before - np.median(meta[a, 1:3], 0)).max(1).min() <= 12 for a in tr[:2])
@@ -135,16 +166,19 @@ def summary(rows):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--scan', default='objects-scan-track')
+    ap = argparse.ArgumentParser(); ap.add_argument('--scan', default='objects-scan-track3')
     ap.add_argument('--faces', nargs='*', default=[], help='SESSION=model')
     ap.add_argument('--sessions', nargs='*', default=list(H.WORK)); ap.add_argument('--min-score', type=float, default=.3)
     ap.add_argument('--json'); ap.add_argument('-v', action='store_true')
     ap.add_argument('--no-split', action='store_true', help='keep two touching dice in one group (dice_faces.split_touching)')
     ap.add_argument('--no-mask', action='store_true', help='read touching dice unmasked (dice_faces.mask_neighbours)')
+    ap.add_argument('--no-join', action='store_true', help='keep one die in two groups apart (dice_faces._joined)')
+    ap.add_argument('--no-split-window', action='store_true', help='two turns sharing a window read the same window')
+    ap.add_argument('--no-pale-partner', action='store_true', help="never take a die of the other colour as the roll's second die")
     ap.add_argument('--pool', default='first', choices=('first', 'confident'), help='which detections of a track are read (read())')
     a = ap.parse_args()
     faces = dict(x.split('=', 1) for x in a.faces)
-    rows = audit(a.sessions, a.scan, faces, a.min_score, a.v, not a.no_split, a.pool, not a.no_mask)
+    rows = audit(a.sessions, a.scan, faces, a.min_score, a.v, not a.no_split, a.pool, not a.no_mask, not a.no_join, not a.no_split_window, not a.no_pale_partner)
     summary(rows)
     if a.json: Path(a.json).write_text(json.dumps(public(rows), indent=0))
 

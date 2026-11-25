@@ -183,6 +183,7 @@ def main():
     ap.add_argument('--tol', type=float, default=12, help='px between a labelled die and its peak')
     ap.add_argument('--cube-thresh', type=float, default=.5, help='best cube peak needed to place the cube (0.15 shipped)')
     ap.add_argument('--track', help='die_track.py testcache file: dice and cube from die tracking (die_track.Tracker)')
+    ap.add_argument('--no-one-die', action='store_true', help='tracking without the one-die check (die_track rule 5b)')
     ap.add_argument('-v', action='store_true')
     a = ap.parse_args()
     global TOL; TOL = a.tol
@@ -193,7 +194,7 @@ def main():
         fnet = df.load_net(a.faces); ver = dv.load(a.verify) if a.verify else None
         if a.track:
             import pickle, die_track
-            trackers = {s: die_track.Tracker(raw) for s, raw in pickle.load(open(a.track, 'rb')).items()}
+            trackers = {s: die_track.Tracker(raw, image=None if a.no_one_die else die_track.session_images(s)) for s, raw in pickle.load(open(a.track, 'rb')).items()}
     S = collections.defaultdict(collections.Counter); errs = collections.defaultdict(list)
     first_turn = {}
     for it in items:

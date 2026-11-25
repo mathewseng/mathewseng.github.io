@@ -43,6 +43,7 @@ def tracks(meta, f0, f1, red, score=None):
         else: groups.append({'key': key, 'idx': list(idx)})
     groups = [np.array(g['idx']) for g in groups if len(g['idx']) >= 5]
     if SPLIT_TOUCHING: groups = [h for g in groups for h in split_touching(meta, g)]
+    if JOIN_GROUPS: return _joined(meta, groups, f0, f1)
     # The window starts at the previous turn's end, so the roller's dice from two
     # turns ago are usually still there until they are picked up to roll. Leave
     # out dice already present when the window opens, then prefer dice still
@@ -86,6 +87,59 @@ def neighbour_offsets(meta, view=None, near=26, same=6):
 
 
 SPLIT_TOUCHING = False  # roll_audit.py: a group seen twice in one frame is two touching dice (split_touching)
+JOIN_GROUPS = False     # roll_audit.py: one die in two groups is one die (_joined)
+
+
+def _joined(meta, groups, f0, f1, near=24, cooc=.1, push_gap=50, push_px=40, gone=250, minor=.25):
+    """tracks() with one die's groups joined (roll_audit.py):
+    - one die seen at two places by turns (its pip face and its side, 14-19 px apart: the scan keeps one
+      of its two peaks per frame, the stronger, and the cells split them): two groups less than 24 px apart
+      that overlap in time but share a frame in at most a tenth of their frames are one die (Nov 24 G1 T34,
+      Nov 21 G2 T16), read at the place it was seen more often (the other is off the die's centre).
+      Touching dice share nearly every frame (dice_faces.split_touching keeps them apart).
+    - a die pushed after it came to rest (15:31 G1 T8: a three pushed over to a one by a hand): a group that
+      starts within 2 s after another ended, its first place within 40 px of the other's last, continues it;
+      the die is read from its first rest and counts with both parts' detections.
+    - the roll's dice lie until the move: when the longest group is still seen in the last 10 s before the
+      move and another group vanished 10 s or more before it and holds under a quarter of its detections,
+      that other group is not the roll's die (Nov 21 G9 T13: a die by the hand at the checkers for 2 s while
+      the roll's dice lay 25 s).
+    Returns the groups to read, most persistent first, after the same fresh/recent choice as tracks()."""
+    G = [{'read': g, 'all': g} for g in groups]
+    pos = lambda g: np.median(meta[g, 1:3], 0)
+    changed = True
+    while changed:
+        changed = False
+        for i in range(len(G)):
+            for j in range(len(G)):
+                if i == j or changed: continue
+                a, b = G[i]['all'], G[j]['all']
+                if np.hypot(*(pos(a) - pos(b))) >= near: continue
+                lo, hi = max(meta[a, 0].min(), meta[b, 0].min()), min(meta[a, 0].max(), meta[b, 0].max())
+                both = len(set(meta[a, 0].tolist()) & set(meta[b, 0].tolist()))
+                if i < j and hi > lo and both <= cooc * min(len(a), len(b)):
+                    g = np.concatenate([a, b]); g = g[np.argsort(meta[g, 0], kind='stable')]
+                    r = max((G[i]['read'], G[j]['read']), key=len)  # read at the place seen more often
+                    G[i] = {'read': r[np.argsort(meta[r, 0], kind='stable')], 'all': g}; del G[j]; changed = True
+        for i in range(len(G)):
+            for j in range(len(G)):
+                if i == j or changed: continue
+                a, b = G[i]['all'], G[j]['all']
+                ea, sb = meta[a, 0].max(), meta[b, 0].min()
+                if not 0 < sb - ea <= push_gap: continue
+                last = meta[a[meta[a, 0] >= ea - 10], 1:3].mean(0); first = meta[b[meta[b, 0] <= sb + 10], 1:3].mean(0)
+                if np.hypot(*(last - first)) > push_px: continue
+                g = np.concatenate([a, b]); g = g[np.argsort(meta[g, 0], kind='stable')]
+                ra = G[i]['read']; G[i] = {'read': ra[np.argsort(meta[ra, 0], kind='stable')], 'all': g}; del G[j]; changed = True
+    fresh = [g for g in G if meta[g['all'], 0].min() > f0 + 25]
+    if len(fresh) >= 2: G = fresh
+    recent = [g for g in G if meta[g['all'], 0].max() >= f1 - 250]
+    if len(recent) >= 2: G = recent
+    G = sorted(G, key=lambda g: len(g['all']), reverse=True)
+    if G and meta[G[0]['all'], 0].max() >= f1 - gone:
+        top = G[0]['all']
+        G = G[:1] + [g for g in G[1:] if not (meta[g['all'], 0].max() < meta[top, 0].max() - gone and len(g['all']) < minor * len(top))]
+    return [g['read'] for g in G]
 
 
 def split_touching(meta, g):

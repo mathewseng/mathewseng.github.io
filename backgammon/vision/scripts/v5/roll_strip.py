@@ -5,7 +5,7 @@ One row per die track in the turn's window (the roller's tracks, most persistent
 other colour's strongest), eight crops along each track at 5x with the frame, the scan score and
 the face reader's read; a last row shows the dice area at the track starts and ends at 2x.
 
-usage: roll_strip.py AUDIT.json OUT_DIR PAGE:G:T ... [--scan objects-scan-track] [--faces SESSION=MODEL ...] [--all-disagreements]
+usage: roll_strip.py AUDIT.json OUT_DIR PAGE:G:T ... [--scan objects-scan-track3] [--faces SESSION=MODEL ...] [--all-disagreements]
 """
 import argparse, json
 from pathlib import Path
@@ -18,7 +18,7 @@ from roll_audit import FACES
 def strip(row, scan, net, out):
     s = row['session']; work = H.WORK[s]; df.SCAN = scan
     meta, patches = df.load_scan(work); score = np.load(work / scan / 'die-score.npy')
-    f0, f1 = row['windowStart'], row['resultFrame']
+    f0, f1 = row['windowStart'], row.get('windowEnd', row['resultFrame']); df.SPLIT_TOUCHING = df.JOIN_GROUPS = True
     mine = df.tracks(meta, f0, f1, row['red'], score)[:4]
     other = df.tracks(meta, f0, f1, 1 - row['red'], score)[:2]
     trs = [(t, row['red']) for t in mine] + [(t, 1 - row['red']) for t in other]
@@ -67,7 +67,7 @@ def strip(row, scan, net, out):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('audit'); ap.add_argument('out'); ap.add_argument('turns', nargs='*')
-    ap.add_argument('--scan', default='objects-scan-track'); ap.add_argument('--all-disagreements', action='store_true')
+    ap.add_argument('--scan', default='objects-scan-track3'); ap.add_argument('--all-disagreements', action='store_true')
     ap.add_argument('--faces', nargs='*', default=[], help='SESSION=model (default roll_audit.FACES)')
     a = ap.parse_args(); faces = {**FACES, **dict(x.split('=', 1) for x in a.faces)}
     rows = json.loads(Path(a.audit).read_text()); out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
