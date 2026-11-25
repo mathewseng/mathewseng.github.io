@@ -1205,7 +1205,13 @@ On n1501 1312–1480 s the 1445.3 s box (`noView`) reports nothing, and the line
 - A skin rule on hidden reports: a truth frame at s1836 has a card named under a hand (skin 0.72).
 - `hiddenEvidence` without the card-face clause: it costs a needed hidden report (n1532, boxed 5.8 s earlier, covered by
   cards).
-- Task 4 (unnamed fresh cards, d1 replacing spanning boxes) was not started this round.
+- **d1 replacing shipped boxes that span cards** (round 9's `span0.3` merge, `combine/merge.py`), measured with the round-10
+  rules: fresh 123 (same), eye 495 → 497 (+ n1532 2703 s Q♦, 4544 s J♠), no truth name lost. Against round 10 it adds 45 name
+  units (871 reports, all n1532 but 7). About 22 are boxed cards checked right on sight, including a 7♣ at s1836 346 s. About
+  20 are 1–9 keyframe hidden reports at spots under hands or during collection, and 2 are boxes under fingers (n1501 904.7 s
+  7♦, s1836 1451.5 s J♣); none of those can be confirmed by eye. Not shipped; the runtime has no span merge either.
+- The unnamed fresh cards (707 s 6♣; 4197 s K♣, K♠, 7♠, 9♣, 4♥; 4361 s 5♦, K♠, A♥) were not worked on: every rule
+  that names them is on the rejected list.
 
 ## What still fails
 
