@@ -514,6 +514,104 @@ Most corner names come before the truth frame and are later covered or dropped. 
 - **Multi-keyframe agreement** for classic cards under the 0.8 gate is unsafe. The s1836 4♦ under a fanned heart card
   reads H4 in 140 views (median 0.67), and v3 and v5a agree on it. The true 7♥ (0.74) cannot be told apart from it.
 
+### Traced misses, ghost objects and fresh truth (2026-11-25, later)
+
+Each remaining miss with a traceable cause was followed keyframe by keyframe (`scripts/eye/slottrace.py`: a slot's
+votes, views, corner evidence, held names and report at every keyframe).
+
+- **K♠ at 2703 s (16:16:58 EST).** Both readers agree on it (corner mean 0.92, card reader median 0.69), but the strip
+  read had no margin. The box's bottom-right corner shows the ace index of the card the K♠ lies on, and the corner
+  reader reads it as A♣ at 0.3–0.85. A♠ and A♣ are both named on other slots in this hand.
+  **Shipped: `cornerHeldMargin`.** When a strip read is scored, the indices of cards another slot holds this hand
+  are set aside: one card, one place, so a held card's index in a corner is a neighbour's.
+- **4♠ at 4544 s (16:47:39 EST).** It has 39 gate passes, all 4♠, but the median of its last 10 views sits at
+  0.78–0.80, so the card-reader name flickers. The corner path reads S4 on every view, but it was blocked because S4 was
+  "held". The slot that held it was the 4♠'s own slot. **Shipped: `stripOwnHeld`:** a slot may take back a name it held
+  itself. (The rule was always meant to block names held by *another* slot.)
+  - That exposed an old hazard: a corner name on a hidden slot was still reported after the card was picked up. With
+    `stripOwnHeld` alone, a 10♠ was reported hidden for 4 s after it was collected (n1532 2718–2722 s, 16:17:13 EST).
+    The shipped runtime already did this for a 2♦ for 4 s (3894–3898 s, 16:36:49 EST, picked up mid-hand).
+  - **Shipped: `stripHiddenStill`.** A corner name on a slot that is not boxed now is reported only while its footprint
+    is unchanged since its last box (the `stillKeep` test).
+  - Cost: a correct corner name is also dropped while a hand hovers over the card. That is 8 keyframes in n1532 (8♣,
+    7♠, 4♥ and 7♥, 1–2 keyframes each).
+- **Slot persistence for the 4♠ (`holdMedian`, rejected).** A named slot kept its name while the median stayed on top
+  at ≥ 0.7. It added no hand-end name. It carried a 10♠ for 9 s after it was collected (2718–2727 s) and named an
+  illegible s0023 object 8♥.
+- **9♥ at 154 s (15:34:29 EST).** It passed the gate once at 150.4 s. The slot median is 0.80–0.85 from then on, and the
+  second gate pass came at 154.9 s. **Shipped: `oneVoteViews` 6.** One gate pass names a slot when the median of its
+  last 6 views also puts that card on top at ≥ the median gate (0.8). This is not the rejected "single read at
+  p ≥ 0.9": the median gate is the one two votes already need. It names the 9♥ from 151 s.
+  - Elsewhere it names 4♠, A♠, A♥ and Q♠ a few keyframes earlier in n1501, 10♣ and A♠ (1 keyframe each) in s1836, and
+    10♠, 2♥, 10♠ and 5♦ in n1532. All were checked on filmstrips and full-resolution zooms.
+- **s1836's two false objects.**
+  - At 1356 s, a slot whose every view reads `none` at 0.95 (off the table, a lap) was kept alive by its own weak box.
+    **Shipped: `noneHide` 0.5.** A slot that is not boxed now, has no gate pass and no corner pair, and whose views'
+    median puts `none` at ≥ 0.5 is not reported.
+  - A first version cut such slots' lives short (`noneDrop`). That changed which slot later boxes joined, and the 6♠ at
+    4544 s lost its name. Reporting only cannot change association.
+  - At 1791 s, an unnamed slot of a 10♦ that had been taken was kept for the 12 s grace after the deck was put on its
+    spot. Its weak median read (10♦ 0.33) is the card that an overlapping named slot holds. **Shipped: `ghostGrace`:**
+    such a slot gets no long grace once nothing covers it.
+  - Rejected: no long grace for any unnamed slot without cover (`unnamedHold`). It named s0023's 8♥, lying under a
+    re-laid 3♥, as 3♥ at the 533 s hand end. A footprint test (`unnamedFootprint`) did not remove the 1791 s object.
+
+**Checks.** Every view whose reported name changed against 0cc8bcba was listed (`namediff.py`). Every changed slot was
+checked by eye on filmstrips of its spot over the changed interval (`hidstrip.py`). Lost names were also checked for
+another object still naming the same card (`namecover.py`).
+
+- s0023: no change.
+- s1836: 2 slots, both right.
+- n1501: 4 slots, all right.
+- n1532: 21 slots. All new names are right. The dropped names are the stale ones above (2♦; 4♥, 7♥ and J♦ during
+  collection) or the 8 keyframes under a hand.
+- One stale report is not fixed: a hidden K♥ is reported for one keyframe after it was taken (n1532 4149.2 s). It is
+  the same in 0cc8bcba.
+
+| hand ends, legible cards named right | 0cc8bcba | this change |
+| --- | --- | --- |
+| s1836 (16 hands) | 306 / 314 | **306 / 314** |
+| s0023 (3 hands) | 53 / 58 | **53 / 58** |
+| n1501 (3 hands) | 68 / 69 | **68 / 69** |
+| n1532 (3 hands) | 60 / 86 | **63 / 86** (9♥ 154 s, K♠ 2703 s, 4♠ 4544 s) |
+| **fresh** n1501 1309 s | 26 / 26 | **26 / 26** |
+| **fresh** n1532 4197 s | 19 / 25 | **19 / 25** |
+| named wrong, all | 0 | **0** |
+| false objects still present (s1836) | 2 | **0** |
+
+**Fresh truth** (`eval/fresh-truth/`) has 2 hand ends that were never trained on and never used to choose a threshold:
+n1501 1309 s (15:23:05 EST) and the classic n1532 hand at 4197 s (16:41:52 EST), with 74 objects and 51 legible cards.
+They were labelled the same way as `eval/eye-truth`: zoomed crops, averages and first-view sheets with no model names,
+then a zoom of every disagreement. Two first-pass labels were pip slips; the runtime was right both times (8♥, 6♥). No
+jumbo-deck hand is left unused, so the corner rules (`cornerAgree`, `cornerMedian` 0.5) still have no fresh jumbo check.
+
+On fresh truth the runtime names everything legible in n1501. In n1532 4197 s it leaves 6 legible cards unnamed:
+
+- the K♣ and K♠ in the top player's fanned court row;
+- a 7♠ under a 6♣;
+- a 9♣ in the right player's column and a 4♥ in the bottom fan, both on hidden slots;
+- the bottom player's Q♣.
+
+One illegible object is named (n1501 1309 s, object 34, 7♥). It is a heart strip between the 10♥ and J♥ whose index
+cannot be read. 7♥ fits the row, but it cannot be checked from pixels.
+
+**Fan-strip slot binding (measured, not shipped).** `scripts/corner/bindcheck.py` read each corner of the 27 legible,
+unnamed, boxed strip objects at the jumbo truth frames. A corner counted as the strip's own when no slot placed later
+covers it. The own corners gave a read for 8 strips: 6 right and 2 wrong (a 4♦ read A♠; and a 2♠ and 5♠ that share one
+box). Placement order is often not the on-top order, because rows are laid already fanned and duplicate slots exist. A
+row-layout model would need a held-out jumbo hand to validate, and none is left.
+
+**Corner reader corner6 (trained, not shipped).** It is corner5's recipe with synthetic rank glyphs weighted 3× for 3
+and 4, real 3s and 4s weighted 3×, and 8 rounder system fonts (`train_corner.py --rankw 3:3,4:3 --posw 3:3,4:3
+--morefonts`).
+
+- Trained on hand A and read on hand B, the 3♣ is right on 14 / 15 crops (corner5: 1 / 15) and the 4♥ on 34 / 39 (31).
+  At p ≥ 0.8, though, it made 1 wrong read (2♠ → 6♠) where corner5 made none.
+- On the truth hands it reads the 2703 s 4♠ as S4 (corner5: A♠) and the 4544 s 3♠ as S3 (corner5: 5♠). Both reads are
+  at 0.43–0.45, too weak to name.
+- In the runtime it changed no hand-end name. Mid-hand it added some right names and dropped others (a 2♦ for 15
+  keyframes, a J♠ for 8). Not shipped.
+
 ### Strip reader (masked crops, not shipped)
 
 For fans laid down already fanned (three-player pineapple rows, Fantasyland), the cards underneath are never seen
@@ -540,7 +638,7 @@ whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px 
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
 - The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
 - **A♠ (deck A)** has too few confident training views.
-- **Jumbo-index deck:** 26 / 86 legible n1532 hand-end cards stay unnamed, mostly fan strips and stacked columns.
+- **Jumbo-index deck:** 23 / 86 legible n1532 hand-end cards stay unnamed, mostly fan strips and stacked columns.
   The corner reader names some of these, but only where the card reader agrees. Only two hands of the deck were
   available for training, with 1–4 physical cards per rank.
 - **Cards the detector stops boxing** keep their name only if they were named while whole (`stillKeep`).
@@ -613,6 +711,14 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
     - `corner/eval_corner.py MODEL HAND SIM` gives the cross-hand table;
     - `eye/sim2.py TAG SESS corner=MODEL.onnx` simulates;
     - `corner/stripnames.py`, `corner/slotcorner.py`, `corner/cdiag.py` and `corner/szany.py` are the check sheets.
+13. **Traced misses and fresh truth (2026-11-25, later),** scratch in `/private/tmp/claude-501/ofc-vision5/`:
+    - `eye/slottrace.py SESS T0 T1 X Y ['{params}'] [START]` prints a slot's life at a spot, keyframe by keyframe;
+    - `eye/hidstrip.py DIFF SESS OUT` filmstrips every changed slot of a `namediff.py` output, and
+      `eye/namecover.py OLD NEW DIFF` says whether a lost name is still on another object of the same card;
+    - fresh truth: `eye/render_truth.py`, then `eye/zsheet.py` / `avgz.py` / `regz.py` (region zoom with ids, `cw` / `ccw` for
+      sideways columns) / `firstz.py` (first-view sheets for fans); `eye/score.py SIM... --truth eval/fresh-truth`;
+    - `corner/bindcheck.py SIM CORNER NAME...` measures fan-strip binding; `corner/train_corner.py --rankw --posw --morefonts`
+      trains corner6.
 
 ## Taken from gigarepo (servers/poker-os)
 

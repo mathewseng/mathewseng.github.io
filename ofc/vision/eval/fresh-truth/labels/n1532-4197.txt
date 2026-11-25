@@ -1,0 +1,43 @@
+# fresh truth 2026-11-25 (never trained or tuned on); classic deck; 3 players (top 13, right 11 in sideways columns, bottom 13)
+# labelled from 5x tiles, 8x 2 s averages, 6-10x region zooms (right columns rotated upright) and first-view sheets (firstz.py)
+# rule: a box is the card it held when first boxed whole; a box never whole whose centre sits within ~6 px of a strip
+# boundary and spans two cards is ?
+1 DK
+2 CK
+3 SK
+4 H3
+5 C3
+6 C5
+7 S7  # box outlines the 7s; the 6c strip lies over its left part
+8 C8
+9 H9
+10 SA
+11 HA
+12 SJ
+13 DQ  # whole at 4135 s, A-diamonds laid beside
+14 ?  # box spans the 2c and 2h of the right player's middle column (centre on the boundary)
+15 ?  # same spot, new slot at the truth frame (hand on the 2h)
+16 C9
+17 dup:16
+18 SQ
+19 dup:13
+20 dup:13
+21 ?  # square box spanning the 8s and 8d strips
+22 ?  # square box spanning the 8s and 8d strips
+23 ?  # box spans the 8s and 8d (both laid before it was boxed)
+24 DJ  # whole at 4140 s
+25 ?  # box spans the Jd and the Jc laid over it
+26 dup:24
+27 CQ
+28 CA  # under the Qh, index A-clubs still shows
+29 HQ
+30 H6
+31 X  # slot of a 3s laid at 4007 s and moved away; slot left on the 6h/10d
+32 DT
+33 dup:34
+34 ST  # whole at 4033 s
+35 HT
+36 ?  # box spans the 4c / 4s / 4h fan
+37 H4
+38 S2
+missed: 8 (C6 DA D9 CJ H8 C4 S4 D4: fan strips with legible indices and no object of their own); C2/H2 and S8/D8 have only ? spanning objects

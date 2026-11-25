@@ -1,0 +1,39 @@
+# fresh truth 2026-11-25 (never trained or tuned on); 2 players, red/blue classic decks
+# labelled from 8x 2 s averages, 5-9x region zooms, first-view sheets (firstz.py) and the court reference sheets
+1 CT
+2 CA
+3 CJ
+4 C7
+5 CK
+6 D9
+7 S9
+8 H9
+9 S3
+10 H5
+11 DK
+12 SK
+13 H8  # first pass H7 (pip slip); 8 pips on a 2 s average, zoomed after the runtime disagreed
+14 SA
+15 DA  # centre on the A-diamonds' pip, index A shows
+16 dup:18
+17 C9  # face-up card beside the rows
+18 D5
+19 C4
+20 CQ  # yellow-hexagon queen (ref-Q)
+21 ?  # box spans the Qc and Qd strips
+22 dup:23
+23 DQ  # whole at 1264 s (grey swirl queen, ref-Q)
+24 ?  # box spans the Qd and 2c
+25 C2
+26 ?  # box spans the 2c and 4s
+27 S4
+28 HK  # grey "()" king with heart (ref-K)
+29 dup:30
+30 H6  # first pass H3; laid already fanned at 1231 s: the visible pip column sits 10 px from the left edge (a side column), the right column is under the 10h; zoomed after the runtime disagreed
+31 HT  # whole at 1236 s (10 pips)
+32 ?  # box on the 10h / next-heart boundary
+33 ?  # box on the 10h / next-heart boundary
+34 ?~ heart pip card between the 10h and Jh, never whole, index not legible
+35 ?  # box spans that heart card and the Jh
+36 HJ  # red-swirl jack (ref-J)
+missed: none

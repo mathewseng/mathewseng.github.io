@@ -8,6 +8,10 @@ F = '/System/Library/Fonts/Supplemental/'; S = '/System/Library/Fonts/'
 FONTS = [(F + 'Arial Narrow.ttf', 0), (S + 'HelveticaNeue.ttc', 0), (S + 'HelveticaNeue.ttc', 7), (S + 'Avenir Next Condensed.ttc', 0),
          (S + 'Avenir Next Condensed.ttc', 3), (F + 'DIN Condensed Bold.ttf', 0), (S + 'Helvetica.ttc', 0), (S + 'SFNS.ttf', 0)]
 RANKS = 'A23456789TJQK'
+# --morefonts (corner6): rounder sans faces whose 3 and closed 4 are closer to the jumbo deck's index font
+MORE = [(F + 'Futura.ttc', 0), (F + 'GillSans.ttc', 0), (S + 'Avenir Next.ttc', 0), (F + 'Trebuchet MS.ttf', 0),
+        (F + 'Verdana.ttf', 0), (F + 'Tahoma.ttf', 0), (F + 'Arial.ttf', 0), (S + 'Avenir.ttc', 0)]
+def use_more_fonts(): FONTS.extend(MORE)
 _cache = {}
 def font(i, px):
     k = (i, px)

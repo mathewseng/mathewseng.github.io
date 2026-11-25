@@ -75,19 +75,23 @@ def aug(rng, im, pool):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--hands', default='A,B'); ap.add_argument('--out', required=True)
     ap.add_argument('--epochs', type=int, default=12); ap.add_argument('--steps', type=int, default=250); ap.add_argument('--extra', action='append'); ap.add_argument('--keep'); ap.add_argument('--synth', type=float, default=0.0)
-    a = ap.parse_args(); global SYN; SYN = a.synth; kj = json.load(open(a.keep)) if a.keep else None; keep = {tuple(x) for x in (kj['keep'] if isinstance(kj, dict) else kj)} if kj else None
+    ap.add_argument('--rankw', default='', help='synthetic rank weights, e.g. 3:3,4:3 (corner6)'); ap.add_argument('--posw', default='', help='real positive weight by rank, e.g. 3:4,4:4'); ap.add_argument('--morefonts', action='store_true')
+    a = ap.parse_args(); global SYN, RW, PW; SYN = a.synth; RW = {k: float(v) for k, v in (x.split(':') for x in a.rankw.split(',') if x)}; PW = {k: float(v) for k, v in (x.split(':') for x in a.posw.split(',') if x)}
+    if a.morefonts: SY.use_more_fonts()
+    kj = json.load(open(a.keep)) if a.keep else None; keep = {tuple(x) for x in (kj['keep'] if isinstance(kj, dict) else kj)} if kj else None
     pos, neg = load(a.hands.split(','), a.extra, keep); print('pos', len(pos), 'neg', len(neg), flush=True)
     model = fit(pos, neg, a.epochs, a.steps)
     model.eval().cpu(); torch.save(model.state_dict(), a.out + '.pt')
     torch.onnx.export(model, torch.zeros(1, 3, S, S), a.out + '.onnx', input_names=['images'], output_names=['logits'],
                       dynamic_axes={'images': {0: 'n'}, 'logits': {0: 'n'}}, opset_version=17)
     print('saved', a.out, flush=True)
-SYN = 0.0
+SYN = 0.0; RW = {}; PW = {}
 def fit(pos, neg, epochs, steps):
     dev = 'mps' if torch.backends.mps.is_available() else 'cpu'; model = CornerNet().to(dev); rng = np.random.default_rng(0)
     # sqrt class balance over positives
     from collections import Counter
-    cnt = Counter(y for _, y in pos); wp = np.array([1 / np.sqrt(cnt[y]) for _, y in pos]); wp /= wp.sum()
+    cnt = Counter(y for _, y in pos); wp = np.array([PW.get(SY.RANKS[y % 13], 1.0) / np.sqrt(cnt[y]) for _, y in pos]); wp /= wp.sum()
+    rw = np.array([RW.get(r, 1.0) for r in SY.RANKS]); rw /= rw.sum()
     opt = torch.optim.AdamW(model.parameters(), lr=3e-3, weight_decay=1e-4)
     sch = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=3e-3, total_steps=epochs * steps, pct_start=0.15)
     for ep in range(epochs):
@@ -99,7 +103,7 @@ def fit(pos, neg, epochs, steps):
                 elif SYN and rng.random() < SYN:
                     im = None
                     while im is None:
-                        p0, y0 = pos[rng.integers(len(pos))]; rk = int(rng.integers(13)); im = SY.synth(rng, p0, seam(p0), SY.RANKS[rk])
+                        p0, y0 = pos[rng.integers(len(pos))]; rk = int(rng.choice(13, p=rw)); im = SY.synth(rng, p0, seam(p0), SY.RANKS[rk])
                     y = (y0 // 13) * 13 + rk
                 elif rng.random() < 0.5: im, y = recombine(rng, pos, rng.choice(len(pos), p=wp), rng.choice(len(pos), p=wp))
                 else: im, y = pos[rng.choice(len(pos), p=wp)]

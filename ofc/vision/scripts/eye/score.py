@@ -5,7 +5,8 @@ Objects = hand-state slots (boxed or hidden) + weak boxes at the truth keyframe.
 import sys, json, re, glob, os
 from collections import Counter
 T = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'eval', 'eye-truth')
-sims = {re.search(r'-(\w+?)(-m)?\.json$', a)[1]: json.load(open(a)) for a in sys.argv[1:] if a.endswith('.json')}
+if '--truth' in sys.argv: T = sys.argv[sys.argv.index('--truth') + 1]  # another truth folder (labels/ + objects/)
+sims = {re.search(r'-(\w+?)(-m)?\.json$', a)[1]: json.load(open(a)) for a in sys.argv[1:] if a.endswith('.json') and a != T}
 detail = '--detail' in sys.argv
 tot = {}
 for lf in sorted(glob.glob(f'{T}/labels/*.txt')):

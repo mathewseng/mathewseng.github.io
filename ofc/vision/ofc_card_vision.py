@@ -344,10 +344,17 @@ class OfcHandState:
       only the best-supported slot keeps the name.
     - Hand memory: every name seen since the table was last empty (<= 1 card for `emptySeconds`) belongs to one slot;
       a single-view or strip read of a name held by another slot is dropped.
-    - Strip reads (covered cards never seen whole) are off unless `stripProbability` <= 1; see README."""
+    - Strip reads (covered cards never seen whole) are off unless `stripProbability` <= 1; see README.
+    - (2026-11-25, README) `oneVoteViews`: one gate pass names a slot when the median of its last oneVoteViews views also
+      tops the card at >= the median gate. Corner names: `cornerHeldMargin` (an index of a card another slot holds this
+      hand does not compete), `stripOwnHeld` (a slot may take back a name it held itself), `stripHiddenStill` (a corner
+      name on a hidden slot only while its footprint is unchanged). `noneHide`: a hidden slot never read as a card whose
+      views say `none` is not reported. `ghostGrace`: an unnamed slot reading weakly as a card an overlapping named slot
+      holds gets no long grace once nothing covers it."""
     DEFAULTS = dict(dist=6, angle=8, gap=4.0, gapNamed=12.0, swapReads=2, minVotes=2, purity=0.8, medianProbability=0.8,
                     emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, stillKeep=0.0, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5,
-                    jumboShare=0.5, jumboMinBodies=10, deckJumbo=0.5, cornerPairVotes=0, cornerAgree=True, cornerMedian=0.5)
+                    jumboShare=0.5, jumboMinBodies=10, deckJumbo=0.5, cornerPairVotes=0, cornerAgree=True, cornerMedian=0.5,
+                    cornerHeldMargin=False, stripOwnHeld=False, stripHiddenStill=False, oneVoteViews=0, ghostGrace=False, noneHide=None)
 
     def __init__(self, **params):
         self.p = dict(self.DEFAULTS, **params); self.slots = []; self.n = 0
@@ -383,9 +390,17 @@ class OfcHandState:
             # a named card still lying where it was, half covered by cards laid over it after the detector stopped
             # boxing it: >= stillKeep of its footprint is unchanged since its last box (a card taken away shows felt,
             # a hand, or whatever was put there instead)
-            if p['stillKeep'] and small is not None and sl['name'] and not glimpse and sl['seen'] < t and sl.get('ref') is not None \
-               and np.mean(np.abs(footprint(small, sl) - sl['ref']).max(2) <= 25) >= p['stillKeep']: sl['last'] = t
+            still = small is not None and sl['seen'] < t and sl.get('ref') is not None \
+                and np.mean(np.abs(footprint(small, sl) - sl['ref']).max(2) <= 25) >= (p['stillKeep'] or 0.6)
+            sl['still'] = still or sl['seen'] == t
+            if p['stillKeep'] and sl['name'] and not glimpse and still: sl['last'] = t
             keep = (sl['name'] and not glimpse) or sl['seen'] - sl['first'] >= 2.5
+            if keep and not sl['name'] and p['ghostGrace'] and sl['views'] and t - sl['last'] > p['gap']:
+                # an unnamed slot whose weak median read is the card an overlapping named slot holds is a ghost of that
+                # card (the deck put where a 10 of diamonds was taken from): no long grace once nothing covers it
+                med = np.median(np.array(sl['views'][-20:]), 0); k = int(med[:52].argmax())
+                if med[k] < 0.5 and any(o['name'] == CODES[k] and math.hypot(o['x'] - sl['x'], o['y'] - sl['y']) < 12
+                                        for o in self.slots if o is not sl): keep = False
             if (t - sl['seen'] > (p['gapNamed'] if keep else p['gap']) and t - sl['last'] > p['gap']) or \
                (not keep and t - sl['seen'] > p['gap']): sl['dead'] = True
         self.slots = [sl for sl in self.slots if not sl['dead']]
@@ -437,7 +452,13 @@ class OfcHandState:
             (c, n), = sl['pairs'].items()
             if n >= p['cornerPairVotes']: return c
         if p['stripProbability'] > 1 or len(ps) < p['stripMinViews']: return None
-        m = np.mean(ps, 0); o = np.argsort(-m); top = int(o[0])
+        ps = np.array(ps)
+        if p['cornerHeldMargin']:
+            # an index of a card another slot holds this hand is a neighbour's corner showing in this box (one card,
+            # one place): it is not this card and does not compete with it
+            other = [CODES.index(k) for k in self.held if self.hand.get(k) != sl['id']]
+            if other: ps = ps.copy(); ps[:, other] = 0
+        m = ps.mean(0); o = np.argsort(-m); top = int(o[0])
         if top == 52 or m[top] < p['stripProbability'] or m[top] - m[o[1]] < p['stripMargin']: return None
         if np.mean([int(q.argmax()) == top for q in ps]) < p['stripAgree']: return None
         return CODES[top]
@@ -483,10 +504,15 @@ class OfcHandState:
                 # one vote is enough for a card read whole at >= singleVoteProbability (seen once, then covered)
                 ok = (n >= p['minVotes'] or (len(sl['votes']) == 1 and sl.get('voteP', 0) >= p['singleVoteProbability'])) \
                     and n >= p['purity'] * sum(sl['votes'].values())
-                if ok and sl['recent']:
+                mp = (p['perClassMedian'] or {}).get(top, p['medianProbability'])
+                k = CODES.index(top)
+                if not ok and p['oneVoteViews'] and n == 1 and len(sl['votes']) == 1 and len(sl['views']) >= p['oneVoteViews']:
+                    # one gate pass, and the median of the slot's last oneVoteViews views also tops it at >= the median gate
+                    med = np.median(np.array(sl['views'][-p['oneVoteViews']:]), 0)
+                    ok = int(med.argmax()) == k and med[k] >= mp
+                elif ok and sl['recent']:
                     med = np.median(np.array(sl['recent']), 0)
-                    mp = (p['perClassMedian'] or {}).get(top, p['medianProbability'])
-                    ok = int(med.argmax()) == CODES.index(top) and med[CODES.index(top)] >= mp
+                    ok = int(med.argmax()) == k and med[k] >= mp
                 sl['name'] = top if ok else None
         self.slots = [sl for sl in self.slots if not sl['dead']]
         byname = {}
@@ -512,7 +538,8 @@ class OfcHandState:
         for sl in self.slots:
             if not sl['name'] and sl['id'] not in dupe:
                 v = self._strip(sl)
-                if v and v not in self.held: strips.setdefault(v, []).append(sl['id'])
+                # (a name this same slot held earlier is its own, not another slot's)
+                if v and (v not in self.held or (p['stripOwnHeld'] and self.hand.get(v) == sl['id'])): strips.setdefault(v, []).append(sl['id'])
         strip_of = self.strip_of = {ids[0]: v for v, ids in strips.items() if len(ids) == 1}
         carried = {}
         for b in bodies:
@@ -538,12 +565,24 @@ class OfcHandState:
             b['handCard'], b['source'] = (c, 'carried') if c else (v, 'view') if v else (s, 'strip') if s else (None, None)
         return bodies
 
+    def _hidden_strip(self, sl, t):
+        # a corner name on a slot not boxed now is reported only while its footprint is unchanged since its last box
+        # (a 10 of spades named from corners was reported hidden for 4 s after it was picked up; see README)
+        if self.p['stripHiddenStill'] and sl['seen'] < t and not sl.get('still', True): return None
+        return self.strip_of.get(sl['id'])
+
+    def _nonecard(self, sl):
+        # a slot whose own views say "not a card" (a lap, a sleeve), never read as a card: not reported as an object
+        p = self.p
+        return p['noneHide'] is not None and not sl['name'] and not sl['votes'] and not sl['pairs'] and len(sl['views']) >= 3 \
+            and float(np.median(np.array(sl['views'][-20:]), 0)[52]) >= p['noneHide']
+
     def table(self, t):
         """Every live slot, including covered cards the detector no longer boxes."""
         dupe = getattr(self, 'dupe', set())
         return [dict(slotId=sl['id'], x=sl['x'], y=sl['y'], width=sl['width'], height=sl['height'], angleDegrees=sl['angle'],
-                     card=(sl['name'] or self.strip_of.get(sl['id'])) if sl['id'] not in dupe else None, placedSeconds=sl['first'], detected=sl['seen'] == t)
-                for sl in self.slots]
+                     card=(sl['name'] or self._hidden_strip(sl, t)) if sl['id'] not in dupe else None, placedSeconds=sl['first'], detected=sl['seen'] == t)
+                for sl in self.slots if sl['seen'] == t or not self._nonecard(sl)]
 
 
 SUIT = {'S': '♠', 'H': '♥', 'C': '♣', 'D': '♦'}
