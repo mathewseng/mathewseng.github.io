@@ -27,12 +27,18 @@ Per frame the dice are those of die_verify.refine (the single-frame result), the
   3. Roll-partner rescue: a peak from 0.1 on a still track (20+ steps, peak 0.25+, verifier not-die
      under 0.3 at least once) that started within 25 frames of exactly one strong die track (0.9+) is
      that roll's other die (a pale die on a cream point, a die at the rail).
+  3b. Opening-roll partner: the same for a still track the verifier never called a die (not-die under 0.5
+     once) when its one strong partner is of the other colour and 30+ px away: the opening roll, one die of
+     each colour (Nov 24 game 3's pale red die at the rail; a red peak landing with one yellow die mid-game
+     is that die's own side, within 30 px).
   4. Pale face: a red die with a yellow peak of 0.35 or more, or a yellow die kept above, within 22 px
      is the pip face of a pale yellow die (red dice show no yellow side: no red die in either test set
      has a yellow peak of 0.35 within 20 px, while yellow dice often have a red one).
   5. The dice are merged again (objects.merge_dice: a die's two peaks now share a colour), except two
      same-colour peaks 13+ px apart that both scored 0.75+ in half the frames within 10 steps: two
      touching dice.
+  6. At most two dice of each colour (there are two): a third is dropped, the weakest track first (a
+     fingertip, a dark checker's emblem next to a fresh roll).
 The cube: a peak of 0.5 or more stands; otherwise the cube peaks from 0.08 within 10 s either side
 are summed per place (20 px) and the strongest place is taken (the current peak if it holds half as
 much): the cube in the holder of the 15:31 view peaks at 0.12-0.18 and sometimes not at all.
@@ -53,6 +59,7 @@ BLOB = 17        # px: peaks of one die
 LINK, STILL, GAP = 16, 10, 10  # px per step, px across a gap, steps of gap
 PRED_GAP, PRED_PX = 150, 12    # a track continuing one that ended here this many frames before
 PARTNER_WIN = 30
+OPEN_VN, OPEN_FAR = .5, 30   # rule 3b: verifier not-die below this once; px from its partner
 
 
 # ---------------------------------------------------------------- raw peaks per frame
@@ -189,9 +196,30 @@ class Tracker:
             P = [j for j, u in enumerate(self.info) if j != i and abs(u['start'] - st) <= 25 and u['smax'] >= .9 and u['n'] >= 20]
             if len(P) == 1:
                 q = max(b['rows'], key=lambda q: q[3]); out.append((int(self.chain_O(i) < 0), q[1], q[2], b['s']))
+        for b in self.blobs[f]:  # 3b. opening-roll partner
+            if any(math.hypot(b['x'] - d[1], b['y'] - d[2]) < BLOB for d in out): continue
+            i = b['t']; t = self.info[i]
+            if b['s'] < LOW or t['n'] < 20 or t['smax'] < .25 or t['vnmin'] >= OPEN_VN: continue
+            st = self.info[self.chain_start(i)]['start']
+            P = [j for j, u in enumerate(self.info) if j != i and abs(u['start'] - st) <= 25 and u['smax'] >= .9 and u['n'] >= 20]
+            c = int(self.chain_O(i) < 0)
+            if len(P) == 1 and int(self.info[P[0]]['O'] < 0) != c and math.hypot(self.info[P[0]]['x'] - t['x'], self.info[P[0]]['y'] - t['y']) >= OPEN_FAR:
+                q = max(b['rows'], key=lambda q: q[3]); out.append((c, q[1], q[2], b['s']))
         ys = [r for r in rows if r[0] == 0 and r[3] >= .35] + [d for d in out if d[0] == 0]  # 4. pale face
         out = [((0,) + tuple(d[1:])) if d[0] == 1 and any(3 < math.hypot(r[1] - d[1], r[2] - d[2]) <= 22 for r in ys) else d for d in out]
-        return self._merge(out, f)  # 5.
+        return self._cap(self._merge(out, f), f)  # 5., 6.
+
+    def _cap(self, out, f):
+        """Rule 6: there are two dice of each colour; a third is the weakest track's (a fingertip, an emblem)."""
+        keep = []
+        for c in (0, 1):
+            mine = [d for d in out if d[0] == c]
+            if len(mine) > 2:
+                def strength(d):
+                    b = self._blob(f, d[1], d[2]); return self.info[b['t']]['smax'] if b is not None else d[3]
+                mine = sorted(mine, key=strength, reverse=True)[:2]
+            keep += mine
+        return keep
 
     def _pair(self, d, b):
         """Rule 1: a weak die with an unsure track takes the colour of its one sure roll partner."""

@@ -104,10 +104,10 @@
   "resultFrame": 84418,
   "player": "white",
   "roll": [
-   6,
-   3
+   5,
+   4
   ],
-  "note": "Visible die shows six."
+  "note": "Dice show four (182,467: two rows of two pips seen from the side) and five (the pale die at the rail, 122,520), 84245-84415; 5-4 is the candidate with a four (was read 6-3 from one die)."
  },
  {
   "game": 3,
@@ -118,5 +118,15 @@
    3
   ],
   "note": "Visible die shows three."
+ },
+ {
+  "game": 3,
+  "resultFrame": 84418,
+  "player": "dark",
+  "roll": [
+   4,
+   3
+  ],
+  "note": "Dance: the red dice show three (436,235) and four (680,324) at 84175-84215 before Black picks them up; 4-3 blocks every entry."
  }
 ]

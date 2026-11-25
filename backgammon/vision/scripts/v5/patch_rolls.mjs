@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 /**
  * Apply source-reviewed rolls (reviewed-rolls.json) to analysed games and
- * re-score only those checker decisions (opening book, else four ply).
+ * re-score only those checker decisions (opening book, else four ply). A dance (no legal entry) only
+ * takes the roll: its candidates are the rolls that block every entry.
  * usage: bun patch_rolls.mjs <analysis-dir> <reviewed-rolls.json>
  */
 import fs from 'node:fs';
@@ -21,6 +22,7 @@ for (const g of [...new Set(reviews.map(r => r.game))]) {
     const key = `${Math.max(...r.roll)}-${Math.min(...r.roll)}`;
     if (!t.rollCandidates.includes(key)) { console.log('roll not legal for observed move', r); continue; }
     t.roll = [Math.max(...r.roll), Math.min(...r.roll)]; t.rollSource = 'reviewed'; t.rollNote = r.note;
+    if (t.dance) { console.log(`game ${g}: ${t.player} ${key} dance`); continue; }  // a dance has no move to score
     // the decoder kept the matching plays; recover the steps from the candidate set when present
     const st = initialState({ points: t.before.points, bar: t.before.bar, off: t.before.off, turn: t.player === 'white' ? 0 : 1,
       dice: t.roll, phase: 'move', matchLength: 0, cube: { ...t.cube }, rules: RULES });

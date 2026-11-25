@@ -415,3 +415,37 @@ Die identity tracking (Nov 25)
   on the point's tip shows several pips), game 2 turn 52 Black 5-3, not 2-2 (three pips in a line on the
   bar edge, five on the other); game 1 turn 8 stays 3-2 (the die landed showing three before a hand
   pushed it over). patch_rolls.mjs re-scored those turns; results and cube actions are unchanged.
+
+Tracker on every session and the roll audit (Nov 25)
+
+  Every orange-board work dir now has a tracked scan from the raw peaks of obj-v8 + die-ver-v1
+  (die_track.py scan, objects-scan-track and cube-scan-track.json; Nov 24 15:31 keeps obj-v8,obj-v10 and
+  its published objects-scan). Two rules were added to the tracker:
+  - 3b, opening-roll partner: a weak still track that the verifier never called a die (not-die under 0.5
+    at least once) is a die when it landed with exactly one strong die of the other colour 30+ px away (the
+    opening roll: one die of each colour). It finds Nov 24 game 3's pale red die at the rail
+    (s5:29672-30059). Without "other colour" and "30 px" it also keeps a yellow die's own red side peak.
+  - 6, two of each colour: a third die of one colour is dropped, the weakest track first (the 15:31
+    fingertip at s6:11500 and the dark checker's emblem at s6:25000, both next to a fresh roll).
+  Test sets (testset_eval.py --track, same caches): Nov 24 dice 90/93 -> 93/93; new set false peaks 3 -> 1;
+  everything else unchanged.
+
+  Dice evidence from the tracked scans (faces-v6; faces-v8 for 15:31) changes one published dice pick:
+  Nov 21 game 9 turn 46, Black's dance.
+
+  roll_audit.py compares every published roll (move, opening book, dice reader or eye) with the roll its
+  dice show, read over the dice's tracks; roll_strip.py draws crop strips of a turn's dice for the eye
+  check. A turn is "stale" when both dice found were lying there 2-4 s before its window opened (an
+  earlier roll's dice). Every disagreement and stale turn was eye-checked:
+  - fixed: Nov 21 game 9 turn 46 Black's dance 4-3 (was 3-3), turn 47 White 5-4 (was 6-3: one die shows
+    four as two rows of two, the pale die at the rail five); Nov 24 PM game 1 turn 14 White's dance 6-1
+    (was 1-1, unread); Nov 24 PM game 1 turns 9-11 are one Black 5-4 (23/18 18/14*): the red dice lie
+    unmoved from 5865 to 6405 and no yellow die appears, so the decode's 3-1, White dance and 4-1 were one
+    roll played in two stages. merge_turns.mjs joins such turns (merged-turns-20261124-1531.json);
+    patch_rolls.mjs now also takes a dance's roll.
+  - the published roll stands: the reader misread a face (a pale die on a point, a side view of 4-6, a 5
+    read as 1), took two peaks of one die as two dice, or read two touching dice as one.
+  - not resolved: three stretches where the dice disagree with the decoded moves and no single roll plays
+    the change: Nov 21 game 2 turns 34-37 (48322-48777), Nov 21 game 7 turns 6-12 (7955-12405) and Nov 24
+    PM game 2 turns 49-52 (54547-55092; White bore off from 6 and 4 on what the dice show as 6-4, then Black
+    moved 18 pips on one non-double roll).

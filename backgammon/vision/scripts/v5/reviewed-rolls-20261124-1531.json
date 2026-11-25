@@ -5,5 +5,6 @@
  {"game": 1, "resultFrame": 3118, "player": "white", "roll": [6, 2], "note": "One die shows its side (two bars: a four, five or six), so not 2-2; 6-2 is the other candidate (tracked dice, faces-v8)."},
  {"game": 1, "resultFrame": 5812, "player": "white", "roll": [3, 2], "note": "The second die landed showing three pips in a row (5750-5760) before a hand pushed it over; the later frames read 2-1."},
  {"game": 2, "resultFrame": 48272, "player": "white", "roll": [3, 1], "note": "One die shows a single pip; the other, on the point's tip, shows several pips, so not 1-1."},
- {"game": 2, "resultFrame": 55092, "player": "dark", "roll": [5, 3], "note": "The die on the bar edge shows three pips in a line and the other five; 5-3 is a candidate, 2-2 and 6-2 are not what they show."}
+ {"game": 2, "resultFrame": 55092, "player": "dark", "roll": [5, 3], "note": "The die on the bar edge shows three pips in a line and the other five; 5-3 is a candidate, 2-2 and 6-2 are not what they show."},
+ {"game": 1, "resultFrame": 7331, "player": "white", "roll": [6, 1], "note": "Dance: the yellow dice show one (628,170) and six (484,195) at 6995-7030; 6-1 blocks every entry."}
 ]
