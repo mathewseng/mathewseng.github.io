@@ -742,7 +742,7 @@ Pale second dice: the rolls without two dice, and obj-v11 (Nov 25, 09:00-11:00 E
   25+ frames into the window, a third of the frames, landing within 30 frames): 454 instead of 460 with the first
   model, the rest of the misses being dice that landed as the window opened.
 
-Presence from obj-v11, colour from the tracker; the audit's window fallback (Nov 25, 10:35-12:00 EST)
+Presence from obj-v11, colour from the tracker; the audit's window fallback (Nov 25, 10:35-11:30 EST)
 
   obj-v11 finds pale dice that obj-v8 misses, but it reads their colour badly. die_track.py rule 7 therefore uses it
   only for where a die is (option (a) of the plan). Tracker(presence=...) takes obj-v11's raw peaks on the same frames
