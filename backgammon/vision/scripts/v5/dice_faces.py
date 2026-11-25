@@ -42,6 +42,7 @@ def tracks(meta, f0, f1, red, score=None):
             if abs(g['key'][0] - key[0]) <= 1 and abs(g['key'][1] - key[1]) <= 1: g['idx'] += idx; break
         else: groups.append({'key': key, 'idx': list(idx)})
     groups = [np.array(g['idx']) for g in groups if len(g['idx']) >= 5]
+    if SPLIT_TOUCHING: groups = [h for g in groups for h in split_touching(meta, g)]
     # The window starts at the previous turn's end, so the roller's dice from two
     # turns ago are usually still there until they are picked up to roll. Leave
     # out dice already present when the window opens, then prefer dice still
@@ -51,6 +52,59 @@ def tracks(meta, f0, f1, red, score=None):
     recent = [g for g in groups if meta[g, 0].max() >= f1 - 250]
     if len(recent) >= 2: groups = recent
     return sorted(groups, key=len, reverse=True)
+
+
+def mask_neighbours(p, offsets):
+    """A 40x40 patch with every pixel nearer to a neighbouring die than to the patch's own die
+    painted the felt colour (the median of the pixels far from both), so a touching die's pips are
+    not read. offsets: neighbours' centres relative to the patch centre, in patch pixels."""
+    if not len(offsets): return p
+    yy, xx = np.mgrid[0:40, 0:40] - 19.5
+    own = np.hypot(xx, yy); near = np.zeros((40, 40), bool); far = own > 13
+    for dx, dy in offsets:
+        dn = np.hypot(xx - dx, yy - dy); near |= dn < own; far &= dn > 13
+    p = p.copy(); fill = np.median(p[far], 0) if far.sum() > 20 else np.median(p.reshape(-1, 3), 0)
+    p[near] = fill; return p
+
+
+def neighbour_offsets(meta, view=None, near=26, same=6):
+    """For every detection in a scan, the other detections of its frame within `near` px (any colour;
+    closer than `same` px is the same die), as offsets in its patch's pixels (patches are cut from the
+    rectified frame, meta is in the reader's view: session.reader_xy)."""
+    sx, sy = (-1, -1) if view == 'turned' else (-1, 1) if view == 'mirrored' else (1, 1)
+    out = [[] for _ in range(len(meta))]
+    order = np.argsort(meta[:, 0], kind='stable'); fr = meta[order, 0]
+    cuts = np.nonzero(np.diff(fr))[0] + 1
+    for grp in np.split(order, cuts):
+        if len(grp) < 2: continue
+        for i in grp:
+            for j in grp:
+                if i == j: continue
+                dx, dy = meta[j, 1] - meta[i, 1], meta[j, 2] - meta[i, 2]
+                if same <= np.hypot(dx, dy) <= near: out[i].append((sx * dx, sy * dy))
+    return out
+
+
+SPLIT_TOUCHING = False  # roll_audit.py: a group seen twice in one frame is two touching dice (split_touching)
+
+
+def split_touching(meta, g):
+    """Two dice of one colour lying within a cell of each other fall into one group (Nov 21 G6 T19:
+    a three 16 px from a four). When a quarter or more of the group's frames hold two of its
+    detections, split it in two around the two farthest-apart detections (2-means); each part must
+    keep 5 detections and the parts' centres must be 10 px apart."""
+    _, c = np.unique(meta[g, 0], return_counts=True)
+    if (c > 1).sum() < .25 * len(c): return [g]
+    xy = meta[g, 1:3].astype(float)
+    d = np.linalg.norm(xy[:, None] - xy[None], axis=2); i, j = np.unravel_index(d.argmax(), d.shape)
+    cen = xy[[i, j]]
+    for _ in range(10):
+        lab = np.linalg.norm(xy[:, None] - cen[None], axis=2).argmin(1)
+        if lab.min() == lab.max(): return [g]
+        cen = np.array([xy[lab == k].mean(0) for k in (0, 1)])
+    parts = [g[lab == 0], g[lab == 1]]
+    if min(map(len, parts)) < 5 or np.linalg.norm(cen[0] - cen[1]) < 10: return [g]
+    return parts
 
 
 def stale_positions(meta, f0, red, score):
@@ -105,9 +159,26 @@ CROP_X = int(os.environ.get('BG_FACE_CROP_X', '4'))
 CROP = 'lean'
 
 
+class Ensemble(nn.Module):
+    """Several face readers, each on its own crop, averaged in log-probability. Inputs are 'full'
+    40x40 patches; a 'lean' member reads its 32x32 crop out of them."""
+    def __init__(self, members):
+        super().__init__(); self.nets = nn.ModuleList(n for n, _ in members); self.crops = [c for _, c in members]
+    def forward(self, x):
+        outs = [torch.log_softmax(n(x if c == 'full' else x[:, :, 4:36, CROP_X:CROP_X + 32]), 1) for n, c in zip(self.nets, self.crops)]
+        return torch.stack(outs).mean(0)
+
+
 def load_net(path):
-    """A face reader and its crop ('lean' for models saved as a bare state dict)."""
+    """A face reader and its crop ('lean' for models saved as a bare state dict). 'a.pt,b.pt' is an
+    Ensemble of the models (read on full patches)."""
     global CROP
+    path = str(path)
+    if ',' in path:
+        members = []
+        for p in path.split(','):
+            n = load_net(p); members.append((n, CROP))
+        CROP = 'full'; return Ensemble(members).eval().to(dev)
     obj = torch.load(path, map_location='cpu')
     sd = obj['state_dict'] if 'state_dict' in obj else obj
     CROP = obj.get('crop', 'lean') if 'state_dict' in obj else 'lean'

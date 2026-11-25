@@ -16,11 +16,16 @@ and "pick" is what analyze.mjs would choose among the move's candidate rolls fro
 published roll when the move fixes it), so a 'dice' or 'ambiguous' turn whose pick changes is a roll
 the scan would publish differently.
 
+Two dice of one colour in one tracked group are split (dice_faces.split_touching) and a die's
+crops are read with a touching neighbour painted out (dice_faces.mask_neighbours); --no-split and
+--no-mask read as before Nov 25 PM. --pool confident reads a track's 10 surest detections (tried, not
+better). The Nov 24 15:31 session's scan is objects-scan: --sessions s6 --scan objects-scan.
+
 usage: roll_audit.py [--scan objects-scan-track] [--faces s1=M ...] [--sessions s1 s4] [--min-score .3] [--json out.json] [-v]
 """
 import argparse, collections, json
 from pathlib import Path
-import numpy as np
+import numpy as np, torch
 import heldout as H, dice_faces as df
 
 D = H.D
@@ -35,8 +40,10 @@ PUBLISHED.append(('2026-11-23', 1, D / 'office-3-backgammon-20261123/analysis-v8
 for g in range(1, 5): PUBLISHED.append(('2026-11-24', g, D / f'office-3-backgammon-20261124/analysis/game-{g:02d}.json', 's5'))
 for g in range(1, 3): PUBLISHED.append(('2026-11-24-pm', g, D / f'office-3-backgammon-20261124-1531/analysis/game-{g:02d}.json', 's6'))
 
-FACES = {s: D / 'office-3-backgammon-20261121/models/faces-v6.pt' for s in H.WORK}
-FACES['s6'] = D / 'office-3-backgammon-20261124-1531/models/faces-v8.pt'
+# faces-v9: faces-v6 with two readers trained on the verified face crops (face_labels.py, face_train.py:
+# lean and full crop, touching-dice augmentation), averaged (dice_faces.Ensemble). Every session.
+_M = D / 'office-3-backgammon-20261121/models'
+FACES = {s: f"{_M / 'faces-v6.pt'},{_M / 'faces-v9-lean.pt'},{_M / 'faces-v9-full.pt'}" for s in H.WORK}
 
 
 def key(r): return f'{max(r)}-{min(r)}'
@@ -48,8 +55,20 @@ def in_game(A, t):
     return not (res.get('reason') == 'pass' and res.get('frame') is not None and t['resultFrame'] > res['frame'])
 
 
-def audit(sessions, scan, faces, min_score=.3, verbose=False):
-    rows = []; nets = {}
+def read(net, patches, t, pool='first', nb=None):
+    """A track's pooled face log-probs: 'first' its first 20 detections (as dice_evidence.py reads),
+    'confident' the 10 of its detections (up to 200) the reader is surest of: a die lying still and
+    seen from above reads sharply, a die under a hand or edge-on does not."""
+    if nb is not None: patches = {i: df.mask_neighbours(patches[i], nb[i]) for i in t}
+    if pool == 'first': return df.read_track(net, patches, t[:20])
+    t = t[np.linspace(0, len(t) - 1, min(len(t), 200)).astype(int)]
+    with torch.no_grad():
+        lp = torch.log_softmax(net(torch.stack([df.prep(patches[i], False) for i in t]).to(df.dev)), 1).cpu().numpy()
+    return lp[np.argsort(-lp.max(1))[:10]].mean(0)
+
+
+def audit(sessions, scan, faces, min_score=.3, verbose=False, split=True, pool='first', mask=True):
+    rows = []; nets = {}; df.SPLIT_TOUCHING = split
     by_s = collections.defaultdict(list)
     for page, g, p, s in PUBLISHED:
         if s in sessions: by_s[s].append((page, g, p))
@@ -60,6 +79,7 @@ def audit(sessions, scan, faces, min_score=.3, verbose=False):
         fpath = str(faces.get(s, FACES[s]))
         if fpath not in nets: nets[fpath] = df.load_net(fpath)
         net = nets[fpath]; red_side = H.red_player(s)
+        nb = df.neighbour_offsets(meta, H.board_view(s)) if mask else None
         for page, g, p in games:
             A = json.loads(p.read_text())
             prev = start = A['startFrame']
@@ -75,14 +95,14 @@ def audit(sessions, scan, faces, min_score=.3, verbose=False):
                 pub = key(t['roll']); cands = t.get('rollCandidates') or [pub]
                 row = {'page': page, 'game': g, 'turn': i + 1, 'session': s, 'player': t['player'], 'red': red, 'opening': opening,
                        'resultFrame': t['resultFrame'], 'windowStart': int(start), 'published': pub, 'source': t.get('rollSource'),
-                       'candidates': cands, 'dance': bool(t.get('dance')), 'tracks': len(tr)}
+                       'candidates': cands, 'dance': bool(t.get('dance')), 'tracks': len(tr), '_tr': tr[:2]}
                 before = meta[(meta[:, 0] >= start - 100) & (meta[:, 0] < start - 50) & (meta[:, 4] == red) & (score > .3), 1:3]
                 stale = not opening and len(tr) >= 2 and len(before) > 0 and all(
                     np.abs(before - np.median(meta[a, 1:3], 0)).max(1).min() <= 12 for a in tr[:2])
                 if stale:  # both dice lay there before the window opened: an earlier roll's dice, this roll unseen
                     row.update(read=None, pick=None, status='stale', dice=[[float(np.median(meta[a, 1])), float(np.median(meta[a, 2])), int(meta[a, 0].min()), int(meta[a, 0].max()), len(a)] for a in tr[:2]])
                 elif len(tr) >= 2:
-                    pp = df.pair_prob(df.read_track(net, patches, tr[0][:20]), df.read_track(net, patches, tr[1][:20]))
+                    pp = df.pair_prob(read(net, patches, tr[0], pool, nb), read(net, patches, tr[1], pool, nb))
                     best = max(pp, key=pp.get); pick = max(cands, key=lambda c: pp.get(c, -1e9))
                     row.update(read=best, margin=round(pp[best] - pp[pub], 2), pick=pick,
                                status='confirmed' if best == pub else 'disagrees',
@@ -96,6 +116,11 @@ def audit(sessions, scan, faces, min_score=.3, verbose=False):
 
 
 OPENING = [-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2]
+
+
+def public(rows):
+    """Rows without the in-memory fields (the tracks' scan indices, '_tr')."""
+    return [{k: v for k, v in r.items() if not k.startswith('_')} for r in rows]
 
 
 def summary(rows):
@@ -114,11 +139,14 @@ def main():
     ap.add_argument('--faces', nargs='*', default=[], help='SESSION=model')
     ap.add_argument('--sessions', nargs='*', default=list(H.WORK)); ap.add_argument('--min-score', type=float, default=.3)
     ap.add_argument('--json'); ap.add_argument('-v', action='store_true')
+    ap.add_argument('--no-split', action='store_true', help='keep two touching dice in one group (dice_faces.split_touching)')
+    ap.add_argument('--no-mask', action='store_true', help='read touching dice unmasked (dice_faces.mask_neighbours)')
+    ap.add_argument('--pool', default='first', choices=('first', 'confident'), help='which detections of a track are read (read())')
     a = ap.parse_args()
     faces = dict(x.split('=', 1) for x in a.faces)
-    rows = audit(a.sessions, a.scan, faces, a.min_score, a.v)
+    rows = audit(a.sessions, a.scan, faces, a.min_score, a.v, not a.no_split, a.pool, not a.no_mask)
     summary(rows)
-    if a.json: Path(a.json).write_text(json.dumps(rows, indent=0))
+    if a.json: Path(a.json).write_text(json.dumps(public(rows), indent=0))
 
 
 if __name__ == '__main__':

@@ -509,3 +509,72 @@ The unresolved decodes, rebuilt by eye (Nov 25)
   2.3 times the session's median die, 34 px long) is matched by single dice with a red halo (5% of
   isolated single dice reach 2.2 times, the largest 2.7; up to 44 px long). Only one labelled red pair
   exists, so a size rule would add several false dice to gain one; not adopted.
+
+Face reader from the published rolls (Nov 25)
+
+  The decoded moves and the eye checks give every published roll's true values, so every tracked crop
+  of its two dice can be labelled. face_labels.py builds the set (one npz per session; the Nov 25 set is
+  ~/Downloads/office-3-backgammon-20261121/faces-labels-20261125): rolls the audit confirms, plus the
+  disagreements eye-checked as reader misreads (face-labels-eye.json, 19 rolls: pale dice on points,
+  side views of 4-6, a 5 read as 1, a 4 as two rows of two on an orange point). A double labels both
+  dice; an opening roll gives the starting player's colour the higher die; otherwise the two values go
+  to the two dice in the order the previous readers prefer (faces-v6, faces-v8 for 15:31), and a pair
+  within 3 log-prob of both orders is kept order-free. Left out: unseen, stale and structurally wrong
+  rolls (duplicate peaks of one die, a dance and a move sharing a window, a die pushed over after it
+  landed, the merged and irregular 15:31 turns, Nov 21 G9 T13 whose second track is not the roll's die).
+  431 rolls, 34,936 crops (at most 60 per die): Nov 21 213 rolls, Nov 23 20, Nov 24 105, 15:31 92.
+  Checked by eye on contact sheets (40 random dice per face and every eye-checked roll's two tracks):
+  labels right; a few crops are a die under a hand.
+
+  face_train.py trains the reader on them (dice drawn uniformly, one random crop each; --strong-aug
+  colour cast, blur and lost resolution; --touch-aug pastes another die's centre 13-20 px away, as
+  touching dice lie; --crop full reads the whole 40x40 patch). Old test-set frames are left out with
+  --skip-held. dice_faces.load_net('a.pt,b.pt,...') is an Ensemble (each model on its own crop,
+  log-probs averaged).
+
+  Honest hold-out (s6 = 15:31; crops scored on the verified set, dice pooled over 20 crops):
+    trained Nov 21 + Nov 23 + Nov 24 AM, old test games out, never s6 (lean + full, --strong-aug):
+      s6 crops 95.9%, dice 181/184 (faces-v6 81.3%, 159/184; faces-v8, fine-tuned on s6 game 1, 96.6%,
+      180/184); the new set's eye-labelled die faces 84/85 (faces-v6 and faces-v8 82/85); old test-set
+      faces 40/41, 7/7, 17/17 (faces-v6 39/41, 7/7, 17/17 having trained on those frames).
+      s6 confusion: 5 read as 1 2 crops (faces-v6 25, faces-v8 61); pale 1 read 2/3/4 45/23/4 (faces-v6
+      202/64/91); side-on 4 read 3 61 (faces-v6 55, faces-v8 66: not better); eye-checked (hard) rolls'
+      crops 269/367 (faces-v6 238, faces-v8 203).
+    reverse, trained on s6 alone (186 dice): old sessions 94-98% of crops (Nov 21 94.2/96.5/94.2%).
+    each Nov 21 recording read by a model that never saw Nov 21 (full crop): eye-checked rolls' crops
+      322/423, 221/221, 365/371 (faces-v6 195/423, 99/221, 200/371 although it trained on them).
+
+  Shipped: faces-v9 = faces-v6 + faces-v9-lean + faces-v9-full (Nov 21 models dir), the two new readers
+  trained on every session with the old test games left out (--strong-aug --touch-aug .3, 8000 and
+  6000 steps). roll_audit.FACES uses it for every session (faces-v8 is no longer the 15:31 default).
+  Old test-set faces 39/41, 7/7, 17/17 -> 41/41, 7/7, 17/17 (s1:78292's touching dice now read); new
+  set die faces 82/85 -> 84/85 (s6:20125's 5 still read 1; faces-v9 saw s6, the honest figure above is
+  also 84/85).
+
+  Roll audit (roll_audit.py, now splitting touching dice and masking a neighbour, below): 477 published
+  rolls, 415 -> 437 read the same from the dice, 28 -> 6 disagree, 33 without two dice, 1 stale; no roll
+  the dice confirmed before is contradicted and no dice-picked roll changes. The 6 left are the known
+  track faults (Nov 21 G9 T13 second track, G9 T29 and Nov 24 G1 T34 duplicate peaks, G9 T46 the dance
+  sharing T47's window, 15:31 G1 T8 die pushed over, G2 T50 irregular turn). Read by models that never
+  saw the session (an honest audit), the gain is smaller and some low-margin misreads appear: Nov 21-24
+  325 -> 335 confirmed with 4 new contradictions (fold models, full crop only), 15:31 89 (faces-v8 90)
+  with 4.
+  - dice_faces.split_touching (roll_audit and face_labels): a tracked group with two detections in a
+    quarter or more of its frames is two touching dice, split by 2-means (Nov 21 G6 T19, Nov 24 G4 T31).
+    No published verdict changes with the old reader.
+  - dice_faces.mask_neighbours: a die's crop with every pixel nearer a neighbouring detection (6-26 px,
+    any colour) painted the felt colour. With faces-v9 it removes the last new contradiction (Nov 21 G6
+    T19, a three on its edge 16 px from a four); with faces-v6 alone it adds one, so it is on only with
+    faces-v9 (roll_audit default; --no-mask).
+  Tried, not kept: lean or full crop alone (full reads a touching neighbour: Nov 21 G4 T24, G6 T19),
+  pooling a track's 10 surest crops (roll_audit --pool confident: no change with faces-v9, one roll
+  swapped with faces-v6), labels from the unsplit groups (touching dice labelled as one die), init from
+  faces-v6 (no better).
+
+  Rolls without two dice, re-read with faces-v9 (extended window, as before): no published roll changes.
+  Nov 21 G2 T13 (5-2 or 4-3) reads its one die as two (p 0.59): 5-2, as published, still uncertain. Nov 24
+  G4 T18 and 15:31 G1 T7's single dice now agree with their eye-read rolls. Nov 23 T16's extended window
+  catches T18's 2-2 dice (4742-4785, the next dark roll); T16's eye-read 5-3 stands. Still open: Nov 21
+  G7 T5/T7/T9 dances (one die each, several blocking rolls), G1 T15 (2-2 or 6-2, one die shows two),
+  G9 T9, Nov 24 G1 T38 (no die seen). Nov 21 G2 T36 (19:34:03 EST, 6-1 by the board) now reads 6-1 from
+  the dice.
