@@ -1,0 +1,37 @@
+# 2 players on the left of the table; labelled from 5x tiles + 8x 2 s averages; courts vs ref-*.jpg
+1 CQ  # right part with club pip and yellow hexagon art under the tilted 9h
+2 H3
+3 dup:2
+4 H9
+5 dup:16
+6 DA
+7 dup:18
+8 DQ
+9 S7
+10 ?  # weak box spanning the Jc and the 7s
+11 CJ
+12 HK
+13 D6
+14 S3
+15 ?  # weak box spanning the 5c and the 3s
+16 C5
+17 CK
+18 DT
+19 SK
+20 ST
+21 S2
+22 D3
+23 dup:22
+24 S4
+25 dup:24
+26 C7
+27 dup:26
+28 C2
+29 H6
+30 HJ
+31 SA
+32 HQ
+33 D8
+34 SJ
+35 C4  # face up below the bottom player's rows
+missed: none

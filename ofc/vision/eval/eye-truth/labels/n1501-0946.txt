@@ -1,0 +1,35 @@
+# 2 players; labelled from 5x tiles + 8x 2 s averages; courts vs ref-*.jpg
+1 S5
+2 DJ
+3 CJ
+4 DQ
+5 dup:4
+6 HQ  # at an angle beside the discards, face up
+7 CK
+8 H6
+9 S3
+10 D2
+11 H4
+12 C9
+13 HK
+14 DK
+15 S6
+16 S7
+17 D7
+18 ?
+19 HA
+20 dup:19
+21 C3
+22 dup:21
+23 DA
+24 ?
+25 HT
+26 D9
+27 ?
+28 SJ
+29 S4
+30 dup:31
+31 S8
+32 SQ  # added: top row right end; no box since 894 s (was missed:)
+33 H5  # added: bottom fan, upper half whole
+missed: none (SQ is object 32 since stillKeep)

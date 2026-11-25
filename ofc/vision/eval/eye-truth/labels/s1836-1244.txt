@@ -26,4 +26,5 @@
 26 HK
 27 D4
 28 D3
-missed: 2 ? (top back row: a diamond strip and a spade strip under the J-clubs, no objects)
+29 C?  # added 2026-11-24: diamond strip under the J-clubs; seen whole as 8d at 1197 s
+missed: 1 ? (top back row: a spade strip under the J-clubs, no object; the diamond strip is object 29)

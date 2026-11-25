@@ -1,0 +1,42 @@
+# 3 players, jumbo-index deck; last OFC hand of the day; fanned rows read by their jumbo indices; box-to-card by the
+# index at the box's left edge (ovz.py maps); right player's columns are stacked index strips
+1 D7
+2 C7
+3 H7
+4 dup:3
+5 dup:3
+6 C2
+7 S8
+8 S9
+9 CT
+10 dup:9
+11 DJ
+12 DQ
+13 D4  # alone at an angle
+14 D3
+15 H3
+16 CA
+17 SJ  # right player, column 2 top
+18 dup:19
+19 CQ
+20 DK
+21 dup:20
+22 DA
+23 C5
+24 CK
+25 SK  # on the face-up discards (Qs, As under it)
+26 S5
+27 S2  # whole at 4404 s
+28 ?  # between the 2s and 5d strips
+29 D5  # whole at 4409 s
+30 dup:29
+31 S4
+32 H8
+33 dup:32
+34 C8
+35 C6  # whole at 4407 s
+36 S6  # whole at 4434 s
+37 S3
+38 SQ  # added: face-up discards under the Ks; Q index + spade
+39 SA  # added: face-up discards under the Ks; A index + spade
+missed: 7 (HA D6 H6 H5 CJ C9: right player's stacked index strips; H4: bottom fan)

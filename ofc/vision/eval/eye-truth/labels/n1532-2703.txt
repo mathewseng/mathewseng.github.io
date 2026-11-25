@@ -1,0 +1,57 @@
+# 3 players, new jumbo-index deck (dark patterned backs, never in training); right player's rows rotated 90 deg; many
+# extra slots on one card (square boxes on sideways cards) are dup; ids mapped with ovz.py on a 2 s average
+1 C6
+2 DJ
+3 C8
+4 H8
+5 D3
+6 H5
+7 S3
+8 H4
+9 dup:10
+10 S4
+11 dup:10
+12 dup:10
+13 dup:15
+14 dup:15
+15 S9
+16 dup:17
+17 D2
+18 DA
+19 DK
+20 dup:19
+21 dup:19
+22 ?  # box spans the Kc, Kd and Ad strips
+23 CK  # whole at 2578 s
+24 ?  # Kd/Kc strips
+25 ?  # Kd/Kc strips
+26 dup:23
+27 SK
+28 dup:31
+29 dup:31
+30 dup:31
+31 SJ
+32 DQ
+33 dup:32
+34 dup:32
+35 dup:32
+36 dup:46
+37 SA  # under the Ks, whole at 2626 s; A index + spade still show
+38 dup:40
+39 S6
+40 ST
+41 dup:39
+42 dup:39
+43 D4
+44 dup:46
+45 dup:43
+46 D7
+47 CQ
+48 dup:47
+49 SQ
+50 dup:51
+51 CA  # whole at 2645 s
+52 H7  # whole at 2671 s
+53 S7
+54 D6
+missed: 5 (D5 H2 H3 C4 S5: bottom player's fanned rows, jumbo indices legible, no object of their own)

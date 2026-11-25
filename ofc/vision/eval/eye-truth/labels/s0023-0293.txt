@@ -19,4 +19,5 @@
 19 CJ
 20 ?
 21 C2
+22 C?  # added 2026-11-24: under a fan; seen whole as 8d at 242 s
 missed: ?

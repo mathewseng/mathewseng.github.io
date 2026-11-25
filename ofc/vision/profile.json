@@ -105,10 +105,11 @@
   "medianProbability": 0.8,
   "contradiction": 0.3,
   "emptySeconds": 3.0,
+  "stillKeep": 0.6,
   "stripProbability": 2.0,
   "perClassMedian": {
    "SA": 0.5
   }
  },
- "handStateNote": "OfcHandState parameters (video). stripProbability > 1 turns strip reads of never-seen covered cards off; no strip reader is shipped (see README)."
+ "handStateNote": "OfcHandState parameters (video). stripProbability > 1 turns strip reads of never-seen covered cards off; no strip reader is shipped (see README). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README)."
 }

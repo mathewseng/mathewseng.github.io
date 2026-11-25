@@ -23,4 +23,5 @@
 23 DT
 24 C9
 25 CT
-missed: 1 ? (top middle row, diamond card between the 8s and 5d, mostly covered; no object)
+26 C?  # added 2026-11-24: diamond card between the 8s and 5d; seen whole as 6d at 1856 s
+missed: none (the diamond card is object 26)

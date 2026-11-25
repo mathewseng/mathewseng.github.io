@@ -1,0 +1,29 @@
+# 2 players; bottom player has a tight fan of ~8 cards (20-26) laid down already fanned; 15/16 thrown to the middle
+1 SJ
+2 D6
+3 H9
+4 S6
+5 H6
+6 H5
+7 CJ
+8 DA
+9 D4
+10 S2
+11 S7
+12 HT
+13 HQ
+14 HK
+15 dup:14
+16 CT
+17 ?  # small pile beside the discards
+18 C4
+19 S4
+20 ?
+21 CQ  # Q-clubs art (yellow hexagon, circle) and club index in the fan
+22 ?
+23 ?
+24 ?
+25 ?
+26 ?
+27 H8
+missed: ? (bottom fan not countable)

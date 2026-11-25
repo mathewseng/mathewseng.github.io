@@ -2,7 +2,7 @@
 1 H8
 2 H3
 3 ?
-4 ?
+4 HK  # relabelled 2026-11-24 from a 6x 1.3 s average: K index and heart pip at the right edge
 5 S2
 6 H5
 7 CJ

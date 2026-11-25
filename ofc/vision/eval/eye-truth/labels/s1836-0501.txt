@@ -23,4 +23,6 @@
 22 H5
 23 D7
 24 D6
-missed: H4 (middle row, between 3 and the 5c, no box); C5 (middle row right of the 4h, no box)
+25 H4  # added 2026-11-24: middle row, half under the re-laid top row; no box since 484 s
+26 C5  # added 2026-11-24: middle row, half under the top row; no box since 430 s
+missed: none (H4 and C5 are objects 25 and 26 since 2026-11-24 evening)

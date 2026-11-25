@@ -40,4 +40,5 @@
 39 D8
 40 dup:41
 41 S8
+42 C?  # added 2026-11-24: clubs card under a heart card; seen whole as 4c at 1659 s
 missed: ?

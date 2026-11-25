@@ -225,6 +225,13 @@ def bare_felt(small, x, y, frac=0.8):
     return float(np.mean((b > 120) & (b - r > 60) & (b - g > 40))) >= frac
 
 
+def footprint(small, sl):
+    """The slot's card footprint on the 4x-downscaled frame, rectified to 12x18 px."""
+    q = card_quad(sl['x'] / 4, sl['y'] / 4, sl['width'] / 4, sl['height'] / 4, sl['angle'])
+    M = cv2.getPerspectiveTransform(q, np.float32([[0, 0], [12, 0], [12, 18], [0, 18]]))
+    return cv2.warpPerspective(small, M, (12, 18), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE).astype(np.int16)
+
+
 def _angdiff(a, b):
     d = abs(a - b) % 180
     return min(d, 180 - d)
@@ -255,7 +262,7 @@ class OfcHandState:
       a single-view or strip read of a name held by another slot is dropped.
     - Strip reads (covered cards never seen whole) are off unless `stripProbability` <= 1; see README."""
     DEFAULTS = dict(dist=6, angle=8, gap=4.0, gapNamed=12.0, swapReads=2, minVotes=2, purity=0.8, medianProbability=0.8,
-                    emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5)
+                    emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, stillKeep=0.0, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5)
 
     def __init__(self, **params):
         self.p = dict(self.DEFAULTS, **params); self.slots = []; self.n = 0
@@ -283,10 +290,16 @@ class OfcHandState:
                 if sl['felt'] >= p['feltReads']: self._forget(sl); continue
             # a name seen only in a brief glimpse (a card in a hand) is carried only if a later card covers it
             glimpse = sl['seen'] - sl['first'] < p['glimpseSeconds'] and not self.covering(sl)
+            # a named card still lying where it was, half covered by cards laid over it after the detector stopped
+            # boxing it: >= stillKeep of its footprint is unchanged since its last box (a card taken away shows felt,
+            # a hand, or whatever was put there instead)
+            if p['stillKeep'] and small is not None and sl['name'] and not glimpse and sl['seen'] < t and sl.get('ref') is not None \
+               and np.mean(np.abs(footprint(small, sl) - sl['ref']).max(2) <= 25) >= p['stillKeep']: sl['last'] = t
             keep = (sl['name'] and not glimpse) or sl['seen'] - sl['first'] >= 2.5
             if (t - sl['seen'] > (p['gapNamed'] if keep else p['gap']) and t - sl['last'] > p['gap']) or \
                (not keep and t - sl['seen'] > p['gap']): sl['dead'] = True
         self.slots = [sl for sl in self.slots if not sl['dead']]
+        self._small = small
         cand = sorted((math.hypot(b['x'] - sl['x'], b['y'] - sl['y']), bi, si)
                       for bi, b in enumerate(bodies) for si, sl in enumerate(self.slots)
                       if math.hypot(b['x'] - sl['x'], b['y'] - sl['y']) < p['dist'] and _angdiff(b['angleDegrees'], sl['angle']) < p['angle'])
@@ -348,6 +361,7 @@ class OfcHandState:
             sl['xs'].append((b['x'], b['y'], b['angleDegrees'], b['width'], b['height'])); sl['xs'] = sl['xs'][-50:]
             m = np.median(np.array(sl['xs']), 0)
             sl.update(x=float(m[0]), y=float(m[1]), angle=float(m[2]), width=float(m[3]), height=float(m[4]), seen=t, last=t)
+            if p['stillKeep'] and getattr(self, '_small', None) is not None: sl['ref'] = footprint(self._small, sl)
             if sl['votes']:
                 top, n = max(sl['votes'].items(), key=lambda kv: kv[1])
                 # one vote is enough for a card read whole at >= singleVoteProbability (seen once, then covered)

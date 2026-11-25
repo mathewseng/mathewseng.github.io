@@ -195,11 +195,78 @@ keyframe thumbnails from `scripts/eye/thumbs.py` for the felt check):
 - s0023, 5 legible cards unnamed: 5♦ never boxed on its own; 8♠ laid exactly on a 7♦ (v3 reads 6♠); 8♥ under the
   3♥ after a re-lay; Q♠ and K♠ in a fan (v3 none / 0.42).
 - Detector: 3 legible cards with no box (4♥ and 5♣ in s1836 501 s; 2♠ in 959 s, where one box spans the J♦ and the 2♠).
+  All three are named hidden slots since `stillKeep` (next section).
 - **Exclusions (illegible, counted):** 100 objects (29 + 71) and 24 countable cards with no object. All lie in rows
   laid down already fanned (Fantasyland and three-player pineapple), shown only as 10–20 px strips with ~7 px
   indices. The labels file of each frame says where. Placement-time views (`scripts/eye/qsheet.py`) show neighbouring
   cards over them from the moment they land. Four s1836 hand ends (1104, 1469, 1697, 1791 s) are mid-Fantasyland
   sorting; cards there are moving in groups.
+
+### Half-covered cards and new held-out footage (2026-11-24 evening)
+
+**Why the 3 "detector misses" were missed.** All three were named while whole. Then a row was laid or slid over
+their top half (4♥ and 5♣ in s1836 501 s, after the top player re-laid a row at 496 s; 2♠ in 959 s, under the J♦).
+The detector stops boxing a half-covered card: no raw candidate reaches 0.02 (`scripts/eye/detdbg.py`). A hidden slot
+lived only while some box covered its centre, so after `gapNamed` (12 s) the slot and its name were dropped. The same
+thing happens to a card the detector simply stops boxing: a whole, legible Q♠ at the top-row end in n1501 946 s has
+no box from 894 s on.
+
+**Shipped: `handState.stillKeep` 0.6.** When a slot is boxed, its footprint on the 4x-downscaled frame (the same
+`small_frame` as the bare-felt check) is kept as a 12x18 reference (`footprint()`). A named, non-glimpse slot with no
+box stays alive while at least 60 % of its footprint is unchanged (every channel within 25) since that last box.
+A half-covered card keeps its visible half. A card taken away shows felt, a hand, or whatever replaced it.
+
+- Measured (`scripts/eye/trace.py`), true half-covered cards keep 0.71–1.00 of their footprint (4♥ 0.86–0.95, 5♣
+  0.71–1.0, 2♠ 0.71–0.93, 8♦ 0.76–0.87).
+- A ghost 10♦ (s1836 1791 s, taken by a hand at 1781 s, deck put on its spot) drops to 0.35–0.47.
+- A first version, "the slot's centre still shows card white", kept that 10♦ and was dropped.
+- Every new name this rule puts at a hand end was checked on filmstrips of the slot from its last whole read to the
+  hand end (`scripts/eye/checkx.py`). Each one was the same card still lying there under later cards. These were the
+  3 no-box cards, 8♦/4♣/6♦ (s1836 1244/1697/1906 s), 2♥/8♦ (s0023 101/293 s), Q♠ and a 5♥ (n1501 946 s), and Q♠/A♠
+  under a K♠ on face-up discards (n1532 4544 s).
+
+**New held-out footage.** Office-3 wide camera, never trained on. `n1501` is 15:01–15:31 EST, the combined file: 2
+players, red/blue decks. `n1532` is the 1-minute clips 0–77 from 15:31:55 EST, stitched on a cumulative-duration clock
+(`scripts/eye/src.py`). It has 2–3 players on the right side, and from about 16:14 EST a third deck: jumbo-index
+PokerStars cards with dark backs that the classifier never saw. There are no cards between 15:49 and 16:14 EST.
+
+- Scans: `scripts/eye/scan2.py` (scan_state + thumbs in one decode).
+- 32 hand ends were found. 6 were eye-labelled the same way as `eval/eye-truth`: n1501 223/946/1694 s and n1532
+  154/2703/4544 s, 208 objects.
+- Labels were read from 5x tiles (`zsheet.py`) and 8x 2 s averages (`avgz.py`), with court art compared against the
+  reference sheets. Objects in fans were mapped by id on a 2 s average (`ovz.py`).
+- A fanned object is the card it held when its slot was first boxed whole. Its position alone is ambiguous by
+  ±8 px between neighbouring strips. Three first-pass labels were wrong this way and were corrected from the slots'
+  earliest views (n1532 2703 obj 51 is A♣ and 37 is A♠, not "5♦" and "dup").
+- `score.py` now takes any sessions (from the sim file names) and prints `EXTRA` for named objects the truth file
+  lacks. A card with several objects (`dup:N`) counts as named when any of them carries its name.
+
+| hand ends, legible cards named right | before (v3, hand state) | after (`stillKeep` 0.6) |
+| --- | --- | --- |
+| s1836 (16 hands) | 303 / 314 | **306 / 314** |
+| s0023 (3 hands) | 52 / 58 | **53 / 58** |
+| n1501 (3 hands, new) | 66 / 69 | **68 / 69** |
+| n1532 (3 hands, new; 2 with the jumbo deck) | 36 / 86 | **38 / 86** |
+| legible cards named wrong, all four | 0 | **0** |
+| illegible (`?`) objects named | 0 | 0 |
+
+The old truth gained 3 legible objects (the no-box cards, now hidden slots) and a relabel: s0023 533 s object 4,
+labelled `?`, shows K♥'s index and pip on a 6x average and is now `HK`. Five `C?` objects (named under fans, not
+scorable) were added. n1532's gap is the jumbo deck: 45 of its 48 unnamed legible cards are jumbo-index cards, which
+v3 gates out as unknown (0 wrong).
+
+**Still unnamed at hand end (none wrong):**
+
+- s1836, 8: A♠ (ornate, under a fan), A♣ half covered, 10♣ seen 2 keyframes, 7♥ (v3 0.74), 6♥ (weak box only), 4♦ ×2,
+  Q♥ hidden.
+- s0023, 5: 5♦ (hidden, never boxed alone), 8♠ on 7♦, 8♥ under a re-laid 3♥, Q♠, K♠.
+- n1501, 1: 4♣ half under a 5♥ in a fan (15:29:30).
+- n1532 154 s (15:34:29), 3: 9♥ turned 30° over a Q♣, 5♣ hidden, 4♠.
+- n1532 2703 s (16:16:58) and 4544 s (16:47:39), 45: every jumbo-index card still unnamed. The detector boxes them, and v3's
+  classifier tops them below the gate.
+- Cards with no object: s1836 22 never-seen fanned strips; n1532 12 fanned jumbo cards whose index shows but that
+  have no box of their own (bottom fans and the right player's stacked columns).
+- 2 false objects (unnamed hidden slots on felt, s1836 1356 and 1791 s) remain.
 
 ### Strip reader (not shipped)
 

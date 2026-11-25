@@ -1,0 +1,34 @@
+# 2 players (top and bottom-left); deck A + deck B courts; labelled from 5x tiles + 8x 2 s averages, court art vs ref-*.jpg
+1 DQ
+2 S9
+3 SA
+4 S5
+5 dup:6  # earlier spot of the same 6s (148 s view = 6s shifted)
+6 S6
+7 S2
+8 HJ
+9 CQ
+10 SJ
+11 H3
+12 CT  # face up on the discards (backs)
+13 D2
+14 C?  # A-hearts at 172 s, fanned under the 2d
+15 dup:13
+16 C?  # A-clubs at 156 s, under the fan
+17 ?
+18 SK
+19 ?~ (clubs card between the Ks and Jd, pips only)
+20 S7
+21 DT
+22 DJ
+23 HQ
+24 H4
+25 C9
+26 D7
+27 ST
+28 H6
+29 dup:28
+30 dup:31
+31 H8
+32 H9
+missed: ? (top player's bottom-row fan of aces not countable)

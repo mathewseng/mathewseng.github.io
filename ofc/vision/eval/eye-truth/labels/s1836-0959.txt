@@ -26,4 +26,5 @@
 26 D8
 27 C9
 28 S9
-missed: S2 (middle row right end; box 11 stretches over J-diamonds and it)
+29 S2  # added 2026-11-24: middle row right end, under the J-diamonds box
+missed: none (S2 is object 29 since 2026-11-24 evening)
