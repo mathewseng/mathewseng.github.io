@@ -37,6 +37,7 @@ Needs `onnxruntime`, `opencv-python` and `numpy`, plus `av` for video. `profile.
 | Identity fallback | `models/card-identity-fallback.onnx` (cls-v5a, same net) | crops where the main classifier's best card < 0.3 or `none` on top (and the deck gate says classic) | same |
 | Deck gate | `models/card-deck.onnx` (deck-v1, same net, 3 outputs) | every crop, both turns | classic / jumbo / none |
 | Jumbo reader | `models/card-identity-jumbo.onnx` (cls-f1, same net, factorized head) | crops with p(jumbo) ≥ 0.5 in both turns | 52 codes + `none` (log p) |
+| Second detector | `models/card-body-d1.onnx` (d1, round 8 fine-tune, fp32) | video mode only, same canvas | bodies kept where no first-detector body overlaps (rotated IoU < 0.3), marked `detector` 1 |
 | Corner reader | `models/card-corner.onnx` (corner5, rank from luma × suit from colour) | in jumbo-deck hands, the 4 corners (36x36) of each unnamed slot's crop | per corner 52 codes + `none` (log p) |
 
 **Gate.** A body is named only when all of these hold:
@@ -952,6 +953,131 @@ at that card (only a one-keyframe slot swap at n1532 480 s). Not shipped. Its ot
 - A cross-detector name diff (`namediff2.py`, units by name and spot) and its sheets (`unitsheet.py`) are ready for the
   check.
 
+### Two detectors, a partial-box guard and a wrong single view (2026-11-25, round 9)
+
+Goal: keep d1's gains (round 8) without its covered-card hazard, and find every new name mid-hand.
+
+**Headline: legible hand-end cards named right.** Scored by name: a truth card counts as named when a report of its name
+lies within 35 px of its object (`scripts/combine/nscore.py`). The 6 px slot binding of `score.py` cannot score a new
+detector, whose boxes sit a few px off the old ones. For the old runtime both scorers give the same numbers.
+
+| | old runtime (4b07a861) | `sandwichNoView` only | d1 alone (round 8) | **round 9 (shipped)** |
+| --- | --- | --- | --- | --- |
+| fresh n1501 707 / 1309 / 1470 s | 26 / 27 / 25 | 26 / 27 / 25 | | **27** / 27 / 25 |
+| fresh n1532 4197 / 4361 s | 19 / 23 | 19 / 23 | | **20** / **24** |
+| **fresh total** | **120 / 132** | 120 | 122 (but the wrong 2♥ mid-hand) | **123 / 132** |
+| eye s1836 / s0023 / n1501 / n1532 | 306 / 53 / 68 / 63 | same | 309 / 55 / 68 / 69 (+ 20 names on no legible object, unchecked) | **308** / 53 / 68 / **66** |
+| eye total | 490 / 527 | 490 | 501 | **495 / 527** |
+| truth names lost vs old | | 0 | 6 | **0** |
+| named wrong (truth), names on the wrong object | 0, 0 | 0, 0 | | **0, 0** |
+
+- Fresh gains: the A♥ at 707 s, the Q♣ at 4197 s and the 5♠ at 4361 s. Eye gains: n1532 5♣ (154 s), 7♦ (2703 s),
+  K♦ (4544 s); s1836 6♥ (1356 s), 4♦ (1469 s).
+- Fresh cards with no legible truth object that the new runtime names, all checked right: A♣ 707 s; 4♠, A♦, 4♦ 4197 s;
+  sideways 3♦ under the hand, K♦, J♦ 4361 s.
+
+**What shipped.**
+
+1. **`secondDetector`** = d1 (`models/card-body-d1.onnx`, round 8's 4-epoch fine-tune, fp32 as measured). In video mode
+   its bodies join only where no first-detector body overlaps them (rotated IoU < 0.3; `second_bodies`). The shipped
+   detector's boxes stay as they are. d1's own box on the 4♥ at n1501 1374–1470 s overlaps the shipped detector's 3♦ box
+   at IoU 0.34–0.39, so it never joins. `read()` (single frames) uses the first detector only.
+2. **`partialGuard`** (`partial_boxes`):
+   - **Card size.** `expected_card` gives the box size of a whole card at any spot and angle. The model is a card
+     W0 × H0 (45.5 × 66.0) under a log-quadratic lens scale sx, sy. It was fitted with a robust loss on 1,512 confident
+     whole views of the shipped scans. On whole views, the side ratio's 5th percentile is 0.94–0.95 and its 1st percentile
+     0.86–0.90.
+   - **Size test (d1 boxes).** A side below 0.85 × expected whose missing end is ≥ 50 % under another box, or a side
+     above 1.2 × expected, is not a whole card. A box above 1.2 × spans cards: a d1 box over a fanned 8, 6♥ and 3♠,
+     1.32 × a card wide, passed the gate as 6♠ at n1532 4012.9 s (16:38:48 EST).
+   - **Sandwich test.** Other bodies overlap the box from both ends of one axis, each centred 0.15–0.85 of a card away.
+     One of them lies on top of it.
+     - On d1 boxes, a sandwiched view may still name a court card by its art, but not a number card or an ace.
+     - On every box, `sandwichNoView`: its single gate pass is not reported by itself. It still votes.
+   - A box marked partial is not a gate pass, and its view does not join the slot's median.
+   - `noViewSources`: a d1 box never names a card by one view, only through the hand state's 2 votes and median.
+3. **Hand state** (d1 bodies are `detector` 1):
+   - `secondKeepsRecent`: a d1 gate pass that agrees with the slot's name keeps the median snapshot that named it.
+     Refreshed with half-covered views, the snapshot dropped a 4♥ at s1836 1104 s below the gate.
+   - `secondViewsOwn`: d1 views join a slot's median only on slots the shipped detector never boxed. Its amodal box over
+     a covered 6♥ dragged the median down when a shipped-box vote then took the snapshot (n1532 4197 s).
+   - `viewMedian` 0.5: a single gate pass on an unnamed slot is reported by itself only when the median of the slot's
+     last 6 views tops the same card at ≥ 0.5. This only removes reports (83 single-keyframe units) and costs no truth name.
+
+**The 4♥ → 2♥ case.**
+
+- **d1's box there is not short.** It is whole-card sized (width 0.94–1.0 × expected, height 1.03 ×) but shifted about
+  10 px left. It spans the 3♦'s exposed strip and the 4♥'s visible left half, so its centre column holds the 4♥'s left
+  pip column. The round-8 description ("boxed only the visible half") was wrong, and **the size test cannot block it**.
+  The merge rule (keep the shipped box there) does.
+- **The shipped runtime reports the same 2♥ itself.** It is a single gate pass on a weak box (conf 0.59) at n1501
+  1445.3 s (15:25:21 EST), reported as `source: view` for one keyframe. The runtime run on the video confirms it.
+  - Round 7's audit took its units from `table()` (slot names), so it never saw a single-view report.
+  - The shipped runtime has 351 such view-only units (a name reported by one view on a slot that never holds it).
+  - The sandwich test blocks this report. Run on video, the shipped profile reports H2 at 1445.3 s and this one does not.
+- **Rejected guard variants:**
+  - the size test on every box: it costs the fresh 1309 s 6♥, which the shipped runtime reads from a box that shows only
+    the card's left pip column;
+  - the sandwich test blocking every read on every box: it costs the 1470 s Q♠ (half covered, read by its art), the
+    1309 s 6♥ and 4197 s names;
+  - `viewReport` off (no single-view reports at all): fresh −1 and eye −4. Those are cards placed one keyframe before
+    the truth frame;
+  - `viewStill` 2 (a single view only on a slot boxed on 2 keyframes): eye −3.
+
+**Combination measured** (merged scans, `scripts/combine/merge.py`; names lost vs shipped in brackets):
+
+| variant (vs the old runtime) | fresh | eye | truth names lost |
+| --- | --- | --- | --- |
+| old + d1 bodies where no old body (IoU < 0.3), no guard | 122 | 494 | 2 (4197 6♥, s1836 1104 4♥) |
+| + size test on all boxes | 121 | 493 | 3 |
+| + size on d1 + sandwich (all reads) on all boxes | 120 | | Q♠ 1470 s, 6♥ 1309 s, … |
+| + size/sandwich on d1, noView on all sandwiched, `long` 1.2, d1 no single views (gE) | 122 | 494 | 2 |
+| + `secondKeepsRecent` (gF) | 122 | 495 | 1 (4197 6♥) |
+| + `secondViewsOwn` (gG) | **123** | **495** | **0** |
+| + `viewMedian` 0.5 (**shipped**) | **123** | **495** | **0** |
+
+**Mid-hand diff and eye check** (`eval/midhand-audit/audit-round9.json`). One unit is (session, name, spot within 20 px,
+time-contiguous within 8 s) (`namediff3.py`). The diff covers all four sessions, including hands with no truth.
+
+- Against the old runtime, the new one adds **238 units** (7,268 keyframe reports: n1532 137, n1501 49,
+  s1836 38, s0023 14). It drops 154 units (567 reports, including the 2♥).
+- **Every added unit was checked by eye**, on full-resolution zooms of:
+  - the slot's first gate pass of that name, with its crop;
+  - its first and last report (`otiles.py`);
+  - 5–10× zooms of later frames for doubtful number cards (`bigz.py`).
+- Courts were compared with hand-labelled reference crops of the two classic decks and the jumbo deck (`courtref.py`).
+  Deck A's J♣ is a yellow diagonal swirl, Q♣ a yellow diamond, K♦ yellow rings, Q♦ a grey swirl, J♦ grey with a dark centre.
+- **Result: 238 right, 0 wrong.**
+  - 18 units are a hidden report that lasts a few keyframes after the card was lifted or moved (a collection sweep,
+    a card picked up). The identity is right and the position is stale.
+  - One name is right only by elimination: s1836 1571.9–1610.9 s A♠, a card 60 % under a 10♣. Its visible end shows
+    an ace index with a black suit and no corner pips, and the eye truth puts the A♣ elsewhere in that hand. Eye truth
+    had labelled it `?`.
+- `viewMedian` was added after the check. Relative to that run it only removes reports (0 added), so the check covers
+  the new runtime.
+
+**Not audited: single-view units.** The new runtime still has 266 view-only units (the old runtime: 351). Most are
+cards in a player's hand or being placed, read once.
+
+- About 85 of the old runtime's 173 not explained by a same-name slot nearby were looked at on contact sheets
+  (`vtiles.py`). One was wrong: the 2♥, now gone.
+- Six cannot be confirmed by eye, and four of them are still reported. They are one view each of cards in a hand or under
+  a neighbour: s1836 1088.7 s 6♠, 1540.5 s 4♠, 1771.3 s 3♣; n1501 276.5 s 4♦ (consistent with a 4) and 278.4 / 295.1 s 9♣.
+- Turning single views off costs hand-end names (above). A next round should audit these units or find a safe rule.
+
+**Rejected or not done.**
+
+- d1 replacing shipped boxes that span two cards: the merge was built (span0.3) but not run through the final rules.
+- An fp16 copy of d1: not measured, so the fp32 file ships (10.9 MB).
+- Retraining was not needed.
+
+**Remaining misses** (new runtime):
+
+- Fresh unnamed: 707 s 6♣ (median 0.78); 4197 s K♣, K♠, 7♠ (column cards under the hand), 9♣ and 4♥ (hidden);
+  4361 s 5♦, K♠ under the A♠, and A♥ (its box spans the K♥ strip).
+- Eye truth: 32 unnamed, 20 of them on n1532 (fan strips and stacked jumbo columns).
+- Fresh cards with no truth object at all: 20, of which the new runtime names 7.
+
 ## What still fails
 
 - **Fans laid down already fanned** (three-player pineapple, Fantasyland 14+ cards): cards never seen whole stay
@@ -960,14 +1086,14 @@ at that card (only a one-keyframe slot swap at n1532 480 s). Not shipped. Its ot
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
 - The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
 - **A♠ (deck A)** has too few confident training views.
-- **Fresh truth:** 120 / 132 legible hand-end cards named, 0 wrong (round 7 above). The mid-hand audit found 0 wrong names after round 7. Its 95 % upper bound is about 1.6 % of named units, set by the 170-unit sample of confident upright cards.
+- **Fresh truth:** 123 / 132 legible hand-end cards named, 0 wrong (round 9 above). The round-9 diff added 238 named units and all were checked right. Round 7's audit missed single-view reports: one was a wrong 2♥ (fixed). 266 single-view units of cards in hands remain unaudited.
 - **Sideways cards in the right player's columns:** a sideways 8♦ passed the gate as 7♦ (n1532 16:32–16:34 EST). This is fixed by `turnVeto` (round 7), but only for number cards whose turned read and pip count agree. Squashed near-square crops are still read upright.
 - **Jumbo-index deck:** 23 / 86 legible n1532 hand-end cards stay unnamed, mostly fan strips and stacked columns.
   The corner reader names some of these, but only where the card reader agrees. Only two hands of the deck were
   available for training, with 1–4 physical cards per rank.
 - **Cards the detector stops boxing** keep their name only if they were named while whole (`stillKeep`).
-- **The detector is still the EPT model.** Fine-tunes on this footage (round 8) boxed the right player's columns and some
-  missed cards better, but read a covered 4♥ as 2♥ and lost names elsewhere, so none shipped.
+- **Two detectors.** The EPT model boxes everything first. d1 (round 8 fine-tune) adds boxes only where it has none, and
+  never names a card from one view, a partial box or a box spanning cards (round 9).
 
 ## Recipe (scripts/)
 
@@ -1064,6 +1190,13 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
       stray boxes and disagreements;
     - `scanall.sh MODEL ROOT` rescans the four sessions (`scan3.py`) and runs the shipped sims (`runsims.sh`);
       `namediff2.py OLD NEW` diffs names across detectors; `unitsheet.py`, `adjud.py` and `simtile.py` are the check sheets.
+
+16. **Two detectors (round 9),** `scripts/combine/`, scratch in `/private/tmp/claude-501/ofc-vision9/` (NOTES.md):
+    - `cardsize.py` fits the card-size model (`cs.py` `expected`); `merge.py RULE ROOT SESS…` builds merged scans of the
+      shipped and d1 scans (crops symlinked); `sim1.sh ROOT TAG SESS [pg=GUARD.json] ['{params}']` runs a sim;
+    - `nscore.py DIR TAG [--fresh] [--v]` scores by name and position (any detector); `units.py TAG` diffs against the
+      shipped sims (`namediff3.py`) and classes units new or shifted;
+    - `otiles.py`, `dtiles.py`, `bigz.py`, `vtiles.py` and `courtref.py` (reference courts and aces) are the eye-check sheets.
 
 ## Taken from gigarepo (servers/poker-os)
 

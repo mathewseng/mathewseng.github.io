@@ -22,6 +22,8 @@ cr = next((a for a in sys.argv[3:] if a.startswith('corner=')), None)  # corner=
 if cr:
     import onnxruntime as ort
     r.corner = ort.InferenceSession(cr[7:], providers=['CPUExecutionProvider'])
+pg = next((a for a in sys.argv[3:] if a.startswith('pg=')), None)  # pg=GUARD.json (partialGuard: q, short, cover)
+if pg: r.profile['partialGuard'] = json.load(open(pg[3:]))
 for s in sessions:
     out = simulate(r, s, False, params)
     json.dump(out, open(f'../sim-{tag}-{s}.json', 'w'), default=float); print('done', s, flush=True)

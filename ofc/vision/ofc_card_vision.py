@@ -83,6 +83,66 @@ def pip_count(crop, ink=24, white=150):
 RANKS = {r: i + 2 for i, r in enumerate('23456789T')}
 
 
+def expected_card(cardsize, x, y, deg):
+    """Box size (short, long side) of a whole card lying at (x, y) with its long axis `deg` from vertical (profile cardSize:
+    card W0 x H0 under a log-quadratic lens scale sx, sy fitted on confident whole views; README round 9)."""
+    q = cardsize['q']; u, v = (x - 1000) / 1000, (y - 600) / 1000; f = (u, v, u * u, u * v, v * v)
+    sx = math.exp(sum(a * b for a, b in zip(q[2:7], f))); sy = math.exp(sum(a * b for a, b in zip(q[7:12], f)))
+    th = math.radians(deg)
+    return math.exp(q[0]) * math.hypot(sx * math.cos(th), sy * math.sin(th)), math.exp(q[1]) * math.hypot(sx * math.sin(th), sy * math.cos(th))
+
+
+def partial_boxes(bodies, cover, guard):
+    """Mark b['partial'] on a box that may show only part of a card, so its view is not read as a whole card (README round 9):
+    - size: a side clearly shorter than a whole card at its spot (< guard['short'] x expected) whose missing part, on either
+      end, is >= guard['cover'] under another box (boxes of the detectors listed in guard['sizeSources'], default all);
+    - sandwich (guard['sandwich'] = [lo, hi]): other bodies overlap it from BOTH ends of one axis, each centred lo..hi of a card
+      along that axis and within half a card across it. One of them lies on top of it: a box over the 4 of hearts' left
+      pip column, the 3 of diamonds' strip and the 8 of clubs' edge read 2 of hearts (n1501 1445 s)."""
+    sw = guard.get('sandwich')
+    for b in bodies:
+        # a box of a detector listed in noViewSources never names a card by one view (only through the hand state's votes)
+        if b.get('detector', 0) in guard.get('noViewSources', ()): b['noView'] = True
+        if sw:
+            ew, eh = expected_card(guard, b['x'], b['y'], b['angleDegrees'])
+            a = math.radians(b['angleDegrees']); u, v = (math.cos(a), math.sin(a)), (-math.sin(a), math.cos(a))
+            ends = set()
+            for o in bodies:
+                if o is b: continue
+                dx, dy = o['x'] - b['x'], o['y'] - b['y']; du, dv = dx * u[0] + dy * u[1], dx * v[0] + dy * v[1]
+                if sw[0] * ew <= abs(du) <= sw[1] * ew and abs(dv) < 0.5 * eh: ends.add(('u', du > 0))
+                if sw[0] * eh <= abs(dv) <= sw[1] * eh and abs(du) < 0.5 * ew: ends.add(('v', dv > 0))
+            for ax in 'uv':
+                if (ax, True) in ends and (ax, False) in ends:
+                    # every detector: a single gate pass on such a box is not reported by itself (hand state, noView)
+                    if guard.get('sandwichNoView'): b['noView'] = True
+                    if guard.get('sandwichSources') is None or b.get('detector', 0) in guard['sandwichSources']:
+                        b['partial'] = dict(side='sandwich-' + ax, courts=bool(guard.get('sandwichCourts')))
+                    break
+            if b.get('partial'): continue
+        if guard.get('sizeSources') is not None and b.get('detector', 0) not in guard['sizeSources']: continue
+        ew, eh = expected_card(guard, b['x'], b['y'], b['angleDegrees'])
+        a = math.radians(b['angleDegrees']); u, v = np.array([math.cos(a), math.sin(a)]), np.array([-math.sin(a), math.cos(a)])
+        for side, exp_, axis, other in (('width', ew, u, 'height'), ('height', eh, v, 'width')):
+            if guard.get('long') and b[side] > guard['long'] * exp_:
+                # clearly longer than a card: the box spans cards (a d1 box over a fanned 8, 6 of hearts and 3 of spades read 6S)
+                b['partial'] = dict(side=side + '-over', ratio=round(b[side] / exp_, 3)); break
+            if b[side] >= guard['short'] * exp_: continue
+            miss = exp_ - b[side]
+            for sgn in (-1, 1):
+                c = np.array([b['x'], b['y']]) + sgn * axis * (b[side] + miss) / 2
+                w_, h_ = (miss, b['height']) if side == 'width' else (b['width'], miss)
+                strip = card_quad(c[0], c[1], w_, h_, b['angleDegrees']); area = w_ * h_
+                for o in cover:
+                    if o is b or (abs(o['x'] - b['x']) < 1e-6 and abs(o['y'] - b['y']) < 1e-6): continue
+                    got, _ = cv2.intersectConvexConvex(strip, np.asarray(o['quad'], np.float32))
+                    if got >= guard['cover'] * area:
+                        b['partial'] = dict(side=side, ratio=round(b[side] / exp_, 3)); break
+                if b.get('partial'): break
+            if b.get('partial'): break
+    return bodies
+
+
 def rotated_nms(boxes, scores, iou):
     order = np.argsort(-scores); keep = []; gone = np.zeros(len(boxes), bool)
     rects = [((float(b[0]), float(b[1])), (float(b[2]), float(b[3])), math.degrees(float(b[4]))) for b in boxes]
@@ -152,17 +212,23 @@ class OfcCardReader:
             cr = p['cornerReader']
             if _sha256(base / cr['path']) != cr['sha256']: raise ValueError(f"model changed: {cr['path']}")
             self.corner = ort.InferenceSession(str(base / cr['path']), o, providers=['CPUExecutionProvider'])
+        self.det2 = None
+        if p.get('secondDetector'):  # d1 (README round 9): its bodies join only where the first detector has none
+            sd = p['secondDetector']
+            if _sha256(base / sd['path']) != sd['sha256']: raise ValueError(f"model changed: {sd['path']}")
+            self.det2 = ort.InferenceSession(str(base / sd['path']), o, providers=['CPUExecutionProvider'])
         self.W, self.H = det['inputWidth'], det['inputHeight']
         self.crop = p['frameCrop']; self.accept = p['acceptance']
 
-    def detect(self, frame, confidence=None):
+    def detect(self, frame, confidence=None, net=None):
         x0, y0, w, h = self.crop
         img = frame[y0:y0 + h, x0:x0 + w]
         s = min(self.W / w, self.H / h); sw, sh = round(w * s), round(h * s)
         canvas = np.full((self.H, self.W, 3), 114, np.uint8)
         ox, oy = (self.W - sw) // 2, (self.H - sh) // 2
         canvas[oy:oy + sh, ox:ox + sw] = cv2.resize(img, (sw, sh), interpolation=cv2.INTER_AREA)
-        out = self.det.run(None, {self.det_in: canvas[:, :, ::-1].transpose(2, 0, 1)[None].astype(np.float32) / 255})[0][0]
+        net = net or self.det
+        out = net.run(None, {net.get_inputs()[0].name: canvas[:, :, ::-1].transpose(2, 0, 1)[None].astype(np.float32) / 255})[0][0]
         sel = out[4] >= (self.profile['detector']['confidence'] if confidence is None else confidence)
         if not sel.any(): return []
         boxes, scores = out[[0, 1, 2, 3, 5]][:, sel].T.copy(), out[4][sel]
@@ -225,6 +291,10 @@ class OfcCardReader:
             if a.get('orientationsAgree'):
                 ok = ok and int(p1.argmax()) == top == int(p2.argmax()) and min(p1[top], p2[top]) >= g['probability']
             b['card'] = b['label'] if ok else None
+            # (partialGuard) part of a card: never read as a whole card. Overlapped from both ends ('sandwich'): a court card
+            # still reads by its art (a half-covered Q of spades), a number card or ace does not (its pips are cut: 4 of hearts -> 2)
+            pg = b.get('partial')
+            if pg and not (pg.get('courts') and b['label'][1:] in ('J', 'Q', 'K')): b['card'] = None
         tv = self.profile.get('turnVeto')
         if tv:
             # a sideways card in a near-square box is squashed into the upright crop: a sideways 8 of diamonds (pips in rows
@@ -255,6 +325,20 @@ class OfcCardReader:
                 if b['card'] and best[b['card']] is not b: b['card'] = None; b['duplicateIdentity'] = True
         return bodies
 
+    def second_bodies(self, frame, boxes):
+        """The second detector's bodies (conf >= secondDetector.confidence) whose rotated IoU with every first-detector body is
+        below secondDetector.mergeIou, marked detector 1: the second detector adds boxes only where the first has none, and
+        the first detector's boxes stay as they are (README round 9)."""
+        sd = self.profile['secondDetector']; c = self.profile['detector']['confidence']
+        first = [np.asarray(b['quad'], np.float32) for b in boxes if b['detectorConfidence'] >= c]
+        out = []
+        for b in self.detect(frame, sd['confidence'], self.det2):
+            q = np.asarray(b['quad'], np.float32); a = cv2.contourArea(q)
+            if all(cv2.intersectConvexConvex(q, f)[0] / (a + cv2.contourArea(f) - cv2.intersectConvexConvex(q, f)[0] + 1e-9) < sd['mergeIou']
+                   for f in first):
+                b['detector'] = 1; out.append(b)
+        return out
+
     def read(self, frame):
         """Every card body in the frame; b['card'] is a code like 'HQ' when accepted, else None (unknown)."""
         return self.identify(frame, self.detect(frame))
@@ -284,7 +368,7 @@ class OfcCardReader:
     def corner_reads(self, state, bodies, crops):
         """In a hand the deck gate calls jumbo, read unnamed slots' boxes by their corner indices (b['stripProbabilities'])."""
         if self.corner is None or not state.jumbo_hand(): return
-        idx = [i for i, b in enumerate(bodies) if not b['slot']['name']]
+        idx = [i for i, b in enumerate(bodies) if not b['slot']['name'] and not b.get('partial')]
         if idx:
             v, pc = self.corner_probabilities([crops[i] for i in idx])
             for i, pr, q in zip(idx, v, pc): bodies[i]['stripProbabilities'] = pr; bodies[i]['cornerPair'] = self.corner_pair(q)
@@ -293,8 +377,10 @@ class OfcCardReader:
         """Read a frame into an OfcHandState: b['handCard'] is the name to report (also for covered cards named
         earlier), b['card'] the single-view read; state.table(t) also lists covered cards no longer boxed."""
         boxes = self.detect(frame, cover_confidence)
+        if self.det2 is not None: boxes = boxes + self.second_bodies(frame, boxes)
         bodies = [b for b in boxes if b['detectorConfidence'] >= self.profile['detector']['confidence']]
         state.associate(t, bodies, boxes, small_frame(frame))
+        if self.profile.get('partialGuard'): partial_boxes(bodies, boxes, self.profile['partialGuard'])
         self.identify(frame, bodies)
         if self.corner is not None:
             c = self.profile['classifier']
@@ -406,7 +492,7 @@ class OfcHandState:
                     emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, stillKeep=0.0, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5,
                     jumboShare=0.5, jumboMinBodies=10, deckJumbo=0.5, cornerPairVotes=0, cornerAgree=True, cornerMedian=0.5,
                     cornerHeldMargin=False, stripOwnHeld=False, stripHiddenStill=False, oneVoteViews=0, ghostGrace=False, noneHide=None,
-                    feltHide=False, turnBan=0, turnShare=0.25, pipMedian=None, pipVotes=5, pipAgree=0.9)
+                    feltHide=False, turnBan=0, turnShare=0.25, pipMedian=None, pipVotes=5, pipAgree=0.9, viewReport=True, secondKeepsRecent=False, secondViewsOwn=False, viewMedian=None)
 
     def __init__(self, **params):
         self.p = dict(self.DEFAULTS, **params); self.slots = []; self.n = 0
@@ -543,11 +629,18 @@ class OfcHandState:
             elif r:
                 sl['pend'], sl['npend'] = None, 0
             if b.get('vetoedCard'): sl.setdefault('vetoes', {})[b['vetoedCard']] = sl.get('vetoes', {}).get(b['vetoedCard'], 0) + 1
-            if b.get('probabilities') is not None: sl['views'].append(b['probabilities']); sl['views'] = sl['views'][-200:]
+            if not b.get('detector'): sl['firstDetector'] = True
+            # (secondViewsOwn) a second-detector view joins a slot's median views only on a slot the first detector never boxed:
+            # its amodal box over a covered 6 of hearts dropped the median a first-detector vote then took (README round 9)
+            own = not (p['secondViewsOwn'] and b.get('detector') and sl.get('firstDetector'))
+            if own and b.get('probabilities') is not None and not (b.get('partial') and not b['partial'].get('courts')): sl['views'].append(b['probabilities']); sl['views'] = sl['views'][-200:]
             if b.get('cornerPair'): sl['pairs'][b['cornerPair']] = sl['pairs'].get(b['cornerPair'], 0) + 1
             if b.get('stripProbabilities') is not None: sl['stripViews'].append(b['stripProbabilities']); sl['stripViews'] = sl['stripViews'][-60:]
             if r:
-                sl['votes'][r] = sl['votes'].get(r, 0) + 1; sl['recent'] = sl['views'][-10:]
+                sl['votes'][r] = sl['votes'].get(r, 0) + 1
+                # (secondKeepsRecent) a second-detector gate pass agreeing with the slot's name keeps the median snapshot that
+                # named it: its refresh with half-covered views dropped a 4 of hearts' median under the gate (README round 9)
+                if not (p['secondKeepsRecent'] and b.get('detector') and r == sl['name'] and sl['recent']): sl['recent'] = sl['views'][-10:]
                 sl['voteP'] = max(sl.get('voteP', 0), b['probability'])
                 if b.get('pips') is not None:
                     pc = sl.setdefault('pipVotes', {}).setdefault(r, [0, 0]); pc[0] += 1; pc[1] += b['pips'] == RANKS[r[1]]
@@ -631,6 +724,14 @@ class OfcHandState:
             v = b.get('card')
             v = v if v and sl['id'] not in dupe and self.hand.get(v, sl['id']) == sl['id'] and v not in held else None
             s = strip_of.get(sl['id'])
+            # (viewReport False) a single gate pass on a slot that holds no name is not reported: one view of a box over
+            # parts of three cards read 2 of hearts at n1501 1445 s (README round 9)
+            if not p['viewReport'] or b.get('noView'): v = None
+            if v and p['viewMedian'] is not None:
+                # (viewMedian) a single gate pass is reported by itself only when the median of the slot's last 6 views tops
+                # the same card at >= viewMedian (README round 9)
+                med = np.median(np.array(sl['views'][-6:]), 0) if sl['views'] else None
+                if med is None or CODES[int(med[:52].argmax())] != v or med[CODES.index(v)] < p['viewMedian']: v = None
             b['handCard'], b['source'] = (c, 'carried') if c else (v, 'view') if v else (s, 'strip') if s else (None, None)
         return bodies
 

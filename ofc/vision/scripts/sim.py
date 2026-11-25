@@ -5,7 +5,7 @@ import sys, os, json, cv2, numpy as np, onnxruntime as ort
 from collections import Counter, defaultdict
 RT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, RT)
-from ofc_card_vision import OfcCardReader, OfcHandState, cover_mask, card_quad
+from ofc_card_vision import OfcCardReader, OfcHandState, cover_mask, card_quad, partial_boxes
 import glob
 def reader(model, strip=None):
     r = OfcCardReader(RT + '/profile.json')
@@ -19,10 +19,11 @@ def simulate(r, s, masked, params):  # masked: a strip reader is attached
     for line in open(f'../scan/{s}/state.jsonl'):
         row = json.loads(line); t = row['t']
         boxes = [dict(x=d['x'], y=d['y'], width=d['w'], height=d['h'], angleDegrees=d['deg'], detectorConfidence=d['conf'],
-                      quad=card_quad(d['x'], d['y'], d['w'], d['h'], d['deg']), crop=d.get('crop')) for d in row['dets']]
+                      quad=card_quad(d['x'], d['y'], d['w'], d['h'], d['deg']), crop=d.get('crop'), detector=int(d.get('src') == 'b')) for d in row['dets']]
         bodies = [b for b in boxes if b['detectorConfidence'] >= 0.25]
         th = f"../scan/{s}/thumbs/{t:08.3f}.png"
         st.associate(t, bodies, boxes, cv2.imread(th) if os.path.exists(th) else None)
+        if r.profile.get('partialGuard'): partial_boxes(bodies, boxes, r.profile['partialGuard'])
         crops = [cv2.imread(f"../scan/{s}/crops/{b['crop']}") for b in bodies]
         r.identify_crops(bodies, [c.copy() for c in crops])
         if getattr(r, 'corner', None) is not None: r.corner_reads(st, bodies, crops)
@@ -36,7 +37,7 @@ def simulate(r, s, masked, params):  # masked: a strip reader is attached
             if todo:
                 for b, pr in zip(todo, r.strip_probabilities(mc)): b['stripProbabilities'] = pr
         st.update(t, bodies)
-        out.append(dict(t=t, bodies=[dict(x=b['x'], y=b['y'], crop=b['crop'], card=b['card'], hand=b['handCard'], src=b['source'], slot=b['slotId'])
+        out.append(dict(t=t, bodies=[dict(x=b['x'], y=b['y'], crop=b['crop'], card=b['card'], hand=b['handCard'], src=b['source'], slot=b['slotId'], **({'part': 1} if b.get('partial') else {}), **({'nov': 1} if b.get('noView') else {}))
                                      for b in bodies], table=st.table(t)))
     return out
 if __name__ == '__main__':

@@ -1,0 +1,4185 @@
+{
+ "runtime": "round 9 candidate gG (shipped detector + d1 merged, partialGuard, secondKeepsRecent, secondViewsOwn)",
+ "against": "9ae5bcac/4b07a861 shipped runtime",
+ "note": "Every unit (session, name, spot within 20 px, time-contiguous within 8 s; scripts/combine/namediff3.py) that the candidate reports and the shipped runtime does not, in all four sessions including hands with no truth. Each was checked by eye: the slot's first gate pass of that name (full-resolution zoom + crop), its first and last report (scripts/combine/otiles.py); courts against hand-labelled reference crops (courtref.py, both classic decks and the jumbo deck), doubtful number cards on 5x zooms of later frames (bigz.py). stale = a hidden report after the card was lifted or moved (right identity, old position).",
+ "counts": {
+  "added": 238,
+  "wrong": 0,
+  "stale": 18,
+  "lost_units": 154,
+  "lost_reports": 567
+ },
+ "units": [
+  {
+   "sess": "n1501",
+   "unit": 0,
+   "name": "S4",
+   "x": 813.3,
+   "y": 407.7,
+   "t0": 10.26,
+   "t1": 96.02,
+   "reports": 135,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 2,
+   "name": "SA",
+   "x": 658.7,
+   "y": 810.6,
+   "t0": 57.62,
+   "t1": 81.94,
+   "reports": 39,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 3,
+   "name": "CJ",
+   "x": 788.9,
+   "y": 821.6,
+   "t0": 72.98,
+   "t1": 72.98,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 5,
+   "name": "S5",
+   "x": 784.8,
+   "y": 346.9,
+   "t0": 149.14,
+   "t1": 154.26,
+   "reports": 9,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 6,
+   "name": "H3",
+   "x": 813.5,
+   "y": 428.0,
+   "t0": 152.98,
+   "t1": 152.98,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 9,
+   "name": "S7",
+   "x": 621.4,
+   "y": 677.6,
+   "t0": 184.98,
+   "t1": 184.98,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 10,
+   "name": "C4",
+   "x": 759.0,
+   "y": 737.7,
+   "t0": 290.58,
+   "t1": 293.78,
+   "reports": 6,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 11,
+   "name": "D2",
+   "x": 488.2,
+   "y": 565.4,
+   "t0": 314.26,
+   "t1": 317.46,
+   "reports": 6,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 16,
+   "name": "C4",
+   "x": 783.1,
+   "y": 424.3,
+   "t0": 352.66,
+   "t1": 353.94,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 17,
+   "name": "D2",
+   "x": 746.2,
+   "y": 420.1,
+   "t0": 353.3,
+   "t1": 353.94,
+   "reports": 2,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 18,
+   "name": "H3",
+   "x": 626.8,
+   "y": 744.2,
+   "t0": 467.86,
+   "t1": 469.14,
+   "reports": 3,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 20,
+   "name": "H9",
+   "x": 662.1,
+   "y": 755.0,
+   "t0": 470.42,
+   "t1": 470.42,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 22,
+   "name": "C8",
+   "x": 744.7,
+   "y": 367.4,
+   "t0": 471.7,
+   "t1": 474.26,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 23,
+   "name": "S3",
+   "x": 699.0,
+   "y": 768.9,
+   "t0": 501.14,
+   "t1": 501.14,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 25,
+   "name": "CA",
+   "x": 795.2,
+   "y": 378.2,
+   "t0": 589.86,
+   "t1": 716.58,
+   "reports": 199,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 26,
+   "name": "CQ",
+   "x": 591.0,
+   "y": 748.0,
+   "t0": 605.22,
+   "t1": 607.78,
+   "reports": 5,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 27,
+   "name": "SA",
+   "x": 719.7,
+   "y": 370.8,
+   "t0": 627.62,
+   "t1": 648.1,
+   "reports": 29,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 28,
+   "name": "HA",
+   "x": 755.5,
+   "y": 374.7,
+   "t0": 639.14,
+   "t1": 717.22,
+   "reports": 123,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 29,
+   "name": "D4",
+   "x": 681.4,
+   "y": 367.8,
+   "t0": 655.14,
+   "t1": 689.7,
+   "reports": 55,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 30,
+   "name": "H4",
+   "x": 776.1,
+   "y": 813.7,
+   "t0": 712.74,
+   "t1": 712.74,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 32,
+   "name": "DQ",
+   "x": 703.4,
+   "y": 350.8,
+   "t0": 819.62,
+   "t1": 846.5,
+   "reports": 41,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 34,
+   "name": "CJ",
+   "x": 682.8,
+   "y": 338.2,
+   "t0": 827.94,
+   "t1": 842.02,
+   "reports": 21,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 35,
+   "name": "DJ",
+   "x": 702.3,
+   "y": 370.4,
+   "t0": 875.94,
+   "t1": 880.42,
+   "reports": 8,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 36,
+   "name": "DQ",
+   "x": 750.6,
+   "y": 372.1,
+   "t0": 876.58,
+   "t1": 876.58,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 38,
+   "name": "D2",
+   "x": 779.6,
+   "y": 431.0,
+   "t0": 878.5,
+   "t1": 878.5,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 39,
+   "name": "C3",
+   "x": 686.8,
+   "y": 729.3,
+   "t0": 897.06,
+   "t1": 897.06,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 40,
+   "name": "HT",
+   "x": 636.3,
+   "y": 760.5,
+   "t0": 903.46,
+   "t1": 903.46,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 44,
+   "name": "SA",
+   "x": 639.3,
+   "y": 765.8,
+   "t0": 985.38,
+   "t1": 986.66,
+   "reports": 3,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 46,
+   "name": "SQ",
+   "x": 649.6,
+   "y": 355.4,
+   "t0": 1028.9,
+   "t1": 1028.9,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 47,
+   "name": "H3",
+   "x": 635.6,
+   "y": 412.3,
+   "t0": 1071.14,
+   "t1": 1071.78,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 48,
+   "name": "SA",
+   "x": 623.1,
+   "y": 684.6,
+   "t0": 1121.7,
+   "t1": 1121.7,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 49,
+   "name": "H9",
+   "x": 777.0,
+   "y": 440.6,
+   "t0": 1130.66,
+   "t1": 1134.5,
+   "reports": 7,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 50,
+   "name": "D2",
+   "x": 695.2,
+   "y": 710.6,
+   "t0": 1158.18,
+   "t1": 1158.82,
+   "reports": 2,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 51,
+   "name": "H6",
+   "x": 665.5,
+   "y": 429.9,
+   "t0": 1172.26,
+   "t1": 1173.54,
+   "reports": 3,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 53,
+   "name": "SA",
+   "x": 621.8,
+   "y": 686.0,
+   "t0": 1198.5,
+   "t1": 1202.98,
+   "reports": 8,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 54,
+   "name": "HT",
+   "x": 645.9,
+   "y": 772.2,
+   "t0": 1231.78,
+   "t1": 1233.06,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 55,
+   "name": "H5",
+   "x": 797.6,
+   "y": 416.9,
+   "t0": 1232.42,
+   "t1": 1242.66,
+   "reports": 17,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 62,
+   "name": "DK",
+   "x": 670.9,
+   "y": 464.7,
+   "t0": 1295.14,
+   "t1": 1295.14,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 66,
+   "name": "D3",
+   "x": 677.2,
+   "y": 730.0,
+   "t0": 1367.46,
+   "t1": 1367.46,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 70,
+   "name": "H5",
+   "x": 713.6,
+   "y": 356.9,
+   "t0": 1387.3,
+   "t1": 1389.86,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 71,
+   "name": "D5",
+   "x": 671.0,
+   "y": 354.8,
+   "t0": 1387.94,
+   "t1": 1389.86,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 72,
+   "name": "S3",
+   "x": 663.0,
+   "y": 410.9,
+   "t0": 1430.62,
+   "t1": 1430.62,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 76,
+   "name": "D7",
+   "x": 701.9,
+   "y": 411.1,
+   "t0": 1479.9,
+   "t1": 1479.9,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": "hidden 1 kf as hand collected (card lifted)"
+  },
+  {
+   "sess": "n1501",
+   "unit": 77,
+   "name": "H8",
+   "x": 677.3,
+   "y": 353.5,
+   "t0": 1520.22,
+   "t1": 1520.22,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 78,
+   "name": "HT",
+   "x": 790.3,
+   "y": 409.7,
+   "t0": 1523.42,
+   "t1": 1597.02,
+   "reports": 115,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 79,
+   "name": "C8",
+   "x": 692.8,
+   "y": 622.3,
+   "t0": 1569.5,
+   "t1": 1569.5,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 80,
+   "name": "C7",
+   "x": 676.8,
+   "y": 404.1,
+   "t0": 1598.3,
+   "t1": 1598.3,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": "hidden 1 kf as hand collected"
+  },
+  {
+   "sess": "n1501",
+   "unit": 82,
+   "name": "S6",
+   "x": 749.0,
+   "y": 372.8,
+   "t0": 1625.18,
+   "t1": 1625.18,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1501",
+   "unit": 84,
+   "name": "H8",
+   "x": 776.4,
+   "y": 349.8,
+   "t0": 1753.18,
+   "t1": 1758.3,
+   "reports": 8,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 0,
+   "name": "DQ",
+   "x": 719.7,
+   "y": 386.0,
+   "t0": 60.0,
+   "t1": 64.0,
+   "reports": 8,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 4,
+   "name": "C2",
+   "x": 706.4,
+   "y": 725.2,
+   "t0": 84.48,
+   "t1": 85.12,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 6,
+   "name": "C5",
+   "x": 674.6,
+   "y": 448.0,
+   "t0": 115.2,
+   "t1": 161.92,
+   "reports": 73,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 7,
+   "name": "SJ",
+   "x": 497.5,
+   "y": 511.3,
+   "t0": 258.56,
+   "t1": 297.6,
+   "reports": 62,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 8,
+   "name": "HJ",
+   "x": 673.9,
+   "y": 812.1,
+   "t0": 270.08,
+   "t1": 270.72,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 10,
+   "name": "H2",
+   "x": 522.5,
+   "y": 710.5,
+   "t0": 280.32,
+   "t1": 280.96,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 11,
+   "name": "SA",
+   "x": 649.5,
+   "y": 702.2,
+   "t0": 337.28,
+   "t1": 337.28,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 12,
+   "name": "D6",
+   "x": 610.7,
+   "y": 750.1,
+   "t0": 338.56,
+   "t1": 338.56,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 14,
+   "name": "H5",
+   "x": 627.0,
+   "y": 372.4,
+   "t0": 397.44,
+   "t1": 410.24,
+   "reports": 21,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 15,
+   "name": "HA",
+   "x": 664.5,
+   "y": 366.9,
+   "t0": 407.04,
+   "t1": 407.68,
+   "reports": 2,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 16,
+   "name": "H9",
+   "x": 770.0,
+   "y": 376.4,
+   "t0": 436.48,
+   "t1": 440.96,
+   "reports": 8,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 17,
+   "name": "D8",
+   "x": 736.7,
+   "y": 383.6,
+   "t0": 439.04,
+   "t1": 440.96,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 20,
+   "name": "HA",
+   "x": 776.7,
+   "y": 355.2,
+   "t0": 586.16,
+   "t1": 651.44,
+   "reports": 103,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 22,
+   "name": "DK",
+   "x": 690.7,
+   "y": 743.1,
+   "t0": 630.96,
+   "t1": 632.24,
+   "reports": 3,
+   "where": [
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 26,
+   "name": "DT",
+   "x": 704.5,
+   "y": 380.2,
+   "t0": 951.6,
+   "t1": 954.16,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 27,
+   "name": "DJ",
+   "x": 741.9,
+   "y": 379.4,
+   "t0": 951.6,
+   "t1": 952.88,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 28,
+   "name": "DA",
+   "x": 707.2,
+   "y": 495.1,
+   "t0": 996.4,
+   "t1": 998.32,
+   "reports": 4,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 30,
+   "name": "H4",
+   "x": 1644.7,
+   "y": 510.2,
+   "t0": 2572.0,
+   "t1": 2572.0,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 32,
+   "name": "D7",
+   "x": 1820.4,
+   "y": 578.0,
+   "t0": 2593.76,
+   "t1": 2726.88,
+   "reports": 209,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 33,
+   "name": "H4",
+   "x": 1645.8,
+   "y": 512.1,
+   "t0": 2607.2,
+   "t1": 2607.2,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 34,
+   "name": "SJ",
+   "x": 1780.1,
+   "y": 541.8,
+   "t0": 2632.8,
+   "t1": 2634.72,
+   "reports": 4,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 35,
+   "name": "CA",
+   "x": 1544.3,
+   "y": 856.5,
+   "t0": 2635.36,
+   "t1": 2637.28,
+   "reports": 4,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 37,
+   "name": "DA",
+   "x": 1592.4,
+   "y": 561.7,
+   "t0": 2656.48,
+   "t1": 2659.68,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 38,
+   "name": "SJ",
+   "x": 1778.3,
+   "y": 541.7,
+   "t0": 2671.2,
+   "t1": 2672.48,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 39,
+   "name": "SK",
+   "x": 1739.5,
+   "y": 564.1,
+   "t0": 2696.16,
+   "t1": 2696.16,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 40,
+   "name": "H8",
+   "x": 1639.7,
+   "y": 445.7,
+   "t0": 2710.24,
+   "t1": 2710.24,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 41,
+   "name": "SK",
+   "x": 1739.3,
+   "y": 569.1,
+   "t0": 2717.92,
+   "t1": 2717.92,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 42,
+   "name": "SJ",
+   "x": 1779.3,
+   "y": 542.0,
+   "t0": 2719.84,
+   "t1": 2723.68,
+   "reports": 7,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 43,
+   "name": "D3",
+   "x": 1828.6,
+   "y": 546.4,
+   "t0": 2755.04,
+   "t1": 2904.16,
+   "reports": 233,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 44,
+   "name": "D4",
+   "x": 1617.9,
+   "y": 772.5,
+   "t0": 2759.52,
+   "t1": 2897.12,
+   "reports": 216,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 45,
+   "name": "S4",
+   "x": 1802.3,
+   "y": 639.2,
+   "t0": 2760.8,
+   "t1": 2775.52,
+   "reports": 13,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 48,
+   "name": "CJ",
+   "x": 1632.8,
+   "y": 841.2,
+   "t0": 2776.8,
+   "t1": 2779.36,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 49,
+   "name": "D7",
+   "x": 1630.7,
+   "y": 770.9,
+   "t0": 2777.44,
+   "t1": 2780.64,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 50,
+   "name": "CA",
+   "x": 1753.2,
+   "y": 583.0,
+   "t0": 2805.6,
+   "t1": 2896.48,
+   "reports": 143,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 52,
+   "name": "C4",
+   "x": 1781.5,
+   "y": 515.3,
+   "t0": 2814.56,
+   "t1": 2870.24,
+   "reports": 87,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 53,
+   "name": "CT",
+   "x": 1541.5,
+   "y": 548.8,
+   "t0": 2828.64,
+   "t1": 2828.64,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 54,
+   "name": "SA",
+   "x": 1754.8,
+   "y": 606.3,
+   "t0": 2829.28,
+   "t1": 2896.48,
+   "reports": 106,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 55,
+   "name": "D5",
+   "x": 1660.3,
+   "y": 767.1,
+   "t0": 2835.68,
+   "t1": 2846.56,
+   "reports": 18,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 56,
+   "name": "C3",
+   "x": 1645.1,
+   "y": 836.3,
+   "t0": 2844.0,
+   "t1": 2848.48,
+   "reports": 8,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 57,
+   "name": "CJ",
+   "x": 1635.6,
+   "y": 839.7,
+   "t0": 2844.0,
+   "t1": 2892.64,
+   "reports": 77,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 58,
+   "name": "HK",
+   "x": 1663.7,
+   "y": 706.9,
+   "t0": 2872.8,
+   "t1": 2900.32,
+   "reports": 41,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 59,
+   "name": "D7",
+   "x": 1639.4,
+   "y": 765.6,
+   "t0": 2888.16,
+   "t1": 2888.16,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 60,
+   "name": "H5",
+   "x": 1633.2,
+   "y": 712.7,
+   "t0": 2897.76,
+   "t1": 2900.32,
+   "reports": 5,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 61,
+   "name": "D3",
+   "x": 1650.3,
+   "y": 785.8,
+   "t0": 2911.84,
+   "t1": 2912.48,
+   "reports": 2,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 63,
+   "name": "H3",
+   "x": 1603.5,
+   "y": 851.1,
+   "t0": 2912.48,
+   "t1": 2924.0,
+   "reports": 19,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 64,
+   "name": "D3",
+   "x": 1626.8,
+   "y": 870.6,
+   "t0": 2915.04,
+   "t1": 2991.84,
+   "reports": 119,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 65,
+   "name": "CJ",
+   "x": 1626.8,
+   "y": 422.6,
+   "t0": 2924.0,
+   "t1": 2924.64,
+   "reports": 2,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 66,
+   "name": "SA",
+   "x": 1587.1,
+   "y": 734.4,
+   "t0": 2946.4,
+   "t1": 2957.28,
+   "reports": 18,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 69,
+   "name": "C6",
+   "x": 1555.0,
+   "y": 758.0,
+   "t0": 3072.48,
+   "t1": 3073.76,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 70,
+   "name": "C4",
+   "x": 1621.2,
+   "y": 854.4,
+   "t0": 3075.68,
+   "t1": 3226.08,
+   "reports": 236,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 71,
+   "name": "H6",
+   "x": 1581.5,
+   "y": 764.9,
+   "t0": 3081.44,
+   "t1": 3082.08,
+   "reports": 2,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 72,
+   "name": "HA",
+   "x": 1834.6,
+   "y": 547.7,
+   "t0": 3099.36,
+   "t1": 3219.68,
+   "reports": 189,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 73,
+   "name": "H9",
+   "x": 1832.3,
+   "y": 508.2,
+   "t0": 3100.64,
+   "t1": 3126.24,
+   "reports": 40,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 74,
+   "name": "DK",
+   "x": 1614.5,
+   "y": 728.5,
+   "t0": 3109.6,
+   "t1": 3109.6,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 76,
+   "name": "DA",
+   "x": 1756.6,
+   "y": 582.1,
+   "t0": 3137.76,
+   "t1": 3204.96,
+   "reports": 106,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 77,
+   "name": "CA",
+   "x": 1642.9,
+   "y": 788.7,
+   "t0": 3163.36,
+   "t1": 3163.36,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 82,
+   "name": "S6",
+   "x": 1486.5,
+   "y": 516.4,
+   "t0": 3185.12,
+   "t1": 3190.88,
+   "reports": 10,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 84,
+   "name": "ST",
+   "x": 1732.8,
+   "y": 580.4,
+   "t0": 3214.56,
+   "t1": 3214.56,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 86,
+   "name": "SJ",
+   "x": 1811.2,
+   "y": 556.4,
+   "t0": 3215.84,
+   "t1": 3227.36,
+   "reports": 19,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 87,
+   "name": "C9",
+   "x": 1801.6,
+   "y": 555.8,
+   "t0": 3216.48,
+   "t1": 3227.36,
+   "reports": 18,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 88,
+   "name": "H9",
+   "x": 1834.7,
+   "y": 509.3,
+   "t0": 3219.68,
+   "t1": 3227.36,
+   "reports": 13,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 89,
+   "name": "S4",
+   "x": 1823.1,
+   "y": 670.1,
+   "t0": 3220.32,
+   "t1": 3224.16,
+   "reports": 7,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 90,
+   "name": "D7",
+   "x": 1832.2,
+   "y": 547.9,
+   "t0": 3261.92,
+   "t1": 3267.68,
+   "reports": 10,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 91,
+   "name": "SK",
+   "x": 1623.2,
+   "y": 765.8,
+   "t0": 3263.2,
+   "t1": 3263.84,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 92,
+   "name": "S2",
+   "x": 1613.3,
+   "y": 839.1,
+   "t0": 3263.2,
+   "t1": 3263.84,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 94,
+   "name": "S2",
+   "x": 1648.7,
+   "y": 843.7,
+   "t0": 3267.68,
+   "t1": 3293.92,
+   "reports": 30,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 95,
+   "name": "DT",
+   "x": 1829.6,
+   "y": 589.5,
+   "t0": 3268.96,
+   "t1": 3279.2,
+   "reports": 17,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 96,
+   "name": "C7",
+   "x": 1663.5,
+   "y": 455.6,
+   "t0": 3311.84,
+   "t1": 3312.48,
+   "reports": 2,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 97,
+   "name": "S2",
+   "x": 1611.7,
+   "y": 856.3,
+   "t0": 3312.48,
+   "t1": 3434.08,
+   "reports": 191,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 98,
+   "name": "C9",
+   "x": 1614.4,
+   "y": 913.5,
+   "t0": 3327.2,
+   "t1": 3329.76,
+   "reports": 5,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 99,
+   "name": "CA",
+   "x": 1628.3,
+   "y": 911.5,
+   "t0": 3348.96,
+   "t1": 3350.24,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 100,
+   "name": "D3",
+   "x": 1629.5,
+   "y": 850.8,
+   "t0": 3350.24,
+   "t1": 3353.44,
+   "reports": 5,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 101,
+   "name": "D3",
+   "x": 1629.8,
+   "y": 851.0,
+   "t0": 3378.4,
+   "t1": 3473.76,
+   "reports": 150,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 102,
+   "name": "SA",
+   "x": 1794.5,
+   "y": 552.1,
+   "t0": 3397.6,
+   "t1": 3418.72,
+   "reports": 31,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 103,
+   "name": "HA",
+   "x": 1786.6,
+   "y": 512.8,
+   "t0": 3398.24,
+   "t1": 3492.32,
+   "reports": 148,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 106,
+   "name": "DA",
+   "x": 1635.5,
+   "y": 789.6,
+   "t0": 3418.08,
+   "t1": 3498.08,
+   "reports": 126,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 107,
+   "name": "D5",
+   "x": 1784.1,
+   "y": 471.9,
+   "t0": 3431.52,
+   "t1": 3435.36,
+   "reports": 7,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 108,
+   "name": "SK",
+   "x": 1620.8,
+   "y": 794.2,
+   "t0": 3444.96,
+   "t1": 3495.52,
+   "reports": 80,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 109,
+   "name": "D5",
+   "x": 1784.7,
+   "y": 471.6,
+   "t0": 3462.24,
+   "t1": 3492.32,
+   "reports": 48,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 112,
+   "name": "HT",
+   "x": 1838.1,
+   "y": 631.5,
+   "t0": 3496.16,
+   "t1": 3498.72,
+   "reports": 5,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 113,
+   "name": "DT",
+   "x": 1836.1,
+   "y": 590.8,
+   "t0": 3496.8,
+   "t1": 3498.72,
+   "reports": 4,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 116,
+   "name": "H4",
+   "x": 1795.0,
+   "y": 549.4,
+   "t0": 3620.32,
+   "t1": 3748.32,
+   "reports": 201,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 117,
+   "name": "DK",
+   "x": 1837.1,
+   "y": 592.1,
+   "t0": 3621.6,
+   "t1": 3627.36,
+   "reports": 11,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 118,
+   "name": "C5",
+   "x": 1615.0,
+   "y": 832.1,
+   "t0": 3627.36,
+   "t1": 3629.92,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 119,
+   "name": "DA",
+   "x": 1830.2,
+   "y": 510.2,
+   "t0": 3647.84,
+   "t1": 3668.32,
+   "reports": 33,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 121,
+   "name": "D6",
+   "x": 1587.4,
+   "y": 904.7,
+   "t0": 3670.24,
+   "t1": 3670.24,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 123,
+   "name": "C7",
+   "x": 1793.4,
+   "y": 506.4,
+   "t0": 3678.56,
+   "t1": 3686.24,
+   "reports": 11,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 124,
+   "name": "D4",
+   "x": 1835.8,
+   "y": 671.6,
+   "t0": 3688.16,
+   "t1": 3756.64,
+   "reports": 108,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 126,
+   "name": "CQ",
+   "x": 1580.6,
+   "y": 779.5,
+   "t0": 3703.52,
+   "t1": 3738.08,
+   "reports": 55,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 128,
+   "name": "C7",
+   "x": 1794.3,
+   "y": 508.9,
+   "t0": 3704.8,
+   "t1": 3718.88,
+   "reports": 23,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 129,
+   "name": "C9",
+   "x": 1615.2,
+   "y": 673.7,
+   "t0": 3708.64,
+   "t1": 3710.56,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 130,
+   "name": "HQ",
+   "x": 1755.3,
+   "y": 583.5,
+   "t0": 3710.56,
+   "t1": 3747.04,
+   "reports": 58,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 132,
+   "name": "H5",
+   "x": 1591.3,
+   "y": 402.4,
+   "t0": 3741.28,
+   "t1": 3743.2,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 133,
+   "name": "CA",
+   "x": 1759.9,
+   "y": 672.9,
+   "t0": 3782.88,
+   "t1": 3785.44,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 134,
+   "name": "HJ",
+   "x": 1837.7,
+   "y": 626.0,
+   "t0": 3784.8,
+   "t1": 3793.12,
+   "reports": 14,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 135,
+   "name": "H2",
+   "x": 1792.1,
+   "y": 608.1,
+   "t0": 3785.44,
+   "t1": 3785.44,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 141,
+   "name": "SK",
+   "x": 1751.7,
+   "y": 610.8,
+   "t0": 3882.08,
+   "t1": 3932.28,
+   "reports": 80,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 142,
+   "name": "SA",
+   "x": 1531.4,
+   "y": 859.2,
+   "t0": 3886.56,
+   "t1": 3891.04,
+   "reports": 8,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 143,
+   "name": "SA",
+   "x": 1558.0,
+   "y": 818.6,
+   "t0": 3900.64,
+   "t1": 3901.92,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 145,
+   "name": "SA",
+   "x": 1644.6,
+   "y": 722.5,
+   "t0": 3907.68,
+   "t1": 3936.12,
+   "reports": 46,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 146,
+   "name": "DJ",
+   "x": 1828.5,
+   "y": 588.7,
+   "t0": 3937.4,
+   "t1": 3939.96,
+   "reports": 5,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 147,
+   "name": "HJ",
+   "x": 1839.2,
+   "y": 627.8,
+   "t0": 3938.68,
+   "t1": 3943.8,
+   "reports": 9,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 148,
+   "name": "S4",
+   "x": 1583.4,
+   "y": 866.8,
+   "t0": 3984.76,
+   "t1": 3987.96,
+   "reports": 6,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 149,
+   "name": "H6",
+   "x": 1576.8,
+   "y": 803.3,
+   "t0": 3987.96,
+   "t1": 3988.6,
+   "reports": 2,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 150,
+   "name": "S4",
+   "x": 1561.1,
+   "y": 888.8,
+   "t0": 3988.6,
+   "t1": 4217.24,
+   "reports": 361,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 151,
+   "name": "H6",
+   "x": 1559.0,
+   "y": 826.0,
+   "t0": 3989.24,
+   "t1": 3993.72,
+   "reports": 8,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 152,
+   "name": "CQ",
+   "x": 1559.3,
+   "y": 766.5,
+   "t0": 3990.52,
+   "t1": 3990.52,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 153,
+   "name": "D4",
+   "x": 1586.9,
+   "y": 885.5,
+   "t0": 4002.68,
+   "t1": 4217.24,
+   "reports": 339,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 154,
+   "name": "S2",
+   "x": 1605.3,
+   "y": 884.2,
+   "t0": 4026.36,
+   "t1": 4027.0,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 156,
+   "name": "CQ",
+   "x": 1558.5,
+   "y": 766.2,
+   "t0": 4051.96,
+   "t1": 4218.52,
+   "reports": 264,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 157,
+   "name": "DJ",
+   "x": 1742.4,
+   "y": 498.2,
+   "t0": 4099.32,
+   "t1": 4102.52,
+   "reports": 6,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 158,
+   "name": "SQ",
+   "x": 1730.8,
+   "y": 418.9,
+   "t0": 4102.52,
+   "t1": 4114.68,
+   "reports": 19,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 160,
+   "name": "D5",
+   "x": 1811.0,
+   "y": 568.8,
+   "t0": 4110.2,
+   "t1": 4152.32,
+   "reports": 56,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 161,
+   "name": "C2",
+   "x": 1829.7,
+   "y": 523.6,
+   "t0": 4110.84,
+   "t1": 4146.04,
+   "reports": 56,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 162,
+   "name": "H2",
+   "x": 1811.2,
+   "y": 467.0,
+   "t0": 4113.4,
+   "t1": 4136.44,
+   "reports": 33,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 163,
+   "name": "DA",
+   "x": 1813.9,
+   "y": 605.3,
+   "t0": 4114.68,
+   "t1": 4117.88,
+   "reports": 6,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 165,
+   "name": "DA",
+   "x": 1705.8,
+   "y": 558.3,
+   "t0": 4120.44,
+   "t1": 4131.32,
+   "reports": 18,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 166,
+   "name": "CJ",
+   "x": 1757.7,
+   "y": 511.2,
+   "t0": 4125.56,
+   "t1": 4139.0,
+   "reports": 22,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 169,
+   "name": "DA",
+   "x": 1677.6,
+   "y": 545.8,
+   "t0": 4137.08,
+   "t1": 4208.92,
+   "reports": 116,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 170,
+   "name": "DJ",
+   "x": 1703.8,
+   "y": 600.8,
+   "t0": 4137.08,
+   "t1": 4137.08,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 172,
+   "name": "CJ",
+   "x": 1792.5,
+   "y": 570.7,
+   "t0": 4145.4,
+   "t1": 4179.48,
+   "reports": 57,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 173,
+   "name": "DJ",
+   "x": 1796.2,
+   "y": 608.9,
+   "t0": 4149.88,
+   "t1": 4212.12,
+   "reports": 101,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 176,
+   "name": "H5",
+   "x": 1765.8,
+   "y": 661.6,
+   "t0": 4236.44,
+   "t1": 4241.56,
+   "reports": 8,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 179,
+   "name": "CA",
+   "x": 1751.0,
+   "y": 616.9,
+   "t0": 4265.88,
+   "t1": 4279.32,
+   "reports": 21,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 186,
+   "name": "SA",
+   "x": 1743.5,
+   "y": 583.5,
+   "t0": 4317.08,
+   "t1": 4320.28,
+   "reports": 6,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 188,
+   "name": "DK",
+   "x": 1813.2,
+   "y": 509.7,
+   "t0": 4324.76,
+   "t1": 4377.88,
+   "reports": 84,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 189,
+   "name": "S7",
+   "x": 1604.0,
+   "y": 814.2,
+   "t0": 4324.76,
+   "t1": 4325.4,
+   "reports": 2,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 190,
+   "name": "S5",
+   "x": 1790.9,
+   "y": 601.6,
+   "t0": 4326.04,
+   "t1": 4377.88,
+   "reports": 82,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 192,
+   "name": "CJ",
+   "x": 1532.3,
+   "y": 886.5,
+   "t0": 4326.68,
+   "t1": 4335.64,
+   "reports": 15,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 193,
+   "name": "S3",
+   "x": 1684.6,
+   "y": 802.2,
+   "t0": 4329.24,
+   "t1": 4335.64,
+   "reports": 10,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 194,
+   "name": "DJ",
+   "x": 1802.6,
+   "y": 468.6,
+   "t0": 4329.88,
+   "t1": 4377.88,
+   "reports": 76,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 195,
+   "name": "HK",
+   "x": 1528.7,
+   "y": 894.5,
+   "t0": 4336.92,
+   "t1": 4336.92,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 196,
+   "name": "H3",
+   "x": 1571.3,
+   "y": 890.9,
+   "t0": 4338.84,
+   "t1": 4338.84,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 198,
+   "name": "D3",
+   "x": 1821.2,
+   "y": 545.8,
+   "t0": 4355.48,
+   "t1": 4379.8,
+   "reports": 39,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 199,
+   "name": "H7",
+   "x": 1576.6,
+   "y": 562.7,
+   "t0": 4383.64,
+   "t1": 4383.64,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 201,
+   "name": "S2",
+   "x": 1529.5,
+   "y": 787.2,
+   "t0": 4400.92,
+   "t1": 4400.92,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "n1532",
+   "unit": 203,
+   "name": "DK",
+   "x": 1733.2,
+   "y": 588.7,
+   "t0": 4519.96,
+   "t1": 4557.08,
+   "reports": 58,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 1,
+   "name": "C4",
+   "x": 657.3,
+   "y": 759.2,
+   "t0": 23.04,
+   "t1": 23.68,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 3,
+   "name": "HT",
+   "x": 974.9,
+   "y": 304.8,
+   "t0": 143.36,
+   "t1": 144.64,
+   "reports": 3,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": "hidden while picked up (in hand)"
+  },
+  {
+   "sess": "s0023",
+   "unit": 4,
+   "name": "D7",
+   "x": 978.1,
+   "y": 296.4,
+   "t0": 151.04,
+   "t1": 151.04,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 6,
+   "name": "CK",
+   "x": 905.1,
+   "y": 487.1,
+   "t0": 214.4,
+   "t1": 214.4,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 9,
+   "name": "S5",
+   "x": 595.3,
+   "y": 736.5,
+   "t0": 411.52,
+   "t1": 411.52,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 11,
+   "name": "HK",
+   "x": 991.7,
+   "y": 260.8,
+   "t0": 476.16,
+   "t1": 478.08,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 12,
+   "name": "SK",
+   "x": 1024.3,
+   "y": 331.8,
+   "t0": 478.72,
+   "t1": 485.12,
+   "reports": 11,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 13,
+   "name": "H5",
+   "x": 844.0,
+   "y": 328.3,
+   "t0": 486.4,
+   "t1": 488.96,
+   "reports": 5,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 14,
+   "name": "S2",
+   "x": 793.0,
+   "y": 312.1,
+   "t0": 488.32,
+   "t1": 488.96,
+   "reports": 2,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": "hidden while picked up"
+  },
+  {
+   "sess": "s0023",
+   "unit": 15,
+   "name": "H5",
+   "x": 845.7,
+   "y": 304.4,
+   "t0": 489.6,
+   "t1": 492.8,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 16,
+   "name": "H3",
+   "x": 887.0,
+   "y": 319.8,
+   "t0": 501.12,
+   "t1": 501.12,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 19,
+   "name": "D7",
+   "x": 609.9,
+   "y": 670.6,
+   "t0": 551.44,
+   "t1": 551.44,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 20,
+   "name": "H9",
+   "x": 939.0,
+   "y": 323.1,
+   "t0": 580.88,
+   "t1": 580.88,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s0023",
+   "unit": 21,
+   "name": "H2",
+   "x": 978.4,
+   "y": 322.8,
+   "t0": 599.44,
+   "t1": 599.44,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 5,
+   "name": "DT",
+   "x": 754.9,
+   "y": 340.9,
+   "t0": 423.06,
+   "t1": 430.1,
+   "reports": 11,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 6,
+   "name": "SA",
+   "x": 789.5,
+   "y": 341.7,
+   "t0": 428.18,
+   "t1": 430.1,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 8,
+   "name": "H4",
+   "x": 702.3,
+   "y": 382.7,
+   "t0": 443.54,
+   "t1": 472.34,
+   "reports": 44,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 10,
+   "name": "C7",
+   "x": 666.1,
+   "y": 375.6,
+   "t0": 471.7,
+   "t1": 472.34,
+   "reports": 2,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 12,
+   "name": "D3",
+   "x": 762.7,
+   "y": 356.7,
+   "t0": 627.86,
+   "t1": 648.34,
+   "reports": 33,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 13,
+   "name": "H2",
+   "x": 746.6,
+   "y": 811.9,
+   "t0": 765.46,
+   "t1": 767.38,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 14,
+   "name": "D2",
+   "x": 699.4,
+   "y": 775.8,
+   "t0": 766.74,
+   "t1": 766.74,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 17,
+   "name": "HJ",
+   "x": 818.6,
+   "y": 323.0,
+   "t0": 863.38,
+   "t1": 864.02,
+   "reports": 2,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 18,
+   "name": "HJ",
+   "x": 840.0,
+   "y": 325.1,
+   "t0": 864.66,
+   "t1": 866.58,
+   "reports": 4,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 19,
+   "name": "DJ",
+   "x": 879.8,
+   "y": 331.8,
+   "t0": 864.66,
+   "t1": 867.22,
+   "reports": 5,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 29,
+   "name": "C3",
+   "x": 623.1,
+   "y": 746.6,
+   "t0": 1084.18,
+   "t1": 1084.18,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 30,
+   "name": "DK",
+   "x": 610.1,
+   "y": 723.9,
+   "t0": 1094.42,
+   "t1": 1096.34,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 32,
+   "name": "SA",
+   "x": 798.0,
+   "y": 460.2,
+   "t0": 1102.1,
+   "t1": 1102.1,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": "AS under a QS laid later; carried (shipped carries it too)"
+  },
+  {
+   "sess": "s1836",
+   "unit": 33,
+   "name": "SK",
+   "x": 600.5,
+   "y": 600.7,
+   "t0": 1118.1,
+   "t1": 1120.66,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 34,
+   "name": "HA",
+   "x": 685.0,
+   "y": 617.8,
+   "t0": 1204.5,
+   "t1": 1205.14,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 38,
+   "name": "H6",
+   "x": 834.1,
+   "y": 298.2,
+   "t0": 1356.18,
+   "t1": 1359.38,
+   "reports": 6,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 39,
+   "name": "CA",
+   "x": 809.0,
+   "y": 301.3,
+   "t0": 1393.3,
+   "t1": 1408.66,
+   "reports": 17,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 40,
+   "name": "C7",
+   "x": 850.8,
+   "y": 314.7,
+   "t0": 1397.14,
+   "t1": 1477.14,
+   "reports": 126,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 42,
+   "name": "D4",
+   "x": 874.9,
+   "y": 378.3,
+   "t0": 1400.34,
+   "t1": 1473.94,
+   "reports": 114,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 43,
+   "name": "CJ",
+   "x": 825.9,
+   "y": 303.3,
+   "t0": 1403.54,
+   "t1": 1450.9,
+   "reports": 75,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 44,
+   "name": "H2",
+   "x": 681.6,
+   "y": 773.2,
+   "t0": 1453.46,
+   "t1": 1455.38,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 46,
+   "name": "H5",
+   "x": 863.9,
+   "y": 386.0,
+   "t0": 1518.1,
+   "t1": 1545.62,
+   "reports": 44,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 50,
+   "name": "HA",
+   "x": 835.4,
+   "y": 442.2,
+   "t0": 1568.02,
+   "t1": 1571.22,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 51,
+   "name": "SA",
+   "x": 834.6,
+   "y": 442.4,
+   "t0": 1571.86,
+   "t1": 1610.9,
+   "reports": 62,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": "A index + black suit at the visible end of a card 60% under a 10C; AC elsewhere in the hand (eye truth 1605 obj 20) -> AS by elimination; eye truth labelled it ?"
+  },
+  {
+   "sess": "s1836",
+   "unit": 53,
+   "name": "H5",
+   "x": 840.6,
+   "y": 379.5,
+   "t0": 1575.06,
+   "t1": 1578.9,
+   "reports": 7,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 54,
+   "name": "C3",
+   "x": 882.9,
+   "y": 394.1,
+   "t0": 1575.7,
+   "t1": 1576.34,
+   "reports": 2,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 55,
+   "name": "S4",
+   "x": 779.2,
+   "y": 312.3,
+   "t0": 1622.86,
+   "t1": 1622.86,
+   "reports": 1,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": "hidden 1 kf under a face-down card"
+  },
+  {
+   "sess": "s1836",
+   "unit": 56,
+   "name": "H5",
+   "x": 870.3,
+   "y": 325.9,
+   "t0": 1640.78,
+   "t1": 1643.34,
+   "reports": 5,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 57,
+   "name": "SJ",
+   "x": 856.5,
+   "y": 320.8,
+   "t0": 1646.54,
+   "t1": 1649.1,
+   "reports": 4,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 58,
+   "name": "HK",
+   "x": 781.4,
+   "y": 417.4,
+   "t0": 1680.46,
+   "t1": 1680.46,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 65,
+   "name": "H5",
+   "x": 866.0,
+   "y": 322.6,
+   "t0": 1704.14,
+   "t1": 1705.42,
+   "reports": 3,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": true,
+   "note": "hidden while picked up"
+  },
+  {
+   "sess": "s1836",
+   "unit": 70,
+   "name": "DK",
+   "x": 552.7,
+   "y": 649.5,
+   "t0": 1781.58,
+   "t1": 1781.58,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "shifted",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 72,
+   "name": "D6",
+   "x": 750.1,
+   "y": 391.4,
+   "t0": 1854.54,
+   "t1": 1855.82,
+   "reports": 3,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 73,
+   "name": "SJ",
+   "x": 801.1,
+   "y": 346.1,
+   "t0": 1854.54,
+   "t1": 1855.82,
+   "reports": 3,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 74,
+   "name": "DQ",
+   "x": 764.3,
+   "y": 339.0,
+   "t0": 1867.34,
+   "t1": 1870.54,
+   "reports": 6,
+   "where": [
+    "box",
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 75,
+   "name": "C2",
+   "x": 681.8,
+   "y": 369.8,
+   "t0": 1884.62,
+   "t1": 1884.62,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 76,
+   "name": "S9",
+   "x": 701.0,
+   "y": 322.4,
+   "t0": 1890.38,
+   "t1": 1891.02,
+   "reports": 2,
+   "where": [
+    "hid"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  },
+  {
+   "sess": "s1836",
+   "unit": 77,
+   "name": "H4",
+   "x": 650.7,
+   "y": 702.5,
+   "t0": 2095.82,
+   "t1": 2095.82,
+   "reports": 1,
+   "where": [
+    "box"
+   ],
+   "cls": "new",
+   "verdict": "right",
+   "stale": false,
+   "note": null
+  }
+ ]
+}

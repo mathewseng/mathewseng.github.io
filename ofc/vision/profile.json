@@ -2,7 +2,7 @@
  "schemaVersion": 1,
  "id": "office3-ofc-deck",
  "version": 1,
- "description": "Face-up playing cards on office-3's overhead wide camera (1920x1080). Two-colour standard-index decks (red- and blue-backed; the two decks have different court-card art). Card bodies: the gigarepo ept-faceup-v5 YOLO11n-OBB detector, unchanged weights (zero-shot on this deck), stored as fp16. Identity: CardNetFast trained here on office-3 OFC/stud footage (cls-v3).",
+ "description": "Face-up playing cards on office-3's overhead wide camera (1920x1080). Two-colour standard-index decks (red- and blue-backed; the two decks have different court-card art). Card bodies: the gigarepo ept-faceup-v5 YOLO11n-OBB detector, unchanged weights (zero-shot on this deck), stored as fp16. Identity: CardNetFast trained here on office-3 OFC/stud footage (cls-v3). Round 9: a second detector (d1, fine-tuned here) adds bodies only where the first has none, behind a partial-box guard (README).",
  "frameCrop": [
   130,
   190,
@@ -18,6 +18,13 @@
   "nmsIou": 0.5,
   "letterbox": "area resize of frameCrop by min(1024/w, 480/h) (~0.575), grey 114 padding",
   "output": "(6, N): cx, cy, w, h, conf, angle radians"
+ },
+ "secondDetector": {
+  "path": "models/card-body-d1.onnx",
+  "sha256": "aae5c77cb4bb9ece4b446ffc6fcacede1696341ae11bff8bd6426da59ad54489",
+  "confidence": 0.25,
+  "mergeIou": 0.3,
+  "note": "d1 (round 8 fine-tune of card-body on amodal labels from hands outside every truth set, 4 epochs, fp32). In video mode its bodies join only where no first-detector body overlaps them (rotated IoU < mergeIou); they are marked detector 1, never name a card by one view (partialGuard.noViewSources), pass the size and sandwich tests, and their views join a slot's median only on slots the first detector never boxed (handState.secondViewsOwn). Not used by read() (README round 9)."
  },
  "classifier": {
   "path": "models/card-identity.onnx",
@@ -149,9 +156,12 @@
   "turnShare": 0.25,
   "pipMedian": 0.7,
   "pipVotes": 5,
-  "pipAgree": 0.9
+  "pipAgree": 0.9,
+  "secondKeepsRecent": true,
+  "secondViewsOwn": true,
+  "viewMedian": 0.5
  },
- "handStateNote": "OfcHandState parameters (video). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README). strip* / corner*: in a jumbo-deck hand the corner reader names a slot the card reader left unnamed after cornerPairVotes views whose two index corners agree, or stripMinViews views whose mean corner read is >= stripProbability (margin stripMargin, stripAgree of views), and only if the card reader's median agrees at >= cornerMedian and no slot has held that name this hand (README). No masked strip reader is shipped. 2026-11-25: oneVoteViews 6 (one gate pass + median of the last 6 views at the median gate), cornerHeldMargin (held cards' indices do not compete in a strip read), stripOwnHeld (a slot may take back its own earlier name), stripHiddenStill (corner names on hidden slots only while the footprint is unchanged), noneHide 0.5 (unread none-like hidden slots are not objects), ghostGrace (unnamed ghosts of a named overlapping card get no long grace) (README). Round 6 (2026-11-25): feltHide 'sticky' (a slot whose centre showed bare felt reports nothing until its own name is read whole again) (README). Round 7: turnBan 2 / turnShare 0.25 (a name the turned-crop + pip-count check contradicted on >= 2 gate passes and >= 25 % of them is barred from the slot; see turnVeto), pipMedian 0.7 (a number card whose >= pipVotes gate passes count its own rank of pips on >= pipAgree of them is held at median 0.7 instead of 0.8) (README).",
+ "handStateNote": "OfcHandState parameters (video). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README). strip* / corner*: in a jumbo-deck hand the corner reader names a slot the card reader left unnamed after cornerPairVotes views whose two index corners agree, or stripMinViews views whose mean corner read is >= stripProbability (margin stripMargin, stripAgree of views), and only if the card reader's median agrees at >= cornerMedian and no slot has held that name this hand (README). No masked strip reader is shipped. 2026-11-25: oneVoteViews 6 (one gate pass + median of the last 6 views at the median gate), cornerHeldMargin (held cards' indices do not compete in a strip read), stripOwnHeld (a slot may take back its own earlier name), stripHiddenStill (corner names on hidden slots only while the footprint is unchanged), noneHide 0.5 (unread none-like hidden slots are not objects), ghostGrace (unnamed ghosts of a named overlapping card get no long grace) (README). Round 6 (2026-11-25): feltHide 'sticky' (a slot whose centre showed bare felt reports nothing until its own name is read whole again) (README). Round 7: turnBan 2 / turnShare 0.25 (a name the turned-crop + pip-count check contradicted on >= 2 gate passes and >= 25 % of them is barred from the slot; see turnVeto), pipMedian 0.7 (a number card whose >= pipVotes gate passes count its own rank of pips on >= pipAgree of them is held at median 0.7 instead of 0.8) (README). Round 9: secondKeepsRecent (a second-detector gate pass agreeing with the slot's name keeps the median snapshot that named it), secondViewsOwn (second-detector views join the median only on slots the first detector never boxed) (README). viewMedian 0.5: a single gate pass on a slot without a name is reported by itself only when the median of the slot's last 6 views tops the same card at >= 0.5.",
  "cornerReader": {
   "path": "models/card-corner.onnx",
   "sha256": "80bd211ff0948b288f0af215c741f638d32ca2cb45098ea5c6cbdbb6c9dc9fec",
@@ -163,5 +173,40 @@
   "aspect": 0.75,
   "probability": 0.5,
   "note": "Round 7 (README): a gate pass on a near-square box (width >= aspect x height, a sideways card squashed into the upright crop) whose crop turned a quarter reads another number card at >= probability, with the pip count (pip_count) equal to that card's rank, is not a vote; handState.turnBan such views (and >= turnShare of the name's gate passes) bar that name from the slot."
+ },
+ "partialGuard": {
+  "q": [
+   3.817297,
+   4.188897,
+   0.136108,
+   0.106575,
+   -0.614634,
+   0.100323,
+   -0.688139,
+   0.036736,
+   0.039609,
+   -0.260529,
+   0.074433,
+   -0.772838
+  ],
+  "short": 0.85,
+  "cover": 0.5,
+  "long": 1.2,
+  "sizeSources": [
+   1
+  ],
+  "sandwich": [
+   0.15,
+   0.85
+  ],
+  "sandwichSources": [
+   1
+  ],
+  "sandwichCourts": true,
+  "sandwichNoView": true,
+  "noViewSources": [
+   1
+  ],
+  "note": "Round 9 (README). Card size: W0 x H0 = exp(q[0]) x exp(q[1]) under a log-quadratic lens scale sx (q[2:7]), sy (q[7:12]) in u=(x-1000)/1000, v=(y-600)/1000 (terms u, v, uu, uv, vv), fitted on confident whole views of the shipped scans (expected_card). A second-detector box with a side < short x expected whose missing end is >= cover under another box, or a side > long x expected (it spans cards), or overlapped from both ends of one axis by other bodies centred sandwich[0]..sandwich[1] of a card away (a court card still reads by its art; number cards and aces do not), is not read as a whole card and its view does not join the slot's median. sandwichNoView: on every detector, a sandwiched box's single gate pass is not reported by itself (a box over the 4 of hearts' left pip column read 2 of hearts at n1501 1445 s). noViewSources: second-detector boxes never name a card by one view."
  }
 }
