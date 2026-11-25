@@ -612,6 +612,129 @@ and 4, real 3s and 4s weighted 3×, and 8 rounder system fonts (`train_corner.py
 - In the runtime it changed no hand-end name. Mid-hand it added some right names and dropped others (a 2♦ for 15
   keyframes, a J♠ for 8). Not shipped.
 
+### Fresh truth, stale names and a wrong name found (2026-11-25, round 6)
+
+**Headline: fresh truth (never trained or tuned on), legible hand-end cards named right.**
+
+| fresh hand end | b4d85aea | this change |
+| --- | --- | --- |
+| n1501 1309 s (15:23:05 EST) | 27 / 27 | **27 / 27** |
+| n1532 4197 s (16:41:52 EST) | 19 / 25 | **19 / 25** |
+| n1501 707 s (15:12:43 EST, new) | 26 / 28 | **26 / 28** |
+| n1501 1470 s (15:25:46 EST, new) | 24 / 25 | **24 / 25** |
+| n1532 4361 s (16:44:36 EST, new) | 23 / 27 | **23 / 27** |
+| **fresh total** | **119 / 132** | **119 / 132** |
+| named wrong / illegible objects named | 0 / 0 | **0 / 0** |
+
+Eye truth is unchanged: s1836 306 / 314, s0023 53 / 58, n1501 68 / 69, n1532 63 / 86, 0 wrong.
+
+The shipped change removes stale names (below). It adds no hand-end name. The only rule that added fresh names
+(`holdAgree`) was dropped because it lengthened a wrong name.
+
+**Fresh truth grew from 2 to 5 hand ends** (`eval/fresh-truth/README.md`). The three new ones (n1501 707 and 1470 s,
+n1532 4361 s) were labelled blind, then every disagreement was zoomed. Four first-pass labels moved to the runtime's
+answer (a pip slip, a jack's art and two box centres). None moved the other way.
+
+**The 7♥ on n1501 1309 s object 34 is right.** The label had been `?~` (a heart strip with no readable index), so the
+runtime looked like it named an illegible object. The trace (`scripts/eye/multitrace.py`, `regtimes.py`) shows:
+
+- the 7♥ lay whole as the row's last card at 1245–1259 s and passed the gate as 7♥ 18 times;
+- the J♥ laid at 1262 s turned it about 10° without lifting it, so a new slot started 7 px away;
+- that slot reads 7♥ at 0.90–0.93 on every view to the frame, with the 7-pip layout (one upper centre pip) still visible.
+
+The fresh label was bound to the new slot's first box, when the J♥ already lay on it. It is now `H7`. No runtime
+change.
+
+**Shipped: `feltHide` 'sticky'.** It fixes the stale K♥ at n1532 4149.2 s (16:41:04 EST). The K♥ was never boxed (the
+detector missed it) and was kept by `stillKeep`. After it was picked up, the first bare-felt keyframe still reported it:
+`feltReads` 2 drops a slot only on the second.
+
+- Now a slot whose centre shows bare felt reports nothing.
+- 'Sticky' means it stays silent until its own name is read whole again. A hand passing over the spot breaks the run of
+  felt reads, and the taken card's name came back.
+- A box that merely joins the slot is not enough. After a Q♠ was taken (n1532 3877.6 s, 16:36:33 EST), a spread deck's
+  box joined its slot, and the old runtime showed Q♠ until 3899.4 s.
+- Report-only, so slot association is unchanged.
+- Every hand-end name is unchanged.
+- Against b4d85aea it drops 2,496 reported names over 1,156 slots in the four sessions, mostly while rows were
+  collected, and adds none. In every case but one the slot died within a second (the card had gone). The 61 spots where
+  the old runtime's name came back later were all checked: each showed bare felt (`spotsheet.py`, `survive.py`). The
+  exception is the Q♠ above.
+
+**A wrong name in the shipped runtime (not fixed).** It was found while checking `holdAgree` below:
+
+- At n1532 3621.6–3754.7 s (16:32:16–16:34:29 EST, a classic hand that is in no truth set), the right player's sideways
+  **8♦** (pips in rows of 3, 2, 3) is reported as **7♦** for 71 keyframes.
+- cls-v3 passes the full gate as 7♦ on 21 views, so no hand-state rule caught it.
+- It is the pip-count slip listed under "Wrong reads below the gate", here above the gate on a sideways card whose box is
+  upright, so the crop is squashed.
+- No change shipped for it. Sideways cards in the right player's columns need their own check: crops rectified on the
+  card's real orientation, or a pip-count test.
+
+**Tried, not shipped:**
+
+- `holdAgree` (with or without `holdAgreeBoxed`): a named slot whose ≥ 5 gate passes are all one card keeps its name
+  while ≥ 90 % of its last 10 views top that card.
+  - It named the 3♦ at 1470 s and the 5♦ at 4361 s (fresh 121 / 132), with every new name checked right.
+  - But it lengthened the wrong 7♦ above from 71 to about 120 keyframes, so it was dropped.
+  - Without `holdAgreeBoxed` it also carried names through collection while hands gathered the cards: a 2♦ for 7 s after
+    it was taken (2897–2904 s), and a 4♠ in a moving fan (4554–4560 s).
+- `wholeVote`: one whole gate pass, then ≥ 10 views topping the card at a median ≥ 0.6. It names the 7♠ under the 6♣ at
+  4197 s, but it named illegible objects (s1836 1104 s object 14 as 3♥ and lost object 13). It is the same trap as
+  single-read naming.
+- `hiddenStill`: a hidden named slot is reported only while its footprint is still or a settled card's box covers it.
+  It removes the collection-time names, but it cost hand-end names: s1836 306 → 304, and fresh n1501 707 s lost Q♠, J♠
+  and 4♥ lying under the player's hand.
+
+**s0023 533 s relabelled.** While checking `holdAgree`, object 3 (labelled `?`) was named 8♥. It is the same object
+that sank `holdMedian`. An 8x 2 s average shows the 8♥ there:
+
+- object 3's centre lies on the 8♥ strip (its pip column, index 8), between the 7♥ and Q♥ strips;
+- the 8♥ lay at object 1 at 478–490 s, and the re-lay at about 504 s moved it about 40 px right;
+- object 1 now shows the whole 3♥ that was put there. One deck has one 8♥.
+
+Object 1 is now `X` and object 3 is `H8`. The shipped runtime names neither, so the score stays 53 / 58. Object 1 now counts as
+one false object (an unnamed hidden slot).
+
+**Why the fresh n1532 4197 s misses stay** (`multitrace.py`, first-view sheets):
+
+- K♣, K♠: the top row was laid already fanned under a wrist at 4157 s. They are never whole, the reader gives
+  0.35–0.65, and there is no gate pass. Strip-only, and naming by agreement at this level is the rejected classic rule.
+- 7♠: one whole gate pass at 0.91 (4159.6 s); a 6♣ strip with no box of its own lies over its left side. Views top 7♠
+  at 0.67–0.75, and the second gate pass (4195.5 s) comes with a recent median of 0.68. The rule that would name it
+  (`wholeVote`) is rejected above.
+- 9♣: the detector's upright box spans the sideways 9♣ and the diamond card below it in the right player's column. Every
+  view reads `none` at 0.5–0.86.
+- Q♣: the box covers only the visible two-thirds of the card (40×46), so the crop is stretched. It reads `none` at
+  about 0.2.
+- 4♥: an index strip in the bottom fan, boxed only twice (`none` 0.8).
+
+**New fresh misses** (all unnamed, none wrong):
+
+- n1501 707 s: the A♥ (a tall box spanning it and the card below, 1 gate pass) and the just-dealt 6♣ (0.78).
+- n1501 1470 s: the 3♦ (44 gate passes, all 3♦, but the median of its recent views stays at 0.77–0.79 once a 4♥ covers
+  its right half; the case `holdAgree` was for).
+- n1532 4361 s:
+  - the 5♦: named with 7 votes, then dropped by a median dip and buried;
+  - the K♠ under the A♠ (1 gate pass);
+  - the 5♠: only a tall box spanning three cards;
+  - the A♥: its box spans the K♥ strip and reads a black ace at 0.25.
+- Cards with no object:
+  - 4197 s: 8 strips;
+  - 707 s: the A♣, and the black 2 under the just-dealt 3♥;
+  - 1470 s: the 4♥ (only `?` boxes);
+  - 4361 s: 9, namely two diamond courts, the card under the hand and the 7♦ in the right column; the K♣, J♣ and 8♣
+    strips; the 10♥ and 9♥ strips.
+
+**Two-card boxes (2♣/2♥ and 8♠/8♦ at 4197 s).** They lie in the right player's sideways columns. Each box sits across
+the boundary between two cards' visible bands (20–30 px of a sideways card). Splitting at the known card size would
+give two index-and-pip strips, not whole cards, so naming them needs a strip reader. The masked strip reader below was
+not shipped because such strips cannot be checked by eye, so splitting was not shipped either.
+
+**Tools** (`scripts/eye/`): `multitrace.py` (slottrace for several spots in one pass), `regtimes.py` (a region at
+several times), `spotsheet.py` (spots at given keyframes) and `survive.py` (whether a lost name came back). Scratch
+is in `/private/tmp/claude-501/ofc-vision6` (NOTES.md).
+
 ### Strip reader (masked crops, not shipped)
 
 For fans laid down already fanned (three-player pineapple rows, Fantasyland), the cards underneath are never seen
@@ -638,6 +761,8 @@ whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px 
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
 - The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
 - **A♠ (deck A)** has too few confident training views.
+- **Fresh truth:** 119 / 132 legible hand-end cards named, 0 wrong (round 6 above).
+- **Sideways cards in the right player's columns:** a sideways 8♦ passes the gate as 7♦ (n1532 16:32–16:34 EST); see round 6.
 - **Jumbo-index deck:** 23 / 86 legible n1532 hand-end cards stay unnamed, mostly fan strips and stacked columns.
   The corner reader names some of these, but only where the card reader agrees. Only two hands of the deck were
   available for training, with 1–4 physical cards per rank.

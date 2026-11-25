@@ -350,11 +350,14 @@ class OfcHandState:
       hand does not compete), `stripOwnHeld` (a slot may take back a name it held itself), `stripHiddenStill` (a corner
       name on a hidden slot only while its footprint is unchanged). `noneHide`: a hidden slot never read as a card whose
       views say `none` is not reported. `ghostGrace`: an unnamed slot reading weakly as a card an overlapping named slot
-      holds gets no long grace once nothing covers it."""
+      holds gets no long grace once nothing covers it.
+    - (2026-11-25 round 6, README) `feltHide` 'sticky': a slot whose centre showed bare felt reports nothing until its own
+      name is read whole again."""
     DEFAULTS = dict(dist=6, angle=8, gap=4.0, gapNamed=12.0, swapReads=2, minVotes=2, purity=0.8, medianProbability=0.8,
                     emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, stillKeep=0.0, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5,
                     jumboShare=0.5, jumboMinBodies=10, deckJumbo=0.5, cornerPairVotes=0, cornerAgree=True, cornerMedian=0.5,
-                    cornerHeldMargin=False, stripOwnHeld=False, stripHiddenStill=False, oneVoteViews=0, ghostGrace=False, noneHide=None)
+                    cornerHeldMargin=False, stripOwnHeld=False, stripHiddenStill=False, oneVoteViews=0, ghostGrace=False, noneHide=None,
+                    feltHide=False)
 
     def __init__(self, **params):
         self.p = dict(self.DEFAULTS, **params); self.slots = []; self.n = 0
@@ -384,6 +387,7 @@ class OfcHandState:
             # felt where a card lay: it was picked up or moved (fanned cards keep its centre covered)
             if small is not None and p['feltReads'] and sl['seen'] < t:
                 sl['felt'] = sl.get('felt', 0) + 1 if bare_felt(small, sl['x'], sl['y']) else 0
+                if sl['felt']: sl['feltSeen'] = True
                 if sl['felt'] >= p['feltReads']: self._forget(sl); continue
             # a name seen only in a brief glimpse (a card in a hand) is carried only if a later card covers it
             glimpse = sl['seen'] - sl['first'] < p['glimpseSeconds'] and not self.covering(sl)
@@ -498,6 +502,8 @@ class OfcHandState:
             sl['xs'].append((b['x'], b['y'], b['angleDegrees'], b['width'], b['height'])); sl['xs'] = sl['xs'][-50:]
             m = np.median(np.array(sl['xs']), 0)
             sl.update(x=float(m[0]), y=float(m[1]), angle=float(m[2]), width=float(m[3]), height=float(m[4]), seen=t, last=t)
+            # (feltHide 'sticky') a slot whose spot showed bare felt stays silent until its own name is read again whole
+            if not sl['name'] or r == sl['name']: sl['feltSeen'] = False
             if p['stillKeep'] and getattr(self, '_small', None) is not None: sl['ref'] = footprint(self._small, sl)
             if sl['votes']:
                 top, n = max(sl['votes'].items(), key=lambda kv: kv[1])
@@ -545,6 +551,7 @@ class OfcHandState:
         for b in bodies:
             sl = b['slot']; c = sl['name'] if sl['id'] not in dupe and not sl['dead'] else None
             if b.get('card') and c and b['card'] != c: c = None  # pending swap: say nothing
+            if c and p['feltHide'] == 'sticky' and sl.get('feltSeen'): c = None  # the card was taken from here
             pr = b.get('probabilities')
             if c and pr is not None:
                 q = int(np.argmax(pr[:52]))
@@ -581,8 +588,17 @@ class OfcHandState:
         """Every live slot, including covered cards the detector no longer boxes."""
         dupe = getattr(self, 'dupe', set())
         return [dict(slotId=sl['id'], x=sl['x'], y=sl['y'], width=sl['width'], height=sl['height'], angleDegrees=sl['angle'],
-                     card=(sl['name'] or self._hidden_strip(sl, t)) if sl['id'] not in dupe else None, placedSeconds=sl['first'], detected=sl['seen'] == t)
-                for sl in self.slots if sl['seen'] == t or not self._nonecard(sl)]
+                     card=(sl['name'] or self._hidden_strip(sl, t)) if sl['id'] not in dupe and not (self._felt_now(sl) and self.p['feltHide'] == 'sticky') else None, placedSeconds=sl['first'], detected=sl['seen'] == t)
+                for sl in self.slots if sl['seen'] == t or not (self._nonecard(sl) or self._felt_now(sl))]
+
+    def _felt_now(self, sl):
+        # bare felt at a hidden slot's centre on this keyframe: the card was taken (feltReads such keyframes in a row drop
+        # the slot; the first one only stops the report). A K of hearts was reported one keyframe after it was picked up.
+        # 'sticky': once its centre showed felt, the slot reports no name until its own name is read whole again (a hand
+        # passing over the spot breaks the run of felt reads that drops the slot, and the taken card's name came back; a
+        # spread deck's box joined a taken Q of spades' slot and showed its name for 12 s)
+        if self.p['feltHide'] == 'sticky': return sl.get('feltSeen', False)
+        return self.p['feltHide'] and sl.get('felt', 0) >= 1
 
 
 SUIT = {'S': '♠', 'H': '♥', 'C': '♣', 'D': '♦'}

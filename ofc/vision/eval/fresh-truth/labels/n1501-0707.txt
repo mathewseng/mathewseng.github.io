@@ -1,0 +1,35 @@
+# fresh truth 2026-11-25 round 6 (never trained or tuned on); 2 players, red/blue classic decks; 15:12:43 EST
+# labelled blind from 5x tiles (zsheet), first-view tiles (firstz, 1.5x box at 5x) and the court reference sheets
+1 DT  # 10 pips, the 4d laid over its right edge
+2 D4
+3 SA  # ornate deck-A ace
+4 HA
+5 H7  # 7 pips (centre pip in the lower half: card upside down), upper centre blank
+6 dup:5
+7 C2  # 2 pips, centre blank
+8 S9
+9 dup:10
+10 C8
+11 D3
+12 X  # discard pile beside the deck: face-down backs at the frame
+13 CK  # ref-K
+14 SK  # ref-K (yellow bars)
+15 HK  # ref-K grey "()"
+16 HT
+17 C5
+18 C4
+19 CQ  # yellow-hexagon queen (ref-Q)
+20 H2
+21 C3
+22 S5
+23 C7
+24 H9
+25 HQ  # diagonal grey band (ref-Q)
+26 C9
+27 H3  # first pass ?; zoomed after the runtime disagreed: the box spans the left card (a black 2) and the 3h over it, but its centre lies 8 px inside the 3h (index 3, pip column)
+28 C6  # just dealt, on top
+29 SQ  # whole at 705 s (ref-Q yellow diagonal); under the player's hand at the frame
+30 SJ  # whole at 702.6 s; under the hand
+31 ?  # box spans the Js and the 4h beside it
+32 H4  # whole at 698 s (4 corner pips); under the Js and the hand
+missed: 2 (Ac at the end of the top player's back row: no box; the black 2 under the 3h of the three just dealt: no box of its own)

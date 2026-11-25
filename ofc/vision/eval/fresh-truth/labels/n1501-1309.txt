@@ -33,7 +33,7 @@
 31 HT  # whole at 1236 s (10 pips)
 32 ?  # box on the 10h / next-heart boundary
 33 ?  # box on the 10h / next-heart boundary
-34 ?~ heart pip card between the 10h and Jh, never whole, index not legible
+34 H7  # round 6: was ?~ (bound to slot 646's first box, when the Jh already lay on it). The same card was whole as slot 632 at 1245-1259 s (7 pips, one upper centre pip, index 7); the Jh laid at 1262 s turned it ~10 deg without lifting it, and the 7-pip layout stays visible to the frame
 35 ?  # box spans that heart card and the Jh
 36 HJ  # red-swirl jack (ref-J)
 missed: none

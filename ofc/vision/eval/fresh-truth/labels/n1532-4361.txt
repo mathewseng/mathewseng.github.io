@@ -1,0 +1,44 @@
+# fresh truth 2026-11-25 round 6 (never trained or tuned on); classic deck; 3 players (top 13, right 13 in sideways columns, bottom 13)
+# labelled blind from 5x tiles (zsheet), first-view tiles (firstz, 1.5x box at 5x), 5-8x region zooms (right column turned upright)
+# rule: a box is the card it held when first boxed whole; a box never whole whose centre is within ~6 px of a strip boundary is ?
+1 H8
+2 ST
+3 CT
+4 S8
+5 D8
+6 D9
+7 H4
+8 H6
+9 S9
+10 D6
+11 C9  # sideways 9c, whole from 4322 s
+12 dup:11
+13 CQ
+14 H7
+15 SQ
+16 C3  # sideways
+17 dup:19  # tall box from the 3c strip over the 5d; centre on the 5d
+18 dup:19
+19 D5  # sideways 5d, whole at 4301 s
+20 SA  # deck-A ornate ace on top of the left column
+21 SK  # whole at 4295 s, now under the As; K index shows
+22 CA  # whole at 4277 s, under the Ks; A index shows
+23 ?  # tall box across 5d / 5s / 5h, centre on the 5d-5s boundary
+24 S5  # tall box laid at 4350 s, centre on the 5s (5 pips, index 5)
+25 ?  # centre on the 5s / 5h boundary
+26 ?  # right column re-laid during the hand; box first over court / A-diamonds / 7d strips
+27 ?  # centre on the Ad / 7d boundary
+28 ?  # centre on the Ad / 7d boundary
+29 ?  # slot from 4245 s; the column was re-laid over it
+30 H5  # sideways 5h, whole at 4244 s
+31 ?  # box spans the 10d and 7s strips
+32 D4
+33 C6  # first pass ?; zoomed after the runtime disagreed: centre 14 px inside the 6c strip (index 6), the 8c strip at its left edge
+34 dup:33  # whole 6c at 4335 s, fanned under the 4c since
+35 C4
+36 HA  # index A and half pip; K-hearts strip on its right
+37 HK  # whole at 4337 s; K index strip
+38 ?  # box on the 10h / 9h boundary
+39 X  # slot of a club card at 4327 s that was moved; box left on the 9h / 3h
+40 H3
+missed: 9 (right column: two diamond courts beside the 9c and 3c, the card under the hand, 7d (only ? boxes); bottom: Kc, Jc, 8c strips, 10h and 9h strips (9h only a ? box))

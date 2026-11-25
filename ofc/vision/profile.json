@@ -143,9 +143,10 @@
   "stripOwnHeld": true,
   "stripHiddenStill": true,
   "noneHide": 0.5,
-  "ghostGrace": true
+  "ghostGrace": true,
+  "feltHide": "sticky"
  },
- "handStateNote": "OfcHandState parameters (video). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README). strip* / corner*: in a jumbo-deck hand the corner reader names a slot the card reader left unnamed after cornerPairVotes views whose two index corners agree, or stripMinViews views whose mean corner read is >= stripProbability (margin stripMargin, stripAgree of views), and only if the card reader's median agrees at >= cornerMedian and no slot has held that name this hand (README). No masked strip reader is shipped. 2026-11-25: oneVoteViews 6 (one gate pass + median of the last 6 views at the median gate), cornerHeldMargin (held cards' indices do not compete in a strip read), stripOwnHeld (a slot may take back its own earlier name), stripHiddenStill (corner names on hidden slots only while the footprint is unchanged), noneHide 0.5 (unread none-like hidden slots are not objects), ghostGrace (unnamed ghosts of a named overlapping card get no long grace) (README).",
+ "handStateNote": "OfcHandState parameters (video). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README). strip* / corner*: in a jumbo-deck hand the corner reader names a slot the card reader left unnamed after cornerPairVotes views whose two index corners agree, or stripMinViews views whose mean corner read is >= stripProbability (margin stripMargin, stripAgree of views), and only if the card reader's median agrees at >= cornerMedian and no slot has held that name this hand (README). No masked strip reader is shipped. 2026-11-25: oneVoteViews 6 (one gate pass + median of the last 6 views at the median gate), cornerHeldMargin (held cards' indices do not compete in a strip read), stripOwnHeld (a slot may take back its own earlier name), stripHiddenStill (corner names on hidden slots only while the footprint is unchanged), noneHide 0.5 (unread none-like hidden slots are not objects), ghostGrace (unnamed ghosts of a named overlapping card get no long grace) (README). Round 6 (2026-11-25): feltHide 'sticky' (a slot whose centre showed bare felt reports nothing until its own name is read whole again) (README).",
  "cornerReader": {
   "path": "models/card-corner.onnx",
   "sha256": "80bd211ff0948b288f0af215c741f638d32ca2cb45098ea5c6cbdbb6c9dc9fec",
