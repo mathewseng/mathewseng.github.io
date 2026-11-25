@@ -83,6 +83,41 @@ def pip_count(crop, ink=24, white=150):
 RANKS = {r: i + 2 for i, r in enumerate('23456789T')}
 
 
+def hand_cover(crop, margin=0.1):
+    """Share of the card in a rectified crop (made with `margin`) covered by a hand: skin-coloured regions that reach the
+    crop border (a hand comes from outside the card; red pips and court art never touch it). gigarepo learned_card_vision
+    hand_cover, read on the classifier crop instead of a 30 % ring (README round 10)."""
+    hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    skin = (cv2.inRange(hsv, (0, 40, 70), (25, 200, 255)) | cv2.inRange(hsv, (165, 40, 70), (180, 200, 255))) > 0
+    n, lab = cv2.connectedComponents(skin.astype(np.uint8))
+    if n <= 1: return 0.0
+    edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    hand = np.isin(lab, edge[edge > 0]); H, W = hand.shape
+    y, x = round(H * margin / (1 + margin) / 2), round(W * margin / (1 + margin) / 2)
+    return float(hand[y:H - y, x:W - x].mean())
+
+
+def sharpness(crop):
+    """Variance of the Laplacian of a crop: a card moving through the frame is a blur (< 100; still cards, aces too, >= 112)."""
+    return float(cv2.Laplacian(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var())
+
+
+def single_view_ok(b, params):
+    """May this body's gate pass be reported as a name by itself (one view, no hand state behind it)? Not when the box is
+    sandwiched in a fan (partialGuard noView), a hand reaches over >= viewHand of the card, or the crop is a blur
+    (sharpness < viewSharp). One view of a 7 of spades with a finger over its centre pip read 6 of spades (s1836 1837 s)."""
+    if b.get('noView'): return False
+    if params.get('viewHand') is not None and b.get('handCover', 0) >= params['viewHand']: return False
+    if params.get('viewSharp') is not None and b.get('sharpness', 1e9) < params['viewSharp']: return False
+    return True
+
+
+def footprint_white(fp):
+    """Share of a slot footprint (footprint(), 4x-downscaled BGR) that looks like a card face: bright and grey."""
+    mx, mn = fp.max(2), fp.min(2)
+    return float(np.mean((mn >= 140) & (mx - mn <= 45)))
+
+
 def expected_card(cardsize, x, y, deg):
     """Box size (short, long side) of a whole card lying at (x, y) with its long axis `deg` from vertical (profile cardSize:
     card W0 x H0 under a log-quadratic lens scale sx, sy fitted on confident whole views; README round 9)."""
@@ -313,6 +348,9 @@ class OfcCardReader:
                         pc = pip_count(crops[i])
                         if pc == RANKS[CODES[top][1]] and pc != RANKS.get(b['card'][1]):
                             b['turnVeto'] = CODES[top]; b['vetoedCard'] = b['card']; b['card'] = None
+        for i, b in enumerate(bodies):
+            # hand over the card and blur, for the single-view checks (single_view_ok)
+            if b['card']: b['handCover'], b['sharpness'] = round(hand_cover(crops[i], self.profile['classifier']['cropMargin']), 3), round(sharpness(crops[i]), 1)
         if tv:
             # pip count of each classic number card read whole (hand state: pipMedian)
             for i, b in enumerate(bodies):
@@ -340,8 +378,14 @@ class OfcCardReader:
         return out
 
     def read(self, frame):
-        """Every card body in the frame; b['card'] is a code like 'HQ' when accepted, else None (unknown)."""
-        return self.identify(frame, self.detect(frame))
+        """Every card body in the frame; b['card'] is a code like 'HQ' when accepted, else None (unknown). One frame is one view:
+        a gate pass on a box sandwiched in a fan, under a hand or blurred is not a name here (single_view_ok, README round 10)."""
+        bodies = self.detect(frame)
+        if self.profile.get('partialGuard'): partial_boxes(bodies, bodies, self.profile['partialGuard'])
+        self.identify(frame, bodies)
+        for b in bodies:
+            if b['card'] and not single_view_ok(b, self.profile.get('handState', {})): b['viewRead'], b['card'] = b['card'], None
+        return bodies
 
     def strip_probabilities(self, crops):
         """Strip reader on masked crops (cards on top greyed out): mean of both 180-degree turns, (n, 53)."""
@@ -492,7 +536,8 @@ class OfcHandState:
                     emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, stillKeep=0.0, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5,
                     jumboShare=0.5, jumboMinBodies=10, deckJumbo=0.5, cornerPairVotes=0, cornerAgree=True, cornerMedian=0.5,
                     cornerHeldMargin=False, stripOwnHeld=False, stripHiddenStill=False, oneVoteViews=0, ghostGrace=False, noneHide=None,
-                    feltHide=False, turnBan=0, turnShare=0.25, pipMedian=None, pipVotes=5, pipAgree=0.9, viewReport=True, secondKeepsRecent=False, secondViewsOwn=False, viewMedian=None)
+                    feltHide=False, turnBan=0, turnShare=0.25, pipMedian=None, pipVotes=5, pipAgree=0.9, viewReport=True, secondKeepsRecent=False, secondViewsOwn=False, viewMedian=None,
+                    viewHand=None, viewSharp=None, hiddenEvidence=None)
 
     def __init__(self, **params):
         self.p = dict(self.DEFAULTS, **params); self.slots = []; self.n = 0
@@ -517,8 +562,14 @@ class OfcHandState:
                 for sl in self.slots: sl['stripViews'], sl['pairs'] = [], {}
         else:
             self.empty_since = None
+        he = p['hiddenEvidence']
         for sl in self.slots:
-            if any(_inside(sl['x'], sl['y'], c) for c in cover): sl['last'] = t
+            sl['covNow'] = any(_inside(sl['x'], sl['y'], c) for c in cover)
+            if sl['covNow']: sl['last'] = t
+            if he and sl['name'] and small is not None:
+                # (hiddenEvidence) what the named card's spot shows now, for its report while no box reads it (table)
+                fp = footprint(small, sl); sl['white'] = footprint_white(fp)
+                sl['stillShare'] = float(np.mean(np.abs(fp - sl['ref']).max(2) <= 25)) if sl.get('ref') is not None else 0.0
             # felt where a card lay: it was picked up or moved (fanned cards keep its centre covered)
             if small is not None and p['feltReads'] and sl['seen'] < t:
                 sl['felt'] = sl.get('felt', 0) + 1 if bare_felt(small, sl['x'], sl['y']) else 0
@@ -725,8 +776,9 @@ class OfcHandState:
             v = v if v and sl['id'] not in dupe and self.hand.get(v, sl['id']) == sl['id'] and v not in held else None
             s = strip_of.get(sl['id'])
             # (viewReport False) a single gate pass on a slot that holds no name is not reported: one view of a box over
-            # parts of three cards read 2 of hearts at n1501 1445 s (README round 9)
-            if not p['viewReport'] or b.get('noView'): v = None
+            # parts of three cards read 2 of hearts at n1501 1445 s (README round 9). Nor one sandwiched in a fan, under a hand
+            # (viewHand) or blurred (viewSharp): a finger over a 7 of spades' centre pip read 6 of spades (README round 10)
+            if not p['viewReport'] or not single_view_ok(b, p): v = None
             if v and p['viewMedian'] is not None:
                 # (viewMedian) a single gate pass is reported by itself only when the median of the slot's last 6 views tops
                 # the same card at >= viewMedian (README round 9)
@@ -747,11 +799,22 @@ class OfcHandState:
         return p['noneHide'] is not None and not sl['name'] and not sl['votes'] and not sl['pairs'] and len(sl['views']) >= 3 \
             and float(np.median(np.array(sl['views'][-20:]), 0)[52]) >= p['noneHide']
 
+    def _hidden_evidence(self, sl, t):
+        """(hiddenEvidence) A named card no box reads now is reported only while something says it still lies there: a box
+        still covers its spot, its footprint is >= `still` unchanged since its last box, it was boxed <= `age` s ago, or >= `white`
+        of its footprint is card face (cards laid over it). A card swept up at collection or picked up kept its name on its old
+        spot for up to 12 s before this (README round 10)."""
+        he = self.p['hiddenEvidence']
+        if not he or sl['seen'] == t or not sl['name']: return True
+        return bool((he.get('cover') and sl.get('covNow')) or sl.get('stillShare', 0) >= he['still'] or t - sl['seen'] <= he['age']
+                    or sl.get('white', 0) >= he['white'])
+
     def table(self, t):
         """Every live slot, including covered cards the detector no longer boxes."""
         dupe = getattr(self, 'dupe', set())
         return [dict(slotId=sl['id'], x=sl['x'], y=sl['y'], width=sl['width'], height=sl['height'], angleDegrees=sl['angle'],
-                     card=(sl['name'] or self._hidden_strip(sl, t)) if sl['id'] not in dupe and not (self._felt_now(sl) and self.p['feltHide'] == 'sticky') else None, placedSeconds=sl['first'], detected=sl['seen'] == t)
+                     card=(sl['name'] or self._hidden_strip(sl, t)) if sl['id'] not in dupe and not (self._felt_now(sl) and self.p['feltHide'] == 'sticky')
+                     and self._hidden_evidence(sl, t) else None, placedSeconds=sl['first'], detected=sl['seen'] == t)
                 for sl in self.slots if sl['seen'] == t or not (self._nonecard(sl) or self._felt_now(sl))]
 
     def _felt_now(self, sl):
@@ -791,9 +854,15 @@ def draw(frame, bodies, table=None):
     return out
 
 
-def public(b):
+# card codes the reader computes on the way that are not reports: the gate's read of one view before the hand state and the
+# single-view checks, the classifier's top class, vetoed and turned reads, corner reads (README round 10, what is reported)
+DIAGNOSTIC = ('card', 'label', 'turnVeto', 'vetoedCard', 'cornerPair', 'viewRead')
+
+
+def public(b, debug=False, report=()):
+    """A body as JSON. Card codes in DIAGNOSTIC are written only with debug, except the mode's own report fields (`report`)."""
     return {k: (round(v, 4) if isinstance(v, float) else v) for k, v in b.items()
-            if k not in ('quad', 'probabilities', 'stripProbabilities', 'slot')}
+            if k not in ('quad', 'probabilities', 'stripProbabilities', 'slot') and (debug or k not in DIAGNOSTIC or k in report)}
 
 
 def main():
@@ -801,10 +870,11 @@ def main():
     ap.add_argument('source'); ap.add_argument('--overlay'); ap.add_argument('--jsonl')
     ap.add_argument('--start', type=float, default=0); ap.add_argument('--end', type=float, default=1e9)
     ap.add_argument('--no-hand-state', action='store_true', help='video: single views + StaticCardFuser only')
+    ap.add_argument('--debug', action='store_true', help='also write diagnostic card codes (raw gate read of each view, top class, vetoed and corner reads): not reports')
     a = ap.parse_args(); reader = OfcCardReader()
     if a.source.lower().endswith(('.jpg', '.jpeg', '.png')):
         frame = cv2.imread(a.source); bodies = reader.read(frame)
-        print(json.dumps([public(b) for b in bodies]))
+        print(json.dumps([public(b, a.debug, ('card',)) for b in bodies]))
         if a.overlay: cv2.imwrite(a.overlay, draw(frame, bodies))
         return
     import av
@@ -819,10 +889,10 @@ def main():
         if t > a.end: break
         frame = fr.to_ndarray(format='bgr24'); last = t
         if a.no_hand_state:
-            bodies = fuser.update(t, reader.read(frame)); rec = dict(t=round(t, 3), cards=[public(b) for b in bodies])
+            bodies = fuser.update(t, reader.read(frame)); rec = dict(t=round(t, 3), cards=[public(b, a.debug, ('card',)) for b in bodies])
         else:
             bodies = reader.read_hand(frame, t, state)
-            rec = dict(t=round(t, 3), cards=[public(b) for b in bodies],
+            rec = dict(t=round(t, 3), cards=[public(b, a.debug) for b in bodies],
                        covered=[{k: (round(v, 2) if isinstance(v, float) else v) for k, v in sl.items()}
                                 for sl in state.table(t) if not sl['detected'] and sl['card']])
         line = json.dumps(rec)

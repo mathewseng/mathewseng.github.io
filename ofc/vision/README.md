@@ -24,9 +24,11 @@ python3 ofc/vision/ofc_card_vision.py frame.jpg --overlay out.jpg      # JSON of
 python3 ofc/vision/ofc_card_vision.py video.mp4 --start 60 --end 120 --jsonl reads.jsonl   # keyframes (0.64 s), hand state
 ```
 
-In video mode each line has `cards` (every box: `card` = this view's read, `handCard` = the name to report,
-`source` = `view` | `carried`) and `covered` (cards named earlier that are now hidden under others and no longer boxed).
-Start a run at the beginning of a hand: names are carried from views seen earlier in that hand.
+In video mode each line has `cards` (every box: `handCard` = the name to report, `source` = `carried` | `view` | `strip`)
+and `covered` (cards named earlier that are now hidden under others and no longer boxed). The gate's raw read of each view
+(`card`), the classifier's top class (`label`) and other diagnostic codes are written only with `--debug`: they are not
+reports (round 10, "What the runtime reports"). Start a run at the beginning of a hand: names are carried from views
+seen earlier in that hand.
 
 Needs `onnxruntime`, `opencv-python` and `numpy`, plus `av` for video. `profile.json` pins every model by SHA-256.
 
@@ -46,6 +48,9 @@ Needs `onnxruntime`, `opencv-python` and `numpy`, plus `av` for video. `profile.
 - the margin over the runner-up is ≥ 0.3;
 - both orientations pick the same card, each with p ≥ 0.8;
 - it is the most confident body with that name in the frame (one copy per identity).
+
+In single-frame mode (`read`) a gate pass is also dropped when the box is sandwiched in a fan, a hand reaches over ≥ 6 %
+of the card in its crop, or the crop is a blur (round 10).
 
 `StaticCardFuser` averages a card's probabilities while it lies still. OFC rows don't move until the hand is cleared. A confident different card on the same spot starts a new track.
 
@@ -1078,15 +1083,141 @@ cards in a player's hand or being placed, read once.
 - Eye truth: 32 unnamed, 20 of them on n1532 (fan strips and stacked jumbo columns).
 - Fresh cards with no truth object at all: 20, of which the new runtime names 7.
 
+### What the runtime reports, single views and stale spots (2026-11-25, round 10)
+
+**What the runtime reports, and which audit covers it.** Every name the runtime can output:
+
+| kind | where it appears | how it arises | audited by |
+| --- | --- | --- | --- |
+| held slot name | `cards[].handCard`, `source: carried`; `covered[]` while not boxed | the hand state named the slot (2 votes, median, …) | round 7 (627 of 1,678 units), round 9 (238 added units) |
+| single-view report | `cards[].handCard`, `source: view` | one gate pass on a slot that holds no name (`viewMedian`, sandwich, hand and blur checks) | **round 10: all 269 units** (round 7 never saw them) |
+| corner / jumbo name | `cards[].handCard`, `source: strip`; `covered[]` | corner reader on an unnamed slot in a jumbo-deck hand, the card reader's median agreeing | round 7 (jumbo stratum, through `table()`), round 9 |
+| stale name after pickup | `covered[]` (a hidden slot) | a named slot keeps its name for up to `gapNamed` 12 s after its last box | round 9 found 18 units; round 10 below |
+| single-frame name | `read()` / image mode `card`; `--no-hand-state` `card` and `fusedCard` | the gate on one frame (fuser: averaged over a still track) | held-out crop eval (still tracks only); round 10 adds the single-view checks |
+| diagnostic codes | `card`, `label`, `turnVeto`, `vetoedCard`, `cornerPair`, `viewRead` | raw reads before the hand state's checks | not reports: written only with `--debug` (before round 10, `card` was in every line and held the wrong 2♥ and 6♠ below) |
+
+The hand-state video mode is the reported output. The single-frame and fuser modes are for overlays and tests.
+
+**Headline.** The single-view reports have now been audited by eye. One was wrong. Two report-only rules remove it, and a third removes most stale spots. No truth name is lost.
+
+| | round 9 (adc757d0) | **round 10** |
+| --- | --- | --- |
+| fresh n1501 707 / 1309 / 1470 s | 27 / 27 / 25 | 27 / 27 / 25 |
+| fresh n1532 4197 / 4361 s | 20 / 24 | 20 / 24 |
+| **fresh total** | **123 / 132** | **123 / 132** |
+| eye s1836 / s0023 / n1501 / n1532 | 308 / 53 / 68 / 66 | 308 / 53 / 68 / 66 |
+| **eye total** | **495 / 527** | **495 / 527** |
+| named wrong at a truth frame, names on the wrong object | 0, 0 | 0, 0 |
+| single-view units: wrong / unverifiable / right | 1 / 15 / 253 (269) | **0** / 5 / 180 (185) |
+| stale units of round 9's 18 (hidden reports) | 18 (82) | 5 (21) |
+
+- Per truth card nothing changed: the lists of unnamed truth cards are identical (`nscore.py --v`).
+- One fresh name on no legible truth object went: a hidden K♦ at 4361 s (round 9 had checked it right).
+- Boxed reports change only from `view` to none (238 keyframe reports). One `view` C6 becomes the same C6 from the corner
+  reader (n1532 4409.9 s). Hidden reports only go (25,320 → 22,477). No report is added anywhere.
+
+**Single-view audit** (`eval/midhand-audit/audit-round10.json`). The round-9 runtime has 269 single-view units: a name
+reported by one view (`source: view`) on a slot that never holds it. Units come from `scripts/views/vounits.py` (slot +
+name, keyframes within 8 s); round 9 counted 266 with slightly different grouping. Every unit was checked by eye on:
+
+- a full-resolution zoom with the box, plus its crop;
+- the zoom where a slot holds the same name, when one does within 60 s (`vt.py`). 213 units are followed to the same
+  physical card that way;
+- full-rate strips (25 fps, −1.2 to +2.4 s) where unsure (`strip.py`).
+
+The results:
+
+- **Wrong: 1.** s1836 1837.26 s, 6♠ at (745, 655). It is a 7♠ with a finger over its centre pip: seven pips are legible
+  0.6 s later, and the runtime reads it 7♠ one keyframe later. It is a single keyframe on a new slot that never named
+  anything.
+- **Unverifiable: 15.** These are cards in a hand, under fingers, thrown, in a fan at collection, or the bottom card of a
+  lifted deck. Two more are boxes over two overlapping cards (n1501 278.4 / 295.1 s 9♣).
+- **Right: 253.** These include round 9's other doubts:
+  - s1836 1540.5 s 4♠: its index 4 is legible 0.3 s earlier; the box also covers a second spade card;
+  - 1771.3 s 3♣: three pips in a line plus the index;
+  - 1088.7 s 6♠ stays unverifiable.
+
+**Why a rule, and which.** Seven truth names depend on a single-view report (`needed.py`): cards placed just before the
+truth frame. Their crops show no hand (hand cover ≤ 0.052) and are sharp (≥ 193). The bad units are mostly fingers over
+a card in a hand:
+
+- **`viewHand` 0.06.** gigarepo's `hand_cover` is ported to the classifier crop: skin-coloured regions that reach the
+  crop border, as a share of the card. A single gate pass is not reported by itself when a hand covers ≥ 6 % of the card.
+  The wrong 6♠ scores 0.13. The unverifiable units score 0–0.23; 10 of 15 are ≥ 0.06.
+- **`viewSharp` 100.** A single gate pass is not reported when the crop's Laplacian variance is < 100: a card moving
+  through the frame. The two thrown or flicked cards score 75 and 87. Every right unit is ≥ 112, aces included (≥ 196).
+- Both rules apply only to the report: the view still votes, so no slot is named differently. `read()` applies them
+  too, with the sandwich check, so single-frame mode no longer names the 2♥ or the 6♠.
+
+Single-view units before → after: wrong 1 → 0, unverifiable 15 → 5, right 253 → 180. Of the 73 right units removed, 65 are
+cards that a slot names within 60 s anyway (48 within 40 px and 10 s).
+
+The 5 unverifiable units still reported:
+
+- n1501 278.4 and 295.1 s 9♣, a box over a diamond card's strip and a clubs card;
+- n1501 1660.4 s 10♦, the bottom card of a deck being lifted (hand cover 0.059);
+- s1836 1041.3 s 4♦, overlapped diamond cards;
+- s1836 1772.0 s 7♣, a fan.
+
+No feature measured here separates them from the 7 needed views:
+
+- box overlap: needed views overlap up to 0.83;
+- box width: needed up to 1.08 × a card, these 1.06–1.11;
+- probability, detector confidence.
+
+**Stale spots: `hiddenEvidence`** (`hidfeat.py`, `hidfeat2.py`). Round 9's 18 stale units are 82 hidden reports. In
+almost all of them the spot shows a hand, a sleeve, felt or face-down backs while the cards are collected or picked up.
+
+A named card that no box reads now is reported only while something says it still lies there:
+
+- a detected box still covers its spot;
+- or ≥ 50 % of its 4×-downscaled footprint is unchanged since its last box;
+- or it was boxed ≤ 1.3 s ago;
+- or ≥ 80 % of its footprint is card face (cards laid over it).
+
+The thresholds were searched on the 82 stale reports against the 57 hidden reports that truth frames need. The chosen
+ones lose none of the 57.
+
+- Stale reports 82 → 21. 13 of the 18 units are gone. The 5 left keep some keyframes:
+  - n1532 2717.9 s K♠ (boxed 0.6 s earlier);
+  - 2897.8 s 5♥ (a pile of white-bordered jumbo backs reads as card face);
+  - 3216–3227 s 9♣ and 9♥ (a court card's box covers the spot);
+  - s0023 143.4 s 10♥.
+- It also removes 2,767 other hidden reports (885 units). A random 24 of those were checked by eye:
+  - 13 are more stale spots during collection or pickup;
+  - 11 are cards still lying under a passing hand or arm, whose right report goes for those keyframes.
+
+  The rule trades about half right mid-hand reports for stale ones. No truth name is lost.
+
+**Output.** Hand-state lines no longer carry the gate's raw read (`card`) or other codes unless `--debug` is given. Before,
+every line held the read the hand state had refused: the 2♥ at n1501 1445 s and the 6♠ at s1836 1837 s were in `card`.
+
+**Runtime check on video.** The real runtime was run on s1836 1826–1840 s with `--debug`:
+
+- at 1837.26 s it reads `card` 6♠ with hand cover 0.127 and reports nothing;
+- at 1838.54 s it reports the 7♠.
+
+On n1501 1312–1480 s the 1445.3 s box (`noView`) reports nothing, and the lines carry no `card`.
+
+**Rejected or not done.**
+
+- Box-overlap, box-width or probability rules for the last 5 unverifiable units: each would cut a needed view (above).
+- A skin rule on hidden reports: a truth frame at s1836 has a card named under a hand (skin 0.72).
+- `hiddenEvidence` without the card-face clause: it costs a needed hidden report (n1532, boxed 5.8 s earlier, covered by
+  cards).
+- Task 4 (unnamed fresh cards, d1 replacing spanning boxes) was not started this round.
+
 ## What still fails
 
 - **Fans laid down already fanned** (three-player pineapple, Fantasyland 14+ cards): cards never seen whole stay
   unnamed. Cards seen whole before being covered are now carried (hand state above).
 - **Hands over cards** cause most pip-count errors below the gate.
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
-- The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
+- The gigarepo skin-cover rule is ported for single-view reports only (`viewHand`, round 10). Votes still count views under a hand.
 - **A♠ (deck A)** has too few confident training views.
-- **Fresh truth:** 123 / 132 legible hand-end cards named, 0 wrong (round 9 above). The round-9 diff added 238 named units and all were checked right. Round 7's audit missed single-view reports: one was a wrong 2♥ (fixed). 266 single-view units of cards in hands remain unaudited.
+- **Fresh truth:** 123 / 132 legible hand-end cards named, 0 wrong (rounds 9 and 10 above). The round-9 diff added 238 named units and all were checked right.
+- **Single views:** all 269 single-view units were audited (round 10). The one wrong (a 6♠ that was a 7♠ under a finger) and 10 of 15 unverifiable are no longer reported. 5 unverifiable units are still reported (boxes over overlapping cards, a fan, a lifted deck).
+- **Stale spots:** 5 of round 9's 18 stale units still report a collected card on its old spot for a few keyframes (`hiddenEvidence`, round 10). The rule also hides right names under a passing arm.
 - **Sideways cards in the right player's columns:** a sideways 8♦ passed the gate as 7♦ (n1532 16:32–16:34 EST). This is fixed by `turnVeto` (round 7), but only for number cards whose turned read and pip count agree. Squashed near-square crops are still read upright.
 - **Jumbo-index deck:** 23 / 86 legible n1532 hand-end cards stay unnamed, mostly fan strips and stacked columns.
   The corner reader names some of these, but only where the card reader agrees. Only two hands of the deck were
@@ -1197,6 +1328,17 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
     - `nscore.py DIR TAG [--fresh] [--v]` scores by name and position (any detector); `units.py TAG` diffs against the
       shipped sims (`namediff3.py`) and classes units new or shifted;
     - `otiles.py`, `dtiles.py`, `bigz.py`, `vtiles.py` and `courtref.py` (reference courts and aces) are the eye-check sheets.
+
+17. **Single views and stale spots (round 10),** `scripts/views/`, scratch in `/private/tmp/claude-501/ofc-vision10/` (NOTES.md,
+    `scan` → round 9's merged scans `ofc-vision9/r-add0.3/scan`). Run from the scratch folder:
+    - `sim1.sh TAG SESS ['{params}']` and `q.sh QUEUE` run sims into `r/` (about 2 min each, 3 at a time);
+    - `vounits.py r/sim-TAG UNITS.json` lists single-view units; `vt.py UNITS.json OUT` (box zoom, crop, holder zoom) and
+      `strip.py UNITS.json OUT.jpg i,j` (full-rate strips) are the eye-check sheets;
+    - `needed.py TAG` lists truth names that depend on a single view; `feat2.py` gives hand cover, sharpness, overlap and size per
+      unit; `cf.py` has the crop features;
+    - `hidfeat.py TAG` then `hidfeat2.py TAG` give each hidden report's footprint shares (card face, skin, felt), cover, stillness and
+      age, marked stale or needed;
+    - score with `combine/nscore.py` (fresh and eye truth).
 
 ## Taken from gigarepo (servers/poker-os)
 

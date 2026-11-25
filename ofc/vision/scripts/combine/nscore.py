@@ -2,7 +2,7 @@
 (boxed hand name or hidden table card) of its name lies within 35 px of its object; a report of a truth name farther away = FAR (wrong
 object), a report of a name with no legible truth object = UNT (missed card or wrong: eye verdicts in verdicts.json key 'frame name x y')."""
 import sys, json, re, glob, os, math
-W = '/private/tmp/claude-501/ofc-wt9/ofc/vision'
+W = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 d, tag = sys.argv[1], sys.argv[2]; fresh = '--fresh' in sys.argv; v = '--v' in sys.argv
 T = W + ('/eval/fresh-truth' if fresh else '/eval/eye-truth')
 V = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'verdicts.json'))) if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'verdicts.json')) else {}
