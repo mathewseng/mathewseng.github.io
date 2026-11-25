@@ -186,3 +186,68 @@ Training data from later sessions
 
   Face reader: dice_faces.py --extra takes each session's own dice colours from
   its session.json; --eval-only scores an existing model on --holdout-games.
+
+Held-out object test (Nov 24 evening)
+
+  heldout.py names four held-out blocks: Nov 21 game 4 (s1), Nov 21 game 8
+  (s3), Nov 23 from 2:00 (s4) and Nov 24 game 3 (s5). Training scripts leave
+  them out (with 10 s either side) when given --exclude-heldout:
+  objects_train.py, train_slots.py, dice_faces.py. testset_build.py stores 253
+  frames from them (every few seconds, plus each turn's settled dice) in the
+  readers' view under ~/Downloads/office-3-backgammon-heldout; every frame was
+  reviewed by eye (notes.txt there, proof/ crops) and testset_labels.py turns
+  the notes into labels/heldout-labels.json: the dice on the board (a die in a
+  hand is not on the board; a die proven hidden is neither a miss nor an
+  extra), the cube's zone and face, and for quiet frames the checker position.
+
+  testset_eval.py scores the detector (dice found / missed / extra by colour,
+  cube zone), the face reader on each turn's dice, the slot reader per point
+  and the decoded position per frame. The decode check counts a frame where the
+  player on roll has made part of the move (or tried another arrangement of the
+  same dice) before picking up the dice as mid-move, since the replay shows
+  whole turns; a finished move shown more than 2 s after the dice were picked up
+  but before the decode's result is late; any other difference is wrong. Frames
+  after a pass whose board was changed by play after the game (Nov 23) are
+  counted apart. --decode s1=file scores a new decode; --decoded-only skips the
+  models. testset_rolls.py reads each held-out turn's roll from the dice alone.
+
+  Frames of the held-out games were in the training sets of obj-v8 (554
+  frames), faces-v6 and slots-v3, so their held-out scores flatter them; models
+  trained with --exclude-heldout are the fair comparison.
+
+  Duplicate peaks. One die can give several detector peaks, 10-20 px apart and
+  sometimes of the other colour (its pip face and its coloured side).
+  objects.merge_dice keeps one: the scan (objects_scan.py) and the Vision
+  overlay (export_audit.py) use it.
+
+  Hard dice. objects_hard.py finds weak die peaks that stay put outside the
+  held-out games; objects_hard_add.py turns a review of them (verdicts.json:
+  N not a die, Y/R a die of that colour, ? colour not decidable) into the
+  extra set "hard" (BG_OBJ_SKIP=hard leaves it out).
+
+  Taken-back moves (decode2.mjs). When a player makes a move, takes it back
+  and the board is read in the old position again, the readings in between
+  are cheap to skip, so the turn is no longer joined with the next one and
+  dated when it ends. The reading that shows the old position must disagree
+  with the skipped ones on a point both read.
+
+  Slot reader v5. slots-v5 (train_slots.py --exclude-heldout on the Nov 21
+  lists, then the Nov 23/24 packed sets with --packed-role all) reads every
+  point of the 145 quiet held-out frames right; a point's count is now the run
+  of filled slots from the rail (read_slots.counts, used by observe.py), so a
+  bar checker or the cube over a strip's tip is not counted. Its readings
+  (obs-v5 in each work dir) feed the Vision overlay. The decodes stay on the
+  slots-v3 readings (obs-v3): decoded from obs-v5, Nov 21 game 2's late
+  bear-in reads Black's tall home stacks differently and its rolls then
+  disagree with the dice (one of them eye-checked), so obs-v5 is not used
+  for the decode yet.
+
+  Rebuilt Nov 24 evening with the taken-back rule (decode2-v5.json in each
+  work dir; moves, rolls and EV losses unchanged unless noted): Nov 21 games
+  1, 2, 6, 7, 8, 9 and Nov 24 games 1-3 have turns dated when they ended
+  instead of joined to the next turn (inferred turns in the rebuilt games:
+  19 before, 8 now, Nov 21 game 5 included); Nov 21 game 5
+  now has White 5-4 (13/9 6/1*) and Black 5-5 from the bar where the old
+  decode had four turns (3-1, an unseen 6-5, 4-1, 5-3) that the board does not
+  show. Nov 24 was analysed as published: the obj.pt scan
+  (BG_DICE_SCAN=objects-scan-obj, cube-scan-obj.json) and faces-v6.

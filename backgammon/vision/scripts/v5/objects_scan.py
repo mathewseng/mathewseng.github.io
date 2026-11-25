@@ -2,7 +2,8 @@
 """Run the dice and cube detector over every 5th rectified frame of one recording.
 
 Writes, under BG_WORK_DIR:
-  objects-scan/clip-NNN.npz  meta [frame, x, y, score, red] and 40x40 patches per die
+  objects-scan/clip-NNN.npz  meta [frame, x, y, score, red] and 40x40 patches per die (peaks on
+                             one die merged: objects.merge_dice)
   objects-scan/die-score.npy detector score per die row (all rows are dice)
   cube-scan.json             [frame, score, x, y] for the best cube peak per scanned frame
 
@@ -34,6 +35,7 @@ def main():
                 det = ob.peaks(net(x), a.thresh)
             for im, n, rows in zip(ims, nums, det):
                 h, w = im.shape[:2]
+                rows = [r for r in rows if r[0] == 2] + ob.merge_dice(rows, a.thresh)
                 rows = [(c, *reader_xy(px, py, w, h, view), s, px, py) for c, px, py, s in rows]
                 cubes = [r for r in rows if r[0] == 2]
                 if cubes:

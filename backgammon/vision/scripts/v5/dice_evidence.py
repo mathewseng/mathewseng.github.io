@@ -10,7 +10,7 @@ from session import red_player
 RED = red_player()
 
 decode = json.load(open(sys.argv[1]))
-net = df.FaceNet(); net.load_state_dict(torch.load(sys.argv[2], map_location='cpu')); net.eval().to(df.dev)
+net = df.load_net(sys.argv[2])
 meta, patches = df.load_scan()
 out = []
 for gi, g in enumerate(decode['games'], 1):

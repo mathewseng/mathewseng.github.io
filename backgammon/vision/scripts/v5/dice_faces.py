@@ -65,14 +65,22 @@ def window_start(prev, last_start, frame):
     return last_start if frame - prev < 25 else prev
 
 
+OPENINGS = False         # --openings: also learn from opening rolls (one die of each colour)
+EXCLUDE_HELDOUT = False  # --exclude-heldout: leave out the object test's held-out games (heldout.py)
+
+
 def examples(decode, meta, score=None, source=0, work=None):
-    out = []; red_side = red_player(work)
+    import heldout
+    out = []; red_side = red_player(work); session = heldout.session_of_work(work or WORK)
     for gi, g in enumerate(decode['games'], 1):
         prev = start = g['startFrame']
-        for t in g['turns']:
+        for ti, t in enumerate(g['turns']):
             red = 1 if t['player'] == red_side else 0
             start = window_start(prev, start, t['frame'])
+            if EXCLUDE_HELDOUT and session and heldout.held(session, t['frame']): prev = t['frame']; continue
             tr = tracks(meta, start, t['frame'], red, score)
+            if ti == 0 and OPENINGS and not g.get('fragment'):
+                tr = tracks(meta, start, t['frame'], 0, score)[:1] + tracks(meta, start, t['frame'], 1, score)[:1]
             if t['rolls'] and len(tr) >= 2 and not t.get('inferred'):
                 sets = [tuple(map(int, r.split('-'))) for r in t['rolls']]
                 out.append({'game': gi, 'source': source, 'frame': t['frame'], 'faces': sets[0], 'sets': sets, 'tracks': tr[:2]})
@@ -90,8 +98,20 @@ class FaceNet(nn.Module):
 
 
 # The detector centres on a die's coloured side face; its pip face is about 10 px
-# to the left (the camera sees the dice from one side), so the crop leans left.
+# to the left (the camera sees the dice from one side), so the crop leans left ('lean': 32x32).
+# 'full' reads the whole 40x40 patch, so a turned die's pip face stays in view. A model saved
+# as {'state_dict', 'crop'} carries its crop (load_net).
 CROP_X = int(os.environ.get('BG_FACE_CROP_X', '4'))
+CROP = 'lean'
+
+
+def load_net(path):
+    """A face reader and its crop ('lean' for models saved as a bare state dict)."""
+    global CROP
+    obj = torch.load(path, map_location='cpu')
+    sd = obj['state_dict'] if 'state_dict' in obj else obj
+    CROP = obj.get('crop', 'lean') if 'state_dict' in obj else 'lean'
+    net = FaceNet(); net.load_state_dict(sd); return net.eval().to(dev)
 
 
 def prep(p, train):
@@ -103,7 +123,7 @@ def prep(p, train):
         M[:, 2] += np.random.uniform(-3, 3, 2)
         p = cv2.warpAffine(np.ascontiguousarray(p), M, (40, 40), borderMode=cv2.BORDER_REFLECT)
         p = p * random.uniform(.8, 1.2) + random.uniform(-20, 20)
-    p = np.ascontiguousarray(p[4:36, CROP_X:CROP_X + 32, ::-1])
+    p = np.ascontiguousarray(p[:, :, ::-1] if CROP == 'full' else p[4:36, CROP_X:CROP_X + 32, ::-1])
     return (torch.from_numpy(p).permute(2, 0, 1).contiguous() / 255. - .5) / .25
 
 
@@ -135,7 +155,11 @@ if __name__ == '__main__':
     ap.add_argument('--holdout-games', type=int, nargs='*', default=[]); ap.add_argument('--steps', type=int, default=2500)
     ap.add_argument('--extra', nargs='*', default=[], help='more sessions as decode.json@work-dir (training only)')
     ap.add_argument('--eval-only', action='store_true', help='score the existing model at out on the held-out games')
+    ap.add_argument('--crop', default='lean', choices=('lean', 'full')); ap.add_argument('--openings', action='store_true')
+    ap.add_argument('--exclude-heldout', action='store_true', help="leave out the object test's held-out games (heldout.py)")
+    ap.add_argument('--init', help='start from this model')
     a = ap.parse_args()
+    CROP, OPENINGS, EXCLUDE_HELDOUT = a.crop, a.openings, a.exclude_heldout
     meta, patches = load_scan()
     ex = examples(json.loads(Path(a.decode).read_text()), meta)
     for k, pair in enumerate(a.extra, 1):
@@ -149,7 +173,8 @@ if __name__ == '__main__':
     print('examples', len(ex), 'train', len(train), 'test', len(test))
     if a.eval_only: a.steps = 0
     net = FaceNet().to(dev)
-    if a.eval_only: net.load_state_dict(torch.load(a.out, map_location='cpu')); net.to(dev)
+    if a.eval_only: net = load_net(a.out)
+    elif a.init: net.load_state_dict(torch.load(a.init, map_location='cpu').get('state_dict', None) or torch.load(a.init, map_location='cpu')); net.to(dev)
     opt = torch.optim.AdamW(net.parameters(), 2e-3, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=max(1, a.steps))
     for step in range(a.steps):
@@ -182,4 +207,4 @@ if __name__ == '__main__':
                 es = [e for e in part if e['game'] == gid and len(e['sets']) == 1]
                 hit = sum(max(pp := pair_prob(read_track(net, patches, e['tracks'][0][:15]), read_track(net, patches, e['tracks'][1][:15])), key=pp.get) == f"{max(e['faces'])}-{min(e['faces'])}" for e in es)
                 print(f'  test game {gid}: {hit} / {len(es)}')
-    if not a.eval_only: torch.save(net.cpu().state_dict(), a.out)
+    if not a.eval_only: torch.save({'state_dict': net.cpu().state_dict(), 'crop': CROP}, a.out)

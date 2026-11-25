@@ -161,8 +161,11 @@ function decodeGame(obs, g0, g1, fragment = false) {
         const players = node.mover === null ? [0, 1] : [node.mover];
         const S = node.state;
         if (consistent(o, S.points)) {
-          // the same position seen again: carry the node forward at no cost
-          relax(t, `${node.mover}|${boardKey(S)}`, { ...node, cost: node.cost + skipped, k: t });
+          // The same position seen again: carry the node forward. Readings skipped on the way that
+          // are a move by the player on roll (made, then taken back) or partial views of one are
+          // cheap, as when a turn ends at a reading; others cost their duration.
+          const cost = node.mover === null ? skipped : skippedRetracted(obs, g0, node.k, t, S.points, results(S, node.mover));
+          relax(t, `${node.mover}|${boardKey(S)}`, { ...node, cost: node.cost + cost, k: t });
           break;
         }
         for (const p of players) {
@@ -217,6 +220,23 @@ function skippedPartial(obs, g0, k, t, a, b, revisions = null) {
   for (let i = k + 1; i < t; i++) {
     const o = obs[g0 + i];
     const cheap = partialOf(o, a, b) || (revisions && [...revisions.values()].some(e => consistent(o, e.state.points)));
+    c += cheap ? o.w * 0.05 : o.w;
+  }
+  return c;
+}
+
+/** Cost of the readings skipped before a position is seen again: a legal move of the player on
+ * roll that was taken back, and partial views of it, are cheap; other readings cost their duration.
+ * A skipped reading only counts as taken back when the reading that sees the position again
+ * disagrees with it on a point both read (one with the moved points hidden does not show the move
+ * was undone). */
+function skippedRetracted(obs, g0, k, t, a, res) {
+  const again = obs[g0 + t];
+  const differs = o => o.pos.some((v, i) => v !== null && again.pos[i] !== null && !same(v, again.pos[i]) && !same(again.pos[i], v));
+  let c = 0;
+  for (let i = k + 1; i < t; i++) {
+    const o = obs[g0 + i];
+    const cheap = differs(o) && [...res.values()].some(e => consistent(o, e.state.points) || partialOf(o, a, e.state.points));
     c += cheap ? o.w * 0.05 : o.w;
   }
   return c;

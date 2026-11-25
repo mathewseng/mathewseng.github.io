@@ -94,14 +94,35 @@ def peaks(logits, thresh=.3):
     return out
 
 
+def merge_dice(rows, thresh=.35):
+    """Die peaks (class < 2) kept as dice. One die can give several peaks (its coloured side and
+    pip face, 10-20 px apart, sometimes of the other colour): peaks of a colour closer than 24 px
+    are one die unless both are strong and at least 13 px apart (two touching dice); a peak within
+    10 px of a stronger peak of the other colour, or within 22 px of one scoring 0.5 or more and
+    at least 1.5 times as much, is the same die. rows: (class, x, y, score); returns the kept rows."""
+    import math
+    out = []
+    for d in sorted([r for r in rows if r[0] < 2 and r[3] >= thresh], key=lambda r: -r[3]):
+        near = [o for o in out if o[0] == d[0] and math.hypot(o[1] - d[1], o[2] - d[2]) < 24]
+        if near and not (d[3] >= .75 and min(o[3] for o in near) >= .75 and min(math.hypot(o[1] - d[1], o[2] - d[2]) for o in near) >= 13):
+            continue
+        if any(o[0] != d[0] and (math.hypot(o[1] - d[1], o[2] - d[2]) < 10 or
+                                 (o[3] >= .5 and o[3] >= 1.5 * d[3] and math.hypot(o[1] - d[1], o[2] - d[2]) < 22)) for o in out):
+            continue
+        out.append(d)
+    return out
+
+
 def load(path):
     net = ObjNet(); net.load_state_dict(torch.load(path, map_location='cpu')); return net.eval().to(dev)
 
 
 def extra_sets():
-    """Later sessions added to the training set (objects_add.py): extra/frames-NAME.npz and
-    extra/labels-NAME.json, stored in the Nov 21 view. Their keys follow the Nov 21 frames."""
-    return sorted((OBJ_DIR / 'extra').glob('frames-*.npz'))
+    """Later sessions added to the training set (objects_add.py) and the reviewed hard dice
+    (objects_hard_add.py): extra/frames-NAME.npz and extra/labels-NAME.json, stored in the Nov 21
+    view. Their keys follow the Nov 21 frames. BG_OBJ_SKIP=name,... leaves sets out."""
+    skip = set(filter(None, os.environ.get('BG_OBJ_SKIP', '').split(',')))
+    return sorted(p for p in (OBJ_DIR / 'extra').glob('frames-*.npz') if p.stem[len('frames-'):] not in skip)
 
 
 def load_frames():

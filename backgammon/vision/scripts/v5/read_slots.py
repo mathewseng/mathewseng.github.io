@@ -35,6 +35,28 @@ class Reader:
         return best
 
 
+def counts(pr):
+    """Signed count and confidence per point from slot probabilities [24, NSLOT, C].
+
+    Checkers stack from the rail without gaps, so a point's count is the run of filled slots from
+    the rail: a slot past the first empty one (a checker on the bar overlapping the strip's tip, the
+    cube, a checker in a hand) does not count, and an occluded slot (class 3) only makes the point
+    unknown when it lies within that run or right after it. Confidence is the least confident slot
+    up to and including the first empty slot (0 when unknown)."""
+    cls = pr.argmax(-1); top = pr.max(-1)
+    pos, conf = [0] * 24, [0.0] * 24
+    for p in range(24):
+        n, colour, c, ok = 0, 0, 1.0, True
+        for k in range(pr.shape[1]):
+            c = min(c, float(top[p, k]))
+            if cls[p, k] == slots.EMPTY: break
+            if cls[p, k] == 3 or (colour and cls[p, k] != colour): ok = False; break
+            colour = int(cls[p, k]); n += 1
+        pos[p] = n if colour == slots.WHITE else -n
+        conf[p] = round(c, 3) if ok else 0.0
+    return pos, conf
+
+
 def position(pr):
     """Signed counts per point from slot probabilities (count occupied slots of the majority colour)."""
     cls = pr.argmax(-1)

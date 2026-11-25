@@ -6,7 +6,8 @@ The overlay draws in a 560x420 board space placed over the video's board at
 Each frame: [checkers [[x, y, side, 0, 0]], dice [[x, y, face, '', score, size]],
 cube [x, y, face, score, size] | null, hands [], stacks [[point, side, count]]]
 
-Dice and cube come from the detector scan (objects_scan.py). A die's face is the
+Dice and cube come from the detector scan (objects_scan.py), one box per die (peaks of 0.4 or
+more merged by objects.merge_dice). A die's face is the
 game's roll for that turn, assigned to the two dice by the face reader; a die
 outside a known roll shows the reader's own answer when it is confident. The
 cube shows the face the game state implies (64 in the middle, the offered or
@@ -18,7 +19,7 @@ import collections, gzip, json, sys
 from pathlib import Path
 import numpy as np, torch
 import geometry as g, slots
-import dice_faces as df, frames
+import dice_faces as df, frames, objects as ob
 from session import WORK, red_player, board_view, display_x
 
 SX, SY = 560 / 800, 420 / 590
@@ -113,7 +114,7 @@ def main():
     view = board_view(); X = lambda x: display_x(x, view)
     # the camera puts a die's pip face on its left: right on the canonical board when it is turned
     die_dx = -DIE_DX if view == 'turned' else DIE_DX
-    net = df.FaceNet(); net.load_state_dict(torch.load(sys.argv[5], map_location='cpu')); net.eval().to(df.dev)
+    net = df.load_net(sys.argv[5])
     rows = {}
     for p in sorted(obs_dir.glob('clip-*.json')):
         for r in json.loads(p.read_text()): rows[r['f']] = r
@@ -149,10 +150,9 @@ def main():
             dice = []
             j = np.searchsorted(dkeys, f, side='right') - 1
             if j >= 0 and f - dkeys[j] < 5:
-                kept = []  # one box per die: a die can give two peaks a few pixels apart
-                for i in sorted(by_frame[int(dkeys[j])], key=lambda i: -meta[i, 3]):
-                    if not any(meta[k, 4] == meta[i, 4] and np.hypot(*(meta[k, 1:3] - meta[i, 1:3])) < 14 for k in kept): kept.append(i)
-                for i in kept:
+                # one box per die: a die can give several peaks (objects.merge_dice)
+                rows_f = [(int(meta[i, 4]), float(meta[i, 1]), float(meta[i, 2]), float(meta[i, 3]), i) for i in by_frame[int(dkeys[j])]]
+                for *_, i in ob.merge_dice(rows_f, .4):
                     dice.append([round((X(float(meta[i, 1])) + die_dx) * SX, 1), round(float(meta[i, 2]) * SY, 1), int(face[i]),
                                  'yellow die' if meta[i, 4] == 0 else 'red die', int(round(float(meta[i, 3]) * 100)), DIE_BOX])
             cb = None

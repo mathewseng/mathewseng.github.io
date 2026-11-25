@@ -1,0 +1,11216 @@
+{
+"s1:58575": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+308.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:58575 dice ok(none) cube ok holder chk ok"
+},
+"s1:59075": {
+"dice": [
+[
+281.2,
+393.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+0,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-4,
+5,
+0,
+0,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:59075 dice ok(1 yellow; second die not visible, likely under hand at bottom) cube ok chk ok"
+},
+"s1:59575": {
+"dice": [
+[
+454.2,
+314.7,
+1
+],
+[
+483.5,
+507.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:59575 dice ok(2 red) cube ok chk moving (hand covers bottom-right 5-stack, reader says 0)"
+},
+"s1:60075": {
+"dice": [
+[
+455.5,
+313.2,
+1
+],
+[
+481.8,
+509.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+0,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-4,
+5,
+0,
+0,
+1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+1
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:60075 dice ok(2 red) cube ok chk ok"
+},
+"s1:60575": {
+"dice": [
+[
+455.4,
+313.4,
+1
+],
+[
+481.8,
+508.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+308.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+0,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-4,
+5,
+0,
+0,
+1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+1
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:60575 dice ok cube ok chk ok"
+},
+"s1:61075": {
+"dice": [
+[
+455.3,
+313.1,
+1
+],
+[
+481.8,
+509.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.6,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+0,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-4,
+5,
+0,
+0,
+1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+1
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:61075 dice ok cube ok chk ok"
+},
+"s1:61575": {
+"dice": [
+[
+353.5,
+197.7,
+0
+],
+[
+355.2,
+238.4,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-3,
+5,
+0,
+0,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+1
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:61575 dice ok(2 yellow) cube ok chk ok  [reader: white bar checker at (370,378) read as 1 on bottom point x356 -> reader error]"
+},
+"s1:62075": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:62075 dice ok(none) cube ok chk moving (hand bottom right)"
+},
+"s1:62575": {
+"dice": [
+[
+632.7,
+346.6,
+1
+],
+[
+483.7,
+477.4,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+308.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:62575 dice ok(2 red) cube ok chk moving (black hitting; white on bar)"
+},
+"s1:63075": {
+"dice": [
+[
+632.6,
+346.6,
+1
+],
+[
+483.2,
+476.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:63075 dice ok cube ok chk moving"
+},
+"s1:63575": {
+"dice": [
+[
+521.0,
+165.7,
+1
+],
+[
+483.5,
+412.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:63575 dice ok cube ok chk moving"
+},
+"s1:64075": {
+"dice": [
+[
+521.2,
+165.5,
+1
+],
+[
+482.9,
+411.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:64075 dice ok cube ok chk moving"
+},
+"s1:64575": {
+"dice": [
+[
+521.5,
+166.1,
+1
+],
+[
+484.4,
+412.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-2,
+5,
+0,
+0,
+0,
+-2,
+0,
+-5,
+0,
+-1,
+-2,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:64575 dice ok cube ok chk ok"
+},
+"s1:65075": {
+"dice": [
+[
+521.5,
+165.7,
+1
+],
+[
+483.7,
+412.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+308.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-2,
+5,
+0,
+0,
+0,
+-2,
+0,
+-5,
+0,
+-1,
+-2,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:65075 dice ok cube ok chk ok"
+},
+"s1:65575": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+308.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:65575 dice ok(none) cube ok chk moving"
+},
+"s1:66075": {
+"dice": [
+[
+343.0,
+208.2,
+0
+],
+[
+333.8,
+457.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.7,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:66075 dice ok(2 yellow) cube ok chk moving"
+},
+"s1:66575": {
+"dice": [
+[
+522.8,
+385.6,
+1
+],
+[
+592.8,
+397.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+1,
+4,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:66575 dice ok cube ok chk ok"
+},
+"s1:67075": {
+"dice": [
+[
+283.6,
+222.8,
+0
+],
+[
+271.0,
+345.0,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+-2,
+3,
+0,
+0,
+0,
+1,
+4,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:67075 dice ok cube ok chk ok"
+},
+"s1:67575": {
+"dice": [
+[
+283.5,
+223.1,
+0
+],
+[
+271.3,
+345.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+-2,
+3,
+0,
+0,
+0,
+1,
+4,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:67575 dice ok cube ok chk ok"
+},
+"s1:68075": {
+"dice": [
+[
+283.5,
+222.8,
+0
+],
+[
+270.8,
+344.6,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.5,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:68075 dice ok cube ok chk moving (arm; reader read covered 5-stack as 0)"
+},
+"s1:68575": {
+"dice": [
+[
+283.5,
+222.9,
+0
+],
+[
+271.2,
+344.5,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+0,
+0,
+0,
+3,
+-2,
+3,
+0,
+0,
+0,
+1,
+5,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+0,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+],
+"barUnseen": true
+},
+"note": "s1:68575 dice ok(2 yellow) cube ok chk ok-points (decoded bar[0,1]: the hit black checker is not on the board yet, held)"
+},
+"s1:69075": {
+"dice": [
+[
+636.8,
+406.5,
+1
+],
+[
+480.8,
+430.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+0,
+0,
+0,
+3,
+-2,
+3,
+0,
+0,
+0,
+1,
+5,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+0,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:69075 dice ok cube ok chk ok"
+},
+"s1:69575": {
+"dice": [
+[
+637.1,
+406.3,
+1
+],
+[
+480.9,
+430.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+0,
+0,
+0,
+3,
+-2,
+3,
+0,
+0,
+0,
+1,
+5,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+0,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:69575 dice ok cube ok chk ok"
+},
+"s1:70075": {
+"dice": [
+[
+484.1,
+349.9,
+1
+],
+[
+509.4,
+455.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+308.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+0,
+-1,
+0,
+3,
+-2,
+3,
+0,
+0,
+0,
+1,
+5,
+0,
+0,
+0,
+-1,
+0,
+-5,
+1,
+-2,
+-2,
+0,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:70075 dice ok cube ok chk ok"
+},
+"s1:70575": {
+"dice": [
+[
+484.3,
+351.0,
+1
+],
+[
+509.3,
+455.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:70575 dice ok cube ok chk moving (black has entered, rest of move pending)"
+},
+"s1:71075": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.8,
+308.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+-1,
+-1,
+0,
+3,
+-2,
+3,
+0,
+0,
+0,
+1,
+5,
+0,
+0,
+0,
+0,
+0,
+-5,
+1,
+-2,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:71075 dice ok(none) cube ok chk ok"
+},
+"s1:71575": {
+"dice": [
+[
+350.4,
+275.5,
+0
+],
+[
+282.6,
+374.7,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:71575 dice ok cube ok chk moving"
+},
+"s1:72075": {
+"dice": [
+[
+457.5,
+247.5,
+1
+],
+[
+680.8,
+426.9,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:72075 dice ok cube ok chk moving"
+},
+"s1:72575": {
+"dice": [
+[
+457.7,
+247.5,
+1
+],
+[
+681.1,
+426.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+-1,
+-1,
+0,
+4,
+-2,
+3,
+0,
+0,
+0,
+0,
+5,
+0,
+1,
+0,
+0,
+0,
+-5,
+0,
+-2,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:72575 dice ok cube ok chk ok"
+},
+"s1:73075": {
+"dice": [
+[
+457.3,
+247.1,
+1
+],
+[
+680.5,
+426.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+-1,
+0,
+0,
+4,
+-2,
+3,
+-1,
+0,
+0,
+0,
+5,
+0,
+1,
+0,
+0,
+0,
+-4,
+-1,
+-2,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:73075 dice ok cube ok chk ok"
+},
+"s1:73575": {
+"dice": [
+[
+457.7,
+247.2,
+1
+],
+[
+681.0,
+426.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.6,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+-1,
+0,
+0,
+4,
+-2,
+3,
+-1,
+0,
+0,
+0,
+5,
+0,
+1,
+0,
+0,
+0,
+-4,
+-1,
+-2,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:73575 dice ok cube ok chk ok"
+},
+"s1:74075": {
+"dice": [
+[
+313.1,
+249.8,
+0
+],
+[
+333.2,
+421.4,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:74075 dice ok cube ok chk moving"
+},
+"s1:74575": {
+"dice": [
+[
+493.0,
+158.1,
+1
+],
+[
+523.4,
+378.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:74575 dice ok cube ok chk moving"
+},
+"s1:75075": {
+"dice": [
+[
+654.1,
+133.1,
+1
+],
+[
+569.1,
+307.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:75075 dice ok cube ok chk moving (black entered at top x488, rest pending)"
+},
+"s1:75575": {
+"dice": [
+[
+218.1,
+323.2,
+0
+],
+[
+288.7,
+380.8,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+2,
+0,
+-1,
+4,
+-2,
+3,
+0,
+0,
+0,
+0,
+3,
+0,
+0,
+0,
+1,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:75575 dice ok cube ok chk ok"
+},
+"s1:76075": {
+"dice": [
+[
+326.0,
+366.3,
+0
+],
+[
+296.5,
+420.9,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:76075 dice ok cube ok chk moving"
+},
+"s1:76575": {
+"dice": [
+[
+623.3,
+453.7,
+1
+],
+[
+428.7,
+241.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+308.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:76575 dice -1 (peaks 0 and 1, both 0.4, are one red die at 418,292: duplicate) cube ok chk moving"
+},
+"s1:77075": {
+"dice": [
+[
+295.6,
+299.6,
+0
+],
+[
+226,
+480,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+3,
+0,
+0,
+4,
+-2,
+6,
+0,
+0,
+-1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:77075 dice +[222,530,0] (yellow die on orange point, peak Y 0.29 below threshold) cube ok chk fix p8=6 p17=0 (white moved 17->8 already; quiet)"
+},
+"s1:77575": {
+"dice": [
+[
+295.5,
+300.7,
+0
+],
+[
+225,
+480,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+3,
+0,
+0,
+4,
+-2,
+6,
+0,
+0,
+-1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:77575 dice +[225,530,0] (same die, peak Y 0.34) cube ok chk fix p8=6 p17=0"
+},
+"s1:78075": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+3,
+0,
+0,
+4,
+-2,
+6,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:78075 dice ok(none) cube ok chk ok"
+},
+"s1:78575": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:78575 dice ok(none visible; hand) cube ok chk moving"
+},
+"s1:79075": {
+"dice": [
+[
+511.4,
+326.9,
+1
+],
+[
+479.3,
+453.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:79075 dice ok cube ok chk moving"
+},
+"s1:79575": {
+"dice": [
+[
+511.6,
+326.9,
+1
+],
+[
+478.5,
+451.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.6,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+4,
+1,
+0,
+4,
+-2,
+4,
+0,
+0,
+-1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:79575 dice ok cube ok chk ok"
+},
+"s1:80075": {
+"dice": [
+[
+511.6,
+327.3,
+1
+],
+[
+478.7,
+453.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+4,
+1,
+0,
+4,
+-2,
+4,
+0,
+0,
+-1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:80075 dice ok cube ok chk ok"
+},
+"s1:80575": {
+"dice": [
+[
+358.2,
+378.2,
+0
+],
+[
+333.7,
+402.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+4,
+2,
+0,
+3,
+-2,
+4,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+-1,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:80575 dice ok cube ok chk fix p6=3 p4=2 (white mid-move, quiet)"
+},
+"s1:81075": {
+"dice": [
+[
+357.9,
+378.7,
+0
+],
+[
+333.7,
+402.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+4,
+2,
+1,
+3,
+-2,
+3,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+-1,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:81075 dice ok cube ok chk fix p8=3 p6=3 p5=1 p4=2"
+},
+"s1:81575": {
+"dice": [
+[
+357.8,
+378.9,
+0
+],
+[
+333.8,
+402.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+5,
+2,
+0,
+2,
+-2,
+4,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+-1,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:81575 dice ok cube ok chk fix p6=2 p4=2 p3=5"
+},
+"s1:82075": {
+"dice": [
+[
+357.9,
+378.7,
+0
+],
+[
+333.7,
+401.8,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+4,
+2,
+1,
+3,
+-2,
+3,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+-1,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:82075 dice ok cube ok chk ok"
+},
+"s1:82575": {
+"dice": [
+[
+171.2,
+181.5,
+1
+],
+[
+320.7,
+263.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.7,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:82575 dice ok cube ok chk moving"
+},
+"s1:83075": {
+"dice": [
+[
+146.4,
+279.0,
+1
+],
+[
+225.4,
+457.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.8,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s1:83075 dice ok cube ok chk moving"
+},
+"s1:83575": {
+"dice": [
+[
+269.8,
+210.3,
+1
+],
+[
+300.2,
+344.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+308.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+4,
+2,
+-2,
+3,
+0,
+3,
+0,
+-1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+-3,
+0,
+-3,
+-3,
+-2,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:83575 dice ok cube ok chk ok  [reader misses the lone white checker at the base of p13 (140,585)]"
+},
+"s1:84075": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+181.2,
+289.9
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+4,
+2,
+-2,
+3,
+0,
+3,
+0,
+-1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+-3,
+0,
+-3,
+-3,
+-2,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:84075 dice ok(none) cube ok board value 2 (offered) chk ok [same p13 reader miss]"
+},
+"s1:84575": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+179.0,
+292.4
+],
+"zone": "board",
+"face": 2
+},
+"checkers": null,
+"note": "s1:84575 dice ok(none) cube ok board value 2 chk moving (hand at bottom)"
+},
+"s1:85075": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.8,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+4,
+2,
+-2,
+3,
+0,
+3,
+0,
+-1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+-3,
+0,
+-3,
+-3,
+-2,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s1:85075 dice ok(none) cube ok holder (after pass) chk ok [p13 reader miss]"
+},
+"s1:58728": {
+"dice": [
+[
+285.6,
+381.6,
+0
+],
+[
+604.4,
+183.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+4
+],
+"note": "s1:58728 dice ok(opening: 1 yellow 1 red) cube ok chk ok"
+},
+"s1:59188": {
+"dice": [
+[
+365.2,
+268.9,
+0
+],
+[
+360.7,
+496.4,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+0,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-4,
+5,
+0,
+0,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+2
+],
+"note": "s1:59188 dice ok(2 yellow, scores .60/.75) cube ok chk ok"
+},
+"s1:59438": {
+"dice": [
+[
+455.4,
+313.8,
+1
+],
+[
+482.5,
+509.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+4,
+3
+],
+"note": "s1:59438 dice ok (faces 4 at 450,362; 3 at 483,558) cube ok chk moving (bar checker in hand)"
+},
+"s1:61317": {
+"dice": [
+[
+353.3,
+197.9,
+0
+],
+[
+355.1,
+238.5,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.7,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-3,
+5,
+0,
+0,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+1
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+2
+],
+"note": "s1:61317 dice ok cube ok chk ok [reader p18: white bar checker read on point again]"
+},
+"s1:62155": {
+"dice": [
+[
+632.6,
+346.6,
+1
+],
+[
+484.2,
+477.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-3,
+5,
+0,
+0,
+-1,
+-3,
+0,
+-5,
+0,
+1,
+1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+5
+],
+"note": "s1:62155 dice ok (5,5) cube ok chk ok"
+},
+"s1:63329": {
+"dice": [
+[
+213.1,
+182.6,
+0
+],
+[
+359,
+387,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+2,
+1
+],
+"note": "s1:63329 dice +[358,435,0] (yellow die on cream point, peak Y 0.28) cube ok chk moving"
+},
+"s1:63444": {
+"dice": [
+[
+521.2,
+165.7,
+1
+],
+[
+483.6,
+412.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-2,
+5,
+0,
+0,
+0,
+-2,
+0,
+-5,
+0,
+-1,
+-2,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+3
+],
+"note": "s1:63444 dice ok (3 at 515,215; 6 at 482,462; low dup peak 0.15 ignored) cube ok chk ok"
+},
+"s1:65683": {
+"dice": [
+[
+343.2,
+208.3,
+0
+],
+[
+333.8,
+457.5,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+-1,
+5,
+0,
+0,
+0,
+-2,
+0,
+-5,
+0,
+-2,
+-2,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+1
+],
+"note": "s1:65683 dice ok (1, 4) cube ok chk ok"
+},
+"s1:66557": {
+"dice": [
+[
+522.5,
+385.7,
+1
+],
+[
+593.0,
+397.4,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+-1,
+0,
+0,
+5,
+-1,
+3,
+0,
+0,
+0,
+1,
+4,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+2
+],
+"note": "s1:66557 dice ok (2, 4) cube ok chk ok"
+},
+"s1:66857": {
+"dice": [
+[
+283.5,
+222.9,
+0
+],
+[
+271.1,
+345.1,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+-2,
+3,
+0,
+0,
+0,
+1,
+4,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+5
+],
+"note": "s1:66857 dice ok (5, 5) cube ok chk ok"
+},
+"s1:68811": {
+"dice": [
+[
+636.5,
+406.7,
+1
+],
+[
+481.0,
+429.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+0,
+0,
+0,
+3,
+-2,
+3,
+0,
+0,
+0,
+1,
+5,
+0,
+0,
+0,
+-2,
+0,
+-5,
+1,
+-2,
+-2,
+0,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+3
+],
+"note": "s1:68811 dice ok (3, 4) cube ok chk ok"
+},
+"s1:69919": {
+"dice": [
+[
+313.5,
+312.7,
+0
+],
+[
+334.0,
+419.0,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+3,
+2
+],
+"note": "s1:69919 dice ok cube ok chk moving"
+},
+"s1:70094": {
+"dice": [
+[
+478.5,
+352.8,
+1
+],
+[
+509.5,
+457.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+6,
+3
+],
+"note": "s1:70094 dice ok (3, 6) cube ok chk moving"
+},
+"s1:71293": {
+"dice": [
+[
+350.5,
+275.6,
+0
+],
+[
+282.6,
+374.7,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.7,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+-1,
+-1,
+0,
+3,
+-2,
+3,
+0,
+0,
+0,
+1,
+5,
+0,
+0,
+0,
+0,
+0,
+-5,
+1,
+-2,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+5
+],
+"note": "s1:71293 dice ok (5, 6) cube ok chk ok"
+},
+"s1:71713": {
+"dice": [
+[
+457.8,
+247.2,
+1
+],
+[
+680.8,
+427.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+-1,
+-1,
+0,
+4,
+-2,
+3,
+0,
+0,
+0,
+0,
+5,
+0,
+1,
+0,
+0,
+0,
+-5,
+0,
+-2,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+1
+],
+"note": "s1:71713 dice ok (1, 5) cube ok chk ok"
+},
+"s1:73815": {
+"dice": [
+[
+312.9,
+249.9,
+0
+],
+[
+333.7,
+421.8,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+-1,
+0,
+0,
+4,
+-2,
+3,
+-1,
+0,
+0,
+0,
+5,
+0,
+1,
+0,
+0,
+0,
+-4,
+-1,
+-2,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+5
+],
+"note": "s1:73815 dice ok (5, 5) cube ok chk ok"
+},
+"s1:74455": {
+"dice": [
+[
+493.2,
+158.3,
+1
+],
+[
+523.2,
+377.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+6,
+2
+],
+"note": "s1:74455 dice ok (6, 2) cube ok chk moving (hand at bottom)"
+},
+"s1:74800": {
+"dice": [
+[
+317.5,
+199.4,
+0
+],
+[
+332.7,
+350.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+5,
+3
+],
+"note": "s1:74800 dice ok cube ok chk moving"
+},
+"s1:75030": {
+"dice": [
+[
+654.6,
+132.6,
+1
+],
+[
+568.9,
+307.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+6,
+5
+],
+"note": "s1:75030 dice ok (5, 6) cube ok chk moving"
+},
+"s1:75599": {
+"dice": [
+[
+217.6,
+323.1,
+0
+],
+[
+296.5,
+420.9,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+2,
+0,
+-1,
+4,
+-2,
+3,
+0,
+0,
+0,
+0,
+3,
+0,
+0,
+0,
+1,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+5
+],
+"note": "s1:75599 dice ok (5, 5) cube ok chk ok"
+},
+"s1:76429": {
+"dice": [
+[
+410.3,
+237.8,
+1
+],
+[
+622.9,
+453.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+4,
+2
+],
+"note": "s1:76429 dice ok (4 at 415,288 [dup peak 0.31 below thr]; 2 at 623,503) cube ok chk moving"
+},
+"s1:76798": {
+"dice": [
+[
+297.6,
+298.7,
+0
+],
+[
+230.4,
+478.4,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+3,
+0,
+0,
+4,
+-2,
+5,
+0,
+0,
+-1,
+0,
+0,
+0,
+0,
+0,
+1,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+3
+],
+"note": "s1:76798 dice ok (yellow on orange found at 0.45) cube ok chk ok"
+},
+"s1:78172": {
+"dice": [
+[
+218.6,
+469.9,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.6,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+6,
+5
+],
+"note": "s1:78172 dice ok (1 red visible; other under arm) cube ok chk moving"
+},
+"s1:78292": {
+"dice": [
+[
+148.8,
+278.5,
+0
+],
+[
+153.4,
+292.6,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+3,
+0,
+0,
+4,
+-2,
+6,
+0,
+0,
+-1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+0,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+4
+],
+"note": "s1:78292 dice +[148,343,0] (two yellow dice touching at 145,328/148,343; second peak 0.31) cube ok chk ok"
+},
+"s1:78677": {
+"dice": [
+[
+511.5,
+327.3,
+1
+],
+[
+478.8,
+453.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+5,
+4
+],
+"note": "s1:78677 dice ok (5, 4) cube ok chk moving"
+},
+"s1:80435": {
+"dice": [
+[
+358.0,
+378.8,
+0
+],
+[
+333.5,
+402.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+4,
+1,
+0,
+4,
+-2,
+4,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+-1,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+3,
+2
+],
+"note": "s1:80435 dice ok (3, 2) cube ok chk ok"
+},
+"s1:82294": {
+"dice": [
+[
+170.6,
+181.1,
+1
+],
+[
+320.8,
+263.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-2,
+4,
+2,
+1,
+3,
+-2,
+3,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+-1,
+-3,
+-2,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+3,
+3
+],
+"note": "s1:82294 dice ok (3, 3) cube ok chk ok"
+},
+"s1:82808": {
+"dice": [
+[
+309.5,
+220.5,
+0
+],
+[
+337.4,
+316.6,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+309.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+4,
+1
+],
+"note": "s1:82808 dice ok cube ok chk moving"
+},
+"s1:82913": {
+"dice": [
+[
+146.6,
+278.7,
+1
+],
+[
+225.7,
+454.4,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+4,
+2,
+-2,
+3,
+-2,
+3,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-3,
+1,
+-3,
+-3,
+-2,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+3
+],
+"note": "s1:82913 dice ok (3, 6) cube ok chk ok"
+},
+"s1:83438": {
+"dice": [
+[
+314.1,
+227.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.6,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+5,
+2
+],
+"note": "s1:83438 dice ok (1 yellow visible, other under arm) cube ok chk moving"
+},
+"s3:30413": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:30413 dice ok(none) cube ok holder chk ok"
+},
+"s3:30788": {
+"dice": [
+[
+345.4,
+377.4,
+0
+],
+[
+508.3,
+307.4,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:30788 dice ok(opening 1 yellow 1 red) cube ok chk moving"
+},
+"s3:31163": {
+"dice": [
+[
+521.5,
+252.6,
+1
+],
+[
+426.0,
+222.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:31163 dice -1 (peaks 0 .84 and 1 .48 are one red die at 418,278) cube ok chk moving"
+},
+"s3:31538": {
+"dice": [
+[
+333.5,
+234.5,
+0
+],
+[
+342.7,
+441.5,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+309.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:31538 dice ok cube ok chk moving"
+},
+"s3:31913": {
+"dice": [
+[
+333.4,
+234.2,
+0
+],
+[
+342.5,
+441.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-4,
+5,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:31913 dice ok cube ok chk ok"
+},
+"s3:32288": {
+"dice": [
+[
+333.2,
+234.0,
+0
+],
+[
+342.5,
+441.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-4,
+5,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:32288 dice ok cube ok chk fix p21=2 p24=0 (white mid-move, quiet)"
+},
+"s3:32663": {
+"dice": [
+[
+333.5,
+233.9,
+0
+],
+[
+342.5,
+439.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+2,
+0,
+-4,
+3,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:32663 dice ok cube ok chk ok"
+},
+"s3:33038": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+308.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+2,
+0,
+-4,
+3,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:33038 dice ok(none) cube ok chk ok"
+},
+"s3:33413": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.2,
+310.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+2,
+0,
+-4,
+3,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:33413 dice ok(none) cube ok chk ok"
+},
+"s3:33788": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+2,
+0,
+-4,
+3,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:33788 dice ok(none) cube ok chk ok"
+},
+"s3:34163": {
+"dice": [
+[
+648.8,
+256.3,
+1
+],
+[
+568.8,
+542.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+2,
+0,
+-4,
+3,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:34163 dice ok cube ok chk ok"
+},
+"s3:34568": {
+"dice": [
+[
+341.8,
+258.5,
+0
+],
+[
+324.2,
+317.0,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+2,
+0,
+-3,
+3,
+0,
+0,
+-2,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:34568 dice ok cube ok chk ok"
+},
+"s3:34943": {
+"dice": [
+[
+342.1,
+258.0,
+0
+],
+[
+324.3,
+317.6,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+2,
+4,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+-2,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:34943 dice ok cube ok chk fix p10=0 p8=3 p5=2 p13=2 (white's move done, decode lags)"
+},
+"s3:35318": {
+"dice": [
+[
+341.9,
+258.4,
+0
+],
+[
+324.2,
+317.4,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+2,
+4,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+-2,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:35318 dice ok cube ok chk fix p10=0 p8=3 p5=2 p13=2"
+},
+"s3:35693": {
+"dice": [
+[
+602.0,
+310.4,
+1
+],
+[
+487.5,
+380.4,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+1,
+0,
+2,
+-2,
+2,
+3,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+-2,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:35693 dice ok cube ok chk fix p10=0 p8=3 p6=3 p5=2 p1=1 p13=2"
+},
+"s3:36038": {
+"dice": [
+[
+601.8,
+310.4,
+1
+],
+[
+488.2,
+380.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.8,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:36038 dice ok cube ok chk moving (hand at bottom)"
+},
+"s3:36413": {
+"dice": [
+[
+602.1,
+310.3,
+1
+],
+[
+544.2,
+319.4,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:36413 dice ok cube ok chk moving"
+},
+"s3:36788": {
+"dice": [
+[
+602.4,
+310.5,
+1
+],
+[
+544.2,
+319.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+1,
+0,
+2,
+-2,
+2,
+3,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+-2,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:36788 dice ok cube ok chk fix p10=0 p8=3 p6=3 p5=2 p1=1 p13=2"
+},
+"s3:37163": {
+"dice": [
+[
+602.5,
+310.0,
+1
+],
+[
+544.1,
+319.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+278.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:37163 dice ok cube ok chk moving"
+},
+"s3:37538": {
+"dice": [
+[
+601.6,
+311.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:37538 dice ok (second red die under hand) cube ok chk moving"
+},
+"s3:37913": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+1,
+0,
+2,
+-2,
+2,
+3,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+-1,
+-2,
+-2,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:37913 dice ok(none) cube ok chk ok"
+},
+"s3:38318": {
+"dice": [
+[
+366.4,
+214.4,
+0
+],
+[
+334.4,
+423.1,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+1,
+0,
+2,
+-2,
+2,
+3,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+1,
+-2,
+-2,
+-5,
+0,
+1,
+0,
+0,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:38318 dice ok (dup low peak 0.19 ignored) cube ok chk fix p16=1 p21=1 bar=0,1 (white hit; decode lags)"
+},
+"s3:38663": {
+"dice": [
+[
+345.8,
+404.9,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.6,
+309.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:38663 dice -1 (red peak 0.47 on the yellow die being picked up at 335,455) cube ok chk moving"
+},
+"s3:39038": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:39038 dice ok(none) cube ok chk moving"
+},
+"s3:39413": {
+"dice": [
+[
+496.9,
+276.4,
+1
+],
+[
+681.4,
+449.4,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:39413 dice ok cube ok chk moving"
+},
+"s3:39788": {
+"dice": [
+[
+269.5,
+293.5,
+0
+],
+[
+358.9,
+441.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+308.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:39788 dice ok cube ok chk moving"
+},
+"s3:40163": {
+"dice": [
+[
+467.8,
+138.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+308.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:40163 dice ok (one red under arm) cube ok chk moving"
+},
+"s3:40568": {
+"dice": [
+[
+467.6,
+138.3,
+1
+],
+[
+529.4,
+495.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+308.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+2,
+-2,
+2,
+2,
+0,
+3,
+0,
+0,
+-1,
+-3,
+2,
+0,
+0,
+2,
+-2,
+-2,
+-4,
+0,
+0,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:40568 dice ok cube ok chk ok"
+},
+"s3:40943": {
+"dice": [
+[
+467.8,
+138.2,
+1
+],
+[
+529.0,
+495.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+2,
+-2,
+2,
+2,
+0,
+3,
+0,
+0,
+-1,
+-3,
+2,
+0,
+0,
+2,
+-2,
+-2,
+-4,
+0,
+0,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:40943 dice ok cube ok chk ok (hand only over the right rail)"
+},
+"s3:41318": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+182.5,
+298.6
+],
+"zone": "board",
+"face": 2
+},
+"checkers": null,
+"note": "s3:41318 dice ok(none) cube ok board value 2 chk moving"
+},
+"s3:41693": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+182.4,
+298.6
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+2,
+-2,
+2,
+2,
+0,
+3,
+0,
+0,
+-1,
+-3,
+2,
+0,
+0,
+2,
+-2,
+-2,
+-4,
+0,
+0,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:41693 dice ok(none) cube ok board value 2 chk ok"
+},
+"s3:42038": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+182.4,
+298.5
+],
+"zone": "board",
+"face": 2
+},
+"checkers": null,
+"note": "s3:42038 dice ok(none) cube ok board value 2 chk moving"
+},
+"s3:42413": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+182.1,
+298.4
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+2,
+-2,
+2,
+2,
+0,
+3,
+0,
+0,
+-1,
+-3,
+2,
+0,
+0,
+2,
+-2,
+-2,
+-4,
+0,
+0,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:42413 dice ok(none) cube ok board value 2 chk ok"
+},
+"s3:42788": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+182.3,
+298.3
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+2,
+-2,
+2,
+2,
+0,
+3,
+0,
+0,
+-1,
+-3,
+2,
+0,
+0,
+2,
+-2,
+-2,
+-4,
+0,
+0,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:42788 dice ok(none) cube ok board value 2 chk ok"
+},
+"s3:43163": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+2,
+-2,
+2,
+2,
+0,
+3,
+0,
+0,
+-1,
+-3,
+2,
+0,
+0,
+2,
+-2,
+-2,
+-4,
+0,
+0,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s3:43163 dice ok(none) cube ok holder (after pass) chk ok"
+},
+"s3:43538": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.6,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s3:43538 dice ok(none) cube ok holder chk moving (hand at top)"
+},
+"s3:30666": {
+"dice": [
+[
+361.9,
+469.1,
+0
+],
+[
+432.1,
+387.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+2,
+1
+],
+"note": "s3:30666 dice ok (opening: yellow 360,518; red on checker 430,435; dup red 0.34 just below thr) cube ok chk ok"
+},
+"s3:30906": {
+"dice": [
+[
+350.1,
+210.4,
+0
+],
+[
+351.1,
+443.6,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+5,
+3
+],
+"note": "s3:30906 dice ok cube ok chk moving"
+},
+"s3:31046": {
+"dice": [
+[
+425.8,
+223.0,
+1
+],
+[
+521.0,
+251.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+2,
+0,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-4,
+5,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+3,
+2
+],
+"note": "s3:31046 dice ok (2, 3) cube ok chk ok"
+},
+"s3:31411": {
+"dice": [
+[
+333.7,
+234.1,
+0
+],
+[
+342.7,
+439.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-4,
+5,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+3,
+3
+],
+"note": "s3:31411 dice ok (3, 3) cube ok chk ok"
+},
+"s3:34164": {
+"dice": [
+[
+648.8,
+256.3,
+1
+],
+[
+568.8,
+542.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+2,
+-2,
+0,
+4,
+0,
+2,
+0,
+2,
+0,
+-4,
+3,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+2
+],
+"note": "s3:34164 dice ok (2, 4) cube ok chk ok"
+},
+"s3:34459": {
+"dice": [
+[
+341.9,
+162.6,
+0
+],
+[
+324.4,
+317.1,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+5,
+5
+],
+"note": "s3:34459 dice ok (5, 5) cube ok chk moving"
+},
+"s3:35688": {
+"dice": [
+[
+602.0,
+310.4,
+1
+],
+[
+487.6,
+379.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+309.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+1,
+0,
+2,
+-2,
+2,
+3,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+-2,
+-3,
+0,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+2,
+1
+],
+"note": "s3:35688 dice ok (2, 1) cube ok chk fix p10=0 p8=3 p6=3 p5=2 p1=1 p13=2"
+},
+"s3:38065": {
+"dice": [
+[
+366.1,
+214.5,
+0
+],
+[
+334.1,
+422.8,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+1,
+0,
+2,
+-2,
+2,
+3,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+-1,
+-2,
+-2,
+-5,
+0,
+2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+1
+],
+"note": "s3:38065 dice ok (1, 5) cube ok chk ok"
+},
+"s3:39181": {
+"dice": [
+[
+497.2,
+276.6,
+1
+],
+[
+681.3,
+449.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+308.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+3,
+2
+],
+"note": "s3:39181 dice ok (3, 2) cube ok chk moving"
+},
+"s3:39676": {
+"dice": [
+[
+269.3,
+293.7,
+0
+],
+[
+361.7,
+441.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+308.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+5,
+4
+],
+"note": "s3:39676 dice ok (5, 4) cube ok chk moving (hand at top)"
+},
+"s3:40051": {
+"dice": [
+[
+468.3,
+138.2,
+1
+],
+[
+529.1,
+495.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+-1,
+2,
+-2,
+2,
+2,
+0,
+3,
+0,
+0,
+0,
+-3,
+2,
+0,
+0,
+2,
+-2,
+-2,
+-4,
+0,
+0,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+4
+],
+"note": "s3:40051 dice ok (5, 4) cube ok chk ok"
+},
+"s4:3062": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.3
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-2,
+1,
+0,
+2,
+-3,
+-5,
+-5
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:3062 dice ok(none) cube ok owned value 2 (white's tray) chk ok"
+},
+"s4:3187": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.4,
+555.5
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-2,
+1,
+0,
+2,
+-3,
+-5,
+-5
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:3187 dice ok(none) cube ok owned 2 chk ok"
+},
+"s4:3312": {
+"dice": [
+[
+361.8,
+273.2,
+0
+],
+[
+348.6,
+331.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-2,
+1,
+0,
+2,
+-3,
+-5,
+-5
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:3312 dice ok cube ok owned 2 chk ok"
+},
+"s4:3437": {
+"dice": [
+[
+361.7,
+273.2,
+0
+],
+[
+348.5,
+331.0,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.3
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:3437 dice ok cube ok owned 2 chk moving"
+},
+"s4:3562": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.5
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-1,
+0,
+2,
+-3,
+-5,
+-6
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:3562 dice ok(none) cube ok owned 2 chk ok"
+},
+"s4:3687": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.1
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-1,
+0,
+2,
+-3,
+-5,
+-6
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:3687 dice ok(none) cube ok owned 2 chk ok"
+},
+"s4:3812": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+65.9,
+557.0
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-1,
+0,
+2,
+-3,
+-5,
+-6
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:3812 dice ok(none) cube ok owned 2 chk ok"
+},
+"s4:3937": {
+"dice": [
+[
+600.2,
+50.7,
+1
+],
+[
+566.3,
+61.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.1,
+557.0
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:3937 dice ok cube ok owned 2 chk moving"
+},
+"s4:4062": {
+"dice": [
+[
+621.4,
+262.3,
+0
+],
+[
+457.3,
+166.5,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.4,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:4062 dice -1 (peaks 0 .66 and 1 .67 are one yellow die at 462,213) cube ok owned 2 chk moving"
+},
+"s4:4187": {
+"dice": [
+[
+454.6,
+287.0,
+1
+],
+[
+650.5,
+293.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+2,
+-3,
+-5,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:4187 dice ok cube ok owned 2 chk ok"
+},
+"s4:4312": {
+"dice": [
+[
+678.8,
+289.2,
+1
+],
+[
+432.2,
+266.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.0,
+556.7
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:4312 dice -2 (peaks 0 .50, 1 .68, 2 .42 are one red die at ~420,312) cube ok owned 2 chk moving"
+},
+"s4:4437": {
+"dice": [
+[
+678.6,
+289.9,
+1
+],
+[
+432.8,
+265.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.4,
+557.8
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:4437 dice -2 (peaks 0,1,2 one red die at ~420,312) cube ok owned 2 chk moving"
+},
+"s4:4562": {
+"dice": [
+[
+603.1,
+289.5,
+0
+],
+[
+478.4,
+382.4,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.6
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+1,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+1,
+-3,
+-5,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:4562 dice ok cube ok owned 2 chk ok"
+},
+"s4:4687": {
+"dice": [
+[
+502.9,
+86.2,
+1
+],
+[
+569.9,
+88.9,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.1,
+557.0
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:4687 dice ok cube ok owned 2 chk moving"
+},
+"s4:4812": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:4812 dice ok(none) cube ok owned 2 chk moving"
+},
+"s4:4937": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+556.6
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:4937 dice ok(none) cube ok owned 2 chk moving"
+},
+"s4:5062": {
+"dice": [
+[
+445.2,
+327.1,
+1
+],
+[
+520.5,
+338.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.5
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:5062 dice ok (2 red rolling) cube ok owned 2 chk moving"
+},
+"s4:5187": {
+"dice": [
+[
+511.5,
+57.8,
+1
+],
+[
+463.1,
+233.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:5187 dice ok cube ok owned 2 chk moving"
+},
+"s4:5312": {
+"dice": [
+[
+601.6,
+141.0,
+0
+],
+[
+670.6,
+465.8,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.4,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:5312 dice ok cube ok owned 2 chk moving"
+},
+"s4:5437": {
+"dice": [
+[
+601.5,
+141.1,
+0
+],
+[
+670.9,
+465.7,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.5
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s4:5437 dice ok cube ok owned 2 chk moving"
+},
+"s4:5562": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+438.7,
+285.5
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:5562 dice ok(none) cube ok board value 4 (redouble) chk ok [8-checker column: reader 6 = slot limit]"
+},
+"s4:5687": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+441.9,
+283.1
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:5687 dice ok(none) cube ok board value 4 chk ok [8-col slot limit; cube makes p unknown]"
+},
+"s4:5812": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+439.3,
+284.9
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:5812 dice ok(none) cube ok board value 4 chk ok [8-col slot limit; cube makes p unknown]"
+},
+"s4:5937": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+438.9,
+285.4
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:5937 dice ok(none) cube ok board value 4 chk ok [8-col slot limit; cube makes p unknown]"
+},
+"s4:6062": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+439.0,
+285.2
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:6062 dice ok(none) cube ok board value 4 chk ok [8-col slot limit; cube makes p unknown]"
+},
+"s4:6187": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+439.0,
+285.4
+],
+"zone": "board",
+"face": 4
+},
+"checkers": null,
+"note": "s4:6187 dice ok(none) cube ok board value 4 chk moving"
+},
+"s4:6312": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+410.3,
+281.8
+],
+"zone": "board",
+"face": 4
+},
+"checkers": null,
+"note": "s4:6312 dice ok(none) cube ok board value 4 (moved onto the bar) chk moving (hand on left rail)"
+},
+"s4:6437": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+426.6,
+285.2
+],
+"zone": "board",
+"face": 4
+},
+"checkers": null,
+"note": "s4:6437 dice ok(none) cube ok board value 4 chk moving"
+},
+"s4:6562": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+410.3,
+266.7
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:6562 dice ok(none) cube ok board value 4 chk ok"
+},
+"s4:6687": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+410.5,
+266.7
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:6687 dice ok(none) cube ok board value 4 (on the bar, peak ~15px below-left of the face) chk ok"
+},
+"s4:6812": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+426.0,
+266.0
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:6812 dice ok(none) cube ok board value 4 (on the bar, peak ~15px below-left of the face) chk ok"
+},
+"s4:6937": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+410.2,
+266.8
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:6937 dice ok(none) cube ok board value 4 (on the bar, peak ~15px below-left of the face) chk ok"
+},
+"s4:7062": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+426.0,
+266.0
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:7062 dice ok(none) cube ok board value 4 (on the bar, peak ~15px below-left of the face) chk ok"
+},
+"s4:7187": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+426.1,
+265.8
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:7187 dice ok(none) cube ok board value 4 chk ok"
+},
+"s4:7312": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+426.2,
+265.6
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:7312 dice ok(none) cube ok board value 4 chk ok"
+},
+"s4:7437": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+410.1,
+266.4
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:7437 dice ok(none) cube ok board value 4 chk ok"
+},
+"s4:7562": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": null,
+"checkers": null,
+"note": "s4:7562 dice ok(none) cube hand (cube held in fingers at ~165,512, partly visible; no peak) chk moving"
+},
+"s4:7687": {
+"dice": [
+[
+518.8,
+54.5,
+1
+],
+[
+447.2,
+83.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:7687 dice ok cube ok holder value 64 (after pass) chk moving (hand at bottom right; reader misses white at rp24 next to it)"
+},
+"s4:7812": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:7812 dice ok(none) cube ok holder 64 chk moving"
+},
+"s4:7937": {
+"dice": [
+[
+567.0,
+85.5,
+1
+],
+[
+436.7,
+206.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.6,
+309.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+1,
+3,
+2,
+2,
+2,
+2,
+2,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:7937 dice ok cube ok holder 64 chk ok"
+},
+"s4:8062": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+309.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+2,
+2,
+3,
+2,
+2,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:8062 dice ok(none) cube ok holder 64 chk fix rp13=2 rp14=2 rp16=3 rp21=0 (play-out move done, decode lags)"
+},
+"s4:8187": {
+"dice": [
+[
+514.9,
+113.5,
+1
+],
+[
+496.5,
+206.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.9,
+306.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:8187 dice ok cube ok holder 64 chk moving"
+},
+"s4:8312": {
+"dice": [
+[
+514.6,
+113.8,
+1
+],
+[
+496.3,
+207.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.6,
+308.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:8312 dice ok cube ok holder 64 chk moving"
+},
+"s4:8437": {
+"dice": [
+[
+582.9,
+58.6,
+1
+],
+[
+500.5,
+212.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.7,
+308.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:8437 dice ok cube ok holder 64 chk moving"
+},
+"s4:8562": {
+"dice": [
+[
+446.1,
+50.8,
+1
+],
+[
+575.4,
+186.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+307.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+3,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s4:8562 dice ok cube ok holder 64 chk ok (decode2 reference)"
+},
+"s4:8687": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:8687 dice ok(none visible) cube ok holder 64 chk moving"
+},
+"s4:8812": {
+"dice": [
+[
+597.7,
+186.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+307.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:8812 dice ok(1 red; other not visible) cube ok holder 64 chk moving"
+},
+"s4:8937": {
+"dice": [
+[
+502.4,
+85.0,
+1
+],
+[
+517.9,
+175.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+47.0,
+308.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:8937 dice ok cube ok holder 64 chk moving"
+},
+"s4:9062": {
+"dice": [
+[
+655,
+65,
+0
+],
+[
+657,
+145,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+307.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:9062 dice +[655,68,0] +[658,146,0] (two yellow dice just thrown, motion-blurred and pale; no peak) cube ok holder 64 chk moving"
+},
+"s4:9187": {
+"dice": [
+[
+450.0,
+186.1,
+1
+],
+[
+522.8,
+430.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+307.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:9187 dice ok cube ok holder 64 chk moving"
+},
+"s4:9312": {
+"dice": [],
+"hidden": [],
+"ignore": [
+[
+360,
+182
+],
+[
+346,
+42
+]
+],
+"cube": {
+"xy": [
+45.9,
+308.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:9312 dice unsure (one die at ~357,232 with peaks Y .45 / R .49, colour not decidable under the arm; pale die at 345,90 Y .17) cube ok holder 64 chk moving"
+},
+"s4:9437": {
+"dice": [
+[
+477.1,
+157.3,
+1
+],
+[
+501.2,
+306.2,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+308.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:9437 dice ok cube ok holder 64 chk moving"
+},
+"s4:9562": {
+"dice": [
+[
+595.0,
+334.2,
+0
+],
+[
+573.7,
+121.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+308.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s4:9562 dice ok cube ok holder 64 chk ok-unknown (bear-off race after the decode's end)"
+},
+"s4:3298": {
+"dice": [
+[
+361.9,
+273.6,
+0
+],
+[
+347.6,
+331.0,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-2,
+1,
+0,
+2,
+-3,
+-5,
+-5
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+1
+],
+"note": "s4:3298 dice ok (6, 1) cube ok owned 2 chk ok"
+},
+"s4:3928": {
+"dice": [
+[
+600.3,
+50.5,
+1
+],
+[
+566.8,
+60.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"roll": [
+6,
+5
+],
+"note": "s4:3928 dice ok (two red dice touching at 683,108 / 700,100) cube ok owned 2 chk moving"
+},
+"s4:4183": {
+"dice": [
+[
+598.5,
+301.2,
+1
+],
+[
+476.9,
+314.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+2,
+-3,
+-5,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+2,
+2
+],
+"note": "s4:4183 dice ok (white's red dice landing; dark danced) cube ok owned 2 chk ok"
+},
+"s4:4218": {
+"dice": [
+[
+678.1,
+289.8,
+1
+],
+[
+432.2,
+265.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.5
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+2,
+-3,
+-5,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+1
+],
+"note": "s4:4218 dice -1 (peaks 0 .47 and 1 .69 one red die at ~420,312) cube ok owned 2 chk ok"
+},
+"s4:4667": {
+"dice": [
+[
+502.6,
+86.1,
+1
+],
+[
+570.5,
+88.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+65.9,
+556.8
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"roll": [
+2,
+1
+],
+"note": "s4:4667 dice -1 (peak 0 R .38 on black checkers at 200,118 is NOT a die -> -1) cube ok owned 2 chk moving"
+},
+"s4:4857": {
+"dice": [
+[
+564.2,
+199.4,
+1
+],
+[
+512.5,
+414.4,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.1,
+555.6
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+1,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+1,
+-3,
+-5,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+2
+],
+"note": "s4:4857 dice ok (6, 2) cube ok owned 2 chk ok"
+},
+"s4:5067": {
+"dice": [
+[
+455.0,
+213.7,
+1
+],
+[
+460.3,
+256.9,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.1
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"roll": [
+6,
+2
+],
+"note": "s4:5067 dice ok (red dice = White's roll landing; dark's turn frame) cube ok owned 2 chk moving"
+},
+"s4:5102": {
+"dice": [
+[
+511.5,
+57.9,
+1
+],
+[
+462.9,
+232.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.2,
+555.5
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+3,
+2,
+2,
+3,
+2,
+0,
+0,
+0,
+0,
+0,
+1,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-3,
+-5,
+-6
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+4
+],
+"note": "s4:5102 dice ok (4, 6) cube ok owned 2 chk ok"
+},
+"s4:5307": {
+"dice": [
+[
+601.6,
+140.9,
+0
+],
+[
+670.7,
+465.8,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+66.3,
+555.4
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"roll": [
+1,
+1
+],
+"note": "s4:5307 dice ok (1, 1) cube ok owned 2 chk moving"
+},
+"s4:7040": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+410.6,
+266.2
+],
+"zone": "board",
+"face": 4
+},
+"checkers": {
+"points": [
+-1,
+3,
+2,
+2,
+3,
+2,
+1,
+0,
+1,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-8,
+-6
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+4
+],
+"note": "s4:7040 dice ok(none) cube ok board 4 chk ok"
+},
+"s5:29309": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.8,
+310.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:29309 dice ok(none) cube ok holder chk moving"
+},
+"s5:29684": {
+"dice": [
+[
+230.0,
+172.8,
+0
+],
+[
+313,
+549,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+310.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-3,
+5,
+0,
+-1,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:29684 dice +[313,598,1] (pale red die on orange point at the rail, peak .26) cube ok chk ok"
+},
+"s5:30059": {
+"dice": [
+[
+230.0,
+172.7,
+0
+],
+[
+312,
+546,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+310.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-3,
+5,
+0,
+-1,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:30059 dice +[312,595,1] (same red die, no peak) cube ok chk ok"
+},
+"s5:30434": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+48.9,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:30434 dice ok (red die in fingers, not scored) cube ok chk moving"
+},
+"s5:30809": {
+"dice": [
+[
+642.2,
+237.4,
+1
+],
+[
+522.5,
+429.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+310.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-3,
+5,
+1,
+-1,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:30809 dice ok (red 4, 4?) cube ok chk ok"
+},
+"s5:31184": {
+"dice": [
+[
+642.4,
+237.7,
+1
+],
+[
+523.1,
+429.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+310.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:31184 dice ok cube ok chk moving"
+},
+"s5:31559": {
+"dice": [
+[
+245.1,
+294.1,
+0
+]
+],
+"hidden": [
+[
+350,
+384,
+0,
+"proof/s5-31559-hidden-die.png"
+]
+],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+310.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:31559 dice ok + hidden[350,384,0] (second yellow die: only a sliver shows above the black stack; proof/s5-31559-hidden-die.png) cube ok chk moving (hand at top)"
+},
+"s5:31934": {
+"dice": [
+[
+636.8,
+193.6,
+1
+],
+[
+645.0,
+250.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.7,
+310.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+2,
+0,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-3,
+5,
+1,
+-1,
+-1,
+-2,
+0,
+-4,
+0,
+-2,
+0,
+0,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:31934 dice ok cube ok chk ok"
+},
+"s5:32309": {
+"dice": [
+[
+636.9,
+201.4,
+1
+],
+[
+645.1,
+249.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+310.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:32309 dice ok cube ok chk moving"
+},
+"s5:32684": {
+"dice": [
+[
+357.6,
+273.1,
+0
+],
+[
+258.6,
+474.1,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+310.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-2,
+5,
+1,
+-1,
+-2,
+-2,
+0,
+-4,
+0,
+-2,
+0,
+0,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:32684 dice ok (low peak .25 at 241,477 is the pip face of the die at 259,474) cube ok chk ok"
+},
+"s5:33029": {
+"dice": [
+[
+258.9,
+473.9,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+310.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:33029 dice ok (one yellow die; other picked up) cube ok chk moving"
+},
+"s5:33404": {
+"dice": [
+[
+299.5,
+393.3,
+0
+],
+[
+119.3,
+537.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+310.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-2,
+5,
+2,
+-1,
+-1,
+-2,
+0,
+-3,
+-1,
+-2,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:33404 dice ok (red die .48 at 119,538 is real) cube ok chk ok"
+},
+"s5:33779": {
+"dice": [
+[
+299.5,
+393.7,
+0
+],
+[
+119.6,
+537.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.7,
+310.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-2,
+5,
+2,
+-1,
+-1,
+-2,
+0,
+-3,
+-1,
+-2,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:33779 dice -1 (two peaks on the one red die at ~120,540) cube ok chk ok"
+},
+"s5:34154": {
+"dice": [
+[
+299.4,
+393.7,
+0
+],
+[
+121.2,
+538.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.6,
+310.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:34154 dice -1 (two peaks on the one red die at ~120,540) cube ok chk moving (hand reaching over the top)"
+},
+"s5:34559": {
+"dice": [
+[
+299.4,
+393.8,
+0
+],
+[
+122.2,
+540.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.8,
+310.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-2,
+5,
+2,
+-1,
+-1,
+-2,
+0,
+-3,
+-1,
+-2,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:34559 dice -1 (two peaks on the one red die at ~120,540) cube ok chk ok"
+},
+"s5:34934": {
+"dice": [
+[
+298.8,
+394.8,
+0
+],
+[
+121.7,
+541.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+314.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:34934 dice -1 (two peaks on the one red die at ~120,540) cube ok chk moving"
+},
+"s5:35309": {
+"dice": [
+[
+352.8,
+242.1,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.4,
+310.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:35309 dice ok cube ok chk moving (white checker being entered)"
+},
+"s5:35684": {
+"dice": [
+[
+651.1,
+130.1,
+1
+],
+[
+644.2,
+302.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.1,
+314.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:35684 dice ok cube ok chk moving"
+},
+"s5:36059": {
+"dice": [
+[
+160.2,
+287.2,
+0
+],
+[
+154.9,
+377.8,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+281.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+2,
+0,
+0,
+4,
+0,
+3,
+1,
+0,
+0,
+-2,
+4,
+0,
+0,
+-2,
+-2,
+0,
+-2,
+-2,
+-2,
+-1,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:36059 dice ok cube ok chk ok"
+},
+"s5:36434": {
+"dice": [
+[
+157.9,
+287.1,
+0
+],
+[
+153.8,
+378.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.0,
+281.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+2,
+0,
+0,
+4,
+0,
+3,
+1,
+0,
+0,
+-2,
+4,
+0,
+0,
+-2,
+-2,
+0,
+-2,
+-2,
+-2,
+-1,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:36434 dice -1 (peak 1 Y .35 at 137,410 duplicates the die at 152,425) cube ok chk ok"
+},
+"s5:36809": {
+"dice": [
+[
+648.2,
+142.1,
+1
+],
+[
+600.6,
+170.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+310.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+2,
+0,
+0,
+4,
+2,
+3,
+1,
+0,
+0,
+-2,
+2,
+0,
+0,
+-2,
+-2,
+0,
+-2,
+-2,
+-2,
+-1,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:36809 dice ok cube ok chk ok"
+},
+"s5:37184": {
+"dice": [
+[
+648.5,
+142.4,
+1
+],
+[
+600.9,
+171.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.1,
+310.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:37184 dice ok cube ok chk moving"
+},
+"s5:37559": {
+"dice": [
+[
+660.9,
+177.8,
+1
+],
+[
+670.2,
+467.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.0,
+310.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+2,
+3,
+2,
+2,
+1,
+0,
+0,
+-2,
+2,
+0,
+0,
+-1,
+-2,
+0,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:37559 dice ok cube ok chk ok"
+},
+"s5:37934": {
+"dice": [
+[
+661.2,
+177.2,
+1
+],
+[
+670.3,
+467.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+310.0
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+0,
+2,
+3,
+2,
+2,
+1,
+0,
+0,
+-2,
+2,
+-1,
+0,
+-1,
+-2,
+0,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:37934 dice ok cube ok chk ok"
+},
+"s5:38309": {
+"dice": [
+[
+298.3,
+169.4,
+0
+],
+[
+247.0,
+234.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+47.0,
+310.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+0,
+2,
+3,
+2,
+2,
+1,
+0,
+0,
+-2,
+2,
+-1,
+0,
+-1,
+-2,
+0,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:38309 dice ok cube ok chk ok"
+},
+"s5:38684": {
+"dice": [
+[
+209.7,
+224.9,
+0
+],
+[
+245.7,
+234.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.1,
+281.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+0,
+2,
+3,
+2,
+2,
+1,
+0,
+0,
+-2,
+2,
+-1,
+0,
+-1,
+-2,
+0,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:38684 dice ok cube ok holder (lifted slightly, peak .51) chk ok"
+},
+"s5:39029": {
+"dice": [
+[
+210.4,
+223.2,
+0
+],
+[
+246.2,
+234.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.1,
+310.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:39029 dice ok cube ok chk moving"
+},
+"s5:39404": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+313.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:39404 dice ok(none) cube ok chk moving"
+},
+"s5:39779": {
+"dice": [
+[
+344.6,
+283.3,
+0
+],
+[
+362.4,
+466.6,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.1,
+309.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:39779 dice ok cube ok chk moving"
+},
+"s5:40154": {
+"dice": [
+[
+350.0,
+281.4,
+0
+],
+[
+365.8,
+463.2,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+61.0,
+305.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:40154 dice ok cube ok chk moving"
+},
+"s5:40559": {
+"dice": [
+[
+345.0,
+283.2,
+0
+],
+[
+362.3,
+466.6,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.9,
+309.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:40559 dice ok cube ok chk moving"
+},
+"s5:40934": {
+"dice": [
+[
+344.8,
+284.5,
+0
+],
+[
+362.0,
+466.7,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+310.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:40934 dice ok cube ok chk moving"
+},
+"s5:41309": {
+"dice": [
+[
+344.5,
+283.1,
+0
+],
+[
+361.5,
+466.3,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.4,
+309.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s5:41309 dice ok cube ok chk moving"
+},
+"s5:41684": {
+"dice": [
+[
+345.1,
+283.3,
+0
+],
+[
+362.2,
+466.6,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+47.4,
+309.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+4,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:41684 dice ok cube ok chk ok"
+},
+"s5:42059": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+226.0,
+315.4
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+-1,
+0,
+4,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:42059 dice ok(none) cube ok board 2 chk ok"
+},
+"s5:42434": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+226.0,
+315.3
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+-1,
+0,
+4,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:42434 dice ok(none) cube ok board 2 chk ok"
+},
+"s5:42809": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+225.9,
+315.1
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+-1,
+0,
+4,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:42809 dice ok(none) cube ok board 2 chk ok"
+},
+"s5:43184": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+223.1,
+314.3
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+-1,
+0,
+4,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:43184 dice ok(none) cube ok board 2 chk ok"
+},
+"s5:43559": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+226.1,
+314.9
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+-1,
+0,
+4,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:43559 dice ok(none) cube ok board 2 chk ok"
+},
+"s5:43934": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+225.9,
+315.1
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+-1,
+0,
+4,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:43934 dice ok(none) cube ok board 2 chk ok"
+},
+"s5:44309": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.5,
+311.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+4,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s5:44309 dice ok(none) cube ok holder (after pass) chk ok"
+},
+"s5:29477": {
+"dice": [
+[
+358.7,
+305.3,
+0
+],
+[
+430.2,
+42.0,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.3,
+310.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+3
+],
+"note": "s5:29477 dice -2 (peaks 1 .45, 2 .63, 3 .63 are one red die at ~420,88) cube ok chk ok"
+},
+"s5:29672": {
+"dice": [
+[
+230.1,
+172.8,
+0
+],
+[
+313,
+547,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.5,
+310.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-3,
+5,
+0,
+-1,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+4
+],
+"note": "s5:29672 dice +[313,595,1] (pale red die at the rail, no peak) cube ok chk ok"
+},
+"s5:30556": {
+"dice": [
+[
+642.2,
+237.5,
+1
+],
+[
+523.2,
+429.5,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+310.5
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-3,
+5,
+1,
+-1,
+-1,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+2
+],
+"note": "s5:30556 dice ok cube ok chk ok"
+},
+"s5:31595": {
+"dice": [
+[
+251.3,
+318.9,
+0
+],
+[
+358,
+381,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+310.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-3,
+5,
+1,
+-1,
+-1,
+-2,
+0,
+-4,
+0,
+-2,
+0,
+0,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+5,
+3
+],
+"note": "s5:31595 dice +[357,430,0] (pale yellow die on the cream point by the black stack; only a red peak .20) cube ok chk ok"
+},
+"s5:31935": {
+"dice": [
+[
+636.8,
+193.6,
+1
+],
+[
+645.0,
+250.6,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.7,
+310.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+2,
+0,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-3,
+5,
+1,
+-1,
+-1,
+-2,
+0,
+-4,
+0,
+-2,
+0,
+0,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+3
+],
+"note": "s5:31935 dice ok (4, 3) cube ok chk ok"
+},
+"s5:32670": {
+"dice": [
+[
+357.8,
+272.9,
+0
+],
+[
+258.7,
+473.8,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+310.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-2,
+5,
+1,
+-1,
+-2,
+-2,
+0,
+-4,
+0,
+-2,
+0,
+0,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+4
+],
+"note": "s5:32670 dice ok (6, 4) cube ok chk ok"
+},
+"s5:33163": {
+"dice": [
+[
+592.5,
+35.0,
+1
+],
+[
+519.3,
+285.1,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.2,
+310.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-2,
+5,
+2,
+-1,
+-2,
+-2,
+0,
+-4,
+0,
+-2,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+1
+],
+"note": "s5:33163 dice ok (6, 1) cube ok chk ok"
+},
+"s5:33433": {
+"dice": [
+[
+299.2,
+393.6,
+0
+],
+[
+121.9,
+540.9,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.9,
+309.9
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+0,
+4,
+0,
+2,
+0,
+0,
+0,
+-2,
+5,
+2,
+-1,
+-1,
+-2,
+0,
+-3,
+-1,
+-2,
+-1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+5
+],
+"note": "s5:33433 dice -1 (two peaks on the red die at ~120,540) cube ok chk ok"
+},
+"s5:35167": {
+"dice": [
+[
+477.3,
+173.5,
+1
+],
+[
+496.3,
+305.7,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.6
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+5,
+1
+],
+"note": "s5:35167 dice ok cube ok chk moving"
+},
+"s5:35332": {
+"dice": [],
+"hidden": [
+[
+360,
+222,
+0,
+"proof/s5-35332-die-under-arm.png"
+]
+],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+310.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+4,
+2
+],
+"note": "s5:35332 dice ok + hidden[360,222] (die mostly under the arm, two pips show; proof/s5-35332-die-under-arm.png) cube ok chk moving"
+},
+"s5:35537": {
+"dice": [
+[
+650.9,
+130.4,
+1
+],
+[
+644.4,
+302.3,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+49.5,
+309.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+2,
+1
+],
+"note": "s5:35537 dice ok cube ok chk moving"
+},
+"s5:35807": {
+"dice": [
+[
+157.1,
+287.4,
+0
+],
+[
+152.9,
+378.5,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+42.9,
+281.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+2,
+0,
+0,
+4,
+0,
+3,
+1,
+0,
+0,
+-2,
+4,
+0,
+0,
+-2,
+-2,
+0,
+-2,
+-2,
+-2,
+-1,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+3,
+3
+],
+"note": "s5:35807 dice ok (3, 3) cube ok holder (lifted, peak .87) chk ok"
+},
+"s5:36606": {
+"dice": [
+[
+647.3,
+141.8,
+1
+],
+[
+600.6,
+170.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.8,
+309.7
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+2,
+0,
+0,
+4,
+2,
+3,
+1,
+0,
+0,
+-2,
+2,
+0,
+0,
+-2,
+-2,
+0,
+-2,
+-2,
+-2,
+-1,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+2,
+2
+],
+"note": "s5:36606 dice ok (2, 2) cube ok chk ok"
+},
+"s5:37311": {
+"dice": [
+[
+253.3,
+178.0,
+0
+],
+[
+366,
+253,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+44.9,
+310.3
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+0,
+4,
+2,
+3,
+1,
+0,
+0,
+-2,
+2,
+0,
+0,
+-1,
+-2,
+0,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+3,
+1
+],
+"note": "s5:37311 dice +[366,300,0] (pale yellow die by the rail, peak .23) cube ok chk ok"
+},
+"s5:37541": {
+"dice": [
+[
+661.1,
+178.0,
+1
+],
+[
+670.3,
+466.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+44.9,
+310.1
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+-1,
+2,
+3,
+2,
+2,
+1,
+0,
+0,
+-2,
+2,
+0,
+0,
+-1,
+-2,
+0,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+6,
+4
+],
+"note": "s5:37541 dice ok (6, 4) cube ok chk ok"
+},
+"s5:38195": {
+"dice": [
+[
+298.0,
+169.4,
+0
+],
+[
+245.7,
+234.5,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.0,
+310.4
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+0,
+2,
+3,
+2,
+2,
+1,
+0,
+0,
+-2,
+2,
+-1,
+0,
+-1,
+-2,
+0,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+1
+],
+"note": "s5:38195 dice ok (4, 1) cube ok chk ok"
+},
+"s5:39543": {
+"dice": [
+[
+460.4,
+321.8,
+1
+],
+[
+549.9,
+342.8,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+45.1,
+310.2
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+0,
+2,
+0,
+4,
+2,
+2,
+2,
+0,
+0,
+0,
+-2,
+2,
+-1,
+0,
+-1,
+-2,
+0,
+-2,
+-2,
+-2,
+-2,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"roll": [
+4,
+2
+],
+"note": "s5:39543 dice ok (4, 2) cube ok chk ok"
+},
+"s5:39788": {
+"dice": [
+[
+344.9,
+283.2,
+0
+],
+[
+362.7,
+466.7,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+46.1,
+309.8
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"roll": [
+5,
+5
+],
+"note": "s5:39788 dice ok (5, 5) cube ok chk moving"
+}
+}

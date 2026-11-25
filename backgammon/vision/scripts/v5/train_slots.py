@@ -8,6 +8,7 @@ import argparse, json, random
 from pathlib import Path
 import numpy as np, torch, torch.nn as nn, cv2
 import frames, slots
+from session import WORK
 
 dev = 'mps' if torch.backends.mps.is_available() else 'cpu'
 
@@ -32,12 +33,17 @@ def held_block(frame):
     return (int(frame) // 4500) % 5 == 2
 
 
+EXCLUDE_HELDOUT = False  # --exclude-heldout: leave out the object test's held-out games (heldout.py)
+
+
 def load_packed(path, role='all'):
     """A later session's labels packed with their frames (slots_add.py), already in the Nov 21 view."""
+    import re, heldout
     z = np.load(path, allow_pickle=True)
-    out = []
+    out = []; name = re.search(r'extra-slots-(\w+)\.npz', str(path)); name = name.group(1) if name else None
     for e, jpeg in zip(json.loads(str(z['labels'])), z['jpegs']):
         if role != 'all' and held_block(e['frame']) != (role == 'held'): continue
+        if EXCLUDE_HELDOUT and name and heldout.held(name, int(e['frame'])): continue
         img = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
         out.append((img, {int(k): v for k, v in e['points'].items()}, e.get('ignore', []), e.get('occluded'), e.get('ignore_slots')))
     return out
@@ -52,8 +58,10 @@ def load(label_files, packed_role='train', json_role='all'):
         if str(f).endswith('.npz'):
             packed += load_packed(f, packed_role)
             continue
+        import heldout; session = heldout.session_of_work(WORK)
         for e in json.loads(Path(f).read_text()):
             if json_role != 'all' and held_block(e['frame']) != (json_role == 'held'): continue
+            if EXCLUDE_HELDOUT and session and heldout.held(session, int(e['frame'])): continue
             entries.append((int(e['frame']), {int(k): v for k, v in e['points'].items()}, e.get('ignore', []),
                             e.get('occluded'), e.get('ignore_slots')))
     imgs = dict(frames.read([e[0] for e in entries])) if entries else {}
@@ -112,8 +120,11 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('labels', nargs='+')
     ap.add_argument('--steps', type=int, default=1500); ap.add_argument('--init')
     ap.add_argument('--hold-json', action='store_true', help='leave out the held-out blocks of the JSON label lists too')
+    ap.add_argument('--exclude-heldout', action='store_true', help="leave out the object test's held-out games (heldout.py)")
+    ap.add_argument('--packed-role', default='train', help='train (slots_eval.py split) or all')
     a = ap.parse_args()
-    data = load(a.labels, json_role='train' if a.hold_json else 'all'); print('frames', len(data))
+    EXCLUDE_HELDOUT = a.exclude_heldout
+    data = load(a.labels, packed_role=a.packed_role, json_role='train' if a.hold_json else 'all'); print('frames', len(data))
     load_hands(Path(a.labels[0]).parent / 'hands'); print('hand cut-outs', len(HANDS))
     net = SlotNet()
     if a.init: net.load_state_dict(torch.load(a.init, map_location='cpu'))

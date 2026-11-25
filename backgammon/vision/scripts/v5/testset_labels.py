@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Write the eye-verified labels of the held-out test frames (labels/heldout-labels.json).
+
+Each frame of TEST_DIR/items.json was looked at on testset_sheet.py sheets (obj-v8 peaks above
+0.15 with crops, slots-v3 and the published decode drawn on the board), on cube crop grids and
+on dice face strips. The review notes are TEST_DIR/notes.txt; this script turns them into labels:
+the obj-v8 peaks at 0.35 or more, then the corrections below. Positions are in the readers' view
+(the Nov 21 orientation the stored frames use).
+
+Labels per frame:
+  dice      [[x, y, red]] dice lying on the board and visible (dice in a hand are not on the board)
+  hidden    dice proven not observable in this frame (a sliver under a hand or a stack), with the
+            proof crop under TEST_DIR/proof; neither a miss nor an extra
+  ignore    places where a peak is neither right nor wrong (the colour cannot be decided by eye)
+  cube      {"xy": [x, y], "zone": holder|board|white|dark, "face": 64|2|4} or null when the cube
+            is in a hand (not observable)
+  checkers  {"points": 24 signed counts (White's numbering, + White), "bar": [w, b], "off": [w, b]}
+            for quiet frames (no hand over the board and no checker in motion), else null;
+            "barUnseen" when a hit checker is held in a hand
+  roll      the turn's roll (turn frames), eye-checked on the dice face strips
+usage: testset_labels.py
+"""
+import json, math, re
+from pathlib import Path
+import heldout as H
+
+OUT = Path(__file__).parent / 'labels/heldout-labels.json'
+THRESH = .35
+
+# Several peaks on one die (one die, at the cluster's strongest peak: the detector centres on a
+# die's coloured side face, the pip face shows about 10 px to its left)
+MERGE = {
+    's1:76575': [(421, 244, 1)], 's3:31163': [(420, 226, 1)], 's4:4062': [(463, 164, 0)],
+    's4:4218': [(421, 262, 1)], 's4:4312': [(419, 265, 1)], 's4:4437': [(419, 264, 1)],
+    's5:29477': [(422, 38, 1)], 's5:33433': [(120, 533, 1)], 's5:33779': [(121, 532, 1)],
+    's5:34154': [(121, 533, 1)], 's5:34559': [(121, 533, 1)], 's5:34934': [(121, 533, 1)],
+}
+# Dice the detector missed or scored under 0.35
+ADD = {
+    's1:63329': [(359, 387, 0)], 's1:77075': [(226, 480, 0)], 's1:77575': [(225, 480, 0)],
+    's4:9062': [(655, 65, 0), (657, 145, 0)],
+    's5:29672': [(313, 547, 1)], 's5:29684': [(313, 549, 1)], 's5:30059': [(312, 546, 1)],
+    's5:31595': [(358, 381, 0)], 's5:37311': [(366, 253, 0)],
+}
+# Peaks that are not dice
+REMOVE = {'s3:38663': [(331, 411)], 's4:4667': [(202, 69)]}
+IGNORE = {'s4:9312': [(360, 182), (346, 42)]}
+HIDDEN = {'s5:31559': [(350, 384, 0, 'proof/s5-31559-hidden-die.png')],
+          's5:35332': [(360, 222, 0, 'proof/s5-35332-die-under-arm.png')]}
+
+
+def cube_truth(key):
+    s, f = key.split(':'); f = int(f)
+    if key == 's4:7562': return None  # held in the fingers on its way to the holder
+    if s == 's1': return ('board', 2) if 83623 <= f < 84927 else ('holder', 64)
+    if s == 's3': return ('board', 2) if 41300 <= f < 43000 else ('holder', 64)
+    if s == 's4':
+        if f < 5512: return ('white', 2)
+        if f < 7604: return ('board', 4)
+        return ('holder', 64)
+    if s == 's5': return ('board', 2) if 41947 <= f < 44295 else ('holder', 64)
+
+
+def main():
+    items = json.loads((H.TEST_DIR / 'items.json').read_text())
+    P = json.loads((H.TEST_DIR / 'proposals.json').read_text())
+    notes = {}
+    for line in (H.TEST_DIR / 'notes.txt').read_text().splitlines():
+        if line.strip() and not line.startswith('#'): notes[line.split()[0]] = line
+    out = {}
+    for it in items:
+        k = it['key']; p = P[k]; note = notes[k]
+        dice = [[x, y, c] for x, y, c, sc in p['dice'] if sc >= THRESH]
+        for mx, my, mc in MERGE.get(k, []):
+            near = [d for d in dice if d[2] == mc and math.hypot(d[0] - mx, d[1] - my) < 20]
+            assert len(near) >= 2, (k, near)
+            top = max(near, key=lambda d: [q for q in p['dice'] if q[:3] == d][0][3])
+            dice = [d for d in dice if d not in near] + [top]
+        for rx, ry in REMOVE.get(k, []):
+            n0 = len(dice); dice = [d for d in dice if math.hypot(d[0] - rx, d[1] - ry) > 8]; assert len(dice) == n0 - 1, k
+        for ix, iy in IGNORE.get(k, []):
+            dice = [d for d in dice if math.hypot(d[0] - ix, d[1] - iy) > 14]
+        dice += [list(a) for a in ADD.get(k, [])]
+        lab = {'dice': dice, 'hidden': [list(h) for h in HIDDEN.get(k, [])], 'ignore': [list(i) for i in IGNORE.get(k, [])]}
+        ct = cube_truth(k)
+        lab['cube'] = None if ct is None else {'xy': p['cube'][:2], 'zone': ct[0], 'face': ct[1]}
+        chk = re.search(r'chk (\S+)', note).group(1)
+        if chk.startswith('ok') and 'ok-unknown' not in chk:
+            pos = json.loads(json.dumps(p['decoded']))
+            if chk == 'ok-points': pos['barUnseen'] = True
+            lab['checkers'] = pos
+        elif chk == 'fix':
+            pos = json.loads(json.dumps(p['decoded']))
+            for m in re.finditer(r'(r?)p(\d+)=(\d+)', note):
+                q = int(m.group(2)) - 1
+                if m.group(1): q = (q - 12) % 24  # reader-view point on the turned Nov 23 board
+                r = p['reader'][q]; v = int(m.group(3))
+                assert r is not None and abs(r) == v, (k, q + 1, r, v)
+                pos['points'][q] = r
+            b = re.search(r'bar=(\d),(\d)', note)
+            if b: pos['bar'] = [int(b.group(1)), int(b.group(2))]
+            lab['checkers'] = pos
+        else:
+            lab['checkers'] = None
+        if it['kind'] == 'turn': lab['roll'] = it['roll']
+        lab['note'] = note
+        out[k] = lab
+    OUT.write_text(json.dumps(out, indent=0))
+    n = len(out)
+    print('frames', n, 'dice', sum(len(v['dice']) for v in out.values()), 'hidden', sum(len(v['hidden']) for v in out.values()),
+          'cube', sum(v['cube'] is not None for v in out.values()), 'checker frames', sum(v['checkers'] is not None for v in out.values()))
+
+
+if __name__ == '__main__':
+    main()

@@ -8,7 +8,7 @@ with a colour hull) so the detector sees them on every kind of point and
 next to checkers. Pixels of unlabelled die-sized colour blobs are ignored,
 so a missed die in an unreviewed frame does not count as background.
 
-usage: objects_train.py out.pt [--steps N] [--init model.pt]
+usage: objects_train.py out.pt [--steps N] [--init model.pt] [--exclude-heldout]
 """
 import argparse, json, os, random
 import cv2, numpy as np, torch
@@ -135,8 +135,12 @@ def focal_w(logits, gt, w, alpha=2, beta=4):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--steps', type=int, default=3000)
     ap.add_argument('--init'); ap.add_argument('--batch', type=int, default=12)
+    ap.add_argument('--exclude-heldout', action='store_true', help="leave out the object test's held-out games (heldout.py)")
     a = ap.parse_args()
     keys, jp = ob.load_frames(); frames = dict(zip(keys, jp))
+    if a.exclude_heldout:
+        import heldout
+        n = len(keys); keys = [k for k in keys if not heldout.held_key(k)]; print('left out (held-out games)', n - len(keys))
     labels = ob.load_labels()
     cubes = json.loads((ob.OBJ_DIR / 'cube-labels.json').read_text())
     for k, c in cubes.items():

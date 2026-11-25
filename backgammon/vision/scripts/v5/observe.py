@@ -27,15 +27,8 @@ def run_clip(clip, reader, outdir):
         prs = reader.probs_batch([reader_view(img, view) for _, img in batch])
         if view: prs = [pr[order] for pr in prs]
         for (i, _), pr in zip(batch, prs):
-            cls = pr.argmax(-1); conf = pr.max(-1).min(-1)
-            if pr.shape[-1] > 3:
-                conf = np.where((cls == 3).any(-1), 0.0, conf)
-            pos = [0] * 24
-            for p in range(24):
-                w, d = int((cls[p] == 1).sum()), int((cls[p] == 2).sum())
-                pos[p] = w if w >= d else -d
-            rows.append({'f': base + i, 'm': round(float(m[max(0, i - 10):i + 11].max()), 2), 'pos': pos,
-                         'conf': [round(float(x), 3) for x in conf]})
+            pos, conf = rs.counts(pr)
+            rows.append({'f': base + i, 'm': round(float(m[max(0, i - 10):i + 11].max()), 2), 'pos': pos, 'conf': conf})
         batch.clear()
     with av.open(str(RECT / f'clip-{clip:03d}.mp4')) as c:
         c.streams.video[0].thread_type = 'AUTO'
