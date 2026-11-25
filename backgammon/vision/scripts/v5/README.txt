@@ -354,3 +354,64 @@ Nov 24 15:31 decoded and published (Nov 25)
   Results: game 1, Black doubles at 3:01, White takes, Black wins 2 by bearing off; game 2, White doubles
   at 31:08, Black takes, White wins a gammon, 4 points. The page is vision/2026-11-24-pm ("Nov 24 PM";
   new_session_page.py and export.mjs take a suffix after the date for a second recording that day).
+
+Die identity tracking (Nov 25)
+
+  die_track.py follows each physical die, and the cube, through time instead of reading every frame on
+  its own. Every 5th frame keeps the detector's die peaks from 0.1 (both colours, the detector's yellow
+  and red scores at the peak and die_verify's not-die / yellow / red) and the three best cube peaks.
+  Peaks within 17 px are one die (side and pip face); dice are linked frame to frame (16 px a step, 10 px
+  across up to 2 s when a hand hides them), and a die that reappears where one vanished (12 px, 6 s)
+  continues it. A die's roll partners are the strong dice that started within 1.2 s of it. Per frame,
+  starting from die_verify.refine: a weak die with an unsure colour takes its one sure partner's colour
+  (the 15:57 die at the rail landed with a clear yellow die; colour from the player on roll fails, the
+  previous roller's dice stay on the board); a faded peak on a die once seen clearly is kept; a weak
+  still die that landed with exactly one strong die is that roll's other die; a red peak next to a yellow
+  one is a pale yellow die's pip face (no red die in either test set has a yellow peak of 0.35 within
+  20 px; yellow dice often have a red one); the dice are merged again, except two peaks that both stay
+  strong for 2 s (touching dice). The cube: a peak under 0.5 is replaced by the strongest place over
+  10 s either side (the 15:31 holder peaks at 0.12-0.18 or not at all).
+
+  testset_eval.py --track CACHE scores it (die_track.py testcache OBJ VER CACHE, same models):
+    older set (obj-v8 + die-ver-v1):  Nov 21 dice 209/212 -> 212/212, Nov 23 65/67 -> 65/67, Nov 24
+      88/93 -> 90/93, no false peaks before or after; faces 39/41, 7/7, 17/17 and cube 252/252 unchanged.
+    new set (obj-v8,obj-v10 + die-ver-v1, --tol 16): dice 213/226 found, 13 missed, 14 false -> 222/226,
+      4 missed, 3 false; cube zone 146/155 -> 155/155.
+  Left: Nov 23 s4:9062's two dice in the air (motion blur, no die shape), the Nov 24 pale red die at the
+  rail (29672-30059, peaks 0.13-0.26; its track looks like the 15:31 checker emblem at 697,177, which
+  the same rule would also keep), the 15:31 die on the bar edge (5125, 5500: three pips on the wood), a
+  die by the checkers at 11125 (one frame), the second of two touching red dice at 43000 (one peak for
+  both), a fingertip (11500), a die held in a hand (21250), a pale die's face peak (23875) and a dark
+  checker's emblem (25000).
+  Tried and not kept: colour from hue (yellow dice never show red pixels, but a tenth of red dice show
+  none either, so per frame it loses 4 dice; over a track, the pale dice still missed lie by the bar or
+  the rail, whose wood counts as red); one die per 17 px blob (merges touching dice, 18-19 px apart in this view); a companion yellow
+  track as pale-face evidence (Nov 23 red dice at the top rail have weak yellow neighbours); the
+  verifier alone for touching dice (adds false dice); face reads pooled over a die's still frames (Nov 21
+  39/41 -> 38/41: touching dice at s1:78292).
+
+  The 15:31 scan is now die_track.py scan (objects-scan; the obj-v8,obj-v10 + verifier scan kept as
+  objects-scan-v8v). cube-scan.json is unchanged: the tracked cube moved the published offer and take
+  times by 1-2 s and nothing else.
+
+  Faces. The new set's faces were read by eye, blind, on 6x crops of each labelled die (124 of 226
+  readable): labels/faces-blind-new.json. Checked against the roll that the checker play fixes for the
+  die's turn, the eye was right 67 of 90 times (a 4, 5 or 6 seen from the side shows two bars), so the
+  score uses the checked label: the roll for a double, the eye's read when it is one of a non-double
+  roll's values (88 dice). testset_eval prints "die faces": shipped 75/78 found dice right, tracked
+  82/85. s6:13750's second die (323,328) was dropped from the labels: the zoom shows bare felt there.
+  faces-v8 (s6 work dir models/faces-v8.pt) is faces-v6 fine-tuned 800 steps on the 15:31 session's
+  game 1 rolls only (dice_faces.py decode2-v7r.json --holdout-games 2 --init faces-v6): game 2's
+  unique-roll turns 21/31 -> 28/31 (1500 steps 27, 3000 steps 26). testset_rolls.py (now also per game)
+  on the new set, against the published rolls: game 2 36/54 (faces-v6, published scan) -> 46/54
+  (faces-v8) -> 47/54 (faces-v8 on the tracked scan); game 1 (trained on) 37/44 -> 43/46, two more turns
+  with both dice seen. The older games keep faces-v6. The two opening-roll misses in the older set
+  (s1:58728 6-4 read 6-6, s3:30666 2-1 read 1-1) are single frames where one die is edge-on or blurred on
+  a cream point; read over their tracks (testset_rolls) both games' rolls are right (Nov 21 40/40).
+
+  Republished Nov 24 PM: the tracked scan with faces-v8 disagreed with four of the session's
+  dice-read rolls; on crop strips of the roll (eye, reviewed-rolls-20261124-1531.json): game 1 turn 4
+  White 6-2, not 2-2 (one die shows its side, so not a two), game 2 turn 33 White 3-1, not 1-1 (the die
+  on the point's tip shows several pips), game 2 turn 52 Black 5-3, not 2-2 (three pips in a line on the
+  bar edge, five on the other); game 1 turn 8 stays 3-2 (the die landed showing three before a hand
+  pushed it over). patch_rolls.mjs re-scored those turns; results and cube actions are unchanged.

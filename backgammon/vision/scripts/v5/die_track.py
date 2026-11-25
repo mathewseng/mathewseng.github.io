@@ -27,9 +27,9 @@ Per frame the dice are those of die_verify.refine (the single-frame result), the
   3. Roll-partner rescue: a peak from 0.1 on a still track (20+ steps, peak 0.25+, verifier not-die
      under 0.3 at least once) that started within 25 frames of exactly one strong die track (0.9+) is
      that roll's other die (a pale die on a cream point, a die at the rail).
-  4. Pale face: a red die with a yellow peak of 0.35 or more within 22 px is the pip face of a pale
-     yellow die (red dice show no yellow side: no red die in either test set has a yellow peak of
-     0.35 within 20 px, while yellow dice often have a red one).
+  4. Pale face: a red die with a yellow peak of 0.35 or more, or a yellow die kept above, within 22 px
+     is the pip face of a pale yellow die (red dice show no yellow side: no red die in either test set
+     has a yellow peak of 0.35 within 20 px, while yellow dice often have a red one).
   5. The dice are merged again (objects.merge_dice: a die's two peaks now share a colour), except two
      same-colour peaks 13+ px apart that both scored 0.75+ in half the frames within 10 steps: two
      touching dice.
@@ -38,7 +38,7 @@ are summed per place (20 px) and the strongest place is taken (the current peak 
 much): the cube in the holder of the 15:31 view peaks at 0.12-0.18 and sometimes not at all.
 
 usage: die_track.py testcache OBJ VER OUT.pkl [--back 3000] [--fwd 750]   ([BG_TEST_SET=new]: test windows)
-       die_track.py scan OBJ VER [--out objects-scan-track] [--cube-out cube-scan-track.json] [--frames A B]
+       die_track.py scan OBJ VER [--out objects-scan-track] [--cube-out cube-scan-track.json] [--frames A B] [--raw R.pkl]
   testcache keeps the raw peaks every 5th frame from 120 s before to 30 s after each held-out test frame
   (testset_eval.py --track reads it). scan does the same for a recording (BG_WORK_DIR) and writes the
   tracked dice in objects_scan.py's format (meta, 40x40 patches, die-score.npy) and the cube per frame.
@@ -189,7 +189,7 @@ class Tracker:
             P = [j for j, u in enumerate(self.info) if j != i and abs(u['start'] - st) <= 25 and u['smax'] >= .9 and u['n'] >= 20]
             if len(P) == 1:
                 q = max(b['rows'], key=lambda q: q[3]); out.append((int(self.chain_O(i) < 0), q[1], q[2], b['s']))
-        ys = [r for r in rows if r[0] == 0 and r[3] >= .35]  # 4. pale face
+        ys = [r for r in rows if r[0] == 0 and r[3] >= .35] + [d for d in out if d[0] == 0]  # 4. pale face
         out = [((0,) + tuple(d[1:])) if d[0] == 1 and any(3 < math.hypot(r[1] - d[1], r[2] - d[2]) <= 22 for r in ys) else d for d in out]
         return self._merge(out, f)  # 5.
 
@@ -257,9 +257,12 @@ def scan(a):
     net = ob.load(a.obj); ver = dv.load(a.ver); view = board_view(); total = fr.total()
     f0, f1 = (a.frames if a.frames else (0, total))
     nums = list(range(f0 - f0 % STEP, min(f1, total), STEP)); t0 = time.time()
-    raw = raw_frames(net, ver, ((n, reader_view(im, view)) for n, im in fr.read(nums)))
-    print('raw', len(raw), f'{time.time() - t0:.0f}s', flush=True)
-    pickle.dump(raw, open(WORK / (a.out + '.raw.pkl'), 'wb'))
+    if a.raw:  # the raw peaks of an earlier scan with the same models
+        raw = pickle.load(open(a.raw, 'rb')); nums = [n for n in nums if n in raw]
+    else:
+        raw = raw_frames(net, ver, ((n, reader_view(im, view)) for n, im in fr.read(nums)))
+        print('raw', len(raw), f'{time.time() - t0:.0f}s', flush=True)
+        pickle.dump(raw, open(WORK / (a.out + '.raw.pkl'), 'wb'))
     tr = Tracker(raw); out = WORK / a.out; out.mkdir(exist_ok=True)
     dice_at = {n: tr.dice(n) for n in nums}; cube_rows = []
     offs = fr.offsets(); scores = []
@@ -288,6 +291,7 @@ def main():
     p.add_argument('--back', type=int, default=3000); p.add_argument('--fwd', type=int, default=750)
     p = sub.add_parser('scan'); p.add_argument('obj'); p.add_argument('ver'); p.add_argument('--out', default='objects-scan-track')
     p.add_argument('--cube-out', default='cube-scan-track.json'); p.add_argument('--frames', type=int, nargs=2)
+    p.add_argument('--raw', help='reuse the raw peaks (OUT.raw.pkl) of an earlier scan')
     a = ap.parse_args()
     {'testcache': testcache, 'scan': scan}[a.cmd](a)
 

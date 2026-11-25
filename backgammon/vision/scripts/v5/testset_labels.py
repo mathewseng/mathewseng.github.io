@@ -67,14 +67,22 @@ def cube_truth(key):
 # place that is neither a miss nor an extra. Quiet frames take their checkers from TEST_DIR/checkers-eye.json.
 RESOLVE = {('s6:5125', 437, 207): 1, ('s6:5500', 437, 207): 1, ('s6:6625', 553, 497): 1, ('s6:6625', 473, 557): 1,
            ('s6:8500', 636, 529): 1, ('s6:9625', 324, 197): 0, ('s6:11125', 467, 541): 1}
-EXTRA_NEW = {'s6:2875': {'ignore': [[345, 312]]}, 's6:13750': {'dice': [[323, 328, 0]]}}
+EXTRA_NEW = {'s6:2875': {'ignore': [[345, 312]]}}
+# s6:13750's "?second" die at (323,328) was dropped on Nov 25: a 5x zoom shows one die by the fingers (287-300,
+# 307-315) and bare felt at (323,328). Faces: labels/faces-blind-new.json, [x, y, red, blind, checked] per die.
+# blind: read by eye on 6x crops around each labelled die, no model output shown (null: not readable; 124 of 226).
+# Checked against the published turn whose roll the checker play fixes (rollSource move/reviewed; the die belongs to
+# its colour's last roll), the blind reads were right 67 of 90 times: a die seen from the side shows two bars for a
+# 4, 5 or 6. checked (the label used): the roll's value for a double, the blind read when it is one of a non-double
+# roll's two values, else null (88 dice).
+FACES = Path(__file__).parent / 'labels/faces-blind-new.json'
 
 
 def main_new():
     items = json.loads((H.TEST_DIR / 'items.json').read_text())
     chk = json.loads((H.TEST_DIR / 'checkers-eye.json').read_text())
     notes = {l.split()[0]: l for l in (H.TEST_DIR / 'notes-blind.txt').read_text().splitlines() if l.startswith('s6:')}
-    out = {}; last_cube_xy = None
+    out = {}; last_cube_xy = None; faces = json.loads(FACES.read_text()) if FACES.exists() else {}
     for it in items:
         k = it['key']; note = notes[k]; dpart, cpart, kpart = note.split(' | ')
         dice, ignore = [], []
@@ -89,7 +97,9 @@ def main_new():
             if m.group(3): last_cube_xy = [int(m.group(3)), int(m.group(4))]
             cube = {'xy': last_cube_xy, 'zone': m.group(1), 'face': int(m.group(2))}
         else: cube = None
-        out[k] = {'dice': dice, 'hidden': [], 'ignore': ignore, 'cube': cube,
+        fl = faces.get(k, [])
+        face = [next((f[4] for f in fl if f[0] == x and f[1] == y and f[2] == c), None) for x, y, c in dice]
+        out[k] = {'dice': dice, 'faces': face, 'hidden': [], 'ignore': ignore, 'cube': cube,
                   'checkers': chk.get(k) if 'chk quiet' in kpart else None, 'note': note}
     OUT.write_text(json.dumps(out, indent=0))
     print('frames', len(out), 'dice', sum(len(v['dice']) for v in out.values()), 'cube', sum(v['cube'] is not None for v in out.values()),

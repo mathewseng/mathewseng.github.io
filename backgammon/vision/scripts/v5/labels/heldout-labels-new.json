@@ -1,6 +1,7 @@
 {
 "s6:1000": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -59,6 +60,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -106,6 +111,7 @@
 },
 "s6:1750": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -153,6 +159,7 @@
 },
 "s6:2125": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -175,6 +182,10 @@
 304,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -228,6 +239,9 @@
 304,
 0
 ]
+],
+"faces": [
+null
 ],
 "hidden": [],
 "ignore": [
@@ -292,6 +306,10 @@
 1
 ]
 ],
+"faces": [
+6,
+6
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -349,6 +367,10 @@
 311,
 1
 ]
+],
+"faces": [
+6,
+6
 ],
 "hidden": [],
 "ignore": [],
@@ -408,6 +430,10 @@
 1
 ]
 ],
+"faces": [
+6,
+6
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -466,6 +492,10 @@
 1
 ]
 ],
+"faces": [
+6,
+6
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -478,6 +508,7 @@
 },
 "s6:4750": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -539,6 +570,10 @@
 1
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -564,6 +599,10 @@
 207,
 1
 ]
+],
+"faces": [
+5,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -626,6 +665,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -686,6 +729,10 @@
 275,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -748,6 +795,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -773,6 +824,10 @@
 196,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -824,6 +879,7 @@
 },
 "s6:7375": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -885,6 +941,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -910,6 +970,10 @@
 253,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -972,6 +1036,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1033,6 +1101,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1058,6 +1130,10 @@
 331,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -1085,6 +1161,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1100,6 +1180,7 @@
 },
 "s6:10000": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1125,6 +1206,10 @@
 413,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -1152,6 +1237,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1177,6 +1266,10 @@
 541,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -1239,6 +1332,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1265,6 +1362,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1290,6 +1391,10 @@
 427,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -1352,6 +1457,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1412,6 +1521,10 @@
 284,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -1474,6 +1587,10 @@
 1
 ]
 ],
+"faces": [
+6,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1493,12 +1610,10 @@
 287,
 313,
 0
-],
-[
-323,
-328,
-0
 ]
+],
+"faces": [
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -1525,6 +1640,10 @@
 373,
 1
 ]
+],
+"faces": [
+1,
+1
 ],
 "hidden": [],
 "ignore": [],
@@ -1587,6 +1706,10 @@
 1
 ]
 ],
+"faces": [
+1,
+1
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1612,6 +1735,10 @@
 311,
 0
 ]
+],
+"faces": [
+6,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -1663,6 +1790,7 @@
 },
 "s6:15250": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1678,6 +1806,7 @@
 },
 "s6:15625": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1739,6 +1868,10 @@
 1
 ]
 ],
+"faces": [
+2,
+2
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1765,6 +1898,10 @@
 1
 ]
 ],
+"faces": [
+2,
+2
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1785,6 +1922,9 @@
 190,
 1
 ]
+],
+"faces": [
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -1812,6 +1952,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1837,6 +1981,10 @@
 330,
 0
 ]
+],
+"faces": [
+5,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -1864,6 +2012,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1885,6 +2037,9 @@
 0
 ]
 ],
+"faces": [
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1900,6 +2055,7 @@
 },
 "s6:18625": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1915,6 +2071,7 @@
 },
 "s6:19000": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1930,6 +2087,7 @@
 },
 "s6:19375": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -1980,6 +2138,7 @@
 },
 "s6:19750": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2041,6 +2200,10 @@
 1
 ]
 ],
+"faces": [
+5,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2091,6 +2254,7 @@
 },
 "s6:20500": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2147,6 +2311,9 @@
 1
 ]
 ],
+"faces": [
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2162,6 +2329,7 @@
 },
 "s6:21250": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2177,6 +2345,7 @@
 },
 "s6:21625": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2192,6 +2361,7 @@
 },
 "s6:22000": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2207,6 +2377,7 @@
 },
 "s6:22375": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2222,6 +2393,7 @@
 },
 "s6:22750": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2237,6 +2409,7 @@
 },
 "s6:23125": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2252,6 +2425,7 @@
 },
 "s6:23500": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2277,6 +2451,10 @@
 306,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -2339,6 +2517,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2354,6 +2536,7 @@
 },
 "s6:24625": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2415,6 +2598,10 @@
 1
 ]
 ],
+"faces": [
+1,
+2
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2430,6 +2617,7 @@
 },
 "s6:25375": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2455,6 +2643,10 @@
 430,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -2517,6 +2709,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2537,6 +2733,9 @@
 292,
 1
 ]
+],
+"faces": [
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -2563,6 +2762,10 @@
 355,
 0
 ]
+],
+"faces": [
+6,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -2625,6 +2828,10 @@
 0
 ]
 ],
+"faces": [
+6,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2675,6 +2882,7 @@
 },
 "s6:27625": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2735,6 +2943,10 @@
 346,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -2797,6 +3009,10 @@
 0
 ]
 ],
+"faces": [
+5,
+6
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2812,6 +3028,7 @@
 },
 "s6:28750": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2837,6 +3054,10 @@
 238,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -2899,6 +3120,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -2959,6 +3184,10 @@
 351,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -3021,6 +3250,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3041,6 +3274,9 @@
 473,
 1
 ]
+],
+"faces": [
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -3068,6 +3304,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3088,6 +3328,9 @@
 380,
 1
 ]
+],
+"faces": [
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -3114,6 +3357,10 @@
 507,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -3176,6 +3423,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3237,6 +3488,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3263,6 +3518,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3288,6 +3547,10 @@
 225,
 0
 ]
+],
+"faces": [
+4,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -3350,6 +3613,10 @@
 0
 ]
 ],
+"faces": [
+4,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3375,6 +3642,10 @@
 377,
 1
 ]
+],
+"faces": [
+1,
+1
 ],
 "hidden": [],
 "ignore": [],
@@ -3437,6 +3708,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3457,6 +3732,9 @@
 470,
 1
 ]
+],
+"faces": [
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -3483,6 +3761,10 @@
 546,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -3545,6 +3827,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3570,6 +3856,10 @@
 247,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -3632,6 +3922,10 @@
 1
 ]
 ],
+"faces": [
+5,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3682,6 +3976,7 @@
 },
 "s6:36625": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3707,6 +4002,10 @@
 356,
 0
 ]
+],
+"faces": [
+5,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -3734,6 +4033,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3760,6 +4063,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3785,6 +4092,10 @@
 537,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -3847,6 +4158,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3908,6 +4223,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -3933,6 +4252,10 @@
 37,
 0
 ]
+],
+"faces": [
+5,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -3995,6 +4318,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4010,6 +4337,7 @@
 },
 "s6:40000": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4036,6 +4364,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4061,6 +4393,10 @@
 243,
 0
 ]
+],
+"faces": [
+5,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -4112,6 +4448,7 @@
 },
 "s6:41125": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4137,6 +4474,10 @@
 244,
 0
 ]
+],
+"faces": [
+5,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -4199,6 +4540,10 @@
 0
 ]
 ],
+"faces": [
+5,
+5
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4259,6 +4604,10 @@
 244,
 0
 ]
+],
+"faces": [
+5,
+5
 ],
 "hidden": [],
 "ignore": [],
@@ -4321,6 +4670,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4381,6 +4734,10 @@
 369,
 1
 ]
+],
+"faces": [
+5,
+6
 ],
 "hidden": [],
 "ignore": [],
@@ -4443,6 +4800,10 @@
 0
 ]
 ],
+"faces": [
+1,
+1
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4499,6 +4860,9 @@
 0
 ]
 ],
+"faces": [
+1
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4514,6 +4878,7 @@
 },
 "s6:44125": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4539,6 +4904,10 @@
 429,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -4601,6 +4970,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4657,6 +5030,9 @@
 1
 ]
 ],
+"faces": [
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4683,6 +5059,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4708,6 +5088,10 @@
 241,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -4759,6 +5143,7 @@
 },
 "s6:46375": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4774,6 +5159,7 @@
 },
 "s6:46750": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4824,6 +5210,7 @@
 },
 "s6:47125": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4874,6 +5261,7 @@
 },
 "s6:47500": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": null,
@@ -4882,6 +5270,7 @@
 },
 "s6:47875": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4908,6 +5297,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -4933,6 +5326,10 @@
 467,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -4995,6 +5392,10 @@
 0
 ]
 ],
+"faces": [
+5,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5055,6 +5456,10 @@
 527,
 1
 ]
+],
+"faces": [
+5,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -5117,6 +5522,10 @@
 0
 ]
 ],
+"faces": [
+6,
+6
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5142,6 +5551,10 @@
 250,
 0
 ]
+],
+"faces": [
+6,
+6
 ],
 "hidden": [],
 "ignore": [],
@@ -5204,6 +5617,10 @@
 0
 ]
 ],
+"faces": [
+6,
+6
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5219,6 +5636,7 @@
 },
 "s6:50875": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5280,6 +5698,10 @@
 1
 ]
 ],
+"faces": [
+6,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5330,6 +5752,7 @@
 },
 "s6:51625": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5356,6 +5779,10 @@
 0
 ]
 ],
+"faces": [
+6,
+6
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5381,6 +5808,10 @@
 489,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -5443,6 +5874,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5468,6 +5903,10 @@
 190,
 0
 ]
+],
+"faces": [
+6,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -5530,6 +5969,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5590,6 +6033,10 @@
 310,
 1
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -5652,6 +6099,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5667,6 +6118,7 @@
 },
 "s6:54625": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [
 [
@@ -5702,6 +6154,10 @@
 1
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5722,6 +6178,9 @@
 276,
 0
 ]
+],
+"faces": [
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -5749,6 +6208,10 @@
 1
 ]
 ],
+"faces": [
+3,
+3
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5774,6 +6237,10 @@
 240,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -5836,6 +6303,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5861,6 +6332,10 @@
 242,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -5923,6 +6398,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -5984,6 +6463,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -6009,6 +6492,10 @@
 267,
 0
 ]
+],
+"faces": [
+null,
+null
 ],
 "hidden": [],
 "ignore": [],
@@ -6036,6 +6523,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -6062,6 +6553,10 @@
 0
 ]
 ],
+"faces": [
+null,
+null
+],
 "hidden": [],
 "ignore": [],
 "cube": {
@@ -6077,6 +6572,7 @@
 },
 "s6:59125": {
 "dice": [],
+"faces": [],
 "hidden": [],
 "ignore": [],
 "cube": {

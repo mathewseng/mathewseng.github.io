@@ -36,16 +36,18 @@ def main():
             if i == 0: tr = (df.tracks(meta, start, t['resultFrame'], 0, score)[:1] + df.tracks(meta, start, t['resultFrame'], 1, score)[:1])
             truth = f"{max(t['roll'])}-{min(t['roll'])}"
             if len(tr) < 2:
-                S[day]['not seen'] += 1
+                S[day]['not seen'] += 1; S[label]['not seen'] += 1
                 if a.v: print(f'  {label} T{i + 1} {t["player"]} {truth} ({t["rollSource"]}): {len(tr)} dice tracked')
             else:
                 pp = df.pair_prob(df.read_track(net, patches, tr[0][:20]), df.read_track(net, patches, tr[1][:20]))
                 best = max(pp, key=pp.get); ok = best == truth
-                S[day]['right'] += ok; S[day]['read'] += 1
+                S[day]['right'] += ok; S[day]['read'] += 1; S[label]['right'] += ok; S[label]['read'] += 1
                 if not ok and a.v: print(f'  {label} T{i + 1} {t["player"]} {truth} ({t["rollSource"]}) read {best} margin {pp[best] - pp[truth]:.1f}')
             prev = t['resultFrame']
     for day in H.DAYS:
         c = S[day]; print(f"{day}: rolls from dice {c['right']}/{c['read']} right, {c['not seen']} turns without two dice")
+        for s, f0, f1, an, label in H.BLOCKS:
+            if H.DAY[s] == day: c = S[label]; print(f"   {label}: {c['right']}/{c['read']} right, {c['not seen']} without two dice")
 
 
 if __name__ == '__main__':

@@ -9,6 +9,7 @@ Per day (Nov 21, Nov 23, Nov 24) it prints counts:
   dice extra      detections with no labelled die (peaks near "ignore" or "hidden" places excepted)
   dice faces      turn frames: the roller's detected dice read by the face reader, compared with the
                   turn's roll without order (both colours on a game's opening roll)
+  die faces       the new set: each found die whose face was read by eye (labels "faces": checked against the legal-move roll), read alone
   cube zone       best cube peak (score >= 0.5) in the labelled zone; a missing peak is wrong
   cube face       the published analysis' cube value at that frame (holder = 64); after the game's end
                   (a pass or the last bear-off) the players reset the cube and the frame is not scored
@@ -226,6 +227,15 @@ def main():
             if j in used or any(math.hypot(d[1] - p[0], d[2] - p[1]) < 16 for p in free): continue
             S[day]['dice extra'] += 1; errs[day].append(f'{k} extra {"YR"[d[0]]} {d[3]:.2f} at {d[1]:.0f},{d[2]:.0f}')
         S[day]['dice labelled'] += len(lab['dice'])
+        # faces of single dice (the new set: read by eye where the crop shows them, testset_labels.FACES)
+        for ti, fv in enumerate(lab.get('faces') or []):
+            if fv is None: continue
+            S[day]['die faces labelled'] += 1
+            if ti not in matched: continue
+            d = dice[matched[ti]]; p = dice_mod.patch(im, d[1], d[2], 40)
+            with torch.no_grad(): r = int(fnet(df.prep(p, False)[None].to(df.dev))[0].argmax()) + 1
+            S[day]['die faces read'] += 1; S[day]['die faces right'] += r == fv
+            if r != fv: errs[day].append(f'{k} die face read {r} truth {fv} at {lab["dice"][ti][0]:.0f},{lab["dice"][ti][1]:.0f}')
         # faces on turn frames
         if lab.get('roll'):
             red = 1 if it['player'] == H.red_player(s) else 0
@@ -286,13 +296,16 @@ def main():
             res = decoded_check(turns_of[it['block']], f, chk, game_end(it['block']))
             S[day]['decoded ' + res] += 1
             if res != 'right': errs[day].append(f'{k} decoded {res}')
+    def die_faces(c):
+        return f" | die faces {c['die faces right']}/{c['die faces read']} ({c['die faces labelled']} labelled)" if c['die faces labelled'] else ''
+
     def after_note(c):
         n = c['cube face after the game']
         return f' (+{n} after the game)' if n else ''
     for day in H.DAYS:
         c = S[day]
         print(f"{day}: dice {c['dice found']}/{c['dice labelled']} found, {c['dice missed']} missed, {c['dice extra']} extra | "
-              f"faces {c['faces right']}/{c['faces read']} | cube zone {c['cube zone right']}/{c['cube frames']} face {c['cube face right']}/{c['cube faces scored']}{after_note(c)} | "
+              f"faces {c['faces right']}/{c['faces read']}{die_faces(c)} | cube zone {c['cube zone right']}/{c['cube frames']} face {c['cube face right']}/{c['cube faces scored']}{after_note(c)} | "
               f"points wrong {c['points wrong']}/{c['points read']} (+{c['points unknown']} unknown), frames all right {c['frames all points right']}/{c['quiet frames']} | "
               f"decoded {c['decoded right']}/{c['quiet frames']} right, {c['decoded mid-move']} mid-move, {c['decoded late']} late, {c['decoded wrong']} wrong, {c['decoded after the game']} after the game (not scored)")
         if a.v:
