@@ -10,7 +10,8 @@ Per day (Nov 21, Nov 23, Nov 24) it prints counts:
   dice faces      turn frames: the roller's detected dice read by the face reader, compared with the
                   turn's roll without order (both colours on a game's opening roll)
   cube zone       best cube peak (score >= 0.5) in the labelled zone; a missing peak is wrong
-  cube face       the published analysis' cube value at that frame (holder = 64)
+  cube face       the published analysis' cube value at that frame (holder = 64); after the game's end
+                  (a pass or the last bear-off) the players reset the cube and the frame is not scored
   points          quiet frames: slot reader per point (a count of 6 reads a column of 6 or more;
                   points the reader marks unknown are counted apart)
   decoded         quiet frames: the published decode's position at that frame (points, bar, off). A
@@ -21,14 +22,14 @@ Per day (Nov 21, Nov 23, Nov 24) it prints counts:
                   the final position is expected; a board changed by play after the game (the Nov 23
                   play-out after the pass) is counted apart.
 
-usage: [BG_TEST_SET=new] testset_eval.py [--obj M[,M2]] [--tol 12] [--cube-thresh 0.5] [--faces M] [--slots M] [--thresh 0.35] [--post merge|none] [--comb]
+usage: [BG_TEST_SET=new] testset_eval.py [--obj M[,M2]] [--verify V] [--tol 12] [--cube-thresh 0.5] [--faces M] [--slots M] [--thresh 0.35] [--post merge|none] [--comb]
                        [--decode s1=decode.json ...] [--decoded-only] [-v]
   --decode scores a decode2.mjs output for a session instead of the published analysis.
 """
 import argparse, collections, json, math
 from pathlib import Path
 import cv2, numpy as np, torch
-import heldout as H, objects as ob, read_slots as rs, dice as dice_mod, dice_faces as df
+import heldout as H, objects as ob, read_slots as rs, dice as dice_mod, dice_faces as df, die_verify as dv
 from session import reader_xy, reader_points
 from testset_sheet import load_test, img_of, analysis, state_at
 
@@ -38,12 +39,13 @@ TOL = 12  # --tol: 16 for the new set's blind labels (placed by eye, about 10 px
 LATE = 50  # 2 s: a stable reading takes three samples 5 frames apart, and the decode marks its start
 
 
-def die_peaks(net, im, thresh, post, comb=False):
+def die_peaks(net, im, thresh, post, comb=False, ver=None):
     with torch.no_grad():
         logits = net(ob.to_tensor(im)[None].to(ob.dev)); det = ob.peaks(logits, min(thresh, .15))[0]
     dice = [(c, x, y, s) for c, x, y, s in det if c < 2 and ob.on_board(x, y)]
     if comb: dice = [d for d in ob.die_peaks(logits, min(thresh, .15))[0] if ob.on_board(d[1], d[2])]
     cubes = sorted([d for d in det if d[0] == 2], key=lambda d: -d[3])
+    if ver is not None: return dv.refine(ver, im, dice, thresh), cubes[0] if cubes else None
     return post_dice(dice, thresh, post), cubes[0] if cubes else None
 
 
@@ -52,8 +54,9 @@ def post_dice(dice, thresh, post):
 
 
 def cube_zone(x, y, session):
-    right = H.settings(session).get('cubeRail') == 'right'
-    on_rail = x > 710 if right else x < 90
+    st = H.settings(session); right = st.get('cubeRail') == 'right'
+    rail = st.get('cubeRailX', 710 if right else 90)  # as analyze.mjs
+    on_rail = x > rail if right else x < rail
     if on_rail: return 'white' if y < 250 else 'dark' if y > 350 else 'holder'
     return 'board'
 
@@ -72,9 +75,10 @@ def system_cube_face(A, f):
 
 
 def game_end(block):
-    """Last frame of the published game: its end, or the cube pass that ended it."""
-    A = analysis(block)
-    return min([A['endFrame']] + [e['frame'] for e in A['cubeEvents'] if e['type'] == 'pass'])
+    """Last frame of the published game: its end, the cube pass that ended it, or its last bear-off."""
+    A = analysis(block); r = A.get('result') or {}
+    won = [r['frame']] if r.get('reason') in ('bear-off', 'gammon') and r.get('frame') else []
+    return min([A['endFrame']] + won + [e['frame'] for e in A['cubeEvents'] if e['type'] == 'pass'])
 
 
 def block_turns(block, decodes):
@@ -174,6 +178,7 @@ def main():
     ap.add_argument('--decode', nargs='*', default=[], help='SESSION=decode2.json: score this decode instead of the published one')
     ap.add_argument('--decoded-only', action='store_true', help='score only the decoded positions (no models)')
     ap.add_argument('--comb', action='store_true', help='dice on the combined die score (objects.die_peaks)')
+    ap.add_argument('--verify', help='die crop verifier (die_verify.py): second look at every die peak')
     ap.add_argument('--tol', type=float, default=12, help='px between a labelled die and its peak')
     ap.add_argument('--cube-thresh', type=float, default=.5, help='best cube peak needed to place the cube (0.15 shipped)')
     ap.add_argument('-v', action='store_true')
@@ -183,7 +188,7 @@ def main():
     items, imgs = load_test(); L = json.loads(LABELS.read_text())
     if not a.decoded_only:
         net = ob.load(a.obj); reader = rs.Reader(a.slots, ob.dev)
-        fnet = df.load_net(a.faces)
+        fnet = df.load_net(a.faces); ver = dv.load(a.verify) if a.verify else None
     S = collections.defaultdict(collections.Counter); errs = collections.defaultdict(list)
     first_turn = {}
     for it in items:
@@ -201,7 +206,7 @@ def main():
                 if res != 'right': errs[day].append(f'{k} decoded {res}')
             continue
         im = img_of(imgs[k]); view = H.board_view(s)
-        dice, cube = die_peaks(net, im, a.thresh, a.post, a.comb)
+        dice, cube = die_peaks(net, im, a.thresh, a.post, a.comb, ver)
         # dice presence and colour
         used = set(); matched = {}
         for ti, (x, y, c) in enumerate(lab['dice']):
@@ -241,10 +246,13 @@ def main():
             else: z = None
             ok = z == lab['cube']['zone']; S[day]['cube zone right'] += ok
             if not ok: errs[day].append(f'{k} cube zone {z} truth {lab["cube"]["zone"]} (peak {cube[3] if cube else 0:.2f})')
-            if it['block'] is None: face = 64  # between games the cube is centred
-            else: A = analysis(it['block']); face = system_cube_face(A, f)
-            ok = face == lab['cube']['face']; S[day]['cube face right'] += ok
-            if not ok: errs[day].append(f'{k} cube face {face} truth {lab["cube"]["face"]}')
+            if it['block'] is not None and f > game_end(it['block']):
+                S[day]['cube face after the game'] += 1  # the replay holds the final cube; the players reset it
+            else:
+                if it['block'] is None: face = 64  # between games the cube is centred
+                else: A = analysis(it['block']); face = system_cube_face(A, f)
+                ok = face == lab['cube']['face']; S[day]['cube face right'] += ok; S[day]['cube faces scored'] += 1
+                if not ok: errs[day].append(f'{k} cube face {face} truth {lab["cube"]["face"]}')
         # checkers
         chk = lab['checkers']
         if chk is not None:
@@ -272,10 +280,13 @@ def main():
             res = decoded_check(turns_of[it['block']], f, chk, game_end(it['block']))
             S[day]['decoded ' + res] += 1
             if res != 'right': errs[day].append(f'{k} decoded {res}')
+    def after_note(c):
+        n = c['cube face after the game']
+        return f' (+{n} after the game)' if n else ''
     for day in H.DAYS:
         c = S[day]
         print(f"{day}: dice {c['dice found']}/{c['dice labelled']} found, {c['dice missed']} missed, {c['dice extra']} extra | "
-              f"faces {c['faces right']}/{c['faces read']} | cube zone {c['cube zone right']}/{c['cube frames']} face {c['cube face right']}/{c['cube frames']} | "
+              f"faces {c['faces right']}/{c['faces read']} | cube zone {c['cube zone right']}/{c['cube frames']} face {c['cube face right']}/{c['cube faces scored']}{after_note(c)} | "
               f"points wrong {c['points wrong']}/{c['points read']} (+{c['points unknown']} unknown), frames all right {c['frames all points right']}/{c['quiet frames']} | "
               f"decoded {c['decoded right']}/{c['quiet frames']} right, {c['decoded mid-move']} mid-move, {c['decoded late']} late, {c['decoded wrong']} wrong, {c['decoded after the game']} after the game (not scored)")
         if a.v:

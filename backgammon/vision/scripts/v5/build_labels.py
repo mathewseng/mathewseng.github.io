@@ -34,6 +34,9 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument('decode'); ap.add_argument('obs'); ap.add_argument('out')
     ap.add_argument('--per-interval', type=int, default=6)
     ap.add_argument('--hard', type=int, default=0, help='per interval: quiet frames the reader was unsure of, labelled with the decoded position')
+    ap.add_argument('--clean-conf', type=float, default=.9, help='least point confidence of a clean frame (lower for a softer view)')
+    ap.add_argument('--clean-motion', type=float, default=.8, help='most motion of a clean frame')
+    ap.add_argument('--games', type=int, nargs='*', help='only these games (1-based) of the decode')
     a = ap.parse_args()
     dec = json.loads(Path(a.decode).read_text())
     rows = []
@@ -41,7 +44,8 @@ def main():
     by_f = {r['f']: r for r in rows}
     fs = sorted(by_f)
     intervals = []
-    for game in dec['games']:
+    for gi, game in enumerate(dec['games']):
+        if a.games and gi + 1 not in a.games: continue
         turns = game['turns']
         start_pts = [-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2]
         if game.get('fragment'): start_pts = game['initial']['points']  # a game already in progress
@@ -54,7 +58,7 @@ def main():
     entries = []
     for f0, f1, pts in intervals:
         inside = [f for f in fs if f0 <= f <= f1]
-        clean = [f for f in inside if by_f[f]['m'] < 0.8 and by_f[f]['pos'] == pts and min(by_f[f]['conf']) > 0.9]
+        clean = [f for f in inside if by_f[f]['m'] < a.clean_motion and by_f[f]['pos'] == pts and min(by_f[f]['conf']) > a.clean_conf]
         if not clean: continue
         hands = [f for f in inside if by_f[f]['m'] > 3]
         pick_c = random.sample(clean, min(5, len(clean)))

@@ -34,7 +34,10 @@ const right = session.cubeRail === 'right';
 // session.json "cubeThresh": the cube peak score that places the cube (0.5; 0.15 where the detector sees the cube
 // faintly, Nov 24 15:31: per frame 137/155 zones right at 0.15 against 85 at 0.5, and no loss on the older sessions)
 const CUBE_THRESH = session.cubeThresh ?? 0.5;
-const onRail = right ? x => x > 710 : x => x < 90, onBoard = right ? x => x >= 90 : x => x < 700;
+// session.json "cubeRailX": where the cube's rail starts (710 on the right, 90 on the left); 690 on Nov 24 15:31,
+// where the cube in White's tray peaks at x 698-724 in the rectified view
+const RAIL_X = session.cubeRailX ?? (right ? 710 : 90);
+const onRail = right ? x => x > RAIL_X : x => x < RAIL_X, onBoard = right ? x => x >= 90 : x => x < 700;
 
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -85,13 +88,22 @@ for (const g of gameArgs.map(Number)) {
   let result = null;
   const decodeTurns = [...game.turns];
   const last = game.final;
+  // session.json "finalBearOff": [game, ...]: games whose winner bore off the last two to four checkers in
+  // one unseen roll (a double) before the board was cleared (Nov 24 15:31 game 1). Cube moves after it
+  // (back to the holder for the next game) are then not a pass.
+  const unseenEnd = (session.finalBearOff ?? []).includes(g);
   for (const p of ['white', 'dark']) {
-    const s = SIDE[p];
-    if (last.off[s] === 14 && !events.some(e => e.type === 'pass')) {
+    const s = SIDE[p], left = 15 - last.off[s];
+    const home = last.points.every((v, i) => !(p === 'white' ? v > 0 : v < 0) || (p === 'white' ? i < 6 : i > 17)) && !last.bar[s];
+    if ((last.off[s] === 14 || (unseenEnd && left <= 4 && home)) && (unseenEnd || !events.some(e => e.type === 'pass'))) {
       decodeTurns.push({ player: p, inferred: 'final-bear-off', frame: game.endFrame, before: last,
         after: { ...last, off: last.off.map((v, i) => i === s ? 15 : v), points: last.points.map(v => (p === 'white' ? v > 0 : v < 0) ? 0 : v) }, plays: [], rolls: [] });
     }
   }
+  // A game over by bear-off has no later cube actions: the cube going back to the holder for the next game
+  // is not a pass.
+  const over = decodeTurns.find(t => t.after.off.includes(15));
+  if (over) for (let i = events.length - 1; i >= 0; i--) if (events[i].frame > over.frame) events.splice(i, 1);
   for (const [i, t] of decodeTurns.entries()) {
     const evidence = ev?.[i] ?? {};
     const s = SIDE[t.player];

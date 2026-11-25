@@ -4,6 +4,12 @@ import slots
 from train_slots import SlotNet, to_tensor
 
 
+# A single checker is often left short of the rail (a checker entered from the bar in a corner of the
+# Nov 24 15:31 view sits about 20 px out): the rail slot then reads empty. When it does, the rail slot is
+# read again further out (RAIL_OFFSETS px) and a checker read there with RAIL_THRESH or more is taken.
+RAIL_OFFSETS, RAIL_THRESH = (12, 18), .8
+
+
 class Reader:
     def __init__(self, weights, device='cpu'):
         self.net = SlotNet(); self.net.load_state_dict(torch.load(weights, map_location='cpu')); self.net.eval().to(device)
@@ -19,20 +25,17 @@ class Reader:
             if best is None: best, conf = pr, c
             else:
                 m = c > conf; best[m] = pr[m]; conf[m] = c[m]
+        for dy in RAIL_OFFSETS:  # a checker short of the rail (see RAIL_OFFSETS)
+            P = np.stack([slots.patches(im, dy)[:, 0] for im in imgs]).reshape(-1, slots.PATCH, slots.PATCH, 3)
+            pr = torch.softmax(self.net(to_tensor(P).to(self.device)), 1).cpu().numpy().reshape(n, 24, -1)
+            b0 = best[:, :, 0]; hit = (b0.argmax(-1) == slots.EMPTY) & (pr[..., 1:3].max(-1) >= RAIL_THRESH)
+            b0[hit] = pr[hit]; best[:, :, 0] = b0
         return best
 
     @torch.no_grad()
     def probs(self, img, offsets=(-6, 0, 6)):
-        """Return [24, NSLOT, 3] probabilities, taking the most confident vertical offset per slot."""
-        best = None; conf = None
-        for dy in offsets:
-            P = slots.patches(img, dy).reshape(-1, slots.PATCH, slots.PATCH, 3)
-            pr = torch.softmax(self.net(to_tensor(P).to(self.device)), 1).cpu().numpy().reshape(24, slots.NSLOT, -1)
-            c = pr.max(-1)
-            if best is None: best, conf = pr, c
-            else:
-                m = c > conf; best[m] = pr[m]; conf[m] = c[m]
-        return best
+        """Return [24, NSLOT, C] probabilities, taking the most confident vertical offset per slot."""
+        return self.probs_batch([img], offsets)[0]
 
 
 def counts(pr):

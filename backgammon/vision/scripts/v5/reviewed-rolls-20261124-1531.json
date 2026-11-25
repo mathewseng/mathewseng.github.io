@@ -1,0 +1,5 @@
+[
+ {"game": 1, "resultFrame": 6911, "player": "dark", "roll": [6, 3], "note": "One die shows three; 6-3 is the only candidate with a three."},
+ {"game": 2, "resultFrame": 45349, "player": "dark", "roll": [3, 1], "note": "One die shows three pips, not one."},
+ {"game": 2, "resultFrame": 54697, "player": "white", "roll": [6, 1], "note": "One die shows six; 6-1 is the only candidate with a six."}
+]

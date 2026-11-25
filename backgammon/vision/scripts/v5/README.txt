@@ -303,3 +303,54 @@ Second held-out test: Nov 24 15:31 recording (Nov 25)
   read on the board: point 18 holds four at 29:40, and turn 21 6-3 18/24 17/20,
   point 18 back to three at 32:16; the face reader read the 6 as a 5), and the
   Nov 23 play-out after the pass (two dances dated earlier, not in the game).
+
+Nov 24 15:31 decoded and published (Nov 25)
+
+  Checker reader. slots-v7 is slots-v6 fine-tuned (--strong-aug, 1500 steps) with the session's game 1
+  only: build_labels.py --games 1 --hard 8 --clean-conf .6 --clean-motion 1.2 on the slots-v6 decode
+  (this view's readings rarely reach 0.9), packed with slots_add.py. Game 2 (14:06-37:40) is never
+  trained on. read_slots.Reader also reads a rail slot that came out empty again 12 and 18 px further
+  out (RAIL_OFFSETS) and takes a checker read there at 0.8 or more: a single checker left short of the
+  rail (White entering from the bar into the bottom-left corner at 23:41) was read as an empty point,
+  which stopped the decode for the rest of the game. Scored on the new test set's game 2 frames (49):
+  slots-v6 18 points wrong and 49 unknown (9 frames all right), slots-v7 8 wrong, slots-v7 with the
+  rail re-read 0 wrong of 1176 (49/49). The older set is unchanged (slots-v5 0 wrong with the re-read).
+  obs-v7r (slots-v7) gives decode2-v7r.json: game 1 0:58-11:29 (48 turns), game 2 14:06-37:30 (55 turns,
+  White bears off all 15). The opening arrangements at 13:34-14:07 are not games. On the eye-checked
+  frames 46 decoded positions are right, 17 mid-move (game 2's players often tried moves for a minute or
+  more before picking up the dice) and 1 wrong (5500, a frame in game 1 before White's dance).
+
+  Eye labels: s6:29125 and s6:29500 had points 14 and 19 as -1/-5; the board shows -2/-4 (corrected in
+  checkers-eye.json, old file kept as checkers-eye.backup-20261125.json).
+
+  Die verifier (die_verify.py). A crop classifier (not a die / yellow / red, 48x48 at full resolution)
+  trained on the detector's training frames (held-out games left out): labelled dice, detector peaks
+  from 0.03 (labelled by the reviewed object labels), random places and crops 12-18 px off a die.
+  refine() is conservative: a die peak from 0.35 is dropped when the crop is not a die at 0.9 or more, a
+  peak of 0.15-0.35 is kept when the crop is a die at 0.9 or more. Both test sets (testset_eval.py
+  --verify objects/models/die-ver-v1.pt): older set Nov 21 209/212 0 extra, Nov 23 65/67 0 extra (was
+  1), Nov 24 88/93 0 extra, faces unchanged; new set 213/227 found, 14 extra (was 211 and 17).
+  Used for the 15:31 scan only (objects_scan.py obj-v8.pt,obj-v10.pt --verify die-ver-v1.pt); the
+  published older scans are left as they were. Tried and not adopted: the crop's die probability as the
+  score (finds the Nov 21 pale dice but adds false ones on the new view), a verifier trained with
+  off-centre negatives as the score (die-ver-v2-offcentre.pt), and colour from the player on roll (the
+  previous roller's dice usually lie on the board until the next roll, so in 70 of 227 new-set dice
+  the labelled colour is not the colour of the turn being played; it needs the roll frame, which comes
+  from the dice).
+
+  Cube. session.json "cubeRailX": the cube in White's tray peaks at x 698-724 in this rectified view, so
+  the rail starts at 690 (710 elsewhere); new set cube zone per frame 137 -> 146/155 (the rest have no
+  cube peak at all: the cube in the holder at 0:40-3:00 and after 37:55). analyze.mjs drops cube moves
+  after a game's last bear-off (the cube put back in the holder for the next game is not a pass; no
+  published game had one) and session.json "finalBearOff" lists games whose winner bore off the last
+  two to four checkers in one unseen roll (game 1: Black's last three, 11:29-11:34, before the board was
+  cleared). "danceWindow" is set as for earlier sessions (game 1's double came after White's dance).
+
+  Rolls. dice_evidence.py on the verified scan with faces-v6; reviewed-rolls-20261124-1531.json holds
+  three close rolls checked by eye (G1 T13 6-3, G2 T28 3-1, G2 T49 6-1). G1 T8 (3-2) and G2 T33 (1-1)
+  could not be read from the crops and stay as the face reader read them; G2 T51 (1-1 or 3-1) is not
+  seen and stays uncertain.
+
+  Results: game 1, Black doubles at 3:01, White takes, Black wins 2 by bearing off; game 2, White doubles
+  at 31:08, Black takes, White wins a gammon, 4 points. The page is vision/2026-11-24-pm ("Nov 24 PM";
+  new_session_page.py and export.mjs take a suffix after the date for a second recording that day).

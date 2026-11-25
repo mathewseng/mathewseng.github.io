@@ -14,10 +14,12 @@ const SIDE = { white: 0, dark: 1 }, NAME = { white: 'White', dark: 'Black' };
 import { RULES } from './scoring.mjs';
 const ENGINE = 'gnubg-core/955555c69adebb1d7de23abc1018074158621168+bg10';
 const SETTINGS = { name: 'Research', plies: 4, cubeful: true, pruning: true, deterministic: true, noise: 0, finalists: 4, threshold: 0.04 };
-// The session comes from the page folder (backgammon/vision/YYYY-MM-DD); Nov 21 keeps its published ids and dates.
+// The session comes from the page folder (backgammon/vision/YYYY-MM-DD, or YYYY-MM-DD-pm for a second recording
+// that day, shown as "Nov 24 PM"); Nov 21 keeps its published ids and dates.
 const SESSION = path.basename(path.resolve(pageDir));
-const [YEAR, MONTH, DAY] = SESSION.split('-').map(Number);
-const SHORT = new Date(Date.UTC(YEAR, MONTH - 1, DAY)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const [YEAR, MONTH, DAY] = SESSION.split('-').map(Number), SUFFIX = SESSION.split('-')[3];
+const SHORT = new Date(Date.UTC(YEAR, MONTH - 1, DAY)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) +
+  (SUFFIX ? ` ${SUFFIX.toUpperCase()}` : '');
 const DATE = `${SHORT}, ${YEAR}`, CREATED = SESSION === '2026-11-21' ? Date.UTC(2026, 10, 22) : Date.UTC(YEAR, MONTH - 1, DAY + 1);
 const ITEM = g => `office3-${SESSION.replaceAll('-', '')}-game-${g}`;
 for (const dir of ['state', 'history', 'reports']) fs.mkdirSync(path.join(pageDir, dir), { recursive: true });
