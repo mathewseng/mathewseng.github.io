@@ -838,6 +838,120 @@ whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px 
 - **Recipe:** `masks.py` → `make_strip_index.py` (MASKED=1) → `train_strip.py --mode mask`; add `stripReader` to the
   profile to try it.
 
+### Detector fine-tune (2026-11-25, round 8, not shipped)
+
+The card-body detector had never been trained on this footage. This round rebuilt it as a trainable model, measured it by
+category, fine-tuned it on amodal (whole-card) labels from hands outside every truth set, and ran the full pipeline. **No
+detector ships.** One variant put a wrong name on a covered card, and both lost names that the shipped runtime gets right.
+The runtime, the models and `profile.json` are unchanged, so the hand-end and mid-hand results of round 7 still stand:
+fresh 120 / 132, eye truth 306 / 314, 53 / 58, 68 / 69 and 63 / 86, and 0 wrong in the mid-hand audit.
+
+**The model.** `card-body.onnx` is gigarepo's EPT detector: YOLO11n-OBB, trained 2026-11-03 on `rf0001-faceup-v4/det-v5`,
+with BatchNorm folded and fp16 storage. Its training labelled the whole card (amodal) whenever ≥ 45 % of it showed, or
+≥ 12 % with an index corner. No `.pt` checkpoint exists anywhere. `scripts/detector/onnx2pt.py` unfolds each conv into
+conv + BatchNorm, with running statistics measured on real frames. The PyTorch model reproduces the ONNX to 1e-5, and
+`export.py` gives back the shipped layout. A rescan with the shipped detector (`scan3.py`) is identical to the old scans,
+box for box.
+
+**Measuring boxes** (`deteval.py`, at the 30 truth frames). Each legible truth card is matched to a box whose centre is within
+5 px across and 7 px along the card, with size within 25 % and angle within 15°. The card's geometry is the tracked whole-view
+box (`amodal.py`) where one exists, else the truth object's box. Categories: whole (no later card over it), partial (≥ 40 %
+showing), strip (< 40 %), and sideways (turned > 45°, or near-square at the right edge). Missed cards (`missed:` lines) have
+no geometry and are not in these counts: 20 on fresh truth, 34 countable on eye truth.
+
+| cards with a good box | shipped | d1 (amodal, 4 epochs) | d3 (whole-only, 1 epoch) |
+| --- | --- | --- | --- |
+| fresh, all | 107 / 132 | 115 | **114** |
+| fresh, whole / partial / strip | 75 / 78, 31 / 46, 1 / 8 | 78, 33, 4 | 75, 35, 4 |
+| fresh, sideways | 4 / 13 | 7 | 7 |
+| eye, all | 453 / 544 | 463 | **469** |
+| eye, whole / partial / strip | 366 / 381, 78 / 124, 9 / 39 | 357, 93, 13 | 366, 91, 12 |
+| eye, sideways | 47 / 67 | 45 | 42 |
+| boxes spanning two cards (fresh / eye) | 12 / 63 | 19 / 72 | 18 / 76 |
+| boxes on no truth object (fresh / eye) | 0 / 0 | 3 / 4 | 9 / 25 |
+
+- The "spanning" row counts boxes that overlap two truth objects without fitting either, plus boxes on the old `?` objects.
+  Some new ones lie on missed strips that have no truth geometry.
+- The boxes on no truth object are almost all face-down backs (which read `none`), plus a sign outside the table at 0.33.
+- The geometry of hidden truth objects comes from old boxes, so a tighter new box can count as a miss. Examples are
+  near-square right-edge cards at 38x40 against old 48x52 boxes, and an A♥ against an old 48x80 tall box. These numbers
+  are a guide only. The pipeline below decides.
+
+**Training labels** (`scripts/detector/`; no frame of s1836, s0023 or any n1501 / n1532 hand that holds a truth frame,
+`hands.py`):
+
+- **`amodal.py`.** Still cards are tracked with the hand state's 6 px / 8° anchors. A card's geometry is the median of its
+  first 3 whole views: detector confidence ≥ 0.6, and size within 12 % of the local median, or near-square at the right
+  edge.
+  - A card stays labelled at that box while ≥ 45 % of it (or ≥ 12 % with an index corner) shows its own pixels and lies
+    under no later card. The pixels are checked against a reference patch (cell-wise ≤ 30).
+  - Boxes that no label explains (strips, merges, weak boxes) are painted grey (114) as ignore regions.
+  - Confident, isolated, card-sized boxes are kept as labels (moving cards, cards in a hand).
+- **The right player's sideways columns** (n1532, near-square and lens-squeezed): the old boxes there are offset and
+  merged, so auto labels are wrong (the 8♦ box overlapped the 7♦). These were labelled by eye at the ends of the three
+  non-truth hands with columns (2888, 3486 and 3738 s; `labels/n1532-right-columns.json`). Labels were propagated back
+  through each hand by pixel match (≥ 0.6 a label, 0.25–0.6 ignore). The tilted column at 3929 s is ignore only.
+- Contact sheets (`overlay.py`, `dsview.py`) were checked by eye: tracked boxes keep their geometry under later cards, and
+  the column labels follow the cards as they are laid.
+- ds2: 6,349 canvases (1024x480, the runtime's input).
+
+**Variants.** Fine-tuned with ultralytics' `OBBTrainer` from the converted weights, rect 1024x480 batches of 8, on MPS
+(about 15 min per epoch). `YOLO(pt).train()` built a detection loss for this checkpoint, so `train.py` passes the model
+to the trainer directly.
+
+- **d1:** all amodal labels, SGD lr 0.002, rotation ±3°.
+  - Mid-hand it made a **wrong name**: n1501 1374–1470 s (15:24:10–15:25:46 EST, fresh hand 1470). A 4♥ has its right half
+    under an 8♣ that was put down on the same keyframe. d1 boxes the visible part (40 px wide), the crop shows two
+    hearts, and v3 reads 2♥ on 124 views. The shipped detector puts a 48 px box spanning the 3♦ and the 4♥ there, which
+    reads nothing.
+  - Birth order cannot tell which card is on top, because the two slots start on the same keyframe.
+  - It also put more boxes on fan strips and lost some whole boxes on eye truth.
+- **d2:** whole-only positives (vis ≥ 0.9). Partly covered cards are greyed out, so the detector keeps its old behaviour on
+  them; d2 does not box the covered 4♥. But with ±3° rotation it forgot turned cards: a 30° 9♥ was boxed upright.
+  Stopped after 2 epochs.
+- **d3:** d2's labels with ±180° rotation, backbone frozen (10 layers), lr 0.001. Epoch 1 is best by box count. Later
+  epochs drift (eye 469 → 454).
+
+**Full pipeline** (rescan with the candidate, then shipped readers and hand state; `score.py` before eye adjudication).
+score.py binds truth objects to the old slots by a 6 px position, so `WRONG` and `EXTRA` lines need checking by eye
+(`adjud.py`, `unitsheet.py`). Example: d1's `s0023 101 s D5 → J♠` is a real J♠, whole at 80 s, with the 5♦ and 5♠ fanned
+over it at 88 s.
+
+| hand ends, legible named (raw) | shipped | d1 | d3 |
+| --- | --- | --- | --- |
+| fresh n1501 + n1532 | 78 + 42 = **120 / 132** | 77 + 40 = 117 (+15 EXTRA names) | 74 + 39 = 113 (+17 EXTRA names) |
+| eye s1836 / s0023 / n1501 / n1532 | 306 / 53 / 68 / 63 | 300 / 52 / 67 / 64 | 300 / 47 / 65 / 55 |
+| name changes vs shipped (added units, 4 sessions) | | 735 (epoch 1) | 641 |
+
+- **Gains are real but narrow.** Most of the d1 fresh `EXTRA` names were checked on zooms and first-view tiles, and are
+  right:
+  - 707 s: A♣, A♥ and 3♦;
+  - 4197 s: A♦, the 4♦ under the 2♠, the 4♠, the J♣ and the 8♦ (two pips in its middle row);
+  - 4361 s: A♠, the sideways 3♦ under the hand, 5♠, A♦ and the 3♥.
+
+  So are the K♦ and J♦ courts. These are mostly the right player's columns and cards that had only spanning boxes.
+- **d3 loses names that the shipped runtime has.** It drops the ornate A♠ and the 3♥ at 707 s, the 6♥ at 1309 s and the
+  3♦ at 1470 s, and eye truth falls on every session. To clear it, about 640 changed-name units would need checking by
+  eye, against a known hazard (covered-card crops).
+- **Not shipped:** fresh truth did not clearly improve, and d1 showed a wrong name.
+
+**Also tried (task 4).** For the fresh 4361 s 5♦ (5 of 6 pip passes), `pipAgree` 0.8 changes no hand-end name and nothing
+at that card (only a one-keyframe slot swap at n1532 480 s). Not shipped. Its other remaining misses are box problems:
+
+- 707 s: the A♥ under a tall box;
+- 4361 s: the 5♠ in a three-card box, and the A♥ whose box spans the K♥ strip;
+- the 707 s 6♣ (median 0.78) and the 4361 s K♠ under the A♠ (1 gate pass) would need the rejected single-read rules.
+
+**What a next round would need.**
+
+- A runtime guard against reading covered cards, one that knows which card is on top. Same-keyframe placements defeat
+  birth order. An edge test also fails on visible-part boxes.
+- A way to keep the old detector's boxes wherever its read was right: a distillation term, or labels from the old boxes
+  where no track disagrees.
+- No raw-box labels on backs.
+- A cross-detector name diff (`namediff2.py`, units by name and spot) and its sheets (`unitsheet.py`) are ready for the
+  check.
+
 ## What still fails
 
 - **Fans laid down already fanned** (three-player pineapple, Fantasyland 14+ cards): cards never seen whole stay
@@ -852,7 +966,8 @@ whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px 
   The corner reader names some of these, but only where the card reader agrees. Only two hands of the deck were
   available for training, with 1–4 physical cards per rank.
 - **Cards the detector stops boxing** keep their name only if they were named while whole (`stillKeep`).
-- **The detector is the EPT model, not fine-tuned.** Fine-tuning on this footage would mostly help the corners of fanned rows.
+- **The detector is still the EPT model.** Fine-tunes on this footage (round 8) boxed the right player's columns and some
+  missed cards better, but read a covered 4♥ as 2♥ and lost names elsewhere, so none shipped.
 
 ## Recipe (scripts/)
 
@@ -935,6 +1050,20 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
     - `audit/tiles.py` and `audit/ztiles.py` (`UNITS.json OUTPREFIX`) make the zoom sheets, and `audit/strip.py` makes 5-keyframe strips;
     - `audit/rotprobs.py SESS` reads every scanned crop turned 90° (writes `scan-rot/`);
     - `audit/rotveto.py`, `audit/conj.py` and `audit/pipunits.py` measure the turned-read and pip-count vetoes.
+
+15. **Detector fine-tune (round 8),** `scripts/detector/`, scratch in `/private/tmp/claude-501/ofc-vision8/` (run from it, or
+    set `OFC_DET_ROOT`; `OFC_SCANS` / `OFC_OLD_SCAN` point at old-detector scans):
+    - `onnx2pt.py BODY.onnx OUT.pt CALIB_DIR` (with `calib_frames.py`) rebuilds a trainable checkpoint; `check_equiv.py`
+      compares it to the ONNX; `export.py CKPT OUT.onnx` exports the shipped layout;
+    - `decode_canvas.py SESS OUT` writes every keyframe as the 1024x480 detector input (`sessions.py` adds the training files);
+    - `amodal.py SESS` builds track labels; `hands.py` lists the truth hands to leave out; `build_ds.py OUT` (env `VISMIN`)
+      writes the YOLO-OBB set with the eye column labels (`labels/n1532-right-columns.json`); `overlay.py`, `region.py`
+      and `dsview.py` are the label sheets;
+    - `train.py DATA NAME INIT EPOCHS [LR]` (env `DEG`, `FREEZE`), `resume.py LAST.pt`;
+    - `deteval.py MODEL TAG` gives the box table; `misstiles.py`, `cmpdet.py` and `gtsheet.py` / `gtobj.py` show misses,
+      stray boxes and disagreements;
+    - `scanall.sh MODEL ROOT` rescans the four sessions (`scan3.py`) and runs the shipped sims (`runsims.sh`);
+      `namediff2.py OLD NEW` diffs names across detectors; `unitsheet.py`, `adjud.py` and `simtile.py` are the check sheets.
 
 ## Taken from gigarepo (servers/poker-os)
 
