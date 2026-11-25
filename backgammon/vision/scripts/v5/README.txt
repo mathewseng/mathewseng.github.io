@@ -449,3 +449,63 @@ Tracker on every session and the roll audit (Nov 25)
     the change: Nov 21 game 2 turns 34-37 (48322-48777), Nov 21 game 7 turns 6-12 (7955-12405) and Nov 24
     PM game 2 turns 49-52 (54547-55092; White bore off from 6 and 4 on what the dice show as 6-4, then Black
     moved 18 pips on one non-double roll).
+
+The unresolved decodes, rebuilt by eye (Nov 25)
+
+  rechain_turns.mjs replaces decoded turns with turns read from the footage and carries the change through
+  the rest of the game: a fixed turn gives its roll and move in the player's own numbering and must be a
+  legal play from the new position; every later turn replays its decoded steps on the new position (a hit
+  still hits) and must stay legal; everything from the first fix on is re-scored as analyze.mjs scores it
+  (pre-roll cube or position, checker play, the answer to an offer). A fix can also be a dance (every
+  candidate must block; one die seen narrows the candidates), irregular play (the tool checks that no roll
+  plays the change) or a turn the decode invented (dropped). Fix files: rechained-turns-2026-11-21.json
+  (Nov 21 games 2 and 7, applied to the -all analysis) and rechained-turns-20261124-1531.json.
+
+  - Nov 21 game 2: the trouble starts at turn 24, not 34. Black's 6-point stack is a lower bound for the
+    reader (five or more), and from turn 24 the decode kept one checker too many there and one too few
+    borne off. The tray shows it: Black's borne-off checkers lie flat in the right rail's tray (x 700-790,
+    y 290-420), one at 31:44, three at 31:56, four at 32:07, six at 32:18, seven at 32:29. Read on the board
+    (every point but the 6-point counted, the 6-point from the 15 checkers): turn 24 4-2 8/4 8/6 (the 8
+    point empties, the 7 point keeps three, one lands on the 4 point; was 1-1), turn 26 5-1 7/2 7/6 (the
+    hand takes one 7-point checker to the 6 point, one to the 2 point; was 4-1), turn 28 6-1 7/6 6/off at
+    31:40-31:44 (was 1-1 7/6(4), dated before the roll), turns 30 and 32 as decoded, turn 34 6-5 6/off
+    5/off (was 1-1 6/5(4), joined to White's 5-5), turn 36 6-1 6/off 6/5 (was 5-5 5/off(4)). The second
+    die of turn 36 is hard: the face readers say 4 (faces-v6) or 3 (faces-v8); at 8x it shows two blobs
+    4 px apart at its left edge, like the single large pip of turn 30's one, where a two or a three in this
+    view shows two or three pips 6-12 px apart; 6-1 is also the only roll that plays the board. The face
+    readers agreed with the wrong decode at turns 24 and 26 (both read a four on a die showing 2x2 pips as
+    a one or a six), so roll_audit.py now lists 24, 26 and 36 as disagreements; they were checked by eye.
+  - Nov 21 game 7: Black hit at 5:08 and White’s checker lay on the bar until 8:50 (it is visible on the
+    bar). The decode had White enter (6-1), move on (an inferred 3-1) and be hit again. Read: White dances
+    at turns 5, 7, 9, 11 (yellow faces six; four; four; four-four, all on Black's 6, 4, 3 and later 5
+    points), Black 5-4 13/9 13/8, 4-3 9/5 8/5, 6-3 13/10 13/7, 1-1 8/7 24/23 10/8 (a single pip on both
+    dice; was 4-4, 4-2, 3-1, 2-1). The decode agrees again from turn 12.
+  - Nov 24 PM game 2: White's 6-4 bore off from the 6 and 4 points in one turn (the decode split it into
+    6-1 and an invented 1-1). Then one red roll lands, 5-3 (16:08:30-16:08:40 EST; the three cocked
+    against the rail), and Black moves two checkers, 18/8 and 12/4: 18 pips, which no roll plays (eye:
+    the 18 point empties, the 12 point goes from two to one, one checker each on the 8 and 4 points). The
+    players' play was irregular. export.mjs now takes a turn marked "irregular": the history keeps the
+    roll, shows "Irregular play: 18/8 12/4" with a note in the turn list and the report (issue
+    'irregular-play'), and the Library history goes on in a second item ("part 2") from the board as the
+    players left it; render.py shows it in the decision panel and the recent actions, unscored.
+
+  Rolls without two dice (roll_audit.py "unseen" and "stale", 34 after the fixes). Each window was
+  extended to the pickup and the landing, the score cut lowered to 0.15, and every die read on its own:
+  - one more pair found (Nov 24 game 3 turn 4, 5-3, second die from 0.15);
+  - Nov 23 turns 14 and 16 and Nov 24 game 4 turn 18 are dances whose dice landed just outside the
+    audit's window (the decode dates dances late); read by eye they are 6-3, 5-3 and 6-4, all blocking
+    (were shown 2-2); reviewed-rolls-unseen-20261125.json;
+  - one die seen and one of the published roll's values, where the move fixes the roll: 18 turns (Nov 24
+    PM game 1 turn 7: the reader said one, the eye reads five as the 5-5 needs);
+  - one die narrows several candidates to one: Nov 21 game 2 turn 31 (five: 5-1, was unresolved 5-1 or
+    4-2), game 2 turn 11 and game 7 turn 17 (their reviewed rolls);
+  - still open: Nov 21 game 7's three single-die dances (several blocking rolls), game 1 turn 15 (two:
+    2-2 or 6-2), game 2 turn 13 (a yellow die on a yellow point, unreadable), game 9 turn 9, Nov 24 game
+    1 turn 38 (closed board) and two turns with no die at all whose move fixes the roll.
+
+  Touching dice (s6:43000). Neither the detector's heat blob nor the die's pixel blob tells one die from
+  two touching ones in this view: the touching red pair's heat blob (11 cells at half its peak,
+  elongation 1.9) is inside the single dice' range (up to 20 cells, 3.8), and its red-body blob (570 px,
+  2.3 times the session's median die, 34 px long) is matched by single dice with a red halo (5% of
+  isolated single dice reach 2.2 times, the largest 2.7; up to 44 px long). Only one labelled red pair
+  exists, so a size rule would add several false dice to gain one; not adopted.

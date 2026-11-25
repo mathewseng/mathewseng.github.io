@@ -60,8 +60,8 @@ for (const g of games.map(Number)) {
     state = { ...state, points: [...b.points], bar: [...b.bar], off: [...b.off], turn: SIDE[A.turns[0].player], phase: 'roll',
       cube: { value: c.value, owner: c.owner ?? null } };
   }
-  const initial = structuredClone(state);
-  const events = [], timeline = [], rolls = [], actions = [];
+  let initial = structuredClone(state), events = [], itemId = ITEM(g);
+  const timeline = [], rolls = [], actions = [], done = [];
   let cubeOffer = null;
   const loss = { white: { checker: 0, cube: 0 }, dark: { checker: 0, cube: 0 } };
   const notes = [];
@@ -91,7 +91,7 @@ for (const g of games.map(Number)) {
           if (cd) ev.evaluation = { result: cubeResult(state, cd) };
           events.push(ev);
           timeline.push({ frame: vf(t.cubeAction.offerFrame), rollFrame: vf(t.cubeAction.offerFrame), endFrame: vf(t.cubeAction.replyFrame ?? t.cubeAction.offerFrame + 50),
-            turn: i + 1, kind: 'cube', checkpoint: false, item: ITEM(g), event: events.length - 1 });
+            turn: i + 1, kind: 'cube', checkpoint: false, item: itemId, event: events.length - 1 });
           state = transition(state, { type: 'double' }, s);
           const opts = { take: null, pass: null };
           for (const o of t.cubeAction.responses ?? []) opts[o.action] = o.equity;
@@ -123,7 +123,7 @@ for (const g of games.map(Number)) {
         if (t.cubeDecision && !t.cubeAction) ev.evaluation = { result: cubeResult(state, t.cubeDecision) };
         events.push(ev);
         if (t.cubeDecision && !t.cubeAction)
-          timeline.push({ frame: rollAt, rollFrame: rollAt, endFrame: resultAt, turn: i + 1, kind: 'cube', checkpoint: false, item: ITEM(g), event: events.length - 1 });
+          timeline.push({ frame: rollAt, rollFrame: rollAt, endFrame: resultAt, turn: i + 1, kind: 'cube', checkpoint: false, item: itemId, event: events.length - 1 });
         state = transition(state, { type: 'roll', dice: t.roll }, s);
       }
       rolls.push({ start: rollAt, player: t.player, dice: t.roll, pickup: t.pickupFrame ? vf(t.pickupFrame) : null, resultFrame: resultAt, source: t.rollSource });
@@ -133,12 +133,25 @@ for (const g of games.map(Number)) {
         state = transition(state, { type: 'move', steps: [] }, s);
         continue;
       }
+      if (t.irregular) {
+        // The players moved in a way no roll plays (rechain_turns.mjs "irregular"). The history keeps the roll and shows
+        // the move as irregular play; the game continues in a second item from the board as the players left it.
+        timeline.push({ frame: resultAt, rollFrame: rollAt, endFrame: resultAt + 50, turn: i + 1, kind: 'irregular', player: t.player,
+          dice: t.roll, label: `Irregular play: ${t.irregular.played}`, note: t.irregular.note });
+        actions.push({ frame: resultAt, player: t.player, kind: 'irregular', label: `irregular play ${t.irregular.played}`, equity: null, loss: null });
+        notes.push(`Turn ${i + 1} (${NAME[t.player]}): irregular play ${t.irregular.played} on ${t.roll.join('-')}; the history continues from the board as left.`);
+        done.push({ id: itemId, initial, state, events, note: ` It stops at ${NAME[t.player]}’s irregular play (${t.irregular.played} on ${t.roll.join('-')}); the next part continues from the board as the players left it.` });
+        const a = t.after;
+        state = { ...state, points: [...a.points], bar: [...a.bar], off: [...a.off], turn: 1 - s, phase: 'roll', dice: [] };
+        initial = structuredClone(state); events = []; itemId = `${ITEM(g)}-part-${done.length + 1}`;
+        continue;
+      }
       if (!t.steps) throw new Error('move unknown');
       const res = t.analysis ? checkerResult(state, t) : null;
       const ev = { action: { type: 'move', steps: t.steps }, actor: s, videoFrame: resultAt };
       if (res) ev.evaluation = { result: res };
       events.push(ev);
-      timeline.push({ frame: resultAt, rollFrame: rollAt, endFrame: resultAt + 50, turn: i + 1, kind: 'checker', checkpoint: false, item: ITEM(g), event: events.length - 1,
+      timeline.push({ frame: resultAt, rollFrame: rollAt, endFrame: resultAt + 50, turn: i + 1, kind: 'checker', checkpoint: false, item: itemId, event: events.length - 1,
         ...(t.rollSource === 'ambiguous' ? { note: 'Several rolls fit this move; the dice were not readable.' } : t.inferred ? { note: 'Move inferred between camera views.' } : {}) });
       const graded = ['move', 'dice', 'reviewed'].includes(t.rollSource) && !t.inferred;
       if (t.analysis && graded) loss[t.player].checker += t.analysis.evLoss;
@@ -150,11 +163,12 @@ for (const g of games.map(Number)) {
     }
   }
   const result = A.result;
-  const item = { version: 1, kind: 'match', id: ITEM(g), title: `Office-3 ${SHORT} · Game ${g}`, collection: `Office-3 · ${DATE}`,
-    tags: ['office-3', 'video'], createdAt: CREATED, updatedAt: CREATED, notes: `Reconstructed from the ${SHORT} Office-3 recording (orange board).${A.fragment ? ' The recording starts in the middle of this game; earlier moves were not recorded.' : ''}`,
-    initial, state, events, names: ['White', 'Black'], gameNumber: g, gameCount: 1, status: state.phase === 'over' ? 'game-complete' : 'in-progress' };
+  const makeItem = (part, k) => ({ version: 1, kind: 'match', id: part.id, title: `Office-3 ${SHORT} · Game ${g}${k ? ` · part ${k + 1}` : ''}`, collection: `Office-3 · ${DATE}`,
+    tags: ['office-3', 'video'], createdAt: CREATED, updatedAt: CREATED, notes: `Reconstructed from the ${SHORT} Office-3 recording (orange board).${A.fragment && !k ? ' The recording starts in the middle of this game; earlier moves were not recorded.' : ''}${k ? ' Continued from the board as the players left it after irregular play.' : ''}${part.note ?? ''}`,
+    initial: part.initial, state: part.state, events: part.events, names: ['White', 'Black'], gameNumber: g, gameCount: 1, status: part.state.phase === 'over' ? 'game-complete' : 'in-progress' });
+  const parts = [...done, { id: itemId, initial, state, events }], items = parts.map(makeItem);
   const lossBreakdown = ['white', 'dark'].map(p => ({ checkerLoss: loss[p].checker, cubeLoss: loss[p].cube }));
-  fs.writeFileSync(path.join(pageDir, 'history', `game-${id}.json`), JSON.stringify({ version: 1, format: 'backgammon-library', progress: [], items: [item],
+  fs.writeFileSync(path.join(pageDir, 'history', `game-${id}.json`), JSON.stringify({ version: 1, format: 'backgammon-library', progress: [], items,
     replay: { game: g, frameData: true, timeline, losses: lossBreakdown.map(l => l.checkerLoss + l.cubeLoss), lossBreakdown } }));
   // ---- frame state ---------------------------------------------------------
   const positions = {}, changes = [];
@@ -182,12 +196,13 @@ for (const g of games.map(Number)) {
   const issues = [];
   for (const t of real) {
     if (t.rollSource === 'ambiguous') issues.push({ kind: 'unknown-face', frame: vf(t.rollFrame ?? t.resultFrame), player: t.player, label: `Roll not resolved: ${t.rollCandidates.join(' or ')} fit the move` });
+    if (t.irregular) issues.push({ kind: 'irregular-play', frame: vf(t.resultFrame), player: t.player, label: `Irregular play: ${t.irregular.played} on ${t.roll.join('-')}` });
     if (t.inferred) issues.push({ kind: 'unconfirmed-play', frame: vf(t.resultFrame), player: t.player, label: `Move inferred between camera views (${t.inferred})` });
   }
   const counts = { rolls: real.length, completeRolls: real.filter(t => t.roll && t.rollSource !== 'ambiguous').length,
     missingFaces: real.filter(t => !t.roll || t.rollSource === 'ambiguous').length,
     gradedPlays: real.filter(t => t.analysis).length, legalPlays: real.filter(t => t.analysis).length };
   fs.writeFileSync(path.join(pageDir, 'reports', `game-${id}.json`), JSON.stringify({ game: g, fps: 25, counts, issues, reviewed: [],
-    issueNames: { 'unknown-face': 'Roll not resolved', 'unconfirmed-play': 'Inferred move' }, confirmedPriorMisreads: 0, notes }));
+    issueNames: { 'unknown-face': 'Roll not resolved', 'unconfirmed-play': 'Inferred move', ...(issues.some(x => x.kind === 'irregular-play') ? { 'irregular-play': 'Irregular play' } : {}) }, confirmedPriorMisreads: 0, notes }));
   console.log(`game ${g}: ${events.length} events, ${rolls.length} rolls, notes ${notes.length ? notes.join('; ') : 'none'}`);
 }

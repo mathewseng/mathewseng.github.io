@@ -1,0 +1,10 @@
+[
+ {"analysis": "office-3-backgammon-20261121-all/analysis", "game": 2, "resultFrame": 47973, "player": "white", "roll": [5, 1],
+  "note": "One yellow die seen (47910-48000), five; 5-1 is the only candidate with a five (was unresolved 5-1 or 4-2)."},
+ {"analysis": "office-3-backgammon-20261123/analysis-v8", "game": 1, "resultFrame": 4552, "player": "dark", "roll": [6, 3],
+  "note": "Dance: the yellow dice at 4070-4105 show six (two rows of three) and three (was shown 2-2)."},
+ {"analysis": "office-3-backgammon-20261123/analysis-v8", "game": 1, "resultFrame": 4712, "player": "dark", "roll": [5, 3],
+  "note": "Dance: the yellow dice at 4545-4570 show three and five (was shown 2-2)."},
+ {"analysis": "office-3-backgammon-20261124/analysis", "game": 4, "resultFrame": 59588, "player": "white", "roll": [6, 4],
+  "note": "Dance: one yellow die shows four (57405-57450), the other, at the rail edge, two rows of three (was shown 2-2)."}
+]

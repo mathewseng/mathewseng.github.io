@@ -141,6 +141,8 @@ class Game:
                                 "loss": l if t.get("rollSource") in ("move", "dice", "reviewed") else None})
             elif t.get("dance"):
                 actions.append({"f": t["resultFrame"], "player": p, "label": "cannot enter", "ev": None, "loss": None})
+            elif t.get("irregular"):
+                actions.append({"f": t["resultFrame"], "player": p, "label": f"irregular play {t['irregular']['played']}", "ev": None, "loss": None})
             prev_end = t["resultFrame"]
             segs.append((t["resultFrame"], t["resultFrame"] + HOLD, {"kind": "played", "t": i}))
             prev_end = t["resultFrame"] + HOLD
@@ -274,6 +276,10 @@ def decision_panel(game, f, info):
                     write(d, PAD, 190 + 37 + len(rows) * 52 + 6, f"Played {played} · rank {a['played']['rank']} of {a['legalMoves']} · EV {a['played']['equity']:+.3f} · loss {a['evLoss']:.3f}", BODY, loss_color(a['evLoss']), True)
             elif t.get("dance"):
                 write(d, PAD, 200, "No legal entry", BODY, MUTED)
+            elif t.get("irregular"):
+                write(d, PAD, 200, f"Irregular play: {t['irregular']['played']}", BODY, TONE[p], True)
+                write(d, PAD, 240, f"No {roll[0]}-{roll[1]} plays this move. The board is shown", META, MUTED)
+                write(d, PAD, 266, "as the players left it; the move is not scored.", META, MUTED)
     # recent actions
     recent = [a for a in game.actions if a["f"] <= f and not a.get("quiet")][-3:]
     if recent:

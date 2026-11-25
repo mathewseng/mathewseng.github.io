@@ -1,0 +1,235 @@
+[
+ {
+  "game": 2,
+  "resultFrame": 46953,
+  "player": "dark",
+  "roll": [
+   4,
+   2
+  ],
+  "move": "8/4 8/6",
+  "rollFrame": 46810,
+  "pickupFrame": 46940,
+  "note": "Board: both checkers leave the 8 point, the 7 point keeps three, one lands on the 4 point. One red die shows four as two rows of two, the other two pips (was decoded 1-1 8/7(2) 6/4)."
+ },
+ {
+  "game": 2,
+  "resultFrame": 47243,
+  "player": "dark",
+  "roll": [
+   5,
+   1
+  ],
+  "move": "7/2 7/6",
+  "rollFrame": 47130,
+  "note": "Board: the 7 point goes from three to one and the 2 point from two to three. One red die shows a single pip, the other five (was 4-1 7/2)."
+ },
+ {
+  "game": 2,
+  "resultFrame": 47508,
+  "player": "dark",
+  "roll": [
+   6,
+   1
+  ],
+  "move": "7/6 6/off",
+  "newResultFrame": 47605,
+  "rollFrame": 47515,
+  "pickupFrame": 47590,
+  "note": "Red dice six and one land at 31:40; the last checker on the 7 point comes in and Black's first checker reaches the tray at 31:44 (was 1-1 7/6(4), dated before the roll)."
+ },
+ {
+  "game": 2,
+  "resultFrame": 47893,
+  "player": "dark",
+  "roll": [
+   6,
+   1
+  ],
+  "move": "6/off 1/off",
+  "note": "As decoded; the 6 point holds one checker fewer than the decode counted (the tray shows three off after it)."
+ },
+ {
+  "game": 2,
+  "resultFrame": 48182,
+  "player": "dark",
+  "roll": [
+   3,
+   2
+  ],
+  "move": "6/3 2/off",
+  "note": "As decoded; tray four off after it."
+ },
+ {
+  "game": 2,
+  "resultFrame": 48672,
+  "player": "dark",
+  "roll": [
+   6,
+   5
+  ],
+  "move": "6/off 5/off",
+  "newResultFrame": 48435,
+  "rollFrame": 48340,
+  "pickupFrame": 48435,
+  "note": "Red dice six and five at 32:14; Black bears off from the 6 and 5 points (tray four to six) before White rolls (was 1-1 6/5(4), joined to White's turn)."
+ },
+ {
+  "game": 2,
+  "resultFrame": 48672,
+  "player": "white",
+  "roll": [
+   5,
+   5
+  ],
+  "move": "6/1(2) 5/off(2)",
+  "newResultFrame": 48555,
+  "rollFrame": 48455,
+  "note": "As decoded, retimed: the yellow five lands at 32:18 and White's move ends at 32:22."
+ },
+ {
+  "game": 2,
+  "resultFrame": 48707,
+  "player": "dark",
+  "roll": [
+   6,
+   1
+  ],
+  "move": "6/off 6/5",
+  "newResultFrame": 48690,
+  "rollFrame": 48585,
+  "pickupFrame": 48695,
+  "note": "Red six clear; the other die shows one large pip split by glare (as the one of turn 30), not the wider pair of a two or the column of a three; 6/off 6/5 (tray six to seven) plays only 6-1 (was 5-5 5/off(4))."
+ },
+ {
+  "game": 7,
+  "resultFrame": 7714,
+  "player": "white",
+  "dance": true,
+  "roll": [
+   6,
+   6
+  ],
+  "candidates": [
+   "6-6",
+   "6-4",
+   "6-3"
+  ],
+  "newResultFrame": 7745,
+  "rollFrame": 7705,
+  "pickupFrame": 7740,
+  "note": "White stays on the bar (the checker lies on the bar until 8:50 of this recording (22:28:09 EST)); one yellow die shows six (was decoded 6-1 bar/18)."
+ },
+ {
+  "game": 7,
+  "resultFrame": 8934,
+  "player": "dark",
+  "roll": [
+   5,
+   4
+  ],
+  "move": "13/9 13/8",
+  "newResultFrame": 8690,
+  "rollFrame": 7955,
+  "pickupFrame": 8685,
+  "note": "Red dice five and four; the 13 point goes from five to three, one checker each to the 9 and 8 points (was 4-4 13/5(2), two turns joined)."
+ },
+ {
+  "game": 7,
+  "resultFrame": 9378,
+  "player": "white",
+  "dance": true,
+  "roll": [
+   4,
+   4
+  ],
+  "candidates": [
+   "4-4",
+   "6-4",
+   "4-3"
+  ],
+  "newResultFrame": 8770,
+  "rollFrame": 8725,
+  "pickupFrame": 8765,
+  "note": "White stays on the bar; one yellow die shows four (was an inferred 3-1 18/14)."
+ },
+ {
+  "game": 7,
+  "resultFrame": 9378,
+  "player": "dark",
+  "roll": [
+   4,
+   3
+  ],
+  "move": "9/5 8/5",
+  "newResultFrame": 8930,
+  "rollFrame": 8815,
+  "pickupFrame": 8925,
+  "note": "Red dice three and four (one on its side); Black makes the 5 point from the 9 and 8 points (was 4-2 13/11*/7)."
+ },
+ {
+  "game": 7,
+  "resultFrame": 11837,
+  "player": "white",
+  "dance": true,
+  "roll": [
+   4,
+   4
+  ],
+  "candidates": [
+   "4-4",
+   "5-4",
+   "6-4",
+   "4-3"
+  ],
+  "newResultFrame": 9005,
+  "rollFrame": 8955,
+  "pickupFrame": 9000,
+  "note": "White stays on the bar; one yellow die shows four."
+ },
+ {
+  "game": 7,
+  "resultFrame": 11837,
+  "player": "dark",
+  "roll": [
+   6,
+   3
+  ],
+  "move": "13/10 13/7",
+  "newResultFrame": 10480,
+  "rollFrame": 9080,
+  "pickupFrame": 10475,
+  "note": "Red dice six and three lie from 6:03 to 6:59 while Black plays 13/7 and 13/10 (was 3-1 13/10 8/7)."
+ },
+ {
+  "game": 7,
+  "resultFrame": 12245,
+  "player": "white",
+  "dance": true,
+  "roll": [
+   4,
+   4
+  ],
+  "candidates": [
+   "4-4"
+  ],
+  "newResultFrame": 11695,
+  "rollFrame": 11655,
+  "pickupFrame": 11690,
+  "note": "White stays on the bar; both yellow dice show four."
+ },
+ {
+  "game": 7,
+  "resultFrame": 12245,
+  "player": "dark",
+  "roll": [
+   1,
+   1
+  ],
+  "move": "24/23 10/8 8/7",
+  "newResultFrame": 12405,
+  "rollFrame": 11735,
+  "pickupFrame": 12405,
+  "note": "Red dice show one and one (11735-12405); Black plays 8/7, 24/23 and 10/8 (was 2-1 24/23 10/8, with the 8/7 put in the turn before)."
+ }
+]

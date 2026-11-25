@@ -1,0 +1,8 @@
+[
+ {"game": 2, "resultFrame": 54697, "player": "white", "roll": [6, 4], "move": "6/off 4/off", "newResultFrame": 54800, "rollFrame": 54545, "pickupFrame": 54800,
+  "note": "Yellow dice six and four; White bears off from the 6 and 4 points (54697 and 54762-54777). The decode split this into 6-1 6/off and an invented 1-1 4/off."},
+ {"game": 2, "resultFrame": 54987, "player": "dark", "irregular": true, "roll": [5, 3], "move": "18/8 12/4", "newResultFrame": 55110, "rollFrame": 54880, "pickupFrame": 55115,
+  "note": "Black rolled 5-3 (one die cocked against the rail, three; the other five) and moved two checkers, 18/8 and 12/4, 18 pips. No roll plays that; 12/4 alone would be the 5-3. The board is shown as the players left it."},
+ {"game": 2, "resultFrame": 54987, "player": "white", "drop": true},
+ {"game": 2, "resultFrame": 55092, "player": "dark", "drop": true}
+]
