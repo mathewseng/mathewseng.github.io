@@ -10,7 +10,8 @@ find() runs the model on every 5th frame of the known die's rest (up to 60 frame
 landed. Die peaks from 0.35 (either colour: a pale die's colour is unsure; objects.merge_dice per frame) are grouped
 across frames (12 px). The second die is the one group that
   - lies 24 px or more from the known die,
-  - is seen in at least a third of the frames (and 4),
+  - is seen in a sixth of the frames and in 5 (in all but two when the known die rests under 7 frames: a dance picked
+    up after a second, Nov 23 T16),
   - first appears within 30 frames (1.2 s) of the known die's landing (the same throw),
   - was not there before the known die landed (no peak within 12 px in the earlier frames: an older roll's die, a
     checker emblem).
@@ -63,7 +64,8 @@ def find(session, model_path, die, near=24, same=12, land=50, frac=1 / 6, nmin=5
             else:
                 g['pts'].append((n, x, y, s)); g['x'] = float(np.mean([p[1] for p in g['pts']])); g['y'] = float(np.mean([p[2] for p in g['pts']]))
     old = [(x, y) for n in before for c, x, y, s in pk[n]]
-    cands = [g for g in groups if math.hypot(g['x'] - kx, g['y'] - ky) >= near and len({p[0] for p in g['pts']}) >= max(nmin, frac * len(fs))
+    need = max(min(nmin, max(3, len(fs) - 2)), frac * len(fs))  # a dance's dice may rest only a second (Nov 23 T16: 6 frames)
+    cands = [g for g in groups if math.hypot(g['x'] - kx, g['y'] - ky) >= near and len({p[0] for p in g['pts']}) >= need
              and min(p[0] for p in g['pts']) <= first + land and not any(math.hypot(g['x'] - x, g['y'] - y) < same for x, y in old)]
     if len(cands) != 1: return None
     g = cands[0]; ns = sorted({p[0] for p in g['pts']})

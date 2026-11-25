@@ -5,7 +5,7 @@ One row per die track in the turn's window (the roller's tracks, most persistent
 other colour's strongest), eight crops along each track at 5x with the frame, the scan score and
 the face reader's read; a last row shows the dice area at the track starts and ends at 2x.
 
-usage: roll_strip.py AUDIT.json OUT_DIR PAGE:G:T ... [--scan objects-scan-track3] [--faces SESSION=MODEL ...] [--all-disagreements]
+usage: roll_strip.py AUDIT.json OUT_DIR PAGE:G:T ... [--scan objects-scan-track4] [--faces SESSION=MODEL ...] [--all-disagreements]
 """
 import argparse, json
 from pathlib import Path
@@ -77,7 +77,7 @@ def strip(row, scan, net, out):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('audit'); ap.add_argument('out'); ap.add_argument('turns', nargs='*')
-    ap.add_argument('--scan', default='objects-scan-track3'); ap.add_argument('--all-disagreements', action='store_true')
+    ap.add_argument('--scan', default='objects-scan-track4'); ap.add_argument('--all-disagreements', action='store_true')
     ap.add_argument('--faces', nargs='*', default=[], help='SESSION=model (default roll_audit.FACES)')
     a = ap.parse_args(); faces = {**FACES, **dict(x.split('=', 1) for x in a.faces)}
     rows = json.loads(Path(a.audit).read_text()); out = Path(a.out); out.mkdir(parents=True, exist_ok=True)

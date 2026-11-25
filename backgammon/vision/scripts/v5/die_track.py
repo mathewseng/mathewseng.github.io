@@ -44,12 +44,25 @@ Per frame the dice are those of die_verify.refine (the single-frame result), the
      images (Tracker(image=...): scan and testset_eval --track pass them); no clean background, no verdict.
   6. At most two dice of each colour (there are two): a third is dropped, the weakest track first (a
      fingertip, a dark checker's emblem next to a fresh roll).
+  7. Presence from a second detector (Tracker(presence=raw frames of obj-v11), Nov 25 PM): obj-v11 was trained on the
+     rolls' pale second dice and finds most of them (bar edge, rails) where obj-v8 scores 0.0-0.3, but it reads
+     their colour badly (a pale red die is yellow to it) and gives false peaks of its own in the 15:31 view. So it
+     only says where a die is: its peaks are tracked the same way, and a peak of 0.2+ with no die within 26 px is a
+     die when its chain has a median of 0.27+ over 14+ samples, stays within 12 px (90th percentile), and started
+     within 50 frames of exactly one strong obj-v8 track (0.8+, 10+ steps, not a continuation) 24 px or more away: a
+     still die that landed with one die, the roll's other die, and the base dice cover under half of the chain's
+     samples (else it is a die the base keeps, in the base's colour). A peak is added only within 8 px of its
+     chain's place (a chain can run on through a gap onto stray peaks after the die is picked up). It takes the
+     partner's colour. The chains this adds on the six recordings were eye-checked: all real dice; the false
+     chains that looser cuts let in (an arm, a checker's emblem, the rail corner: median 0.26 or 6-13 samples; a
+     die's own side peak 21-22 px from it; stray peaks after a base die was picked up) are out.
 The cube: a peak of 0.5 or more stands; otherwise the cube peaks from 0.08 within 10 s either side
 are summed per place (20 px) and the strongest place is taken (the current peak if it holds half as
 much): the cube in the holder of the 15:31 view peaks at 0.12-0.18 and sometimes not at all.
 
 usage: die_track.py testcache OBJ VER OUT.pkl [--back 3000] [--fwd 750]   ([BG_TEST_SET=new]: test windows)
        die_track.py scan OBJ VER [--out objects-scan-track] [--cube-out cube-scan-track.json] [--frames A B] [--raw R.pkl]
+                     [--presence obj-v11.pt | --presence-raw P.pkl]
   testcache keeps the raw peaks every 5th frame from 120 s before to 30 s after each held-out test frame
   (testset_eval.py --track reads it). scan does the same for a recording (BG_WORK_DIR) and writes the
   tracked dice in objects_scan.py's format (meta, 40x40 patches, die-score.npy) and the cube per frame.
@@ -65,6 +78,11 @@ LINK, STILL, GAP = 16, 10, 10  # px per step, px across a gap, steps of gap
 PRED_GAP, PRED_PX = 150, 12    # a track continuing one that ended here this many frames before
 PARTNER_WIN = 30
 OPEN_VN, OPEN_FAR = .5, 30   # rule 3b: verifier not-die below this once; px from its partner
+# rule 7 (presence): a second detector's peaks (obj-v11), used only for where a die is
+PRES, PRES_MED, PRES_N = .2, .27, 14          # peak kept from; chain median; chain samples
+PRES_LAND, PRES_FAR, PRES_STILL, PRES_NEAR = 50, 24, 12, 26  # frames to the partner's landing; px from it; 90th-pct spread; no die within
+PART_S, PART_N = .8, 10                        # the partner: a strong track (peak, steps), not a continuation
+PRES_COVER, PRES_AT = .5, 8                    # base dice cover less of the chain than this; a peak this near its place
 
 
 # ---------------------------------------------------------------- raw peaks per frame
@@ -135,10 +153,12 @@ def colour_lo(b):
 class Tracker:
     """Tracks over one recording's raw frames {frame: {'dice': rows, 'cube': peaks}} (every STEP frames)."""
 
-    def __init__(self, frames, image=None):
+    def __init__(self, frames, image=None, presence=None):
         """image: optional callable (list of frames) -> {frame: reader-view image}, for the one-die check
-        (rule 5); without it two strong peaks of one blob are kept as touching dice, as before."""
+        (rule 5); without it two strong peaks of one blob are kept as touching dice, as before.
+        presence: optional raw frames of a second detector (the same frames), for rule 7."""
         self.F = frames; self.T = []; self.blobs = {}; self.image = image; self._one = {}; self.one_log = []
+        self.P = Tracker(presence) if presence else None; self._pres = {}; self.pres_log = []
         live = []; prev = None
         for f in sorted(frames):
             if prev is not None and f - prev > 10 * STEP: live = []
@@ -186,6 +206,17 @@ class Tracker:
 
     def dice(self, f):
         """Tracked dice at a sampled frame: [(class, x, y, score)] in the readers' view."""
+        out = self._base(f)
+        if self.P is not None and f in self.P.blobs: out = self._cap(out + self._presence(f, out), f)
+        return out
+
+    def _base(self, f):
+        """Rules 1-6 (memoized: rule 7 looks at the base dice over a whole presence chain)."""
+        if not hasattr(self, '_bcache'): self._bcache = {}
+        if f not in self._bcache: self._bcache[f] = self._base_dice(f)
+        return self._bcache[f]
+
+    def _base_dice(self, f):
         rows = self.F[f]['dice']; out = []
         for d in refine_rows(rows):  # 1. pair colour
             b = self._blob(f, d[1], d[2])
@@ -215,6 +246,41 @@ class Tracker:
         ys = [r for r in rows if r[0] == 0 and r[3] >= .35] + [d for d in out if d[0] == 0]  # 4. pale face
         out = [((0,) + tuple(d[1:])) if d[0] == 1 and any(3 < math.hypot(r[1] - d[1], r[2] - d[2]) <= 22 for r in ys) else d for d in out]
         return self._cap(self._merge(out, f), f)  # 5., 6.
+
+    def _pres_chain(self, r):
+        """Rule 7's facts about one presence chain (cached): its frames' peaks, length, spread and roll partner."""
+        if r in self._pres: return self._pres[r]
+        P = self.P
+        if not hasattr(self, '_roots'):
+            self._roots = collections.defaultdict(list)
+            for i in range(len(P.info)): self._roots[P.chain_start(i)].append(i)
+            self._strong = [j for j, u in enumerate(self.info) if u['pred'] is None and u['smax'] >= PART_S and u['n'] >= PART_N]
+        mem = self._roots[r]
+        pts = [(g, b['x'], b['y'], b['s']) for i in mem for g, b in P.T[i]]
+        xs, ys, ss = (np.array([p[k] for p in pts]) for k in (1, 2, 3))
+        mx, my = float(np.median(xs)), float(np.median(ys)); st = P.info[r]['start']
+        part = [j for j in self._strong if abs(self.info[j]['start'] - st) <= PRES_LAND
+                and math.hypot(self.info[j]['x'] - mx, self.info[j]['y'] - my) >= PRES_FAR]
+        ok = (len({p[0] for p in pts}) >= PRES_N and float(np.median(ss)) >= PRES_MED and
+              float(np.percentile(np.hypot(xs - mx, ys - my), 90)) <= PRES_STILL and len(part) == 1)
+        if ok:  # a die the base already keeps for half its chain or more is the base's (its colour stands)
+            fs = sorted({p[0] for p in pts if p[0] in self.F})
+            cov = np.mean([any(math.hypot(d[1] - mx, d[2] - my) < PRES_NEAR for d in self._base(g)) for g in fs]) if fs else 1.
+            ok = cov < PRES_COVER
+        self._pres[r] = res = {'ok': ok, 'x': mx, 'y': my, 'start': st, 'n': len(pts), 'partner': part[0] if len(part) == 1 else None,
+                               'colour': int(self.chain_O(part[0]) < 0) if len(part) == 1 else None}
+        return res
+
+    def _presence(self, f, out):
+        """Rule 7 (see the module notes): obj-v11's still dice that landed with exactly one strong obj-v8 die and that no
+        die covers are added, in the partner's colour."""
+        add = []
+        for b in self.P.blobs[f]:
+            if b['s'] < PRES or any(math.hypot(b['x'] - d[1], b['y'] - d[2]) < PRES_NEAR for d in out + add): continue
+            c = self._pres_chain(self.P.chain_start(b['t']))
+            if c['ok'] and math.hypot(b['x'] - c['x'], b['y'] - c['y']) <= PRES_AT:
+                add.append((c['colour'], round(b['x'], 1), round(b['y'], 1), b['s'])); self.pres_log.append((f, c['x'], c['y'], c['colour'], c['partner']))
+        return add
 
     def _cap(self, out, f):
         """Rule 6: there are two dice of each colour; a third is the weakest track's (a fingertip, an emblem)."""
@@ -369,7 +435,15 @@ def scan(a):
     import json
     def image(fs):  # frames for the one-die check (rule 5b)
         return {n: reader_view(im, view) for n, im in fr.read(sorted(set(fs)))}
-    tr = Tracker(raw, image=None if a.no_one_die else image); out = WORK / a.out; out.mkdir(exist_ok=True)
+    pres = None
+    if a.presence_raw: pres = pickle.load(open(a.presence_raw, 'rb'))
+    elif a.presence:
+        pnet = ob.load(a.presence); pres = raw_frames(pnet, ver, ((n, reader_view(im, view)) for n, im in fr.read(sorted(raw))))
+        pickle.dump(pres, open(WORK / (a.out + '.presence.pkl'), 'wb'))
+    if pres is not None:
+        miss = [n for n in raw if n not in pres]
+        if miss: raise SystemExit(f'presence frames missing: {len(miss)} (first {miss[0]})')
+    tr = Tracker(raw, image=None if a.no_one_die else image, presence=pres); out = WORK / a.out; out.mkdir(exist_ok=True)
     dice_at = {n: tr.dice(n) for n in nums}; cube_rows = []
     offs = fr.offsets(); scores = []
     for clip in range(len(offs) - 1):
@@ -389,6 +463,7 @@ def scan(a):
     np.save(out / 'die-score.npy', np.concatenate(scores))
     import json
     json.dump(tr.one_log, open(out / 'one-die.json', 'w'), default=list)
+    json.dump(tr.pres_log, open(out / 'presence.json', 'w'), default=list)
     (WORK / a.cube_out).write_text(json.dumps(cube_rows))
 
 
@@ -400,6 +475,8 @@ def main():
     p.add_argument('--cube-out', default='cube-scan-track.json'); p.add_argument('--frames', type=int, nargs=2)
     p.add_argument('--raw', help='reuse the raw peaks (OUT.raw.pkl) of an earlier scan')
     p.add_argument('--no-one-die', action='store_true', help='keep every touching pair (no rule 5b check)')
+    p.add_argument('--presence', help='rule 7: second detector (obj-v11) run on the same frames')
+    p.add_argument('--presence-raw', help='rule 7: raw peaks of the second detector on the same frames (a pickle like OUT.raw.pkl)')
     a = ap.parse_args()
     {'testcache': testcache, 'scan': scan}[a.cmd](a)
 

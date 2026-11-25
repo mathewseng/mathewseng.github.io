@@ -741,3 +741,76 @@ Pale second dice: the rolls without two dice, and obj-v11 (Nov 25, 09:00-11:00 E
   Tried, not kept: obj-v11 as the scan detector (above); the second-opinion rules as first written (fresh = landed
   25+ frames into the window, a third of the frames, landing within 30 frames): 454 instead of 460 with the first
   model, the rest of the misses being dice that landed as the window opened.
+
+Presence from obj-v11, colour from the tracker; the audit's window fallback (Nov 25, 10:35-12:00 EST)
+
+  obj-v11 finds pale dice that obj-v8 misses, but it reads their colour badly. die_track.py rule 7 therefore uses it
+  only for where a die is (option (a) of the plan). Tracker(presence=...) takes obj-v11's raw peaks on the same frames
+  and tracks them the same way. A peak of 0.2+ with no die within 26 px is added as a die when its chain (presence
+  tracks continuing one another) meets all of these:
+    - a median of 0.27+ over 14+ samples;
+    - stays within 12 px (90th percentile);
+    - started within 50 frames of exactly one strong obj-v8 track (0.8+, 10+ steps, not a continuation) 24 px or
+      more away: a still die that landed with one die, so the roll's other die;
+    - the base dice (rules 1-6) cover under half of the chain's samples;
+    - the peak lies within 8 px of the chain's place.
+  The added die takes its partner's colour. Wherever obj-v8 has a die, its die and its colour stand.
+  - The cuts were set on eye-checked sheets (~/Downloads/office-3-backgammon-heldout-20261124pm/proof-20261125pm).
+    Looser cuts (0.25 median, 6 samples, partner 0.75) let in false dice: an arm, a checker's emblem and the rail
+    corner (15:31, medians 0.26, or 6-13 samples), and a die's own second peak 21-22 px from a base die (Nov 24 red
+    dice at the bar). Without the cover and place guards, a base die's chain ran on through a gap onto stray peaks
+    after the die was picked up (Nov 24 7675, 35180-35250). The 15:31 bar-edge die has a median of 0.2785, so the
+    cut is close.
+  - Every chain rule 7 adds on the six recordings is a real die (eye-checked): the hard-pale places and four dice
+    with no hard-pale label (Nov 21 s1 61290, s3 70470 and 80350, s3 83390). Where the base kept a pale yellow die as
+    red in some frames (Nov 21 G1 T5, G2 T27, G7 T29), rule 7 fills the gaps in yellow.
+  - Scans: objects-scan-track4 in every work dir (die_track.py scan OBJ VER --raw objects-scan-track.raw.pkl
+    --presence-raw objects-scan-track4.presence.pkl --out objects-scan-track4 --cube-out cube-scan-track4.json; the
+    presence pickle is obj-v11 on every 5th frame; presence.json logs the added dice). roll_audit.py and
+    roll_strip.py now default to it. The published scans (objects-scan) and the Vision overlays are unchanged.
+
+  Test sets (testset_eval.py --track CACHE --presence CACHE; the presence caches are obj-v11 testcaches on the same
+  frames):
+    Nov 21 212/212, Nov 23 65/67, Nov 24 93/93, no false dice: unchanged; faces 41/41, 7/7, 17/17; cube; checkers.
+    15:31 222/226 (1 false) -> 224/226 (1 false). The bar-edge red die at 5125 and 5500 (15:31 G1 T7's pale die) is
+    found. Its face reads 4 against the label's 5 (cocked against the wood, half its face hidden), so die faces go
+    85/85 -> 85/87.
+  Hard-pale dice (labels/hard-pale-dice-20261125.json; found = the tracked scan keeps a die within 12 px on half its
+  rest frames or more):
+    tracked obj-v8 scan                  2/28 (colour right 1)
+    rule 7, obj-v11                      21/28 (colour right 20)  s1 11/11, s3 6/10, s5 3/6, 15:31 1/1
+    rule 7, held out by session          18/28 (colour right 17)  s1 10/11, s3 4/10, s5 3/6, 15:31 1/1
+      (obj-v11-without-n21a for s1, -n21b for s3, -n2324 for s5; nothing trained on 15:31)
+    Still missed with obj-v11: Nov 21 G7 T5, T7, T9 (dance dice that rest 1.0-1.4 s, under 14 samples: the audit's
+    second opinion reads them), G7 T29 (found on 44 of 111 frames), Nov 24 G1 T34, G3 T10 and G4 T18 (1.2 s).
+  Tried, not kept: obj-v11 + obj-v10 as the 15:31 presence model (bar-edge die median 0.22); a looser chain cut
+  (above).
+
+  Roll audit window fallback (roll_audit.extend, --no-extend). This applies only to a roll with fewer than two dice:
+  - The window opens at the previous turn's dice pickup instead of its result. Nov 23 T14 and T16 were dances rolled
+    while the board settled.
+  - When none of the roll's dice is fresh, the window runs on to just before the other player's next dice land.
+    Nov 24 G1 T8 is a 2-1 decoded together with the turn before it (4249) whose dice land at 4375.
+  - The forward step never applies to a split window and never runs to the next result, so a dance and the next roll
+    cannot share a window again (Nov 21 G9 T46/T47).
+  second_die.find needs the second die in 5 frames, or all but two when the known die rests under 7 frames (Nov 23
+  T16's 1.2 s dance). Its "was it lying there before" check skips the 25 frames before the known die's first
+  detection, its own landing (Nov 21 G7 T5 landed as the window opened). An opening roll whose dice are all of one
+  colour takes two of that colour (Nov 24 G4 T1: two red dice).
+  Roll audit, 477 published rolls (confirmed / disagree / without two dice / stale):
+    before (objects-scan-track3, second opinion)       465 / 1 / 10 / 1
+    window fallback, objects-scan-track3               470 / 1 /  5 / 1
+    window fallback, objects-scan-track4 (default)     471 / 2 /  3 / 1
+  - Newly confirmed, each reading its published roll: Nov 21 G7 T5 6-3, G9 T9 6-1; Nov 23 T14 6-3, T16 5-3; Nov 24
+    G1 T8 2-1, G4 T1 3-2.
+  - New disagreement: 15:31 G1 T7, where the move fixes 5-5. The rule-7 pale die at the bar edge is cocked against
+    the wood and reads 4 or 5 (5-4, margin 0.39); the eye read five before. The published roll stands; this is a
+    reader misread.
+  - No roll the dice confirmed before is contradicted, and no dice pick changes. Nothing was republished.
+  - Without two dice:
+      - Nov 24 G1 T38: not rolled (White was closed out).
+      - Nov 24 G1 T34: a pale die on the top-rail point tip. Plainly visible, but obj-v11 scores it 0.24 and obj-v8
+        0.0-0.21.
+      - Nov 24 G3 T10: a pale die touching its partner, 20 px apart. Visible, but inside the 24-26 px where a die's
+        own second peak lies.
+    Neither die is too faint to see (proof-20261125pm/pale-still-missed.jpg), so none is left out of the scores.

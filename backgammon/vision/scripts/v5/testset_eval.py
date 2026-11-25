@@ -23,7 +23,7 @@ Per day (Nov 21, Nov 23, Nov 24) it prints counts:
                   the final position is expected; a board changed by play after the game (the Nov 23
                   play-out after the pass) is counted apart.
 
-usage: [BG_TEST_SET=new] testset_eval.py [--obj M[,M2]] [--verify V] [--track CACHE] [--tol 12] [--cube-thresh 0.5] [--faces M] [--slots M] [--thresh 0.35] [--post merge|none] [--comb]
+usage: [BG_TEST_SET=new] testset_eval.py [--obj M[,M2]] [--verify V] [--track CACHE [--presence CACHE]] [--tol 12] [--cube-thresh 0.5] [--faces M] [--slots M] [--thresh 0.35] [--post merge|none] [--comb]
                        [--decode s1=decode.json ...] [--decoded-only] [-v]
   --decode scores a decode2.mjs output for a session instead of the published analysis.
 """
@@ -184,6 +184,7 @@ def main():
     ap.add_argument('--cube-thresh', type=float, default=.5, help='best cube peak needed to place the cube (0.15 shipped)')
     ap.add_argument('--track', help='die_track.py testcache file: dice and cube from die tracking (die_track.Tracker)')
     ap.add_argument('--no-one-die', action='store_true', help='tracking without the one-die check (die_track rule 5b)')
+    ap.add_argument('--presence', help='with --track: a testcache of the presence detector (obj-v11) on the same frames (die_track rule 7)')
     ap.add_argument('-v', action='store_true')
     a = ap.parse_args()
     global TOL; TOL = a.tol
@@ -194,7 +195,9 @@ def main():
         fnet = df.load_net(a.faces); ver = dv.load(a.verify) if a.verify else None
         if a.track:
             import pickle, die_track
-            trackers = {s: die_track.Tracker(raw, image=None if a.no_one_die else die_track.session_images(s)) for s, raw in pickle.load(open(a.track, 'rb')).items()}
+            pres = pickle.load(open(a.presence, 'rb')) if a.presence else {}
+            trackers = {s: die_track.Tracker(raw, image=None if a.no_one_die else die_track.session_images(s), presence=pres.get(s))
+                        for s, raw in pickle.load(open(a.track, 'rb')).items()}
     S = collections.defaultdict(collections.Counter); errs = collections.defaultdict(list)
     first_turn = {}
     for it in items:
