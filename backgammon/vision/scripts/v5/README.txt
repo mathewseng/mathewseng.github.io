@@ -676,3 +676,68 @@ Tracking faults fixed; side-on four; the open rolls (Nov 25, 08:00-09:30 EST)
   Republished Nov 21 games 1 and 7: re-rendered, web copies replaced in release office3-backgammon-20261121-v3,
   page data, Vision overlay (faces-v5, obs-v5 as before) and posters re-exported. Backups are in
   ~/Downloads/office-3-backgammon-20261121-all/backup-20261125e.
+
+Pale second dice: the rolls without two dice, and obj-v11 (Nov 25, 09:00-11:00 EST)
+
+  The miss class, measured. Every roll the audit left without two dice (32, plus the one stale) was looked at on
+  whole-board sheets with the detector's weak peaks and the blobs that changed since before the roll (scratch
+  find2.py), the second die placed by eye, re-centred on its difference from the board before the roll, and its rest
+  span found (patch match + difference, every 5th frame); every place was checked on 4x zoom sheets.
+  labels/hard-pale-dice-20261125.json holds the 28 dice found this way (session, readers' view x/y, colour, where,
+  rest span, obj-v8's best and median score at the place; obj-v8,obj-v10 for 15:31). Of the 33:
+    28  a pale second die lying on the board the whole time, never in the scan: 20 at the bar edge or beside the bar
+        (mostly side-on, two white bars), 8 on a rail or a point's end at the rail; 26 yellow, 2 red (Nov 24 G4 T1,
+        15:31 G1 T7, the new test set's bar-edge die at 15:35:20). obj-v8's median score over the rest: 0.00-0.32
+        (mean 0.13), 0/28 at 0.35 or more, 8/28 reach 0.35 in some frame.
+     3  dice the detector sees (0.6-0.97) outside the audit's window: Nov 23 T14 (the second die lay 1 s by the bar
+        before a hand took it), T16 (both dice lay before the window: a dance dated late) and Nov 24 G1 T8 (the yellow
+        2-1 landed at 4360-4460, after the window the decode gave the turn; 4054-4249 belongs to Black's 5-3).
+     1  never rolled: Nov 24 G1 T38 (White closed out; known).
+     1  stale: 15:31 G1 T38, both dice seen, lying from before the window.
+  The Nov 24 test set's pale die at the rail (s5:29672-30059) is the same place as Nov 24 G3 T2's second die. Its
+  label is red and the die shows no yellow at all (a pink tinge against its partner's plain yellow): White's 6-4 was
+  rolled with one die of each colour after the opening roll. The label is left as it is.
+
+  Training frames from verified positions (objects_rolls.py, extra sets rolls-n21a = s1+s2, rolls-n21b = s3,
+  rolls-n2324 = s4+s5 in the detector's extra/ folder): one frame per confirmed roll (40% into the time both its dice
+  lie still) and up to six per eye-found die over the inner 80% of its rest; never a frame of the old test games (10 s
+  margin) or of the 15:31 recording. Labels: every die of the session's tracked scan (objects-scan-track3) at that
+  frame plus the eye-found dice lying then. Raw detector peaks no label explains: from 0.15 reviewed by eye (120 on
+  contact sheets, labels/rolls-review-20261125.json: 99 a labelled die's other face or a touching neighbour, ignored;
+  19 not a die - hands, fingertips, checker gaps, the tray, the hinge - kept as background, hard negatives; 1 a die
+  whose track had a gap, labelled), under 0.15 ignored. 408 frames, 803 dice. The 125 eye-die labels and 57 random scan
+  labels were checked on contact sheets: all dice.
+
+  obj-v11 = obj-v8 fine-tuned 4000 steps on the usual sets plus these (objects_train.py --exclude-heldout
+  --repeat-rolls 3, BG_OBJ_SKIP=hard as obj-v8). --repeat-rolls K draws the roll frames K times as often (K=1, 3000 steps: 10/28 at
+  the same hold-out, below). Hard-pale recall, a die counting when the detector's median over its rest is 0.35 or
+  more, each session's dice scored by a model trained without that session's new frames (obj-v11-without-n21a for
+  s1, -n21b for s3, -n2324 for s5; nothing ever trained on 15:31):
+      obj-v8 0/28;  the same fine-tune without the new frames (control) 1/28;
+      honest 16/28 (s1 6/11, s3 5/10, s5 5/6, 15:31 0/1);  obj-v11 itself 21/28 (it trained on the non-test ones).
+  As a scan detector it is not shipped. Tracked test sets (testset_eval --track, die-ver-v1; obj-v11 in place of obj-v8,
+  and in the 15:31 pair with obj-v10), shipped -> obj-v11 (the first recipe, --repeat-rolls 1, in brackets):
+      Nov 21 212/212 -> 211/212 (212/212), Nov 23 65/67 -> 65/67 (65/67), Nov 24 93/93 0 false -> 89/93 4 false
+      (90/93 0), 15:31 222/226 1 false -> 221/226 4 false (220/226 6); faces and cube unchanged but 15:31 cube 154/155
+      with the first recipe. obj-v11 calls pale dice yellow, so Nov 24's pale red rail die becomes a
+  yellow peak of 0.2 next to its yellow partner and the opening-partner rule no longer keeps it, and in the 15:31 view
+  it adds dice of the wrong colour and emblem peaks. The scans and the test sets stay on obj-v8 (+obj-v10 for 15:31).
+
+  Second opinion (second_die.py, roll_audit.py default; --no-second for the old audit). Only for a roll whose roller has
+  exactly one die that landed in the window (or was not lying there 4 s before): obj-v11 is run on every 5th frame of
+  that die's rest (up to 60) and on four frames 2-6 s before it landed. Its die peaks from 0.35 (either colour) are
+  grouped across frames (12 px); the second die is the only group 24 px or more from the known die, seen in a sixth of
+  the frames (and 5), first seen within 50 frames of the known die's landing and absent before it. Its crops are read
+  by the face reader with the known die's. roll_strip.py adds a row of its crops.
+  Roll audit, 477 published rolls (confirmed / disagree / without two dice / stale):
+      before                                         443 / 1 / 32 / 1
+      second opinion, honest folds (per session as above)  458 / 1 / 17 / 1   (15 second dice)
+      second opinion, obj-v11 (shipped)              465 / 1 / 10 / 1   (22 second dice)
+  Every second die lies within 12 px of the eye-found die of that roll (none elsewhere), and every one of the 22 rolls
+  reads its published roll (14 rolls the move fixes, 7 eye-reviewed, 1 dice-picked: Nov 21 G9 T13 6-1). No published
+  roll changes; nothing was republished. The disagreement is 15:31 G2 T50 (the irregular turn). Still without two dice:
+  the 3 timing cases, the closed-out roll, and 6 pale dice obj-v11 does not keep (Nov 21 G7 T5, lying 1.4 s; G9 T9 on a
+  point at the rail; Nov 24 G1 T34 top rail; G3 T10; G4 T1 red; 15:31 G1 T7 red at the bar edge, median 0.28).
+  Tried, not kept: obj-v11 as the scan detector (above); the second-opinion rules as first written (fresh = landed
+  25+ frames into the window, a third of the frames, landing within 30 frames): 454 instead of 460 with the first
+  model, the rest of the misses being dice that landed as the window opened.

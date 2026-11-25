@@ -47,6 +47,16 @@ def strip(row, scan, net, out):
                                  f'{int(meta[t[0], 0])}', f'..{int(meta[t[-1], 0])}']):
             cv2.putText(lab, txt, (4, 30 + 30 * j), 0, .5, (255, 255, 255), 1)
         rows.append(np.hstack([lab] + tiles))
+    if row.get('secondDie'):  # the second opinion's die (second_die.py), eight crops over its rest
+        sx, sy, a0, a1, n = row['secondDie']
+        pick = sorted({int(v) - int(v) % 5 for v in np.linspace(a0, a1, 8)}); got = dict(read(s, pick)); tiles = []
+        for m in pick:
+            im = cv2.getRectSubPix(got[m], (60, 60), (float(sx), float(sy))); im = cv2.resize(im, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+            cv2.putText(im, f'{m}', (3, 16), 0, .5, (0, 255, 255), 1); tiles.append(im)
+        while len(tiles) < 8: tiles.append(np.zeros((240, 240, 3), np.uint8))
+        lab = np.zeros((240, 120, 3), np.uint8)
+        for j, txt in enumerate(['second die', '(obj-v11)', f'n {n}', f'{a0}', f'..{a1}']): cv2.putText(lab, txt, (4, 30 + 30 * j), 0, .5, (255, 255, 255), 1)
+        rows.append(np.hstack([lab] + tiles[:8]))
     if trs:
         xs = [float(np.median(meta[t, 1])) for t, _, _ in trs[:2]]; ys = [float(np.median(meta[t, 2])) for t, _, _ in trs[:2]]
         cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2

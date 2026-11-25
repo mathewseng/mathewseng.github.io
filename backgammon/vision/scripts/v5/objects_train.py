@@ -8,7 +8,7 @@ with a colour hull) so the detector sees them on every kind of point and
 next to checkers. Pixels of unlabelled die-sized colour blobs are ignored,
 so a missed die in an unreviewed frame does not count as background.
 
-usage: objects_train.py out.pt [--steps N] [--init model.pt] [--exclude-heldout] [--strong-aug]
+usage: objects_train.py out.pt [--steps N] [--init model.pt] [--exclude-heldout] [--strong-aug] [--repeat-rolls K]
   --strong-aug: softer, differently lit views (white balance, saturation, gamma, blur, lost resolution),
   as from another camera position or light (the Nov 24 15:31 view).
 """
@@ -159,6 +159,7 @@ def main():
     ap.add_argument('--init'); ap.add_argument('--batch', type=int, default=12)
     ap.add_argument('--exclude-heldout', action='store_true', help="leave out the object test's held-out games (heldout.py)")
     ap.add_argument('--strong-aug', action='store_true', help='photometric(): blur, colour cast, lost resolution')
+    ap.add_argument('--repeat-rolls', type=int, default=1, help='draw the verified-roll frames (objects_rolls.py) this many times as often')
     a = ap.parse_args()
     if a.strong_aug: os.environ['BG_OBJ_STRONG_AUG'] = '1'; globals()['STRONG_AUG'] = True
     keys, jp = ob.load_frames(); frames = dict(zip(keys, jp))
@@ -173,6 +174,7 @@ def main():
             elif c: labels[k]['cube'] = c
     held = [k for i, k in enumerate(keys) if i % 10 == 0]
     train = [k for i, k in enumerate(keys) if i % 10]
+    train += [k for k in train if labels[k].get('rolls')] * (a.repeat_rolls - 1)
     bank = cutouts(frames, labels, train)
     print('train', len(train), 'held', len(held), 'cutouts', len(bank), flush=True)
     net = ob.ObjNet()
