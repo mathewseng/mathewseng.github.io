@@ -107,21 +107,20 @@
 
         <section aria-labelledby="eye-title">
           <h2 id="eye-title">Checked by eye</h2>
-          <p>Every object at every hand end of both held-out sessions was labelled by eye from zoomed crops, with no model names shown: 19 hand ends. Cards whose own face never shows were marked illegible rather than guessed.</p>
+          <p>Every object at hand ends was labelled by eye from zoomed crops and frame averages, with no model names shown. That covers 19 hand ends of the first two held-out sessions, and 6 of a new afternoon (Nov 24, 15:01–16:47 EST), which brought a third deck with jumbo indices that the classifier had never seen. Cards whose own face never shows were marked illegible rather than guessed.</p>
           <div class="cv-scroll">
             <table class="cv-table">
-              <thead><tr><th>At hand end</th><th>Three players</th><th>Two players</th></tr></thead>
+              <thead><tr><th>Legible cards named right at hand end</th><th>Before</th><th>Now</th></tr></thead>
               <tbody>
-                <tr class="is-chosen"><td>Legible cards named right</td><td>52 / 57 (was 51)</td><td>303 / 311 (was 298)</td></tr>
-                <tr><td>Legible cards named wrong</td><td>0</td><td>0</td></tr>
-                <tr><td>Names for a card that had left the spot</td><td>0</td><td>0 (was 5)</td></tr>
-                <tr><td>Objects with no card under them</td><td>0</td><td>2, unnamed (was 12)</td></tr>
-                <tr><td>Illegible fanned cards given a name</td><td>0 / 29</td><td>0 / 71</td></tr>
-                <tr><td>Legible cards with no box</td><td>0</td><td>3</td></tr>
+                <tr><td>Nov 23 evening, 2 players (16 hands)</td><td>303 / 314</td><td>306 / 314</td></tr>
+                <tr><td>Nov 24 night, 3 players (3 hands)</td><td>52 / 58</td><td>53 / 58</td></tr>
+                <tr><td>Nov 24 15:01, 2 players (3 hands, new)</td><td>66 / 69</td><td>68 / 69</td></tr>
+                <tr class="is-chosen"><td>Nov 24 15:32, 2–3 players, jumbo deck in 2 of 3 hands (new)</td><td>36 / 86</td><td>44 / 86</td></tr>
+                <tr><td>Legible cards named wrong, all sessions</td><td>0</td><td>0</td></tr>
               </tbody>
             </table>
           </div>
-          <p>What changed: a covered card's slot ends when bare felt shows where it lay, a name glimpsed for under 1.5 s is not carried, a card read whole elsewhere has moved, and the ornate ace of spades is named at a lower gate. That last change was checked on all 73 slots where the classifier leans to it; every one is an A♠. Still unnamed: 13 legible cards, mostly partly covered (a 4♦ under a heart card, a Q♠ and K♠ in a fan, a 7♥ the classifier holds at 0.74). Cards laid down already fanned show only 10–20 px strips. They stay unnamed and are counted as exclusions: 100 objects, plus 24 countable cards the detector never boxed. A retrained classifier that also learned covered views was tried and rejected: it called a 4♦ under a heart card 4♥.</p>
+          <p>What changed: a card named while whole now keeps its name after a row is laid over its top half and the detector stops boxing it, as long as most of its footprint still looks the same. A card taken away shows felt or something else and is dropped. This named the three legible cards that had no box. A second classifier, the first fine-tuned on eye-labelled views of the jumbo deck, is read only where the first one has no opinion. On the older decks that never happens, so those sessions are unchanged view for view. Every name it added on the new afternoon was checked: 137 slots, all right, 30 of them outside the hands it learned from. Still unnamed: the jumbo cards it isn't sure of, a few partly covered cards, and cards laid down already fanned, which show only thin strips.</p>
         </section>
 
         <section aria-labelledby="how-title">

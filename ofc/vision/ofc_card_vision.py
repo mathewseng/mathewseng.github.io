@@ -85,6 +85,12 @@ class OfcCardReader:
         self.det = ort.InferenceSession(str(base / det['path']), o, providers=['CPUExecutionProvider'])
         self.cls = ort.InferenceSession(str(base / cls['path']), o, providers=['CPUExecutionProvider'])
         self.det_in, self.cls_in = self.det.get_inputs()[0].name, self.cls.get_inputs()[0].name
+        self.fb = None
+        if p.get('fallbackClassifier'):  # second classifier, consulted only where the main one has no opinion
+            fb = p['fallbackClassifier']
+            if _sha256(base / fb['path']) != fb['sha256']: raise ValueError(f"model changed: {fb['path']}")
+            self.fb = ort.InferenceSession(str(base / fb['path']), o, providers=['CPUExecutionProvider'])
+            self.fb_below = fb['below']
         self.strip = None
         if p.get('stripReader'):  # optional: reads covered cards from crops with the cards on top greyed out
             sr = p['stripReader']
@@ -130,6 +136,17 @@ class OfcCardReader:
         logits = self.cls.run(None, {self.cls_in: np.ascontiguousarray(x.transpose(0, 3, 1, 2))})[0]
         e = np.exp(logits - logits.max(1, keepdims=True)); pr = e / e.sum(1, keepdims=True)
         n = len(bodies); a = self.accept
+        if self.fb is not None:
+            # the main classifier has no opinion (best card < fallbackClassifier.below, or none on top): a deck it
+            # was not trained on. Read those crops with the fallback classifier instead (see README)
+            m = (pr[:n] + pr[n:]) / 2
+            ask = [i for i in range(n) if m[i, :52].max() < self.fb_below or m[i].argmax() == 52]
+            if ask:
+                xs = np.concatenate([x[ask], x[[n + i for i in ask]]])
+                lf = self.fb.run(None, {self.fb.get_inputs()[0].name: np.ascontiguousarray(xs.transpose(0, 3, 1, 2))})[0]
+                ef = np.exp(lf - lf.max(1, keepdims=True)); pf = ef / ef.sum(1, keepdims=True); k = len(ask)
+                for j, i in enumerate(ask):
+                    pr[i], pr[n + i] = pf[j], pf[k + j]; bodies[i]['fallback'] = True
         for b, p1, p2 in zip(bodies, pr[:n], pr[n:]):
             p = (p1 + p2) / 2; o = np.argsort(-p); top = int(o[0])
             b['probabilities'] = p

@@ -82,6 +82,12 @@
    "none"
   ]
  },
+ "fallbackClassifier": {
+  "path": "models/card-identity-fallback.onnx",
+  "sha256": "5ea31e2882172d3635299ba48ef1d313e0385040d97ccdda09270230bedcf0cf",
+  "below": 0.3,
+  "note": "cls-v5a: cls-v3 fine-tuned (scripts/ft_cls.py) on v4b's whole-view crops plus 3,959 eye-labelled crops of the jumbo-index PokerStars deck (n1532 16:25-16:37 EST). Read only for crops where cls-v3's best card is < below or none is on top; same gate after that."
+ },
  "acceptance": {
   "probability": 0.8,
   "margin": 0.3,

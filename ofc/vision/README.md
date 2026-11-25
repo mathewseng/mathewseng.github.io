@@ -11,6 +11,8 @@ frames.
   - deck A has large yellow and grey figures with small indices;
   - deck B has big corner letters and a small figure.
   - A third, dark-backed deck box also appears on the table; it reads as `none`.
+- From Nov 24 about 16:14 EST a **jumbo-index PokerStars deck** (dark patterned backs, big corner indices, small court
+  panels) alternates with the classic decks hand by hand. `cls-v3` never saw it; the fallback classifier below reads it.
 - Cards are about 50x75 px. Pips are readable, and court ranks are told apart by their artwork more than by the tiny index.
 
 ## Runtime
@@ -24,12 +26,13 @@ In video mode each line has `cards` (every box: `card` = this view's read, `hand
 `source` = `view` | `carried`) and `covered` (cards named earlier that are now hidden under others and no longer boxed).
 Start a run at the beginning of a hand: names are carried from views seen earlier in that hand.
 
-Needs `onnxruntime`, `opencv-python` and `numpy`, plus `av` for video. `profile.json` pins both models by SHA-256.
+Needs `onnxruntime`, `opencv-python` and `numpy`, plus `av` for video. `profile.json` pins every model by SHA-256.
 
 | Stage | Model | Input | Output |
 | --- | --- | --- | --- |
 | Card body | `models/card-body.onnx`, YOLO11n-OBB, one class | table crop `frameCrop` = x 130, y 190, 1781x835, area-resized by 0.575 into 1024x480 (grey 114 pad) | (6, N): cx, cy, w, h, conf, angle (rad); conf ≥ 0.25, rotated NMS 0.5 |
 | Identity | `models/card-identity.onnx`, CardNetFast (0.38 M params) | each body rectified to 64x96 BGR, 10 % margin | 52 suit-first codes (`SA`…`DK`) + `none` |
+| Identity fallback | `models/card-identity-fallback.onnx` (cls-v5a, same net) | crops where the main classifier's best card < 0.3 or `none` on top | same |
 
 **Gate.** A body is named only when all of these hold:
 
@@ -252,8 +255,52 @@ PokerStars cards with dark backs that the classifier never saw. There are no car
 
 The old truth gained 3 legible objects (the no-box cards, now hidden slots) and a relabel: s0023 533 s object 4,
 labelled `?`, shows K♥'s index and pip on a 6x average and is now `HK`. Five `C?` objects (named under fans, not
-scorable) were added. n1532's gap is the jumbo deck: 45 of its 48 unnamed legible cards are jumbo-index cards, which
-v3 gates out as unknown (0 wrong).
+scorable) were added.
+
+### Jumbo-index deck: fallback classifier (2026-11-24 evening)
+
+`cls-v3` gates every jumbo-index card out as unknown (0 wrong), so n1532's two jumbo hands were almost all unnamed.
+gigarepo's `ept-faceup-v5/full-face.onnx` read only 31 / 47 of those boxes zero-shot, with confident wrong reads
+(6♠ → K♦ at 0.86, K♣ → K♦ at 0.91), so it was not used.
+
+**Training data.** The deck alternates by hand. Dark-backed jumbo hands end at about 2720, 3494, 3746, 3937, 4375 and
+4558 s of n1532's clock; the others are classic.
+
+- The hand-state slots of 3230–3940 s (16:25–16:37 EST) were rendered at 3x from full-resolution frames
+  (`scripts/eye/jslots.py`) and labelled by eye. That gave 106 slots (jumbo plus some clear classic cards, and phone
+  and back crops as `none`), 3,959 crops (`labels/n1532-jumbo-slots.json`). Fan strips and doubtful slots were left
+  out.
+- Only crops taken before any later card overlapped the slot are used. Covered views had poisoned v4's labels.
+- The jumbo truth hands (2703 and 4544 s) and every other session stay held out.
+- 12 jumbo classes never appear in the window (3♠ 4♠ 8♠ 3♥ 6♥ 7♥ 8♥ 2♣ A♦ 2♦ 4♦ 9♦).
+
+**cls-v5a** (`scripts/ft_cls.py`): v3's ONNX weights, BatchNorm folded, loaded into CardNetFast with frozen BN. It was
+fine-tuned for 6 × 300 steps × 128 at lr 1e-3 on v4b's whole-view index (59.5k crops) and the jumbo crops, 2 : 1.
+
+- Box level on all 472 legible boxed truth objects (`scripts/eye/boxeval.py`): gated right 392 → 412, gated wrong
+  0 → 0. Jumbo truth frames 4 → 10 and 1 → 8.
+- **Rejected as the main classifier.** In the hand state it named n1532 56 / 86, but it put 3 wrong names on old-deck
+  objects that v3 leaves unnamed: A♠ for an A♥ under a 10♣ (s1836 1605 s), C3 and C6 on fan strips (s1836 1697 and
+  1791 s). v3 itself leans to the same wrong card on those views (0.31–0.9). v5a is just sharper.
+
+**Shipped: v5a as a fallback** (`fallbackClassifier`, `below` 0.3). A crop is read by v5a only when v3's best card is
+< 0.3 or `none` is on top, which is the case for a deck v3 never saw. The same gate and hand state apply after that.
+
+- On 6,000 s1836 crops v3 is never that unsure where v5a is confident. On held-out jumbo crops it is unsure on 634 of
+  2,848.
+- At `below` 0.5 the A♥ → A♠ name came back (v3 held it at 0.31–0.41), so 0.3 it is.
+- Every view in all four sessions where the fallback changes the reported name was listed against the v3-only run
+  (`fb30-diff`): 0 in s1836 and s0023, 1 in n1501 (an ornate A♠, right), and 136 slots in n1532.
+- All 137 slots were checked by eye on 3x tiles with their names; one was checked on a filmstrip (an A♣ over an 8♠).
+  All are right, including the 30 outside the training window. No view where v3 named a card changed name.
+
+| hand ends, legible cards named right | v3 | + `stillKeep` | + fallback (shipped) |
+| --- | --- | --- | --- |
+| s1836 | 303 / 314 | 306 | **306 / 314** |
+| s0023 | 52 / 58 | 53 | **53 / 58** |
+| n1501 | 66 / 69 | 68 | **68 / 69** |
+| n1532 | 36 / 86 | 38 | **44 / 86** |
+| named wrong, all four | 0 | 0 | **0** |
 
 **Still unnamed at hand end (none wrong):**
 
@@ -262,11 +309,16 @@ v3 gates out as unknown (0 wrong).
 - s0023, 5: 5♦ (hidden, never boxed alone), 8♠ on 7♦, 8♥ under a re-laid 3♥, Q♠, K♠.
 - n1501, 1: 4♣ half under a 5♥ in a fan (15:29:30).
 - n1532 154 s (15:34:29), 3: 9♥ turned 30° over a Q♣, 5♣ hidden, 4♠.
-- n1532 2703 s (16:16:58) and 4544 s (16:47:39), 45: every jumbo-index card still unnamed. The detector boxes them, and v3's
-  classifier tops them below the gate.
+- n1532 2703 s (16:16:58), 15 jumbo cards: 5♥ 3♠ 4♥ 4♠ 2♦ K♦ K♠ J♠ Q♦ 6♠ 10♠ 4♦ 7♦ 7♥ 7♠.
+- n1532 4544 s (16:47:39), 24 jumbo cards: 7♦ 7♥ 2♣ 8♠ 10♣ J♦ Q♦ 4♦ 3♥ A♣ J♠ Q♣ K♦ A♦ 5♣ K♣ K♠ 5♠ 5♦ 4♠ 8♥ 8♣ 6♠ 3♠.
+- Most of these are classes missing from the jumbo training window, or cards where v3 holds a weak opinion (≥ 0.3),
+  so the fallback is not asked.
 - Cards with no object: s1836 22 never-seen fanned strips; n1532 12 fanned jumbo cards whose index shows but that
   have no box of their own (bottom fans and the right player's stacked columns).
 - 2 false objects (unnamed hidden slots on felt, s1836 1356 and 1791 s) remain.
+
+**Next for the jumbo deck:** label its 12 missing classes from more footage, then try a jumbo-aware main classifier.
+The fallback's checks above are the bar it must pass on old-deck objects.
 
 ### Strip reader (not shipped)
 
@@ -294,6 +346,9 @@ whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px 
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
 - The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
 - **A♠ (deck A)** has too few confident training views.
+- **Jumbo-index deck:** about half its legible cards stay unnamed. 12 classes were never in its training window, and
+  where v3 holds a weak opinion (≥ 0.3) the fallback is not asked.
+- **Cards the detector stops boxing** keep their name only if they were named while whole (`stillKeep`).
 - **The detector is the EPT model, not fine-tuned.** Fine-tuning on this footage would mostly help the corners of fanned rows.
 
 ## Recipe (scripts/)
@@ -326,6 +381,17 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
      experiment.
    - `render_hand_samples.py` makes the page's hand-state overlays.
 9. **`fp16_storage.py`** stores the detector weights as fp16 with a Cast back to fp32: 10.9 → 5.5 MB, max confidence change 0.003. **`render_samples.py`** makes the page overlays.
+10. **New footage, eye truth and fallback (2026-11-24 evening),** scratch in `/private/tmp/claude-501/ofc-vision2/`:
+    - `eye/src.py` maps sessions to files, including the stitched 1-minute clips.
+    - `eye/scan2.py SESS T0 T1 NAME` scans state and thumbs in one decode; 2.8k + 7.3k keyframes take about 6 min each
+      with 3 jobs.
+    - `eye/sim2.py TAG SESS '{params}' [MODEL] [fb=FALLBACK:below]` runs the sim.
+    - `eye/score.py` scores against eye truth.
+    - `eye/zsheet.py`, `avgz.py` and `ovz.py` make labelling sheets.
+    - `eye/checkx.py` filmstrips a named slot; `eye/trace.py` prints a slot's life at one spot; `eye/detdbg.py` shows
+      raw detector candidates.
+    - `eye/jslots.py` renders training-slot tiles; `eye/boxeval.py` gives box-level gated reads.
+    - `ft_cls.py` fine-tunes from the shipped ONNX.
 
 **Dataset sizes:**
 
