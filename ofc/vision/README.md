@@ -735,6 +735,91 @@ not shipped because such strips cannot be checked by eye, so splitting was not s
 several times), `spotsheet.py` (spots at given keyframes) and `survive.py` (whether a lost name came back). Scratch
 is in `/private/tmp/claude-501/ofc-vision6` (NOTES.md).
 
+### Mid-hand audit and the sideways 8♦ (2026-11-25, round 7)
+
+Hand-end truth cannot see a wrong name that is gone by the time the hand ends. The sideways 8♦ that round 6 found is such a name.
+
+**Headline: fresh truth (`eval/fresh-truth`), legible hand-end cards named right.**
+
+| fresh hand end | 0f71f2c7 | `turnVeto` | + `pipMedian` (shipped) |
+| --- | --- | --- | --- |
+| n1501 707 s | 26 / 28 | 26 / 28 | **26 / 28** |
+| n1501 1309 s | 27 / 27 | 27 / 27 | **27 / 27** |
+| n1501 1470 s | 24 / 25 | 24 / 25 | **25 / 25** (3♦) |
+| n1532 4197 s | 19 / 25 | 19 / 25 | **19 / 25** |
+| n1532 4361 s | 23 / 27 | 23 / 27 | **23 / 27** |
+| **fresh total** | **119 / 132** | 119 / 132 | **120 / 132** |
+| named wrong / illegible objects named | 0 / 0 | 0 / 0 | **0 / 0** |
+| eye truth s1836 / s0023 / n1501 / n1532 | 306 / 314, 53 / 58, 68 / 69, 63 / 86 | same | **same**, 0 wrong |
+| mid-hand audit: wrong names found | 1 (the 8♦) | 0 | **0** |
+
+`pipMedian` was built for the 1470 s 3♦, which this task named. So that fresh gain is not held out. `turnVeto` changes no truth frame.
+
+**The audit** (`eval/midhand-audit/audit-0f71f2c7.json`, `scripts/audit/`).
+
+- **What a unit is.** One unit is one (session, slot, reported name) of the shipped runtime's sim. There are 1,678 such units in the four sessions, with 114,733 named keyframe reports. Hands with no truth frame are included.
+- **Strata:**
+  - every sideways unit: 289, of which 127 are in the right player's columns;
+  - every upright unit with median p < 0.8 or no median: 136;
+  - every upright jumbo unit: 32;
+  - 170 of the 1,221 upright classic units with median p ≥ 0.8, drawn at random (seed 7) and split by confidence band and by pip-confusable rank (7/8, 6/7, 8/9, 9/10, 2/3, 3/4).
+- **How each unit was checked:**
+  - a full-resolution zoom at its first gate pass and at its last report (`tiles.py`);
+  - a 5.2x zoom for every number card (`ztiles.py`);
+  - a strip of 5 keyframes for every doubtful one (`strip.py`).
+
+| stratum | units checked | wrong | cannot be checked by eye |
+| --- | --- | --- | --- |
+| sideways, right player's columns (classic / jumbo) | 56 / 71 | **1** | 0 |
+| sideways, elsewhere (classic / jumbo) | 146 / 16 | 0 | 12 |
+| upright, median < 0.8 (classic / jumbo) | 56 / 80 | 0 | 2 |
+| upright jumbo, median ≥ 0.8 | 32 | 0 | 0 |
+| upright classic, median ≥ 0.8 (sample of 1,221) | 170 | 0 | 4 |
+| **total** | **627** | **1** | 18 |
+
+- **Mid-hand wrong-name rate before:** 1 / 1,678 units (0.06 %). The only wrong unit had 65 of the 114,733 named reports.
+  - The census strata (457 units) give it exactly.
+  - The sampled stratum found 0 / 170. Its Clopper–Pearson 95 % upper bound is 2.1 %, about 26 units.
+  - So the overall 95 % upper bound is about 27 / 1,678 (1.6 %).
+- **After:** 0 wrong found. The upper bound is still about 1.6 %, because it is set by the sample size of the high-confidence upright stratum.
+- The 18 units that cannot be checked are fan strips or cards under a hand at pick-up. Each fits its row, but its pips cannot be counted.
+
+**Why the 8♦ passed** (n1532 3621.6–3754.7 s, 16:32:16–16:34:29 EST, slot at (1833, 633)):
+
+- At the right edge, the lens squeezes a sideways card into a near-square box (about 42x48 px). Rectified to 64x96, its rows of 3, 2 and 3 pips look like a 7's 3, 1 and 3.
+- cls-v3 reads 7♦ at 0.8–0.95 on 26 gate passes.
+- The same crop turned a quarter reads 8♦ at 0.85–0.95.
+- The real 7♦ lies one card up the same column, at (1834, 550), with pips in rows of 3, 1 and 3. Once the 8♦ no longer holds the name, it is named there once, at 3676 s, correctly.
+
+**Shipped: `turnVeto`** (profile; `pip_count` in `ofc_card_vision.py`). It applies to a classic gate pass on a near-square box (width ≥ 0.75 × height) when both of these hold:
+
+- the crop turned 90° (both 180° turns averaged) tops another number card at ≥ 0.5;
+- `pip_count` of the crop equals that card's rank.
+
+Such a view is not a vote. `handState.turnBan` 2 / `turnShare` 0.25 bar a name from a slot after ≥ 2 such views that are also ≥ 25 % of the name's gate passes.
+
+- On the 8♦, 20 of its 26 D7 gate passes are vetoed, and all 65 wrong reports are gone.
+- In all four sessions only 3 other slots have a vetoed view: H8 2 / 36, D6 1 / 1 and DT 1 / 107. None is barred, and no reported name changed.
+- The only other change is the real 7♦ above, named for 1 keyframe.
+- Cost: 0 correct names.
+
+Each signal alone is unsafe:
+
+- **The turned read alone** tops another card at ≥ 0.5 on 30 near-square slots. Fifteen of them were checked on strips (10♦, K♣, 8♦, 2♦, 7♥, 8♥, Q♠, J♠, …), and all but the 8♦ are right. A turned crop of a box that is only partly visible is often misread.
+- **The pip count alone** matches the rank on 82 % of gate-pass views. In fans, a neighbour's pips fall inside the box: 146 named units count mostly an adjacent rank, while the ones checked are right.
+- Each signal misfires on different units. Together they agree only on the 8♦ (20 views) and on 4 single views elsewhere.
+
+**Shipped: `pipMedian` 0.7** (`pipVotes` 5, `pipAgree` 0.9). A number card keeps its name at a median of 0.7 instead of 0.8 when ≥ 5 of its gate passes exist and ≥ 90 % of them count its own rank of pips. It does not apply to a name `turnVeto` ever contradicted on that slot.
+
+- This is `holdAgree`'s goal, made safe. The wrong 7♦ that sank `holdAgree` counted 8 pips on 21 of its 26 passes, so it never qualifies.
+- New names in the four sessions (`namediff.py` against `turnVeto`), both checked on strips:
+  - the 3♦ at n1501 1400–1485 s (it lies under the 4♥; 36 / 36 passes count 3);
+  - a 2♦ at s1836 1087–1089 s.
+- 0.6 adds 4 more 3♦ keyframes and nothing else. 0.7 ships.
+- The fresh 4361 s 5♦ is still unnamed: its pip count is 5 on 5 of 6 passes, and an earlier slot of it counted 4.
+
+**Rejected:** using the turned read as a veto by itself, or the pip count as a veto by itself (above).
+
 ### Strip reader (masked crops, not shipped)
 
 For fans laid down already fanned (three-player pineapple rows, Fantasyland), the cards underneath are never seen
@@ -761,8 +846,8 @@ whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px 
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
 - The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
 - **A♠ (deck A)** has too few confident training views.
-- **Fresh truth:** 119 / 132 legible hand-end cards named, 0 wrong (round 6 above).
-- **Sideways cards in the right player's columns:** a sideways 8♦ passes the gate as 7♦ (n1532 16:32–16:34 EST); see round 6.
+- **Fresh truth:** 120 / 132 legible hand-end cards named, 0 wrong (round 7 above). The mid-hand audit found 0 wrong names after round 7. Its 95 % upper bound is about 1.6 % of named units, set by the 170-unit sample of confident upright cards.
+- **Sideways cards in the right player's columns:** a sideways 8♦ passed the gate as 7♦ (n1532 16:32–16:34 EST). This is fixed by `turnVeto` (round 7), but only for number cards whose turned read and pip count agree. Squashed near-square crops are still read upright.
 - **Jumbo-index deck:** 23 / 86 legible n1532 hand-end cards stay unnamed, mostly fan strips and stacked columns.
   The corner reader names some of these, but only where the card reader agrees. Only two hands of the deck were
   available for training, with 1–4 physical cards per rank.
@@ -844,6 +929,12 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
       sideways columns) / `firstz.py` (first-view sheets for fans); `eye/score.py SIM... --truth eval/fresh-truth`;
     - `corner/bindcheck.py SIM CORNER NAME...` measures fan-strip binding; `corner/train_corner.py --rankw --posw --morefonts`
       trains corner6.
+
+14. **Mid-hand audit (round 7),** scratch in `/private/tmp/claude-501/ofc-vision7/` (scan/ links to ofc-vision2's scans). Run from that folder:
+    - `audit/runs.py SIMPREFIX OUT` lists every named run with its strata;
+    - `audit/tiles.py` and `audit/ztiles.py` (`UNITS.json OUTPREFIX`) make the zoom sheets, and `audit/strip.py` makes 5-keyframe strips;
+    - `audit/rotprobs.py SESS` reads every scanned crop turned 90° (writes `scan-rot/`);
+    - `audit/rotveto.py`, `audit/conj.py` and `audit/pipunits.py` measure the turned-read and pip-count vetoes.
 
 ## Taken from gigarepo (servers/poker-os)
 

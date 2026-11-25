@@ -56,6 +56,33 @@ def corner_patches(crop):
             cv2.rotate(crop[h - 1 - S:h - 1, 1:1 + S], cv2.ROTATE_90_CLOCKWISE)]
 
 
+def pip_count(crop, ink=24, white=150):
+    """Suit pips in a classic card crop (64x96): ink holes enclosed by the white card component at the crop centre,
+    away from the index corners, compact (fill >= 0.4, aspect <= 2.3) and sized like the largest ones. Noisy on its
+    own (a neighbour's pips in a fan count too); used only together with the turned read (turnVeto, README)."""
+    im = crop.astype(np.int16); mn = im.min(2); mx = im.max(2); g = im[..., 1].astype(np.float32)
+    dark = ((cv2.dilate(g, np.ones((11, 11), np.uint8)) - g) > ink) | (mn < white) | (mx - mn >= 70)
+    n, lab, st, _ = cv2.connectedComponentsWithStats((~dark).astype(np.uint8), connectivity=4)
+    H, W = dark.shape; win = lab[H // 2 - 12:H // 2 + 12, W // 2 - 8:W // 2 + 8].ravel(); win = win[win > 0]
+    if n < 2 or not len(win): return -1
+    comp = (lab == np.bincount(win).argmax()).astype(np.uint8)
+    ys, xs = np.nonzero(comp); x0, y0 = xs.min(), ys.min(); cw, ch = xs.max() - x0 + 1, ys.max() - y0 + 1
+    n2, _, st2, cen = cv2.connectedComponentsWithStats(1 - comp, connectivity=8)
+    areas = []
+    for i in range(1, n2):
+        x, y, w, h, a = st2[i]
+        if x == 0 or y == 0 or x + w >= W or y + h >= H or a < 6: continue
+        fx, fy = (cen[i][0] - x0) / cw, (cen[i][1] - y0) / ch
+        if min(fx, 1 - fx) < 0.2 and min(fy, 1 - fy) < 0.2: continue  # index corner
+        if a / float(w * h) >= 0.4 and max(w, h) / max(1, min(w, h)) <= 2.3: areas.append(a)
+    if not areas: return 0
+    a = np.array(areas); ref = float(np.median(a[a >= 0.5 * a.max()]))
+    return int(((a >= 0.55 * ref) & (a <= 1.8 * ref)).sum())
+
+
+RANKS = {r: i + 2 for i, r in enumerate('23456789T')}
+
+
 def rotated_nms(boxes, scores, iou):
     order = np.argsort(-scores); keep = []; gone = np.zeros(len(boxes), bool)
     rects = [((float(b[0]), float(b[1])), (float(b[2]), float(b[3])), math.degrees(float(b[4]))) for b in boxes]
@@ -198,6 +225,28 @@ class OfcCardReader:
             if a.get('orientationsAgree'):
                 ok = ok and int(p1.argmax()) == top == int(p2.argmax()) and min(p1[top], p2[top]) >= g['probability']
             b['card'] = b['label'] if ok else None
+        tv = self.profile.get('turnVeto')
+        if tv:
+            # a sideways card in a near-square box is squashed into the upright crop: a sideways 8 of diamonds (pips in rows
+            # of 3, 2, 3) passed the gate as a 7 of diamonds 21 times (README, round 7). Turned a quarter, its crop reads
+            # 8 of diamonds; with the pip count also 8, the view is not a vote for the 7 (hand state: turnBan)
+            idx = [i for i, b in enumerate(bodies) if b['card'] and not b.get('fallback') and b['width'] >= tv['aspect'] * b['height']]
+            if idx:
+                xt = np.stack([cv2.resize(cv2.rotate(crops[i], cv2.ROTATE_90_CLOCKWISE), (crops[i].shape[1], crops[i].shape[0]))
+                               for i in idx]).astype(np.float32) / 255
+                xt = np.concatenate([xt, xt[:, ::-1, ::-1]])
+                lt = self.cls.run(None, {self.cls_in: np.ascontiguousarray(xt.transpose(0, 3, 1, 2))})[0]
+                et = np.exp(lt - lt.max(1, keepdims=True)); pt = et / et.sum(1, keepdims=True); k = len(idx)
+                for j, i in enumerate(idx):
+                    b = bodies[i]; q = (pt[j] + pt[k + j]) / 2; top = int(q.argmax())
+                    if top < 52 and CODES[top] != b['card'] and q[top] >= tv['probability'] and CODES[top][1] in RANKS:
+                        pc = pip_count(crops[i])
+                        if pc == RANKS[CODES[top][1]] and pc != RANKS.get(b['card'][1]):
+                            b['turnVeto'] = CODES[top]; b['vetoedCard'] = b['card']; b['card'] = None
+        if tv:
+            # pip count of each classic number card read whole (hand state: pipMedian)
+            for i, b in enumerate(bodies):
+                if b['card'] and not b.get('fallback') and b['card'][1] in RANKS: b['pips'] = pip_count(crops[i])
         if a.get('oneCopyPerIdentity'):
             best = {}
             for b in bodies:
@@ -357,7 +406,7 @@ class OfcHandState:
                     emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, stillKeep=0.0, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5,
                     jumboShare=0.5, jumboMinBodies=10, deckJumbo=0.5, cornerPairVotes=0, cornerAgree=True, cornerMedian=0.5,
                     cornerHeldMargin=False, stripOwnHeld=False, stripHiddenStill=False, oneVoteViews=0, ghostGrace=False, noneHide=None,
-                    feltHide=False)
+                    feltHide=False, turnBan=0, turnShare=0.25, pipMedian=None, pipVotes=5, pipAgree=0.9)
 
     def __init__(self, **params):
         self.p = dict(self.DEFAULTS, **params); self.slots = []; self.n = 0
@@ -493,12 +542,15 @@ class OfcHandState:
                     sl['dead'] = True; sl = b['slot'] = self._new(t, b); sl['votes'][r] = p['swapReads']; r = None
             elif r:
                 sl['pend'], sl['npend'] = None, 0
+            if b.get('vetoedCard'): sl.setdefault('vetoes', {})[b['vetoedCard']] = sl.get('vetoes', {}).get(b['vetoedCard'], 0) + 1
             if b.get('probabilities') is not None: sl['views'].append(b['probabilities']); sl['views'] = sl['views'][-200:]
             if b.get('cornerPair'): sl['pairs'][b['cornerPair']] = sl['pairs'].get(b['cornerPair'], 0) + 1
             if b.get('stripProbabilities') is not None: sl['stripViews'].append(b['stripProbabilities']); sl['stripViews'] = sl['stripViews'][-60:]
             if r:
                 sl['votes'][r] = sl['votes'].get(r, 0) + 1; sl['recent'] = sl['views'][-10:]
                 sl['voteP'] = max(sl.get('voteP', 0), b['probability'])
+                if b.get('pips') is not None:
+                    pc = sl.setdefault('pipVotes', {}).setdefault(r, [0, 0]); pc[0] += 1; pc[1] += b['pips'] == RANKS[r[1]]
             sl['xs'].append((b['x'], b['y'], b['angleDegrees'], b['width'], b['height'])); sl['xs'] = sl['xs'][-50:]
             m = np.median(np.array(sl['xs']), 0)
             sl.update(x=float(m[0]), y=float(m[1]), angle=float(m[2]), width=float(m[3]), height=float(m[4]), seen=t, last=t)
@@ -511,6 +563,12 @@ class OfcHandState:
                 ok = (n >= p['minVotes'] or (len(sl['votes']) == 1 and sl.get('voteP', 0) >= p['singleVoteProbability'])) \
                     and n >= p['purity'] * sum(sl['votes'].values())
                 mp = (p['perClassMedian'] or {}).get(top, p['medianProbability'])
+                pv = sl.get('pipVotes', {}).get(top)
+                if p['pipMedian'] and pv and pv[0] >= p['pipVotes'] and pv[1] >= p['pipAgree'] * pv[0] and not sl.get('vetoes', {}).get(top):
+                    # (pipMedian) a number card whose gate passes nearly all count its own rank of pips keeps its name at a
+                    # lower median: the 3 of diamonds at n1501 1470 s (44 gate passes) sat at 0.77-0.79 once a 4 of hearts
+                    # covered half of it. The wrong 7 of diamonds that sank holdAgree counted 8 pips (README, round 7)
+                    mp = min(mp, p['pipMedian'])
                 k = CODES.index(top)
                 if not ok and p['oneVoteViews'] and n == 1 and len(sl['votes']) == 1 and len(sl['views']) >= p['oneVoteViews']:
                     # one gate pass, and the median of the slot's last oneVoteViews views also tops it at >= the median gate
@@ -519,6 +577,10 @@ class OfcHandState:
                 elif ok and sl['recent']:
                     med = np.median(np.array(sl['recent']), 0)
                     ok = int(med.argmax()) == k and med[k] >= mp
+                # (turnBan) the turned-crop + pip-count check said another card on >= turnBan of this name's gate passes
+                # and >= turnShare of them: never this name on this slot
+                nv = sl.get('vetoes', {}).get(top, 0)
+                if p['turnBan'] and nv >= p['turnBan'] and nv >= p['turnShare'] * (n + nv): ok = False
                 sl['name'] = top if ok else None
         self.slots = [sl for sl in self.slots if not sl['dead']]
         byname = {}

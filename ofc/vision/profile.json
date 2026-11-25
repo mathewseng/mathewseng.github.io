@@ -144,14 +144,24 @@
   "stripHiddenStill": true,
   "noneHide": 0.5,
   "ghostGrace": true,
-  "feltHide": "sticky"
+  "feltHide": "sticky",
+  "turnBan": 2,
+  "turnShare": 0.25,
+  "pipMedian": 0.7,
+  "pipVotes": 5,
+  "pipAgree": 0.9
  },
- "handStateNote": "OfcHandState parameters (video). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README). strip* / corner*: in a jumbo-deck hand the corner reader names a slot the card reader left unnamed after cornerPairVotes views whose two index corners agree, or stripMinViews views whose mean corner read is >= stripProbability (margin stripMargin, stripAgree of views), and only if the card reader's median agrees at >= cornerMedian and no slot has held that name this hand (README). No masked strip reader is shipped. 2026-11-25: oneVoteViews 6 (one gate pass + median of the last 6 views at the median gate), cornerHeldMargin (held cards' indices do not compete in a strip read), stripOwnHeld (a slot may take back its own earlier name), stripHiddenStill (corner names on hidden slots only while the footprint is unchanged), noneHide 0.5 (unread none-like hidden slots are not objects), ghostGrace (unnamed ghosts of a named overlapping card get no long grace) (README). Round 6 (2026-11-25): feltHide 'sticky' (a slot whose centre showed bare felt reports nothing until its own name is read whole again) (README).",
+ "handStateNote": "OfcHandState parameters (video). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README). strip* / corner*: in a jumbo-deck hand the corner reader names a slot the card reader left unnamed after cornerPairVotes views whose two index corners agree, or stripMinViews views whose mean corner read is >= stripProbability (margin stripMargin, stripAgree of views), and only if the card reader's median agrees at >= cornerMedian and no slot has held that name this hand (README). No masked strip reader is shipped. 2026-11-25: oneVoteViews 6 (one gate pass + median of the last 6 views at the median gate), cornerHeldMargin (held cards' indices do not compete in a strip read), stripOwnHeld (a slot may take back its own earlier name), stripHiddenStill (corner names on hidden slots only while the footprint is unchanged), noneHide 0.5 (unread none-like hidden slots are not objects), ghostGrace (unnamed ghosts of a named overlapping card get no long grace) (README). Round 6 (2026-11-25): feltHide 'sticky' (a slot whose centre showed bare felt reports nothing until its own name is read whole again) (README). Round 7: turnBan 2 / turnShare 0.25 (a name the turned-crop + pip-count check contradicted on >= 2 gate passes and >= 25 % of them is barred from the slot; see turnVeto), pipMedian 0.7 (a number card whose >= pipVotes gate passes count its own rank of pips on >= pipAgree of them is held at median 0.7 instead of 0.8) (README).",
  "cornerReader": {
   "path": "models/card-corner.onnx",
   "sha256": "80bd211ff0948b288f0af215c741f638d32ca2cb45098ea5c6cbdbb6c9dc9fec",
   "patch": "4 corners of the 64x96 classifier crop, 36x36, each turned so that corner sits top-left (corner_patches)",
   "output": "log p of 52 codes + none per corner: rank (13 + none) from contrast-normalized luma x suit (4) from colour",
   "note": "corner5: jumbo-index deck only (read in hands where >= jumboShare of crops pass the deck gate). Trained (scripts/corner/) on corner patches of the eye-labelled whole jumbo crops of the two training hands (n1532 3225-3494 and 3746-3937 s), positives cleaned by 4-fold cross-validation by slot, plus rank/suit recombination and synthetic rank glyphs drawn in system fonts. A slot the card reader leaves unnamed is named from corners only when the card reader's median over its last 20 views puts the same card on top at >= cornerMedian (README)."
+ },
+ "turnVeto": {
+  "aspect": 0.75,
+  "probability": 0.5,
+  "note": "Round 7 (README): a gate pass on a near-square box (width >= aspect x height, a sideways card squashed into the upright crop) whose crop turned a quarter reads another number card at >= probability, with the pip count (pip_count) equal to that card's rank, is not a vote; handState.turnBan such views (and >= turnShare of the name's gate passes) bar that name from the slot."
  }
 }
