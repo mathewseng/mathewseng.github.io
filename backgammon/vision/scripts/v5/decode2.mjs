@@ -16,7 +16,7 @@ import path from 'node:path';
 import { legalTurns, boardKey } from '../../../core/rules.mjs';
 
 const [obsDir, outFile] = process.argv.slice(2);
-const CONF = 0.9, MIN_RUN = 3, WINDOW = 150, MISS = 12, DANCE = 10;
+const MIN_RUN = 3, WINDOW = 150, MISS = 12, DANCE = 10;
 const minKnown = f => MIN_KNOWN.filter(([from]) => f >= from).at(-1)[1];
 
 // Points that must be read for a stable observation: 21, unless the session's session.json (next
@@ -27,6 +27,9 @@ const minKnown = f => MIN_KNOWN.filter(([from]) => f >= from).at(-1)[1];
 const sessionFile = path.join(path.dirname(path.resolve(obsDir)), 'session.json');
 const SESSION = fs.existsSync(sessionFile) ? JSON.parse(fs.readFileSync(sessionFile, 'utf8')) : {};
 const MIN_KNOWN = SESSION.minKnown || [[0, 21]];
+// session.json "conf": the slot reader confidence a point needs to count as read (0.9). A session the
+// reader saw less sharply (Nov 24 15:31: the case near the image edge) reads right at lower confidence.
+const CONF = SESSION.conf ?? 0.9, SOFT_CONF = CONF - 0.2;
 const KEEP = SESSION.branchTies ? 12 : 4;
 // session.json "entered": [[fromFrame, toFrame, "dark"]]: the player was seen leaving the bar then,
 // so no dance is decoded for a turn ending in that window.
@@ -40,6 +43,9 @@ const rows = fs.readdirSync(obsDir).filter(f => /^clip-\d+\.json$/.test(f)).sort
 const START = [-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2];
 const pkey = p => p.join(',');
 const START_KEY = pkey(START);
+// The opening position: read in full, or with up to three points unknown and the rest as at the start
+// (a session the reader sees less sharply leaves a few points under the confidence cut).
+const opening = o => o.key === START_KEY || (o.pos.filter(v => v === null).length <= 3 && o.pos.every((v, i) => v === null || v === START[i]));
 const PLAYER = ['white', 'dark'];
 
 // ---- observations -------------------------------------------------------
@@ -53,13 +59,28 @@ function observations() {
     const pos = r.pos.map((v, i) => known[i] ? v : null);
     if (cur && pos.every((v, i) => v === null || cur.pos[i] === null || v === cur.pos[i])) {
       for (let i = 0; i < 24; i++) if (cur.pos[i] === null && pos[i] !== null) cur.pos[i] = pos[i];
-      cur.n++; cur.f1 = r.f; cur.gap = 0; cur.raw = r.pos; continue;
+      cur.n++; cur.f1 = r.f; cur.gap = 0; cur.raw = r.pos; tally(cur, r); continue;
     }
-    flush(); cur = { f0: r.f, f1: r.f, n: 1, gap: 0, pos, raw: r.pos };
+    flush(); cur = { f0: r.f, f1: r.f, n: 1, gap: 0, pos, raw: r.pos, votes: Array.from({ length: 24 }, () => new Map()) }; tally(cur, r);
   }
   flush();
-  for (const o of out) { o.full = o.pos.every(v => v !== null); o.tall = o.pos.some(v => v !== null && Math.abs(v) >= 5); o.key = o.full ? pkey(o.pos) : null; o.w = Math.min(o.n, 60); }
+  for (const o of out) {
+    o.full = o.pos.every(v => v !== null); o.tall = o.pos.some(v => v !== null && Math.abs(v) >= 5); o.key = o.full ? pkey(o.pos) : null; o.w = Math.min(o.n, 60);
+    // Less sure readings (SOFT_CONF, 0.2 under CONF, up to CONF) of a point the run leaves unknown: the value given by
+    // at least three and 80% of them (under five checkers), used only to break a tie between legal results (find).
+    o.soft = o.votes.map((m, i) => {
+      if (o.pos[i] !== null) return null;
+      const all = [...m.values()].reduce((a, b) => a + b, 0);
+      const [v, n] = [...m.entries()].sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
+      // a column of five or more is only a lower bound, so it settles nothing
+      return n >= 3 && n >= 0.8 * all && Math.abs(v) < 5 ? v : null;
+    });
+    delete o.votes;
+  }
   return out;
+}
+function tally(o, r) {
+  for (let i = 0; i < 24; i++) if (r.conf[i] >= SOFT_CONF) o.votes[i].set(r.pos[i], (o.votes[i].get(r.pos[i]) ?? 0) + 1);
 }
 
 // ---- legal results ------------------------------------------------------
@@ -99,8 +120,16 @@ function find(res, o, all = false) {
     for (let i = 0; i < 24; i++) if (o.pos[i] !== null && o.pos[i] === e.state.points[i]) score++;
     if (score > bestScore) { best = e; bestScore = score; tie = false; ties = [e]; } else if (score === bestScore) { tie = true; ties.push(e); }
   }
+  if (tie) ties = softBest(o, ties);
   if (all) return best ? ties : [];
-  return tie ? null : best;
+  return ties.length === 1 ? ties[0] : null;
+}
+/** Among results the sure readings fit equally well, the ones that also match the most less-sure
+ * readings (o.soft). A tie that the less-sure readings do not settle stays a tie. */
+function softBest(o, ties) {
+  const score = e => o.soft.reduce((n, v, i) => n + (v !== null && v === e.state.points[i] ? 1 : 0), 0);
+  const top = Math.max(...ties.map(score));
+  return top > 0 ? ties.filter(e => score(e) === top) : ties;
 }
 /** Checkers of player p (sign) on points agree, except p checkers that may have been hit. */
 function sideCompatible(points, o, p) {
@@ -244,9 +273,11 @@ function skippedRetracted(obs, g0, k, t, a, res) {
 
 // ---- games ---------------------------------------------------------------
 const obs = observations();
+// BG_DUMP_OBS=file writes the stable observations (for review)
+if (process.env.BG_DUMP_OBS) fs.writeFileSync(process.env.BG_DUMP_OBS, JSON.stringify(obs));
 const starts = [];
 for (let i = 0; i < obs.length; i++) {
-  if (obs[i].key === START_KEY && obs[i].n >= 10 && (!starts.length || obs.slice(starts.at(-1) + 1, i).some(o => o.key !== START_KEY))) starts.push(i);
+  if (opening(obs[i]) && obs[i].n >= 10 && (!starts.length || obs.slice(starts.at(-1) + 1, i).some(o => !opening(o)))) starts.push(i);
 }
 // A recording that begins mid-game: the first long, complete view starts a fragment.
 const firstStart = starts.length ? starts[0] : obs.length;
@@ -266,7 +297,7 @@ for (let g = 0; g < segments.length; g++) {
   // a game's observations begin at its last opening view
   let g0 = segments[g].s; const g1 = g + 1 < segments.length ? segments[g + 1].s : obs.length;
   const fragment = segments[g].fragment;
-  while (!fragment && g0 + 1 < g1 && obs[g0 + 1].key === START_KEY) g0++;
+  while (!fragment && g0 + 1 < g1 && opening(obs[g0 + 1])) g0++;
   const best = decodeGame(obs, g0, g1, fragment);
   const turns = best.turns.map(t => ({ ...t, frame: obs[t.obs].f0, fromFrame: obs[t.fromObs].f1,
     rolls: [...new Set(t.plays.map(p => p.dice.join('-')))], plays: t.plays.slice(0, 60) }));

@@ -94,6 +94,21 @@ def paste_hand(patch):
     return out, float(alpha.mean())
 
 
+STRONG_AUG = False  # --strong-aug: blur, colour cast and saturation changes (another camera position or light)
+
+
+def photometric(patch):
+    """A softer, differently lit view: per-channel gain (white balance), saturation, gamma and blur."""
+    p = np.clip(patch, 0, 255)
+    p = p * np.random.uniform(.85, 1.15, 3)[None, None]
+    hsv = cv2.cvtColor(np.clip(p, 0, 255).astype(np.uint8), cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv[..., 1] *= random.uniform(.6, 1.3)
+    p = cv2.cvtColor(np.clip(hsv, 0, 255).astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
+    p = 255 * (p / 255) ** random.uniform(.8, 1.25)
+    if random.random() < .6: p = cv2.GaussianBlur(p, (0, 0), random.uniform(.4, 2.0))
+    return p
+
+
 def sample(data, n):
     X, Y = [], []
     for _ in range(n):
@@ -111,7 +126,8 @@ def sample(data, n):
                 if cov > .3: label = 3
                 elif cov > .05: continue
             patch = patch * random.uniform(.8, 1.15) + random.uniform(-18, 18)
-            if random.random() < .3: patch = cv2.GaussianBlur(patch, (3, 3), random.uniform(.3, 1.2))
+            if STRONG_AUG: patch = photometric(patch)
+            elif random.random() < .3: patch = cv2.GaussianBlur(patch, (3, 3), random.uniform(.3, 1.2))
             X.append(np.clip(patch, 0, 255).astype(np.uint8)); Y.append(label)
     return to_tensor(np.stack(X)), torch.tensor(Y)
 
@@ -122,8 +138,9 @@ if __name__ == '__main__':
     ap.add_argument('--hold-json', action='store_true', help='leave out the held-out blocks of the JSON label lists too')
     ap.add_argument('--exclude-heldout', action='store_true', help="leave out the object test's held-out games (heldout.py)")
     ap.add_argument('--packed-role', default='train', help='train (slots_eval.py split) or all')
+    ap.add_argument('--strong-aug', action='store_true', help='blur, colour cast and saturation changes (photometric)')
     a = ap.parse_args()
-    EXCLUDE_HELDOUT = a.exclude_heldout
+    EXCLUDE_HELDOUT = a.exclude_heldout; STRONG_AUG = a.strong_aug
     data = load(a.labels, packed_role=a.packed_role, json_role='train' if a.hold_json else 'all'); print('frames', len(data))
     load_hands(Path(a.labels[0]).parent / 'hands'); print('hand cut-outs', len(HANDS))
     net = SlotNet()

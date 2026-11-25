@@ -31,13 +31,16 @@ const SIDE = { white: 0, dark: 1 };
 const sessionFile = path.join(path.dirname(decodeFile), 'session.json');
 const session = fs.existsSync(sessionFile) ? JSON.parse(fs.readFileSync(sessionFile, 'utf8')) : {};
 const right = session.cubeRail === 'right';
+// session.json "cubeThresh": the cube peak score that places the cube (0.5; 0.15 where the detector sees the cube
+// faintly, Nov 24 15:31: per frame 137/155 zones right at 0.15 against 85 at 0.5, and no loss on the older sessions)
+const CUBE_THRESH = session.cubeThresh ?? 0.5;
 const onRail = right ? x => x > 710 : x => x < 90, onBoard = right ? x => x >= 90 : x => x < 700;
 
 fs.mkdirSync(outDir, { recursive: true });
 
 function cubeZones() {
   const zone = ([, score, x, y]) => {
-    if (score < 0.5) return null;
+    if (score < CUBE_THRESH) return null;
     if (onRail(x)) return y < 250 ? 'white' : y > 350 ? 'dark' : 'holder';
     if (onBoard(x)) return 'board';
     return null;

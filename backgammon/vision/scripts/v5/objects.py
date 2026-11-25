@@ -94,6 +94,26 @@ def peaks(logits, thresh=.3):
     return out
 
 
+@torch.no_grad()
+def die_peaks(logits, thresh=.35):
+    """Dice found on one combined die score, 1 - (1 - yellow)(1 - red), instead of per colour: a
+    pale die (mostly its white pip face showing) splits its evidence between the colours and can
+    score under the threshold in both. Each peak takes the colour of the stronger channel around it.
+    Returns per image rows (class, x, y, score) like peaks(); cube peaks are left to peaks()."""
+    p = torch.sigmoid(logits[:, :2])
+    comb = 1 - (1 - p[:, 0]) * (1 - p[:, 1])
+    out = []
+    for b, rows in enumerate(peaks(torch.logit(comb[:, None].clamp(1e-6, 1 - 1e-6)), thresh)):
+        res = []
+        for _, x, y, s in rows:
+            cy, cx = int((y - 2) / STRIDE + .5), int((x - 2) / STRIDE + .5)
+            y0, x0 = max(0, cy - 1), max(0, cx - 1)
+            win = p[b, :, y0:cy + 2, x0:cx + 2].flatten(1).max(1).values
+            res.append((int(win[1] > win[0]), x, y, s))
+        out.append(res)
+    return out
+
+
 def merge_dice(rows, thresh=.35):
     """Die peaks (class < 2) kept as dice. One die can give several peaks (its coloured side and
     pip face, 10-20 px apart, sometimes of the other colour): peaks of a colour closer than 24 px
@@ -113,8 +133,25 @@ def merge_dice(rows, thresh=.35):
     return out
 
 
+class Ensemble(torch.nn.Module):
+    """Several detectors as one: the mean of their probabilities, returned as logits."""
+    def __init__(self, nets):
+        super().__init__(); self.nets = torch.nn.ModuleList(nets)
+    def forward(self, x):
+        p = sum(torch.sigmoid(n(x)) for n in self.nets) / len(self.nets)
+        return torch.logit(p.clamp(1e-6, 1 - 1e-6))
+
+
 def load(path):
+    """A detector, or the mean of several given as 'a.pt,b.pt' (obj-v8 with obj-v10, the shipped pair)."""
+    if ',' in str(path): return Ensemble([load(p) for p in str(path).split(',')]).eval().to(dev)
     net = ObjNet(); net.load_state_dict(torch.load(path, map_location='cpu')); return net.eval().to(dev)
+
+
+def on_board(x, y):
+    """Inside the case's playing surface in the readers' view: dice outside it (on the table, red chips
+    below the case on Nov 24 15:31) are not part of play."""
+    return 12 <= x <= 788 and 6 <= y <= 578
 
 
 def extra_sets():

@@ -44,7 +44,7 @@ def main():
                 S[day]['right'] += ok; S[day]['read'] += 1
                 if not ok and a.v: print(f'  {label} T{i + 1} {t["player"]} {truth} ({t["rollSource"]}) read {best} margin {pp[best] - pp[truth]:.1f}')
             prev = t['resultFrame']
-    for day in ('nov21', 'nov23', 'nov24'):
+    for day in H.DAYS:
         c = S[day]; print(f"{day}: rolls from dice {c['right']}/{c['read']} right, {c['not seen']} turns without two dice")
 
 

@@ -251,3 +251,55 @@ Held-out object test (Nov 24 evening)
   decode had four turns (3-1, an unseen 6-5, 4-1, 5-3) that the board does not
   show. Nov 24 was analysed as published: the obj.pt scan
   (BG_DICE_SCAN=objects-scan-obj, cube-scan-obj.json) and faces-v6.
+
+Second held-out test: Nov 24 15:31 recording (Nov 25)
+
+  A new camera position: the case sits on the right of the table, turned about
+  23 degrees, so the rectified view is softer and greyer than any training
+  session. No model has seen this recording (heldout.py: all of s6 is held
+  out). BG_TEST_SET=new selects it in heldout.py, testset_build.py,
+  testset_labels.py, testset_eval.py and testset_rolls.py; the test dir is
+  ~/Downloads/office-3-backgammon-heldout-20261124pm.
+
+  156 frames (every 15 s, 15:32:35-16:11:20 EST) were labelled blind: no model
+  output was shown, every unclear die was zoomed (notes-blind.txt; the colour
+  of a pale die showing its pip face is taken from its pair and noted). Quiet
+  frames' checkers (checkers-eye.json, 72 frames) started from the slot readers
+  and every point was checked on overlay sheets (35 frames corrected).
+  Blind labels are placed by eye, about 10 px, so this set is scored with
+  testset_eval.py --tol 16 (a die is about 20 px across).
+
+  Findings and what changed:
+  - The shipped detector (obj-v8) finds 209 of 227 dice but gives 199 false
+    peaks: red chips on the table below the case and dark checkers' emblems.
+    objects.on_board drops peaks off the playing surface (scan and test).
+  - obj-v10: obj-v8 fine-tuned with objects_train.py --strong-aug (white
+    balance, saturation, gamma, blur, lost resolution; 3000 steps, same
+    training frames, none from s6). The mean of obj-v8 and obj-v10
+    (objects.load('obj-v8.pt,obj-v10.pt')) on the new set: 211/227 found,
+    16 missed, 17 extra (obj-v8 with the board mask: 209/18/112). On the
+    older set it trades evenly (one miss and one false peak fixed, one false
+    peak and one face misread added), so the pair is used for the 15:31
+    session only and obj-v8 stays the default.
+  - The cube peak is faint in this view: zone right per frame 137/155 at a
+    0.15 cut against 86/155 at 0.5 (the older set is 252/252 either way).
+    The scan now keeps cube peaks from 0.15; analyze.mjs takes the cut from
+    session.json "cubeThresh" (0.5 unless set; 0.15 for this session).
+  - Checkers: slots-v6 (stronger blur and colour-cast augmentation, older
+    sessions only) reads the new set with 19 wrong of 1669 points read
+    (slots-v3: 25 wrong of 1087, 641 unknown). Its misses: checkers pushed
+    off the column centre (a white 3-stack next to the bar read as one) and a
+    single checker in the bottom corners.
+  - Decode: game 1 (0:36-11:28) decodes; on its eye-checked frames 18 are
+    right and 5 mid-move or late. After it the players showed several opening
+    arrangements of one 4-1 (13/8 against 13/9 24/23) from 14:11 to 15:41 and
+    the reader then misreads the 3-stack on point 8 for minutes at a time, so
+    games 2 and 3 do not decode yet; the session is not published.
+    decode2.mjs: session.json "conf" (the reader confidence a point needs),
+    an opening view may leave up to three points unread, soft readings break
+    ties, and BG_DUMP_OBS=file writes the stable observations.
+  The decode2.mjs changes leave every published decode as it was except Nov 21
+  game 2, which they rebuild as decode2-v6.json (turn 19 Black 4-3 15/19 15/18,
+  read on the board: point 18 holds four at 29:40, and turn 21 6-3 18/24 17/20,
+  point 18 back to three at 32:16; the face reader read the 6 as a 5), and the
+  Nov 23 play-out after the pass (two dances dated earlier, not in the game).

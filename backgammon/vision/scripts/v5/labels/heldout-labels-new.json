@@ -1,0 +1,6093 @@
+{
+"s6:1000": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:1000 dice none | cube holder 64 | chk quiet"
+},
+"s6:1375": {
+"dice": [
+[
+620,
+117,
+1
+],
+[
+313,
+384,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:1375 dice R(620,117) Y(313,384) | cube holder 64 | chk quiet"
+},
+"s6:1750": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-4,
+5,
+-1,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:1750 dice none | cube holder 64 | chk quiet"
+},
+"s6:2125": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:2125 dice none | cube holder 64 | chk moving"
+},
+"s6:2500": {
+"dice": [
+[
+251,
+184,
+0
+],
+[
+337,
+304,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+2,
+5,
+0,
+3,
+0,
+0,
+0,
+-4,
+3,
+-1,
+0,
+0,
+-2,
+0,
+-4,
+0,
+-2,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:2500 dice Y(251,184) Y(337,304) | cube holder 64 | chk quiet"
+},
+"s6:2875": {
+"dice": [
+[
+336,
+304,
+0
+]
+],
+"hidden": [],
+"ignore": [
+[
+345,
+312
+]
+],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+2,
+5,
+0,
+3,
+0,
+0,
+0,
+-4,
+3,
+-1,
+0,
+0,
+-2,
+0,
+-4,
+0,
+-2,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:2875 dice Y(336,304)? (one or two dice touching) | cube holder 64 | chk quiet"
+},
+"s6:3250": {
+"dice": [
+[
+337,
+260,
+1
+],
+[
+267,
+311,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+2,
+5,
+0,
+3,
+0,
+0,
+1,
+-4,
+2,
+-1,
+0,
+0,
+-2,
+1,
+-4,
+0,
+-2,
+0,
+0,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:3250 dice R(337,260) R(267,311) | cube holder 64 | chk quiet"
+},
+"s6:3625": {
+"dice": [
+[
+340,
+260,
+1
+],
+[
+267,
+311,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+2,
+5,
+0,
+3,
+0,
+0,
+1,
+-2,
+2,
+-1,
+0,
+0,
+-2,
+-2,
+-4,
+0,
+-2,
+0,
+0,
+1
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:3625 dice R(340,260) R(267,311) | cube holder 64 | chk quiet"
+},
+"s6:4000": {
+"dice": [
+[
+337,
+263,
+1
+],
+[
+267,
+309,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+2,
+5,
+0,
+3,
+0,
+0,
+1,
+-2,
+2,
+-1,
+0,
+0,
+-2,
+-2,
+-4,
+0,
+-2,
+0,
+0,
+1
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:4000 dice R(337,263) R(267,309) | cube holder 64 | chk quiet"
+},
+"s6:4375": {
+"dice": [
+[
+340,
+263,
+1
+],
+[
+267,
+309,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": null,
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:4375 dice R(340,263) R(267,309) | cube holder 64 | chk moving"
+},
+"s6:4750": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+217,
+321
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+-1,
+0,
+0,
+2,
+5,
+-1,
+3,
+0,
+0,
+1,
+-2,
+2,
+0,
+0,
+0,
+-2,
+-2,
+-4,
+-1,
+-2,
+0,
+0,
+1
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:4750 dice none | cube board 2 (217,321) | chk quiet"
+},
+"s6:5125": {
+"dice": [
+[
+656,
+275,
+1
+],
+[
+437,
+207,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:5125 dice R(656,275) ?(437,207) | cube white 2 (93,55) | chk moving"
+},
+"s6:5500": {
+"dice": [
+[
+657,
+276,
+1
+],
+[
+437,
+207,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+-1,
+0,
+0,
+2,
+5,
+-1,
+3,
+0,
+0,
+1,
+-2,
+2,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-1,
+-2,
+0,
+0,
+-2
+],
+"bar": [
+2,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:5500 dice R(657,276) ?(437,207) | cube white 2 | chk quiet"
+},
+"s6:5875": {
+"dice": [
+[
+547,
+124,
+1
+],
+[
+453,
+273,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+-1,
+0,
+0,
+2,
+5,
+-1,
+3,
+0,
+0,
+1,
+-2,
+2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-1,
+-2,
+-2,
+1,
+-2
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:5875 dice R(547,124) R(453,273) | cube white 2 | chk quiet"
+},
+"s6:6250": {
+"dice": [
+[
+547,
+124,
+1
+],
+[
+453,
+275,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+-1,
+0,
+0,
+2,
+5,
+-1,
+3,
+0,
+0,
+1,
+-2,
+2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-1,
+-2,
+-2,
+1,
+-2
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:6250 dice R(547,124) R(453,275) | cube white 2 | chk quiet"
+},
+"s6:6625": {
+"dice": [
+[
+553,
+497,
+1
+],
+[
+473,
+557,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:6625 dice ?R(553,497) ?R(473,557) | cube white 2 | chk moving"
+},
+"s6:7000": {
+"dice": [
+[
+173,
+171,
+0
+],
+[
+324,
+196,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+0,
+0,
+0,
+2,
+5,
+-1,
+3,
+0,
+0,
+0,
+-2,
+2,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-2,
+-2,
+2,
+-2
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:7000 dice Y(173,171) Y(324,196) | cube white 2 | chk quiet"
+},
+"s6:7375": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+0,
+0,
+0,
+2,
+5,
+-1,
+3,
+0,
+0,
+0,
+-1,
+2,
+0,
+0,
+0,
+0,
+-3,
+-2,
+-2,
+-2,
+-2,
+2,
+-2
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:7375 dice none | cube white 2 | chk quiet"
+},
+"s6:7750": {
+"dice": [
+[
+524,
+33,
+1
+],
+[
+603,
+73,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:7750 dice R(524,33) R(603,73) | cube white 2 | chk moving"
+},
+"s6:8125": {
+"dice": [
+[
+331,
+217,
+0
+],
+[
+343,
+253,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+1,
+0,
+0,
+0,
+2,
+4,
+0,
+3,
+0,
+0,
+0,
+-2,
+2,
+0,
+0,
+0,
+0,
+-3,
+-2,
+-2,
+-2,
+-2,
+3,
+-2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:8125 dice Y(331,217) Y(343,253) | cube white 2 | chk quiet"
+},
+"s6:8500": {
+"dice": [
+[
+496,
+231,
+1
+],
+[
+636,
+529,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+0,
+0,
+2,
+3,
+0,
+3,
+0,
+0,
+0,
+-2,
+2,
+0,
+0,
+0,
+0,
+-3,
+-2,
+-2,
+-2,
+-2,
+3,
+-2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:8500 dice R(496,231)? ?R(636,529) | cube white 2 | chk quiet"
+},
+"s6:8875": {
+"dice": [
+[
+253,
+173,
+0
+],
+[
+331,
+244,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:8875 dice Y(253,173) Y(331,244) | cube white 2 | chk moving"
+},
+"s6:9250": {
+"dice": [
+[
+280,
+231,
+0
+],
+[
+347,
+331,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:9250 dice Y(280,231) Y(347,331) | cube white 2 | chk moving"
+},
+"s6:9625": {
+"dice": [
+[
+331,
+441,
+0
+],
+[
+324,
+197,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:9625 dice Y(331,441) ?(324,197) | cube white 2 | chk moving"
+},
+"s6:10000": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:10000 dice none | cube white 2 | chk moving"
+},
+"s6:10375": {
+"dice": [
+[
+129,
+387,
+0
+],
+[
+187,
+413,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:10375 dice Y(129,387) Y(187,413) | cube white 2 | chk moving"
+},
+"s6:10750": {
+"dice": [
+[
+653,
+40,
+1
+],
+[
+643,
+251,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:10750 dice R(653,40) R(643,251) | cube white 2 | chk moving"
+},
+"s6:11125": {
+"dice": [
+[
+607,
+373,
+1
+],
+[
+467,
+541,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+2,
+1,
+3,
+3,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+1,
+0,
+0,
+-3,
+-4,
+-2,
+-2,
+-2,
+2,
+-2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:11125 dice R(607,373) ?R(467,541) | cube white 2 | chk quiet"
+},
+"s6:11500": {
+"dice": [
+[
+609,
+213,
+1
+],
+[
+509,
+429,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:11500 dice R(609,213) R(509,429) | cube white 2 | chk moving"
+},
+"s6:11875": {
+"dice": [
+[
+373,
+164,
+0
+],
+[
+379,
+260,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:11875 dice Y(373,164) Y(379,260) | cube white 2 | chk moving"
+},
+"s6:12250": {
+"dice": [
+[
+519,
+351,
+1
+],
+[
+460,
+427,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+3,
+2,
+3,
+2,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-3,
+-3,
+-3,
+-3,
+2,
+-3
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:12250 dice R(519,351) R(460,427) | cube white 2 | chk quiet"
+},
+"s6:12625": {
+"dice": [
+[
+523,
+260,
+1
+],
+[
+473,
+444,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+4,
+0,
+3,
+2,
+2,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-3,
+-3,
+-2,
+-2,
+2,
+-3
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+2
+]
+},
+"note": "s6:12625 dice R(523,260) R(473,444) | cube white 2 | chk quiet"
+},
+"s6:13000": {
+"dice": [
+[
+376,
+153,
+0
+],
+[
+293,
+284,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+4,
+0,
+3,
+2,
+2,
+2,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-3,
+-2,
+-2,
+-2,
+2,
+-3
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+3
+]
+},
+"note": "s6:13000 dice Y(376,153) Y(293,284) | cube white 2 | chk quiet"
+},
+"s6:13375": {
+"dice": [
+[
+443,
+323,
+1
+],
+[
+644,
+353,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:13375 dice R(443,323) R(644,353) | cube white 2 | chk moving"
+},
+"s6:13750": {
+"dice": [
+[
+287,
+313,
+0
+],
+[
+323,
+328,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:13750 dice Y(287,313) ?second | cube white 2 | chk moving"
+},
+"s6:14125": {
+"dice": [
+[
+440,
+275,
+1
+],
+[
+447,
+373,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+4,
+3,
+3,
+2,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-2,
+-2,
+0,
+-3,
+2,
+-3
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+5
+]
+},
+"note": "s6:14125 dice R(440,275) R(447,373) | cube white 2 | chk quiet"
+},
+"s6:14500": {
+"dice": [
+[
+440,
+271,
+1
+],
+[
+443,
+373,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:14500 dice R(440,271) R(443,373) | cube white 2 | chk moving"
+},
+"s6:14875": {
+"dice": [
+[
+287,
+197,
+0
+],
+[
+287,
+311,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+4,
+3,
+3,
+2,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-2,
+-2,
+0,
+-3,
+2,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+8
+]
+},
+"note": "s6:14875 dice Y(287,197) Y(287,311) | cube white 2 | chk quiet"
+},
+"s6:15250": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:15250 dice none | cube white 2 | chk moving"
+},
+"s6:15625": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+4,
+3,
+3,
+2,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+1,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-2,
+-1,
+-3,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+9
+]
+},
+"note": "s6:15625 dice none | cube white 2 | chk quiet"
+},
+"s6:16000": {
+"dice": [
+[
+563,
+391,
+1
+],
+[
+599,
+496,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:16000 dice R(563,391) R(599,496) | cube white 2 | chk moving"
+},
+"s6:16375": {
+"dice": [
+[
+563,
+393,
+1
+],
+[
+599,
+496,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:16375 dice R(563,393) R(599,496) | cube white 2 | chk moving"
+},
+"s6:16750": {
+"dice": [
+[
+460,
+190,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:16750 dice R(460,190) (second not seen, hand) | cube white 2 | chk moving"
+},
+"s6:17125": {
+"dice": [
+[
+231,
+246,
+0
+],
+[
+245,
+331,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:17125 dice Y(231,246) Y(245,331) | cube white 2 | chk moving"
+},
+"s6:17500": {
+"dice": [
+[
+231,
+266,
+0
+],
+[
+245,
+330,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:17500 dice Y(231,266) Y(245,330) | cube white 2 | chk moving"
+},
+"s6:17875": {
+"dice": [
+[
+231,
+266,
+0
+],
+[
+245,
+330,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:17875 dice Y(231,266) Y(245,330) | cube white 2 | chk moving"
+},
+"s6:18250": {
+"dice": [
+[
+374,
+367,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:18250 dice Y(374,367) (on a checker; other die not seen) | cube white 2 | chk moving"
+},
+"s6:18625": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:18625 dice none | cube white 2 | chk quiet"
+},
+"s6:19000": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": null,
+"note": "s6:19000 dice none | cube white 2 | chk moving (setup: two dark checkers off their point)"
+},
+"s6:19375": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:19375 dice none | cube white 2 | chk quiet"
+},
+"s6:19750": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:19750 dice none | cube white 2 | chk quiet"
+},
+"s6:20125": {
+"dice": [
+[
+282,
+387,
+0
+],
+[
+521,
+408,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+93,
+55
+],
+"zone": "white",
+"face": 2
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:20125 dice Y(282,387) (rolling, blurred) R(521,408) | cube white 2 | chk quiet"
+},
+"s6:20500": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+0,
+0,
+0,
+-5,
+5,
+0,
+0,
+0,
+-3,
+0,
+-5,
+0,
+0,
+0,
+0,
+2
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:20500 dice none | cube holder 64 (77,296) | chk quiet"
+},
+"s6:20875": {
+"dice": [
+[
+448,
+257,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:20875 dice R(448,257) (second not seen) | cube holder 64 | chk moving (hand)"
+},
+"s6:21250": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:21250 dice none | cube holder 64 | chk moving"
+},
+"s6:21625": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:21625 dice none | cube holder 64 | chk moving"
+},
+"s6:22000": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:22000 dice none | cube holder 64 | chk moving"
+},
+"s6:22375": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:22375 dice none | cube holder 64 | chk moving"
+},
+"s6:22750": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:22750 dice none | cube holder 64 | chk moving"
+},
+"s6:23125": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:23125 dice none | cube holder 64 | chk moving"
+},
+"s6:23500": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:23500 dice none | cube holder 64 | chk moving"
+},
+"s6:23875": {
+"dice": [
+[
+378,
+272,
+0
+],
+[
+381,
+306,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+1,
+0,
+0,
+-4,
+4,
+-1,
+0,
+0,
+-3,
+0,
+-4,
+-1,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:23875 dice Y(378,272) (pale, pip face up; colour from its pair) Y(381,306) | cube holder 64 | chk quiet"
+},
+"s6:24250": {
+"dice": [
+[
+378,
+273,
+0
+],
+[
+381,
+306,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:24250 dice Y(378,273) (pale) Y(381,306) | cube holder 64 | chk moving"
+},
+"s6:24625": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+1,
+0,
+0,
+-4,
+4,
+-1,
+0,
+0,
+-3,
+1,
+-4,
+0,
+0,
+0,
+1,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:24625 dice none | cube holder 64 | chk quiet (dark checker on the bar)"
+},
+"s6:25000": {
+"dice": [
+[
+456,
+174,
+1
+],
+[
+567,
+183,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:25000 dice R(456,174) R(567,183) | cube holder 64 | chk moving (hand; dark checker on the bar)"
+},
+"s6:25375": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:25375 dice none | cube holder 64 | chk moving"
+},
+"s6:25750": {
+"dice": [
+[
+363,
+337,
+0
+],
+[
+206,
+430,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-3,
+0,
+0,
+0,
+0,
+5,
+0,
+3,
+1,
+0,
+0,
+-3,
+4,
+-2,
+0,
+0,
+-3,
+1,
+-4,
+0,
+0,
+0,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:25750 dice Y(363,337) Y(206,430) | cube holder 64 | chk quiet"
+},
+"s6:26125": {
+"dice": [
+[
+363,
+337,
+0
+],
+[
+206,
+430,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:26125 dice Y(363,337) Y(206,430) | cube holder 64 | chk moving"
+},
+"s6:26500": {
+"dice": [
+[
+489,
+292,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:26500 dice R(489,292) (second in the hand) | cube holder 64 | chk moving"
+},
+"s6:26875": {
+"dice": [
+[
+255,
+355,
+0
+],
+[
+327,
+355,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+-1,
+3,
+2,
+0,
+0,
+-3,
+4,
+-2,
+0,
+0,
+-3,
+0,
+-4,
+0,
+0,
+0,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:26875 dice Y(255,355) Y(327,355) (pale) | cube holder 64 | chk quiet"
+},
+"s6:27250": {
+"dice": [
+[
+258,
+357,
+0
+],
+[
+326,
+357,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+1,
+3,
+2,
+0,
+0,
+-3,
+3,
+-2,
+0,
+0,
+-3,
+0,
+-4,
+0,
+0,
+0,
+1,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:27250 dice Y(258,357) Y(326,357) (pale) | cube holder 64 | chk quiet (dark checker on the bar)"
+},
+"s6:27625": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+0,
+5,
+1,
+3,
+2,
+0,
+0,
+-3,
+3,
+-2,
+0,
+0,
+-3,
+1,
+-4,
+0,
+0,
+0,
+0,
+0
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:27625 dice none | cube holder 64 | chk quiet (dark checker on the bar)"
+},
+"s6:28000": {
+"dice": [
+[
+473,
+292,
+1
+],
+[
+443,
+346,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+-1,
+0,
+0,
+0,
+5,
+1,
+3,
+2,
+0,
+0,
+-3,
+3,
+-2,
+0,
+0,
+-3,
+1,
+-4,
+0,
+0,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:28000 dice R(473,292) R(443,346) | cube holder 64 | chk quiet"
+},
+"s6:28375": {
+"dice": [
+[
+167,
+291,
+0
+],
+[
+169,
+357,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:28375 dice Y(167,291) Y(169,357) | cube holder 64 | chk moving"
+},
+"s6:28750": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:28750 dice none | cube holder 64 | chk moving (dark checker on the bar)"
+},
+"s6:29125": {
+"dice": [
+[
+160,
+251,
+0
+],
+[
+242,
+238,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+-1,
+3,
+2,
+0,
+0,
+-3,
+2,
+-1,
+0,
+0,
+-3,
+1,
+-5,
+1,
+1,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:29125 dice Y(160,251) Y(242,238) (pale) | cube holder 64 | chk quiet"
+},
+"s6:29500": {
+"dice": [
+[
+524,
+242,
+1
+],
+[
+447,
+351,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+-1,
+3,
+2,
+0,
+0,
+-3,
+2,
+-1,
+0,
+0,
+-3,
+1,
+-5,
+1,
+1,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:29500 dice R(524,242) R(447,351) | cube holder 64 | chk quiet"
+},
+"s6:29875": {
+"dice": [
+[
+524,
+242,
+1
+],
+[
+447,
+351,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+-1,
+3,
+2,
+0,
+0,
+-3,
+2,
+-2,
+0,
+0,
+-3,
+1,
+-4,
+1,
+1,
+0,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:29875 dice R(524,242) R(447,351) | cube holder 64 | chk quiet"
+},
+"s6:30250": {
+"dice": [
+[
+523,
+242,
+1
+],
+[
+446,
+350,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:30250 dice R(523,242) R(446,350) | cube holder 64 | chk moving (finger on a checker)"
+},
+"s6:30625": {
+"dice": [
+[
+445,
+473,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:30625 dice R(445,473) (pale, on an orange point; second under the hand) | cube holder 64 | chk moving"
+},
+"s6:31000": {
+"dice": [
+[
+144,
+101,
+0
+],
+[
+352,
+379,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:31000 dice Y(144,101) (on a pale point) Y(352,379) (pale) | cube holder 64 | chk moving (light checker on the bar)"
+},
+"s6:31375": {
+"dice": [
+[
+490,
+380,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:31375 dice R(490,380) (beside the hand) | cube holder 64 | chk moving"
+},
+"s6:31750": {
+"dice": [
+[
+538,
+427,
+1
+],
+[
+541,
+507,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+-1,
+3,
+2,
+0,
+0,
+-3,
+2,
+0,
+0,
+0,
+-2,
+0,
+-4,
+-2,
+1,
+1,
+-1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:31750 dice R(538,427) R(541,507) | cube holder 64 | chk quiet"
+},
+"s6:32125": {
+"dice": [
+[
+535,
+425,
+1
+],
+[
+540,
+507,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-1,
+-1,
+0,
+0,
+0,
+5,
+-1,
+3,
+2,
+0,
+0,
+-3,
+2,
+0,
+0,
+0,
+-2,
+0,
+-4,
+-2,
+1,
+1,
+-1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:32125 dice R(535,425) R(540,507) | cube holder 64 | chk quiet"
+},
+"s6:32500": {
+"dice": [
+[
+533,
+428,
+1
+],
+[
+540,
+512,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:32500 dice R(533,428) R(540,512) | cube holder 64 | chk moving (hand at the front rail)"
+},
+"s6:32875": {
+"dice": [
+[
+533,
+427,
+1
+],
+[
+538,
+512,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:32875 dice R(533,427) R(538,512) | cube holder 64 | chk moving"
+},
+"s6:33250": {
+"dice": [
+[
+288,
+68,
+0
+],
+[
+229,
+225,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+0,
+0,
+-1,
+5,
+-2,
+3,
+2,
+0,
+0,
+-3,
+2,
+0,
+0,
+0,
+-2,
+0,
+-4,
+-2,
+1,
+1,
+-1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:33250 dice Y(288,68) (pale, pip face up, half hidden by a checker; colour from its pair) Y(229,225) | cube holder 64 | chk quiet"
+},
+"s6:33625": {
+"dice": [
+[
+288,
+68,
+0
+],
+[
+229,
+225,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:33625 dice Y(288,68) (pale) Y(229,225) | cube holder 64 | chk moving (dark checker on the bar)"
+},
+"s6:34000": {
+"dice": [
+[
+440,
+150,
+1
+],
+[
+487,
+377,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+1,
+5,
+-2,
+3,
+1,
+0,
+0,
+-3,
+2,
+0,
+0,
+0,
+-2,
+0,
+-4,
+-2,
+1,
+1,
+1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:34000 dice R(440,150) R(487,377) | cube holder 64 | chk quiet"
+},
+"s6:34375": {
+"dice": [
+[
+336,
+255,
+0
+],
+[
+378,
+285,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:34375 dice Y(336,255) Y(378,285) | cube holder 64 | chk moving"
+},
+"s6:34750": {
+"dice": [
+[
+437,
+470,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:34750 dice R(437,470) (half hidden at the bar edge; second under the hand) | cube holder 64 | chk moving (light checker on the bar)"
+},
+"s6:35125": {
+"dice": [
+[
+437,
+470,
+1
+],
+[
+604,
+546,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+2,
+4,
+-2,
+3,
+2,
+0,
+0,
+-2,
+-1,
+0,
+0,
+0,
+0,
+-2,
+-4,
+-2,
+1,
+1,
+1,
+0
+],
+"bar": [
+1,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:35125 dice R(437,470) (half hidden at the bar edge) R(604,546) | cube holder 64 | chk quiet (light checker on the bar)"
+},
+"s6:35500": {
+"dice": [
+[
+372,
+272,
+0
+],
+[
+135,
+396,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:35500 dice Y(372,272) Y(135,396) | cube holder 64 | chk moving"
+},
+"s6:35875": {
+"dice": [
+[
+253,
+247,
+0
+],
+[
+291,
+247,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+2,
+4,
+-2,
+3,
+2,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+0,
+-2,
+-5,
+-2,
+1,
+1,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:35875 dice Y(253,247) Y(291,247) | cube holder 64 | chk quiet"
+},
+"s6:36250": {
+"dice": [
+[
+462,
+394,
+1
+],
+[
+657,
+547,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+-2,
+0,
+0,
+0,
+2,
+4,
+-2,
+3,
+2,
+0,
+0,
+-2,
+0,
+0,
+0,
+1,
+0,
+-2,
+-5,
+-2,
+0,
+1,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:36250 dice R(462,394) (pale) R(657,547) (on a pale point) | cube holder 64 | chk quiet"
+},
+"s6:36625": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:36625 dice none | cube holder 64 | chk moving"
+},
+"s6:37000": {
+"dice": [
+[
+194,
+250,
+0
+],
+[
+143,
+356,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:37000 dice Y(194,250) Y(143,356) (pale) | cube holder 64 | chk moving (dark checker on the bar)"
+},
+"s6:37375": {
+"dice": [
+[
+194,
+250,
+0
+],
+[
+143,
+356,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:37375 dice Y(194,250) Y(143,356) (pale) | cube holder 64 | chk moving"
+},
+"s6:37750": {
+"dice": [
+[
+194,
+250,
+0
+],
+[
+143,
+357,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:37750 dice Y(194,250) Y(143,357) (pale) | cube holder 64 | chk moving"
+},
+"s6:38125": {
+"dice": [
+[
+522,
+170,
+1
+],
+[
+582,
+537,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+0,
+0,
+2,
+2,
+-2,
+3,
+2,
+0,
+1,
+-3,
+0,
+0,
+0,
+0,
+1,
+-2,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:38125 dice R(522,170) R(582,537) (on a pale point) | cube holder 64 | chk quiet (dark checker on the bar)"
+},
+"s6:38500": {
+"dice": [
+[
+213,
+229,
+0
+],
+[
+272,
+37,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+0,
+0,
+2,
+2,
+-3,
+3,
+2,
+0,
+1,
+-3,
+0,
+0,
+0,
+0,
+1,
+-2,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:38500 dice Y(213,229) Y(272,37) (pale, pip face up on an orange point by the rail; colour from its pair) | cube holder 64 | chk quiet"
+},
+"s6:38875": {
+"dice": [
+[
+213,
+229,
+0
+],
+[
+272,
+37,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:38875 dice Y(213,229) Y(272,37) (pale) | cube holder 64 | chk moving"
+},
+"s6:39250": {
+"dice": [
+[
+213,
+229,
+0
+],
+[
+272,
+37,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+0,
+0,
+2,
+3,
+-3,
+3,
+2,
+0,
+0,
+-3,
+0,
+0,
+0,
+0,
+1,
+-2,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:39250 dice Y(213,229) Y(272,37) (pale) | cube holder 64 | chk quiet"
+},
+"s6:39625": {
+"dice": [
+[
+213,
+230,
+0
+],
+[
+272,
+37,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:39625 dice Y(213,230) Y(272,37) (pale) | cube holder 64 | chk moving"
+},
+"s6:40000": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:40000 dice none | cube holder 64 | chk moving"
+},
+"s6:40375": {
+"dice": [
+[
+214,
+228,
+0
+],
+[
+225,
+243,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:40375 dice Y(214,228) Y(225,243) (two dice touching) | cube holder 64 | chk moving"
+},
+"s6:40750": {
+"dice": [
+[
+214,
+228,
+0
+],
+[
+225,
+243,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+3,
+0,
+1,
+0,
+2,
+2,
+-3,
+2,
+2,
+0,
+0,
+-3,
+0,
+0,
+0,
+0,
+1,
+-2,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:40750 dice Y(214,228) Y(225,243) (two dice touching) | cube holder 64 | chk quiet"
+},
+"s6:41125": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:41125 dice none | cube holder 64 | chk moving"
+},
+"s6:41500": {
+"dice": [
+[
+214,
+230,
+0
+],
+[
+226,
+244,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+0,
+0,
+2,
+3,
+-3,
+3,
+2,
+0,
+0,
+-3,
+0,
+0,
+0,
+0,
+1,
+-2,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:41500 dice Y(214,230) Y(226,244) (two dice touching) | cube holder 64 | chk quiet"
+},
+"s6:41875": {
+"dice": [
+[
+214,
+229,
+0
+],
+[
+225,
+243,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+0,
+0,
+2,
+3,
+-3,
+3,
+2,
+0,
+0,
+-3,
+0,
+0,
+0,
+0,
+1,
+-2,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:41875 dice Y(214,229) Y(225,243) (two dice touching) | cube holder 64 | chk quiet"
+},
+"s6:42250": {
+"dice": [
+[
+214,
+230,
+0
+],
+[
+226,
+244,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+0,
+2,
+2,
+3,
+-3,
+3,
+0,
+0,
+0,
+-3,
+0,
+0,
+0,
+0,
+1,
+-2,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:42250 dice Y(214,230) Y(226,244) (two dice touching) | cube holder 64 | chk quiet"
+},
+"s6:42625": {
+"dice": [
+[
+534,
+398,
+1
+],
+[
+616,
+486,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+1,
+2,
+2,
+3,
+-3,
+2,
+0,
+0,
+0,
+-3,
+0,
+0,
+0,
+0,
+1,
+-2,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:42625 dice R(534,398) R(616,486) (pale, on an orange point) | cube holder 64 | chk quiet"
+},
+"s6:43000": {
+"dice": [
+[
+466,
+355,
+1
+],
+[
+479,
+369,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+1,
+2,
+2,
+3,
+-2,
+2,
+0,
+0,
+0,
+-3,
+0,
+0,
+0,
+0,
+1,
+-3,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:43000 dice R(466,355) R(479,369) (two dice touching) | cube holder 64 | chk quiet"
+},
+"s6:43375": {
+"dice": [
+[
+260,
+183,
+0
+],
+[
+134,
+399,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+1,
+2,
+2,
+3,
+-2,
+2,
+0,
+0,
+0,
+-3,
+0,
+0,
+0,
+0,
+1,
+-3,
+-5,
+-2,
+0,
+0,
+1,
+1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:43375 dice Y(260,183) Y(134,399) (on an orange point by the bar) | cube holder 64 | chk quiet"
+},
+"s6:43750": {
+"dice": [
+[
+134,
+399,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:43750 dice Y(134,399) (other hidden under the arm) | cube holder 64 | chk moving"
+},
+"s6:44125": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:44125 dice none | cube holder 64 | chk moving"
+},
+"s6:44500": {
+"dice": [
+[
+609,
+42,
+1
+],
+[
+570,
+429,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+1,
+2,
+2,
+3,
+-2,
+2,
+0,
+0,
+0,
+-3,
+0,
+0,
+0,
+1,
+0,
+-3,
+-5,
+-2,
+0,
+2,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:44500 dice R(609,42) (on a pale point by the rail) R(570,429) | cube holder 64 | chk quiet"
+},
+"s6:44875": {
+"dice": [
+[
+609,
+44,
+1
+],
+[
+567,
+430,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+1,
+2,
+2,
+3,
+-2,
+2,
+0,
+0,
+0,
+-3,
+0,
+0,
+0,
+1,
+0,
+-3,
+-5,
+-2,
+0,
+2,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:44875 dice R(609,44) (by the rail) R(567,430) | cube holder 64 | chk quiet"
+},
+"s6:45250": {
+"dice": [
+[
+609,
+44,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:45250 dice R(609,44) (by the rail; second under the hand) | cube holder 64 | chk moving"
+},
+"s6:45625": {
+"dice": [
+[
+367,
+230,
+0
+],
+[
+342,
+273,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:45625 dice Y(367,230) Y(342,273) | cube holder 64 | chk moving"
+},
+"s6:46000": {
+"dice": [
+[
+266,
+247,
+0
+],
+[
+329,
+241,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+2,
+0,
+1,
+2,
+2,
+3,
+-2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+1,
+0,
+-3,
+-5,
+-2,
+0,
+1,
+0,
+1
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:46000 dice Y(266,247) (pale) Y(329,241) | cube holder 64 | chk quiet (dark checker on the bar)"
+},
+"s6:46375": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+77,
+296
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:46375 dice none | cube holder 64 | chk moving"
+},
+"s6:46750": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+196,
+286
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+1,
+2,
+2,
+3,
+-2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+1,
+0,
+-3,
+-5,
+-2,
+0,
+1,
+0,
+1
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:46750 dice none | cube board 2 (196,286) | chk quiet (dark checker on the bar)"
+},
+"s6:47125": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+197,
+287
+],
+"zone": "board",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+1,
+2,
+2,
+3,
+-2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+1,
+0,
+-3,
+-5,
+-2,
+0,
+1,
+0,
+1
+],
+"bar": [
+0,
+1
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:47125 dice none | cube board 2 (197,287) | chk quiet (dark checker on the bar)"
+},
+"s6:47500": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": null,
+"checkers": null,
+"note": "s6:47500 dice none | cube in hand (taken, carried to the bottom-left tray) | chk moving"
+},
+"s6:47875": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:47875 dice none | cube dark 2 (68,532) | chk moving"
+},
+"s6:48250": {
+"dice": [
+[
+277,
+212,
+0
+],
+[
+336,
+298,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:48250 dice Y(277,212) (pale, on an orange point tip; colour from its pair) Y(336,298) | cube dark 2 | chk moving"
+},
+"s6:48625": {
+"dice": [
+[
+677,
+179,
+1
+],
+[
+509,
+467,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+-1,
+2,
+2,
+2,
+2,
+-2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+1,
+0,
+0,
+-3,
+-5,
+-2,
+1,
+1,
+0,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:48625 dice R(677,179) (pale, at an orange point) R(509,467) | cube dark 2 | chk quiet"
+},
+"s6:49000": {
+"dice": [
+[
+301,
+119,
+0
+],
+[
+269,
+227,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+-1,
+2,
+2,
+2,
+2,
+-2,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+1,
+0,
+0,
+-3,
+-4,
+-2,
+1,
+1,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:49000 dice Y(301,119) (pale, between checkers) Y(269,227) | cube dark 2 | chk quiet"
+},
+"s6:49375": {
+"dice": [
+[
+440,
+393,
+1
+],
+[
+541,
+527,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+2,
+2,
+2,
+2,
+-3,
+2,
+0,
+0,
+0,
+-2,
+0,
+0,
+1,
+0,
+2,
+-3,
+-4,
+-2,
+0,
+0,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:49375 dice R(440,393) (pale, pip face up by the bar; colour from its pair) R(541,527) | cube dark 2 | chk quiet"
+},
+"s6:49750": {
+"dice": [
+[
+287,
+131,
+0
+],
+[
+250,
+250,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:49750 dice Y(287,131) (pale, beside an orange point) Y(250,250) | cube dark 2 | chk moving"
+},
+"s6:50125": {
+"dice": [
+[
+288,
+131,
+0
+],
+[
+250,
+250,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+0,
+3,
+2,
+2,
+2,
+-3,
+2,
+0,
+0,
+2,
+-2,
+0,
+0,
+0,
+0,
+0,
+-3,
+-3,
+-2,
+-1,
+0,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:50125 dice Y(288,131) (pale) Y(250,250) | cube dark 2 | chk quiet"
+},
+"s6:50500": {
+"dice": [
+[
+288,
+131,
+0
+],
+[
+253,
+250,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:50500 dice Y(288,131) (pale) Y(253,250) | cube dark 2 | chk moving"
+},
+"s6:50875": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+2,
+3,
+2,
+2,
+2,
+-3,
+0,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+2,
+-3,
+-3,
+-2,
+-1,
+0,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:50875 dice none | cube dark 2 | chk quiet"
+},
+"s6:51250": {
+"dice": [
+[
+475,
+406,
+1
+],
+[
+538,
+537,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+2,
+3,
+2,
+2,
+2,
+-3,
+0,
+0,
+0,
+0,
+-2,
+0,
+0,
+0,
+0,
+2,
+-3,
+-3,
+-2,
+-1,
+0,
+-1,
+0
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:51250 dice R(475,406) R(538,537) (pale, on an orange point) | cube dark 2 | chk quiet"
+},
+"s6:51625": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:51625 dice none | cube dark 2 | chk moving"
+},
+"s6:52000": {
+"dice": [
+[
+374,
+244,
+0
+],
+[
+263,
+302,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:52000 dice Y(374,244) Y(263,302) | cube dark 2 | chk moving"
+},
+"s6:52375": {
+"dice": [
+[
+360,
+368,
+0
+],
+[
+250,
+489,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+2,
+2,
+3,
+2,
+4,
+2,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-1,
+0,
+0,
+0,
+0,
+-2,
+-2,
+-2,
+-1,
+0,
+-2,
+-1
+],
+"bar": [
+0,
+0
+],
+"off": [
+0,
+0
+]
+},
+"note": "s6:52375 dice Y(360,368) (pale, at a pale point tip) Y(250,489) (on an orange point) | cube dark 2 | chk quiet"
+},
+"s6:52750": {
+"dice": [
+[
+463,
+389,
+1
+],
+[
+461,
+428,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:52750 dice R(463,389) R(461,428) (pale) | cube dark 2 | chk moving"
+},
+"s6:53125": {
+"dice": [
+[
+256,
+190,
+0
+],
+[
+287,
+190,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+1,
+2,
+3,
+1,
+4,
+2,
+-2,
+0,
+0,
+0,
+0,
+-1,
+-1,
+0,
+0,
+0,
+0,
+-2,
+-3,
+-2,
+-1,
+0,
+-2,
+-1
+],
+"bar": [
+0,
+0
+],
+"off": [
+2,
+0
+]
+},
+"note": "s6:53125 dice Y(256,190) Y(287,190) (pale, at an orange point) | cube dark 2 | chk quiet"
+},
+"s6:53500": {
+"dice": [
+[
+568,
+368,
+1
+],
+[
+441,
+420,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+1,
+2,
+3,
+1,
+3,
+1,
+-2,
+0,
+0,
+0,
+0,
+-1,
+-1,
+0,
+0,
+0,
+0,
+-2,
+-3,
+-2,
+-1,
+0,
+-2,
+-1
+],
+"bar": [
+0,
+0
+],
+"off": [
+4,
+0
+]
+},
+"note": "s6:53500 dice R(568,368) R(441,420) (on an orange point by the bar) | cube dark 2 | chk quiet"
+},
+"s6:53875": {
+"dice": [
+[
+678,
+256,
+1
+],
+[
+662,
+310,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+0,
+1,
+3,
+1,
+3,
+1,
+-1,
+0,
+0,
+0,
+0,
+-1,
+-2,
+0,
+0,
+0,
+0,
+-2,
+-3,
+-2,
+-1,
+0,
+-2,
+-1
+],
+"bar": [
+0,
+0
+],
+"off": [
+6,
+0
+]
+},
+"note": "s6:53875 dice R(678,256) R(662,310) | cube dark 2 | chk quiet"
+},
+"s6:54250": {
+"dice": [
+[
+160,
+178,
+0
+],
+[
+345,
+177,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:54250 dice Y(160,178) (pale) Y(345,177) | cube dark 2 | chk moving"
+},
+"s6:54625": {
+"dice": [],
+"hidden": [],
+"ignore": [
+[
+313,
+134
+],
+[
+326,
+126
+]
+],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:54625 dice ignore(313,134) ignore(326,126) (two yellow dice being picked up under the fingers) | cube dark 2 | chk moving"
+},
+"s6:55000": {
+"dice": [
+[
+582,
+363,
+1
+],
+[
+439,
+423,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:55000 dice R(582,363) R(439,423) (half hidden at the bar edge) | cube dark 2 | chk moving"
+},
+"s6:55375": {
+"dice": [
+[
+327,
+276,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:55375 dice Y(327,276) (rolling, blurred; second not seen) | cube dark 2 | chk moving"
+},
+"s6:55750": {
+"dice": [
+[
+462,
+68,
+1
+],
+[
+512,
+448,
+1
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:55750 dice R(462,68) (between points by the rail) R(512,448) | cube dark 2 | chk moving"
+},
+"s6:56125": {
+"dice": [
+[
+326,
+192,
+0
+],
+[
+241,
+240,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": {
+"points": [
+1,
+0,
+3,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+-5,
+-2,
+-1,
+-2,
+-1
+],
+"bar": [
+0,
+0
+],
+"off": [
+11,
+0
+]
+},
+"note": "s6:56125 dice Y(326,192) (pale) Y(241,240) (pale) | cube dark 2 | chk quiet"
+},
+"s6:56500": {
+"dice": [
+[
+325,
+192,
+0
+],
+[
+242,
+242,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+68,
+532
+],
+"zone": "dark",
+"face": 2
+},
+"checkers": null,
+"note": "s6:56500 dice Y(325,192) (pale) Y(242,242) (pale) | cube dark 2 | chk moving (game over: White bore off)"
+},
+"s6:56875": {
+"dice": [
+[
+325,
+192,
+0
+],
+[
+242,
+242,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+75,
+293
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-4,
+-5,
+-2,
+-1,
+-2,
+-1
+],
+"bar": [
+0,
+0
+],
+"off": [
+15,
+0
+]
+},
+"note": "s6:56875 dice Y(325,192) (pale) Y(242,242) (pale) | cube holder 64 (75,293) | chk quiet (after the game)"
+},
+"s6:57250": {
+"dice": [
+[
+325,
+192,
+0
+],
+[
+242,
+242,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+75,
+293
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": {
+"points": [
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+-5,
+0,
+-2,
+-1,
+-1,
+-2
+],
+"bar": [
+0,
+0
+],
+"off": [
+15,
+4
+]
+},
+"note": "s6:57250 dice Y(325,192) (pale) Y(242,242) (pale) | cube holder 64 | chk quiet (after the game)"
+},
+"s6:57625": {
+"dice": [
+[
+325,
+192,
+0
+],
+[
+242,
+242,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+75,
+293
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:57625 dice Y(325,192) (pale) Y(242,242) (pale) | cube holder 64 | chk moving (clearing)"
+},
+"s6:58000": {
+"dice": [
+[
+224,
+238,
+0
+],
+[
+276,
+267,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+75,
+293
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:58000 dice Y(224,238) Y(276,267) | cube holder 64 | chk moving (setting up)"
+},
+"s6:58375": {
+"dice": [
+[
+224,
+237,
+0
+],
+[
+277,
+266,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+75,
+293
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:58375 dice Y(224,237) Y(277,266) | cube holder 64 | chk moving"
+},
+"s6:58750": {
+"dice": [
+[
+223,
+238,
+0
+],
+[
+273,
+266,
+0
+]
+],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+75,
+293
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:58750 dice Y(223,238) Y(273,266) | cube holder 64 | chk moving"
+},
+"s6:59125": {
+"dice": [],
+"hidden": [],
+"ignore": [],
+"cube": {
+"xy": [
+75,
+293
+],
+"zone": "holder",
+"face": 64
+},
+"checkers": null,
+"note": "s6:59125 dice none | cube holder 64 | chk none (board cleared, every checker in the trays)"
+}
+}

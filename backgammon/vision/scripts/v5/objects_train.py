@@ -8,7 +8,9 @@ with a colour hull) so the detector sees them on every kind of point and
 next to checkers. Pixels of unlabelled die-sized colour blobs are ignored,
 so a missed die in an unreviewed frame does not count as background.
 
-usage: objects_train.py out.pt [--steps N] [--init model.pt] [--exclude-heldout]
+usage: objects_train.py out.pt [--steps N] [--init model.pt] [--exclude-heldout] [--strong-aug]
+  --strong-aug: softer, differently lit views (white balance, saturation, gamma, blur, lost resolution),
+  as from another camera position or light (the Nov 24 15:31 view).
 """
 import argparse, json, os, random
 import cv2, numpy as np, torch
@@ -87,6 +89,25 @@ def paste(img, labels, bank, n):
     return img, {**labels, 'dice': dice}
 
 
+STRONG_AUG = os.environ.get('BG_OBJ_STRONG_AUG') == '1'  # set by --strong-aug (inherited by the loader workers)
+
+
+def photometric(img):
+    """A softer, differently lit view of a crop: per-channel gain, saturation, gamma, then blur or a
+    resolution loss (down and up again)."""
+    p = img.astype(np.float32) * np.random.uniform(.85, 1.15, 3)[None, None]
+    hsv = cv2.cvtColor(np.clip(p, 0, 255).astype(np.uint8), cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv[..., 1] *= random.uniform(.55, 1.25)
+    p = cv2.cvtColor(np.clip(hsv, 0, 255).astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
+    p = 255 * (p / 255) ** random.uniform(.8, 1.25)
+    r = random.random()
+    if r < .4: p = cv2.GaussianBlur(p, (0, 0), random.uniform(.5, 1.8))
+    elif r < .7:
+        h, w = p.shape[:2]; f = random.uniform(.45, .8)
+        p = cv2.resize(cv2.resize(p, (int(w * f), int(h * f)), interpolation=cv2.INTER_AREA), (w, h), interpolation=cv2.INTER_LINEAR)
+    return np.clip(p, 0, 255).astype(np.uint8)
+
+
 def sample(frames, labels, keys, bank, train=True):
     k = random.choice(keys); lab = labels[k]
     img = ob.decode(frames[k])
@@ -107,6 +128,7 @@ def sample(frames, labels, keys, bank, train=True):
         if random.random() < .5: img, ign, tgt = img[:, ::-1], ign[:, ::-1], tgt[:, :, ::-1]
         if random.random() < .5: img, ign, tgt = img[::-1], ign[::-1], tgt[:, ::-1]
         img = np.clip(img.astype(np.float32) * random.uniform(.8, 1.2) + random.uniform(-18, 18), 0, 255).astype(np.uint8)
+        if STRONG_AUG and random.random() < .7: img = photometric(np.ascontiguousarray(img))
     weight = np.ones_like(tgt)
     small = np.ascontiguousarray(ign).reshape(tgt.shape[1], 4, tgt.shape[2], 4).any(axis=(1, 3))
     weight[0][small] = 0; weight[1][small] = 0
@@ -136,7 +158,9 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--steps', type=int, default=3000)
     ap.add_argument('--init'); ap.add_argument('--batch', type=int, default=12)
     ap.add_argument('--exclude-heldout', action='store_true', help="leave out the object test's held-out games (heldout.py)")
+    ap.add_argument('--strong-aug', action='store_true', help='photometric(): blur, colour cast, lost resolution')
     a = ap.parse_args()
+    if a.strong_aug: os.environ['BG_OBJ_STRONG_AUG'] = '1'; globals()['STRONG_AUG'] = True
     keys, jp = ob.load_frames(); frames = dict(zip(keys, jp))
     if a.exclude_heldout:
         import heldout

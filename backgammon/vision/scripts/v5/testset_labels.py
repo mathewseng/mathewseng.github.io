@@ -24,7 +24,7 @@ import json, math, re
 from pathlib import Path
 import heldout as H
 
-OUT = Path(__file__).parent / 'labels/heldout-labels.json'
+OUT = Path(__file__).parent / ('labels/heldout-labels-new.json' if H.TEST_SET == 'new' else 'labels/heldout-labels.json')
 THRESH = .35
 
 # Several peaks on one die (one die, at the cluster's strongest peak: the detector centres on a
@@ -61,7 +61,43 @@ def cube_truth(key):
     if s == 's5': return ('board', 2) if 41947 <= f < 44295 else ('holder', 64)
 
 
+# The second test set (BG_TEST_SET=new, Nov 24 15:31): labelled blind (no model output shown) in
+# TEST_DIR/notes-blind.txt, one line per frame: "dice Y(x,y) R(x,y) ... | cube ZONE FACE [(x,y)] | chk quiet|moving".
+# A die colour written "?" or "?R" was settled on a zoom (RESOLVE, from the notes' last lines); ignore(x,y) marks a
+# place that is neither a miss nor an extra. Quiet frames take their checkers from TEST_DIR/checkers-eye.json.
+RESOLVE = {('s6:5125', 437, 207): 1, ('s6:5500', 437, 207): 1, ('s6:6625', 553, 497): 1, ('s6:6625', 473, 557): 1,
+           ('s6:8500', 636, 529): 1, ('s6:9625', 324, 197): 0, ('s6:11125', 467, 541): 1}
+EXTRA_NEW = {'s6:2875': {'ignore': [[345, 312]]}, 's6:13750': {'dice': [[323, 328, 0]]}}
+
+
+def main_new():
+    items = json.loads((H.TEST_DIR / 'items.json').read_text())
+    chk = json.loads((H.TEST_DIR / 'checkers-eye.json').read_text())
+    notes = {l.split()[0]: l for l in (H.TEST_DIR / 'notes-blind.txt').read_text().splitlines() if l.startswith('s6:')}
+    out = {}; last_cube_xy = None
+    for it in items:
+        k = it['key']; note = notes[k]; dpart, cpart, kpart = note.split(' | ')
+        dice, ignore = [], []
+        for m in re.finditer(r'(ignore|\?R|[YR?])\((\d+),(\d+)\)', dpart):
+            c, x, y = m.group(1), int(m.group(2)), int(m.group(3))
+            if c == 'ignore': ignore.append([x, y]); continue
+            if c in ('?', '?R'): c = 'YR'[RESOLVE[(k, x, y)]]
+            dice.append([x, y, int(c == 'R')])
+        e = EXTRA_NEW.get(k, {}); dice += e.get('dice', []); ignore += e.get('ignore', [])
+        m = re.search(r'cube (holder|board|white|dark) (\d+)(?: \((\d+),(\d+)\))?', cpart)
+        if m:
+            if m.group(3): last_cube_xy = [int(m.group(3)), int(m.group(4))]
+            cube = {'xy': last_cube_xy, 'zone': m.group(1), 'face': int(m.group(2))}
+        else: cube = None
+        out[k] = {'dice': dice, 'hidden': [], 'ignore': ignore, 'cube': cube,
+                  'checkers': chk.get(k) if 'chk quiet' in kpart else None, 'note': note}
+    OUT.write_text(json.dumps(out, indent=0))
+    print('frames', len(out), 'dice', sum(len(v['dice']) for v in out.values()), 'cube', sum(v['cube'] is not None for v in out.values()),
+          'checker frames', sum(v['checkers'] is not None for v in out.values()))
+
+
 def main():
+    if H.TEST_SET == 'new': return main_new()
     items = json.loads((H.TEST_DIR / 'items.json').read_text())
     P = json.loads((H.TEST_DIR / 'proposals.json').read_text())
     notes = {}

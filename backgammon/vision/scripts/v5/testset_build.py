@@ -7,7 +7,7 @@ Two kinds of frame per block:
 Frames within 25 of a detector training frame are moved by 30 frames. Frames are stored losslessly
 (PNG) in the readers' view (heldout.board_view turned back), as the scans read them.
 
-Writes TEST_DIR/frames.npz (keys, png) and TEST_DIR/items.json. usage: testset_build.py
+Writes TEST_DIR/frames.npz (keys, png) and TEST_DIR/items.json. usage: [BG_TEST_SET=new] testset_build.py
 """
 import json
 import av, cv2, numpy as np
@@ -35,7 +35,24 @@ def read(s, numbers):
                 if i >= last: break
 
 
+def main_new():
+    """BG_TEST_SET=new: the Nov 24 15:31 recording (s6), which no model was trained on. Frames every
+    15 s from the first orange-board reading to the end of play (session.json "testFrames": [a, b])."""
+    s = 's6'; a, b = H.settings(s)['testFrames']
+    items = [{'key': f'{s}:{n}', 'session': s, 'kind': 'uniform', 'block': 'Nov 24 15:31'} for n in range(a, b, 375)]
+    view = H.board_view(s); pngs = {}
+    for n, im in read(s, [int(it['key'].split(':')[1]) for it in items]):
+        pngs[f'{s}:{n}'] = cv2.imencode('.png', reader_view(im, view))[1].tobytes()
+    items = [it for it in items if it['key'] in pngs]
+    H.TEST_DIR.mkdir(parents=True, exist_ok=True)
+    arr = np.empty(len(items), object); arr[:] = [pngs[it['key']] for it in items]
+    np.savez(H.TEST_DIR / 'frames.npz', keys=np.array([it['key'] for it in items]), png=arr)
+    (H.TEST_DIR / 'items.json').write_text(json.dumps(items, indent=1))
+    print(len(items), 'frames')
+
+
 def main():
+    if H.TEST_SET == 'new': return main_new()
     train = {}
     for k in ob.load_frames()[0]:
         s, f = k.split(':'); train.setdefault(s, []).append(int(f))
