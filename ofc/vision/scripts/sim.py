@@ -25,6 +25,7 @@ def simulate(r, s, masked, params):  # masked: a strip reader is attached
         st.associate(t, bodies, boxes, cv2.imread(th) if os.path.exists(th) else None)
         crops = [cv2.imread(f"../scan/{s}/crops/{b['crop']}") for b in bodies]
         r.identify_crops(bodies, [c.copy() for c in crops])
+        if getattr(r, 'corner', None) is not None: r.corner_reads(st, bodies, crops)
         if r.strip is not None:
             todo, mc = [], []
             for b, im in zip(bodies, crops):

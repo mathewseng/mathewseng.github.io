@@ -128,10 +128,23 @@
   "contradiction": 0.3,
   "emptySeconds": 3.0,
   "stillKeep": 0.6,
-  "stripProbability": 2.0,
+  "stripProbability": 0.8,
   "perClassMedian": {
    "SA": 0.5
-  }
+  },
+  "stripMargin": 0.3,
+  "stripAgree": 0.8,
+  "stripMinViews": 3,
+  "cornerPairVotes": 2,
+  "cornerMedian": 0.5,
+  "cornerAgree": true
  },
- "handStateNote": "OfcHandState parameters (video). stripProbability > 1 turns strip reads of never-seen covered cards off; no strip reader is shipped (see README). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README)."
+ "handStateNote": "OfcHandState parameters (video). stillKeep 0.6: a named card whose box is lost stays while >= 60 % of its 4x-downscaled footprint is unchanged since its last box (README). strip* / corner*: in a jumbo-deck hand the corner reader names a slot the card reader left unnamed after cornerPairVotes views whose two index corners agree, or stripMinViews views whose mean corner read is >= stripProbability (margin stripMargin, stripAgree of views), and only if the card reader's median agrees at >= cornerMedian and no slot has held that name this hand (README). No masked strip reader is shipped.",
+ "cornerReader": {
+  "path": "models/card-corner.onnx",
+  "sha256": "80bd211ff0948b288f0af215c741f638d32ca2cb45098ea5c6cbdbb6c9dc9fec",
+  "patch": "4 corners of the 64x96 classifier crop, 36x36, each turned so that corner sits top-left (corner_patches)",
+  "output": "log p of 52 codes + none per corner: rank (13 + none) from contrast-normalized luma x suit (4) from colour",
+  "note": "corner5: jumbo-index deck only (read in hands where >= jumboShare of crops pass the deck gate). Trained (scripts/corner/) on corner patches of the eye-labelled whole jumbo crops of the two training hands (n1532 3225-3494 and 3746-3937 s), positives cleaned by 4-fold cross-validation by slot, plus rank/suit recombination and synthetic rank glyphs drawn in system fonts. A slot the card reader leaves unnamed is named from corners only when the card reader's median over its last 20 views puts the same card on top at >= cornerMedian (README)."
+ }
 }

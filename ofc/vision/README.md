@@ -37,6 +37,7 @@ Needs `onnxruntime`, `opencv-python` and `numpy`, plus `av` for video. `profile.
 | Identity fallback | `models/card-identity-fallback.onnx` (cls-v5a, same net) | crops where the main classifier's best card < 0.3 or `none` on top (and the deck gate says classic) | same |
 | Deck gate | `models/card-deck.onnx` (deck-v1, same net, 3 outputs) | every crop, both turns | classic / jumbo / none |
 | Jumbo reader | `models/card-identity-jumbo.onnx` (cls-f1, same net, factorized head) | crops with p(jumbo) ≥ 0.5 in both turns | 52 codes + `none` (log p) |
+| Corner reader | `models/card-corner.onnx` (corner5, rank from luma × suit from colour) | in jumbo-deck hands, the 4 corners (36x36) of each unnamed slot's crop | per corner 52 codes + `none` (log p) |
 
 **Gate.** A body is named only when all of these hold:
 
@@ -416,7 +417,104 @@ wrong.
   fine-tuned. The 12 n1532 cards are bottom-fan and stacked-column strips: even when boxed, they would need a strip
   reader.
 
-### Strip reader (not shipped)
+### Corner-index reader for the jumbo deck (2026-11-25)
+
+The jumbo deck's index (rank glyph over a suit pip) is about 15 px tall at full resolution. It stays readable at the
+edge of a fan strip and on the right player's stacked columns, where the whole-card readers see mostly other cards.
+**The source video is 1920x1080 H.264 at about 12.6 Mbit/s in every session**: the CV374 is a 1080p camera, so there is
+no 4K. Multi-frame averages were already used for the eye labels (`avgz.py`, 8x 2 s means).
+
+**Reader.** `corner_patches()` cuts the 4 corners of the 64x96 classifier crop and turns each so that its corner sits
+top-left. Upright cards carry the index top-left and bottom-right. Cards lying sideways in the right player's columns
+get near-square boxes, so their index lands top-right and bottom-left. `models/card-corner.onnx` reads each patch:
+
+- rank (13 + `none`) from contrast-normalized luma, because H.264 halves colour resolution and a red glyph blurs in
+  colour channels;
+- suit from colour;
+- p(card) = p(rank) · p(suit).
+
+**Training data** (`scripts/corner/`, jumbo training hands only: n1532 3225–3494 and 3746–3937 s; the truth hands
+2703 and 4544 s were never used):
+
+- Corners of the eye-labelled whole crops (`labels/n1532-jumbo-slots.json`). A crop gives a positive pair only when one
+  diagonal pair of corners has index ink and the other has none (`build_corner_idx.py`).
+- Some of those corners show a neighbour's index (a "J 9" or "7 2" pair at a fan edge). Positives were cleaned by
+  4-fold cross-validation by slot (`cvclean.py`). Rejects of the rare ranks that showed a single clean glyph (A♥, 2♠,
+  9♣) were put back by eye. The result is in `labels/n1532-jumbo-corner-keep.json`.
+- Augmentation: rank and suit recombined from different cards at the gap between glyph and pip; a neighbour card
+  pasted over the far side, with its own index (fan or column); and **synthetic rank glyphs** (`synth.py`). A patch's
+  rank glyph is erased and another rank is drawn in a condensed system font at the same box, ink colour and blur. Each
+  rank appears on only 1–4 physical cards in the two hands, and without the synthetic glyphs the reader confused 3/7,
+  4/A, 5/6 and 6/8/Q.
+
+| corner reader, trained on hand A, read on hand B's labelled crops (`eval_corner.py`) | p ≥ 0.5 | p ≥ 0.8 | two corners agree |
+| --- | --- | --- | --- |
+| corner2 (min-channel rank) | 1092 right / 34 wrong | 980 / 13 | 987 / 0 |
+| corner3 (luma rank) | 1178 / 39 | 1000 / 2 | 1099 / 0 |
+| corner5 (cleaned + recombined + synthetic, shipped recipe) | **1243 / 7** | **1162 / 0** | 980 / 0 |
+
+Trained on hand B and read on A, every version was poor (hand B has no 6 at all). The shipped model trains on both hands.
+
+**Naming** (`OfcHandState`, all in `profile.json`). It runs only in a hand where ≥ 50 % of the crops so far pass the
+deck gate (`jumboShare`), and only on slots the card reader leaves unnamed. A slot is named from corners when:
+
+- `cornerPairVotes` (2) views have two corners that both put the same card on top at ≥ 0.5, and no view has two
+  corners agreeing on another card; or the mean corner read over ≥ 3 views is ≥ 0.8 with margin 0.3, and 80 % of the
+  views agree (`strip*`);
+- **and** the card reader's median over the slot's last 20 views has the same card on top at ≥ `cornerMedian` (0.5);
+- **and** no slot has held that name in this hand. The name is shown on the slot's box and on its hidden slot.
+
+Each guard came from a wrong name found by eye:
+
+- **Corner reader alone** (corner4): it named a whole, clear 4♥ as A♥ at the 2703 s hand end (wrong at the truth
+  frame), and mid-hand a 10♠ as Q♠, a 3♦ as 7♦ and a 4♠ as A♠. Hence the agreement with the card reader.
+- **Agreement at any p**: a sideways 2♦ was named 2♠ for 6 s (16:16:37–16:16:43 EST, n1532 2682–2688 s). Both readers
+  leaned to the spade, the card reader with a median of 0.31. Hence `cornerMedian` 0.5. This was found on a truth hand,
+  so that one threshold is not held out.
+- **Stale hidden names**: a duplicate slot of a 10♠ was named after the 10♠ was picked up (2718–2727 s, cards being
+  collected). Two fixes: no slot may take a name another slot held earlier in the hand, and corner evidence is cleared
+  when a hand ends.
+
+**Checks.** Every view whose reported name changed against the shipped runtime was listed (`namediff.py`): 0 in s1836,
+s0023 and n1501, and 17 slots in n1532 (`corner/szany.py` full-resolution views):
+
+- 12 in the two truth hands: 8♣, 4♥, J♠, 7♥ (2703 s hand); 6♣, 4♥, 4♠, 5♥, J♠, A♣, 8♠, Q♦, J♦ (4544 s hand);
+- 5 in the training hands: 8♥, 7♠, K♠, 2♦ and 8♣.
+
+All 17 are right.
+
+| hand ends, legible cards named right | shipped (deck gate + jumbo reader) | + corner reader (shipped) |
+| --- | --- | --- |
+| s1836 | 306 / 314 | **306 / 314** |
+| s0023 | 53 / 58 | **53 / 58** |
+| n1501 | 68 / 69 | **68 / 69** |
+| n1532 | 57 / 86 | **60 / 86** (4♥ and 7♥ at 2703 s, J♦ at 4544 s) |
+| named wrong, all four | 0 | **0** |
+
+Most corner names come before the truth frame and are later covered or dropped. The gain at hand end is small.
+
+**Why the rest stay unnamed** (`corner/cdiag.py`, n1532):
+
+- Whole cards the card reader tops under its gate (3♠ ×2, 3♥, the 2703 s 4♠): corner5 still reads a jumbo 3 as 5 and that
+  4 as A, so the two never agree.
+- 4♠ (4544 s): named by corners from 4422 s, but the name flickers off at the truth frame. One view's corners once agreed
+  on A♠, which ends the pair path, and the mean read dips under 0.8.
+- K♠ (2703 s): corners (mean 0.92) and the card reader (0.69) agree on its views, but it is never named. This was not
+  traced further.
+- Fan strips and stacked columns (D2, DQ, S6, D4 ×2, D7, H7, SJ, CQ, DK, DA, C5, CK, S5, H8, C8, C6): the card
+  reader reads the card on top or `none`. With the agreement rule, a strip read by corners alone is never named. A
+  box in a fan often sits one strip off its card, so a corner read cannot be bound to a slot safely without the card
+  reader.
+- 12 fanned jumbo cards still have no object (the detector was not fine-tuned).
+
+**Classic deck, not done:**
+
+- **Corner reader.** Classic indices are about 6 px and often faint on whole training cards
+  (`corner/build_classic_idx.py`). They add little over the card reader, which already sees pips and art.
+- **Multi-keyframe agreement** for classic cards under the 0.8 gate is unsafe. The s1836 4♦ under a fanned heart card
+  reads H4 in 140 views (median 0.67), and v3 and v5a agree on it. The true 7♥ (0.74) cannot be told apart from it.
+
+### Strip reader (masked crops, not shipped)
 
 For fans laid down already fanned (three-player pineapple rows, Fantasyland), the cards underneath are never seen
 whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px tall.
@@ -442,8 +540,9 @@ whole. Only a strip about 10–20 px wide shows, with a corner index about 7 px 
 - Cards held in a player's hand, and cards moving while being dealt, are not read.
 - The gigarepo skin-cover rule was not ported, because the eval works from saved crops.
 - **A♠ (deck A)** has too few confident training views.
-- **Jumbo-index deck:** a third of its legible hand-end cards stay unnamed (29 / 86 in n1532, mostly fan strips and
-  stacked columns). Only two hands of it were available for training, and 12 types were never seen whole there.
+- **Jumbo-index deck:** 26 / 86 legible n1532 hand-end cards stay unnamed, mostly fan strips and stacked columns.
+  The corner reader names some of these, but only where the card reader agrees. Only two hands of the deck were
+  available for training, with 1–4 physical cards per rank.
 - **Cards the detector stops boxing** keep their name only if they were named while whole (`stillKeep`).
 - **The detector is the EPT model, not fine-tuned.** Fine-tuning on this footage would mostly help the corners of fanned rows.
 
@@ -505,6 +604,15 @@ Scratch lived in `/private/tmp/claude-501/ofc-vision/` (scan/, labels/, data/, m
 - 74,212 body crops over 7 sessions; 3,775 tracks after splitting.
 - The v3 training index has 51,173 real crops from 2,349 tracks (742 hand-checked, 1,607 pseudo-labelled), plus 3,150 `none` crops.
 - `labels/*.json` holds every hand-checked track with its file seconds and frame position.
+
+12. **Corner reader (2026-11-25),** scratch in `/private/tmp/claude-501/ofc-vision4/` (scan/ links to ofc-vision2's
+    scans). Run from `work/`:
+    - `corner/build_corner_idx.py` writes `../corner-whole.json`;
+    - `corner/cvclean.py` cleans it into `../corner-cv.json` (keep list: `labels/n1532-jumbo-corner-keep.json`);
+    - `corner/train_corner.py --hands A,B --keep KEEP --synth 0.35 --out OUT` trains in about 5 min on MPS;
+    - `corner/eval_corner.py MODEL HAND SIM` gives the cross-hand table;
+    - `eye/sim2.py TAG SESS corner=MODEL.onnx` simulates;
+    - `corner/stripnames.py`, `corner/slotcorner.py`, `corner/cdiag.py` and `corner/szany.py` are the check sheets.
 
 ## Taken from gigarepo (servers/poker-os)
 

@@ -1,4 +1,4 @@
-"""sim2.py TAG SESS[,SESS] ['{params}'] [MODEL.onnx] [fb=FALLBACK.onnx:below] [deck=GATE.onnx:jumbo[:JUMBO.onnx]]: sim.py's simulate() only (no v3 reference), writes ../sim-TAG-SESS.json."""
+"""sim2.py TAG SESS[,SESS] ['{params}'] [MODEL.onnx] [fb=FALLBACK.onnx:below] [deck=GATE.onnx:jumbo[:JUMBO.onnx]] [corner=CORNER.onnx]: sim.py's simulate() only (no v3 reference), writes ../sim-TAG-SESS.json."""
 import sys, json, os
 from src import REPO
 R = REPO
@@ -18,6 +18,10 @@ if dk:
     path, th = dk[5:].split(':')[:2]; r.deck = ort.InferenceSession(path, providers=['CPUExecutionProvider']); r.deck_jumbo = float(th)
     jc = dk[5:].split(':')[2:]  # deck=GATE.onnx:jumbo:JUMBO_CLASSIFIER.onnx reads jumbo crops with their own classifier
     r.jumbo = ort.InferenceSession(jc[0], providers=['CPUExecutionProvider']) if jc else None
+cr = next((a for a in sys.argv[3:] if a.startswith('corner=')), None)  # corner=CORNER.onnx (cornerReader)
+if cr:
+    import onnxruntime as ort
+    r.corner = ort.InferenceSession(cr[7:], providers=['CPUExecutionProvider'])
 for s in sessions:
     out = simulate(r, s, False, params)
     json.dump(out, open(f'../sim-{tag}-{s}.json', 'w'), default=float); print('done', s, flush=True)

@@ -43,6 +43,19 @@ def cover_mask(body, covering, out_w, out_h, margin):
     return m
 
 
+CORNER = 36
+
+
+def corner_patches(crop):
+    """The 4 corners of a 64x96 card crop, each turned so that corner sits top-left, 36x36: index glyphs of an upright
+    card (top-left, bottom-right) and of a card lying sideways in a near-square box (top-right, bottom-left)."""
+    S, (h, w) = CORNER, crop.shape[:2]
+    return [crop[1:1 + S, 1:1 + S],
+            cv2.rotate(crop[1:1 + S, w - 1 - S:w - 1], cv2.ROTATE_90_COUNTERCLOCKWISE),
+            cv2.rotate(crop[h - 1 - S:h - 1, w - 1 - S:w - 1], cv2.ROTATE_180),
+            cv2.rotate(crop[h - 1 - S:h - 1, 1:1 + S], cv2.ROTATE_90_CLOCKWISE)]
+
+
 def rotated_nms(boxes, scores, iou):
     order = np.argsort(-scores); keep = []; gone = np.zeros(len(boxes), bool)
     rects = [((float(b[0]), float(b[1])), (float(b[2]), float(b[3])), math.degrees(float(b[4]))) for b in boxes]
@@ -107,6 +120,11 @@ class OfcCardReader:
             sr = p['stripReader']
             if _sha256(base / sr['path']) != sr['sha256']: raise ValueError(f"model changed: {sr['path']}")
             self.strip = ort.InferenceSession(str(base / sr['path']), o, providers=['CPUExecutionProvider'])
+        self.corner = None
+        if p.get('cornerReader'):  # jumbo-index deck: reads the index glyphs in the box corners (fan strips, columns)
+            cr = p['cornerReader']
+            if _sha256(base / cr['path']) != cr['sha256']: raise ValueError(f"model changed: {cr['path']}")
+            self.corner = ort.InferenceSession(str(base / cr['path']), o, providers=['CPUExecutionProvider'])
         self.W, self.H = det['inputWidth'], det['inputHeight']
         self.crop = p['frameCrop']; self.accept = p['acceptance']
 
@@ -199,6 +217,29 @@ class OfcCardReader:
         e = np.exp(lg - lg.max(1, keepdims=True)); pr = e / e.sum(1, keepdims=True)
         return (pr[:n] + pr[n:]) / 2
 
+    def corner_probabilities(self, crops):
+        """Corner reader on the 4 corners of each crop: (n, 53), per card the best corner's p; none = the least
+        none-like corner's p(none). Two different indices in two corners leave no margin (see README)."""
+        x = np.stack([q for c in crops for q in corner_patches(c)]).astype(np.float32) / 255
+        lp = self.corner.run(None, {self.corner.get_inputs()[0].name: np.ascontiguousarray(x.transpose(0, 3, 1, 2))})[0]
+        pc = np.exp(lp).reshape(len(crops), 4, 53)
+        return np.concatenate([pc[:, :, :52].max(1), pc[:, :, 52:].min(1)], 1), pc
+
+    @staticmethod
+    def corner_pair(pc, p=0.5):
+        """The card two corners of one view both put on top at >= p (the two index corners of a whole card), else None."""
+        tops = [int(q.argmax()) for q in pc if q.argmax() < 52 and q.max() >= p]
+        best = max(set(tops), key=tops.count) if tops else None
+        return CODES[best] if best is not None and tops.count(best) >= 2 and len(set(tops)) == 1 else None
+
+    def corner_reads(self, state, bodies, crops):
+        """In a hand the deck gate calls jumbo, read unnamed slots' boxes by their corner indices (b['stripProbabilities'])."""
+        if self.corner is None or not state.jumbo_hand(): return
+        idx = [i for i, b in enumerate(bodies) if not b['slot']['name']]
+        if idx:
+            v, pc = self.corner_probabilities([crops[i] for i in idx])
+            for i, pr, q in zip(idx, v, pc): bodies[i]['stripProbabilities'] = pr; bodies[i]['cornerPair'] = self.corner_pair(q)
+
     def read_hand(self, frame, t, state, cover_confidence=0.1):
         """Read a frame into an OfcHandState: b['handCard'] is the name to report (also for covered cards named
         earlier), b['card'] the single-view read; state.table(t) also lists covered cards no longer boxed."""
@@ -206,6 +247,9 @@ class OfcCardReader:
         bodies = [b for b in boxes if b['detectorConfidence'] >= self.profile['detector']['confidence']]
         state.associate(t, bodies, boxes, small_frame(frame))
         self.identify(frame, bodies)
+        if self.corner is not None:
+            c = self.profile['classifier']
+            self.corner_reads(state, bodies, [rectify(frame, b['quad'], c['cropWidth'], c['cropHeight'], c['cropMargin']) for b in bodies])
         if self.strip is not None:
             c = self.profile['classifier']; todo, crops = [], []
             for b in bodies:
@@ -302,15 +346,17 @@ class OfcHandState:
       a single-view or strip read of a name held by another slot is dropped.
     - Strip reads (covered cards never seen whole) are off unless `stripProbability` <= 1; see README."""
     DEFAULTS = dict(dist=6, angle=8, gap=4.0, gapNamed=12.0, swapReads=2, minVotes=2, purity=0.8, medianProbability=0.8,
-                    emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, stillKeep=0.0, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5)
+                    emptySeconds=3.0, contradiction=0.3, feltReads=2, glimpseSeconds=1.5, moveReads=2, stillKeep=0.0, coveredContradiction=True, singleVoteProbability=2.0, perClassMedian=None, stripProbability=2.0, stripMargin=0.3, stripAgree=0.7, stripMinViews=5,
+                    jumboShare=0.5, jumboMinBodies=10, deckJumbo=0.5, cornerPairVotes=0, cornerAgree=True, cornerMedian=0.5)
 
     def __init__(self, **params):
         self.p = dict(self.DEFAULTS, **params); self.slots = []; self.n = 0
-        self.hand = {}; self.hand_no = 0; self.empty_since = None
+        self.hand = {}; self.hand_no = 0; self.empty_since = None; self.deck_n = self.deck_j = 0; self.strip_of = {}; self.held = set()
 
     def _new(self, t, b):
         sl = dict(id=self.n, xs=[], x=b['x'], y=b['y'], angle=b['angleDegrees'], width=b['width'], height=b['height'],
-                  first=t, last=t, seen=t, votes={}, name=None, pend=None, npend=0, dead=False, views=[], stripViews=[], recent=None)
+                  first=t, last=t, seen=t, votes={}, name=None, pend=None, npend=0, dead=False, views=[], stripViews=[], recent=None,
+                  pairs={})
         self.n += 1; self.slots.append(sl); return sl
 
     def associate(self, t, bodies, cover, small=None):
@@ -319,7 +365,11 @@ class OfcHandState:
         p = self.p
         if len(bodies) <= 1:
             self.empty_since = t if self.empty_since is None else self.empty_since
-            if t - self.empty_since >= p['emptySeconds'] and self.hand: self.hand = {}; self.hand_no += 1
+            if t - self.empty_since >= p['emptySeconds'] and (self.hand or self.deck_n):
+                self.hand = {}; self.hand_no += 1; self.deck_n = self.deck_j = 0; self.held = set()
+                # corner evidence belongs to the hand it was seen in: a duplicate slot of a collected card must not
+                # become the only holder of its name once the hand's names are forgotten
+                for sl in self.slots: sl['stripViews'], sl['pairs'] = [], {}
         else:
             self.empty_since = None
         for sl in self.slots:
@@ -362,8 +412,30 @@ class OfcHandState:
         return [o for o in self.slots if o is not sl and o['first'] > sl['first'] + 0.3
                 and math.hypot(o['x'] - sl['x'], o['y'] - sl['y']) < 0.9 * (sl['height'] + o['height']) / 2]
 
+    def jumbo_hand(self):
+        """This hand is dealt from the jumbo-index deck: >= jumboShare of its card crops so far passed the deck gate."""
+        p = self.p
+        return self.deck_n >= p['jumboMinBodies'] and self.deck_j >= p['jumboShare'] * self.deck_n
+
     def _strip(self, sl):
+        p = self.p; c = self._strip_read(sl)
+        if c is None or not p['cornerAgree']: return c
+        # the card reader's median over the slot's last views must put the same card on top (the corner reader alone,
+        # trained on 1-4 physical cards per rank, read a whole jumbo 4 as an ace and a 10 as a queen; see README)
+        vs = sl['views'][-20:]
+        if not vs: return None
+        med = np.median(np.array(vs), 0); k = CODES.index(c)
+        # ... at >= cornerMedian: a sideways 2 of diamonds that both readers leant to call a spade (reader median 0.31)
+        # was named 2 of spades for 6 s before this check
+        return c if int(med[:52].argmax()) == k and med[k] >= p['cornerMedian'] else None
+
+    def _strip_read(self, sl):
         p = self.p; ps = sl['stripViews']
+        # two index corners of one view agree (a whole card the reader left under its gate): cornerPairVotes such views,
+        # and no view whose two corners agree on another card
+        if p['cornerPairVotes'] and len(sl['pairs']) == 1:
+            (c, n), = sl['pairs'].items()
+            if n >= p['cornerPairVotes']: return c
         if p['stripProbability'] > 1 or len(ps) < p['stripMinViews']: return None
         m = np.mean(ps, 0); o = np.argsort(-m); top = int(o[0])
         if top == 52 or m[top] < p['stripProbability'] or m[top] - m[o[1]] < p['stripMargin']: return None
@@ -386,6 +458,9 @@ class OfcHandState:
             for sl in self.slots:
                 if id(sl) in boxed: sl['moved'] = 0
         for b in bodies:
+            if b.get('deckJumbo') is not None and b.get('label') != 'none':
+                self.deck_n += 1; self.deck_j += b['deckJumbo'] >= p['deckJumbo']
+        for b in bodies:
             sl = b['slot']; r = b.get('card')
             if r and sl['name'] and r != sl['name']:
                 sl['npend'] = sl['npend'] + 1 if sl['pend'] == r else 1; sl['pend'] = r
@@ -394,6 +469,7 @@ class OfcHandState:
             elif r:
                 sl['pend'], sl['npend'] = None, 0
             if b.get('probabilities') is not None: sl['views'].append(b['probabilities']); sl['views'] = sl['views'][-200:]
+            if b.get('cornerPair'): sl['pairs'][b['cornerPair']] = sl['pairs'].get(b['cornerPair'], 0) + 1
             if b.get('stripProbabilities') is not None: sl['stripViews'].append(b['stripProbabilities']); sl['stripViews'] = sl['stripViews'][-60:]
             if r:
                 sl['votes'][r] = sl['votes'].get(r, 0) + 1; sl['recent'] = sl['views'][-10:]
@@ -431,12 +507,13 @@ class OfcHandState:
         dupe = self.dupe = {sl['id'] for sl in self.slots if sl['name'] and best[sl['name']] is not sl}
         for sl in self.slots:
             if sl['name'] and sl['id'] not in dupe: self.hand.setdefault(sl['name'], sl['id'])
+        self.held |= set(self.hand)  # every name a slot has held this hand (a picked-up card's name is freed, not forgotten)
         strips = {}
         for sl in self.slots:
             if not sl['name'] and sl['id'] not in dupe:
                 v = self._strip(sl)
-                if v and self.hand.get(v, sl['id']) == sl['id']: strips.setdefault(v, []).append(sl['id'])
-        strip_of = {ids[0]: v for v, ids in strips.items() if len(ids) == 1}
+                if v and v not in self.held: strips.setdefault(v, []).append(sl['id'])
+        strip_of = self.strip_of = {ids[0]: v for v, ids in strips.items() if len(ids) == 1}
         carried = {}
         for b in bodies:
             sl = b['slot']; c = sl['name'] if sl['id'] not in dupe and not sl['dead'] else None
@@ -465,7 +542,7 @@ class OfcHandState:
         """Every live slot, including covered cards the detector no longer boxes."""
         dupe = getattr(self, 'dupe', set())
         return [dict(slotId=sl['id'], x=sl['x'], y=sl['y'], width=sl['width'], height=sl['height'], angleDegrees=sl['angle'],
-                     card=sl['name'] if sl['id'] not in dupe else None, placedSeconds=sl['first'], detected=sl['seen'] == t)
+                     card=(sl['name'] or self.strip_of.get(sl['id'])) if sl['id'] not in dupe else None, placedSeconds=sl['first'], detected=sl['seen'] == t)
                 for sl in self.slots]
 
 
