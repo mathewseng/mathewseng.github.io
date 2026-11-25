@@ -22,7 +22,7 @@ Per day (Nov 21, Nov 23, Nov 24) it prints counts:
                   the final position is expected; a board changed by play after the game (the Nov 23
                   play-out after the pass) is counted apart.
 
-usage: [BG_TEST_SET=new] testset_eval.py [--obj M[,M2]] [--verify V] [--tol 12] [--cube-thresh 0.5] [--faces M] [--slots M] [--thresh 0.35] [--post merge|none] [--comb]
+usage: [BG_TEST_SET=new] testset_eval.py [--obj M[,M2]] [--verify V] [--track CACHE] [--tol 12] [--cube-thresh 0.5] [--faces M] [--slots M] [--thresh 0.35] [--post merge|none] [--comb]
                        [--decode s1=decode.json ...] [--decoded-only] [-v]
   --decode scores a decode2.mjs output for a session instead of the published analysis.
 """
@@ -181,6 +181,7 @@ def main():
     ap.add_argument('--verify', help='die crop verifier (die_verify.py): second look at every die peak')
     ap.add_argument('--tol', type=float, default=12, help='px between a labelled die and its peak')
     ap.add_argument('--cube-thresh', type=float, default=.5, help='best cube peak needed to place the cube (0.15 shipped)')
+    ap.add_argument('--track', help='die_track.py testcache file: dice and cube from die tracking (die_track.Tracker)')
     ap.add_argument('-v', action='store_true')
     a = ap.parse_args()
     global TOL; TOL = a.tol
@@ -189,6 +190,9 @@ def main():
     if not a.decoded_only:
         net = ob.load(a.obj); reader = rs.Reader(a.slots, ob.dev)
         fnet = df.load_net(a.faces); ver = dv.load(a.verify) if a.verify else None
+        if a.track:
+            import pickle, die_track
+            trackers = {s: die_track.Tracker(raw) for s, raw in pickle.load(open(a.track, 'rb')).items()}
     S = collections.defaultdict(collections.Counter); errs = collections.defaultdict(list)
     first_turn = {}
     for it in items:
@@ -206,7 +210,9 @@ def main():
                 if res != 'right': errs[day].append(f'{k} decoded {res}')
             continue
         im = img_of(imgs[k]); view = H.board_view(s)
-        dice, cube = die_peaks(net, im, a.thresh, a.post, a.comb, ver)
+        if a.track:
+            dice = trackers[s].dice(f); c = trackers[s].cube(f, a.cube_thresh); cube = (2, *c) if c else None
+        else: dice, cube = die_peaks(net, im, a.thresh, a.post, a.comb, ver)
         # dice presence and colour
         used = set(); matched = {}
         for ti, (x, y, c) in enumerate(lab['dice']):
