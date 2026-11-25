@@ -578,3 +578,101 @@ Face reader from the published rolls (Nov 25)
   G7 T5/T7/T9 dances (one die each, several blocking rolls), G1 T15 (2-2 or 6-2, one die shows two),
   G9 T9, Nov 24 G1 T38 (no die seen). Nov 21 G2 T36 (19:34:03 EST, 6-1 by the board) now reads 6-1 from
   the dice.
+
+Tracking faults fixed; side-on four; the open rolls (Nov 25, 08:00-09:30 EST)
+
+  The six disagreements left in the roll audit were tracking faults. Each was traced:
+  - one die seen twice, two ways. (a) Nov 24 G1 T34 and Nov 21 G2 T16: the scan keeps one peak per frame,
+    the stronger, and the die's pip face and side (14-19 px apart) win by turns, so the 10 px cells of
+    dice_faces.tracks split one die into two groups that never share a frame. (b) Nov 21 G9 T29: a pale die
+    on a cream point gives two strong peaks in every frame, 14.7 px apart, which the tracker kept as two
+    touching dice (rule 5); its two "dice" filled the colour's two places (rule 6), so the real second die
+    (a two at 338,316) was dropped.
+  - the wrong second die, Nov 21 G9 T13: the second group (351,479) is a die by the hand at the checkers for
+    2.4 s, while the roll's dice lay 25 s. The roll's real second die, pale on the bottom rail (256,554),
+    peaks at 0.10-0.23 and is not in the scan.
+  - the shared dance window, Nov 21 G9 T46/T47: the dance and White's next roll were decoded from one jump
+    and read the same window, so the dance read White's pale rail die (coloured red by the tracker) and
+    White's turn read a five from turn 45's dice, still lying when the window opened.
+  - the pushed die, 15:31 G1 T8: the three rests at 461,383 for 0.8 s, a hand pushes it 25 px and it
+    shows one; the two rests are two groups.
+  Fixes:
+  - die_track.py rule 5b: two strong same-colour dice 13-24 px apart are checked once per track against
+    the board before the die landed (the median of up to 9 frames with no die peak within 30 px, else
+    after it left). The changed region under the two peaks spans 12-24 px for one die and 29-48 px for two
+    touching dice. Under 28 px the weaker peak is dropped. A board that changed around the die (light, a
+    hand) gives no verdict. All 38 checks on the six sessions were eye-checked on mask sheets (9 one die,
+    29 two dice, all right). Tracker(image=...) takes the frames; scan and testset_eval --track pass them.
+    Every session has a new scan, objects-scan-track3 (die_track.py scan --raw objects-scan-track.raw.pkl
+    --out objects-scan-track3 --cube-out cube-scan-track3.json; the 15:31 raw peaks are obj-v8,obj-v10 as
+    before). The published scans and cube scans are untouched.
+  - dice_faces._joined (roll_audit.py sets dice_faces.JOIN_GROUPS): groups less than 24 px apart that
+    overlap in time but share at most a tenth of their frames are one die, read at the place seen more
+    often. A group that starts within 2 s of another's end, within 40 px, is the same die pushed, read from
+    its first rest. When the longest group is seen in the last 10 s before the move, another group that
+    vanished 10 s before it with under a quarter of its detections is not the roll's die.
+  - roll_audit.py: a dance and the next roll that share a window split it where the next roll's dice land
+    (the dance's window ends 5 frames before; the next turn's starts 30 frames before, so its dice count as
+    fresh). The roller's only fresh die takes a fresh die of the other colour that landed within 30 frames
+    as its pale partner (the other player's roll already lies on the board); rows show it as
+    'otherColour'. --no-join, --no-split-window and --no-pale-partner turn these off.
+  A relaxed pair-colour rule (a strong die of unsure track colour takes its partner's colour) was tried in
+  the tracker and dropped: it recolours the Nov 23 opening roll's red die (s4:9562).
+
+  Roll audit (477 published rolls): 437 -> 443 confirmed, 6 -> 1 disagree (15:31 G2 T50, the irregular turn),
+  33 -> 32 without two dice, 1 stale. No roll the dice confirmed before is contradicted and no dice pick
+  changes. Newly confirmed: Nov 21 G9 T29 4-2, G9 T46 4-3; 15:31 G1 T8 3-2; and three rolls whose pale
+  partner was read in the other colour: Nov 21 G2 T13 5-2 (a pale five at the rail, eye-checked), G2 T21
+  4-4, Nov 24 G3 T8 6-5. G9 T47 5-4 is now read from its own two dice. Now without two dice: Nov 21 G9 T13
+  and Nov 24 G1 T34, whose second dice were found by eye (below). Every newly confirmed roll was
+  eye-checked on roll_strip.py strips.
+  Object test sets (testset_eval.py --track, rule 5b on): Nov 21 212/212, Nov 23 65/67, Nov 24 93/93, no
+  false dice, faces 41/41, 7/7, 17/17, cube 252/252; new set 222/226 with 1 false. All unchanged.
+
+  Side-on four read as three (15:31). The 61 crops are one die, s6:147 (all 60 of its crops), plus one
+  crop of another die. s6:147 is 15:31 G2 T34's red four, cocked against the rail. The roll is fixed by the
+  move (4-2), and the other die shows two, so the label is solid. The crop is centred. The cause is the
+  view angle: the tilted face is foreshortened along its diagonal, so the four's two off-diagonal pips
+  merge in the middle and the face shows one diagonal line of pips, a three's pattern. No training session
+  has a die cocked this way. Tried with honest hold-out (face_train.py, s1-s5 with the old test games out,
+  scored on every 15:31 crop, lean crop, 8000 steps, --strong-aug --touch-aug .3):
+    baseline (same recipe)                  89.6% of crops, dice 168/184, 4->3 61, 5->4 17, 6->3 21
+    --squash-aug .3 (crop foreshortened 0.4-0.8 along a random direction)   79.2%, 153/184, 4->3 66, 5->4 318, 6->3 370
+    --squash-aug .1                          84.7%, 163/184, 4->3 68, 5->4 299, 6->3 152
+  Foreshortening makes a six's two columns one line (a three) and a five a four, so it costs far more than
+  it could gain; not adopted (the option stays in face_train.py, off). The shipped faces-v9, which saw
+  15:31, reads the die right, and the published roll does not depend on it.
+  The 5 read as 1 at s6:20125 was a label error. The yellow die there is a new roll between the games
+  (one yellow and one red die land at 20125). It was labelled 5 from White's last published roll (5-5 at
+  17235). At rest (20150-20200) it shows a single pip. faces-blind-new.json now has 1 (old file kept as
+  ~/Downloads/office-3-backgammon-heldout-20261124pm/faces-blind-new.backup-20261125.json); heldout-labels-new.json
+  is regenerated. New set die faces with faces-v9: 84/85 -> 85/85; the honest readers that never saw
+  15:31 (last round's lean + full pair) also 85/85.
+
+  The seven open rolls. In every one the second die lies on the board and the scan never found it: pale
+  dice at the bar edge or the rail. They were found on whole-board frames, zoomed, and read by eye and by
+  the face reader on crops at that place (faces-v9):
+  - Nov 21 G7 T5, White's dance: a three by White's checker at the bar (343,369, 7715-7745; one diagonal
+    bar of pips; reader 3, p 1.00) and the six already seen: 6-3, was published 6-6.
+  - Nov 21 G7 T7, dance: a six seen side-on at the bar edge (363,319, 8735-8765; two unbroken bars, where a
+    four's rows show separate pips; reader 6, p 0.78) and the four: 6-4, was 4-4.
+  - Nov 21 G7 T9, dance: a five at the bar edge (360,307, 8960-8985; four corners and the centre; reader 5,
+    p 1.00) and the four: 5-4, was 4-4.
+  - Nov 21 G1 T15: a six side-on beside the bar (364,368; reader 6, p 1.00) and the two: 6-2, was 2-2.
+    13/5 is now scored as 6-2 (loss 0.095), so White's graded checker loss in game 1 goes from 0.047 to
+    0.142.
+  - Nov 21 G2 T13: 5-2 as published. The pale five at the rail is now read by the audit (above).
+  - Nov 21 G9 T9: 6-1 as published. The one was already seen; the pale six on an orange point at the bottom
+    (223,545, 48020-48150) reads 6 on every frame.
+  - Nov 24 G1 T38: not rolled. White was closed out: no yellow die appears from 17950 to 19950, and after
+    Black's roll Black takes the cube and redoubles (18161). The 1-1 is the decode's placeholder for the
+    skipped turn. It stays marked on the page as a roll not resolved (rollSource "ambiguous"), and is not
+    graded.
+  Also confirmed by second dice found by eye: Nov 21 G9 T13 6-1 (a one, pale on the bottom rail, 256,554,
+  reader 1 on every frame) and Nov 24 G1 T34 3-2 (a two at the top rail, 147,32, reader 2). The audio was
+  not needed: every open roll but the closed-out one had both dice in view.
+  reviewed-rolls-open-20261125.json holds the four changed rolls (patch_rolls.mjs on the -all analysis).
+  rechained-turns-2026-11-21.json carries the three dances, so a rechain does not undo them.
+  Republished Nov 21 games 1 and 7: re-rendered, web copies replaced in release office3-backgammon-20261121-v3,
+  page data, Vision overlay (faces-v5, obs-v5 as before) and posters re-exported. Backups are in
+  ~/Downloads/office-3-backgammon-20261121-all/backup-20261125e.

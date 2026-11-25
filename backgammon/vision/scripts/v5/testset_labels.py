@@ -75,6 +75,8 @@ EXTRA_NEW = {'s6:2875': {'ignore': [[345, 312]]}}
 # its colour's last roll), the blind reads were right 67 of 90 times: a die seen from the side shows two bars for a
 # 4, 5 or 6. checked (the label used): the roll's value for a double, the blind read when it is one of a non-double
 # roll's two values, else null (88 dice).
+# s6:20125's yellow die was labelled 5 from White's last published roll (5-5 at 17235), but it is a new roll between
+# the games (one yellow and one red die land at 20125); at rest (20150-20200) it shows a single pip: checked 1 (Nov 25).
 FACES = Path(__file__).parent / 'labels/faces-blind-new.json'
 
 

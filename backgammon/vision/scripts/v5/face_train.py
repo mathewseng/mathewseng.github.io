@@ -10,6 +10,7 @@ order was not decided (face 0) with dice_faces.pair_loss. Sessions are named as 
   --test s6 ...         sessions to score; --test-held scores only their held-out frames
   --strong-aug          colour cast, saturation, gamma, blur and lost resolution (other views)
   --touch-aug 0.3       paste another die's centre 13-20 px away in that share of crops (touching dice)
+  --squash-aug 0.3      foreshorten that share of crops along a random direction (a die face seen at a slant)
 
 Scores: crops right, dice right (log-probs pooled over a die's first 20 crops, as roll_audit.py
 reads a track), and a confusion matrix of crops (rows truth 1-6, columns read).
@@ -60,13 +61,25 @@ def touching(p, donors):
     return p
 
 
+def squash(p):
+    """A die face seen at a slant: the crop shrunk along one random direction to 0.4-0.8 of its size about the
+    centre, as a die cocked against the rail or lying on a slope shows its top face foreshortened (15:31 G2 T34:
+    a red four at the rail whose two rows of pips merge into one line)."""
+    a = random.uniform(0, np.pi); k = random.uniform(.4, .8); c, s = np.cos(a), np.sin(a)
+    R = np.array([[c, -s], [s, c]]); A = R @ np.diag([k, 1.]) @ R.T
+    M = np.hstack([A, (np.eye(2) - A) @ np.array([[19.5], [19.5]])])
+    return cv2.warpAffine(np.ascontiguousarray(p), M, (40, 40), borderMode=cv2.BORDER_REFLECT)
+
+
 TOUCH = 0.  # --touch-aug: share of training crops given a touching neighbour
+SQUASH = 0.  # --squash-aug: share of training crops seen at a slant (squash)
 
 
 def batch_x(patches, strong, donors=None):
     out = []
     for p in patches:
         if donors is not None and TOUCH and random.random() < TOUCH: p = touching(p, donors)
+        if SQUASH and random.random() < SQUASH: p = squash(p)
         out.append(df.prep(photometric(p) if strong and random.random() < .7 else p, True))
     return torch.stack(out).to(df.dev)
 
@@ -106,7 +119,8 @@ def main():
     ap.add_argument('--crop', default='lean', choices=('lean', 'full')); ap.add_argument('--strong-aug', action='store_true')
     ap.add_argument('--eval-only', action='store_true'); ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--touch-aug', type=float, default=0., help='share of crops given a touching neighbour die')
-    a = ap.parse_args(); global TOUCH; TOUCH = a.touch_aug
+    ap.add_argument('--squash-aug', type=float, default=0., help='share of crops foreshortened along a random direction')
+    a = ap.parse_args(); global TOUCH, SQUASH; TOUCH = a.touch_aug; SQUASH = a.squash_aug
     random.seed(a.seed); np.random.seed(a.seed); torch.manual_seed(a.seed)
     if a.eval_only:
         net = df.load_net(a.out)

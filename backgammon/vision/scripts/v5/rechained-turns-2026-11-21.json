@@ -108,7 +108,7 @@
   "dance": true,
   "roll": [
    6,
-   6
+   3
   ],
   "candidates": [
    "6-6",
@@ -118,7 +118,7 @@
   "newResultFrame": 7745,
   "rollFrame": 7705,
   "pickupFrame": 7740,
-  "note": "White stays on the bar (the checker lies on the bar until 8:50 of this recording (22:28:09 EST)); one yellow die shows six (was decoded 6-1 bar/18)."
+  "note": "White stays on the bar (the checker lies on the bar until 8:50 of this recording (22:28:09 EST)); one yellow die shows six (was decoded 6-1 bar/18). Second die (by the bar, found by eye Nov 25) shows three: 6-3 (reviewed-rolls-open-20261125.json)."
  },
  {
   "game": 7,
@@ -140,7 +140,7 @@
   "player": "white",
   "dance": true,
   "roll": [
-   4,
+   6,
    4
   ],
   "candidates": [
@@ -151,7 +151,7 @@
   "newResultFrame": 8770,
   "rollFrame": 8725,
   "pickupFrame": 8765,
-  "note": "White stays on the bar; one yellow die shows four (was an inferred 3-1 18/14)."
+  "note": "White stays on the bar; one yellow die shows four (was an inferred 3-1 18/14). Second die (at the bar edge, found by eye Nov 25) shows six side-on: 6-4 (reviewed-rolls-open-20261125.json)."
  },
  {
   "game": 7,
@@ -173,7 +173,7 @@
   "player": "white",
   "dance": true,
   "roll": [
-   4,
+   5,
    4
   ],
   "candidates": [
@@ -185,7 +185,7 @@
   "newResultFrame": 9005,
   "rollFrame": 8955,
   "pickupFrame": 9000,
-  "note": "White stays on the bar; one yellow die shows four."
+  "note": "White stays on the bar; one yellow die shows four. Second die (at the bar edge, found by eye Nov 25) shows five: 5-4 (reviewed-rolls-open-20261125.json)."
  },
  {
   "game": 7,
