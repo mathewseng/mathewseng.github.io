@@ -648,7 +648,7 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[14]?.id).toBe("push-2026-09-14");
+    expect(workoutsNewestFirst[16]?.id).toBe("push-2026-09-14");
   });
 
   it("loads the September 21 and 22 sessions with the interrupted bench rep excluded", () => {
@@ -688,7 +688,7 @@ describe("seed data integration", () => {
       calculableSetCount: 17,
       excludedSetCount: 3,
     });
-    expect(workoutsNewestFirst.slice(12, 14).map((workout) => workout.id)).toEqual([
+    expect(workoutsNewestFirst.slice(14, 16).map((workout) => workout.id)).toEqual([
       "pull-2026-09-22",
       "push-2026-09-21",
     ]);
@@ -731,7 +731,7 @@ describe("seed data integration", () => {
     ).toMatchObject({
       achieved: true,
     });
-    expect(workoutsNewestFirst[11]?.id).toBe("push-2026-09-28");
+    expect(workoutsNewestFirst[13]?.id).toBe("push-2026-09-28");
   });
 
   it("loads the September 29 pull workout without inventing leg-raise sets", () => {
@@ -766,7 +766,7 @@ describe("seed data integration", () => {
       calculableSetCount: 24,
       excludedSetCount: 4,
     });
-    expect(workoutsNewestFirst[9]?.id).toBe("legs-2026-09-30");
+    expect(workoutsNewestFirst[11]?.id).toBe("legs-2026-09-30");
   });
 
   it("excludes the October 4 incomplete bench rep without allocating mixed raises", () => {
@@ -786,12 +786,12 @@ describe("seed data integration", () => {
         (entry) => entry.exerciseId === "dumbbell-shoulder-raise-mixed",
       )?.sets,
     ).toHaveLength(8);
-    expect(workoutsNewestFirst[8]?.id).toBe(workout.id);
+    expect(workoutsNewestFirst[10]?.id).toBe(workout.id);
   });
 
   it("loads the November 9 return full-body session with bench warm-ups excluded", () => {
     const workout = workouts.find((item) => item.id === "full-body-2026-11-09")!;
-    expect(workoutsNewestFirst[6]?.id).toBe(workout.id);
+    expect(workoutsNewestFirst[8]?.id).toBe(workout.id);
     expect(workout).toMatchObject({
       type: "full-body",
       startTime: "22:30",
@@ -815,7 +815,7 @@ describe("seed data integration", () => {
 
   it("loads the November 10 sore-day session with per-dumbbell loads undoubled", () => {
     const workout = workouts.find((item) => item.id === "full-body-2026-11-10")!;
-    expect(workoutsNewestFirst[5]?.id).toBe(workout.id);
+    expect(workoutsNewestFirst[7]?.id).toBe(workout.id);
     expect(workout.exercises.map((entry) => entry.exerciseId)).toContain("dumbbell-curl");
     expect(calculateWorkoutTotals(workout)).toMatchObject({
       completedReps: 280,

@@ -1541,6 +1541,26 @@ Start: 2:00 PM. Duration: 80 minutes.
 
 17 overhand pull-up reps across four sets. Strict form was not specified. Incline and spider curl weights follow the prior per-dumbbell convention. Preacher curl reps are recorded as supplied, with completion on both arms unconfirmed.
 
+# 33. Flat Bench Push Session — November 25, 2026
+
+Start: 8:20 PM. Duration: 10 minutes.
+
+- Bench: 95 lb × 7, 7, 7
+
+The session ended after flat bench because the lifter had to leave. Smith setup follows the workout plan and prior history.
+
+# 34. Incline Bench and Push Accessories — November 25, 2026
+
+Start: 10:45 PM. Duration: 35 minutes.
+
+- Incline bench: 65 lb × 7, 7, 7
+- Tricep pushdown: 35 lb × 8, 8, 8
+- Cable lateral raise: 10 lb × 10, 10, 10
+- Cable front raise: 10 lb × 10, 10, 10
+- Cable ab crunch: 70 lb × 10, 10, 10
+
+Smith incline setup follows the workout plan and prior history. Cable setup and load conventions were not specified.
+
 # Current Benchmarks
 
 ## Smith-Machine Flat Bench

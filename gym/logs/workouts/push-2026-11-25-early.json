@@ -1,0 +1,40 @@
+{
+  "id": "push-2026-11-25-early",
+  "date": "2026-11-25",
+  "startTime": "20:20",
+  "durationMinutes": 10,
+  "type": "push",
+  "title": "Flat Bench Push Session",
+  "chronologyIndex": 33,
+  "dataQuality": "partial",
+  "exercises": [
+    {
+      "exerciseId": "smith-flat-bench",
+      "name": "Smith-Machine Flat Bench",
+      "equipment": "Smith machine",
+      "dataQuality": "partial",
+      "sets": [
+        {
+          "id": "push-2026-11-25-early-smith-flat-bench-1",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "push-2026-11-25-early-smith-flat-bench-2",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        },
+        {
+          "id": "push-2026-11-25-early-smith-flat-bench-3",
+          "weightLb": 95,
+          "reps": 7,
+          "completed": true
+        }
+      ],
+      "notes": "Smith setup inferred from the plan and prior history."
+    }
+  ],
+  "notes": "Session ended after flat bench because the lifter had to leave."
+}

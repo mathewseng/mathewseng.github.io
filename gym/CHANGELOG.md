@@ -2,6 +2,10 @@
 
 All notable changes to the `/gym` project are recorded here.
 
+## 2026-11-25 — Split Push Workout
+
+- Logged the 8:20 PM flat bench session and the 10:45 PM incline bench and accessories session separately.
+
 ## 2026-11-22 — Pull Workout
 
 - Logged 17 overhand pull-ups, seated two-arm cable rows, and bench reverse crunches in the 80-minute session.
