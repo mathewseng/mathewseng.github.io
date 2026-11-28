@@ -814,3 +814,35 @@ Presence from obj-v11, colour from the tracker; the audit's window fallback (Nov
       - Nov 24 G3 T10: a pale die touching its partner, 20 px apart. Visible, but inside the 24-26 px where a die's
         own second peak lies.
     Neither die is too faint to see (proof-20261125pm/pale-still-missed.jpg), so none is left out of the scores.
+
+Nov 27 evening (s7, published Nov 28)
+
+  Recording ~/Downloads/office-3-wide-20261127-191603-1jzdy_b0 (19:16:03-19:31:20 EST, 16 clips), work dir
+  ~/Downloads/office-3-backgammon-20261127 (session.json, PROGRESS.txt, run-vision2.sh, run-analyze.sh, run-render.sh).
+  The case sits about where it did on Nov 21 but turned 180 degrees, so White's home is the camera's bottom-right and
+  ref/reference.json is "mirrored" (corners fitted by ECC of the readers' view against the Nov 21 reference); the
+  rectified opening position and a mid-game frame count 15 checkers a side with White's home top-right. White rolls
+  yellow, Black red, cube holder on the right rail. heldout.WORK has the session as s7; no model trained on it.
+  Models as for the older sessions: obs-v3 (slots-v3) for the decode, obs-v5 for the overlay, die_track.py scan
+  obj-v8 + die-ver-v1 + obj-v11 presence (objects-scan-track4), faces-v9 for the dice evidence and the audit.
+  decode2-v3.json decodes both games without changes (game 1 0:16-6:38, game 2 6:49-14:37).
+
+  Read by eye and patched (all in the work dir):
+  - Cube. The tracked cube moves dated game 2's double (11:04.8, Black; White takes 11:06.8) and redouble (14:08.2,
+    White) about 5 s off: the cube in a hand and faint tray peaks (0.15-0.25) were replaced by stale places.
+    cube-scan-eye.json is cube-scan-track4.json with 16640-16715 and 21045-21200 set from the footage; cubeThresh 0.15.
+  - Game 2's last turn: Black's dance at 14:02 (red dice; one shows four by the bar, the other slid under Black's
+    checker on the bar) is added to the decode (decode2-v3e.json); then White redoubles and Black passes (the cube stays
+    on the board while the players clear it from 14:21). Its roll stays unresolved (4-3, 4-4, 5-4 or 6-4).
+  - Game 1's end: Black's last checker comes off at 6:23.6 (9590) with White's 15 still on the board, a gammon; the
+    inferred bear-off turn is dated there instead of at the decode's end.
+  - reviewed-rolls-20261127.json: G1 T14 dance 2-1 (dice rest 1 s, tilted; reader's read, eye-consistent), G1 T24 5-1
+    (one die shows one), G2 T7 dance 3-3, G2 T17 dance 6-4.
+  Roll audit (roll_audit.py --sessions s7): 69 rolls, 62 confirmed by the dice; the 3 disagreements are reader
+  misreads, eye-checked on roll_strip.py strips: G1 T11 5-1 (the board shows 12/17 and 1/2; the "four" is a five cocked
+  against the rail), G1 T25 6-6 (the pair landed touching, two side-on sixes; the other track is an earlier roll's pale
+  die), G2 T6 5-4 (5 and 4 landed apart, then were pushed together). Without two dice: G2 T7 and T17 (dances, eye),
+  T8 2-1 (the move fixes it; one die shows one), T32 (above).
+  Results: game 1 Black doubles at 1:46, White takes, Black wins a gammon, 4 points; game 2 Black doubles at 11:04,
+  White takes, White redoubles to 4 at 14:08, Black passes, White wins 2. Page vision/2026-11-27, release
+  office3-backgammon-20261127-v1.

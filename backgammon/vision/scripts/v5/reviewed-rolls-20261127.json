@@ -1,0 +1,6 @@
+[
+ {"game": 1, "resultFrame": 3803, "player": "white", "roll": [2, 1], "note": "Dance: two yellow dice rest 1 s (3570-3595), both tilted; one shows two pips, the other one pip on an orange point; the face reader reads 2-1 (margin 6.8). Not sharp: treat as the likeliest read."},
+ {"game": 1, "resultFrame": 7225, "player": "white", "roll": [5, 1], "note": "The yellow die on the cream point shows one pip; 5-1 is the only candidate with a one (the pale partner at the rail reads five)."},
+ {"game": 2, "resultFrame": 11842, "player": "white", "roll": [3, 3], "note": "Dance: the yellow dice land at 11664-11680 by the bar; the lower one shows three pips in a diagonal line, the upper (pale, on a cream point) also a diagonal of three. Candidates 3-3, 6-3, 6-6."},
+ {"game": 2, "resultFrame": 16857, "player": "white", "roll": [6, 4], "note": "Dance: the yellow dice rest about 1 s (16560-16578) before White picks them up; one shows four corner pips, the other lies side-on against the bar showing two unbroken bars (a six)."}
+]

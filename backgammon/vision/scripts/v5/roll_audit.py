@@ -56,6 +56,9 @@ for p in sorted(ALL.glob('game-*.json')):
 PUBLISHED.append(('2026-11-23', 1, D / 'office-3-backgammon-20261123/analysis-v8/game-01.json', 's4'))
 for g in range(1, 5): PUBLISHED.append(('2026-11-24', g, D / f'office-3-backgammon-20261124/analysis/game-{g:02d}.json', 's5'))
 for g in range(1, 3): PUBLISHED.append(('2026-11-24-pm', g, D / f'office-3-backgammon-20261124-1531/analysis/game-{g:02d}.json', 's6'))
+for g in range(1, 3):
+    if (D / f'office-3-backgammon-20261127/analysis/game-{g:02d}.json').exists():
+        PUBLISHED.append(('2026-11-27', g, D / f'office-3-backgammon-20261127/analysis/game-{g:02d}.json', 's7'))
 
 # faces-v9: faces-v6 with two readers trained on the verified face crops (face_labels.py, face_train.py:
 # lean and full crop, touching-dice augmentation), averaged (dice_faces.Ensemble). Every session.

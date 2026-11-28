@@ -1,0 +1,1 @@
+{"game":2,"fps":25,"counts":{"rolls":32,"completeRolls":31,"missingFaces":1,"gradedPlays":28,"legalPlays":28},"issues":[{"kind":"unknown-face","frame":10497,"player":"dark","label":"Roll not resolved: 4-3 or 4-4 or 5-4 or 6-4 fit the move"}],"reviewed":[],"issueNames":{"unknown-face":"Roll not resolved","unconfirmed-play":"Inferred move"},"confirmedPriorMisreads":0,"notes":[]}

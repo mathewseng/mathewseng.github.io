@@ -4,7 +4,8 @@ Whole games (or, on Nov 23, the second half of the one game) are held out so tha
 scored on them has seen no frame of that play. Training scripts call `held(session, frame)` to
 leave these frames out (objects_train.py, train_slots.py, dice_faces.py).
 
-Sessions use the detector's names: s1-s3 are the three Nov 21 recordings, s4 Nov 23, s5 Nov 24.
+Sessions use the detector's names: s1-s3 are the three Nov 21 recordings, s4 Nov 23, s5 Nov 24,
+s6 Nov 24 15:31, s7 Nov 27 19:16 (no model trained on s7).
 The test set itself (testset_build.py) lives in TEST_DIR, outside the repository.
 """
 import json, os
@@ -23,8 +24,9 @@ WORK = {
     's4': D / 'office-3-backgammon-20261123',
     's5': D / 'office-3-backgammon-20261124',
     's6': D / 'office-3-backgammon-20261124-1531',
+    's7': D / 'office-3-backgammon-20261127',
 }
-DAY = {'s1': 'nov21', 's2': 'nov21', 's3': 'nov21', 's4': 'nov23', 's5': 'nov24', 's6': 'nov24pm'}
+DAY = {'s1': 'nov21', 's2': 'nov21', 's3': 'nov21', 's4': 'nov23', 's5': 'nov24', 's6': 'nov24pm', 's7': 'nov27'}
 DAYS = ('nov24pm',) if TEST_SET == 'new' else ('nov21', 'nov23', 'nov24')
 
 # (session, first frame, last frame, published analysis file, label)
