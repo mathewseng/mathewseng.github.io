@@ -954,7 +954,10 @@
 
 .vision-sessions {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .vision-sessions a {
